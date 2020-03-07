@@ -154,11 +154,11 @@ class DetectorClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
         """
         if not (
             (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
-                and (label < self.nb_classes()).all()
+                and (label < self.nb_classes).all()
                 and label.shape[0] == x.shape[0]
             )
         ):
@@ -169,7 +169,7 @@ class DetectorClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
             combined_grads = self._compute_combined_grads(x, label=None)
 
         elif isinstance(label, (int, np.int)):
-            if label < self.nb_classes() - 1:
+            if label < self.nb_classes - 1:
                 # Compute and return from the classifier gradients
                 combined_grads = self.classifier.class_gradient(x=x, label=label)
 
@@ -198,8 +198,8 @@ class DetectorClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
 
         else:
             # Compute indexes for classifier labels and detector labels
-            classifier_idx = np.where(label < self.nb_classes() - 1)
-            detector_idx = np.where(label == self.nb_classes() - 1)
+            classifier_idx = np.where(label < self.nb_classes - 1)
+            detector_idx = np.where(label == self.nb_classes - 1)
 
             # Initialize the combined gradients
             combined_grads = np.zeros(shape=(x.shape[0], 1, x.shape[1], x.shape[2], x.shape[3]))
@@ -294,15 +294,6 @@ class DetectorClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
             self._learning_phase = train
             self.classifier.set_learning_phase(train=train)
             self.detector.set_learning_phase(train=train)
-
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
 
     def save(self, filename, path=None):
         """

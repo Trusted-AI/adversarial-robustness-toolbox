@@ -295,15 +295,6 @@ class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
                 classifier.set_learning_phase(train)
             self._learning_phase = train
 
-    def nb_classes(self):
-        """
-        Return the number of output classes.
-
-        :return: Number of classes in the data.
-        :rtype: `int`
-        """
-        return self._nb_classes
-
     def __repr__(self):
         repr_ = (
             "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, "

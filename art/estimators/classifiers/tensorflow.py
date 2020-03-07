@@ -136,7 +136,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
+        results = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=np.float32)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
@@ -250,11 +250,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Check value of label for computing gradients
         if not (
             label is None
-            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes()))
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
-                and (label < self.nb_classes()).all()
+                and (label < self.nb_classes).all()
                 and label.shape[0] == x.shape[0]
             )
         ):
@@ -328,13 +328,13 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         import tensorflow as tf
 
         if not hasattr(self, "_class_grads"):
-            self._class_grads = [None for _ in range(self.nb_classes())]
+            self._class_grads = [None for _ in range(self.nb_classes)]
 
         # Construct the class gradients graph
         if label is None:
             if None in self._class_grads:
                 self._class_grads = [
-                    tf.gradients(self._output[:, i], self._input_ph)[0] for i in range(self.nb_classes())
+                    tf.gradients(self._output[:, i], self._input_ph)[0] for i in range(self.nb_classes)
                 ]
 
         elif isinstance(label, int):

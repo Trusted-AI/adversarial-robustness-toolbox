@@ -105,7 +105,7 @@ class TestDetectorClassifier(TestBase):
         self.assertEqual(np.argmax(predictions, axis=1)[0], predictions_expected)
 
     def test_nb_classes(self):
-        self.assertEqual(self.detector_classifier.nb_classes(), 11)
+        self.assertEqual(self.detector_classifier.nb_classes, 11)
 
     def test_input_shape(self):
         self.assertEqual(self.detector_classifier.input_shape, (1, 28, 28))
