@@ -54,11 +54,59 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     def get_activations(self):
         raise NotImplementedError
 
-    def loss_gradient(self):
-        raise NotImplementedError
+    def loss_gradient(self, x, y, **kwargs):
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
 
-    def predict(self, x):
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :return: Array of gradients of the same shape as `x`.
+        :rtype: `np.ndarray`
+        """
 
+        import torch
+        import numpy as np
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+
+        # Convert the inputs to Tensors
+        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
+        inputs_t.requires_grad = True
+
+        # Convert the labels to Tensors
+        labels_t = torch.from_numpy(np.argmax(y_preprocessed, axis=1)).to(self._device)
+
+        # Compute the gradient and return
+        model_outputs = self._model(inputs_t)
+        loss = self._loss(model_outputs[-1], labels_t)
+
+        # Clean gradients
+        self._model.zero_grad()
+
+        # Compute gradients
+        loss.backward()
+        grads = inputs_t.grad.cpu().numpy().copy()
+        grads = self._apply_preprocessing_gradient(x, grads)
+        assert grads.shape == x.shape
+
+        return grads
+
+
+    def predict(self, x, batch_size=128, **kwargs):
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Test set.
+        :type x: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        :rtype: `np.ndarray`
+        """
         import torchvision
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
         image = transform(x)
