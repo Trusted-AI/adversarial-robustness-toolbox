@@ -52,7 +52,7 @@ model = Net()
 # Step 2a: Define the loss function and the optimizer
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.5)
+optimizer = optim.Adam(model.parameters(), lr=0.01)
 
 # Step 3: Create the ART classifier
 
