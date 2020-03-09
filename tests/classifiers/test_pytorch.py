@@ -333,6 +333,35 @@ class TestPyTorchClassifier(TestBase):
         accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
         self.assertEqual(accuracy_1, accuracy_2)
 
+    def test_device(self):
+        # Define the network
+        model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+        # First test cpu
+        classifier_cpu = PyTorchClassifier(model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer,
+                                           input_shape=(1, 28, 28), nb_classes=10, device_type='cpu')
+
+        self.assertTrue(classifier_cpu._device == torch.device('cpu'))
+        self.assertFalse(classifier_cpu._device == torch.device('cuda'))
+
+        # Then test gpu
+        if torch.cuda.device_count() >= 2:
+            with torch.cuda.device(0):
+                classifier_gpu0 = PyTorchClassifier(model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer,
+                                                    input_shape=(1, 28, 28), nb_classes=10)
+                self.assertTrue(classifier_gpu0._device == torch.device('cuda:0'))
+                self.assertFalse(classifier_gpu0._device == torch.device('cuda:1'))
+
+            with torch.cuda.device(1):
+                classifier_gpu1 = PyTorchClassifier(model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer,
+                                                    input_shape=(1, 28, 28), nb_classes=10)
+                self.assertTrue(classifier_gpu1._device == torch.device('cuda:1'))
+                self.assertFalse(classifier_gpu1._device == torch.device('cuda:0'))
+
 
 if __name__ == '__main__':
     unittest.main()
