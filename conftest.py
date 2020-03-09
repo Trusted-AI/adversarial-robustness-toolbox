@@ -8,13 +8,13 @@ import os
 import requests
 import tempfile
 import shutil
-from tests import utils_test
+from tests import utils
 from art.classifiers import KerasClassifier
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
 
-utils_test.master_seed(1234)
+utils.master_seed(1234)
 
 
 def pytest_addoption(parser):
@@ -55,12 +55,12 @@ def get_image_classifier_list(framework):
     def _get_image_classifier_list(one_classifier=False, **kwargs):
         sess = None
         if framework == "keras":
-            classifier_list = [utils_test.get_image_classifier_kr(**kwargs)]
+            classifier_list = [utils.get_image_classifier_kr(**kwargs)]
         if framework == "tensorflow":
-            classifier, sess = utils_test.get_image_classifier_tf(**kwargs)
+            classifier, sess = utils.get_image_classifier_tf(**kwargs)
             classifier_list = [classifier]
         if framework == "pytorch":
-            classifier_list = [utils_test.get_image_classifier_pt()]
+            classifier_list = [utils.get_image_classifier_pt()]
         if framework == "scikitlearn":
             logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
             classifier_list = None
@@ -81,14 +81,14 @@ def get_tabular_classifier_list(framework):
     def _get_tabular_classifier_list(clipped=True):
         if framework == "keras":
             if clipped:
-                classifier_list = [utils_test.get_tabular_classifier_kr()]
+                classifier_list = [utils.get_tabular_classifier_kr()]
             else:
-                classifier = utils_test.get_tabular_classifier_kr()
+                classifier = utils.get_tabular_classifier_kr()
                 classifier_list = [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
 
         if framework == "tensorflow":
             if clipped:
-                classifier, _ = utils_test.get_tabular_classifier_tf()
+                classifier, _ = utils.get_tabular_classifier_tf()
                 classifier_list = [classifier]
             else:
                 logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
@@ -96,13 +96,13 @@ def get_tabular_classifier_list(framework):
 
         if framework == "pytorch":
             if clipped:
-                classifier_list = [utils_test.get_tabular_classifier_pt()]
+                classifier_list = [utils.get_tabular_classifier_pt()]
             else:
                 logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
                 classifier_list = None
 
         if framework == "scikitlearn":
-            return utils_test.get_tabular_classifier_scikit_list(clipped=False)
+            return utils.get_tabular_classifier_scikit_list(clipped=False)
 
         return classifier_list
 

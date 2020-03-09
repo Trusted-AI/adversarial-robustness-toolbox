@@ -31,8 +31,8 @@ import numpy as np
 from art.attacks import ThresholdAttack
 from art.utils import get_labels_np_array
 
-from tests.utils_test import TestBase
-from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import TestBase
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 
 logger = logging.getLogger(__name__)
 

@@ -26,7 +26,7 @@ import GPy
 from art.attacks import HighConfidenceLowUncertainty
 from art.classifiers import GPyGaussianProcessClassifier
 
-from tests.utils_test import TestBase
+from tests.utils import TestBase
 
 logger = logging.getLogger(__name__)
 

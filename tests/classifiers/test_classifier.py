@@ -24,7 +24,7 @@ import numpy as np
 
 from art.classifiers import Classifier, ClassifierNeuralNetwork, ClassifierGradients
 
-from tests.utils_test import TestBase, master_seed
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 

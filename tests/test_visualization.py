@@ -27,7 +27,7 @@ from art.config import ART_DATA_PATH
 from art.utils import load_mnist, load_cifar10
 from art.visualization import create_sprite, convert_to_rgb, save_image, plot_3d
 
-from tests.utils_test import master_seed
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 

@@ -27,11 +27,11 @@ from art.attacks import ElasticNet
 from art.classifiers import KerasClassifier
 from art.utils import random_targets, to_categorical
 
-from tests.utils_test import TestBase, master_seed
-from tests.utils_test import get_image_classifier_tf, get_image_classifier_kr
-from tests.utils_test import get_image_classifier_pt, get_tabular_classifier_tf
-from tests.utils_test import get_tabular_classifier_kr, get_tabular_classifier_pt
-from tests.attacks.utils_attack import backend_test_classifier_type_check_fail
+from tests.utils import TestBase, master_seed
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr
+from tests.utils import get_image_classifier_pt, get_tabular_classifier_tf
+from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 

@@ -26,7 +26,7 @@ import numpy as np
 from art.defences import JpegCompression
 from art.utils import load_mnist
 
-from tests.utils_test import master_seed
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 

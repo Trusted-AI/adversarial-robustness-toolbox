@@ -23,9 +23,9 @@ import keras.backend as k
 import numpy as np
 from art.attacks import ZooAttack
 from art.utils import random_targets
-from tests.utils_test import TestBase, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils_test import get_image_classifier_tf, master_seed
-from tests.attacks.utils_attack import backend_test_classifier_type_check_fail
+from tests.utils import TestBase, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_image_classifier_tf, master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 

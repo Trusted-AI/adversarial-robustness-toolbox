@@ -26,7 +26,7 @@ from art.attacks import FastGradientMethod, DeepFool
 from art.data_generators import DataGenerator
 from art.defences import AdversarialTrainer
 from art.utils import load_mnist
-from tests.utils_test import master_seed, get_image_classifier_tf
+from tests.utils import master_seed, get_image_classifier_tf
 
 logger = logging.getLogger(__name__)
 

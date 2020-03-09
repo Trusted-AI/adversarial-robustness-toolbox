@@ -23,9 +23,9 @@ import unittest
 import numpy as np
 
 from art.defences import DefensiveDistillation
-from tests.utils_test import master_seed, TestBase
-from tests.utils_test import get_image_classifier_tf, get_image_classifier_pt, get_image_classifier_kr
-from tests.utils_test import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.utils import master_seed, TestBase
+from tests.utils import get_image_classifier_tf, get_image_classifier_pt, get_image_classifier_kr
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 

@@ -28,7 +28,7 @@ from mxnet.gluon import nn
 
 from art.classifiers import MXClassifier
 
-from tests.utils_test import TestBase, master_seed
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 

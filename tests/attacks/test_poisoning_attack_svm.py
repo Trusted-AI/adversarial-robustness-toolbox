@@ -27,7 +27,7 @@ from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
 from art.utils import load_iris
 
-from tests.utils_test import master_seed
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 

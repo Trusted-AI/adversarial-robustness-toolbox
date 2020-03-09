@@ -28,7 +28,7 @@ from art.classifiers import PyTorchClassifier
 from art.defences import PixelDefend
 from art.utils import load_mnist
 
-from tests.utils_test import master_seed
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 

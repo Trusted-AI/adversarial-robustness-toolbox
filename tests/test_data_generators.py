@@ -29,7 +29,7 @@ from keras.preprocessing.image import ImageDataGenerator
 
 from art.data_generators import KerasDataGenerator, PyTorchDataGenerator, MXDataGenerator, TFDataGenerator
 
-from tests.utils_test import master_seed
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 

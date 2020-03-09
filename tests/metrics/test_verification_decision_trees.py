@@ -29,7 +29,7 @@ from art.classifiers import XGBoostClassifier, LightGBMClassifier, SklearnClassi
 from art.utils import load_dataset
 from art.metrics import RobustnessVerificationTreeModelsCliqueMethod
 
-from tests.utils_test import master_seed
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,6 @@
 import pytest
 import logging
-from tests import utils_test
+from tests import utils
 from art.classifiers import KerasClassifier
 from art.defences import FeatureSqueezing
 
@@ -13,7 +13,7 @@ def get_image_classifier_list_defended(framework):
         sess = None
         classifier_list = None
         if framework == "keras":
-            classifier = utils_test.get_image_classifier_kr()
+            classifier = utils.get_image_classifier_kr()
             # Get the ready-trained Keras model
             fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
             classifier_list = [

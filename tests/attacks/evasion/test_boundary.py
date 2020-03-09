@@ -2,8 +2,8 @@ import pytest
 import logging
 from art.attacks import BoundaryAttack
 
-from tests.attacks.utils_attack import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
-from tests.attacks.utils_attack import back_end_untargeted_images, backend_test_classifier_type_check_fail
+from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
+from tests.attacks.utils import back_end_untargeted_images, backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 

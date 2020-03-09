@@ -31,7 +31,7 @@ from art.classifiers import KerasClassifier
 from art.detection import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist
 
-from tests.utils_test import master_seed, get_image_classifier_kr
+from tests.utils import master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 

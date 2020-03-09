@@ -23,11 +23,11 @@ import pytest
 
 from art.attacks import FastGradientMethod
 from art.classifiers.classifier import ClassifierGradients
-from tests.utils_test import ExpectedValue
-from tests.attacks.utils_attack import backend_check_adverse_values, backend_test_defended_images
-from tests.attacks.utils_attack import backend_test_random_initialisation_images, backend_targeted_images
-from tests.attacks.utils_attack import backend_targeted_tabular, backend_untargeted_tabular
-from tests.attacks.utils_attack import backend_test_classifier_type_check_fail
+from tests.utils import ExpectedValue
+from tests.attacks.utils import backend_check_adverse_values, backend_test_defended_images
+from tests.attacks.utils import backend_test_random_initialisation_images, backend_targeted_images
+from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 

@@ -39,7 +39,7 @@ from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
 
-from tests.utils_test import TestBase, master_seed, get_image_classifier_kr_tf
+from tests.utils import TestBase, master_seed, get_image_classifier_kr_tf
 
 logger = logging.getLogger(__name__)
 

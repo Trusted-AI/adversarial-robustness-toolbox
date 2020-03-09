@@ -33,8 +33,8 @@ from art.classifiers.keras import generator_fit
 from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
 
-from tests.utils_test import ExpectedValue
-from tests.classifiersFrameworks.utils_classifier import backend_test_nb_classes, backend_test_input_shape, \
+from tests.utils import ExpectedValue
+from tests.classifiersFrameworks.utils import backend_test_nb_classes, backend_test_input_shape, \
     backend_test_fit_generator, backend_test_loss_gradient, backend_test_layers, backend_test_class_gradient, \
     backend_test_repr
 

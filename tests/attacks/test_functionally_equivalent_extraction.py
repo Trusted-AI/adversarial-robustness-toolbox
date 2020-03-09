@@ -31,7 +31,7 @@ from tensorflow.keras.models import load_model
 from art.attacks import FunctionallyEquivalentExtraction
 from art.classifiers import KerasClassifier
 
-from tests.utils_test import TestBase, master_seed
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 

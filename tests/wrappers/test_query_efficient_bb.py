@@ -29,7 +29,7 @@ from art.defences import FeatureSqueezing
 from art.utils import load_dataset, get_labels_np_array
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 
-from tests.utils_test import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
+from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
 
 logger = logging.getLogger(__name__)
 
