@@ -215,10 +215,11 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         from art.data_generators import PyTorchDataGenerator
 
         # Train directly in PyTorch
-        if isinstance(generator, PyTorchDataGenerator) and self.preprocessing_defences is None \
-                and self.preprocessing == (0, 1):
+        if isinstance(generator, PyTorchDataGenerator) and \
+                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
+                self.preprocessing == (0, 1):
             for _ in range(nb_epochs):
-                for i_batch, o_batch in generator.data_loader:
+                for i_batch, o_batch in generator.iterator:
                     if isinstance(i_batch, np.ndarray):
                         i_batch = torch.from_numpy(i_batch).to(self._device)
                     else:

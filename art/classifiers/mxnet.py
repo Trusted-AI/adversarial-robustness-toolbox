@@ -187,11 +187,12 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
 
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
 
-        if isinstance(generator, MXDataGenerator) and self.preprocessing_defences is None \
-                and self.preprocessing == (0, 1):
+        if isinstance(generator, MXDataGenerator) and \
+                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
+                self.preprocessing == (0, 1):
             # Train directly in MXNet
             for _ in range(nb_epochs):
-                for x_batch, y_batch in generator.data_loader:
+                for x_batch, y_batch in generator.iterator:
                     x_batch = mx.nd.array(x_batch.astype(ART_NUMPY_DTYPE)).as_in_context(self._ctx)
                     y_batch = mx.nd.argmax(y_batch, axis=1)
                     y_batch = mx.nd.array(y_batch).as_in_context(self._ctx)
@@ -199,9 +200,6 @@ class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                     with mx.autograd.record(train_mode=train_mode):
                         # Perform prediction
                         preds = self._model(x_batch)
-
-                        # Apply postprocessing
-                        preds = self._apply_postprocessing(preds=preds, fit=True)
 
                         # Form the loss function
                         loss = self._loss(preds, y_batch)
