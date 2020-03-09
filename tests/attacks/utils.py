@@ -2,28 +2,29 @@ import pytest
 import numpy as np
 import logging
 
-from tests import utils
 import keras.backend as k
-from art import utils
+from sklearn.tree import DecisionTreeClassifier
+
+from art.utils import random_targets, get_labels_np_array, WrongClassifier
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-from sklearn.tree import DecisionTreeClassifier
+from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_y
 
 logger = logging.getLogger(__name__)
 
 
 def backend_targeted_images(attack, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    targets = utils.random_targets(y_test_mnist, attack.classifier.nb_classes())
+    targets = random_targets(y_test_mnist, attack.classifier.nb_classes())
     x_test_adv = attack.generate(x_test_mnist, y=targets)
     assert (x_test_mnist == x_test_adv).all() is False
 
-    y_test_pred_adv = utils.get_labels_np_array(attack.classifier.predict(x_test_adv))
+    y_test_pred_adv = get_labels_np_array(attack.classifier.predict(x_test_adv))
 
     assert targets.shape == y_test_pred_adv.shape
     assert (targets == y_test_pred_adv).sum() >= (x_test_mnist.shape[0] // 2)
 
-    utils.check_adverse_example_x(x_test_adv, x_test_mnist)
+    check_adverse_example_x(x_test_adv, x_test_mnist)
 
     y_pred_adv = np.argmax(attack.classifier.predict(x_test_adv), axis=1)
 
@@ -35,18 +36,18 @@ def backend_test_defended_images(attack, mnist_dataset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
     x_train_adv = attack.generate(x_train_mnist)
 
-    utils.check_adverse_example_x(x_train_adv, x_train_mnist)
+    check_adverse_example_x(x_train_adv, x_train_mnist)
 
-    y_train_pred_adv = utils.get_labels_np_array(attack.classifier.predict(x_train_adv))
-    y_train_labels = utils.get_labels_np_array(y_train_mnist)
+    y_train_pred_adv = get_labels_np_array(attack.classifier.predict(x_train_adv))
+    y_train_labels = get_labels_np_array(y_train_mnist)
 
-    utils.check_adverse_predicted_sample_y(y_train_pred_adv, y_train_labels)
+    check_adverse_predicted_sample_y(y_train_pred_adv, y_train_labels)
 
     x_test_adv = attack.generate(x_test_mnist)
-    utils.check_adverse_example_x(x_test_adv, x_test_mnist)
+    check_adverse_example_x(x_test_adv, x_test_mnist)
 
-    y_test_pred_adv = utils.get_labels_np_array(attack.classifier.predict(x_test_adv))
-    utils.check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
+    y_test_pred_adv = get_labels_np_array(attack.classifier.predict(x_test_adv))
+    check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
 
 
 def backend_test_random_initialisation_images(attack, mnist_dataset):
@@ -105,7 +106,7 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
 
 
 def _backend_test_classifier_list_type_check_fail(attack, classifier, classifier_expected_list):
-    with pytest.raises(utils.WrongClassifier) as exception:
+    with pytest.raises(WrongClassifier) as exception:
         _ = attack(classifier=classifier)
 
     for classifier_expected in classifier_expected_list:
@@ -115,10 +116,10 @@ def _backend_test_classifier_list_type_check_fail(attack, classifier, classifier
 def backend_targeted_tabular(attack, fix_get_iris):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
-    targets = utils.random_targets(y_test_iris, nb_classes=3)
+    targets = random_targets(y_test_iris, nb_classes=3)
     x_test_adv = attack.generate(x_test_iris, **{'y': targets})
 
-    utils.check_adverse_example_x(x_test_adv, x_test_iris)
+    check_adverse_example_x(x_test_adv, x_test_iris)
 
     y_pred_adv = np.argmax(attack.classifier.predict(x_test_adv), axis=1)
     target = np.argmax(targets, axis=1)
@@ -133,7 +134,7 @@ def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_mlFramework):
 
     x_test_adv = attack.generate(x_test_mnist)
 
-    utils.check_adverse_example_x(x_test_adv, x_test_mnist)
+    check_adverse_example_x(x_test_adv, x_test_mnist)
 
     y_pred = np.argmax(attack.classifier.predict(x_test_mnist), axis=1)
     y_pred_adv = np.argmax(attack.classifier.predict(x_test_adv), axis=1)
@@ -152,7 +153,7 @@ def backend_untargeted_tabular(attack, iris_dataset, clipped):
     # if mlFramework in ["scikitlearn"]:
     #     np.testing.assert_array_almost_equal(np.abs(x_test_adv - x_test_iris), .1, decimal=5)
 
-    utils.check_adverse_example_x(x_test_adv, x_test_iris)
+    check_adverse_example_x(x_test_adv, x_test_iris)
     # utils_test.check_adverse_example_x(x_test_adv, x_test_iris, bounded=clipped)
 
     y_pred_test_adv = np.argmax(attack.classifier.predict(x_test_adv), axis=1)

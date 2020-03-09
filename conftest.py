@@ -1,6 +1,5 @@
 import logging
 import pytest
-from art import utils
 import numpy as np
 import tensorflow as tf
 import keras
@@ -8,13 +7,15 @@ import os
 import requests
 import tempfile
 import shutil
-from tests import utils
+from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
+from tests.utils import get_tabular_classifier_scikit_list, load_dataset
 from art.classifiers import KerasClassifier
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
 
-utils.master_seed(1234)
+master_seed(1234)
 
 
 def pytest_addoption(parser):
@@ -55,12 +56,12 @@ def get_image_classifier_list(framework):
     def _get_image_classifier_list(one_classifier=False, **kwargs):
         sess = None
         if framework == "keras":
-            classifier_list = [utils.get_image_classifier_kr(**kwargs)]
+            classifier_list = [get_image_classifier_kr(**kwargs)]
         if framework == "tensorflow":
-            classifier, sess = utils.get_image_classifier_tf(**kwargs)
+            classifier, sess = get_image_classifier_tf(**kwargs)
             classifier_list = [classifier]
         if framework == "pytorch":
-            classifier_list = [utils.get_image_classifier_pt()]
+            classifier_list = [get_image_classifier_pt()]
         if framework == "scikitlearn":
             logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
             classifier_list = None
@@ -81,14 +82,14 @@ def get_tabular_classifier_list(framework):
     def _get_tabular_classifier_list(clipped=True):
         if framework == "keras":
             if clipped:
-                classifier_list = [utils.get_tabular_classifier_kr()]
+                classifier_list = [get_tabular_classifier_kr()]
             else:
-                classifier = utils.get_tabular_classifier_kr()
+                classifier = get_tabular_classifier_kr()
                 classifier_list = [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
 
         if framework == "tensorflow":
             if clipped:
-                classifier, _ = utils.get_tabular_classifier_tf()
+                classifier, _ = get_tabular_classifier_tf()
                 classifier_list = [classifier]
             else:
                 logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
@@ -96,13 +97,13 @@ def get_tabular_classifier_list(framework):
 
         if framework == "pytorch":
             if clipped:
-                classifier_list = [utils.get_tabular_classifier_pt()]
+                classifier_list = [get_tabular_classifier_pt()]
             else:
                 logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
                 classifier_list = None
 
         if framework == "scikitlearn":
-            return utils.get_tabular_classifier_scikit_list(clipped=False)
+            return get_tabular_classifier_scikit_list(clipped=False)
 
         return classifier_list
 
@@ -152,7 +153,7 @@ def is_tf_version_2():
 @pytest.fixture(scope="session")
 def load_iris_dataset():
     logging.info("Loading Iris dataset")
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = utils.load_dataset('iris')
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
 
     yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris)
 
@@ -192,7 +193,7 @@ def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes):
 @pytest.fixture(scope="session")
 def load_mnist_dataset():
     logging.info("Loading mnist")
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = utils.load_dataset('mnist')
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
     yield (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist)
 
 
