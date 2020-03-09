@@ -8,12 +8,14 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 #### Refactored tests
 pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evation tests"; fi
 
 #Only classifier tests need to be run for each frameworks
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
   pytest -q tests/classifiersFrameworks/ --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed tests for framework $mlFramework"; fi
 done
 
 
