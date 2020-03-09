@@ -100,6 +100,15 @@ class FastGradientMethod(EvasionAttack):
 
         self._project = True
 
+    @classmethod
+    def is_valid_classifier_type(cls, classifier):
+        """
+        Checks whether the classifier provided is a classifer which this class can perform an attack on
+        :param classifier:
+        :return:
+        """
+        return True if isinstance(classifier, ClassifierGradients) else False
+
     def _minimal_perturbation(self, x, y):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
         first adversarial example was found.
