@@ -24,6 +24,7 @@ import logging
 import abc
 import numpy as np
 
+from art.classifiers import BlackBoxClassifier
 from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
@@ -91,7 +92,12 @@ class Attack(abc.ABC, metaclass=input_filter):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
-        if not isinstance(classifier, Classifier):
+        classifier_is_art_classifier = isinstance(classifier, Classifier)
+        classifier_is_none = classifier is None
+        is_black_box_attack = isinstance(self, PoisoningAttackBlackBox) and not \
+            isinstance(self, PoisoningAttackWhiteBox)
+
+        if not (classifier_is_art_classifier or classifier_is_none and is_black_box_attack):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "

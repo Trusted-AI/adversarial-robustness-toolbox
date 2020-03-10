@@ -7,6 +7,7 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
+                    "tests/attacks/test_backdoor_attack.py" \
                     "tests/attacks/test_boundary.py" \
                     "tests/attacks/test_carlini.py" \
                     "tests/attacks/test_copycat_cnn.py" \
