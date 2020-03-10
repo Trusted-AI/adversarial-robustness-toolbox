@@ -32,9 +32,9 @@ def setup_tear_down_framework(framework):
     if framework == "keras":
         pass
     if framework == "tensorflow":
-        tf.reset_default_graph()
-        # if tf.__version__[0] == '2':
-        #     tf.reset_default_graph()
+        # tf.reset_default_graph()
+        if tf.__version__[0] != '2':
+            tf.reset_default_graph()
     if framework == "pytorch":
         pass
     if framework == "scikitlearn":
