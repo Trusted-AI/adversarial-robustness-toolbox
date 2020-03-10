@@ -55,17 +55,17 @@ class ElasticNet(EvasionAttack):
     ]
 
     def __init__(
-            self,
-            classifier,
-            confidence=0.0,
-            targeted=False,
-            learning_rate=1e-2,
-            binary_search_steps=9,
-            max_iter=100,
-            beta=1e-3,
-            initial_const=1e-3,
-            batch_size=1,
-            decision_rule="EN",
+        self,
+        classifier,
+        confidence=0.0,
+        targeted=False,
+        learning_rate=1e-2,
+        binary_search_steps=9,
+        max_iter=100,
+        beta=1e-3,
+        initial_const=1e-3,
+        batch_size=1,
+        decision_rule="EN",
     ):
         """
         Create an ElasticNet attack instance.
@@ -185,7 +185,7 @@ class ElasticNet(EvasionAttack):
         :return: The decayed learning rate
         :rtype: `float`
         """
-        learn_rate = (self.learning_rate - end_learning_rate)
+        learn_rate = self.learning_rate - end_learning_rate
         decayed_learning_rate = learn_rate * (1 - global_step / decay_steps) ** 2 + end_learning_rate
 
         return decayed_learning_rate

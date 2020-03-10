@@ -56,15 +56,15 @@ class FastGradientMethod(EvasionAttack):
     ]
 
     def __init__(
-            self,
-            classifier,
-            norm=np.inf,
-            eps=0.3,
-            eps_step=0.1,
-            targeted=False,
-            num_random_init=0,
-            batch_size=1,
-            minimal=False,
+        self,
+        classifier,
+        norm=np.inf,
+        eps=0.3,
+        eps_step=0.1,
+        targeted=False,
+        num_random_init=0,
+        batch_size=1,
+        minimal=False,
     ):
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -93,8 +93,15 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(classifier, ClassifierGradients):
             raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
-        kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
-                  'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
+        kwargs = {
+            "norm": norm,
+            "eps": eps,
+            "eps_step": eps_step,
+            "targeted": targeted,
+            "num_random_init": num_random_init,
+            "batch_size": batch_size,
+            "minimal": minimal,
+        }
 
         FastGradientMethod.set_params(self, **kwargs)
 
