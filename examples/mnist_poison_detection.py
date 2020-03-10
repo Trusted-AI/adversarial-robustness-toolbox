@@ -7,6 +7,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
+from art.attacks.poisoning.perturbations.image_perturbations import add_pattern_bd, add_single_bd
 from art.classifiers import KerasClassifier
 from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
@@ -192,67 +193,6 @@ def generate_backdoor(
     is_poison = is_poison != 0
 
     return is_poison, x_poison, y_poison
-
-
-def add_single_bd(x, distance=2, pixel_value=1):
-    """
-    Augments a matrix by setting value some `distance` away from the bottom-right edge to 1. Works for single images
-    or a batch of images.
-    :param x: N X W X H matrix or W X H matrix. will apply to last 2
-    :type x: `np.ndarray`
-
-    :param distance: distance from bottom-right walls. defaults to 2
-    :type distance: `int`
-
-    :param pixel_value: Value used to replace the entries of the image matrix
-    :type pixel_value: `int`
-
-    :return: augmented matrix
-    :rtype: `np.ndarray`
-    """
-    x = np.array(x)
-    shape = x.shape
-    if len(shape) == 3:
-        width, height = x.shape[1:]
-        x[:, width - distance, height - distance] = pixel_value
-    elif len(shape) == 2:
-        width, height = x.shape
-        x[width - distance, height - distance] = pixel_value
-    else:
-        raise RuntimeError("Do not support numpy arrays of shape " + str(shape))
-    return x
-
-
-def add_pattern_bd(x, distance=2, pixel_value=1):
-    """
-    Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
-    edge to 1. Works for single images or a batch of images.
-    :param x: N X W X H matrix or W X H matrix. will apply to last 2
-    :type x: `np.ndarray`
-    :param distance: distance from bottom-right walls. defaults to 2
-    :type distance: `int`
-    :param pixel_value: Value used to replace the entries of the image matrix
-    :type pixel_value: `int`
-    :return: augmented matrix
-    :rtype: np.ndarray
-    """
-    x = np.array(x)
-    shape = x.shape
-    if len(shape) == 3:
-        width, height = x.shape[1:]
-        x[:, width - distance, height - distance] = pixel_value
-        x[:, width - distance - 1, height - distance - 1] = pixel_value
-        x[:, width - distance, height - distance - 2] = pixel_value
-        x[:, width - distance - 2, height - distance] = pixel_value
-    elif len(shape) == 2:
-        width, height = x.shape
-        x[width - distance, height - distance] = pixel_value
-        x[width - distance - 1, height - distance - 1] = pixel_value
-        x[width - distance, height - distance - 2] = pixel_value
-        x[width - distance - 2, height - distance] = pixel_value
-    else:
-        raise RuntimeError("Do not support numpy arrays of shape " + str(shape))
-    return x
 
 
 if __name__ == "__main__":

@@ -92,8 +92,25 @@ class Attack(abc.ABC, metaclass=input_filter):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
+
         if not isinstance(classifier, Classifier):
             raise WrongClassifier(self.__class__, [Classifier], classifier)
+
+        classifier_is_art_classifier = isinstance(classifier, Classifier)
+        classifier_is_none = classifier is None
+        is_black_box_attack = isinstance(self, PoisoningAttackBlackBox) and not \
+            isinstance(self, PoisoningAttackWhiteBox)
+
+        if not (classifier_is_art_classifier or classifier_is_none and is_black_box_attack):
+            raise WrongClassifier(self.__class__, [Classifier], classifier)
+            # raise (
+            #     TypeError(
+            #         "For `" + self.__class__.__name__ + "` classifier must be an instance of "
+            #         "`art.classifiers.classifier.Classifier`, the provided classifier is instance of "
+            #         + str(classifier.__class__.__bases__)
+            #         + "."
+            #     )
+            # )
 
         self.classifier = classifier
 

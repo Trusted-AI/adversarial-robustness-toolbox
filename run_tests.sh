@@ -21,6 +21,7 @@ done
 
 #### Tests yet to be refactored
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
+                    "tests/attacks/test_backdoor_attack.py" \
                     "tests/attacks/test_carlini.py" \
                     "tests/attacks/test_copycat_cnn.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
