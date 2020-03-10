@@ -222,7 +222,7 @@ class TestTensorFlowClassifier(TestBase):
             self.assertIn('TensorFlowClassifier', repr_classifier)
             self.assertIn('input_ph=<tf.Tensor \'Placeholder:0\' shape=(?, 28, 28, 1) dtype=float32>', repr_classifier)
             self.assertIn('output=<tf.Tensor \'Softmax:0\' shape=(?, 10) dtype=float32>', repr_classifier)
-            self.assertIn('labels_ph=<tf.Tensor \'Placeholder_1:0\' shape=(?, 10) dtype=int32>', repr_classifier)
+            self.assertIn('labels_ph=<tf.Tensor \'Placeholder_1:0\' shape=(?, 10) dtype=float32>', repr_classifier)
             self.assertIn('train=<tf.Operation \'Adam\' type=NoOp>', repr_classifier)
             self.assertIn('loss=<tf.Tensor \'Mean:0\' shape=() dtype=float32>', repr_classifier)
             self.assertIn('learning=None', repr_classifier)

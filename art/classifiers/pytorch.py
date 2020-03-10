@@ -48,6 +48,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         preprocessing_defences=None,
         postprocessing_defences=None,
         preprocessing=(0, 1),
+        device_type='gpu',
     ):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -79,6 +80,8 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        :type device_type: `string`
         """
         super(PyTorchClassifier, self).__init__(
             clip_values=clip_values,
@@ -98,14 +101,25 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         # Get the internal layers
         self._layer_names = self._model.get_layers
 
-        # Use GPU if possible
+        # Set device
         import torch
 
-        self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        if device_type == 'cpu' or not torch.cuda.is_available():
+            self._device = torch.device('cpu')
+        else:
+            cuda_idx = torch.cuda.current_device()
+            self._device = torch.device('cuda:{}'.format(cuda_idx))
+
         self._model.to(self._device)
 
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
+
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if isinstance(loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss)):
+            self._reduce_labels = True
+        else:
+            self._reduce_labels = False
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -161,7 +175,10 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-        y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
+        # Check label shape
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
@@ -173,8 +190,8 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]).to(self._device)
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -345,12 +362,16 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
+        # Check label shape
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
-        labels_t = torch.from_numpy(np.argmax(y_preprocessed, axis=1)).to(self._device)
+        labels_t = torch.from_numpy(y_preprocessed).to(self._device)
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
