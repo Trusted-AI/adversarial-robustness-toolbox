@@ -39,34 +39,6 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, clipp
             backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped_classifier)
 
 
-def test_tensorflow_iris(get_iris_dataset):
-    classifier, _ = get_tabular_classifier_tf()
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
-    # Test untargeted attack
-    attack = BoundaryAttack(classifier, targeted=False, max_iter=3)
-    x_test_adv = attack.generate(x_test_iris)
-    unittest.TestCase.assertFalse((x_test_iris == x_test_adv).all())
-    unittest.TestCase.assertTrue((x_test_adv <= 1).all())
-    unittest.TestCase.assertTrue((x_test_adv >= 0).all())
-
-    preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-    unittest.TestCase.assertFalse((np.argmax(y_test_iris, axis=1) == preds_adv).all())
-    accuracy = np.sum(preds_adv == np.argmax(y_test_iris, axis=1)) / y_test_iris.shape[0]
-    logger.info('Accuracy on Iris with boundary adversarial examples: %.2f%%', (accuracy * 100))
-
-    # Test targeted attack
-    targets = random_targets(y_test_iris, nb_classes=3)
-    attack = BoundaryAttack(classifier, targeted=True, max_iter=3)
-    x_test_adv = attack.generate(x_test_iris, **{'y': targets})
-    unittest.TestCase.assertFalse((x_test_iris == x_test_adv).all())
-    unittest.TestCase.assertTrue((x_test_adv <= 1).all())
-    unittest.TestCase.assertTrue((x_test_adv >= 0).all())
-
-    preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
-    unittest.TestCase.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
-    accuracy = np.sum(preds_adv == np.argmax(targets, axis=1)) / y_test_iris.shape[0]
-    logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
-
 @pytest.mark.parametrize("targeted", [True, False])
 def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack, framework, targeted):
     classifier_list = get_image_classifier_list_for_attack(BoundaryAttack)

@@ -125,9 +125,7 @@ def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
     :param bounded:
     :return:
     '''
-    unittest.TestCase.assertFalse((x_original == x_adv).all(),"x_test_adv should have been different from x_test")
-
-    assert (x_original == x_adv).all() == False, "x_test_adv should have been different from x_test"
+    assert bool((x_original == x_adv).all()) is False, "x_test_adv should have been different from x_test"
 
     if bounded:
         assert np.amax(x_adv) <= max, "x_test_adv values should have all been below {0}".format(max)
@@ -138,8 +136,7 @@ def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
 
 
 def check_adverse_predicted_sample_y(y_pred_adv, y_non_adv):
-    unittest.TestCase.assertFalse((y_non_adv == y_pred_adv).all(), "Adverse predicted sample was not what was expected")
-    assert (y_non_adv == y_pred_adv).all() == False, "Adverse predicted sample was not what was expected"
+    assert bool((y_non_adv == y_pred_adv).all()) is False, "Adverse predicted sample was not what was expected"
 
 
 def is_valid_framework(framework):

@@ -1,7 +1,6 @@
 import pytest
 import numpy as np
 import logging
-import unittest
 
 import keras.backend as k
 from sklearn.tree import DecisionTreeClassifier
@@ -18,8 +17,7 @@ def backend_targeted_images(attack, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     targets = random_targets(y_test_mnist, attack.classifier.nb_classes())
     x_test_adv = attack.generate(x_test_mnist, y=targets)
-    unittest.TestCase.assertFalse((x_test_mnist == x_test_adv).all())
-    assert (x_test_mnist == x_test_adv).all() == False
+    assert bool((x_test_mnist == x_test_adv).all()) is False
 
     y_test_pred_adv = get_labels_np_array(attack.classifier.predict(x_test_adv))
 
@@ -55,8 +53,7 @@ def backend_test_defended_images(attack, mnist_dataset):
 def backend_test_random_initialisation_images(attack, mnist_dataset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
     x_test_adv = attack.generate(x_test_mnist)
-    unittest.TestCase.assertFalse((x_test_mnist == x_test_adv).all())
-    assert (x_test_mnist == x_test_adv).all() == False
+    assert bool((x_test_mnist == x_test_adv).all()) is False
 
 
 def backend_check_adverse_values(attack, mnist_dataset, expected_values):
@@ -163,9 +160,9 @@ def backend_untargeted_tabular(attack, iris_dataset, clipped):
     y_test_true = np.argmax(y_test_iris, axis=1)
 
     # assert (y_test_true == y_pred_test_adv).any(), "An untargeted attack should have changed SOME predictions"
-    unittest.TestCase.assertFalse((y_test_true == y_pred_test_adv).all(), "An untargeted attack should NOT have changed all predictions")
-    assert (y_test_true == y_pred_test_adv).all() == False, "An untargeted attack " \
-                                                            "should NOT have changed all predictions"
+    assert bool(
+        (y_test_true == y_pred_test_adv).all()) is False, "An untargeted attack should NOT have changed all predictions"
+
     accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
     logger.info('Accuracy of ' + attack.classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
                                                                         '%.2f%%', (accuracy * 100))
