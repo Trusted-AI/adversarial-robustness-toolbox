@@ -24,6 +24,7 @@ import logging
 import abc
 import numpy as np
 
+from art.utils import WrongClassifier
 from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
@@ -91,15 +92,14 @@ class Attack(abc.ABC, metaclass=input_filter):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
-        if not isinstance(classifier, Classifier):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.Classifier`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + "."
-                )
-            )
+        classifier_is_art_classifier = isinstance(classifier, Classifier)
+        classifier_is_none = classifier is None
+        is_black_box_attack = isinstance(self, PoisoningAttackBlackBox) and not \
+            isinstance(self, PoisoningAttackWhiteBox)
+
+        if not (classifier_is_art_classifier or classifier_is_none and is_black_box_attack):
+            raise WrongClassifier(self.__class__, [Classifier], classifier)
+
         self.classifier = classifier
 
     def set_params(self, **kwargs):
@@ -176,6 +176,7 @@ class PoisoningAttackWhiteBox(PoisoningAttackBlackBox):
     """
     Abstract base class for poisoning attack classes that have white-box access to the model (classifier object)
     """
+
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier.

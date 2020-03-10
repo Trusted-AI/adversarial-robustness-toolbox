@@ -19,17 +19,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
 import keras
 import numpy as np
-
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.attacks import DeepFool
 from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array
 
 from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class TestDeepFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Keras classifier
-        classifier = get_classifier_kr(from_logits=True)
+        classifier = get_image_classifier_kr(from_logits=True)
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
@@ -72,12 +72,12 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_train_mnist == train_y_pred).all())
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
-        accuracy = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-            self.y_train_mnist.shape[0]
+        sum = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1))
+        accuracy = sum / self.y_train_mnist.shape[0]
         logger.info('Accuracy on adversarial train examples: %.2f%%', (accuracy * 100))
 
-        accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / \
-            self.y_test_mnist.shape[0]
+        sum1 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1))
+        accuracy = sum1 / self.y_test_mnist.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
@@ -87,16 +87,16 @@ class TestDeepFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Create basic CNN on MNIST using TensorFlow
-        classifier, sess = get_classifier_tf(from_logits=True)
+        classifier, sess = get_image_classifier_tf(from_logits=True)
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
-        accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-            self.y_train_mnist.shape[0]
+        sum2 = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1))
+        accuracy = sum2 / self.y_train_mnist.shape[0]
         logger.info('[TF, MNIST] Accuracy on training set: %.2f%%', (accuracy * 100))
 
         scores = get_labels_np_array(classifier.predict(self.x_test_mnist))
-        accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[
-            0]
+        sum3 = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1))
+        accuracy = sum3 / self.y_test_mnist.shape[0]
         logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (accuracy * 100))
 
         attack = DeepFool(classifier, max_iter=5, batch_size=11)
@@ -112,12 +112,12 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_train_mnist == train_y_pred).all())
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
-        accuracy = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-            self.y_train_mnist.shape[0]
+        sum4 = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1))
+        accuracy = sum4 / self.y_train_mnist.shape[0]
         logger.info('Accuracy on adversarial train examples: %.2f%%', (accuracy * 100))
 
-        accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / \
-            self.y_test_mnist.shape[0]
+        sum5 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1))
+        accuracy = sum5 / self.y_test_mnist.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
@@ -129,16 +129,16 @@ class TestDeepFool(TestBase):
         x_test_original = x_test.copy()
 
         # Create basic PyTorch model
-        classifier = get_classifier_pt(from_logits=True)
+        classifier = get_image_classifier_pt(from_logits=True)
 
         scores = get_labels_np_array(classifier.predict(x_train))
-        accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-            self.y_train_mnist.shape[0]
+        sum6 = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1))
+        accuracy = sum6 / self.y_train_mnist.shape[0]
         logger.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (accuracy * 100))
 
         scores = get_labels_np_array(classifier.predict(x_test))
-        accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[
-            0]
+        sum7 = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1))
+        accuracy = sum7 / self.y_test_mnist.shape[0]
         logger.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (accuracy * 100))
 
         attack = DeepFool(classifier, max_iter=5, batch_size=11)
@@ -154,12 +154,12 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_train_mnist == train_y_pred).all())
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
-        accuracy = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / \
-            self.y_train_mnist.shape[0]
+        sum8 = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1))
+        accuracy = sum8 / self.y_train_mnist.shape[0]
         logger.info('Accuracy on adversarial train examples: %.2f%%', (accuracy * 100))
 
-        accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / \
-            self.y_test_mnist.shape[0]
+        sum9 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1))
+        accuracy = sum9 / self.y_test_mnist.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
@@ -168,46 +168,22 @@ class TestDeepFool(TestBase):
     @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
                      reason='Minimal version of Keras or TensorFlow required.')
     def test_kera_mnist_partial_grads(self):
-        classifier = get_classifier_kr(from_logits=True)
+        classifier = get_image_classifier_kr(from_logits=True)
         attack = DeepFool(classifier, max_iter=2, nb_grads=3)
         x_test_adv = attack.generate(self.x_test_mnist)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
 
         test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
-
-        accuracy = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / \
-            self.y_test_mnist.shape[0]
+        sum10 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1))
+        accuracy = sum10 / self.y_test_mnist.shape[0]
         logger.info('Accuracy on adversarial test examples: %.2f%%', (accuracy * 100))
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = DeepFool(classifier=classifier)
-
-        self.assertIn('For `DeepFool` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
-            _ = DeepFool(classifier=classifier)
-
-        self.assertIn('For `DeepFool` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(DeepFool, [ClassifierGradients])
 
     def test_keras_iris_clipped(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         attack = DeepFool(classifier, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
@@ -221,7 +197,7 @@ class TestDeepFool(TestBase):
         logger.info('Accuracy on Iris with DeepFool adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_unbounded(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -235,7 +211,7 @@ class TestDeepFool(TestBase):
         logger.info('Accuracy on Iris with DeepFool adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_tensorflow_iris(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         attack = DeepFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris)
@@ -249,7 +225,7 @@ class TestDeepFool(TestBase):
         logger.info('Accuracy on Iris with DeepFool adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
 
         attack = DeepFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris)

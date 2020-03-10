@@ -24,7 +24,7 @@ import torch
 import torch.utils.data
 
 from art.classifiers.pytorch import PyTorchClassifier
-from art.attacks.fast_gradient import FastGradientMethod
+from art.attacks.evasion.fast_gradient import FastGradientMethod
 
 import zipfile
 import importlib

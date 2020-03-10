@@ -25,7 +25,7 @@ import numpy as np
 from art.defences import AdversarialTrainerMadryPGD
 from art.utils import load_mnist
 
-from tests.utils import master_seed, get_classifier_tf
+from tests.utils import master_seed, get_image_classifier_tf
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ class TestAdversarialTrainerMadryPGD(unittest.TestCase):
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = ((x_train, y_train), (x_test, y_test))
 
-        cls.classifier, _ = get_classifier_tf()
+        cls.classifier, _ = get_image_classifier_tf()
 
     def setUp(self):
         master_seed(seed=1234)

@@ -19,7 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
+from art.classifiers.classifier import ClassifierGradients
 import numpy as np
 
 from art.attacks import ProjectedGradientDescent
@@ -27,8 +27,9 @@ from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array, random_targets
 
 from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,7 @@ class TestPGD(TestBase):
         cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
 
     def test_keras_mnist(self):
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', scores[1] * 100)
@@ -58,7 +59,7 @@ class TestPGD(TestBase):
                                  self.y_test_mnist)
 
     def test_tensorflow_mnist(self):
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
@@ -74,7 +75,7 @@ class TestPGD(TestBase):
     def test_pytorch_mnist(self):
         x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
         x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
 
         scores = get_labels_np_array(classifier.predict(x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
@@ -132,34 +133,11 @@ class TestPGD(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = ProjectedGradientDescent(classifier=classifier)
-
-        self.assertIn('For `ProjectedGradientDescent` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
-            _ = ProjectedGradientDescent(classifier=classifier)
-
-        self.assertIn('For `ProjectedGradientDescent` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [ClassifierGradients])
 
     def test_keras_iris_clipped(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
@@ -187,7 +165,7 @@ class TestPGD(TestBase):
         logger.info('Success rate of targeted PGD on Iris: %.2f%%', (acc * 100))
 
     def test_keras_iris_unbounded(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -203,7 +181,7 @@ class TestPGD(TestBase):
         logger.info('Accuracy on Iris with PGD adversarial examples: %.2f%%', (acc * 100))
 
     def test_tensorflow_iris(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
@@ -231,7 +209,7 @@ class TestPGD(TestBase):
         logger.info('Success rate of targeted PGD on Iris: %.2f%%', (acc * 100))
 
     def test_pytorch_iris_pt(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
 
         # Test untargeted attack
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)

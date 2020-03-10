@@ -32,7 +32,7 @@ from scipy.ndimage import rotate, shift, zoom
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import check_and_transform_label_format
+from art.utils import check_and_transform_label_format, WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -56,16 +56,16 @@ class AdversarialPatch(EvasionAttack):
     ]
 
     def __init__(
-        self,
-        classifier,
-        target=0,
-        rotation_max=22.5,
-        scale_min=0.1,
-        scale_max=1.0,
-        learning_rate=5.0,
-        max_iter=500,
-        clip_patch=None,
-        batch_size=16,
+            self,
+            classifier,
+            target=0,
+            rotation_max=22.5,
+            scale_min=0.1,
+            scale_max=1.0,
+            learning_rate=5.0,
+            max_iter=500,
+            clip_patch=None,
+            batch_size=16,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
@@ -94,16 +94,7 @@ class AdversarialPatch(EvasionAttack):
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierNeuralNetwork` and "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to be a Neural Network and provide gradients."
-                )
-            )
+            raise WrongClassifier(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         kwargs = {
             "target": target,
@@ -286,9 +277,8 @@ class AdversarialPatch(EvasionAttack):
 
             inverted_patch_mask_transformed = 1 - patch_mask_transformed
 
-            patched_image = (
-                images[i_image, :, :, :] * inverted_patch_mask_transformed + patch_transformed * patch_mask_transformed
-            )
+            patched_image = (images[i_image, :, :,
+                             :] * inverted_patch_mask_transformed + patch_transformed * patch_mask_transformed)
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
 
@@ -332,9 +322,9 @@ class AdversarialPatch(EvasionAttack):
             patch_hw_1 = int(self.classifier.input_shape[1] / 2)
             patch_hw_2 = self.classifier.input_shape[1] - patch_hw_1
             if self.classifier.channel_index == 3:
-                x = x[center - patch_hw_1 : center + patch_hw_2, center - patch_hw_1 : center + patch_hw_2, :]
+                x = x[center - patch_hw_1: center + patch_hw_2, center - patch_hw_1: center + patch_hw_2, :]
             elif self.classifier.channel_index == 1:
-                x = x[:, center - patch_hw_1 : center + patch_hw_2, center - patch_hw_1 : center + patch_hw_2]
+                x = x[:, center - patch_hw_1: center + patch_hw_2, center - patch_hw_1: center + patch_hw_2]
             else:
                 x = None
 

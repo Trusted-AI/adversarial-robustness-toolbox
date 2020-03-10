@@ -25,9 +25,13 @@ import keras.backend as k
 
 from art.attacks.extraction.knockoff_nets import KnockoffNets
 
+from art.config import ART_NUMPY_DTYPE
+from art.utils import load_dataset
+
 from tests.utils import TestBase, master_seed
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr
+from tests.utils import get_image_classifier_pt, get_tabular_classifier_tf
+from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +60,10 @@ class TestKnockoffNets(TestBase):
         :return:
         """
         # Build TensorFlowClassifier
-        victim_tfc, sess = get_classifier_tf()
+        victim_tfc, sess = get_image_classifier_tf()
 
         # Create the thieved classifier
-        thieved_tfc, _ = get_classifier_tf(load_init=False, sess=sess)
+        thieved_tfc, _ = get_image_classifier_tf(load_init=False, sess=sess)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -93,10 +97,10 @@ class TestKnockoffNets(TestBase):
         :return:
         """
         # Build KerasClassifier
-        victim_krc = get_classifier_kr()
+        victim_krc = get_image_classifier_kr()
 
         # Create the thieved classifier
-        thieved_krc = get_classifier_kr(load_init=False)
+        thieved_krc = get_image_classifier_kr(load_init=False)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -131,10 +135,10 @@ class TestKnockoffNets(TestBase):
         self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Build PyTorchClassifier
-        victim_ptc = get_classifier_pt()
+        victim_ptc = get_image_classifier_pt()
 
         # Create the thieved classifier
-        thieved_ptc = get_classifier_pt(load_init=False)
+        thieved_ptc = get_image_classifier_pt(load_init=False)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -178,10 +182,10 @@ class TestKnockoffNetsVectors(TestBase):
         :return:
         """
         # Get the TensorFlow classifier
-        victim_tfc, sess = get_iris_classifier_tf()
+        victim_tfc, sess = get_tabular_classifier_tf()
 
         # Create the thieved classifier
-        thieved_tfc, _ = get_iris_classifier_tf(load_init=False, sess=sess)
+        thieved_tfc, _ = get_tabular_classifier_tf(load_init=False, sess=sess)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_tfc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -215,10 +219,10 @@ class TestKnockoffNetsVectors(TestBase):
         :return:
         """
         # Build KerasClassifier
-        victim_krc = get_iris_classifier_kr()
+        victim_krc = get_tabular_classifier_kr()
 
         # Create the thieved classifier
-        thieved_krc = get_iris_classifier_kr(load_init=False)
+        thieved_krc = get_tabular_classifier_kr(load_init=False)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_krc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
@@ -251,10 +255,10 @@ class TestKnockoffNetsVectors(TestBase):
         :return:
         """
         # Build PyTorchClassifier
-        victim_ptc = get_iris_classifier_pt()
+        victim_ptc = get_tabular_classifier_pt()
 
         # Create the thieved classifier
-        thieved_ptc = get_iris_classifier_pt(load_init=False)
+        thieved_ptc = get_tabular_classifier_pt(load_init=False)
 
         # Create random attack
         attack = KnockoffNets(classifier=victim_ptc, batch_size_fit=BATCH_SIZE, batch_size_query=BATCH_SIZE,
