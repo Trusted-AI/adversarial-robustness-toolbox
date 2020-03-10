@@ -6,7 +6,6 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
-#### Refactored tests
 pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evation tests"; fi
 
@@ -19,7 +18,6 @@ for mlFramework in "${mlFrameworkList[@]}"; do
 done
 
 
-#### Tests yet to be refactored
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_backdoor_attack.py" \
                     "tests/attacks/test_carlini.py" \
