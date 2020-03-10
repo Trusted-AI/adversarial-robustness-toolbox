@@ -109,7 +109,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         logger.info('Accuracy: %.2f%%', (acc * 100))
 
         gen = generator_fit(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size)
-        data_gen = KerasDataGenerator(generator=gen, size=self.n_train, batch_size=self.batch_size)
+        data_gen = KerasDataGenerator(iterator=gen, size=self.n_train, batch_size=self.batch_size)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
         acc2 = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / self.n_test
         logger.info('Accuracy: %.2f%%', (acc2 * 100))
@@ -128,7 +128,7 @@ class TestKerasClassifierTensorFlow(TestBase):
                                        shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
         keras_gen.fit(self.x_train_mnist)
         data_gen = KerasDataGenerator(
-            generator=keras_gen.flow(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size),
+            iterator=keras_gen.flow(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size),
             size=self.n_train, batch_size=self.batch_size)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
         acc2 = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels_test) / self.n_test
