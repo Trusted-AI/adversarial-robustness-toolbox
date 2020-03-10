@@ -81,6 +81,9 @@ def insert_image(x, backdoor_path='data/backdoors/post_it.png', random=True, x_s
     :type y_shift: `int`
     :param size: the size the backdoor image should be (width, height). Default None if no resizing necessary
     :type size: (int, int)
+    :param mode: the mode the image should be read in. See PIL documentation
+                 (https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes)
+    :type mode: str
     :return: backdoored image
     :rtype: np.ndarray
     """
@@ -89,11 +92,11 @@ def insert_image(x, backdoor_path='data/backdoors/post_it.png', random=True, x_s
     elif len(x.shape) != 2:
         raise ValueError("Invalid array shape " + str(x.shape))
 
-    backdoor = Image.open(backdoor_path).convert(mode=mode)
+    backdoor = Image.open(backdoor_path)
     backdoored_input = Image.fromarray(np.copy(x), mode=mode)
 
     if size:
-        backdoor = backdoor.resize(size)
+        backdoor = backdoor.resize(size).convert(mode=mode)
 
     backdoor_width, backdoor_height = backdoor.size
     orig_width, orig_height = backdoored_input.size
