@@ -93,8 +93,8 @@ class Attack(abc.ABC, metaclass=input_filter):
         :type classifier: :class:`.Classifier`
         """
 
-        if not isinstance(classifier, Classifier):
-            raise WrongClassifier(self.__class__, [Classifier], classifier)
+        # if not isinstance(classifier, Classifier):
+        #     raise WrongClassifier(self.__class__, [Classifier], classifier)
 
         classifier_is_art_classifier = isinstance(classifier, Classifier)
         classifier_is_none = classifier is None
