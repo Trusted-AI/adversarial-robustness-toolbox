@@ -113,8 +113,8 @@ class TestAdversarialTrainer(unittest.TestCase):
                 super().__init__(size=size, batch_size=batch_size)
                 self.x = x
                 self.y = y
-                self.size = size
-                self.batch_size = batch_size
+                self._size = size
+                self._batch_size = batch_size
 
             def get_batch(self):
                 ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
