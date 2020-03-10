@@ -20,14 +20,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
+import os
 import numpy as np
-from keras import Sequential
-from keras.layers import Conv2D, MaxPooling2D, Dropout, Flatten, Dense
 
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
-from art.classifiers import KerasClassifier
-from art.utils import preprocess, load_mnist, to_categorical
+from art.utils import to_categorical
 from tests.utils import TestBase, master_seed, get_classifier_kr
 
 logger = logging.getLogger(__name__)
@@ -43,6 +41,7 @@ class TestBackdoorAttack(TestBase):
 
     def setUp(self):
         master_seed(seed=301)
+        self.backdoor_path = os.path.join("data", "backdoors", "alert.png")
         super().setUp()
 
     @staticmethod
@@ -83,20 +82,19 @@ class TestBackdoorAttack(TestBase):
         return np.expand_dims(add_single_bd(x.squeeze(3), pixel_value=max_val), axis=3)
 
     def poison_func_3(self, x):
-        return np.expand_dims(insert_image(x.squeeze(3), backdoor_path='../../data/backdoors/alert.png', size=(5, 5),
-                                           random=False, x_shift=3, y_shift=3), axis=3)
+        return np.expand_dims(insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=False,
+                                           x_shift=3, y_shift=3), axis=3)
 
     def poison_func_4(self, x):
-        return np.expand_dims(insert_image(x.squeeze(3), backdoor_path='../../data/backdoors/alert.png', size=(5, 5),
-                                           random=True), axis=3)
+        return np.expand_dims(insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=True),
+                              axis=3)
 
     def poison_func_5(self, x):
-        return np.expand_dims(insert_image(x.squeeze(3), backdoor_path='../../data/backdoors/alert.png', random=True,
+        return np.expand_dims(insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, random=True,
                                            size=(100, 100)), axis=3)
 
     def poison_func_6(self, x):
-        return np.expand_dims(insert_image(x, backdoor_path='../../data/backdoors/alert.png', random=True,
-                                           size=(100, 100)), axis=3)
+        return np.expand_dims(insert_image(x, backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3)
 
     def test_backdoor_pattern(self):
         """
@@ -149,7 +147,6 @@ class TestBackdoorAttack(TestBase):
         y_train = y_poisoned_raw[shuffled_indices]
 
         krc.fit(x_train, y_train, nb_epochs=NB_EPOCHS, batch_size=32)
-
 
     def test_multiple_perturbations(self):
         """
