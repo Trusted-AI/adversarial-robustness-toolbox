@@ -21,3 +21,6 @@ Framework-Specific Data Generators
 
 .. autoclass:: TensorFlowDataGenerator
    :members:
+
+.. autoclass:: TensorFlowV2DataGenerator
+   :members:
