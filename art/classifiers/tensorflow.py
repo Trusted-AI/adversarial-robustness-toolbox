@@ -830,7 +830,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                     self._train_step(i_batch, o_batch)
         else:
             # Fit a generic data generator through the API
-            super(TensorFlowV2DataGenerator, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super().fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """

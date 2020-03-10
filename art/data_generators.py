@@ -322,6 +322,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
 
         super(TensorFlowV2DataGenerator, self).__init__(size=size, batch_size=batch_size)
         self._iterator = iterator
+        self._iterator_iter = iter(iterator)
 
         if not isinstance(iterator, tf.data.Dataset):
             raise TypeError("Only support object tf.data.Dataset")
@@ -336,4 +337,5 @@ class TensorFlowV2DataGenerator(DataGenerator):
         :raises: `ValueError` if the iterator has reached the end.
         """
         # Get next batch
-        return next(self.iterator)
+        x, y = next(self._iterator_iter)
+        return x.numpy(), y.numpy()
