@@ -22,7 +22,8 @@ import numpy as np
 
 from art.defences.postprocessor import GaussianNoise
 from art.utils import load_dataset
-from tests.utils import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
+
+from tests.utils import master_seed, get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class TestGaussianNoise(unittest.TestCase):
         Test Gaussian noise.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = GaussianNoise(scale=0.1)
         post_preds = postprocessor(preds=preds)
@@ -65,7 +66,7 @@ class TestGaussianNoise(unittest.TestCase):
         Test Gaussian noise for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = GaussianNoise(scale=0.1)
         post_preds = postprocessor(preds=preds)

@@ -29,7 +29,7 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success
+from art.utils import compute_success, WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -60,16 +60,8 @@ class VirtualAdversarialMethod(EvasionAttack):
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierNeuralNetwork` and "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to be a Neural Network and provide gradients."
-                )
-            )
+            raise WrongClassifier(self.__class__, [ClassifierGradients, ClassifierNeuralNetwork], classifier)
+
         kwargs = {"finite_diff": finite_diff, "eps": eps, "max_iter": max_iter, "batch_size": batch_size}
         self.set_params(**kwargs)
 

@@ -30,7 +30,7 @@ from art.attacks import FastGradientMethod
 from art.detection import SubsetScanningDetector
 from art.utils import load_dataset
 
-from tests.utils import master_seed, get_classifier_kr
+from tests.utils import master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +56,7 @@ class TestSubsetScanningDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.5)

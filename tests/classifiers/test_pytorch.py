@@ -34,7 +34,8 @@ from art.config import ART_DATA_PATH
 from art.data_generators import PyTorchDataGenerator
 from art.classifiers import PyTorchClassifier
 
-from tests.utils import TestBase, master_seed, get_classifier_pt
+from tests.utils import TestBase, get_image_classifier_pt, master_seed
+
 
 logger = logging.getLogger(__name__)
 
@@ -109,14 +110,14 @@ class TestPyTorchClassifier(TestBase):
         super().tearDown()
 
     def test_fit_predict(self):
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
         predictions = classifier.predict(self.x_test_mnist)
         accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
         logger.info('Accuracy after fitting: %.2f%%', (accuracy * 100))
         self.assertEqual(accuracy, 0.32)
 
     def test_fit_generator(self):
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
         accuracy = np.sum(
             np.argmax(classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist,
                                                                                   axis=1)) / self.n_test
@@ -143,15 +144,15 @@ class TestPyTorchClassifier(TestBase):
         self.assertAlmostEqual(accuracy_2, 0.75, delta=0.1)
 
     def test_nb_classes(self):
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
         self.assertEqual(classifier.nb_classes(), 10)
 
     def test_input_shape(self):
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
         self.assertEqual(classifier.input_shape, (1, 28, 28))
 
     def test_class_gradient(self):
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
 
         # Test all gradients label = None
         gradients = classifier.class_gradient(self.x_test_mnist)
@@ -218,7 +219,7 @@ class TestPyTorchClassifier(TestBase):
         np.testing.assert_array_almost_equal(gradients[0, 0, 0, 14, :], expected_gradients_2, decimal=4)
 
     def test_class_gradient_target(self):
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
         gradients = classifier.class_gradient(self.x_test_mnist, label=3)
 
         self.assertEqual(gradients.shape, (self.n_test, 1, 1, 28, 28))
@@ -240,7 +241,7 @@ class TestPyTorchClassifier(TestBase):
         np.testing.assert_array_almost_equal(gradients[0, 0, 0, 14, :], expected_gradients_2, decimal=4)
 
     def test_loss_gradient(self):
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
         gradients = classifier.loss_gradient(self.x_test_mnist, self.y_test_mnist)
 
         self.assertEqual(gradients.shape, (self.n_test, 1, 28, 28))

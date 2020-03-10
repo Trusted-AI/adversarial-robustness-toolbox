@@ -31,6 +31,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
+from art.utils import WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -55,15 +56,15 @@ class FastGradientMethod(EvasionAttack):
     ]
 
     def __init__(
-        self,
-        classifier,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        targeted=False,
-        num_random_init=0,
-        batch_size=1,
-        minimal=False,
+            self,
+            classifier,
+            norm=np.inf,
+            eps=0.3,
+            eps_step=0.1,
+            targeted=False,
+            num_random_init=0,
+            batch_size=1,
+            minimal=False,
     ):
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -88,29 +89,25 @@ class FastGradientMethod(EvasionAttack):
         :type minimal: `bool`
         """
         super(FastGradientMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
 
-        kwargs = {
-            "norm": norm,
-            "eps": eps,
-            "eps_step": eps_step,
-            "targeted": targeted,
-            "num_random_init": num_random_init,
-            "batch_size": batch_size,
-            "minimal": minimal,
-        }
+        if not isinstance(classifier, ClassifierGradients):
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+
+        kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
+                  'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
+
         FastGradientMethod.set_params(self, **kwargs)
 
         self._project = True
+
+    @classmethod
+    def is_valid_classifier_type(cls, classifier):
+        """
+        Checks whether the classifier provided is a classifer which this class can perform an attack on
+        :param classifier:
+        :return:
+        """
+        return True if isinstance(classifier, ClassifierGradients) else False
 
     def _minimal_perturbation(self, x, y):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the

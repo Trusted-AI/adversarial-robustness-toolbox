@@ -19,15 +19,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
 import numpy as np
-from sklearn.tree import DecisionTreeClassifier
 
 from art.attacks import AdversarialPatch
-from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 
 from tests.utils import TestBase, master_seed
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr
+from tests.utils import get_tabular_classifier_kr, get_image_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class TestAdversarialPatch(TestBase):
         First test with the TensorFlowClassifier.
         :return:
         """
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         attack_ap = AdversarialPatch(tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
@@ -76,7 +76,7 @@ class TestAdversarialPatch(TestBase):
         Second test with the KerasClassifier.
         :return:
         """
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         attack_ap = AdversarialPatch(krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
                                      batch_size=10, max_iter=500)
@@ -92,7 +92,7 @@ class TestAdversarialPatch(TestBase):
         Third test with the PyTorchClassifier.
         :return:
         """
-        ptc = get_classifier_pt()
+        ptc = get_image_classifier_pt()
 
         x_train = np.reshape(self.x_train_mnist, (self.n_train, 1, 28, 28)).astype(np.float32)
 
@@ -108,7 +108,7 @@ class TestAdversarialPatch(TestBase):
     def test_failure_feature_vectors(self):
         attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0, "learning_rate": 5.0,
                          "number_of_steps": 5, "batch_size": 10}
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
@@ -119,29 +119,9 @@ class TestAdversarialPatch(TestBase):
 
         self.assertIn('Feature vectors detected.', str(context.exception))
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = AdversarialPatch(classifier=classifier)
-
-        self.assertIn('For `AdversarialPatch` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
-            _ = AdversarialPatch(classifier=classifier)
-
-        self.assertIn('For `AdversarialPatch` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(AdversarialPatch,
+                                                [ClassifierNeuralNetwork, ClassifierGradients])
 
 
 if __name__ == '__main__':

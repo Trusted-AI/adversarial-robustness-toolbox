@@ -22,7 +22,7 @@ import numpy as np
 
 from art.defences import Rounded
 from art.utils import load_dataset
-from tests.utils import master_seed, get_classifier_kr
+from tests.utils import master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ class TestRounded(unittest.TestCase):
     def setUpClass(cls):
         (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
         cls.mnist = (x_train, y_train), (x_test, y_test)
-        cls.classifier = get_classifier_kr()
+        cls.classifier = get_image_classifier_kr()
 
     def setUp(self):
         master_seed(seed=1234)

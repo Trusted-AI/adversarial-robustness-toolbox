@@ -26,7 +26,7 @@ import numpy as np
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
 from art.utils import to_categorical
-from tests.utils import TestBase, master_seed, get_classifier_kr
+from tests.utils import TestBase, master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -101,7 +101,7 @@ class TestBackdoorAttack(TestBase):
         Test the backdoor attack with a pattern-based perturbation can be trained on classifier
         """
 
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist, self.y_train_mnist,
                                                                                 self.poison_func_1)
         # Shuffle training data
@@ -118,7 +118,7 @@ class TestBackdoorAttack(TestBase):
         Test the backdoor attack with a pixel-based perturbation can be trained on classifier
         """
 
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist, self.y_train_mnist,
                                                                                 self.poison_func_2)
 
@@ -135,7 +135,7 @@ class TestBackdoorAttack(TestBase):
         """
         Test the backdoor attack with a image-based perturbation can be trained on classifier
         """
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist, self.y_train_mnist,
                                                                                 self.poison_func_3)
 
@@ -153,7 +153,7 @@ class TestBackdoorAttack(TestBase):
         Test using multiple perturbation functions in the same attack can be trained on classifier
         """
 
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist, self.y_train_mnist,
                                                                                 [self.poison_func_4,
                                                                                  self.poison_func_1])

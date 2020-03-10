@@ -24,17 +24,19 @@ import os
 import logging
 import json
 import time
+import pickle
 import unittest
-
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
+logger = logging.getLogger(__name__)
+
 from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
 
-
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
+art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
+
 
 class TestBase(unittest.TestCase):
     """
@@ -43,21 +45,13 @@ class TestBase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(1234)
+
         cls.n_train = 1000
         cls.n_test = 100
         cls.batch_size = 16
 
-        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
-
-        cls.x_train_mnist = x_train_mnist[:cls.n_train].astype(ART_NUMPY_DTYPE)
-        cls.y_train_mnist = y_train_mnist[:cls.n_train]
-        cls.x_test_mnist = x_test_mnist[:cls.n_test].astype(ART_NUMPY_DTYPE)
-        cls.y_test_mnist = y_test_mnist[:cls.n_test]
-
-        cls._x_train_mnist_original = cls.x_train_mnist.copy()
-        cls._y_train_mnist_original = cls.y_train_mnist.copy()
-        cls._x_test_mnist_original = cls.x_test_mnist.copy()
-        cls._y_test_mnist_original = cls.y_test_mnist.copy()
+        cls.create_image_dataset(n_train=cls.n_train, n_test=cls.n_test)
 
         (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
 
@@ -74,6 +68,19 @@ class TestBase(unittest.TestCase):
         import warnings
         # Filter warning for scipy, removed with scipy 1.4
         warnings.filterwarnings('ignore', '.*the output shape of zoom.*')
+
+    @classmethod
+    def create_image_dataset(cls, n_train, n_test):
+        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist), _, _ = load_dataset('mnist')
+        cls.x_train_mnist = x_train_mnist[:n_train]
+        cls.y_train_mnist = y_train_mnist[:n_train]
+        cls.x_test_mnist = x_test_mnist[:n_test]
+        cls.y_test_mnist = y_test_mnist[:n_test]
+
+        cls._x_train_mnist_original = cls.x_train_mnist.copy()
+        cls._y_train_mnist_original = cls.y_train_mnist.copy()
+        cls._x_test_mnist_original = cls.x_test_mnist.copy()
+        cls._y_test_mnist_original = cls.y_test_mnist.copy()
 
     def setUp(self):
         self.time_start = time.time()
@@ -100,7 +107,44 @@ class TestBase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self._y_test_iris_original, self.y_test_iris, decimal=3)
 
 
+class ExpectedValue():
+    def __init__(self, value, decimals):
+        self.value = value
+        self.decimals = decimals
+
+
 # ----------------------------------------------------------------------------------------------- TEST MODELS FOR MNIST
+
+def check_adverse_example_x(x_adv, x_original, max=1.0, min=0.0, bounded=True):
+    '''
+    Performs basic checks on generated adversarial inputs (whether x_test or x_train)
+    :param x_adv:
+    :param x_original:
+    :param max:
+    :param min:
+    :param bounded:
+    :return:
+    '''
+    assert bool((x_original == x_adv).all()) is False, "x_test_adv should have been different from x_test"
+
+    if bounded:
+        assert np.amax(x_adv) <= max, "x_test_adv values should have all been below {0}".format(max)
+        assert np.amin(x_adv) >= min, "x_test_adv values should have all been above {0}".format(min)
+    else:
+        assert (x_adv > max).any(), "some x_test_adv values should have been above 1".format(max)
+        assert (x_adv < min).any(), " some x_test_adv values should have all been below {0}".format(min)
+
+
+def check_adverse_predicted_sample_y(y_pred_adv, y_non_adv):
+    assert bool((y_non_adv == y_pred_adv).all()) is False, "Adverse predicted sample was not what was expected"
+
+
+def is_valid_framework(framework):
+    if framework not in art_supported_frameworks:
+        raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+            framework, " ".join(art_supported_frameworks)))
+    return True
+
 
 def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
@@ -110,15 +154,14 @@ def _tf_weights_loader(dataset, weights_type, layer='DENSE', tf_version=1):
     if tf_version == 1:
         def _tf_initializer(_, dtype, partition_info):
             import tensorflow as tf
-
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources/models', filename))
             return tf.constant(weights, dtype)
 
     elif tf_version == 2:
         def _tf_initializer(_, dtype):
             import tensorflow as tf
 
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources/models', filename))
             return tf.constant(weights, dtype)
 
     else:
@@ -132,7 +175,7 @@ def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
 
     def _kr_initializer(_, dtype=None):
-        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources/models', filename))
         return k.variable(value=weights, dtype=dtype)
 
     return _kr_initializer
@@ -140,21 +183,21 @@ def _kr_weights_loader(dataset, weights_type, layer='DENSE'):
 
 def _kr_tf_weights_loader(dataset, weights_type, layer='DENSE'):
     filename = str(weights_type) + '_' + str(layer) + '_' + str(dataset) + '.npy'
-    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', filename))
+    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), 'resources/models', filename))
     return weights
 
 
-def get_classifier_tf(from_logits=False, load_init=True, sess=None):
+def get_image_classifier_tf(from_logits=False, load_init=True, sess=None):
     import tensorflow as tf
     if tf.__version__[0] == '2':
         # sess is not required but set to None to return 2 values for v1 and v2
-        classifier, sess = get_classifier_tf_v2(from_logits=from_logits), None
+        classifier, sess = get_image_classifier_tf_v2(from_logits=from_logits), None
     else:
-        classifier, sess = get_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
+        classifier, sess = get_image_classifier_tf_v1(from_logits=from_logits, load_init=load_init, sess=sess)
     return classifier, sess
 
 
-def get_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
+def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -229,7 +272,7 @@ def get_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     return tfc, sess
 
 
-def get_classifier_tf_v2(from_logits=False):
+def get_image_classifier_tf_v2(from_logits=False):
     """
     Standard TensorFlow v2 classifier for unit testing.
 
@@ -304,8 +347,8 @@ def get_classifier_tf_v2(from_logits=False):
     return tfc
 
 
-def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_losses', from_logits=False,
-                      load_init=True):
+def get_image_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_losses', from_logits=False,
+                            load_init=True):
     """
     Standard Keras classifier for unit testing
 
@@ -436,7 +479,7 @@ def get_classifier_kr(loss_name='categorical_crossentropy', loss_type='function_
     return krc
 
 
-def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='function', from_logits=False):
+def get_image_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='function', from_logits=False):
     """
     Standard Keras classifier for unit testing
 
@@ -593,7 +636,7 @@ def get_classifier_kr_tf(loss_name='categorical_crossentropy', loss_type='functi
     return krc
 
 
-def get_classifier_kr_tf_binary():
+def get_image_classifier_kr_tf_binary():
     """
     Standard Tensorflow-Keras binary classifier for unit testing
 
@@ -628,7 +671,7 @@ def get_classifier_kr_tf_binary():
     return krc
 
 
-def get_classifier_pt(from_logits=False, load_init=True):
+def get_image_classifier_pt(from_logits=False, load_init=True):
     """
     Standard PyTorch classifier for unit testing.
 
@@ -658,13 +701,13 @@ def get_classifier_pt(from_logits=False, load_init=True):
 
             if load_init:
                 w_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'W_CONV2D_MNIST.npy'))
+                                                'resources/models', 'W_CONV2D_MNIST.npy'))
                 b_conv2d = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'B_CONV2D_MNIST.npy'))
+                                                'resources/models', 'B_CONV2D_MNIST.npy'))
                 w_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                               'models', 'W_DENSE_MNIST.npy'))
+                                               'resources/models', 'W_DENSE_MNIST.npy'))
                 b_dense = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                               'models', 'B_DENSE_MNIST.npy'))
+                                               'resources/models', 'B_DENSE_MNIST.npy'))
 
                 w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
 
@@ -761,17 +804,17 @@ def get_classifier_mx():
 
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
-def get_iris_classifier_tf(load_init=True, sess=None):
+def get_tabular_classifier_tf(load_init=True, sess=None):
     import tensorflow as tf
     if tf.__version__[0] == '2':
         # sess is not required but set to None to return 2 values for v1 and v2
-        classifier, sess = get_iris_classifier_tf_v2(), None
+        classifier, sess = get_tabular_classifier_tf_v2(), None
     else:
-        classifier, sess = get_iris_classifier_tf_v1(load_init=load_init, sess=sess)
+        classifier, sess = get_tabular_classifier_tf_v1(load_init=load_init, sess=sess)
     return classifier, sess
 
 
-def get_iris_classifier_tf_v1(load_init=True, sess=None):
+def get_tabular_classifier_tf_v1(load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -835,7 +878,7 @@ def get_iris_classifier_tf_v1(load_init=True, sess=None):
     return tfc, sess
 
 
-def get_iris_classifier_tf_v2():
+def get_tabular_classifier_tf_v2():
     """
     Standard TensorFlow v2 classifier for unit testing.
 
@@ -908,7 +951,34 @@ def get_iris_classifier_tf_v2():
     return tfc
 
 
-def get_iris_classifier_kr(load_init=True):
+def get_tabular_classifier_scikit_list(clipped=False):
+    model_list_names = ["decisionTreeClassifier",
+                        "extraTreeClassifier",
+                        "adaBoostClassifier",
+                        "baggingClassifier",
+                        "extraTreesClassifier",
+                        "gradientBoostingClassifier",
+                        "randomForestClassifier",
+                        "logisticRegression",
+                        "svc",
+                        "linearSVC"]
+    if clipped:
+        classifier_list = [
+
+            # os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', 'W_DENSE3_IRIS.npy')
+
+            pickle.load(open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/",
+                                          model_name + "iris_clipped.sav"), 'rb'))
+            for model_name in model_list_names]
+    else:
+        classifier_list = [
+            pickle.load(open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/",
+                                          model_name + "iris_unclipped.sav"), 'rb')) for model_name in model_list_names]
+
+    return classifier_list
+
+
+def get_tabular_classifier_kr(load_init=True):
     """
     Standard Keras classifier for unit testing on Iris dataset. The weights and biases are identical to the TensorFlow
     model in `get_iris_classifier_tf`.
@@ -948,7 +1018,7 @@ def get_iris_classifier_kr(load_init=True):
     return krc
 
 
-def get_iris_classifier_pt(load_init=True):
+def get_tabular_classifier_pt(load_init=True):
     """
     Standard PyTorch classifier for unit testing on Iris dataset.
 
@@ -977,17 +1047,17 @@ def get_iris_classifier_pt(load_init=True):
 
             if load_init:
                 w_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'W_DENSE1_IRIS.npy'))
+                                                'resources/models', 'W_DENSE1_IRIS.npy'))
                 b_dense1 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'B_DENSE1_IRIS.npy'))
+                                                'resources/models', 'B_DENSE1_IRIS.npy'))
                 w_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'W_DENSE2_IRIS.npy'))
+                                                'resources/models', 'W_DENSE2_IRIS.npy'))
                 b_dense2 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'B_DENSE2_IRIS.npy'))
+                                                'resources/models', 'B_DENSE2_IRIS.npy'))
                 w_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'W_DENSE3_IRIS.npy'))
+                                                'resources/models', 'W_DENSE3_IRIS.npy'))
                 b_dense3 = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)),
-                                                'models', 'B_DENSE3_IRIS.npy'))
+                                                'resources/models', 'B_DENSE3_IRIS.npy'))
 
                 self.fully_connected1.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
                 self.fully_connected1.bias = torch.nn.Parameter(torch.Tensor(b_dense1))

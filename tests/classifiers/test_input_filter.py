@@ -28,7 +28,7 @@ if tf.__version__[0] == '2':
 
 from art.utils import load_dataset
 
-from tests.utils import master_seed, get_classifier_kr_tf
+from tests.utils import get_image_classifier_kr_tf, master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +53,7 @@ class TestInputFilter(unittest.TestCase):
 
     def test_fit(self):
         labels = np.argmax(self.y_test, axis=1)
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
 
         acc = np.sum(np.argmax(classifier.predict(self.x_test), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))
@@ -69,7 +69,7 @@ class TestInputFilter(unittest.TestCase):
         classifier.fit(x=self.x_train, y=self.y_train, batch_size=BATCH_SIZE, nb_epochs=2)
 
     def test_class_gradient(self):
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
 
         # Test all gradients label
         gradients = classifier.class_gradient(self.x_test)
@@ -136,7 +136,7 @@ class TestInputFilter(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, 0, :, 14, 0], expected_gradients_2, decimal=4)
 
     def test_loss_gradient(self):
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
 
         # Test gradient
         gradients = classifier.loss_gradient(self.x_test, self.y_test)
@@ -160,7 +160,7 @@ class TestInputFilter(unittest.TestCase):
         np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_gradients_2, decimal=4)
 
     def test_layers(self):
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         self.assertEqual(len(classifier.layer_names), 3)
 
         layer_names = classifier.layer_names

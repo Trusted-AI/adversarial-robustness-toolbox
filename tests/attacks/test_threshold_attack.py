@@ -32,7 +32,7 @@ from art.attacks import ThresholdAttack
 from art.utils import get_labels_np_array
 
 from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class TestThresholdAttack(TestBase):
         Test with the KerasClassifier. (Untargeted Attack)
         :return:
         """
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
 
     def test_tensorflow_mnist(self):
@@ -68,7 +68,7 @@ class TestThresholdAttack(TestBase):
         Test with the TensorFlowClassifier. (Untargeted Attack)
         :return:
         """
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
 
     def test_pytorch_mnist(self):
@@ -77,7 +77,7 @@ class TestThresholdAttack(TestBase):
         :return:
         """
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
         self._test_attack(classifier, x_test, self.y_test_mnist, False)
 
     def test_keras_mnist_targeted(self):
@@ -85,7 +85,7 @@ class TestThresholdAttack(TestBase):
         Test with the KerasClassifier. (Targeted Attack)
         :return:
         """
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     def test_tensorflow_mnist_targeted(self):
@@ -93,7 +93,7 @@ class TestThresholdAttack(TestBase):
         Test with the TensorFlowClassifier. (Targeted Attack)
         :return:
         """
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
 
     def test_pytorch_mnist_targeted(self):
@@ -102,7 +102,7 @@ class TestThresholdAttack(TestBase):
         :return:
         """
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
         self._test_attack(classifier, x_test, self.y_test_mnist, True)
 
     def _test_attack(self, classifier, x_test, y_test, targeted):

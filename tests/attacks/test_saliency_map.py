@@ -19,7 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
+from art.classifiers.classifier import ClassifierGradients
 import numpy as np
 
 from art.attacks import SaliencyMapMethod
@@ -27,8 +27,9 @@ from art.classifiers import KerasClassifier
 from art.utils import get_labels_np_array, to_categorical
 
 from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +51,7 @@ class TestSaliencyMap(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
         logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
@@ -99,7 +100,7 @@ class TestSaliencyMap(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Create basic CNN on MNIST using TensorFlow
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.n_train
@@ -151,7 +152,7 @@ class TestSaliencyMap(TestBase):
         x_test_original = x_test_mnist.copy()
 
         # Create basic PyTorch model
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
 
         scores = get_labels_np_array(classifier.predict(x_train_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.n_train
@@ -197,34 +198,11 @@ class TestSaliencyMap(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = SaliencyMapMethod(classifier=classifier)
-
-        self.assertIn('For `SaliencyMapMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
-
-    def test_classifier_type_check_fail_gradients(self):
-        # Use a test classifier not providing gradients required by white-box attack
-        from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
-        from sklearn.tree import DecisionTreeClassifier
-
-        classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-        with self.assertRaises(TypeError) as context:
-            _ = SaliencyMapMethod(classifier=classifier)
-
-        self.assertIn('For `SaliencyMapMethod` classifier must be an instance of '
-                      '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                      '(<class \'art.classifiers.scikitlearn.ScikitlearnClassifier\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(SaliencyMapMethod, [ClassifierGradients])
 
     def test_keras_iris_vector_clipped(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         attack = SaliencyMapMethod(classifier, theta=1)
         x_test_iris_adv = attack.generate(self.x_test_iris)
@@ -238,7 +216,7 @@ class TestSaliencyMap(TestBase):
         logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_keras_iris_vector_unbounded(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -247,7 +225,7 @@ class TestSaliencyMap(TestBase):
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
 
     def test_tensorflow_iris_vector(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         attack = SaliencyMapMethod(classifier, theta=1)
         x_test_iris_adv = attack.generate(self.x_test_iris)
@@ -261,7 +239,7 @@ class TestSaliencyMap(TestBase):
         logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (accuracy * 100))
 
     def test_pytorch_iris_vector(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
 
         attack = SaliencyMapMethod(classifier, theta=1)
         x_test_iris_adv = attack.generate(self.x_test_iris)

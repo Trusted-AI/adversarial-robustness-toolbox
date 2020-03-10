@@ -33,7 +33,7 @@ from scipy.stats import truncnorm
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -51,16 +51,16 @@ class ProjectedGradientDescent(FastGradientMethod):
     attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps"]
 
     def __init__(
-        self,
-        classifier,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        max_iter=100,
-        targeted=False,
-        num_random_init=0,
-        batch_size=1,
-        random_eps=False,
+            self,
+            classifier,
+            norm=np.inf,
+            eps=0.3,
+            eps_step=0.1,
+            max_iter=100,
+            targeted=False,
+            num_random_init=0,
+            batch_size=1,
+            random_eps=False,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -99,15 +99,7 @@ class ProjectedGradientDescent(FastGradientMethod):
             minimal=False,
         )
         if not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
+            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {"max_iter": max_iter, "random_eps": random_eps}
         ProjectedGradientDescent.set_params(self, **kwargs)

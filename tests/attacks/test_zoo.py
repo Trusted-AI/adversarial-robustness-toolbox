@@ -19,14 +19,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
 import keras.backend as k
 import numpy as np
-
 from art.attacks import ZooAttack
 from art.utils import random_targets
-
-from tests.utils import TestBase, master_seed, get_classifier_kr, get_classifier_pt, get_classifier_tf
+from tests.utils import TestBase, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_image_classifier_tf, master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +55,7 @@ class TestZooAttack(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # Failure attack
         zoo = ZooAttack(classifier=tfc, max_iter=0, binary_search_steps=0, learning_rate=0)
@@ -80,7 +79,7 @@ class TestZooAttack(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # Targeted attack
         zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=30, binary_search_steps=8, batch_size=128)
@@ -121,7 +120,7 @@ class TestZooAttack(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # Targeted attack
         # zoo = ZooAttack(classifier=krc, targeted=True, batch_size=5)
@@ -175,7 +174,7 @@ class TestZooAttack(TestBase):
         :return:
         """
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        ptc = get_image_classifier_pt()
 
         # Get MNIST
         x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
@@ -209,17 +208,8 @@ class TestZooAttack(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = ZooAttack(classifier=classifier)
-
-        self.assertIn('For `ZooAttack` classifier must be an instance of `art.classifiers.classifier.Classifier`, the '
-                      'provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(ZooAttack)
 
 
 if __name__ == '__main__':
