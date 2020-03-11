@@ -20,7 +20,7 @@ import pytest
 import logging
 import tensorflow as tf
 import numpy as np
-from art.data_generators import TFDataGenerator
+from art.data_generators import TensorFlowDataGenerator
 
 from tests.utils import ExpectedValue
 from tests.classifiersFrameworks.utils import backend_test_layers, backend_test_repr
@@ -56,8 +56,8 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
         dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
 
         iterator = dataset.make_initializable_iterator()
-        data_gen = TFDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable', iterator_arg={},
-                                   size=1000, batch_size=100)
+        data_gen = TensorFlowDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable', iterator_arg={},
+                                           size=1000, batch_size=100)
 
         expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
 
