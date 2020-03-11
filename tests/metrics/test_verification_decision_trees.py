@@ -110,7 +110,7 @@ class TestMetricsTrees(unittest.TestCase):
         average_bound, verified_error = rt.verify(x=self.x_test, y=self.y_test, eps_init=0.3,
                                                   nb_search_steps=10, max_clique=2, max_level=2)
 
-        self.assertEqual(average_bound, 0.009117187499999995)
+        self.assertEqual(average_bound, 0.009234374999999996)
         self.assertEqual(verified_error, 1.0)
 
     def test_RandomForest(self):
