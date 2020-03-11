@@ -28,4 +28,8 @@ Dataset Operations
 .. autofunction:: clip_and_round
 .. autofunction:: preprocess
 
+Excpetions
+----------
+.. autoclass:: ClassifierError
+
 
