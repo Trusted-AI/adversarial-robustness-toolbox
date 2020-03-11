@@ -129,6 +129,10 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
    modules/classifiers/classifiers_scikitlearn
    modules/data_generators
    modules/defences
+   modules/defences/postprocessor
+   modules/defences/preprocessor
+   modules/defences/trainer
+   modules/defences/transformer
    modules/detection
    modules/poison_detection
    modules/metrics
