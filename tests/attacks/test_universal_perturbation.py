@@ -43,10 +43,10 @@ class TestUniversalPerturbation(TestBase):
 
         cls.n_train = 500
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def test_tensorflow_mnist(self):
         """
@@ -129,8 +129,7 @@ class TestUniversalPerturbation(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(UniversalPerturbation,
-                                                [ClassifierNeuralNetwork, ClassifierGradients])
+        backend_test_classifier_type_check_fail(UniversalPerturbation, [ClassifierNeuralNetwork, ClassifierGradients])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
@@ -147,7 +146,7 @@ class TestUniversalPerturbation(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
     def test_keras_iris_unbounded(self):
         classifier = get_tabular_classifier_kr()
@@ -163,7 +162,7 @@ class TestUniversalPerturbation(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
     def test_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
@@ -180,7 +179,7 @@ class TestUniversalPerturbation(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
     def test_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
@@ -196,8 +195,8 @@ class TestUniversalPerturbation(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with universal adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -48,7 +48,7 @@ class TestGPyGaussianProcessClassifier(TestBase):
         gpkern = GPy.kern.RBF(np.shape(cls.x_train_iris)[1])
         m = GPy.models.GPClassification(cls.x_train_iris, cls.y_train_iris_binary.reshape(-1, 1), kernel=gpkern)
         m.inference_method = GPy.inference.latent_function_inference.laplace.Laplace()
-        m.optimize(messages=True, optimizer='lbfgs')
+        m.optimize(messages=True, optimizer="lbfgs")
 
         # get ART classifier + clean accuracy
         cls.classifier = GPyGaussianProcessClassifier(m)
@@ -60,7 +60,8 @@ class TestGPyGaussianProcessClassifier(TestBase):
     def test_predict(self):
         # predictions should be correct
         self.assertTrue(
-            np.mean((self.classifier.predict(self.x_test_iris[:3])[:, 0] > 0.5) == self.y_test_iris_binary[:3]) > 0.6)
+            np.mean((self.classifier.predict(self.x_test_iris[:3])[:, 0] > 0.5) == self.y_test_iris_binary[:3]) > 0.6
+        )
         outlier = np.ones(np.shape(self.x_test_iris[:3])) * 10.0
         # output for random points should be 0.5 (as classifier is uncertain)
         self.assertTrue(np.sum(self.classifier.predict(outlier).flatten() == 0.5) == 6.0)
@@ -68,8 +69,12 @@ class TestGPyGaussianProcessClassifier(TestBase):
     def test_predict_unc(self):
         outlier = np.ones(np.shape(self.x_test_iris[:3])) * (np.max(self.x_test_iris.flatten()) * 10.0)
         # uncertainty should increase as we go deeper into data
-        self.assertTrue(np.mean(self.classifier.predict_uncertainty(
-            outlier) > self.classifier.predict_uncertainty(self.x_test_iris[:3])) == 1.0)
+        self.assertTrue(
+            np.mean(
+                self.classifier.predict_uncertainty(outlier) > self.classifier.predict_uncertainty(self.x_test_iris[:3])
+            )
+            == 1.0
+        )
 
     def test_loss_gradient(self):
         grads = self.classifier.loss_gradient(self.x_test_iris[0:1], self.y_test_iris_binary[0:1])
@@ -88,5 +93,5 @@ class TestGPyGaussianProcessClassifier(TestBase):
         self.assertTrue(np.argmax(grads) == 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

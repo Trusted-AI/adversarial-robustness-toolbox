@@ -79,7 +79,6 @@ class ClassifierNeuralNetworkInstance(ClassifierNeuralNetwork, ClassifierGradien
 
 
 class TestClassifier(TestBase):
-
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234)
@@ -94,22 +93,20 @@ class TestClassifier(TestBase):
 
         x = np.random.rand(2, 3)
         x_new = classifier._apply_preprocessing_standardisation(x)
-        x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774],
-                                     [0.78535858, 0.77997581, 0.27259261]])
+        x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774], [0.78535858, 0.77997581, 0.27259261]])
         np.testing.assert_array_almost_equal(x_new, x_new_expected)
 
     def test_repr(self):
         classifier = ClassifierInstance()
 
         repr_ = repr(classifier)
-        self.assertIn('ClassifierInstance', repr_)
-        self.assertIn('clip_values=None', repr_)
-        self.assertIn('defences=None', repr_)
-        self.assertIn('preprocessing=None', repr_)
+        self.assertIn("ClassifierInstance", repr_)
+        self.assertIn("clip_values=None", repr_)
+        self.assertIn("defences=None", repr_)
+        self.assertIn("preprocessing=None", repr_)
 
 
 class TestClassifierNeuralNetwork(TestBase):
-
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234)
@@ -122,20 +119,19 @@ class TestClassifierNeuralNetwork(TestBase):
     def test_preprocessing_normalisation(self):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
         x = np.random.rand(2, 3)
-        x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774],
-                                     [0.78535858, 0.77997581, 0.27259261]])
+        x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774], [0.78535858, 0.77997581, 0.27259261]])
         x_new = classifier._apply_preprocessing_standardisation(x)
         np.testing.assert_array_almost_equal(x_new, x_new_expected, decimal=4)
 
     def test_repr(self):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
         repr_ = repr(classifier)
-        self.assertIn('ClassifierNeuralNetworkInstance', repr_)
-        self.assertIn('channel_index=1', repr_)
-        self.assertIn('clip_values=(0, 1)', repr_)
-        self.assertIn('defences=None', repr_)
-        self.assertIn('preprocessing=None', repr_)
+        self.assertIn("ClassifierNeuralNetworkInstance", repr_)
+        self.assertIn("channel_index=1", repr_)
+        self.assertIn("clip_values=(0, 1)", repr_)
+        self.assertIn("defences=None", repr_)
+        self.assertIn("preprocessing=None", repr_)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

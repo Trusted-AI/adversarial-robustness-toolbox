@@ -44,10 +44,10 @@ class TestAdversarialPatch(TestBase):
 
         cls.n_train = 10
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def setUp(self):
         master_seed(seed=1234)
@@ -60,8 +60,9 @@ class TestAdversarialPatch(TestBase):
         """
         tfc, sess = get_image_classifier_tf()
 
-        attack_ap = AdversarialPatch(tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                                     batch_size=10, max_iter=500)
+        attack_ap = AdversarialPatch(
+            tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500
+        )
         patch_adv, _ = attack_ap.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106631027725005, delta=0.4)
@@ -78,8 +79,9 @@ class TestAdversarialPatch(TestBase):
         """
         krc = get_image_classifier_kr()
 
-        attack_ap = AdversarialPatch(krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                                     batch_size=10, max_iter=500)
+        attack_ap = AdversarialPatch(
+            krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500
+        )
         master_seed(seed=1234)
         patch_adv, _ = attack_ap.generate(self.x_train_mnist)
 
@@ -96,8 +98,9 @@ class TestAdversarialPatch(TestBase):
 
         x_train = np.reshape(self.x_train_mnist, (self.n_train, 1, 28, 28)).astype(np.float32)
 
-        attack_ap = AdversarialPatch(ptc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0,
-                                     batch_size=10, max_iter=500)
+        attack_ap = AdversarialPatch(
+            ptc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500
+        )
 
         patch_adv, _ = attack_ap.generate(x_train)
 
@@ -106,8 +109,14 @@ class TestAdversarialPatch(TestBase):
         self.assertAlmostEqual(float(np.sum(patch_adv)), 383.068, delta=0.1)
 
     def test_failure_feature_vectors(self):
-        attack_params = {"rotation_max": 22.5, "scale_min": 0.1, "scale_max": 1.0, "learning_rate": 5.0,
-                         "number_of_steps": 5, "batch_size": 10}
+        attack_params = {
+            "rotation_max": 22.5,
+            "scale_min": 0.1,
+            "scale_max": 1.0,
+            "learning_rate": 5.0,
+            "number_of_steps": 5,
+            "batch_size": 10,
+        }
         classifier = get_tabular_classifier_kr()
         attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
@@ -117,12 +126,11 @@ class TestAdversarialPatch(TestBase):
         with self.assertRaises(ValueError) as context:
             attack.generate(data)
 
-        self.assertIn('Feature vectors detected.', str(context.exception))
+        self.assertIn("Feature vectors detected.", str(context.exception))
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(AdversarialPatch,
-                                                [ClassifierNeuralNetwork, ClassifierGradients])
+        backend_test_classifier_type_check_fail(AdversarialPatch, [ClassifierNeuralNetwork, ClassifierGradients])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

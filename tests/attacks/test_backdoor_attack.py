@@ -63,8 +63,9 @@ class TestBackdoorAttack(TestBase):
 
                 imgs_to_be_poisoned = src_imgs[indices_to_be_poisoned]
                 backdoor_attack = PoisoningAttackBackdoor(poison_func)
-                poison_images, poison_labels = backdoor_attack.poison(imgs_to_be_poisoned,
-                                                                      y=to_categorical(np.ones(num_poison) * tgt, 10))
+                poison_images, poison_labels = backdoor_attack.poison(
+                    imgs_to_be_poisoned, y=to_categorical(np.ones(num_poison) * tgt, 10)
+                )
                 x_poison = np.append(x_poison, poison_images, axis=0)
                 y_poison = np.append(y_poison, poison_labels, axis=0)
                 is_poison = np.append(is_poison, np.ones(num_poison))
@@ -82,16 +83,22 @@ class TestBackdoorAttack(TestBase):
         return np.expand_dims(add_single_bd(x.squeeze(3), pixel_value=max_val), axis=3)
 
     def poison_func_3(self, x):
-        return np.expand_dims(insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=False,
-                                           x_shift=3, y_shift=3), axis=3)
+        return np.expand_dims(
+            insert_image(
+                x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=False, x_shift=3, y_shift=3
+            ),
+            axis=3,
+        )
 
     def poison_func_4(self, x):
-        return np.expand_dims(insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=True),
-                              axis=3)
+        return np.expand_dims(
+            insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=True), axis=3
+        )
 
     def poison_func_5(self, x):
-        return np.expand_dims(insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, random=True,
-                                           size=(100, 100)), axis=3)
+        return np.expand_dims(
+            insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3
+        )
 
     def poison_func_6(self, x):
         return np.expand_dims(insert_image(x, backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3)
@@ -102,8 +109,9 @@ class TestBackdoorAttack(TestBase):
         """
 
         krc = get_image_classifier_kr()
-        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist, self.y_train_mnist,
-                                                                                self.poison_func_1)
+        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(
+            self.x_train_mnist, self.y_train_mnist, self.poison_func_1
+        )
         # Shuffle training data
         n_train = np.shape(y_poisoned_raw)[0]
         shuffled_indices = np.arange(n_train)
@@ -119,8 +127,9 @@ class TestBackdoorAttack(TestBase):
         """
 
         krc = get_image_classifier_kr()
-        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist, self.y_train_mnist,
-                                                                                self.poison_func_2)
+        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(
+            self.x_train_mnist, self.y_train_mnist, self.poison_func_2
+        )
 
         # Shuffle training data
         n_train = np.shape(y_poisoned_raw)[0]
@@ -136,8 +145,9 @@ class TestBackdoorAttack(TestBase):
         Test the backdoor attack with a image-based perturbation can be trained on classifier
         """
         krc = get_image_classifier_kr()
-        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist, self.y_train_mnist,
-                                                                                self.poison_func_3)
+        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(
+            self.x_train_mnist, self.y_train_mnist, self.poison_func_3
+        )
 
         # Shuffle training data
         n_train = np.shape(y_poisoned_raw)[0]
@@ -154,9 +164,9 @@ class TestBackdoorAttack(TestBase):
         """
 
         krc = get_image_classifier_kr()
-        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(self.x_train_mnist, self.y_train_mnist,
-                                                                                [self.poison_func_4,
-                                                                                 self.poison_func_1])
+        (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(
+            self.x_train_mnist, self.y_train_mnist, [self.poison_func_4, self.poison_func_1]
+        )
 
         # Shuffle training data
         n_train = np.shape(y_poisoned_raw)[0]
@@ -176,15 +186,15 @@ class TestBackdoorAttack(TestBase):
         with self.assertRaises(ValueError) as context:
             backdoor_attack.poison(self.x_train_mnist, y=adv_target)
 
-        self.assertIn('Backdoor does not fit inside original image', str(context.exception))
+        self.assertIn("Backdoor does not fit inside original image", str(context.exception))
 
         backdoor_attack = PoisoningAttackBackdoor(self.poison_func_6)
 
         with self.assertRaises(ValueError) as context:
             backdoor_attack.poison(np.zeros(5), y=np.ones(5))
 
-        self.assertIn('Invalid array shape', str(context.exception))
+        self.assertIn("Invalid array shape", str(context.exception))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

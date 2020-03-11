@@ -46,7 +46,7 @@ def cross_entropy(prob1, prob2, eps=1e-10):
     :return: Cross entropy.
     :rtype: `float`
     """
-    prob1 = np.clip(prob1, eps, 1. - eps)
+    prob1 = np.clip(prob1, eps, 1.0 - eps)
     size = prob1.shape[0]
     result = -np.sum(prob2 * np.log(prob1 + eps)) / size
 
@@ -75,34 +75,18 @@ class TestDefensiveDistillation(TestBase):
         trained_classifier, sess = get_image_classifier_tf()
 
         # Create the modified classifier
-        transformed_classifier, _ = get_image_classifier_tf(
-            load_init=False,
-            sess=sess
-        )
+        transformed_classifier, _ = get_image_classifier_tf(load_init=False, sess=sess)
 
         # Create defensive distillation transformer
-        transformer = DefensiveDistillation(
-            classifier=trained_classifier,
-            batch_size=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS
-        )
+        transformer = DefensiveDistillation(classifier=trained_classifier, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS)
 
         # Perform the transformation
-        transformed_classifier = transformer(
-            x=self.x_train_mnist,
-            transformed_classifier=transformed_classifier
-        )
+        transformed_classifier = transformer(x=self.x_train_mnist, transformed_classifier=transformed_classifier)
 
         # Compare the 2 outputs
-        preds1 = trained_classifier.predict(
-            x=self.x_train_mnist,
-            batch_size=BATCH_SIZE
-        )
+        preds1 = trained_classifier.predict(x=self.x_train_mnist, batch_size=BATCH_SIZE)
 
-        preds2 = transformed_classifier.predict(
-            x=self.x_train_mnist,
-            batch_size=BATCH_SIZE
-        )
+        preds2 = transformed_classifier.predict(x=self.x_train_mnist, batch_size=BATCH_SIZE)
 
         preds1 = np.argmax(preds1, axis=1)
         preds2 = np.argmax(preds2, axis=1)
@@ -133,28 +117,15 @@ class TestDefensiveDistillation(TestBase):
         transformed_classifier = get_image_classifier_pt(load_init=False)
 
         # Create defensive distillation transformer
-        transformer = DefensiveDistillation(
-            classifier=trained_classifier,
-            batch_size=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS
-        )
+        transformer = DefensiveDistillation(classifier=trained_classifier, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS)
 
         # Perform the transformation
-        transformed_classifier = transformer(
-            x=self.x_train_mnist,
-            transformed_classifier=transformed_classifier
-        )
+        transformed_classifier = transformer(x=self.x_train_mnist, transformed_classifier=transformed_classifier)
 
         # Compare the 2 outputs
-        preds1 = trained_classifier.predict(
-            x=self.x_train_mnist,
-            batch_size=BATCH_SIZE
-        )
+        preds1 = trained_classifier.predict(x=self.x_train_mnist, batch_size=BATCH_SIZE)
 
-        preds2 = transformed_classifier.predict(
-            x=self.x_train_mnist,
-            batch_size=BATCH_SIZE
-        )
+        preds2 = transformed_classifier.predict(x=self.x_train_mnist, batch_size=BATCH_SIZE)
 
         preds1 = np.argmax(preds1, axis=1)
         preds2 = np.argmax(preds2, axis=1)
@@ -181,28 +152,15 @@ class TestDefensiveDistillation(TestBase):
         transformed_classifier = get_image_classifier_kr(load_init=False)
 
         # Create defensive distillation transformer
-        transformer = DefensiveDistillation(
-            classifier=trained_classifier,
-            batch_size=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS
-        )
+        transformer = DefensiveDistillation(classifier=trained_classifier, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS)
 
         # Perform the transformation
-        transformed_classifier = transformer(
-            x=self.x_train_mnist,
-            transformed_classifier=transformed_classifier
-        )
+        transformed_classifier = transformer(x=self.x_train_mnist, transformed_classifier=transformed_classifier)
 
         # Compare the 2 outputs
-        preds1 = trained_classifier.predict(
-            x=self.x_train_mnist,
-            batch_size=BATCH_SIZE
-        )
+        preds1 = trained_classifier.predict(x=self.x_train_mnist, batch_size=BATCH_SIZE)
 
-        preds2 = transformed_classifier.predict(
-            x=self.x_train_mnist,
-            batch_size=BATCH_SIZE
-        )
+        preds2 = transformed_classifier.predict(x=self.x_train_mnist, batch_size=BATCH_SIZE)
 
         preds1 = np.argmax(preds1, axis=1)
         preds2 = np.argmax(preds2, axis=1)
@@ -239,26 +197,16 @@ class TestDefensiveDistillationVectors(TestBase):
         trained_classifier, sess = get_tabular_classifier_tf()
 
         # Create the modified classifier
-        transformed_classifier, _ = get_tabular_classifier_tf(
-            load_init=False,
-            sess=sess
-        )
+        transformed_classifier, _ = get_tabular_classifier_tf(load_init=False, sess=sess)
 
         # Create defensive distillation transformer
-        transformer = DefensiveDistillation(
-            classifier=trained_classifier,
-            batch_size=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS
-        )
+        transformer = DefensiveDistillation(classifier=trained_classifier, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS)
 
         # Perform the transformation
         with self.assertRaises(ValueError) as context:
-            transformed_classifier = transformer(
-                x=self.x_train_iris,
-                transformed_classifier=transformed_classifier
-            )
+            transformed_classifier = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
 
-        self.assertIn('The input trained classifier do not produce probability outputs.', str(context.exception))
+        self.assertIn("The input trained classifier do not produce probability outputs.", str(context.exception))
 
         # Clean-up session
         if sess is not None:
@@ -276,28 +224,15 @@ class TestDefensiveDistillationVectors(TestBase):
         transformed_classifier = get_tabular_classifier_kr(load_init=False)
 
         # Create defensive distillation transformer
-        transformer = DefensiveDistillation(
-            classifier=trained_classifier,
-            batch_size=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS
-        )
+        transformer = DefensiveDistillation(classifier=trained_classifier, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS)
 
         # Perform the transformation
-        transformed_classifier = transformer(
-            x=self.x_train_iris,
-            transformed_classifier=transformed_classifier
-        )
+        transformed_classifier = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
 
         # Compare the 2 outputs
-        preds1 = trained_classifier.predict(
-            x=self.x_train_iris,
-            batch_size=BATCH_SIZE
-        )
+        preds1 = trained_classifier.predict(x=self.x_train_iris, batch_size=BATCH_SIZE)
 
-        preds2 = transformed_classifier.predict(
-            x=self.x_train_iris,
-            batch_size=BATCH_SIZE
-        )
+        preds2 = transformed_classifier.predict(x=self.x_train_iris, batch_size=BATCH_SIZE)
 
         preds1 = np.argmax(preds1, axis=1)
         preds2 = np.argmax(preds2, axis=1)
@@ -322,21 +257,14 @@ class TestDefensiveDistillationVectors(TestBase):
         transformed_classifier = get_tabular_classifier_pt(load_init=False)
 
         # Create defensive distillation transformer
-        transformer = DefensiveDistillation(
-            classifier=trained_classifier,
-            batch_size=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS
-        )
+        transformer = DefensiveDistillation(classifier=trained_classifier, batch_size=BATCH_SIZE, nb_epochs=NB_EPOCHS)
 
         # Perform the transformation
         with self.assertRaises(ValueError) as context:
-            transformed_classifier = transformer(
-                x=self.x_train_iris,
-                transformed_classifier=transformed_classifier
-            )
+            transformed_classifier = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
 
-        self.assertIn('The input trained classifier do not produce probability outputs.', str(context.exception))
+        self.assertIn("The input trained classifier do not produce probability outputs.", str(context.exception))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

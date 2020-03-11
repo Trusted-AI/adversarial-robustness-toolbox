@@ -51,7 +51,7 @@ class TestSubsetScanningDetector(unittest.TestCase):
         k.clear_session()
 
     def test_subsetscan_detector(self):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
@@ -82,5 +82,5 @@ class TestSubsetScanningDetector(unittest.TestCase):
         self.assertGreater(dpwr, 0.5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

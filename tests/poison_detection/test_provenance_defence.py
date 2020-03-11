@@ -38,11 +38,10 @@ NB_POISON = 5
 NB_VALID = 10
 NB_TRUSTED = 10
 NB_DEVICES = 4
-kernel = 'linear'
+kernel = "linear"
 
 
 class TestProvenanceDefence(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         master_seed(seed=301)
@@ -87,14 +86,22 @@ class TestProvenanceDefence(unittest.TestCase):
         clean_prov = np.random.randint(NB_DEVICES - 1, size=x_train.shape[0])
         p_train = np.eye(NB_DEVICES)[clean_prov]
 
-        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel, gamma='auto'), clip_values=(min_, max_))
+        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel, gamma="auto"), clip_values=(min_, max_))
         no_defense.fit(x=x_train, y=y_train)
         poison_points = np.random.randint(no_defense._model.support_vectors_.shape[0], size=NB_POISON)
         all_poison_init = np.copy(no_defense._model.support_vectors_[poison_points])
         poison_labels = np.array([1, 1]) - no_defense.predict(all_poison_init)
 
-        svm_attack = PoisoningAttackSVM(classifier=no_defense, x_train=x_train, y_train=y_train,
-                                        step=0.1, eps=1.0, x_val=valid_data, y_val=valid_labels, max_iters=200)
+        svm_attack = PoisoningAttackSVM(
+            classifier=no_defense,
+            x_train=x_train,
+            y_train=y_train,
+            step=0.1,
+            eps=1.0,
+            x_val=valid_data,
+            y_val=valid_labels,
+            max_iters=200,
+        )
 
         poisoned_data, _ = svm_attack.poison(all_poison_init, y=poison_labels)
 
@@ -105,14 +112,20 @@ class TestProvenanceDefence(unittest.TestCase):
         poison_prov[:, NB_DEVICES - 1] = 1
         all_p = np.vstack([p_train, poison_prov])
 
-        model = SVC(kernel=kernel, gamma='auto')
-        cls.mnist = (all_data, all_labels, all_p), (x_test, y_test), (trusted_data, trusted_labels), \
-                    (valid_data, valid_labels), (min_, max_)
+        model = SVC(kernel=kernel, gamma="auto")
+        cls.mnist = (
+            (all_data, all_labels, all_p),
+            (x_test, y_test),
+            (trusted_data, trusted_labels),
+            (valid_data, valid_labels),
+            (min_, max_),
+        )
         cls.classifier = SklearnClassifier(model=model, clip_values=(min_, max_))
 
         cls.classifier.fit(all_data, all_labels)
-        cls.defence_trust = ProvenanceDefense(cls.classifier, all_data, all_labels, all_p,
-                                              x_val=trusted_data, y_val=trusted_labels, eps=0.1)
+        cls.defence_trust = ProvenanceDefense(
+            cls.classifier, all_data, all_labels, all_p, x_val=trusted_data, y_val=trusted_labels, eps=0.1
+        )
         cls.defence_no_trust = ProvenanceDefense(cls.classifier, all_data, all_labels, all_p, eps=0.1)
 
     def setUp(self):
@@ -133,8 +146,9 @@ class TestProvenanceDefence(unittest.TestCase):
 
     def test_wrong_parameters_4(self):
         (_, _, p_train), (x_test, y_test), (_, _), (_, _), (_, _) = self.mnist
-        self.assertRaises(ValueError, self.defence_no_trust.set_params, x_train=-x_test, y_train=y_test,
-                          p_train=p_train)
+        self.assertRaises(
+            ValueError, self.defence_no_trust.set_params, x_train=-x_test, y_train=y_test, p_train=p_train
+        )
         self.assertRaises(ValueError, self.defence_trust.set_params, x_train=-x_test, y_train=y_test, p_train=p_train)
 
     def test_detect_poison(self):
@@ -159,5 +173,5 @@ class TestProvenanceDefence(unittest.TestCase):
         logger.info(self.defence_no_trust.evaluate_defence(real_clean))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -50,24 +50,25 @@ class TestMXClassifier(TestBase):
         net = nn.Sequential()
         with net.name_scope():
             net.add(
-                nn.Conv2D(channels=6, kernel_size=5, activation='relu'),
+                nn.Conv2D(channels=6, kernel_size=5, activation="relu"),
                 nn.MaxPool2D(pool_size=2, strides=2),
-                nn.Conv2D(channels=16, kernel_size=3, activation='relu'),
+                nn.Conv2D(channels=16, kernel_size=3, activation="relu"),
                 nn.MaxPool2D(pool_size=2, strides=2),
                 nn.Flatten(),
                 nn.Dense(120, activation="relu"),
                 nn.Dense(84, activation="relu"),
-                nn.Dense(10)
+                nn.Dense(10),
             )
         net.initialize(init=init.Xavier())
 
         # Create optimizer
         loss = gluon.loss.SoftmaxCrossEntropyLoss()
-        trainer = gluon.Trainer(net.collect_params(), 'sgd', {'learning_rate': 0.1})
+        trainer = gluon.Trainer(net.collect_params(), "sgd", {"learning_rate": 0.1})
 
         # Fit classifier
-        classifier = MXClassifier(model=net, loss=loss, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
-                                  optimizer=trainer)
+        classifier = MXClassifier(
+            model=net, loss=loss, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10, optimizer=trainer
+        )
         classifier.fit(cls.x_train_mnist, cls.y_train_mnist, batch_size=128, nb_epochs=2)
         cls.classifier = classifier
 
@@ -87,15 +88,19 @@ class TestMXClassifier(TestBase):
     def test_predict(self):
         preds = self.classifier.predict(self.x_test_mnist)
         acc = np.sum(np.argmax(preds, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info('Accuracy after fitting: %.2f%%', (acc * 100))
+        logger.info("Accuracy after fitting: %.2f%%", (acc * 100))
         self.assertGreater(acc, 0.1)
 
     def test_fit_generator(self):
         from art.data_generators import MXDataGenerator
 
-        acc = np.sum(np.argmax(self.classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist,
-                                                                                                axis=1)) / self.n_test
-        logger.info('Accuracy: %.2f%%', (acc * 100))
+        acc = (
+            np.sum(
+                np.argmax(self.classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist, axis=1)
+            )
+            / self.n_test
+        )
+        logger.info("Accuracy: %.2f%%", (acc * 100))
 
         # Create MXNet dataset and loader
         dataset = gluon.data.dataset.ArrayDataset(self.x_train_mnist, self.y_train_mnist)
@@ -104,9 +109,13 @@ class TestMXClassifier(TestBase):
 
         # Fit model with generator
         self.classifier.fit_generator(data_gen, nb_epochs=2)
-        acc2 = np.sum(np.argmax(self.classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist,
-                                                                                                 axis=1)) / self.n_test
-        logger.info('Accuracy: %.2f%%', (acc * 100))
+        acc2 = (
+            np.sum(
+                np.argmax(self.classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist, axis=1)
+            )
+            / self.n_test
+        )
+        logger.info("Accuracy: %.2f%%", (acc * 100))
 
         self.assertGreaterEqual(acc2, 0.8 * acc)
 
@@ -147,11 +156,17 @@ class TestMXClassifier(TestBase):
     def test_preprocessing(self):
         # Create classifier
         loss = gluon.loss.SoftmaxCrossEntropyLoss()
-        classifier_preproc = MXClassifier(model=self.classifier._model, loss=loss, clip_values=(0, 1),
-                                          input_shape=(1, 28, 28), nb_classes=10, optimizer=self.classifier._optimizer,
-                                          preprocessing=(1, 2))
+        classifier_preproc = MXClassifier(
+            model=self.classifier._model,
+            loss=loss,
+            clip_values=(0, 1),
+            input_shape=(1, 28, 28),
+            nb_classes=10,
+            optimizer=self.classifier._optimizer,
+            preprocessing=(1, 2),
+        )
 
-        preds = self.classifier.predict((self.x_test_mnist - 1.) / 2)
+        preds = self.classifier.predict((self.x_test_mnist - 1.0) / 2)
         preds_preproc = classifier_preproc.predict(self.x_test_mnist)
         self.assertEqual(np.sum(preds - preds_preproc), 0)
 
@@ -170,12 +185,12 @@ class TestMXClassifier(TestBase):
     def test_set_learning(self):
         classifier = self.classifier
 
-        self.assertFalse(hasattr(classifier, '_learning_phase'))
+        self.assertFalse(hasattr(classifier, "_learning_phase"))
         classifier.set_learning_phase(False)
         self.assertFalse(classifier.learning_phase)
         classifier.set_learning_phase(True)
         self.assertTrue(classifier.learning_phase)
-        self.assertTrue(hasattr(classifier, '_learning_phase'))
+        self.assertTrue(hasattr(classifier, "_learning_phase"))
 
     def test_save(self):
         classifier = self.classifier
@@ -187,15 +202,15 @@ class TestMXClassifier(TestBase):
 
         classifier.save(base_name, path=dir_name)
         self.assertTrue(os.path.exists(full_path + ".params"))
-        os.remove(full_path + '.params')
+        os.remove(full_path + ".params")
 
     def test_repr(self):
         repr_ = repr(self.classifier)
-        self.assertIn('art.classifiers.mxnet.MXClassifier', repr_)
-        self.assertIn('input_shape=(1, 28, 28), nb_classes=10', repr_)
-        self.assertIn('channel_index=1, clip_values=(0, 1)', repr_)
-        self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
+        self.assertIn("art.classifiers.mxnet.MXClassifier", repr_)
+        self.assertIn("input_shape=(1, 28, 28), nb_classes=10", repr_)
+        self.assertIn("channel_index=1, clip_values=(0, 1)", repr_)
+        self.assertIn("defences=None, preprocessing=(0, 1)", repr_)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

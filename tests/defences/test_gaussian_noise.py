@@ -35,7 +35,7 @@ class TestGaussianNoise(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
@@ -51,12 +51,27 @@ class TestGaussianNoise(unittest.TestCase):
         postprocessor = GaussianNoise(scale=0.1)
         post_preds = postprocessor(preds=preds)
 
-        classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
-                                                      0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
-                                                    dtype=np.float32)
-        post_classifier_prediction_expected = np.asarray([[0.15412168, 0.0, 0.2222987, 0.03007976, 0.0381179,
-                                                           0.12382449, 0.13755375, 0.22279163, 0.07121207, 0.0]],
-                                                         dtype=np.float32)
+        classifier_prediction_expected = np.asarray(
+            [
+                [
+                    0.12109935,
+                    0.0498215,
+                    0.0993958,
+                    0.06410096,
+                    0.11366928,
+                    0.04645343,
+                    0.06419807,
+                    0.30685693,
+                    0.07616714,
+                    0.05823757,
+                ]
+            ],
+            dtype=np.float32,
+        )
+        post_classifier_prediction_expected = np.asarray(
+            [[0.15412168, 0.0, 0.2222987, 0.03007976, 0.0381179, 0.12382449, 0.13755375, 0.22279163, 0.07121207, 0.0]],
+            dtype=np.float32,
+        )
 
         np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
@@ -78,5 +93,5 @@ class TestGaussianNoise(unittest.TestCase):
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

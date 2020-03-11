@@ -35,25 +35,24 @@ logger = logging.getLogger(__name__)
 
 
 class TestVirtualAdversarial(TestBase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
 
         cls.n_train = 100
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def test_keras_mnist(self):
         classifier = get_image_classifier_kr()
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
-        logging.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
+        logging.info("[Keras, MNIST] Accuracy on training set: %.2f%%", (scores[1] * 100))
         scores = classifier._model.evaluate(self.x_test_mnist, self.y_test_mnist)
-        logging.info('[Keras, MNIST] Accuracy on test set: %.2f%%', (scores[1] * 100))
+        logging.info("[Keras, MNIST] Accuracy on test set: %.2f%%", (scores[1] * 100))
 
         self._test_backend_mnist(classifier, self.x_test_mnist, self.y_test_mnist)
 
@@ -62,11 +61,11 @@ class TestVirtualAdversarial(TestBase):
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
-        logger.info('[TF, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
+        logger.info("[TF, MNIST] Accuracy on training set: %.2f%%", (acc * 100))
 
         scores = get_labels_np_array(classifier.predict(self.x_test_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[0]
-        logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+        logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", (acc * 100))
 
         self._test_backend_mnist(classifier, self.x_test_mnist, self.y_test_mnist)
 
@@ -77,11 +76,11 @@ class TestVirtualAdversarial(TestBase):
 
         scores = get_labels_np_array(classifier.predict(x_train_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
-        logger.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (acc * 100))
+        logger.info("[PyTorch, MNIST] Accuracy on training set: %.2f%%", (acc * 100))
 
         scores = get_labels_np_array(classifier.predict(x_test_mnist))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[0]
-        logger.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', (acc * 100))
+        logger.info("[PyTorch, MNIST] Accuracy on test set: %.2f%%", (acc * 100))
 
         self._test_backend_mnist(classifier, x_test_mnist, self.y_test_mnist)
 
@@ -98,20 +97,21 @@ class TestVirtualAdversarial(TestBase):
         self.assertFalse((y_test == y_pred).all())
 
         acc = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on adversarial examples: %.2f%%", (acc * 100))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(VirtualAdversarialMethod,
-                                                [ClassifierNeuralNetwork, ClassifierGradients])
+        backend_test_classifier_type_check_fail(
+            VirtualAdversarialMethod, [ClassifierNeuralNetwork, ClassifierGradients]
+        )
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
-        attack = VirtualAdversarialMethod(classifier, eps=.1)
+        attack = VirtualAdversarialMethod(classifier, eps=0.1)
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
         self.assertTrue((x_test_iris_adv <= 1).all())
@@ -120,7 +120,7 @@ class TestVirtualAdversarial(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with VAT adversarial examples: %.2f%%", (acc * 100))
 
     def test_keras_iris_unbounded(self):
         classifier = get_tabular_classifier_kr()
@@ -136,7 +136,7 @@ class TestVirtualAdversarial(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with VAT adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with VAT adversarial examples: %.2f%%", (acc * 100))
 
     # def test_iris_tf(self):
     #     classifier, _ = get_iris_classifier_tf()
@@ -172,25 +172,31 @@ class TestVirtualAdversarial(TestBase):
     def test_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
 
-        attack = VirtualAdversarialMethod(classifier, eps=.1)
+        attack = VirtualAdversarialMethod(classifier, eps=0.1)
 
         with self.assertRaises(TypeError) as context:
             x_test_iris_adv = attack.generate(self.x_test_iris)
 
-        self.assertIn('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
-                      'Values smaller than 0.0 or larger than 1.0 have been detected.', str(context.exception))
+        self.assertIn(
+            "This attack requires a classifier predicting probabilities in the range [0, 1] as output."
+            "Values smaller than 0.0 or larger than 1.0 have been detected.",
+            str(context.exception),
+        )
 
     def test_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
 
-        attack = VirtualAdversarialMethod(classifier, eps=.1)
+        attack = VirtualAdversarialMethod(classifier, eps=0.1)
 
         with self.assertRaises(TypeError) as context:
             x_test_iris_adv = attack.generate(self.x_test_iris.astype(np.float32))
 
-        self.assertIn('This attack requires a classifier predicting probabilities in the range [0, 1] as output.'
-                      'Values smaller than 0.0 or larger than 1.0 have been detected.', str(context.exception))
+        self.assertIn(
+            "This attack requires a classifier predicting probabilities in the range [0, 1] as output."
+            "Values smaller than 0.0 or larger than 1.0 have been detected.",
+            str(context.exception),
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

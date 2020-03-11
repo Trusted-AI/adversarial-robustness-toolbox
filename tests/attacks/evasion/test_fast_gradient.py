@@ -92,10 +92,12 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier
         attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
         attack.set_params(**attack_params)
 
-        expected_values = {"x_test_mean": ExpectedValue(0.03896513, 0.01),
-                           "x_test_min": ExpectedValue(-0.30000000, 0.00001),
-                           "x_test_max": ExpectedValue(0.30000000, 0.00001),
-                           "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0]), 2)}
+        expected_values = {
+            "x_test_mean": ExpectedValue(0.03896513, 0.01),
+            "x_test_min": ExpectedValue(-0.30000000, 0.00001),
+            "x_test_max": ExpectedValue(0.30000000, 0.00001),
+            "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0]), 2),
+        }
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
 
@@ -109,24 +111,27 @@ def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list_for_a
         return
 
     elif norm == np.inf:
-        expected_values = {"x_test_mean": ExpectedValue(0.2346725, 0.002),
-                           "x_test_min": ExpectedValue(-1.0, 0.00001),
-                           "x_test_max": ExpectedValue(1.0, 0.00001),
-                           "y_test_pred_adv_expected": ExpectedValue(
-                               np.asarray([4, 4, 4, 7, 7, 4, 7, 2, 2, 3, 0]), 2)}
+        expected_values = {
+            "x_test_mean": ExpectedValue(0.2346725, 0.002),
+            "x_test_min": ExpectedValue(-1.0, 0.00001),
+            "x_test_max": ExpectedValue(1.0, 0.00001),
+            "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 4, 4, 7, 7, 4, 7, 2, 2, 3, 0]), 2),
+        }
 
     elif norm == 1:
-        expected_values = {"x_test_mean": ExpectedValue(0.00051374, 0.002),
-                           "x_test_min": ExpectedValue(-0.01486498, 0.001),
-                           "x_test_max": ExpectedValue(0.014761963, 0.001),
-                           "y_test_pred_adv_expected": ExpectedValue(
-                               np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4, 4]), 4)}
+        expected_values = {
+            "x_test_mean": ExpectedValue(0.00051374, 0.002),
+            "x_test_min": ExpectedValue(-0.01486498, 0.001),
+            "x_test_max": ExpectedValue(0.014761963, 0.001),
+            "y_test_pred_adv_expected": ExpectedValue(np.asarray([7, 1, 1, 4, 4, 1, 4, 4, 4, 4, 4]), 4),
+        }
     elif norm == 2:
-        expected_values = {"x_test_mean": ExpectedValue(0.007636416, 0.001),
-                           "x_test_min": ExpectedValue(-0.211054801, 0.001),
-                           "x_test_max": ExpectedValue(0.209592223, 0.001),
-                           "y_test_pred_adv_expected": ExpectedValue(
-                               np.asarray([7, 2, 4, 4, 4, 7, 7, 4, 0, 4, 4]), 2)}
+        expected_values = {
+            "x_test_mean": ExpectedValue(0.007636416, 0.001),
+            "x_test_min": ExpectedValue(-0.211054801, 0.001),
+            "x_test_max": ExpectedValue(0.209592223, 0.001),
+            "y_test_pred_adv_expected": ExpectedValue(np.asarray([7, 2, 4, 4, 4, 7, 7, 4, 0, 4, 4]), 2),
+        }
 
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1, norm=norm, batch_size=128)
@@ -144,10 +149,10 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targe
         return
     for classifier in classifier_list:
         if targeted:
-            attack = FastGradientMethod(classifier, targeted=True, eps=.1, batch_size=128)
+            attack = FastGradientMethod(classifier, targeted=True, eps=0.1, batch_size=128)
             backend_targeted_tabular(attack, get_iris_dataset)
         else:
-            attack = FastGradientMethod(classifier, eps=.1)
+            attack = FastGradientMethod(classifier, eps=0.1)
             backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
 
 
@@ -155,5 +160,5 @@ def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(FastGradientMethod, [ClassifierGradients])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

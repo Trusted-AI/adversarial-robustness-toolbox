@@ -31,16 +31,15 @@ logger = logging.getLogger(__name__)
 
 
 class TestXGBoostClassifierBoosterSoftprob(TestBase):
-
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234)
         super().setUpClass()
 
         num_round = 10
-        param = {'objective': 'multi:softprob', 'metric': 'multi_logloss', 'num_class': 3}
+        param = {"objective": "multi:softprob", "metric": "multi_logloss", "num_class": 3}
         train_data = xgb.DMatrix(cls.x_train_iris, label=cls.y_train_iris)
-        eval_list = [(train_data, 'train')]
+        eval_list = [(train_data, "train")]
         model = xgb.train(param, train_data, num_round, eval_list)
 
         cls.classifier = XGBoostClassifier(model=model, nb_classes=3)
@@ -52,16 +51,15 @@ class TestXGBoostClassifierBoosterSoftprob(TestBase):
 
 
 class TestXGBoostClassifierBoosterSoftmax(TestBase):
-
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234)
         super().setUpClass()
 
         num_round = 10
-        param = {'objective': 'multi:softmax', 'metric': 'multi_logloss', 'num_class': 3}
+        param = {"objective": "multi:softmax", "metric": "multi_logloss", "num_class": 3}
         train_data = xgb.DMatrix(cls.x_train_iris, label=cls.y_train_iris)
-        eval_list = [(train_data, 'train')]
+        eval_list = [(train_data, "train")]
         model = xgb.train(param, train_data, num_round, eval_list)
 
         cls.classifier = XGBoostClassifier(model=model, nb_classes=3)
@@ -73,7 +71,6 @@ class TestXGBoostClassifierBoosterSoftmax(TestBase):
 
 
 class TestXGBoostClassifierPythonAPI(TestBase):
-
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234)
@@ -90,5 +87,5 @@ class TestXGBoostClassifierPythonAPI(TestBase):
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

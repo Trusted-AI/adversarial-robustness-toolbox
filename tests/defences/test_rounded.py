@@ -34,7 +34,7 @@ class TestRounded(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
         cls.mnist = (x_train, y_train), (x_test, y_test)
         cls.classifier = get_image_classifier_kr()
 
@@ -50,8 +50,9 @@ class TestRounded(unittest.TestCase):
         postprocessor = Rounded(decimals=2)
         post_preds = postprocessor(preds=preds)
 
-        expected_predictions = np.asarray([[0.12, 0.05, 0.1, 0.06, 0.11, 0.05, 0.06, 0.31, 0.08, 0.06]],
-                                          dtype=np.float32)
+        expected_predictions = np.asarray(
+            [[0.12, 0.05, 0.1, 0.06, 0.11, 0.05, 0.06, 0.31, 0.08, 0.06]], dtype=np.float32
+        )
         np.testing.assert_array_equal(post_preds, expected_predictions)
 
     def test_decimals_3(self):
@@ -63,10 +64,11 @@ class TestRounded(unittest.TestCase):
         postprocessor = Rounded(decimals=3)
         post_preds = postprocessor(preds=preds)
 
-        expected_predictions = np.asarray([[0.121, 0.05, 0.099, 0.064, 0.114, 0.046, 0.064, 0.307, 0.076, 0.058]],
-                                          dtype=np.float32)
+        expected_predictions = np.asarray(
+            [[0.121, 0.05, 0.099, 0.064, 0.114, 0.046, 0.064, 0.307, 0.076, 0.058]], dtype=np.float32
+        )
         np.testing.assert_array_equal(post_preds, expected_predictions)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

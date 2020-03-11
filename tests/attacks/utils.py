@@ -63,23 +63,31 @@ def backend_check_adverse_values(attack, mnist_dataset, expected_values):
     y_test_pred_adv = np.argmax(y_test_pred_adv_matrix, axis=1)
 
     if "x_test_mean" in expected_values:
-        np.testing.assert_array_almost_equal(float(np.mean(x_test_adv - x_test_mnist)),
-                                             expected_values["x_test_mean"].value,
-                                             decimal=expected_values["x_test_mean"].decimals)
+        np.testing.assert_array_almost_equal(
+            float(np.mean(x_test_adv - x_test_mnist)),
+            expected_values["x_test_mean"].value,
+            decimal=expected_values["x_test_mean"].decimals,
+        )
     if "x_test_min" in expected_values:
         # utils_test.assert_almost_equal_min(x_test_mnist, x_test_adv,
         # expected_values["x_test_min"].value, decimal=expected_values["x_test_min"].decimals)
-        np.testing.assert_array_almost_equal(float(np.min(x_test_adv - x_test_mnist)),
-                                             expected_values["x_test_min"].value,
-                                             decimal=expected_values["x_test_min"].decimals)
+        np.testing.assert_array_almost_equal(
+            float(np.min(x_test_adv - x_test_mnist)),
+            expected_values["x_test_min"].value,
+            decimal=expected_values["x_test_min"].decimals,
+        )
     if "x_test_max" in expected_values:
-        np.testing.assert_array_almost_equal(float(np.max(x_test_adv - x_test_mnist)),
-                                             expected_values["x_test_max"].value,
-                                             decimal=expected_values["x_test_max"].decimals)
+        np.testing.assert_array_almost_equal(
+            float(np.max(x_test_adv - x_test_mnist)),
+            expected_values["x_test_max"].value,
+            decimal=expected_values["x_test_max"].decimals,
+        )
     if "y_test_pred_adv_expected_matrix" in expected_values:
-        np.testing.assert_array_almost_equal(y_test_pred_adv_matrix,
-                                             expected_values["y_test_pred_adv_expected_matrix"].value,
-                                             decimal=expected_values["y_test_pred_adv_expected"].decimals)
+        np.testing.assert_array_almost_equal(
+            y_test_pred_adv_matrix,
+            expected_values["y_test_pred_adv_expected_matrix"].value,
+            decimal=expected_values["y_test_pred_adv_expected"].decimals,
+        )
     if "y_test_pred_adv_expected" in expected_values:
         np.testing.assert_array_equal(y_test_pred_adv, expected_values["y_test_pred_adv_expected"].value)
 
@@ -99,8 +107,10 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
                 # Use a test classifier not providing gradients required by white-box attack
                 classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
             else:
-                raise Exception("a test classifier must be provided if classifiers other than "
-                                "ClassifierGradients and ClassifierNeuralNetwork are expected")
+                raise Exception(
+                    "a test classifier must be provided if classifiers other than "
+                    "ClassifierGradients and ClassifierNeuralNetwork are expected"
+                )
 
         _backend_test_classifier_list_type_check_fail(attack, classifier, classifier_expected_list)
 
@@ -117,7 +127,7 @@ def backend_targeted_tabular(attack, fix_get_iris):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
 
     targets = random_targets(y_test_iris, nb_classes=3)
-    x_test_adv = attack.generate(x_test_iris, **{'y': targets})
+    x_test_adv = attack.generate(x_test_iris, **{"y": targets})
 
     check_adverse_example_x(x_test_adv, x_test_iris)
 
@@ -126,7 +136,7 @@ def backend_targeted_tabular(attack, fix_get_iris):
     assert (target == y_pred_adv).any()
 
     accuracy = np.sum(y_pred_adv == target) / y_test_iris.shape[0]
-    logger.info('Success rate of targeted boundary on Iris: %.2f%%', (accuracy * 100))
+    logger.info("Success rate of targeted boundary on Iris: %.2f%%", (accuracy * 100))
 
 
 def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_mlFramework):
@@ -160,9 +170,12 @@ def backend_untargeted_tabular(attack, iris_dataset, clipped):
     y_test_true = np.argmax(y_test_iris, axis=1)
 
     # assert (y_test_true == y_pred_test_adv).any(), "An untargeted attack should have changed SOME predictions"
-    assert bool(
-        (y_test_true == y_pred_test_adv).all()) is False, "An untargeted attack should NOT have changed all predictions"
+    assert (
+        bool((y_test_true == y_pred_test_adv).all()) is False
+    ), "An untargeted attack should NOT have changed all predictions"
 
     accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
-    logger.info('Accuracy of ' + attack.classifier.__class__.__name__ + ' on Iris with FGM adversarial examples: '
-                                                                        '%.2f%%', (accuracy * 100))
+    logger.info(
+        "Accuracy of " + attack.classifier.__class__.__name__ + " on Iris with FGM adversarial examples: " "%.2f%%",
+        (accuracy * 100),
+    )

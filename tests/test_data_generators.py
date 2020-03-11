@@ -21,8 +21,10 @@ import logging
 import unittest
 
 import tensorflow as tf
-if tf.__version__[0] == '2':
+
+if tf.__version__[0] == "2":
     import tensorflow.compat.v1 as tf
+
     tf.disable_eager_execution()
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
@@ -37,6 +39,7 @@ logger = logging.getLogger(__name__)
 class TestKerasDataGenerator(unittest.TestCase):
     def setUp(self):
         import keras
+
         master_seed(seed=42)
 
         class DummySequence(keras.utils.Sequence):
@@ -56,6 +59,7 @@ class TestKerasDataGenerator(unittest.TestCase):
 
     def tearDown(self):
         import keras.backend as k
+
         k.clear_session()
 
     def test_gen_interface(self):
@@ -114,13 +118,21 @@ class TestKerasDataGenerator(unittest.TestCase):
         train_size, batch_size = 20, 5
         x_train, y_train = np.random.rand(train_size, 28, 28, 1), np.random.randint(0, 2, size=(train_size, 10))
 
-        datagen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
-                                     shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
+        datagen = ImageDataGenerator(
+            width_shift_range=0.075,
+            height_shift_range=0.075,
+            rotation_range=12,
+            shear_range=0.075,
+            zoom_range=0.05,
+            fill_mode="constant",
+            cval=0,
+        )
         datagen.fit(x_train)
 
         # Create wrapper and get batch
-        data_gen = KerasDataGenerator(datagen.flow(x_train, y_train, batch_size=batch_size), size=None,
-                                      batch_size=batch_size)
+        data_gen = KerasDataGenerator(
+            datagen.flow(x_train, y_train, batch_size=batch_size), size=None, batch_size=batch_size
+        )
         x, y = data_gen.get_batch()
 
         # Check return types
@@ -135,13 +147,21 @@ class TestKerasDataGenerator(unittest.TestCase):
         train_size, batch_size = 20, 5
         x_train, y_train = np.random.rand(train_size, 28, 28, 1), np.random.randint(0, 2, size=(train_size, 10))
 
-        datagen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
-                                     shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
+        datagen = ImageDataGenerator(
+            width_shift_range=0.075,
+            height_shift_range=0.075,
+            rotation_range=12,
+            shear_range=0.075,
+            zoom_range=0.05,
+            fill_mode="constant",
+            cval=0,
+        )
         datagen.fit(x_train)
 
         # Create wrapper and get batch
-        data_gen = KerasDataGenerator(datagen.flow(x_train, y_train, batch_size=batch_size), size=None,
-                                      batch_size=batch_size)
+        data_gen = KerasDataGenerator(
+            datagen.flow(x_train, y_train, batch_size=batch_size), size=None, batch_size=batch_size
+        )
         x, y = next(data_gen.generator)
 
         # Check return types
@@ -161,6 +181,7 @@ class TestPyTorchGenerator(unittest.TestCase):
     def setUp(self):
         import torch
         from torch.utils.data import DataLoader
+
         master_seed(seed=42)
 
         class DummyDataset(torch.utils.data.Dataset):
@@ -208,6 +229,7 @@ class TestPyTorchGenerator(unittest.TestCase):
 class TestMXGenerator(unittest.TestCase):
     def setUp(self):
         import mxnet as mx
+
         master_seed(seed=42, set_mxnet=True)
 
         x = mx.random.uniform(shape=(10, 1, 5, 5))
@@ -249,8 +271,9 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
 
         def generator(batch_size=5):
             while True:
-                yield np.random.rand(batch_size, 5, 5, 1), np.random.randint(0, 10, size=10 * batch_size). \
-                    reshape(batch_size, -1)
+                yield np.random.rand(batch_size, 5, 5, 1), np.random.randint(0, 10, size=10 * batch_size).reshape(
+                    batch_size, -1
+                )
 
         self.sess = tf.Session()
         self.dataset = tf.data.Dataset.from_generator(generator, (tf.float32, tf.int32))
@@ -260,8 +283,9 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
 
     def test_init(self):
         iter_ = tf.compat.v1.data.make_initializable_iterator(self.dataset)
-        data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='initializable',
-                                   iterator_arg={}, size=10, batch_size=5)
+        data_gen = TFDataGenerator(
+            sess=self.sess, iterator=iter_, iterator_type="initializable", iterator_arg={}, size=10, batch_size=5
+        )
         x, y = data_gen.get_batch()
 
         # Check return types
@@ -273,11 +297,13 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
         self.assertEqual(y.shape, (5, 10))
 
     def test_reinit(self):
-        iter_ = tf.data.Iterator.from_structure(tf.compat.v1.data.get_output_types(self.dataset),
-                                                tf.compat.v1.data.get_output_shapes(self.dataset))
+        iter_ = tf.data.Iterator.from_structure(
+            tf.compat.v1.data.get_output_types(self.dataset), tf.compat.v1.data.get_output_shapes(self.dataset)
+        )
         init_op = iter_.make_initializer(self.dataset)
-        data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='reinitializable',
-                                   iterator_arg=init_op, size=10, batch_size=5)
+        data_gen = TFDataGenerator(
+            sess=self.sess, iterator=iter_, iterator_type="reinitializable", iterator_arg=init_op, size=10, batch_size=5
+        )
         x, y = data_gen.get_batch()
 
         # Check return types
@@ -290,12 +316,19 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
 
     def test_feedable(self):
         handle = tf.placeholder(tf.string, shape=[])
-        iter_ = tf.data.Iterator.from_string_handle(handle, tf.compat.v1.data.get_output_types(self.dataset),
-                                                    tf.compat.v1.data.get_output_shapes(self.dataset))
+        iter_ = tf.data.Iterator.from_string_handle(
+            handle, tf.compat.v1.data.get_output_types(self.dataset), tf.compat.v1.data.get_output_shapes(self.dataset)
+        )
         feed_iterator = tf.compat.v1.data.make_initializable_iterator(self.dataset)
         feed_handle = self.sess.run(feed_iterator.string_handle())
-        data_gen = TFDataGenerator(sess=self.sess, iterator=iter_, iterator_type='feedable',
-                                   iterator_arg=(feed_iterator, {handle: feed_handle}), size=10, batch_size=5)
+        data_gen = TFDataGenerator(
+            sess=self.sess,
+            iterator=iter_,
+            iterator_type="feedable",
+            iterator_arg=(feed_iterator, {handle: feed_handle}),
+            size=10,
+            batch_size=5,
+        )
         x, y = data_gen.get_batch()
 
         # Check return types
@@ -307,5 +340,5 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
         self.assertEqual(y.shape, (5, 10))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

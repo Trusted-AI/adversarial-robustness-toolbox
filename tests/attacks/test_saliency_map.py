@@ -35,17 +35,16 @@ logger = logging.getLogger(__name__)
 
 
 class TestSaliencyMap(TestBase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
 
         cls.n_train = 100
         cls.n_test = 2
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def test_keras_mnist(self):
         x_test_original = self.x_test_mnist.copy()
@@ -54,10 +53,10 @@ class TestSaliencyMap(TestBase):
         classifier = get_image_classifier_kr()
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
-        logger.info('[Keras, MNIST] Accuracy on training set: %.2f%%', (scores[1] * 100))
+        logger.info("[Keras, MNIST] Accuracy on training set: %.2f%%", (scores[1] * 100))
 
         scores = classifier._model.evaluate(self.x_test_mnist, self.y_test_mnist)
-        logger.info('[Keras, MNIST] Accuracy on test set: %.2f%%', (scores[1] * 100))
+        logger.info("[Keras, MNIST] Accuracy on test set: %.2f%%", (scores[1] * 100))
 
         # targeted
 
@@ -78,7 +77,7 @@ class TestSaliencyMap(TestBase):
         self.assertFalse((self.y_test_mnist == y_pred).all())
 
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
 
         # untargeted
         df = SaliencyMapMethod(classifier, theta=1, batch_size=100)
@@ -91,7 +90,7 @@ class TestSaliencyMap(TestBase):
         self.assertFalse((self.y_test_mnist == y_pred).all())
 
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
@@ -104,11 +103,11 @@ class TestSaliencyMap(TestBase):
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.n_train
-        logger.info('[TF, MNIST] Accuracy on training set: %.2f%%', (accuracy * 100))
+        logger.info("[TF, MNIST] Accuracy on training set: %.2f%%", (accuracy * 100))
 
         scores = get_labels_np_array(classifier.predict(self.x_test_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_train
-        logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', (accuracy * 100))
+        logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", (accuracy * 100))
 
         # targeted
         # Generate random target classes
@@ -128,7 +127,7 @@ class TestSaliencyMap(TestBase):
         self.assertFalse((self.y_test_mnist == y_pred).all())
 
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
 
         # untargeted
         df = SaliencyMapMethod(classifier, theta=1, batch_size=100)
@@ -141,7 +140,7 @@ class TestSaliencyMap(TestBase):
         self.assertFalse((self.y_test_mnist == y_pred).all())
 
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
@@ -156,11 +155,11 @@ class TestSaliencyMap(TestBase):
 
         scores = get_labels_np_array(classifier.predict(x_train_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.n_train
-        logger.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', (accuracy * 100))
+        logger.info("[PyTorch, MNIST] Accuracy on training set: %.2f%%", (accuracy * 100))
 
         scores = get_labels_np_array(classifier.predict(x_test_mnist))
         accuracy = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info('\n[PyTorch, MNIST] Accuracy on test set: %.2f%%', (accuracy * 100))
+        logger.info("\n[PyTorch, MNIST] Accuracy on test set: %.2f%%", (accuracy * 100))
 
         # targeted
         # Generate random target classes
@@ -180,7 +179,7 @@ class TestSaliencyMap(TestBase):
         self.assertFalse((self.y_test_mnist == y_pred).all())
 
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
 
         # untargeted
         df = SaliencyMapMethod(classifier, theta=1, batch_size=100)
@@ -193,7 +192,7 @@ class TestSaliencyMap(TestBase):
         self.assertFalse((self.y_test_mnist == y_pred).all())
 
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        logger.info('Accuracy on adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
@@ -213,7 +212,7 @@ class TestSaliencyMap(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with JSMA adversarial examples: %.2f%%", (accuracy * 100))
 
     def test_keras_iris_vector_unbounded(self):
         classifier = get_tabular_classifier_kr()
@@ -236,7 +235,7 @@ class TestSaliencyMap(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with JSMA adversarial examples: %.2f%%", (accuracy * 100))
 
     def test_pytorch_iris_vector(self):
         classifier = get_tabular_classifier_pt()
@@ -250,7 +249,7 @@ class TestSaliencyMap(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with JSMA adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with JSMA adversarial examples: %.2f%%", (accuracy * 100))
 
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
@@ -258,9 +257,11 @@ class TestSaliencyMap(TestBase):
 
         from art.classifiers.scikitlearn import SklearnClassifier
 
-        scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
-                                  SVC(gamma='auto'),
-                                  LinearSVC()]
+        scikitlearn_test_cases = [
+            LogisticRegression(solver="lbfgs", multi_class="auto"),
+            SVC(gamma="auto"),
+            LinearSVC(),
+        ]
 
         x_test_original = self.x_test_iris.copy()
 
@@ -277,12 +278,14 @@ class TestSaliencyMap(TestBase):
             preds_adv = np.argmax(classifier.predict(x_test_iris_adv), axis=1)
             self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
             accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with JSMA adversarial examples: '
-                                                                         '%.2f%%', (accuracy * 100))
+            logger.info(
+                "Accuracy of " + classifier.__class__.__name__ + " on Iris with JSMA adversarial examples: " "%.2f%%",
+                (accuracy * 100),
+            )
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

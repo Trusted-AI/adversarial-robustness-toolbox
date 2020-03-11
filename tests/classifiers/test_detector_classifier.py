@@ -79,8 +79,9 @@ class TestDetectorClassifier(TestBase):
         model = Model(model)
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        detector = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
-                                     nb_classes=1, clip_values=(0, 1))
+        detector = PyTorchClassifier(
+            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=1, clip_values=(0, 1)
+        )
 
         # Define the detector-classifier
         cls.detector_classifier = DetectorClassifier(classifier=classifier, detector=detector)
@@ -129,7 +130,7 @@ class TestDetectorClassifier(TestBase):
         # Test label = array
         n_test_local = 2
         label = np.array([2, 10])
-        gradients = self.detector_classifier.class_gradient(x=self.x_test_mnist[0: n_test_local], label=label)
+        gradients = self.detector_classifier.class_gradient(x=self.x_test_mnist[0:n_test_local], label=label)
         self.assertEqual(gradients.shape, (n_test_local, 1, 1, 28, 28))
 
     def test_set_learning(self):
@@ -158,19 +159,19 @@ class TestDetectorClassifier(TestBase):
 
         self.assertTrue(os.path.exists(full_path + "_classifier.optimizer"))
         self.assertTrue(os.path.exists(full_path + "_classifier.model"))
-        os.remove(full_path + '_classifier.optimizer')
-        os.remove(full_path + '_classifier.model')
+        os.remove(full_path + "_classifier.optimizer")
+        os.remove(full_path + "_classifier.model")
 
         self.assertTrue(os.path.exists(full_path + "_detector.optimizer"))
         self.assertTrue(os.path.exists(full_path + "_detector.model"))
-        os.remove(full_path + '_detector.optimizer')
-        os.remove(full_path + '_detector.model')
+        os.remove(full_path + "_detector.optimizer")
+        os.remove(full_path + "_detector.model")
 
     def test_repr(self):
         repr_ = repr(self.detector_classifier)
-        self.assertIn('art.classifiers.detector_classifier.DetectorClassifier', repr_)
-        self.assertIn('preprocessing=(0, 1)', repr_)
+        self.assertIn("art.classifiers.detector_classifier.DetectorClassifier", repr_)
+        self.assertIn("preprocessing=(0, 1)", repr_)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

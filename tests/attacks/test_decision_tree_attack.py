@@ -64,5 +64,5 @@ class TestDecisionTreeAttack(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(X_original - self.X))), 0.0, delta=0.00001)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
