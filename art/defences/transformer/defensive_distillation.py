@@ -26,7 +26,7 @@ import logging
 
 import numpy as np
 
-from art.defences.transform.transformer import Transformer
+from art.defences.transformer.transformer import Transformer
 from art.utils import is_probability
 
 logger = logging.getLogger(__name__)
