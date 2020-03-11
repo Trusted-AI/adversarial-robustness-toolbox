@@ -102,7 +102,7 @@ class TestXGBoostClassifierPythonAPI(unittest.TestCase):
 
     def test_predict(self):
         y_predicted = self.classifier.predict(self.x_test[0:1])
-        y_expected = [0.02563512, 0.02925956, 0.94510525]
+        y_expected = [0.00280161, 0.00359648, 0.99360186]
         for i in range(3):
             self.assertAlmostEqual(y_predicted[0, i], y_expected[i], 4)
 
