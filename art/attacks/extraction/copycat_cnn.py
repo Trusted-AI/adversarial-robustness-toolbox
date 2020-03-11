@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 class CopycatCNN(ExtractionAttack):
     """
-    Implementation of the Copycat CNN attack from Jacson et al. (2018).
+    Implementation of the Copycat CNN attack from Rodrigues Correia-Silva et al. (2018).
 
     | Paper link: https://arxiv.org/abs/1806.05476
     """
