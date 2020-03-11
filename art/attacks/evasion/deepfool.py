@@ -29,7 +29,7 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, WrongClassifier
+from art.utils import compute_success, ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class DeepFool(EvasionAttack):
         """
         super(DeepFool, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
         params = {"max_iter": max_iter, "epsilon": epsilon, "nb_grads": nb_grads, "batch_size": batch_size}
         self.set_params(**params)

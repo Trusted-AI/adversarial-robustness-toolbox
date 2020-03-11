@@ -5,7 +5,7 @@ import logging
 import keras.backend as k
 from sklearn.tree import DecisionTreeClassifier
 
-from art.utils import random_targets, get_labels_np_array, WrongClassifier
+from art.utils import random_targets, get_labels_np_array, ClassifierError
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_y
@@ -116,7 +116,7 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
 
 
 def _backend_test_classifier_list_type_check_fail(attack, classifier, classifier_expected_list):
-    with pytest.raises(WrongClassifier) as exception:
+    with pytest.raises(ClassifierError) as exception:
         _ = attack(classifier=classifier)
 
     for classifier_expected in classifier_expected_list:

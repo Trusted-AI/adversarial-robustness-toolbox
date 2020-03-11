@@ -31,7 +31,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
-from art.utils import WrongClassifier
+from art.utils import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ class FastGradientMethod(EvasionAttack):
         super(FastGradientMethod, self).__init__(classifier)
 
         if not isinstance(classifier, ClassifierGradients):
-            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "norm": norm,

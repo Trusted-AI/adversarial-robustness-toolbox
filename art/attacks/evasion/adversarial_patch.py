@@ -32,7 +32,7 @@ from scipy.ndimage import rotate, shift, zoom
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import check_and_transform_label_format, WrongClassifier
+from art.utils import check_and_transform_label_format, ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +94,7 @@ class AdversarialPatch(EvasionAttack):
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise WrongClassifier(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         kwargs = {
             "target": target,

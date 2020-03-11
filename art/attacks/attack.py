@@ -24,7 +24,7 @@ import logging
 import abc
 import numpy as np
 
-from art.utils import WrongClassifier
+from art.utils import ClassifierError
 from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
@@ -93,7 +93,7 @@ class Attack(abc.ABC, metaclass=input_filter):
         :type classifier: :class:`.Classifier`
         """
         if not isinstance(classifier, Classifier) and classifier is not None:
-            raise WrongClassifier(self.__class__, [Classifier], classifier)
+            raise ClassifierError(self.__class__, [Classifier], classifier)
 
         self.classifier = classifier
 

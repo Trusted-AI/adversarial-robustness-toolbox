@@ -30,7 +30,7 @@ import numpy as np
 
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import projection, WrongClassifier
+from art.utils import projection, ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ class UniversalPerturbation(EvasionAttack):
         """
         super(UniversalPerturbation, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise WrongClassifier(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         kwargs = {
             "attacker": attacker,

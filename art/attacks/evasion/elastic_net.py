@@ -30,7 +30,7 @@ import six
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, WrongClassifier
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -97,7 +97,7 @@ class ElasticNet(EvasionAttack):
         """
         super(ElasticNet, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "confidence": confidence,
