@@ -23,10 +23,9 @@ import unittest
 import numpy as np
 
 from art.defences import DefensiveDistillation
-
-from tests.utils import TestBase, master_seed
-from tests.utils import get_classifier_tf, get_classifier_pt, get_classifier_kr
-from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import master_seed, TestBase
+from tests.utils import get_image_classifier_tf, get_image_classifier_pt, get_image_classifier_kr
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -73,10 +72,10 @@ class TestDefensiveDistillation(TestBase):
         :return:
         """
         # Create the trained classifier
-        trained_classifier, sess = get_classifier_tf()
+        trained_classifier, sess = get_image_classifier_tf()
 
         # Create the modified classifier
-        transformed_classifier, _ = get_classifier_tf(
+        transformed_classifier, _ = get_image_classifier_tf(
             load_init=False,
             sess=sess
         )
@@ -128,10 +127,10 @@ class TestDefensiveDistillation(TestBase):
         self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Create the trained classifier
-        trained_classifier = get_classifier_pt()
+        trained_classifier = get_image_classifier_pt()
 
         # Create the modified classifier
-        transformed_classifier = get_classifier_pt(load_init=False)
+        transformed_classifier = get_image_classifier_pt(load_init=False)
 
         # Create defensive distillation transformer
         transformer = DefensiveDistillation(
@@ -176,10 +175,10 @@ class TestDefensiveDistillation(TestBase):
         :return:
         """
         # Create the trained classifier
-        trained_classifier = get_classifier_kr()
+        trained_classifier = get_image_classifier_kr()
 
         # Create the modified classifier
-        transformed_classifier = get_classifier_kr(load_init=False)
+        transformed_classifier = get_image_classifier_kr(load_init=False)
 
         # Create defensive distillation transformer
         transformer = DefensiveDistillation(
@@ -237,10 +236,10 @@ class TestDefensiveDistillationVectors(TestBase):
         :return:
         """
         # Create the trained classifier
-        trained_classifier, sess = get_iris_classifier_tf()
+        trained_classifier, sess = get_tabular_classifier_tf()
 
         # Create the modified classifier
-        transformed_classifier, _ = get_iris_classifier_tf(
+        transformed_classifier, _ = get_tabular_classifier_tf(
             load_init=False,
             sess=sess
         )
@@ -271,10 +270,10 @@ class TestDefensiveDistillationVectors(TestBase):
         :return:
         """
         # Create the trained classifier
-        trained_classifier = get_iris_classifier_kr()
+        trained_classifier = get_tabular_classifier_kr()
 
         # Create the modified classifier
-        transformed_classifier = get_iris_classifier_kr(load_init=False)
+        transformed_classifier = get_tabular_classifier_kr(load_init=False)
 
         # Create defensive distillation transformer
         transformer = DefensiveDistillation(
@@ -317,10 +316,10 @@ class TestDefensiveDistillationVectors(TestBase):
         :return:
         """
         # Create the trained classifier
-        trained_classifier = get_iris_classifier_pt()
+        trained_classifier = get_tabular_classifier_pt()
 
         # Create the modified classifier
-        transformed_classifier = get_iris_classifier_pt(load_init=False)
+        transformed_classifier = get_tabular_classifier_pt(load_init=False)
 
         # Create defensive distillation transformer
         transformer = DefensiveDistillation(

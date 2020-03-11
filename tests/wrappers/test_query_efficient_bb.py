@@ -29,7 +29,7 @@ from art.defences import FeatureSqueezing
 from art.utils import load_dataset, get_labels_np_array
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 
-from tests.utils import master_seed, get_classifier_kr, get_iris_classifier_kr
+from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class TestWrappingClassifierAttack(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Keras classifier
-        cls.classifier_k = get_classifier_kr()
+        cls.classifier_k = get_image_classifier_kr()
 
     def setUp(self):
         master_seed(seed=1234)
@@ -132,7 +132,7 @@ class TestQueryEfficientVectors(unittest.TestCase):
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64., round_samples=1 / 255.)
 
         # Test untargeted attack
@@ -149,7 +149,7 @@ class TestQueryEfficientVectors(unittest.TestCase):
 
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)

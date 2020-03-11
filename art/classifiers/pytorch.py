@@ -48,6 +48,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         preprocessing_defences=None,
         postprocessing_defences=None,
         preprocessing=(0, 1),
+        device_type='gpu',
     ):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -79,6 +80,8 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        :type device_type: `string`
         """
         super(PyTorchClassifier, self).__init__(
             clip_values=clip_values,
@@ -98,10 +101,15 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         # Get the internal layers
         self._layer_names = self._model.get_layers
 
-        # Use GPU if possible
+        # Set device
         import torch
 
-        self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        if device_type == 'cpu' or not torch.cuda.is_available():
+            self._device = torch.device('cpu')
+        else:
+            cuda_idx = torch.cuda.current_device()
+            self._device = torch.device('cuda:{}'.format(cuda_idx))
+
         self._model.to(self._device)
 
         # Index of layer at which the class gradients should be calculated

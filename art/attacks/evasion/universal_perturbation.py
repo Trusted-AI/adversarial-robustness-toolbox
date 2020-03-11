@@ -30,7 +30,7 @@ import numpy as np
 
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import projection
+from art.utils import projection, WrongClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class UniversalPerturbation(EvasionAttack):
     attack_params = EvasionAttack.attack_params + ["attacker", "attacker_params", "delta", "max_iter", "eps", "norm"]
 
     def __init__(
-        self, classifier, attacker="deepfool", attacker_params=None, delta=0.2, max_iter=20, eps=10.0, norm=np.inf
+            self, classifier, attacker="deepfool", attacker_params=None, delta=0.2, max_iter=20, eps=10.0, norm=np.inf
     ):
         """
         :param classifier: A trained classifier.
@@ -80,16 +80,7 @@ class UniversalPerturbation(EvasionAttack):
         """
         super(UniversalPerturbation, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierNeuralNetwork` and "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to be a Neural Network and provide gradients."
-                )
-            )
+            raise WrongClassifier(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         kwargs = {
             "attacker": attacker,

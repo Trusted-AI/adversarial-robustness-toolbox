@@ -19,14 +19,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
 import keras.backend as k
 import numpy as np
 
 from art.attacks import SpatialTransformation
 
 from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr
+from tests.utils import get_image_classifier_pt, get_tabular_classifier_kr
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +56,7 @@ class TestSpatialTransformation(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # Attack
         attack_st = SpatialTransformation(tfc, max_translation=10.0, num_translations=3, max_rotation=30.0,
@@ -87,7 +88,7 @@ class TestSpatialTransformation(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # Attack
         attack_st = SpatialTransformation(krc, max_translation=10.0, num_translations=3, max_rotation=30.0,
@@ -120,7 +121,7 @@ class TestSpatialTransformation(TestBase):
         x_test_original = x_test_mnist.copy()
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt(from_logits=True)
+        ptc = get_image_classifier_pt(from_logits=True)
 
         # Attack
         attack_st = SpatialTransformation(ptc, max_translation=10.0, num_translations=3, max_rotation=30.0,
@@ -143,7 +144,7 @@ class TestSpatialTransformation(TestBase):
 
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         attack = SpatialTransformation(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
@@ -154,18 +155,8 @@ class TestSpatialTransformation(TestBase):
 
         self.assertIn('Feature vectors detected.', str(context.exception))
 
-    def test_classifier_type_check_fail_classifier(self):
-        # Use a useless test classifier to test basic classifier properties
-        class ClassifierNoAPI:
-            pass
-
-        classifier = ClassifierNoAPI
-        with self.assertRaises(TypeError) as context:
-            _ = SpatialTransformation(classifier=classifier)
-
-        self.assertIn('For `SpatialTransformation` classifier must be an instance of '
-                      '`art.classifiers.classifier.Classifier`, the provided classifier is instance of '
-                      '(<class \'object\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(SpatialTransformation)
 
 
 if __name__ == '__main__':
