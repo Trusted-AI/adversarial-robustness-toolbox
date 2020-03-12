@@ -33,8 +33,9 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh, ClassifierError
+from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
 from art.utils import check_and_transform_label_format
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 

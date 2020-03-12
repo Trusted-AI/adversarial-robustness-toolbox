@@ -29,7 +29,8 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, ClassifierError
+from art.utils import compute_success
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 

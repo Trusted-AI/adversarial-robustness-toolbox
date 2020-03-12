@@ -30,7 +30,8 @@ import numpy as np
 
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import projection, ClassifierError
+from art.utils import projection
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 

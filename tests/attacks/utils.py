@@ -5,7 +5,8 @@ import logging
 import keras.backend as k
 from sklearn.tree import DecisionTreeClassifier
 
-from art.utils import random_targets, get_labels_np_array, ClassifierError
+from art.utils import random_targets, get_labels_np_array
+from art.exceptions import ClassifierError
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_y

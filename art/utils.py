@@ -418,30 +418,6 @@ def load_cifar10(raw=False):
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-class ClassifierError(TypeError):
-    """
-    Basic exception for errors raised by unexpected classifier types.
-    """
-    def __init__(self, this_class, class_expected_list, classifier_given):
-        self.this_class = this_class
-        self.class_expected_list = class_expected_list
-        self.classifier_given = classifier_given
-
-        classes_expected_message = ""
-        for idx, class_expected in enumerate(class_expected_list):
-            if idx == 0:
-                classes_expected_message += "{0}".format(class_expected)
-            else:
-                classes_expected_message += " and {0}".format(class_expected)
-
-        self.message = (
-            "For {0} classifier must be an instance of {1}, "
-            "the provided classifier is instance of {2}.".format(
-                this_class.__name__, classes_expected_message, classifier_given
-            )
-        )
-
-
 def load_mnist(raw=False):
     """
     Loads MNIST dataset from `ART_DATA_PATH` or downloads it if necessary.

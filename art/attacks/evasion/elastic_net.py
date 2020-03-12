@@ -30,7 +30,8 @@ import six
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, ClassifierError
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
