@@ -1177,3 +1177,7 @@ def test_loss_functions(get_default_mnist_subset, get_image_classifier_list):
             loss_gradient_expected,
             _from_logits=False,
         )
+
+
+if __name__ == "__main__":
+    pytest.cmdline.main("-q {} --mlFramework=keras --durations=0".format(__file__).split(" "))

@@ -447,3 +447,7 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
                 "preprocessing=(0, 1))",
             ],
         )
+
+
+if __name__ == "__main__":
+    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

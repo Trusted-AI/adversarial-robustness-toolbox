@@ -69,3 +69,7 @@ def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack, fram
 
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(BoundaryAttack)
+
+
+if __name__ == "__main__":
+    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

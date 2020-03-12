@@ -163,4 +163,4 @@ def test_classifier_type_check_fail():
 
 
 if __name__ == "__main__":
-    unittest.main()
+    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
