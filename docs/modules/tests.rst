@@ -1,3 +1,0 @@
-:mod:`tests`
-==================
-.. automodule:: tests
