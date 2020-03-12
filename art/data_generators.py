@@ -23,13 +23,13 @@ their own generators following the :class:`.DataGenerator` interface.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import abc
 import logging
-from abc import ABC
 
 logger = logging.getLogger(__name__)
 
 
-class DataGenerator(ABC):
+class DataGenerator(abc.ABC):
     """
     Base class for data generators.
     """
