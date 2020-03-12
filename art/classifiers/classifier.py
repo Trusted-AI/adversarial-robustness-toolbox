@@ -391,13 +391,14 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
             )
 
         for _ in range(nb_epochs):
-            x, y = generator.get_batch()
+            for _ in range(int(generator.size / generator.batch_size)):
+                x, y = generator.get_batch()
 
-            # Apply preprocessing and defences
-            x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+                # Apply preprocessing and defences
+                x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
-            # Fit for current batch
-            self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=len(x), **kwargs)
+                # Fit for current batch
+                self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
 
     @property
     def channel_index(self):
