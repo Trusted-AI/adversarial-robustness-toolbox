@@ -21,8 +21,8 @@ This module implements the JPEG compression defence `JpegCompression`.
 | Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
 
 | Please keep in mind the limitations of defences. For more information on the limitations of this defence, see
-https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
-https://arxiv.org/abs/1902.06705
+    https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
+    https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -45,8 +45,8 @@ class JpegCompression(Preprocessor):
 
 
     | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
-    see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
-    https://arxiv.org/abs/1902.06705
+        see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
+        https://arxiv.org/abs/1902.06705
     """
 
     params = ["quality", "channel_index", "clip_values"]
@@ -189,7 +189,7 @@ class JpegCompression(Preprocessor):
 
         if len(self.clip_values) != 2:
             raise ValueError(
-                "`clip_values` should be a tuple of 2 floats or arrays containing the allowed" "data range."
+                "`clip_values` should be a tuple of 2 floats or arrays containing the allowed data range."
             )
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():

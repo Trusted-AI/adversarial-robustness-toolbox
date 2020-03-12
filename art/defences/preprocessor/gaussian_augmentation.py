@@ -63,7 +63,7 @@ class GaussianAugmentation(Preprocessor):
         self._is_fitted = True
         if augmentation and apply_fit and apply_predict:
             raise ValueError(
-                "If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`" " must be `False`."
+                "If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict` must be `False`."
             )
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
@@ -80,7 +80,7 @@ class GaussianAugmentation(Preprocessor):
     def __call__(self, x, y=None):
         """
         Augment the sample `(x, y)` with Gaussian noise. The result is either an extended dataset containing the
-        original sample, as well as the newly created noisy samples (`augmentation`=True) or just the noisy counterparts
+        original sample, as well as the newly created noisy samples (augmentation=True) or just the noisy counterparts
         to the original samples.
 
         :param x: Sample to augment with shape `(batch_size, width, height, depth)`.
@@ -150,7 +150,7 @@ class GaussianAugmentation(Preprocessor):
 
             if len(self.clip_values) != 2:
                 raise ValueError(
-                    "`clip_values` should be a tuple of 2 floats or arrays containing the allowed" "data range."
+                    "`clip_values` should be a tuple of 2 floats or arrays containing the allowed data range."
                 )
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")

@@ -22,8 +22,8 @@ manifold.
 | Paper link: https://arxiv.org/abs/1710.10766
 
 | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
-see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
-https://arxiv.org/abs/1902.06705
+    see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
+    https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -44,8 +44,8 @@ class PixelDefend(Preprocessor):
     | Paper link: https://arxiv.org/abs/1710.10766
 
     | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
-    see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
-    https://arxiv.org/abs/1902.06705
+        see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
+        https://arxiv.org/abs/1902.06705
     """
 
     params = ["clip_values", "eps", "pixel_cnn"]
