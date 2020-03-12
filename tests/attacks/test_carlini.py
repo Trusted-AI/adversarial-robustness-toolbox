@@ -22,6 +22,7 @@ import unittest
 import keras
 import keras.backend as k
 import numpy as np
+
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier

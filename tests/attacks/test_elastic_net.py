@@ -19,12 +19,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-from art.classifiers.classifier import ClassifierGradients
 import keras.backend as k
 import numpy as np
 
 from art.attacks import ElasticNet
 from art.classifiers import KerasClassifier
+from art.classifiers.classifier import ClassifierGradients
 from art.utils import random_targets, to_categorical
 
 from tests.utils import TestBase, master_seed

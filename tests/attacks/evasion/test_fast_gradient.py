@@ -16,6 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
+
 import logging
 import unittest
 import numpy as np
@@ -23,6 +24,7 @@ import pytest
 
 from art.attacks import FastGradientMethod
 from art.classifiers.classifier import ClassifierGradients
+
 from tests.utils import ExpectedValue
 from tests.attacks.utils import backend_check_adverse_values, backend_test_defended_images
 from tests.attacks.utils import backend_test_random_initialisation_images, backend_targeted_images

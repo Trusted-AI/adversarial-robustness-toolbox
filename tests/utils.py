@@ -26,9 +26,8 @@ import json
 import time
 import pickle
 import unittest
-import numpy as np
 
-logger = logging.getLogger(__name__)
+import numpy as np
 
 from art.utils import load_dataset
 

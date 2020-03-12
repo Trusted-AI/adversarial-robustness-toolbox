@@ -24,8 +24,8 @@ import logging
 import abc
 import numpy as np
 
-from art.exceptions import ClassifierError
 from art.classifiers.classifier import Classifier
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 

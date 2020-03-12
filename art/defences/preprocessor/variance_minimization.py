@@ -31,8 +31,8 @@ import logging
 import numpy as np
 from scipy.optimize import minimize
 
-from art.defences.preprocessor.preprocessor import Preprocessor
 from art.config import ART_NUMPY_DTYPE
+from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
 

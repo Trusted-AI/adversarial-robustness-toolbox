@@ -30,9 +30,9 @@ import logging
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import to_categorical
-from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 

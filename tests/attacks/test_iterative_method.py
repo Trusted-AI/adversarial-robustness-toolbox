@@ -16,11 +16,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-from art.classifiers.classifier import ClassifierGradients
 import numpy as np
 
 from art.attacks import BasicIterativeMethod
 from art.classifiers import KerasClassifier
+from art.classifiers.classifier import ClassifierGradients
 from art.utils import get_labels_np_array, random_targets
 
 from tests.utils import TestBase

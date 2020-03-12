@@ -21,6 +21,7 @@ import logging
 import unittest
 import keras
 import numpy as np
+
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.attacks import DeepFool
 from art.classifiers import KerasClassifier

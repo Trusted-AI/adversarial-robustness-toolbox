@@ -22,8 +22,8 @@ import numpy as np
 
 from art.defences import HighConfidence
 from art.utils import load_dataset
+
 from tests.utils import master_seed, get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
-from tests.utils import get_image_classifier_kr_tf_binary
 
 logger = logging.getLogger(__name__)
 

@@ -19,11 +19,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 import numpy as np
 
 from art.attacks import VirtualAdversarialMethod
 from art.classifiers import KerasClassifier
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.utils import get_labels_np_array
 
 from tests.utils import TestBase

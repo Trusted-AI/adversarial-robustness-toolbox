@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 import numpy as np
+
 from art.attacks import UniversalPerturbation
 from art.classifiers import KerasClassifier
 from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients

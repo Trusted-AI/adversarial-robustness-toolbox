@@ -21,10 +21,6 @@ import logging
 import unittest
 
 import numpy as np
-import tensorflow as tf
-
-if tf.__version__[0] == "2":
-    tf.compat.v1.disable_eager_execution()
 
 from art.utils import load_dataset
 

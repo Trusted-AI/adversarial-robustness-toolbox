@@ -23,18 +23,10 @@ their own generators following the :class:`.DataGenerator` interface.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import abc
-import sys
-
 import logging
+from abc import ABC
 
 logger = logging.getLogger(__name__)
-
-# Ensure compatibility with Python 2 and 3 when using ABCMeta
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta(str("ABC"), (), {})
 
 
 class DataGenerator(ABC):

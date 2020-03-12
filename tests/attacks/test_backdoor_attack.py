@@ -17,15 +17,16 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import logging
 import unittest
 
-import os
 import numpy as np
 
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
 from art.utils import to_categorical
+
 from tests.utils import TestBase, master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)

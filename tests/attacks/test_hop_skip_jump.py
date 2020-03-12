@@ -31,7 +31,6 @@ from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_im
 from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr
 from tests.utils import get_tabular_classifier_pt, master_seed
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 

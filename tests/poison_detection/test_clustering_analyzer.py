@@ -29,8 +29,6 @@ logger = logging.getLogger(__name__)
 
 class TestActivationDefence(unittest.TestCase):
 
-    # python -m unittest discover art/ -p 'clustering_analyzer_unittest.py'
-
     def test_size_analyzer(self):
         nb_clusters = 2
         nb_classes = 3

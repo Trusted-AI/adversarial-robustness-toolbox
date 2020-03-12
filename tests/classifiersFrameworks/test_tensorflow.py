@@ -16,10 +16,13 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
+
 import pytest
 import logging
+
 import tensorflow as tf
 import numpy as np
+
 from art.data_generators import TensorFlowDataGenerator
 
 from tests.utils import ExpectedValue
