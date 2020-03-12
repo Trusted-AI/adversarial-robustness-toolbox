@@ -47,15 +47,15 @@ class HighConfidenceLowUncertainty(EvasionAttack):
     def __init__(self, classifier, conf=0.95, unc_increase=100.0, min_val=0.0, max_val=1.0):
         """
         :param classifier: A trained model of type GPYGaussianProcessClassifier.
-        :type classifier: :class:`.Classifier.GPyGaussianProcessClassifier
+        :type classifier: :class:`.Classifier.GPyGaussianProcessClassifier`
         :param conf: Confidence that examples should have, if there were to be classified as 1.0 maximally
-        :type conf: :float:
+        :type conf: `float`
         :param unc_increase: Value uncertainty is allowed to deviate, where 1.0 is original value
-        :type unc_increase: :float:
+        :type unc_increase: `float`
         :param min_val: minimal value any feature can take, defaults to 0.0
-        :type min_val: :float:
+        :type min_val: `float`
         :param max_val: maximal value any feature can take, defaults to 1.0
-        :type max_val: :float:
+        :type max_val: `float`
         """
         super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
         if not isinstance(classifier, GPyGaussianProcessClassifier):
