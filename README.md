@@ -52,7 +52,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 
 **Evasion Attacks:**
 * Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
-* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), and [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations)) 
+* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations))
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * High Confidence Low Uncertainty adversarial samples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
@@ -75,11 +75,13 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 **Extraction Attacks:**
 * Functionally Equivalent Extraction ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
 * Copycat CNN ([Correia-Silva et al., 2018](https://arxiv.org/abs/1806.05476))
+* KnockoffNets ([Orekondy et al., 2018](https://arxiv.org/abs/1812.02766))
 
 **Poisoning Attacks:**
 * Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
+* Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 
-**Defences:**
+**Defences - Preprocessor:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
@@ -89,14 +91,20 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * JPEG compression ([Dziugaite et al., 2016](https://arxiv.org/abs/1608.00853))
 * Label smoothing ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * Virtual adversarial training ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
-* Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 
-**Extraction Defences:**
+**Defences - Postprocessor:**
 * Reverse Sigmoid ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
 * Random Noise ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * Class Labels ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * High Confidence ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
 * Rounding ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+
+**Defences - Trainer:**
+* Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
+* Adversarial training Madry PGD ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
+
+**Defences - Transformer:**
+* Defensive Distillation ([Papernot et al., 2015](https://arxiv.org/abs/1511.04508))
 
 **Robustness Metrics, Certifications and Verifications**:
 * Clique Method Robustness Verification ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))

@@ -39,7 +39,7 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 
 **逃避攻击：**
 * Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
-* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), and [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations)) 
+* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations)) 
 * HopSkipJump攻击 ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * 高可信度低不确定性对抗性例子 ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * 预计梯度下降 ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
@@ -62,11 +62,13 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 **提取攻击:**
 * 功能等效提取 ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
 * Copycat CNN ([Correia-Silva et al., 2018](https://arxiv.org/abs/1806.05476))
+* KnockoffNets ([Orekondy et al., 2018](https://arxiv.org/abs/1812.02766))
 
 **中毒攻击**
 * 对SVM的中毒攻击 ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
+* Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 
-**防御：**
+**防御 - 预处理器：**
 * 温度计编码 ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * 总方差最小化 ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
@@ -76,14 +78,20 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * JPEG压缩 ([Dziugaite et al., 2016](https://arxiv.org/abs/1608.00853))
 * 标签平滑 ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * 虚拟对抗训练 ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
-* 对抗训练 ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 
-**提取防御:**
+**防御 - 后处理器:**
 * 反向乙状结肠 ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
 * 随机噪声 ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * 类标签 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * 高信心 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
 * 四舍五入 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+
+**防御 - 培训师:**
+* 对抗训练 ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
+* 对抗训练 Madry PGD ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
+
+**防御 - 变压器:**
+* 防御蒸馏 ([Papernot et al., 2015](https://arxiv.org/abs/1511.04508))
 
 **稳健性指标，认证和验证：**
 * Clique方法稳健性验证 ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
