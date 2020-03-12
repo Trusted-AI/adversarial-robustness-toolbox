@@ -12,6 +12,7 @@ Math Operations
 Label Operations
 ----------------
 .. autofunction:: to_categorical
+.. autofunction:: check_and_transform_label_format
 .. autofunction:: random_targets
 .. autofunction:: least_likely_class
 .. autofunction:: second_most_likely_class
@@ -27,9 +28,6 @@ Dataset Operations
 .. autofunction:: make_directory
 .. autofunction:: clip_and_round
 .. autofunction:: preprocess
-
-Excpetions
-----------
-.. autoclass:: ClassifierError
-
-
+.. autofunction:: segment_by_class
+.. autofunction:: performance_diff
+.. autofunction:: is_probability

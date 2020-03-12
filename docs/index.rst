@@ -134,11 +134,13 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
    modules/defences/trainer
    modules/defences/transformer
    modules/detection
+   modules/exceptions
    modules/poison_detection
    modules/metrics
    modules/utils
-   modules/utils_test
    modules/wrappers
+   modules/tests
+   modules/tests/utils
 
 
 Indices and tables
