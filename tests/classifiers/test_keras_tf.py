@@ -119,7 +119,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         logger.info("Accuracy: %.2f%%", (acc2 * 100))
 
         self.assertEqual(acc, 0.32)
-        self.assertAlmostEqual(acc2, 0.70, delta=0.05)
+        self.assertAlmostEqual(acc2, 0.70, delta=0.15)
 
     def test_fit_image_generator(self):
         master_seed(seed=1234)
