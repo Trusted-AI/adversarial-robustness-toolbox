@@ -117,7 +117,7 @@ def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_c
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     gen = generator_fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
-    data_gen = KerasDataGenerator(generator=gen, size=x_train_mnist.shape[0], batch_size=default_batch_size)
+    data_gen = KerasDataGenerator(iterator=gen, size=x_train_mnist.shape[0], batch_size=default_batch_size)
 
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
@@ -140,8 +140,8 @@ def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_i
     keras_gen = ImageDataGenerator(width_shift_range=0.075, height_shift_range=0.075, rotation_range=12,
                                    shear_range=0.075, zoom_range=0.05, fill_mode='constant', cval=0)
     keras_gen.fit(x_train_mnist)
-    data_gen = KerasDataGenerator(generator=keras_gen.flow(x_train_mnist, y_train_mnist,
-                                                           batch_size=default_batch_size),
+    data_gen = KerasDataGenerator(iterator=keras_gen.flow(x_train_mnist, y_train_mnist,
+                                                          batch_size=default_batch_size),
                                   size=x_train_mnist.shape[0], batch_size=default_batch_size)
     classifier.fit_generator(generator=data_gen, nb_epochs=5)
     accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]

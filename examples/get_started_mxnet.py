@@ -35,7 +35,7 @@ with model.name_scope():
     model.initialize()
 
 loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss()
-trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.01})
+trainer = mxnet.gluon.Trainer(model.collect_params(), "adam", {"learning_rate": 0.01})
 
 # Step 3: Create the ART classifier
 
@@ -48,7 +48,7 @@ classifier = MXClassifier(
     optimizer=trainer,
     ctx=None,
     channel_index=1,
-    defences=None,
+    preprocessing_defences=None,
     preprocessing=(0, 1),
 )
 

@@ -226,15 +226,18 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
         :type kwargs: `dict`
         :return: `None`
         """
-        from art.data_generators import TFDataGenerator
+        from art.data_generators import TensorFlowDataGenerator
 
         # Train directly in TensorFlow
-        if isinstance(generator, TFDataGenerator) and not (
-            hasattr(self, "label_smooth") or hasattr(self, "feature_squeeze")
-        ):
+        if isinstance(generator, TensorFlowDataGenerator) and \
+                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
+                self.preprocessing == (0, 1):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):
                     i_batch, o_batch = generator.get_batch()
+
+                    if self._reduce_labels:
+                        o_batch = np.argmax(o_batch, axis=1)
 
                     # Create feed_dict
                     feed_dict = {self._input_ph: i_batch, self._labels_ph: o_batch}
@@ -242,6 +245,7 @@ class TensorFlowClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classif
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
+        else:
             super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, **kwargs):
@@ -816,7 +820,21 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
                TensorFlow and providing it takes no effect.
         :type kwargs: `dict`
         """
-        raise NotImplementedError
+        import tensorflow as tf
+        from art.data_generators import TensorFlowV2DataGenerator
+
+        # Train directly in TensorFlow
+        if isinstance(generator, TensorFlowV2DataGenerator) and \
+                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
+                self.preprocessing == (0, 1):
+            for _ in range(nb_epochs):
+                for i_batch, o_batch in generator.iterator:
+                    if self._reduce_labels:
+                        o_batch = tf.math.argmax(o_batch, axis=1)
+                    self._train_step(i_batch, o_batch)
+        else:
+            # Fit a generic data generator through the API
+            super().fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """
