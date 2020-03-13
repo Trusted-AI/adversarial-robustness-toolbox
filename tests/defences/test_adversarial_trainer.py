@@ -26,6 +26,7 @@ from art.attacks import FastGradientMethod, DeepFool
 from art.data_generators import DataGenerator
 from art.defences import AdversarialTrainer
 from art.utils import load_mnist
+
 from tests.utils import master_seed, get_image_classifier_tf
 
 logger = logging.getLogger(__name__)
@@ -147,12 +148,12 @@ class TestAdversarialTrainer(unittest.TestCase):
         :return: None
         """
         (x_train, y_train), (_, _) = self.mnist
-        params = {'nb_epochs': 2, 'batch_size': BATCH_SIZE}
+        params = {"nb_epochs": 2, "batch_size": BATCH_SIZE}
 
         adv = FastGradientMethod(self.classifier, targeted=True)
         adv_trainer = AdversarialTrainer(self.classifier, attacks=adv)
         self.assertRaises(NotImplementedError, adv_trainer.fit, x_train, y_train, **params)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

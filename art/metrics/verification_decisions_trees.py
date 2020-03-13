@@ -56,7 +56,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         :param x: Feature data of shape (nb_samples, nb_features).
         :type x: `np.ndarray`
         :param y: Labels, one-vs-rest encoding of shape (nb_samples, nb_classes).
-        :type : `np.ndarray`
+        :type y: `np.ndarray`
         :param eps_init: Attack budget for the first search step.
         :type eps_init: `double`
         :param norm: The norm to apply epsilon.

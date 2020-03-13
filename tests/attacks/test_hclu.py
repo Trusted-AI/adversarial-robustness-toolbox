@@ -48,7 +48,7 @@ class TestHCLU(TestBase):
         gpkern = GPy.kern.RBF(np.shape(self.x_train)[1])
         m = GPy.models.GPClassification(self.x_train, self.y_train.reshape(-1, 1), kernel=gpkern)
         m.inference_method = GPy.inference.latent_function_inference.laplace.Laplace()
-        m.optimize(messages=True, optimizer='lbfgs')
+        m.optimize(messages=True, optimizer="lbfgs")
         # get ART classifier + clean accuracy
         m_art = GPyGaussianProcessClassifier(m)
         clean_acc = np.mean(np.argmin(m_art.predict(self.x_test), axis=1) == self.y_test)
@@ -75,5 +75,5 @@ class TestHCLU(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

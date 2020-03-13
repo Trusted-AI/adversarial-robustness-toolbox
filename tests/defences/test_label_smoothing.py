@@ -36,7 +36,7 @@ class TestLabelSmoothing(unittest.TestCase):
     def test_default(self):
         m, n = 1000, 20
         y = np.zeros((m, n))
-        y[(range(m), np.random.choice(range(n), m))] = 1.
+        y[(range(m), np.random.choice(range(n), m))] = 1.0
 
         ls = LabelSmoothing()
         _, y_smooth = ls(None, y)
@@ -46,7 +46,7 @@ class TestLabelSmoothing(unittest.TestCase):
     def test_customizing(self):
         m, n = 1000, 20
         y = np.zeros((m, n))
-        y[(range(m), np.random.choice(range(n), m))] = 1.
+        y[(range(m), np.random.choice(range(n), m))] = 1.0
 
         ls = LabelSmoothing(max_value=1.0 / n)
         _, y_smooth = ls(None, y)
@@ -55,5 +55,5 @@ class TestLabelSmoothing(unittest.TestCase):
         self.assertTrue(np.isclose(y_smooth, np.ones((m, n)) / n).all())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -37,7 +37,8 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
 
     | Paper link: https://arxiv.org/abs/1708.06733
     """
-    attack_params = PoisoningAttackBlackBox.attack_params + ['perturbation']
+
+    attack_params = PoisoningAttackBlackBox.attack_params + ["perturbation"]
 
     def __init__(self, perturbation, **kwargs):
         """
@@ -66,7 +67,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         """
 
         if y is None:
-            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
         else:
             y_attack = np.copy(y)
 

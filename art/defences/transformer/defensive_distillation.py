@@ -26,7 +26,7 @@ import logging
 
 import numpy as np
 
-from art.defences.transform.transformer import Transformer
+from art.defences.transformer.transformer import Transformer
 from art.utils import is_probability
 
 logger = logging.getLogger(__name__)
@@ -69,8 +69,8 @@ class DefensiveDistillation(Transformer):
         :param x: Dataset for training the transformed classifier.
         :type x: `np.ndarray`
         :param transformed_classifier: A classifier to be transformed for increased robustness. Note that, the
-        objective loss function used for fitting inside the input transformed_classifier must support soft labels,
-        i.e. probability labels.
+            objective loss function used for fitting inside the input transformed_classifier must support soft labels,
+            i.e. probability labels.
         :type transformed_classifier: :class:`.Classifier`
         :return: The transformed classifier.
         :rtype: :class:`.Classifier`

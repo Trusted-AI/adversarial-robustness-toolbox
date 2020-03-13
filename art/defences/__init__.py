@@ -22,5 +22,5 @@ from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 from art.defences.trainer.adversarial_trainer_madry_pgd import AdversarialTrainerMadryPGD
 from art.defences.trainer.trainer import Trainer
 
-from art.defences.transform.defensive_distillation import DefensiveDistillation
-from art.defences.transform.transformer import Transformer
+from art.defences.transformer.defensive_distillation import DefensiveDistillation
+from art.defences.transformer.transformer import Transformer

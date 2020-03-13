@@ -31,9 +31,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
-from art.classifiers import TensorFlowClassifier
-from art.classifiers import KerasClassifier
-from art.classifiers import PyTorchClassifier
+from art.classifiers import TensorFlowClassifier, KerasClassifier, PyTorchClassifier
 
 from tests.utils import TestBase, master_seed
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
@@ -55,7 +53,7 @@ class TestCopycatCNN(TestBase):
         master_seed(seed=1234)
         super().setUpClass()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2.')
+    @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
     def test_tensorflow_classifier(self):
         """
         First test with the TensorFlowClassifier.
@@ -85,13 +83,25 @@ class TestCopycatCNN(TestBase):
         sess.run(tf.global_variables_initializer())
 
         # Create the classifier
-        thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
-                                           train=train, loss=loss, learning=None, sess=sess)
+        thieved_tfc = TensorFlowClassifier(
+            clip_values=(0, 1),
+            input_ph=input_ph,
+            output=logits,
+            labels_ph=output_ph,
+            train=train,
+            loss=loss,
+            learning=None,
+            sess=sess,
+        )
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size_query=self.batch_size,
-                                 batch_size_fit=self.batch_size,
-                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        copycat_cnn = CopycatCNN(
+            classifier=victim_tfc,
+            batch_size_query=self.batch_size,
+            batch_size_fit=self.batch_size,
+            nb_epochs=NB_EPOCHS,
+            nb_stolen=NB_STOLEN,
+        )
         thieved_tfc = copycat_cnn.extract(x=self.x_train_mnist, thieved_classifier=thieved_tfc)
 
         victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_mnist[:100]), axis=1)
@@ -115,19 +125,24 @@ class TestCopycatCNN(TestBase):
 
         # Create simple CNN
         model = Sequential()
-        model.add(Conv2D(1, kernel_size=(7, 7), activation='relu', input_shape=(28, 28, 1)))
+        model.add(Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))
         model.add(MaxPooling2D(pool_size=(4, 4)))
         model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
+        model.add(Dense(10, activation="softmax"))
         loss = keras.losses.categorical_crossentropy
-        model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
+        model.compile(loss=loss, optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
 
         # Get classifier
         thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size_fit=self.batch_size,
-                                 batch_size_query=self.batch_size, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        copycat_cnn = CopycatCNN(
+            classifier=victim_krc,
+            batch_size_fit=self.batch_size,
+            batch_size_query=self.batch_size,
+            nb_epochs=NB_EPOCHS,
+            nb_stolen=NB_STOLEN,
+        )
         thieved_krc = copycat_cnn.extract(x=self.x_train_mnist, thieved_classifier=thieved_krc)
 
         victim_preds = np.argmax(victim_krc.predict(x=self.x_train_mnist[:100]), axis=1)
@@ -187,12 +202,18 @@ class TestCopycatCNN(TestBase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        thieved_ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
-                                        nb_classes=10, clip_values=(0, 1))
+        thieved_ptc = PyTorchClassifier(
+            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+        )
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size_fit=self.batch_size,
-                                 batch_size_query=self.batch_size, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        copycat_cnn = CopycatCNN(
+            classifier=victim_ptc,
+            batch_size_fit=self.batch_size,
+            batch_size_query=self.batch_size,
+            nb_epochs=NB_EPOCHS,
+            nb_stolen=NB_STOLEN,
+        )
 
         thieved_ptc = copycat_cnn.extract(x=x_train, thieved_classifier=thieved_ptc)
         victim_preds = np.argmax(victim_ptc.predict(x=x_train[:100]), axis=1)
@@ -204,12 +225,11 @@ class TestCopycatCNN(TestBase):
 
 
 class TestCopycatCNNVectors(TestBase):
-
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2.')
+    @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
     def test_tensorflow_iris(self):
         """
         First test for TensorFlow.
@@ -236,12 +256,26 @@ class TestCopycatCNNVectors(TestBase):
         sess.run(tf.global_variables_initializer())
 
         # Train the classifier
-        thieved_tfc = TensorFlowClassifier(clip_values=(0, 1), input_ph=input_ph, output=logits, labels_ph=output_ph,
-                                           train=train, loss=loss, learning=None, sess=sess, channel_index=1)
+        thieved_tfc = TensorFlowClassifier(
+            clip_values=(0, 1),
+            input_ph=input_ph,
+            output=logits,
+            labels_ph=output_ph,
+            train=train,
+            loss=loss,
+            learning=None,
+            sess=sess,
+            channel_index=1,
+        )
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_tfc, batch_size_fit=self.batch_size,
-                                 batch_size_query=self.batch_size, nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        copycat_cnn = CopycatCNN(
+            classifier=victim_tfc,
+            batch_size_fit=self.batch_size,
+            batch_size_query=self.batch_size,
+            nb_epochs=NB_EPOCHS,
+            nb_stolen=NB_STOLEN,
+        )
         thieved_tfc = copycat_cnn.extract(x=self.x_train_iris, thieved_classifier=thieved_tfc)
 
         victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_iris[:100]), axis=1)
@@ -265,18 +299,22 @@ class TestCopycatCNNVectors(TestBase):
 
         # Create simple CNN
         model = Sequential()
-        model.add(Dense(10, input_shape=(4,), activation='relu'))
-        model.add(Dense(10, activation='relu'))
-        model.add(Dense(3, activation='softmax'))
-        model.compile(loss='categorical_crossentropy', optimizer=keras.optimizers.Adam(lr=0.001), metrics=['accuracy'])
+        model.add(Dense(10, input_shape=(4,), activation="relu"))
+        model.add(Dense(10, activation="relu"))
+        model.add(Dense(3, activation="softmax"))
+        model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
 
         # Get classifier
         thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_krc, batch_size_fit=self.batch_size,
-                                 batch_size_query=self.batch_size,
-                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        copycat_cnn = CopycatCNN(
+            classifier=victim_krc,
+            batch_size_fit=self.batch_size,
+            batch_size_query=self.batch_size,
+            nb_epochs=NB_EPOCHS,
+            nb_stolen=NB_STOLEN,
+        )
         thieved_krc = copycat_cnn.extract(x=self.x_train_iris, thieved_classifier=thieved_krc)
 
         victim_preds = np.argmax(victim_krc.predict(x=self.x_train_iris[:100]), axis=1)
@@ -325,13 +363,24 @@ class TestCopycatCNNVectors(TestBase):
         optimizer = optim.Adam(model.parameters(), lr=0.001)
 
         # Get classifier
-        thieved_ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,),
-                                        nb_classes=3, clip_values=(0, 1), channel_index=1)
+        thieved_ptc = PyTorchClassifier(
+            model=model,
+            loss=loss_fn,
+            optimizer=optimizer,
+            input_shape=(4,),
+            nb_classes=3,
+            clip_values=(0, 1),
+            channel_index=1,
+        )
 
         # Create attack
-        copycat_cnn = CopycatCNN(classifier=victim_ptc, batch_size_fit=self.batch_size,
-                                 batch_size_query=self.batch_size,
-                                 nb_epochs=NB_EPOCHS, nb_stolen=NB_STOLEN)
+        copycat_cnn = CopycatCNN(
+            classifier=victim_ptc,
+            batch_size_fit=self.batch_size,
+            batch_size_query=self.batch_size,
+            nb_epochs=NB_EPOCHS,
+            nb_stolen=NB_STOLEN,
+        )
         thieved_ptc = copycat_cnn.extract(x=self.x_train_iris, thieved_classifier=thieved_ptc)
 
         victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_iris[:100]), axis=1)
@@ -341,5 +390,5 @@ class TestCopycatCNNVectors(TestBase):
         self.assertGreater(acc, 0.3)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -31,7 +31,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
-from art.utils import WrongClassifier
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -56,15 +56,15 @@ class FastGradientMethod(EvasionAttack):
     ]
 
     def __init__(
-            self,
-            classifier,
-            norm=np.inf,
-            eps=0.3,
-            eps_step=0.1,
-            targeted=False,
-            num_random_init=0,
-            batch_size=1,
-            minimal=False,
+        self,
+        classifier,
+        norm=np.inf,
+        eps=0.3,
+        eps_step=0.1,
+        targeted=False,
+        num_random_init=0,
+        batch_size=1,
+        minimal=False,
     ):
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -91,10 +91,17 @@ class FastGradientMethod(EvasionAttack):
         super(FastGradientMethod, self).__init__(classifier)
 
         if not isinstance(classifier, ClassifierGradients):
-            raise WrongClassifier(self.__class__, [ClassifierGradients], classifier)
+            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
-        kwargs = {'norm': norm, 'eps': eps, 'eps_step': eps_step, 'targeted': targeted,
-                  'num_random_init': num_random_init, 'batch_size': batch_size, 'minimal': minimal}
+        kwargs = {
+            "norm": norm,
+            "eps": eps,
+            "eps_step": eps_step,
+            "targeted": targeted,
+            "num_random_init": num_random_init,
+            "batch_size": batch_size,
+            "minimal": minimal,
+        }
 
         FastGradientMethod.set_params(self, **kwargs)
 

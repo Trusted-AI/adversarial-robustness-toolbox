@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
+
 import keras.backend as k
 import numpy as np
 
@@ -43,10 +44,10 @@ class TestSpatialTransformation(TestBase):
 
         cls.n_train = 100
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def test_tensorflow_classifier(self):
         """
@@ -59,8 +60,9 @@ class TestSpatialTransformation(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         # Attack
-        attack_st = SpatialTransformation(tfc, max_translation=10.0, num_translations=3, max_rotation=30.0,
-                                          num_rotations=3)
+        attack_st = SpatialTransformation(
+            tfc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+        )
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(x_train_adv[0, 8, 13, 0], 0.49004024, delta=0.01)
@@ -91,8 +93,9 @@ class TestSpatialTransformation(TestBase):
         krc = get_image_classifier_kr()
 
         # Attack
-        attack_st = SpatialTransformation(krc, max_translation=10.0, num_translations=3, max_rotation=30.0,
-                                          num_rotations=3)
+        attack_st = SpatialTransformation(
+            krc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+        )
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(x_train_adv[0, 8, 13, 0], 0.49004024, delta=0.01)
@@ -124,8 +127,9 @@ class TestSpatialTransformation(TestBase):
         ptc = get_image_classifier_pt(from_logits=True)
 
         # Attack
-        attack_st = SpatialTransformation(ptc, max_translation=10.0, num_translations=3, max_rotation=30.0,
-                                          num_rotations=3)
+        attack_st = SpatialTransformation(
+            ptc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+        )
         x_train__mnistadv = attack_st.generate(x_train_mnist)
 
         self.assertAlmostEqual(x_train__mnistadv[0, 0, 13, 18], 0.627451, delta=0.01)
@@ -153,11 +157,11 @@ class TestSpatialTransformation(TestBase):
         with self.assertRaises(ValueError) as context:
             attack.generate(data)
 
-        self.assertIn('Feature vectors detected.', str(context.exception))
+        self.assertIn("Feature vectors detected.", str(context.exception))
 
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(SpatialTransformation)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

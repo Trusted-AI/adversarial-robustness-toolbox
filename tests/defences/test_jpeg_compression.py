@@ -94,7 +94,7 @@ class TestJpegCompression(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             preprocess(x)
 
-        self.assertTrue('Feature vectors detected.' in str(context.exception))
+        self.assertTrue("Feature vectors detected." in str(context.exception))
 
     def test_failure_clip_values_negative(self):
         clip_values = (-1, 1)
@@ -103,7 +103,7 @@ class TestJpegCompression(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _ = JpegCompression(clip_values=clip_values, channel_index=1, quality=80)
 
-        self.assertTrue('min value must be 0.' in str(context.exception))
+        self.assertTrue("min value must be 0." in str(context.exception))
 
     def test_failure_clip_values_unexpected_maximum(self):
         clip_values = (0, 2)
@@ -112,8 +112,8 @@ class TestJpegCompression(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _ = JpegCompression(clip_values=clip_values, channel_index=1, quality=80)
 
-        self.assertIn('max value must be either 1 or 255.', str(context.exception))
+        self.assertIn("max value must be either 1 or 255.", str(context.exception))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

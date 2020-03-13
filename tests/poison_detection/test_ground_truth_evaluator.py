@@ -53,8 +53,9 @@ class TestGroundTruth(unittest.TestCase):
 
     def test_analyze_correct_all_clean(self):
         # perfect detection all data is actually clean:
-        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(self.is_clean_all_clean,
-                                                                               self.is_clean_all_clean)
+        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(
+            self.is_clean_all_clean, self.is_clean_all_clean
+        )
 
         json_object = json.loads(conf_matrix_json)
         self.assertEqual(len(json_object.keys()), self.n_classes)
@@ -62,23 +63,23 @@ class TestGroundTruth(unittest.TestCase):
 
         # print(json_object)
         for i in range(self.n_classes):
-            res_class_i = json_object['class_' + str(i)]
-            self.assertEqual(res_class_i['TruePositive']['rate'], 'N/A')
-            self.assertEqual(res_class_i['TrueNegative']['rate'], 100)
-            self.assertEqual(res_class_i['FalseNegative']['rate'], 'N/A')
-            self.assertEqual(res_class_i['FalsePositive']['rate'], 0)
+            res_class_i = json_object["class_" + str(i)]
+            self.assertEqual(res_class_i["TruePositive"]["rate"], "N/A")
+            self.assertEqual(res_class_i["TrueNegative"]["rate"], 100)
+            self.assertEqual(res_class_i["FalseNegative"]["rate"], "N/A")
+            self.assertEqual(res_class_i["FalsePositive"]["rate"], 0)
 
-            self.assertEqual(res_class_i['TruePositive']['numerator'], 0)
-            self.assertEqual(res_class_i['TruePositive']['denominator'], 0)
+            self.assertEqual(res_class_i["TruePositive"]["numerator"], 0)
+            self.assertEqual(res_class_i["TruePositive"]["denominator"], 0)
 
-            self.assertEqual(res_class_i['TrueNegative']['numerator'], self.n_dp)
-            self.assertEqual(res_class_i['TrueNegative']['denominator'], self.n_dp)
+            self.assertEqual(res_class_i["TrueNegative"]["numerator"], self.n_dp)
+            self.assertEqual(res_class_i["TrueNegative"]["denominator"], self.n_dp)
 
-            self.assertEqual(res_class_i['FalseNegative']['numerator'], 0)
-            self.assertEqual(res_class_i['FalseNegative']['denominator'], 0)
+            self.assertEqual(res_class_i["FalseNegative"]["numerator"], 0)
+            self.assertEqual(res_class_i["FalseNegative"]["denominator"], 0)
 
-            self.assertEqual(res_class_i['FalsePositive']['numerator'], 0)
-            self.assertEqual(res_class_i['FalsePositive']['denominator'], self.n_dp)
+            self.assertEqual(res_class_i["FalsePositive"]["numerator"], 0)
+            self.assertEqual(res_class_i["FalsePositive"]["denominator"], self.n_dp)
 
             # all errors_by_class should be 1 (errors_by_class[i] = 1 if marked clean, is clean)
             for item in errors_by_class[i]:
@@ -86,8 +87,9 @@ class TestGroundTruth(unittest.TestCase):
 
     def test_analyze_correct_all_poison(self):
         # perfect detection all data is actually poison
-        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(self.is_clean_all_poison,
-                                                                               self.is_clean_all_poison)
+        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(
+            self.is_clean_all_poison, self.is_clean_all_poison
+        )
 
         json_object = json.loads(conf_matrix_json)
         self.assertEqual(len(json_object.keys()), self.n_classes)
@@ -95,23 +97,23 @@ class TestGroundTruth(unittest.TestCase):
 
         # print(json_object)
         for i in range(self.n_classes):
-            res_class_i = json_object['class_' + str(i)]
-            self.assertEqual(res_class_i['TruePositive']['rate'], 100)
-            self.assertEqual(res_class_i['TrueNegative']['rate'], 'N/A')
-            self.assertEqual(res_class_i['FalseNegative']['rate'], 0)
-            self.assertEqual(res_class_i['FalsePositive']['rate'], 'N/A')
+            res_class_i = json_object["class_" + str(i)]
+            self.assertEqual(res_class_i["TruePositive"]["rate"], 100)
+            self.assertEqual(res_class_i["TrueNegative"]["rate"], "N/A")
+            self.assertEqual(res_class_i["FalseNegative"]["rate"], 0)
+            self.assertEqual(res_class_i["FalsePositive"]["rate"], "N/A")
 
-            self.assertEqual(res_class_i['TruePositive']['numerator'], self.n_dp)
-            self.assertEqual(res_class_i['TruePositive']['denominator'], self.n_dp)
+            self.assertEqual(res_class_i["TruePositive"]["numerator"], self.n_dp)
+            self.assertEqual(res_class_i["TruePositive"]["denominator"], self.n_dp)
 
-            self.assertEqual(res_class_i['TrueNegative']['numerator'], 0)
-            self.assertEqual(res_class_i['TrueNegative']['denominator'], 0)
+            self.assertEqual(res_class_i["TrueNegative"]["numerator"], 0)
+            self.assertEqual(res_class_i["TrueNegative"]["denominator"], 0)
 
-            self.assertEqual(res_class_i['FalseNegative']['numerator'], 0)
-            self.assertEqual(res_class_i['FalseNegative']['denominator'], self.n_dp)
+            self.assertEqual(res_class_i["FalseNegative"]["numerator"], 0)
+            self.assertEqual(res_class_i["FalseNegative"]["denominator"], self.n_dp)
 
-            self.assertEqual(res_class_i['FalsePositive']['numerator'], 0)
-            self.assertEqual(res_class_i['FalsePositive']['denominator'], 0)
+            self.assertEqual(res_class_i["FalsePositive"]["numerator"], 0)
+            self.assertEqual(res_class_i["FalsePositive"]["denominator"], 0)
 
             # all errors_by_class should be 0 (all_errors_by_class[i] = 0 if marked poison, is poison)
             for item in errors_by_class[i]:
@@ -119,8 +121,7 @@ class TestGroundTruth(unittest.TestCase):
 
     def test_analyze_correct_mixed(self):
         # perfect detection mixed
-        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(self.is_clean_mixed,
-                                                                               self.is_clean_mixed)
+        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(self.is_clean_mixed, self.is_clean_mixed)
 
         json_object = json.loads(conf_matrix_json)
         self.assertEqual(len(json_object.keys()), self.n_classes)
@@ -128,23 +129,23 @@ class TestGroundTruth(unittest.TestCase):
 
         # print(json_object)
         for i in range(self.n_classes):
-            res_class_i = json_object['class_' + str(i)]
-            self.assertEqual(res_class_i['TruePositive']['rate'], 100)
-            self.assertEqual(res_class_i['TrueNegative']['rate'], 100)
-            self.assertEqual(res_class_i['FalseNegative']['rate'], 0)
-            self.assertEqual(res_class_i['FalsePositive']['rate'], 0)
+            res_class_i = json_object["class_" + str(i)]
+            self.assertEqual(res_class_i["TruePositive"]["rate"], 100)
+            self.assertEqual(res_class_i["TrueNegative"]["rate"], 100)
+            self.assertEqual(res_class_i["FalseNegative"]["rate"], 0)
+            self.assertEqual(res_class_i["FalsePositive"]["rate"], 0)
 
-            self.assertEqual(res_class_i['TruePositive']['numerator'], self.n_dp_mix)
-            self.assertEqual(res_class_i['TruePositive']['denominator'], self.n_dp_mix)
+            self.assertEqual(res_class_i["TruePositive"]["numerator"], self.n_dp_mix)
+            self.assertEqual(res_class_i["TruePositive"]["denominator"], self.n_dp_mix)
 
-            self.assertEqual(res_class_i['TrueNegative']['numerator'], self.n_dp_mix)
-            self.assertEqual(res_class_i['TrueNegative']['denominator'], self.n_dp_mix)
+            self.assertEqual(res_class_i["TrueNegative"]["numerator"], self.n_dp_mix)
+            self.assertEqual(res_class_i["TrueNegative"]["denominator"], self.n_dp_mix)
 
-            self.assertEqual(res_class_i['FalseNegative']['numerator'], 0)
-            self.assertEqual(res_class_i['FalseNegative']['denominator'], self.n_dp_mix)
+            self.assertEqual(res_class_i["FalseNegative"]["numerator"], 0)
+            self.assertEqual(res_class_i["FalseNegative"]["denominator"], self.n_dp_mix)
 
-            self.assertEqual(res_class_i['FalsePositive']['numerator'], 0)
-            self.assertEqual(res_class_i['FalsePositive']['denominator'], self.n_dp_mix)
+            self.assertEqual(res_class_i["FalsePositive"]["numerator"], 0)
+            self.assertEqual(res_class_i["FalsePositive"]["denominator"], self.n_dp_mix)
 
             # all errors_by_class should be 1 (errors_by_class[i] = 1 if marked clean, is clean)
             for j, item in enumerate(errors_by_class[i]):
@@ -153,8 +154,9 @@ class TestGroundTruth(unittest.TestCase):
     def test_analyze_fully_misclassified(self):
         # Completely wrong
         # order parameters: analyze_correctness(assigned_clean_by_class, is_clean_by_class)
-        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(self.is_clean_all_clean,
-                                                                               self.is_clean_all_poison)
+        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(
+            self.is_clean_all_clean, self.is_clean_all_poison
+        )
 
         json_object = json.loads(conf_matrix_json)
         self.assertEqual(len(json_object.keys()), self.n_classes)
@@ -162,23 +164,23 @@ class TestGroundTruth(unittest.TestCase):
 
         print(json_object)
         for i in range(self.n_classes):
-            res_class_i = json_object['class_' + str(i)]
-            self.assertEqual(res_class_i['TruePositive']['rate'], 0)
-            self.assertEqual(res_class_i['TrueNegative']['rate'], 'N/A')
-            self.assertEqual(res_class_i['FalseNegative']['rate'], 100)
-            self.assertEqual(res_class_i['FalsePositive']['rate'], 'N/A')
+            res_class_i = json_object["class_" + str(i)]
+            self.assertEqual(res_class_i["TruePositive"]["rate"], 0)
+            self.assertEqual(res_class_i["TrueNegative"]["rate"], "N/A")
+            self.assertEqual(res_class_i["FalseNegative"]["rate"], 100)
+            self.assertEqual(res_class_i["FalsePositive"]["rate"], "N/A")
 
-            self.assertEqual(res_class_i['TruePositive']['numerator'], 0)
-            self.assertEqual(res_class_i['TruePositive']['denominator'], self.n_dp)
+            self.assertEqual(res_class_i["TruePositive"]["numerator"], 0)
+            self.assertEqual(res_class_i["TruePositive"]["denominator"], self.n_dp)
 
-            self.assertEqual(res_class_i['TrueNegative']['numerator'], 0)
-            self.assertEqual(res_class_i['TrueNegative']['denominator'], 0)
+            self.assertEqual(res_class_i["TrueNegative"]["numerator"], 0)
+            self.assertEqual(res_class_i["TrueNegative"]["denominator"], 0)
 
-            self.assertEqual(res_class_i['FalseNegative']['numerator'], self.n_dp)
-            self.assertEqual(res_class_i['FalseNegative']['denominator'], self.n_dp)
+            self.assertEqual(res_class_i["FalseNegative"]["numerator"], self.n_dp)
+            self.assertEqual(res_class_i["FalseNegative"]["denominator"], self.n_dp)
 
-            self.assertEqual(res_class_i['FalsePositive']['numerator'], 0)
-            self.assertEqual(res_class_i['FalsePositive']['denominator'], 0)
+            self.assertEqual(res_class_i["FalsePositive"]["numerator"], 0)
+            self.assertEqual(res_class_i["FalsePositive"]["denominator"], 0)
 
             # all errors_by_class should be 3 (all_errors_by_class[i] = 3 marked clean, is poison)
             for item in errors_by_class[i]:
@@ -187,8 +189,9 @@ class TestGroundTruth(unittest.TestCase):
     def test_analyze_fully_misclassified_rev(self):
         # Completely wrong
         # order parameters: analyze_correctness(assigned_clean_by_class, is_clean_by_class)
-        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(self.is_clean_all_poison,
-                                                                               self.is_clean_all_clean)
+        errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(
+            self.is_clean_all_poison, self.is_clean_all_clean
+        )
 
         json_object = json.loads(conf_matrix_json)
         self.assertEqual(len(json_object.keys()), self.n_classes)
@@ -196,23 +199,23 @@ class TestGroundTruth(unittest.TestCase):
 
         pprint.pprint(json_object)
         for i in range(self.n_classes):
-            res_class_i = json_object['class_' + str(i)]
-            self.assertEqual(res_class_i['TruePositive']['rate'], 'N/A')
-            self.assertEqual(res_class_i['TrueNegative']['rate'], 0)
-            self.assertEqual(res_class_i['FalseNegative']['rate'], 'N/A')
-            self.assertEqual(res_class_i['FalsePositive']['rate'], 100)
+            res_class_i = json_object["class_" + str(i)]
+            self.assertEqual(res_class_i["TruePositive"]["rate"], "N/A")
+            self.assertEqual(res_class_i["TrueNegative"]["rate"], 0)
+            self.assertEqual(res_class_i["FalseNegative"]["rate"], "N/A")
+            self.assertEqual(res_class_i["FalsePositive"]["rate"], 100)
 
-            self.assertEqual(res_class_i['TruePositive']['numerator'], 0)
-            self.assertEqual(res_class_i['TruePositive']['denominator'], 0)
+            self.assertEqual(res_class_i["TruePositive"]["numerator"], 0)
+            self.assertEqual(res_class_i["TruePositive"]["denominator"], 0)
 
-            self.assertEqual(res_class_i['TrueNegative']['numerator'], 0)
-            self.assertEqual(res_class_i['TrueNegative']['denominator'], self.n_dp)
+            self.assertEqual(res_class_i["TrueNegative"]["numerator"], 0)
+            self.assertEqual(res_class_i["TrueNegative"]["denominator"], self.n_dp)
 
-            self.assertEqual(res_class_i['FalseNegative']['numerator'], 0)
-            self.assertEqual(res_class_i['FalseNegative']['denominator'], 0)
+            self.assertEqual(res_class_i["FalseNegative"]["numerator"], 0)
+            self.assertEqual(res_class_i["FalseNegative"]["denominator"], 0)
 
-            self.assertEqual(res_class_i['FalsePositive']['numerator'], self.n_dp)
-            self.assertEqual(res_class_i['FalsePositive']['denominator'], self.n_dp)
+            self.assertEqual(res_class_i["FalsePositive"]["numerator"], self.n_dp)
+            self.assertEqual(res_class_i["FalsePositive"]["denominator"], self.n_dp)
 
             # all errors_by_class should be 3 (all_errors_by_class[i] = 2 if marked poison, is clean)
             for item in errors_by_class[i]:

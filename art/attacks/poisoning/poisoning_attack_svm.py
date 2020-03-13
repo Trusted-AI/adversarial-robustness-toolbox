@@ -37,8 +37,16 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
     | Paper link: https://arxiv.org/pdf/1206.6389.pdf
     """
-    attack_params = PoisoningAttackWhiteBox.attack_params + ['classifier', 'step', 'eps', 'x_train', 'y_train', 'x_val',
-                                                             'y_val']
+
+    attack_params = PoisoningAttackWhiteBox.attack_params + [
+        "classifier",
+        "step",
+        "eps",
+        "x_train",
+        "y_train",
+        "x_val",
+        "y_val",
+    ]
 
     def __init__(self, classifier, step, eps, x_train, y_train, x_val, y_val, max_iter=100, **kwargs):
         """
@@ -68,10 +76,11 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         super(PoisoningAttackSVM, self).__init__(classifier)
 
         if not isinstance(classifier, ScikitlearnSVC):
-            raise TypeError('Classifier must be a SVC')
+            raise TypeError("Classifier must be a SVC")
         if isinstance(self.classifier._model, LinearSVC):
-            self.classifier = ScikitlearnSVC(model=SVC(C=self.classifier._model.C, kernel='linear'),
-                                             clip_values=self.classifier.clip_values)
+            self.classifier = ScikitlearnSVC(
+                model=SVC(C=self.classifier._model.C, kernel="linear"), clip_values=self.classifier.clip_values
+            )
             self.classifier.fit(x_train, y_train)
         elif not isinstance(self.classifier._model, SVC):
             raise NotImplementedError("Model type '{}' not yet supported".format(type(self.classifier._model)))
@@ -97,7 +106,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         """
 
         if y is None:
-            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
         else:
             y_attack = np.copy(y)
 
@@ -120,8 +129,10 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         x_adv = np.array(all_poison).reshape((num_poison, num_features))
         targeted = y is not None
 
-        logger.info('Success rate of poisoning attack SVM attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, targeted=targeted))
+        logger.info(
+            "Success rate of poisoning attack SVM attack: %.2f%%",
+            100 * compute_success(self.classifier, x, y, x_adv, targeted=targeted),
+        )
 
         return x_adv, y_attack
 
@@ -239,8 +250,9 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
             q_ks = art_model.q_submatrix(np.array([x_k]), support_vectors)
             m_k = (1.0 / zeta) * np.matmul(q_ks, zeta * qss_inv - np.matmul(nu_k, nu_k.T)) + np.matmul(y_k, nu_k.T)
-            d_q_sc = np.fromfunction(lambda i: art_model._get_kernel_gradient_sv(i, attack_point),
-                                     (len(support_vectors),), dtype=int)
+            d_q_sc = np.fromfunction(
+                lambda i: art_model._get_kernel_gradient_sv(i, attack_point), (len(support_vectors),), dtype=int
+            )
             d_q_kc = art_model._kernel_grad(x_k, attack_point)
             grad += (np.matmul(m_k, d_q_sc) + d_q_kc) * alpha_c
 

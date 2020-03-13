@@ -22,6 +22,7 @@ import unittest
 import keras
 import keras.backend as k
 import numpy as np
+
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
 from art.attacks import CarliniL2Method, CarliniLInfMethod
 from art.classifiers import KerasClassifier
@@ -46,10 +47,10 @@ class TestCarlini(TestBase):
 
         cls.n_train = 10
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def setUp(self):
         master_seed(seed=1234)
@@ -66,9 +67,10 @@ class TestCarlini(TestBase):
         tfc, sess = get_image_classifier_tf(from_logits=True)
 
         # Failure attack
-        cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
-                               initial_const=1)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes())}
+        cl2m = CarliniL2Method(
+            classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0, initial_const=1
+        )
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
         x_test_adv = cl2m.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -93,16 +95,16 @@ class TestCarlini(TestBase):
 
         # First attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
         x_test_adv = cl2m.generate(self.x_test_mnist, **params)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('CW2 Target: %s', target)
-        logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
+        logger.debug("CW2 Target: %s", target)
+        logger.debug("CW2 Actual: %s", y_pred_adv)
+        logger.info("CW2 Success Rate: %.2f", (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack, no batching
@@ -110,11 +112,11 @@ class TestCarlini(TestBase):
         x_test_adv = cl2m.generate(self.x_test_mnist)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('CW2 Target: %s', target)
-        logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
+        logger.debug("CW2 Target: %s", target)
+        logger.debug("CW2 Actual: %s", y_pred_adv)
+        logger.info("CW2 Success Rate: %.2f", (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Check that x_test has not been modified by attack and classifier
@@ -124,8 +126,10 @@ class TestCarlini(TestBase):
         if sess is not None:
             sess.close()
 
-    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
-                     reason='Minimal version of Keras or TensorFlow required.')
+    @unittest.skipIf(
+        not (int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3),
+        reason="Minimal version of Keras or TensorFlow required.",
+    )
     def test_keras_mnist_L2(self):
         """
         Second test with the KerasClassifier.
@@ -144,9 +148,9 @@ class TestCarlini(TestBase):
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        logger.debug('CW2 Target: %s', y_target)
-        logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f', (np.sum(y_target == y_pred_adv) / float(len(y_target))))
+        logger.debug("CW2 Target: %s", y_target)
+        logger.debug("CW2 Actual: %s", y_pred_adv)
+        logger.info("CW2 Success Rate: %.2f", (np.sum(y_target == y_pred_adv) / float(len(y_target))))
         self.assertTrue((y_target == y_pred_adv).any())
 
         # Second attack
@@ -155,9 +159,9 @@ class TestCarlini(TestBase):
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        logger.debug('CW2 Target: %s', y_target)
-        logger.debug('CW2 Actual: %s', y_pred_adv)
-        logger.info('CW2 Success Rate: %.2f', (np.sum(y_target != y_pred_adv) / float(len(y_target))))
+        logger.debug("CW2 Target: %s", y_target)
+        logger.debug("CW2 Actual: %s", y_pred_adv)
+        logger.info("CW2 Success Rate: %.2f", (np.sum(y_target != y_pred_adv) / float(len(y_target))))
         self.assertTrue((y_target != y_pred_adv).any())
 
         # Check that x_test has not been modified by attack and classifier
@@ -179,25 +183,25 @@ class TestCarlini(TestBase):
 
         # First attack
         cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
-        params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes())}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
-        logger.info('CW2 Success Rate: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.info("CW2 Success Rate: %.2f", (sum(target == y_pred_adv) / float(len(target))))
 
         # Second attack
         cl2m = CarliniL2Method(classifier=ptc, targeted=False, max_iter=10)
         x_test_adv = cl2m.generate(x_test)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
-        logger.info('CW2 Success Rate: %.2f', (sum(target != y_pred_adv) / float(len(target))))
+        logger.info("CW2 Success Rate: %.2f", (sum(target != y_pred_adv) / float(len(target))))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
@@ -216,7 +220,7 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
         accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with C&W adversarial examples: %.2f%%", (accuracy * 100))
 
     def test_keras_iris_unbounded_L2(self):
         classifier = get_tabular_classifier_kr()
@@ -230,7 +234,7 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
         accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with C&W adversarial examples: %.2f%%", (accuracy * 100))
 
     def test_tensorflow_iris_L2(self):
         classifier, _ = get_tabular_classifier_tf()
@@ -245,12 +249,12 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
         accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with C&W adversarial examples: %.2f%%", (accuracy * 100))
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = CarliniL2Method(classifier, targeted=True, max_iter=10)
-        x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
+        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -258,7 +262,7 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
         accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Success rate of targeted C&W on Iris: %.2f%%', (accuracy * 100))
+        logger.info("Success rate of targeted C&W on Iris: %.2f%%", (accuracy * 100))
 
     def test_pytorch_iris_L2(self):
         classifier = get_tabular_classifier_pt()
@@ -271,7 +275,7 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
         accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with C&W adversarial examples: %.2f%%", (accuracy * 100))
 
     def test_scikitlearn_L2(self):
         from sklearn.linear_model import LogisticRegression
@@ -279,9 +283,11 @@ class TestCarlini(TestBase):
 
         from art.classifiers.scikitlearn import SklearnClassifier
 
-        scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
-                                  SVC(gamma='auto'),
-                                  LinearSVC()]
+        scikitlearn_test_cases = [
+            LogisticRegression(solver="lbfgs", multi_class="auto"),
+            SVC(gamma="auto"),
+            LinearSVC(),
+        ]
 
         x_test_original = self.x_test_iris.copy()
 
@@ -299,13 +305,15 @@ class TestCarlini(TestBase):
             predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
             accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with C&W adversarial examples: '
-                                                                         '%.2f%%', (accuracy * 100))
+            logger.info(
+                "Accuracy of " + classifier.__class__.__name__ + " on Iris with C&W adversarial examples: " "%.2f%%",
+                (accuracy * 100),
+            )
 
             # Test targeted attack
             targets = random_targets(self.y_test_iris, nb_classes=3)
             attack = CarliniL2Method(classifier, targeted=True, max_iter=2)
-            x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
+            x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertLessEqual(np.amax(x_test_adv), 1.0)
             self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -313,8 +321,10 @@ class TestCarlini(TestBase):
             predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
             accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-            logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted C&W on Iris: %.2f%%',
-                        (accuracy * 100))
+            logger.info(
+                "Success rate of " + classifier.__class__.__name__ + " on targeted C&W on Iris: %.2f%%",
+                (accuracy * 100),
+            )
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
@@ -333,7 +343,7 @@ class TestCarlini(TestBase):
 
         # Failure attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
         x_test_adv = clinfm.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -353,16 +363,16 @@ class TestCarlini(TestBase):
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
         x_test_adv = clinfm.generate(self.x_test_mnist, **params)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('CW0 Target: %s', target)
-        logger.debug('CW0 Actual: %s', y_pred_adv)
-        logger.info('CW0 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
+        logger.debug("CW0 Target: %s", target)
+        logger.debug("CW0 Actual: %s", y_pred_adv)
+        logger.info("CW0 Success Rate: %.2f", (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack, no batching
@@ -370,20 +380,22 @@ class TestCarlini(TestBase):
         x_test_adv = clinfm.generate(self.x_test_mnist)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
-        logger.debug('CW0 Target: %s', target)
-        logger.debug('CW0 Actual: %s', y_pred_adv)
-        logger.info('CW0 Success Rate: %.2f', (np.sum(target != y_pred_adv) / float(len(target))))
+        logger.debug("CW0 Target: %s", target)
+        logger.debug("CW0 Actual: %s", y_pred_adv)
+        logger.info("CW0 Success Rate: %.2f", (np.sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Clean-up session
         if sess is not None:
             sess.close()
 
-    @unittest.skipIf(not (int(keras.__version__.split('.')[0]) == 2 and int(keras.__version__.split('.')[1]) >= 3),
-                     reason='Keras 2.3 or later or TensorFlow-Keras required to support selected combination of loss '
-                            'function and logits.')
+    @unittest.skipIf(
+        not (int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3),
+        reason="Keras 2.3 or later or TensorFlow-Keras required to support selected combination of loss "
+        "function and logits.",
+    )
     def test_keras_mnist_LInf(self):
         """
         Second test with the KerasClassifier.
@@ -394,16 +406,16 @@ class TestCarlini(TestBase):
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)
-        params = {'y': random_targets(self.y_test_mnist, krc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes())}
         x_test_adv = clinfm.generate(self.x_test_mnist, **params)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.000001)
         self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        logger.debug('CW0 Target: %s', target)
-        logger.debug('CW0 Actual: %s', y_pred_adv)
-        logger.info('CW0 Success Rate: %.2f', (np.sum(target == y_pred_adv) / float(len(target))))
+        logger.debug("CW0 Target: %s", target)
+        logger.debug("CW0 Actual: %s", y_pred_adv)
+        logger.info("CW0 Success Rate: %.2f", (np.sum(target == y_pred_adv) / float(len(target))))
         self.assertTrue((target == y_pred_adv).any())
 
         # Second attack
@@ -411,11 +423,11 @@ class TestCarlini(TestBase):
         x_test_adv = clinfm.generate(self.x_test_mnist)
         self.assertLessEqual(np.amax(x_test_adv), 1.000001)
         self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
-        logger.debug('CW0 Target: %s', target)
-        logger.debug('CW0 Actual: %s', y_pred_adv)
-        logger.info('CW0 Success Rate: %.2f', (np.sum(target != y_pred_adv) / float(len(target))))
+        logger.debug("CW0 Target: %s", target)
+        logger.debug("CW0 Actual: %s", y_pred_adv)
+        logger.info("CW0 Success Rate: %.2f", (np.sum(target != y_pred_adv) / float(len(target))))
         self.assertTrue((target != y_pred_adv).any())
 
         # Clean-up
@@ -433,12 +445,12 @@ class TestCarlini(TestBase):
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
-        params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes())}
         x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0 + 1e-6)
         self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
@@ -448,7 +460,7 @@ class TestCarlini(TestBase):
         self.assertLessEqual(np.amax(x_test_adv), 1.0 + 1e-6)
         self.assertGreaterEqual(np.amin(x_test_adv), -1e-6)
 
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
 
@@ -466,7 +478,7 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
         accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with C&W adversarial examples: %.2f%%", (accuracy * 100))
 
     def test_keras_iris_unbounded_LInf(self):
         classifier = get_tabular_classifier_kr()
@@ -480,7 +492,7 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
         accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with C&W adversarial examples: %.2f%%", (accuracy * 100))
 
     def test_tensorflow_iris_LInf(self):
         classifier, _ = get_tabular_classifier_tf()
@@ -495,12 +507,12 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
         accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with C&W adversarial examples: %.2f%%", (accuracy * 100))
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = CarliniLInfMethod(classifier, targeted=True, max_iter=10, eps=0.5)
-        x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
+        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -508,7 +520,7 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
         accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Success rate of targeted C&W on Iris: %.2f%%', (accuracy * 100))
+        logger.info("Success rate of targeted C&W on Iris: %.2f%%", (accuracy * 100))
 
     def test_pytorch_iris_LInf(self):
         classifier = get_tabular_classifier_pt()
@@ -521,7 +533,7 @@ class TestCarlini(TestBase):
         predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
         accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with C&W adversarial examples: %.2f%%', (accuracy * 100))
+        logger.info("Accuracy on Iris with C&W adversarial examples: %.2f%%", (accuracy * 100))
 
     def test_scikitlearn_LInf(self):
         from sklearn.linear_model import LogisticRegression
@@ -529,9 +541,11 @@ class TestCarlini(TestBase):
 
         from art.classifiers.scikitlearn import SklearnClassifier
 
-        scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
-                                  SVC(gamma='auto'),
-                                  LinearSVC()]
+        scikitlearn_test_cases = [
+            LogisticRegression(solver="lbfgs", multi_class="auto"),
+            SVC(gamma="auto"),
+            LinearSVC(),
+        ]
 
         x_test_original = self.x_test_iris.copy()
 
@@ -549,13 +563,15 @@ class TestCarlini(TestBase):
             predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertFalse((np.argmax(self.y_test_iris, axis=1) == predictions_adv).all())
             accuracy = np.sum(predictions_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with C&W adversarial examples: '
-                                                                         '%.2f%%', (accuracy * 100))
+            logger.info(
+                "Accuracy of " + classifier.__class__.__name__ + " on Iris with C&W adversarial examples: " "%.2f%%",
+                (accuracy * 100),
+            )
 
             # Test targeted attack
             targets = random_targets(self.y_test_iris, nb_classes=3)
             attack = CarliniLInfMethod(classifier, targeted=True, max_iter=10, eps=0.5)
-            x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
+            x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertLessEqual(np.amax(x_test_adv), 1.0)
             self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -563,12 +579,14 @@ class TestCarlini(TestBase):
             predictions_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertTrue((np.argmax(targets, axis=1) == predictions_adv).any())
             accuracy = np.sum(predictions_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-            logger.info('Success rate of ' + classifier.__class__.__name__ + ' on targeted C&W on Iris: %.2f%%',
-                        (accuracy * 100))
+            logger.info(
+                "Success rate of " + classifier.__class__.__name__ + " on targeted C&W on Iris: %.2f%%",
+                (accuracy * 100),
+            )
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

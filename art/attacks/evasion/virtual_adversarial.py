@@ -29,7 +29,8 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, WrongClassifier
+from art.utils import compute_success
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise WrongClassifier(self.__class__, [ClassifierGradients, ClassifierNeuralNetwork], classifier)
+            raise ClassifierError(self.__class__, [ClassifierGradients, ClassifierNeuralNetwork], classifier)
 
         kwargs = {"finite_diff": finite_diff, "eps": eps, "max_iter": max_iter, "batch_size": batch_size}
         self.set_params(**kwargs)

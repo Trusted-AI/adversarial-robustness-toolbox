@@ -33,8 +33,8 @@ import logging
 import numpy as np
 from scipy.optimize import least_squares
 
-from art.attacks.attack import ExtractionAttack
 from art.classifiers import KerasClassifier, BlackBoxClassifier
+from art.attacks.attack import ExtractionAttack
 
 NUMPY_DTYPE = np.float64
 

@@ -116,7 +116,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
         if clip_values is not None:
             if len(clip_values) != 2:
                 raise ValueError(
-                    "`clip_values` should be a tuple of 2 floats or arrays containing the allowed" "data range."
+                    "`clip_values` should be a tuple of 2 floats or arrays containing the allowed data range."
                 )
             if np.array(clip_values[0] >= clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")

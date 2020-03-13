@@ -120,8 +120,8 @@ class TestMixinWKerasClassifier(unittest.TestCase):
     def test_save(self):
         import os
 
-        path = 'tmp'
-        filename = 'model.h5'
+        path = "tmp"
+        filename = "model.h5"
         classifier = ClassifierWrapper(self.model_mnist)
         classifier.save(filename, path=path)
         self.assertTrue(os.path.isfile(os.path.join(path, filename)))
@@ -130,5 +130,5 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         os.remove(os.path.join(path, filename))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

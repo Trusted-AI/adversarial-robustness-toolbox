@@ -24,8 +24,8 @@ import logging
 import abc
 import numpy as np
 
-from art.utils import WrongClassifier
 from art.classifiers.classifier import Classifier
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -92,13 +92,8 @@ class Attack(abc.ABC, metaclass=input_filter):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
-        classifier_is_art_classifier = isinstance(classifier, Classifier)
-        classifier_is_none = classifier is None
-        is_black_box_attack = isinstance(self, PoisoningAttackBlackBox) and not \
-            isinstance(self, PoisoningAttackWhiteBox)
-
-        if not (classifier_is_art_classifier or classifier_is_none and is_black_box_attack):
-            raise WrongClassifier(self.__class__, [Classifier], classifier)
+        if not isinstance(classifier, Classifier) and classifier is not None:
+            raise ClassifierError(self.__class__, [Classifier], classifier)
 
         self.classifier = classifier
 

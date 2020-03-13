@@ -1,16 +1,28 @@
+# MIT License
+#
+# Copyright (C) IBM Corporation 2018
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import pytest
 import logging
-import numpy as np
+
 from art.attacks import BoundaryAttack
-import unittest
+
 from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
 from tests.attacks.utils import back_end_untargeted_images, backend_test_classifier_type_check_fail
-
-from art.utils import random_targets
-
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -57,3 +69,7 @@ def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack, fram
 
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(BoundaryAttack)
+
+
+if __name__ == "__main__":
+    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

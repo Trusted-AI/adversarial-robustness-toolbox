@@ -88,7 +88,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((x != y).any())
         self.assertTrue((z == x).all())
 
-    @unittest.skipIf(tf.__version__[0] != '1', reason='Skip unittests if not TensorFlow v1.')
+    @unittest.skipIf(tf.__version__[0] != "1", reason="Skip unittests if not TensorFlow v1.")
     def test_master_seed_tf(self):
         tf.reset_default_graph()
         master_seed(seed=1234, set_tensorflow=True)
@@ -106,7 +106,7 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((xv != yv).any())
         np.testing.assert_array_almost_equal(zv, xv, decimal=4)
 
-    @unittest.skipIf(tf.__version__[0] != '2', reason='Skip unittests if not TensorFlow v2.')
+    @unittest.skipIf(tf.__version__[0] != "2", reason="Skip unittests if not TensorFlow v2.")
     def test_master_seed_tf_v2(self):
         master_seed(seed=1234, set_tensorflow=True)
         x = tf.random.uniform(shape=(1, 10))
@@ -270,7 +270,7 @@ class TestUtils(unittest.TestCase):
     def test_preprocess(self):
         (x, y), (_, _), _, _ = load_mnist()
 
-        x = (255 * x).astype('int')[:100]
+        x = (255 * x).astype("int")[:100]
         y = np.argmax(y, axis=1)[:100]
 
         x_, y_ = preprocess(x, y, clip_values=(0, 255))
@@ -281,7 +281,7 @@ class TestUtils(unittest.TestCase):
 
         (x, y), (_, _), _, _ = load_mnist()
 
-        x = (5 * x).astype('int')[:100]
+        x = (5 * x).astype("int")[:100]
         y = np.argmax(y, axis=1)[:100]
         x_, y_ = preprocess(x, y, nb_classes=20, clip_values=(0, 5))
         self.assertEqual(x_.shape, x.shape)
@@ -328,27 +328,31 @@ class TestUtils(unittest.TestCase):
 
         (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()
 
-        full_model = SklearnClassifier(model=SVC(kernel='linear', gamma='auto'), clip_values=(min_, max_))
+        full_model = SklearnClassifier(model=SVC(kernel="linear", gamma="auto"), clip_values=(min_, max_))
         full_model.fit(x_train, y_train)
 
-        limited_model = SklearnClassifier(model=SVC(kernel='linear', gamma='auto'), clip_values=(min_, max_))
+        limited_model = SklearnClassifier(model=SVC(kernel="linear", gamma="auto"), clip_values=(min_, max_))
         limited_model.fit(x_train[:10], y_train[:10])
 
-        self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20],
-                                          perf_function='accuracy'), 0.35)
+        self.assertEqual(
+            performance_diff(full_model, limited_model, x_test[:20], y_test[:20], perf_function="accuracy"), 0.35
+        )
         self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20]), 0.35)
-        diff = performance_diff(full_model, limited_model, x_test[:20], y_test[:20], perf_function='f1',
-                                average='weighted')
+        diff = performance_diff(
+            full_model, limited_model, x_test[:20], y_test[:20], perf_function="f1", average="weighted"
+        )
         self.assertGreater(diff, 0.43)
         self.assertLess(diff, 0.44)
 
         def first_class(true_labels, model_labels, idx=0):
             return np.average(np.argmax(model_labels, axis=1) == idx)
 
-        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class),
-                         1.0 / 3)
-        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class, idx=1),
-                         -1.0 / 3)
+        self.assertEqual(
+            performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class), 1.0 / 3
+        )
+        self.assertEqual(
+            performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class, idx=1), -1.0 / 3
+        )
 
     def test_is_probability(self):
         probabilities = np.array([0.1, 0.3, 0.6])
@@ -367,5 +371,5 @@ class TestUtils(unittest.TestCase):
         self.assertFalse(is_probability(not_probabilities))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

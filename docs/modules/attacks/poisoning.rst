@@ -9,7 +9,7 @@ Poisoning SVM Attack
    :special-members:
 
 Backdoor Poisoning Attack
---------------------
+-------------------------
 .. autoclass:: PoisoningAttackBackdoor
    :members:
    :special-members:

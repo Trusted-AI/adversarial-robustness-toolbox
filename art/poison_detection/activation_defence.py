@@ -21,8 +21,8 @@ This module implements methods performing poisoning detection based on activatio
 | Paper link: https://arxiv.org/abs/1811.03728
 
 | Please keep in mind the limitations of defences. For more information on the limitations of this
-defence, see https://arxiv.org/abs/1905.13409 . For details on how to evaluate classifier security
-in general, see https://arxiv.org/abs/1902.06705
+    defence, see https://arxiv.org/abs/1905.13409 . For details on how to evaluate classifier security
+    in general, see https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -47,8 +47,8 @@ class ActivationDefence(PoisonFilteringDefence):
     | Paper link: https://arxiv.org/abs/1811.03728
 
     | Please keep in mind the limitations of defences. For more information on the limitations of this
-    defence, see https://arxiv.org/abs/1905.13409 . For details on how to evaluate classifier security
-    in general, see https://arxiv.org/abs/1902.06705
+        defence, see https://arxiv.org/abs/1905.13409 . For details on how to evaluate classifier security
+        in general, see https://arxiv.org/abs/1902.06705
     """
 
     defence_params = ["nb_clusters", "clustering_method", "nb_dims", "reduce", "cluster_analysis"]
