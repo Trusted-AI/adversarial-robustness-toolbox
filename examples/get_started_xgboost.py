@@ -31,7 +31,7 @@ params = {"objective": "multi:softprob", "metric": "accuracy", "num_class": 10}
 dtrain = xgb.DMatrix(x_train, label=np.argmax(y_train, axis=1))
 dtest = xgb.DMatrix(x_test, label=np.argmax(y_test, axis=1))
 evals = [(dtest, "test"), (dtrain, "train")]
-model = xgb.train(params=params, dtrain=dtrain, num_boost_round=10, evals=evals)
+model = xgb.train(params=params, dtrain=dtrain, num_boost_round=2, evals=evals)
 
 # Step 3: Create the ART classifier
 
@@ -65,7 +65,7 @@ attack = ZooAttack(
     batch_size=1,
     variable_h=0.01,
 )
-x_test_adv = attack.generate(x=x_test)
+x_test_adv = attack.generate(x=x_test, y=y_test)
 
 # Step 7: Evaluate the ART classifier on adversarial test examples
 
