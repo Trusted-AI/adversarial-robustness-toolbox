@@ -42,10 +42,21 @@ class ProvenanceDefense(PoisonFilteringDefence):
     | Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
     """
 
-    defence_params = ['classifier', 'x_train', 'y_train', 'p_train', 'x_val', 'y_val', 'eps', 'perf_func', 'pp_valid']
+    defence_params = ["classifier", "x_train", "y_train", "p_train", "x_val", "y_val", "eps", "perf_func", "pp_valid"]
 
-    def __init__(self, classifier, x_train, y_train, p_train, x_val=None, y_val=None, eps=0.2, perf_func='accuracy',
-                 pp_valid=0.2, **kwargs):
+    def __init__(
+        self,
+        classifier,
+        x_train,
+        y_train,
+        p_train,
+        x_val=None,
+        y_val=None,
+        eps=0.2,
+        perf_func="accuracy",
+        pp_valid=0.2,
+        **kwargs
+    ):
         """
         Create an :class:`.ProvenanceDefense` object with the provided classifier.
 
@@ -103,8 +114,9 @@ class ProvenanceDefense(PoisonFilteringDefence):
             self.detect_poison()
 
         self.is_clean_by_device = segment_by_class(is_clean, self.p_train, self.num_devices)
-        self.errors_by_device, conf_matrix_json = self.evaluator.analyze_correctness(self.assigned_clean_by_device,
-                                                                                     self.is_clean_by_device)
+        self.errors_by_device, conf_matrix_json = self.evaluator.analyze_correctness(
+            self.assigned_clean_by_device, self.is_clean_by_device
+        )
         return conf_matrix_json
 
     def detect_poison(self, **kwargs):
@@ -163,8 +175,9 @@ class ProvenanceDefense(PoisonFilteringDefence):
             unfiltered_model.fit(unfiltered_data, unfiltered_labels)
             filtered_model.fit(filtered_data, filtered_labels)
 
-            var_w = performance_diff(filtered_model, unfiltered_model, self.x_val, self.y_val,
-                                     perf_function=self.perf_func)
+            var_w = performance_diff(
+                filtered_model, unfiltered_model, self.x_val, self.y_val, perf_function=self.perf_func
+            )
             if self.eps < var_w:
                 suspected[device_idx] = var_w
                 unfiltered_data = filtered_data
@@ -183,8 +196,9 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         suspected = {}
 
-        train_data, valid_data, train_labels, valid_labels, train_prov, valid_prov = \
-            train_test_split(self.x_train, self.y_train, self.p_train, test_size=self.pp_valid)
+        train_data, valid_data, train_labels, valid_labels, train_prov, valid_prov = train_test_split(
+            self.x_train, self.y_train, self.p_train, test_size=self.pp_valid
+        )
 
         train_segments = segment_by_class(train_data, train_prov, self.num_devices)
         valid_segments = segment_by_class(valid_data, valid_prov, self.num_devices)
@@ -198,10 +212,14 @@ class ProvenanceDefense(PoisonFilteringDefence):
             unfiltered_model.fit(train_data, train_labels)
             filtered_model.fit(filtered_data, filtered_labels)
 
-            valid_non_device_data, valid_non_device_labels = \
-                self.filter_input(valid_data, valid_labels, valid_segment)
-            var_w = performance_diff(filtered_model, unfiltered_model, valid_non_device_data, valid_non_device_labels,
-                                     perf_function=self.perf_func)
+            valid_non_device_data, valid_non_device_labels = self.filter_input(valid_data, valid_labels, valid_segment)
+            var_w = performance_diff(
+                filtered_model,
+                unfiltered_model,
+                valid_non_device_data,
+                valid_non_device_labels,
+                perf_function=self.perf_func,
+            )
 
             if self.eps < var_w:
                 suspected[device_idx] = var_w
@@ -222,7 +240,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         :param labels: The corresponding labels to segment
         :type labels: `np.ndarray`
         :param segment:
-        :return: tupe of (filtered_data, filtered_labels)
+        :return: tuple of (filtered_data, filtered_labels)
         :rtype: (`np.ndarray`, `np.ndarray`)
         """
         filter_mask = np.array([np.isin(data[i, :], segment, invert=True).any() for i in range(data.shape[0])])

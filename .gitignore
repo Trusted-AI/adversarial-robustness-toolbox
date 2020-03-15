@@ -105,5 +105,9 @@ demo/pics/*
 *.ipynb
 .DS_Store
 
+# ignore PyCharm project files
+.idea/
+
 # Exceptions for notebooks/
 !notebooks/*.ipynb
+!notebooks/adaptive_defence_evaluations/*.ipynb

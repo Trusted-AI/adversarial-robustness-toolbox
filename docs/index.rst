@@ -3,10 +3,10 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to the Adversarial Robustness 360 Toolbox
-=================================================
+Welcome to the Adversarial Robustness Toolbox
+=============================================
 
-Adversarial Robustness 360 Toolbox (ART) is a Python library supporting developers and researchers in defending Machine
+Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine
 Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests,
 Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats
 (including evasion, extraction and poisoning) and helps making AI systems more secure and trustworthy. Machine Learning
@@ -41,6 +41,8 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
 
 **Evasion Attacks:**
 
+* Threshold Attack (`Vargas et al., 2019`_)
+* Pixel Attack (`Vargas et al., 2019`_, `Su et al., 2019`_)
 * HopSkipJump attack (`Chen et al., 2019`_)
 * High Confidence Low Uncertainty adversarial examples (`Grosse et al., 2018`_)
 * Projected gradient descent (`Madry et al., 2017`_)
@@ -64,12 +66,14 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
 
 * Functionally Equivalent Extraction (`Jagielski et al., 2019`_)
 * Copycat CNN (`Correia-Silva et al., 2018`_)
+* KnockoffNets (`Orekondy et al., 2018`_)
 
 **Poisoning Attacks:**
 
 * Poisoning Attack on SVM (`Biggio et al., 2013`_)
+* Backdoor Attack (`Gu, et. al., 2017`_)
 
-**Defences:**
+**Defences - Preprocessor:**
 
 * Thermometer encoding (`Buckman et al., 2018`_)
 * Total variance minimization (`Guo et al., 2018`_)
@@ -80,15 +84,23 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
 * JPEG compression (`Dziugaite et al., 2016`_)
 * Label smoothing (`Warde-Farley and Goodfellow, 2016`_)
 * Virtual adversarial training (`Miyato et al., 2015`_)
-* Adversarial training (`Szegedy et al., 2013`_)
 
-**Extraction Defences:**
+**Defences - Postprocessor:**
 
 * Reverse Sigmoid (`Lee et al., 2018`_)
 * Random Noise (`Chandrasekaranet al., 2018`_)
 * Class Labels (`Tramer et al., 2016`_, `Chandrasekaranet al., 2018`_)
 * High Confidence (`Tramer et al., 2016`_)
 * Rounding (`Tramer et al., 2016`_)
+
+**Defences - Trainer:**
+
+* Adversarial training (`Szegedy et al., 2013`_)
+* Adversarial training Madry PGD (`Madry et al., 2017`_)
+
+**Defences - Transformer:**
+
+* Defensive Distillatoin (`Papernot et al., 2015`_)
 
 **Robustness Metrics, Certifications and Verifications:**
 
@@ -129,12 +141,17 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
    modules/classifiers/classifiers_scikitlearn
    modules/data_generators
    modules/defences
+   modules/defences/postprocessor
+   modules/defences/preprocessor
+   modules/defences/trainer
+   modules/defences/transformer
    modules/detection
+   modules/exceptions
    modules/poison_detection
    modules/metrics
    modules/utils
-   modules/utils_test
    modules/wrappers
+   modules/tests/utils
 
 
 Indices and tables
@@ -146,6 +163,8 @@ Indices and tables
 
 .. _GitHub: https:github.com/IBM/adversarial-robustness-toolbox
 
+.. _Vargas et al., 2019: https://arxiv.org/abs/1906.06026
+.. _Su et al., 2019: https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
 .. _Chen et al., 2019: https://arxiv.org/abs/1904.02144
 .. _Grosse et al., 2018: https://arxiv.org/abs/1812.02606
 
@@ -178,12 +197,14 @@ Indices and tables
 
 .. _Jagielski et al., 2019: https://arxiv.org/abs/1909.01838
 .. _Correia-Silva et al., 2018: https://arxiv.org/abs/1806.05476
+.. _Orekondy et al., 2018: https://arxiv.org/abs/1812.02766
 
 .. _Lee et al., 2018: https://arxiv.org/abs/1806.00054
 .. _Chandrasekaranet al., 2018: https://arxiv.org/abs/1811.02054
 .. _Tramer et al., 2016: https://arxiv.org/abs/1609.02943
 
 .. _Biggio et al., 2013: https://arxiv.org/abs/1206.6389
+.. _Gu, et. al., 2017: https://arxiv.org/abs/1708.06733
 
 .. _Speakman et al., 2018: https://arxiv.org/pdf/1810.08676
 .. _Papernot et al., 2016b: https://arxiv.org/abs/1605.07277
@@ -192,3 +213,5 @@ Indices and tables
 .. _Hongge et al., 2019: https://arxiv.org/abs/1906.03849
 
 .. _Baracaldo et al., 2018: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
+
+.. _Papernot et al., 2015: https://arxiv.org/abs/1511.04508

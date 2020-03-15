@@ -41,29 +41,26 @@ class HighConfidenceLowUncertainty(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1812.02606
     """
-    attack_params = ['conf', 'unc_increase', 'min_val', 'max_val']
+
+    attack_params = ["conf", "unc_increase", "min_val", "max_val"]
 
     def __init__(self, classifier, conf=0.95, unc_increase=100.0, min_val=0.0, max_val=1.0):
         """
         :param classifier: A trained model of type GPYGaussianProcessClassifier.
-        :type classifier: :class:`.Classifier.GPyGaussianProcessClassifier
+        :type classifier: :class:`.Classifier.GPyGaussianProcessClassifier`
         :param conf: Confidence that examples should have, if there were to be classified as 1.0 maximally
-        :type conf: :float:
+        :type conf: `float`
         :param unc_increase: Value uncertainty is allowed to deviate, where 1.0 is original value
-        :type unc_increase: :float:
+        :type unc_increase: `float`
         :param min_val: minimal value any feature can take, defaults to 0.0
-        :type min_val: :float:
+        :type min_val: `float`
         :param max_val: maximal value any feature can take, defaults to 1.0
-        :type max_val: :float:
+        :type max_val: `float`
         """
         super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
         if not isinstance(classifier, GPyGaussianProcessClassifier):
-            raise TypeError('Model must be a GPy Gaussian Process classifier!')
-        params = {'conf': conf,
-                  'unc_increase': unc_increase,
-                  'min_val': min_val,
-                  'max_val': max_val
-                  }
+            raise TypeError("Model must be a GPy Gaussian Process classifier!")
+        params = {"conf": conf, "unc_increase": unc_increase, "min_val": min_val, "max_val": max_val}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
@@ -82,18 +79,17 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         x_adv = copy.copy(x)
 
         def minfun(x, args):  # minimize L2 norm
-            return np.sum(np.sqrt((x - args['orig']) ** 2))
+            return np.sum(np.sqrt((x - args["orig"]) ** 2))
 
         def constraint_conf(x, args):  # constraint for confidence
-            pred = args['classifier'].predict(x.reshape(1, -1))[0, 0]
-            if args['class_zero']:
+            pred = args["classifier"].predict(x.reshape(1, -1))[0, 0]
+            if args["class_zero"]:
                 pred = 1.0 - pred
-            return (pred - args['conf']).reshape(-1)
+            return (pred - args["conf"]).reshape(-1)
 
         def constraint_unc(x, args):  # constraint for uncertainty
-            cur_unc = (args['classifier'].predict_uncertainty(
-                x.reshape(1, -1))).reshape(-1)
-            return (args['max_uncertainty'] - cur_unc)[0]
+            cur_unc = (args["classifier"].predict_uncertainty(x.reshape(1, -1))).reshape(-1)
+            return (args["max_uncertainty"] - cur_unc)[0]
 
         bounds = []
         # adding bounds, to not go away from original data
@@ -103,16 +99,18 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             # get properties for attack
             max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
             class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
-            init_args = {'classifier': self.classifier, 'class_zero': class_zero,
-                         'max_uncertainty': max_uncertainty, 'conf': self.conf}
-            constr_conf = {'type': 'ineq',
-                           'fun': constraint_conf, 'args': (init_args,)}
-            constr_unc = {'type': 'ineq',
-                          'fun': constraint_unc, 'args': (init_args,)}
-            args = {'args': init_args, 'orig': x[i].reshape(-1)}
+            init_args = {
+                "classifier": self.classifier,
+                "class_zero": class_zero,
+                "max_uncertainty": max_uncertainty,
+                "conf": self.conf,
+            }
+            constr_conf = {"type": "ineq", "fun": constraint_conf, "args": (init_args,)}
+            constr_unc = {"type": "ineq", "fun": constraint_unc, "args": (init_args,)}
+            args = {"args": init_args, "orig": x[i].reshape(-1)}
             # finally, run optimization
-            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])['x']
-        logger.info('Success rate of HCLU attack: %.2f%%', 100 * compute_success(self.classifier, x, y, x_adv))
+            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])["x"]
+        logger.info("Success rate of HCLU attack: %.2f%%", 100 * compute_success(self.classifier, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):

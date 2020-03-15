@@ -29,16 +29,18 @@ import numpy.linalg as la
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
 
-from art.attacks import FastGradientMethod
-from art.attacks import HopSkipJump
-from art.utils import random_sphere
 from art.config import ART_NUMPY_DTYPE
+from art.attacks import FastGradientMethod, HopSkipJump
+from art.utils import random_sphere
 
 logger = logging.getLogger(__name__)
 
 SUPPORTED_METHODS = {
-    "fgsm": {"class": FastGradientMethod, "params": {"eps_step": 0.1, "eps_max": 1., "clip_min": 0., "clip_max": 1.}},
-    "hsj": {"class": HopSkipJump, "params": {'max_iter': 50, 'max_eval': 10000, 'init_eval': 100, 'init_size': 100}}
+    "fgsm": {
+        "class": FastGradientMethod,
+        "params": {"eps_step": 0.1, "eps_max": 1.0, "clip_min": 0.0, "clip_max": 1.0},
+    },
+    "hsj": {"class": HopSkipJump, "params": {"max_iter": 50, "max_eval": 10000, "init_eval": 100, "init_size": 100}},
 }
 
 
@@ -89,19 +91,19 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     :rtype: `float`
     """
     crafter = get_crafter(classifier, attack_name, attack_params)
-    crafter.set_params(**{'minimal': True})
+    crafter.set_params(**{"minimal": True})
     adv_x = crafter.generate(x)
 
     # Predict the labels for adversarial examples
     y = classifier.predict(x)
     y_pred = classifier.predict(adv_x)
 
-    idxs = (np.argmax(y_pred, axis=1) != np.argmax(y, axis=1))
+    idxs = np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)
     if np.sum(idxs) == 0.0:
         return 0
 
     norm_type = 2
-    if hasattr(crafter, 'norm'):
+    if hasattr(crafter, "norm"):
         norm_type = crafter.norm
     perts_norm = la.norm((adv_x - x).reshape(x.shape[0], -1), ord=norm_type, axis=1)
     perts_norm = perts_norm[idxs]
@@ -168,8 +170,9 @@ def loss_sensitivity(classifier, x, y):
     return np.mean(norm)
 
 
-def clever(classifier, x, nb_batches, batch_size, radius, norm, target=None, target_sort=False, c_init=1,
-           pool_factor=10):
+def clever(
+    classifier, x, nb_batches, batch_size, radius, norm, target=None, target_sort=False, c_init=1, pool_factor=10
+):
     """
     Compute CLEVER score for an untargeted attack.
 
@@ -306,11 +309,12 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     shape.extend(x.shape)
 
     # Generate a pool of samples
-    rand_pool = np.reshape(random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm),
-                           shape)
+    rand_pool = np.reshape(
+        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape
+    )
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)
-    if hasattr(classifier, 'clip_values') and classifier.clip_values is not None:
+    if hasattr(classifier, "clip_values") and classifier.clip_values is not None:
         np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)

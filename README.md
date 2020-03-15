@@ -1,14 +1,23 @@
-# Adversarial Robustness 360 Toolbox (ART) v1.1
+# Adversarial Robustness Toolbox (ART) v1.1
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
 <br />
 
-[![Build Status](https://travis-ci.org/IBM/adversarial-robustness-toolbox.svg?branch=master)](https://travis-ci.org/IBM/adversarial-robustness-toolbox) [![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest) [![GitHub version](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/)
+[![Build Status](https://travis-ci.org/IBM/adversarial-robustness-toolbox.svg?branch=master)](https://travis-ci.org/IBM/adversarial-robustness-toolbox)
+[![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest)
+[![GitHub version](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/context:python)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/)
+[![codecov](https://codecov.io/gh/IBM/adversarial-robustness-toolbox/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/adversarial-robustness-toolbox)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/adversarial-robustness-toolbox)](https://pypi.org/project/adversarial-robustness-toolbox/)
+[![slack-img](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://ibm-art.slack.com/)
 
 [中文README请按此处](README-cn.md)
 
-Adversarial Robustness 360 Toolbox (ART) is a Python library supporting developers and researchers in defending Machine 
+Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine 
 Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests, 
 Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats 
 (including evasion, extraction and poisoning) and helps making AI systems more secure and trustworthy. Machine Learning 
@@ -42,6 +51,8 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 ## Implemented Attacks, Defences, Detections, Metrics, Certifications and Verifications
 
 **Evasion Attacks:**
+* Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
+* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations))
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * High Confidence Low Uncertainty adversarial samples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
@@ -64,11 +75,13 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 **Extraction Attacks:**
 * Functionally Equivalent Extraction ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
 * Copycat CNN ([Correia-Silva et al., 2018](https://arxiv.org/abs/1806.05476))
+* KnockoffNets ([Orekondy et al., 2018](https://arxiv.org/abs/1812.02766))
 
 **Poisoning Attacks:**
 * Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
+* Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 
-**Defences:**
+**Defences - Preprocessor:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
@@ -78,14 +91,20 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * JPEG compression ([Dziugaite et al., 2016](https://arxiv.org/abs/1608.00853))
 * Label smoothing ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * Virtual adversarial training ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
-* Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 
-**Extraction Defences:**
+**Defences - Postprocessor:**
 * Reverse Sigmoid ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
 * Random Noise ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * Class Labels ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * High Confidence ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
 * Rounding ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+
+**Defences - Trainer:**
+* Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
+* Adversarial training Madry PGD ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
+
+**Defences - Transformer:**
+* Defensive Distillation ([Papernot et al., 2015](https://arxiv.org/abs/1511.04508))
 
 **Robustness Metrics, Certifications and Verifications**:
 * Clique Method Robustness Verification ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
@@ -122,7 +141,7 @@ The most recent version of ART can be downloaded or cloned from this repository:
 git clone https://github.com/IBM/adversarial-robustness-toolbox
 ```
 
-Install ART with the following command from the project folder `art`:
+Install ART with the following command from the project folder `adversarial-robustness-toolbox`:
 ```bash
 pip install .
 ```
@@ -149,10 +168,10 @@ and overview and more information.
 
 Adding new features, improving documentation, fixing bugs, or writing tutorials are all examples of helpful 
 contributions. Furthermore, if you are publishing a new attack or defense, we strongly encourage you to add it to the 
-Adversarial Robustness 360 Toolbox so that others may evaluate it fairly in their own work.
+Adversarial Robustness Toolbox so that others may evaluate it fairly in their own work.
 
 Bug fixes can be initiated through GitHub pull requests. When making code contributions to the Adversarial Robustness 
-360 Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide unit tests for the new features.
+Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide unit tests for the new features.
 
 This project uses [DCO](https://developercertificate.org/). Be sure to sign off your commits using the `-s` flag or 
 adding `Signed-off-By: Name<Email>` in the commit message.

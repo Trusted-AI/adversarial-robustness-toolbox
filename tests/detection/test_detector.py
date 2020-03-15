@@ -29,8 +29,9 @@ import numpy as np
 from art.attacks import FastGradientMethod
 from art.classifiers import KerasClassifier
 from art.detection import BinaryInputDetector, BinaryActivationDetector
-from art.utils import load_mnist, master_seed
-from tests.utils_test import get_classifier_kr
+from art.utils import load_mnist
+
+from tests.utils import master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +44,7 @@ class TestBinaryInputDetector(unittest.TestCase):
     """
 
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def tearDown(self):
         k.clear_session()
@@ -61,7 +61,7 @@ class TestBinaryInputDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.1)
@@ -75,12 +75,13 @@ class TestBinaryInputDetector(unittest.TestCase):
         # Create a simple CNN for the detector
         input_shape = x_train.shape[1:]
         model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
+        model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=input_shape))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(2, activation='softmax'))
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
+        model.add(Dense(2, activation="softmax"))
+        model.compile(
+            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+        )
 
         # Create detector and train it:
         detector = BinaryInputDetector(KerasClassifier(model=model, clip_values=(0, 1), use_logits=False))
@@ -93,8 +94,8 @@ class TestBinaryInputDetector(unittest.TestCase):
         # Assert there is at least one true positive and negative:
         nb_true_positives = len(np.where(test_adv_detection == 1)[0])
         nb_true_negatives = len(np.where(test_detection == 0)[0])
-        logger.debug('Number of true positives detected: %i', nb_true_positives)
-        logger.debug('Number of true negatives detected: %i', nb_true_negatives)
+        logger.debug("Number of true positives detected: %i", nb_true_positives)
+        logger.debug("Number of true negatives detected: %i", nb_true_negatives)
         self.assertGreater(nb_true_positives, 0)
         self.assertGreater(nb_true_negatives, 0)
 
@@ -105,8 +106,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
     """
 
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def tearDown(self):
         k.clear_session()
@@ -122,7 +122,7 @@ class TestBinaryActivationDetector(unittest.TestCase):
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.1)
@@ -139,15 +139,16 @@ class TestBinaryActivationDetector(unittest.TestCase):
         model = Sequential()
         model.add(MaxPooling2D(pool_size=(2, 2), input_shape=activation_shape))
         model.add(Flatten())
-        model.add(Dense(number_outputs, activation='softmax'))
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
+        model.add(Dense(number_outputs, activation="softmax"))
+        model.compile(
+            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+        )
 
         # Create detector and train it.
         # Detector consider activations at layer=0:
-        detector = BinaryActivationDetector(classifier=classifier,
-                                            detector=KerasClassifier(model=model, clip_values=(0, 1), use_logits=False),
-                                            layer=0)
+        detector = BinaryActivationDetector(
+            classifier=classifier, detector=KerasClassifier(model=model, clip_values=(0, 1), use_logits=False), layer=0
+        )
         detector.fit(x_train_detector, y_train_detector, nb_epochs=2, batch_size=128)
 
         # Apply detector on clean and adversarial test data:
@@ -157,11 +158,11 @@ class TestBinaryActivationDetector(unittest.TestCase):
         # Assert there is at least one true positive and negative
         nb_true_positives = len(np.where(test_adv_detection == 1)[0])
         nb_true_negatives = len(np.where(test_detection == 0)[0])
-        logger.debug('Number of true positives detected: %i', nb_true_positives)
-        logger.debug('Number of true negatives detected: %i', nb_true_negatives)
+        logger.debug("Number of true positives detected: %i", nb_true_positives)
+        logger.debug("Number of true negatives detected: %i", nb_true_negatives)
         self.assertGreater(nb_true_positives, 0)
         self.assertGreater(nb_true_negatives, 0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

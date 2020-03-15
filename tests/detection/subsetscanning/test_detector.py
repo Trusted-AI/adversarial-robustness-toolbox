@@ -28,8 +28,9 @@ import numpy as np
 
 from art.attacks import FastGradientMethod
 from art.detection import SubsetScanningDetector
-from art.utils import master_seed, load_dataset
-from tests.utils_test import get_classifier_kr
+from art.utils import load_dataset
+
+from tests.utils import master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -44,18 +45,18 @@ class TestSubsetScanningDetector(unittest.TestCase):
     """
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def tearDown(self):
         k.clear_session()
 
     def test_subsetscan_detector(self):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
 
         # Keras classifier
-        classifier = get_classifier_kr()
+        classifier = get_image_classifier_kr()
 
         # Generate adversarial samples:
         attacker = FastGradientMethod(classifier, eps=0.5)
@@ -81,5 +82,5 @@ class TestSubsetScanningDetector(unittest.TestCase):
         self.assertGreater(dpwr, 0.5)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

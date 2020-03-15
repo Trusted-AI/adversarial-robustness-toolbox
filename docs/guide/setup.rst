@@ -1,7 +1,7 @@
 Setup
 =====
 
-The Adversarial Robustness 360 Toolbox is designed to run with Python 3.
+The Adversarial Robustness Toolbox is designed to run with Python 3.
 
 Installation with `pip`
 -----------------------

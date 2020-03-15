@@ -31,6 +31,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -41,12 +42,32 @@ class ElasticNet(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1709.04114
     """
-    attack_params = EvasionAttack.attack_params + ['confidence', 'targeted', 'learning_rate', 'max_iter', 'beta',
-                                                   'binary_search_steps', 'initial_const', 'batch_size',
-                                                   'decision_rule']
 
-    def __init__(self, classifier, confidence=0.0, targeted=False, learning_rate=1e-2, binary_search_steps=9,
-                 max_iter=100, beta=1e-3, initial_const=1e-3, batch_size=1, decision_rule='EN'):
+    attack_params = EvasionAttack.attack_params + [
+        "confidence",
+        "targeted",
+        "learning_rate",
+        "max_iter",
+        "beta",
+        "binary_search_steps",
+        "initial_const",
+        "batch_size",
+        "decision_rule",
+    ]
+
+    def __init__(
+        self,
+        classifier,
+        confidence=0.0,
+        targeted=False,
+        learning_rate=1e-2,
+        binary_search_steps=9,
+        max_iter=100,
+        beta=1e-3,
+        initial_const=1e-3,
+        batch_size=1,
+        decision_rule="EN",
+    ):
         """
         Create an ElasticNet attack instance.
 
@@ -77,21 +98,19 @@ class ElasticNet(EvasionAttack):
         """
         super(ElasticNet, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '. '
-                             ' The classifier needs to provide gradients.'))
+            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
-        kwargs = {'confidence': confidence,
-                  'targeted': targeted,
-                  'learning_rate': learning_rate,
-                  'binary_search_steps': binary_search_steps,
-                  'max_iter': max_iter,
-                  'beta': beta,
-                  'initial_const': initial_const,
-                  'batch_size': batch_size,
-                  'decision_rule': decision_rule
-                  }
+        kwargs = {
+            "confidence": confidence,
+            "targeted": targeted,
+            "learning_rate": learning_rate,
+            "binary_search_steps": binary_search_steps,
+            "max_iter": max_iter,
+            "beta": beta,
+            "initial_const": initial_const,
+            "batch_size": batch_size,
+            "decision_rule": decision_rule,
+        }
         assert self.set_params(**kwargs)
 
     def _loss(self, x, x_adv):
@@ -132,12 +151,14 @@ class ElasticNet(EvasionAttack):
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
-            i_add = np.argmax(predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
-                              axis=1)
+            i_add = np.argmax(
+                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1
+            )
         else:
             i_add = np.argmax(target, axis=1)
-            i_sub = np.argmax(predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
-                              axis=1)
+            i_sub = np.argmax(
+                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1
+            )
 
         loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
         loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
@@ -165,8 +186,8 @@ class ElasticNet(EvasionAttack):
         :return: The decayed learning rate
         :rtype: `float`
         """
-        decayed_learning_rate = (self.learning_rate - end_learning_rate) * (1 - global_step / decay_steps) ** 2 + \
-            end_learning_rate
+        learn_rate = self.learning_rate - end_learning_rate
+        decayed_learning_rate = learn_rate * (1 - global_step / decay_steps) ** 2 + end_learning_rate
 
         return decayed_learning_rate
 
@@ -188,7 +209,7 @@ class ElasticNet(EvasionAttack):
 
         # Assert that, if attack is targeted, y is provided:
         if self.targeted and y is None:
-            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # No labels provided, use model prediction as correct class
         if y is None:
@@ -197,7 +218,7 @@ class ElasticNet(EvasionAttack):
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
         for batch_id in range(nb_batches):
-            logger.debug('Processing batch %i out of %i', batch_id, nb_batches)
+            logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_batch = x_adv[batch_index_1:batch_index_2]
@@ -205,12 +226,14 @@ class ElasticNet(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(x_batch, y_batch)
 
         # Apply clip
-        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
             x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
 
         # Compute success rate of the EAD attack
-        logger.info('Success rate of EAD attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
+        logger.info(
+            "Success rate of EAD attack: %.2f%%",
+            100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+        )
 
         return x_adv
 
@@ -236,8 +259,9 @@ class ElasticNet(EvasionAttack):
 
         # Start with a binary search
         for bss in range(self.binary_search_steps):
-            logger.debug('Binary search step %i out of %i (c_mean==%f)', bss, self.binary_search_steps,
-                         np.mean(c_current))
+            logger.debug(
+                "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current)
+            )
 
             # Run with 1 specific binary search step
             best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c_current)
@@ -247,8 +271,9 @@ class ElasticNet(EvasionAttack):
             o_best_dist[best_dist < o_best_dist] = best_dist[best_dist < o_best_dist]
 
             # Adjust the constant as needed
-            c_current, c_lower_bound, c_upper_bound = self._update_const(y_batch, best_label, c_current, c_lower_bound,
-                                                                         c_upper_bound)
+            c_current, c_lower_bound, c_upper_bound = self._update_const(
+                y_batch, best_label, c_current, c_lower_bound, c_upper_bound
+            )
 
         return o_best_attack
 
@@ -320,11 +345,12 @@ class ElasticNet(EvasionAttack):
         x_adv = x_batch.copy()
         y_adv = x_batch.copy()
         for i_iter in range(self.max_iter):
-            logger.debug('Iteration step %i out of %i', i_iter, self.max_iter)
+            logger.debug("Iteration step %i out of %i", i_iter, self.max_iter)
 
             # Update learning rate
-            learning_rate = self._decay_learning_rate(global_step=i_iter, end_learning_rate=0,
-                                                      decay_steps=self.max_iter)
+            learning_rate = self._decay_learning_rate(
+                global_step=i_iter, end_learning_rate=0, decay_steps=self.max_iter
+            )
 
             # Compute adversarial examples
             grad = self._gradient_of_loss(target=y_batch, x=x_batch, x_adv=y_adv, c_weight=c_batch)
@@ -335,11 +361,11 @@ class ElasticNet(EvasionAttack):
             # Adjust the best result
             (logits, l1dist, l2dist, endist) = self._loss(x=x_batch, x_adv=x_adv)
 
-            if self.decision_rule == 'EN':
+            if self.decision_rule == "EN":
                 zip_set = zip(endist, logits)
-            elif self.decision_rule == 'L1':
+            elif self.decision_rule == "L1":
                 zip_set = zip(l1dist, logits)
-            elif self.decision_rule == 'L2':
+            elif self.decision_rule == "L2":
                 zip_set = zip(l2dist, logits)
             else:
                 raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
@@ -416,7 +442,7 @@ class ElasticNet(EvasionAttack):
         if not isinstance(self.batch_size, int) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
-        if not isinstance(self.decision_rule, six.string_types) or self.decision_rule not in ['EN', 'L1', 'L2']:
+        if not isinstance(self.decision_rule, six.string_types) or self.decision_rule not in ["EN", "L1", "L2"]:
             raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
 
         return True

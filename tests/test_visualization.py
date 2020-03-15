@@ -24,43 +24,43 @@ import unittest
 import numpy as np
 
 from art.config import ART_DATA_PATH
-from art.utils import load_mnist, load_cifar10, master_seed
+from art.utils import load_mnist, load_cifar10
 from art.visualization import create_sprite, convert_to_rgb, save_image, plot_3d
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
 
-# python -m unittest discover art/ -p 'visualization_unittest.py'
-
 class TestVisualization(unittest.TestCase):
     def setUp(self):
-        master_seed(42)
+        master_seed(seed=42)
 
     def test_save_image(self):
         (x, _), (_, _), _, _ = load_mnist(raw=True)
 
-        f_name = 'image1.png'
+        f_name = "image1.png"
         save_image(x[0], f_name)
         path = os.path.join(ART_DATA_PATH, f_name)
         self.assertTrue(os.path.isfile(path))
         os.remove(path)
 
-        f_name = 'image2.jpg'
+        f_name = "image2.jpg"
         save_image(x[1], f_name)
         path = os.path.join(ART_DATA_PATH, f_name)
         self.assertTrue(os.path.isfile(path))
         os.remove(path)
 
-        folder = 'images123456'
-        f_name_with_dir = os.path.join(folder, 'image3.png')
+        folder = "images123456"
+        f_name_with_dir = os.path.join(folder, "image3.png")
         save_image(x[3], f_name_with_dir)
         path = os.path.join(ART_DATA_PATH, f_name_with_dir)
         self.assertTrue(os.path.isfile(path))
         os.remove(path)
         os.rmdir(os.path.split(path)[0])  # Remove also test folder
 
-        folder = os.path.join('images123456', 'inner')
-        f_name_with_dir = os.path.join(folder, 'image4.png')
+        folder = os.path.join("images123456", "inner")
+        f_name_with_dir = os.path.join(folder, "image4.png")
         save_image(x[3], f_name_with_dir)
         path_nested = os.path.join(ART_DATA_PATH, f_name_with_dir)
         self.assertTrue(os.path.isfile(path_nested))
@@ -91,7 +91,7 @@ class TestVisualization(unittest.TestCase):
         x = x[:n]
 
         sprite = create_sprite(x)
-        f_name = 'test_sprite_mnist.png'
+        f_name = "test_sprite_mnist.png"
         path = os.path.join(ART_DATA_PATH, f_name)
         save_image(sprite, path)
         self.assertTrue(os.path.isfile(path))
@@ -104,7 +104,7 @@ class TestVisualization(unittest.TestCase):
         x = x[:n]
 
         sprite = create_sprite(x)
-        f_name = 'test_cifar.jpg'
+        f_name = "test_cifar.jpg"
         path = os.path.join(ART_DATA_PATH, f_name)
         save_image(sprite, path)
         self.assertTrue(os.path.isfile(path))
@@ -113,22 +113,18 @@ class TestVisualization(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_3D_plot_fail(self):
-        points = [[1, 1, 1],
-                  [2, 2, 2],
-                  [3, 3, 3]]
+        points = [[1, 1, 1], [2, 2, 2], [3, 3, 3]]
         labels = [1, 1, 3]
 
         # Shouldn't work because labels don't start in zero.
         plot_3d(points, labels, save=False)
 
     def test_3D_plot(self):
-        points = [[1, 1, 1],
-                  [2, 2, 2],
-                  [3, 3, 3]]
+        points = [[1, 1, 1], [2, 2, 2], [3, 3, 3]]
         labels = [0, 1, 1]
 
         plot_3d(points, labels, save=False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

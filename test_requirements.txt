@@ -1,19 +1,21 @@
 pytest-pep8
+codecov
+
 h5py
-Pillow
 requests
 
 keras
 mxnet
 #torch>=1.2.0
 tensorflow
-scikit-learn==0.21.3
+scikit-learn==0.22.1
 xgboost==1.0.0
-lightgbm
+lightgbm==2.3.1
 # Comment out because of compatibility issues with numpy versions
 # catboost
-GPy
+GPy==1.9.9
 
-
-scipy
-statsmodels
+numpy==1.18.1
+scipy==1.4.1
+statsmodels==0.11.0
+cma==2.7.0
