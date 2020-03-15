@@ -124,7 +124,7 @@ class EvasionAttack(Attack):
         super().__init__(classifier)
 
     @abc.abstractmethod
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x, y=None, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         evasion attack implementations.
