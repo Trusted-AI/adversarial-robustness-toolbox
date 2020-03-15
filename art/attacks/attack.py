@@ -177,7 +177,7 @@ class PoisoningAttackWhiteBox(PoisoningAttackBlackBox):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
-        super(PoisoningAttackBlackBox, self).__init__(classifier)
+        super(PoisoningAttackWhiteBox, self).__init__(classifier)
 
     @abc.abstractmethod
     def poison(self, x, y=None, **kwargs):
