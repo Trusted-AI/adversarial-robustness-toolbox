@@ -31,7 +31,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class MXClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # lgtm [py/missing-call-to-init]
     """
     Wrapper class for importing MXNet Gluon models.
     """

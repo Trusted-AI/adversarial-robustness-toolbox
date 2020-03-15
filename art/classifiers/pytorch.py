@@ -31,7 +31,7 @@ from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, Clas
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # lgtm [py/missing-call-to-init]
     """
     This class implements a classifier with the PyTorch framework.
     """
