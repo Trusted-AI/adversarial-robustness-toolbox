@@ -8,3 +8,5 @@ python:
     use_system_site_packages: true
     extra_requirements:
         - docs
+    install:
+      - requirements: requirements.txt
