@@ -236,7 +236,6 @@ class PixelThreshold(EvasionAttack):
             except Exception as exception:
                 if self.verbose:
                     print(exception)
-                pass
 
             adv_x = strategy.result[0]
 
