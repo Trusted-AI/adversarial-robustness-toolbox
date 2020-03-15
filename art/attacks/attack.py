@@ -167,7 +167,7 @@ class PoisoningAttackBlackBox(Attack):
         raise NotImplementedError
 
 
-class PoisoningAttackWhiteBox(PoisoningAttackBlackBox):
+class PoisoningAttackWhiteBox(Attack):
     """
     Abstract base class for poisoning attack classes that have white-box access to the model (classifier object)
     """
