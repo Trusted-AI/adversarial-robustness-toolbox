@@ -82,7 +82,7 @@ def create_scikit_model_weights():
                       model_list.items()}
     unclipped_models = {model_name: SklearnClassifier(model=model) for model_name, model in model_list.items()}
 
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset('iris')
+    (x_train_iris, y_train_iris), (_, _), _, _ = load_dataset('iris')
 
     for model_name, model in clipped_models.items():
         model.fit(x=x_train_iris, y=y_train_iris)
