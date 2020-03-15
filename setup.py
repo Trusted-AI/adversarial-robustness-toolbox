@@ -11,24 +11,27 @@ install_requires = ['matplotlib',
                     'scipy',
                     'six',
                     'setuptools',
-                    'scikit-learn==0.22.1']
+                    'scikit-learn==0.22.1',
+                    'Pillow==7.0.0']
 
 # Comment out because of compatibility issues with numpy versions
 # 'catboost',
 tests_require = ['pytest-pep8',
-                 'keras>=2.2.5',
+                 'codecov'
                  'h5py',
-                 'mxnet',
-                 'Pillow',
                  'requests',
+                 'keras>=2.2.5',
+                 'mxnet',
                  'torch>=1.2.0',
-                 'tensorflow>=1.13.2',
+                 'tensorflow>=1.14.0',
                  'scikit-learn==0.22.1',
-                 'xgboost',
-                 'lightgbm',
-                 'GPy',
-                 'SciPy',
-                 'statsmodels']
+                 'xgboost==1.0.0',
+                 'lightgbm==2.3.1',
+                 'GPy==1.9.9',
+                 'numpy==1.18.1'
+                 'scipy==1.4.1',
+                 'statsmodels==0.11.0',
+                 'cma==2.7.0']
 
 docs_require = ['sphinx >= 1.4',
                 'sphinx_rtd_theme']
