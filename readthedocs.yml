@@ -1,4 +1,3 @@
-requirements_file: requirements.txt
 version: 2
 sphinx:
   configuration: docs/conf.py
