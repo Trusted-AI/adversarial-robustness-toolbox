@@ -68,35 +68,106 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         """
 
         import torch
+        import torchvision
         import numpy as np
 
+        self._model.train()
+
+        # For training
+        # images = torch.rand(4, 3, 600, 1200)
+        # boxes = torch.rand(4, 11, 4)
+        # labels = torch.randint(1, 91, (4, 11))
+
+        # images = list(image for image in images)
+
+        # transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+        # image = transform(x)
+        # images = [image]
+
+        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+
+        image_tensor_list = list()
+
+        for i in range(x.shape[0]):
+            img = transform(x[i])
+            print('print(x[i].shape)')
+            print(x[i].shape)
+            print('img')
+            print(img.shape)
+            img.requires_grad = True
+            image_tensor_list.append(img)
+
+        predictions = self.predict(x=x)
+        self._model.train()
+
+        # predictions[0]["labels"].numpy())]  # Get the Prediction Score
+        # print(pred_class)
+        # pred_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in
+        #               list(predictions[0]["boxes"].detach().numpy())]  # Bounding boxes
+        # pred_score = list(predictions[0]["scores"].
+
+        targets = []
+
+        for i in range(len(image_tensor_list)):
+            d = {}
+            # d['boxes'] = boxes[i]
+            d['boxes'] = predictions[i]["boxes"]
+            # d['labels'] = labels[i]
+            d['labels'] = predictions[i]["labels"]
+            targets.append(d)
+
+        output = self._model(image_tensor_list, targets)
+
+        print(output)
+        print(output['loss_classifier'])
+
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        # x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
-        inputs_t.requires_grad = True
+        # inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
+        # inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
-        labels_t = torch.from_numpy(np.argmax(y_preprocessed, axis=1)).to(self._device)
+        # labels_t = torch.from_numpy(np.argmax(y_preprocessed, axis=1)).to(self._device)
 
         # Compute the gradient and return
-        model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1], labels_t)
+        # model_outputs = self._model(inputs_t)
+        # loss = self._loss(model_outputs[-1], labels_t)
+        loss = output['loss_classifier']
 
         # Clean gradients
         self._model.zero_grad()
 
         # Compute gradients
         loss.backward()
-        grads = inputs_t.grad.cpu().numpy().copy()
-        grads = self._apply_preprocessing_gradient(x, grads)
+        # grads = inputs_t.grad.cpu().numpy().copy()
+        # grads = image.grad.cpu().numpy().copy()
+        grad_list = list()
+        for img in image_tensor_list:
+            gradients = img.grad.cpu().numpy().copy()
+            grad_list.append(gradients)
+
+        grads = np.stack(grad_list, axis=0)
+
+        # grads = self._apply_preprocessing_gradient(x, grads)
+
+        print(grads.shape)
+        print(type(grads))
+
+        # if len(image_tensor_list) == 1:
+        #     grads = np.newaxis(grads, axis=0)
+
+        print(grads.shape)
+        grads = np.swapaxes(grads, 1, 3)
+        grads = np.swapaxes(grads, 1, 2)
+        print(x.shape)
+        print(grads.shape)
         assert grads.shape == x.shape
 
         return grads
 
-
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -108,11 +179,16 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :rtype: `np.ndarray`
         """
         import torchvision
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        image = transform(x)
-        image_list = [image]
-        predictions = self._model(image_list)
 
+        self._model.eval()
+
+        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
+
+        image_tensor_list = list()
+
+        for i in range(x.shape[0]):
+            image_tensor_list.append(transform(x[i]))
+        predictions = self._model(image_tensor_list)
         return predictions
 
     def set_learning_phase(self):
