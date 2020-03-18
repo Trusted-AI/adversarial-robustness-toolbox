@@ -21,14 +21,15 @@ def extract_predictions(predictions_):
     #     print(key, item)
 
     # Get the predicted class
-    predictions_class = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions_[0]["labels"].numpy())]
+    predictions_class = [COCO_INSTANCE_CATEGORY_NAMES[i] for i in list(predictions_["labels"].numpy())]
     print('predicted classes:', predictions_class)
 
     # Get the predicted bounding boxes
-    predictions_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions_[0]["boxes"].detach().numpy())]
+    predictions_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in list(predictions_["boxes"].detach().numpy())]
 
     # Get the predicted prediction score
-    predictions_score = list(predictions_[0]["scores"].detach().numpy())
+    predictions_score = list(predictions_["scores"].detach().numpy())
+    print('predicted score:', predictions_score)
 
     # Get a list of index with score greater than threshold
     threshold = 0.5
@@ -86,7 +87,7 @@ def main():
     predictions = frcnn.predict(x=image)
 
     # Process predictions
-    predictions_class, predictions_boxes, predictions_class = extract_predictions(predictions)
+    predictions_class, predictions_boxes, predictions_class = extract_predictions(predictions[0])
 
     # Plot predictions
     plot_image_with_boxes(img=image[0].copy(), boxes=predictions_boxes, pred_cls=predictions_class)
@@ -95,7 +96,7 @@ def main():
     gradients = frcnn.loss_gradient(x=image, y=None)
 
     # Create adversarial image
-    image_adv = image + np.sign(gradients) * 8
+    image_adv = image + np.sign(gradients) * 8 * 1
     image_adv = np.clip(image_adv, a_min=0, a_max=255).astype(np.uint8)
 
     for i in range(image_adv.shape[0]):
@@ -106,7 +107,7 @@ def main():
 
     predictions_adv = frcnn.predict(x=image_adv)
 
-    predictions_adv_class, predictions_adv_boxes, predictions_adv_class = extract_predictions(predictions_adv)
+    predictions_adv_class, predictions_adv_boxes, predictions_adv_class = extract_predictions(predictions_adv[0])
 
     plot_image_with_boxes(img=image_adv[0].copy(), boxes=predictions_adv_boxes, pred_cls=predictions_adv_class)
 
