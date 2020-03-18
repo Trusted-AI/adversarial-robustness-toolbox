@@ -107,6 +107,15 @@ class BoundaryAttack(EvasionAttack):
         }
         self.set_params(**params)
 
+    @classmethod
+    def is_valid_classifier_type(cls, classifier):
+        """
+        Checks whether the classifier provided is a classifer which this class can perform an attack on
+        :param classifier:
+        :return:
+        """
+        return True if isinstance(classifier, ClassifierMixin) else False
+
     def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
