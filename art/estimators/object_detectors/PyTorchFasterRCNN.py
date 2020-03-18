@@ -90,14 +90,18 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         for i in range(x.shape[0]):
             img = transform(x[i])
-            print('print(x[i].shape)')
-            print(x[i].shape)
-            print('img')
-            print(img.shape)
+            # print('print(x[i].shape)')
+            # print(x[i].shape)
+            # print('img')
+            # print(img.shape)
             img.requires_grad = True
             image_tensor_list.append(img)
 
-        predictions = self.predict(x=x)
+        if y is None:
+            predictions = self.predict(x=x)
+        else:
+            predictions = y
+
         self._model.train()
 
         # predictions[0]["labels"].numpy())]  # Get the Prediction Score
@@ -152,17 +156,17 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         # grads = self._apply_preprocessing_gradient(x, grads)
 
-        print(grads.shape)
-        print(type(grads))
+        # print(grads.shape)
+        # print(type(grads))
 
         # if len(image_tensor_list) == 1:
         #     grads = np.newaxis(grads, axis=0)
 
-        print(grads.shape)
+        # print(grads.shape)
         grads = np.swapaxes(grads, 1, 3)
         grads = np.swapaxes(grads, 1, 2)
-        print(x.shape)
-        print(grads.shape)
+        # print(x.shape)
+        # print(grads.shape)
         assert grads.shape == x.shape
 
         return grads
