@@ -86,12 +86,12 @@ class BaseEstimator(ABC):
             else:
                 raise ValueError("Unexpected parameter {} found in kwargs.".format(key))
 
-        if self.clip_values is not None:
-            if len(self.clip_values) != 2:
+        if self._clip_values is not None:
+            if len(self._clip_values) != 2:
                 raise ValueError(
                     "`clip_values` should be a tuple of 2 floats or arrays containing the allowed data range."
                 )
-            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+            if np.array(self._clip_values[0] >= self._clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
 
         if isinstance(self.preprocessing_defences, Preprocessor):

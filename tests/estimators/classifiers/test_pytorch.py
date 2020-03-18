@@ -148,7 +148,7 @@ class TestPyTorchClassifier(TestBase):
         self.assertAlmostEqual(accuracy_2, 0.75, delta=0.1)
 
     def test_nb_classes(self):
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
         self.assertEqual(classifier.nb_classes, 10)
 
     def test_input_shape(self):
