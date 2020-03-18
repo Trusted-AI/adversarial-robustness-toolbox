@@ -28,9 +28,10 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import Classifier
+from art.estimators.classifiers.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,8 @@ class BoundaryAttack(EvasionAttack):
         :type init_size: `int`
         """
         super(BoundaryAttack, self).__init__(classifier=classifier)
+        if not isinstance(classifier, ClassifierMixin):
+            raise ClassifierError(self.__class__, [ClassifierMixin], classifier)
 
         params = {
             "targeted": targeted,
@@ -103,15 +106,6 @@ class BoundaryAttack(EvasionAttack):
             "batch_size": 1,
         }
         self.set_params(**params)
-
-    @classmethod
-    def is_valid_classifier_type(cls, classifier):
-        """
-        Checks whether the classifier provided is a classifer which this class can perform an attack on
-        :param classifier:
-        :return:
-        """
-        return True if isinstance(classifier, Classifier) else False
 
     def generate(self, x, y=None, **kwargs):
         """
