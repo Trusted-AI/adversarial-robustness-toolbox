@@ -68,6 +68,18 @@ NewtonFool
    :members:
    :special-members:
 
+PixelAttack
+-----------
+.. autoclass:: PixelAttack
+   :members:
+   :special-members:
+
+ThresholdAttack
+---------------
+.. autoclass:: ThresholdAttack
+   :members:
+   :special-members:
+
 Spatial Transformations Attack
 ------------------------------
 .. autoclass:: SpatialTransformation

@@ -90,7 +90,7 @@ class Postprocessor(abc.ABC):
         :type preds: `np.ndarray`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
-        :return: None
+        :return: None.
         """
         raise NotImplementedError
 
@@ -98,7 +98,7 @@ class Postprocessor(abc.ABC):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
-        :return: `True` when parsing was successful
+        :return: `True` when parsing was successful.
         """
         for key, value in kwargs.items():
             if key in self.params:

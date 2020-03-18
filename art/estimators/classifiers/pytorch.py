@@ -32,7 +32,7 @@ from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradient
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
+class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
     """
     This class implements a classifier with the PyTorch framework.
     """
@@ -49,6 +49,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         preprocessing_defences=None,
         postprocessing_defences=None,
         preprocessing=(0, 1),
+        device_type="gpu",
     ):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -80,6 +81,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
+        :type device_type: `string`
         """
         super().__init__(
             clip_values=clip_values,
@@ -99,14 +102,25 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Get the internal layers
         self._layer_names = self._model.get_layers
 
-        # Use GPU if possible
+        # Set device
         import torch
 
-        self._device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        if device_type == "cpu" or not torch.cuda.is_available():
+            self._device = torch.device("cpu")
+        else:
+            cuda_idx = torch.cuda.current_device()
+            self._device = torch.device("cuda:{}".format(cuda_idx))
+
         self._model.to(self._device)
 
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
+
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if isinstance(loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss)):
+            self._reduce_labels = True
+        else:
+            self._reduce_labels = False
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -162,7 +176,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-        y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
+        # Check label shape
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
@@ -207,11 +224,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         from art.data_generators import PyTorchDataGenerator
 
         # Train directly in PyTorch
-        if isinstance(generator, PyTorchDataGenerator) and not (
-            hasattr(self, "label_smooth") or hasattr(self, "feature_squeeze")
-        ):
+        if isinstance(generator, PyTorchDataGenerator) and \
+                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
+                self.preprocessing == (0, 1):
             for _ in range(nb_epochs):
-                for i_batch, o_batch in generator.data_loader:
+                for i_batch, o_batch in generator.iterator:
                     if isinstance(i_batch, np.ndarray):
                         i_batch = torch.from_numpy(i_batch).to(self._device)
                     else:
@@ -346,12 +363,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
+        # Check label shape
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
-        labels_t = torch.from_numpy(np.argmax(y_preprocessed, axis=1)).to(self._device)
+        labels_t = torch.from_numpy(y_preprocessed).to(self._device)
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)

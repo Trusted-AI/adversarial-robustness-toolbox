@@ -24,21 +24,21 @@ import logging
 
 import numpy as np
 
-from art.attacks.attack import PoisoningAttack
+from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators.classifiers.scikitlearn import ScikitlearnSVC
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
 
-class PoisoningAttackSVM(PoisoningAttack):
+class PoisoningAttackSVM(PoisoningAttackWhiteBox):
     """
     Close implementation of poisoning attack on Support Vector Machines (SVM) by Biggio et al.
 
     | Paper link: https://arxiv.org/pdf/1206.6389.pdf
     """
 
-    attack_params = PoisoningAttack.attack_params + [
+    attack_params = PoisoningAttackWhiteBox.attack_params + [
         "classifier",
         "step",
         "eps",
@@ -94,19 +94,19 @@ class PoisoningAttackSVM(PoisoningAttack):
         self.max_iter = max_iter
         self.set_params(**kwargs)
 
-    def generate(self, x, y=None, **kwargs):
+    def poison(self, x, y=None, **kwargs):
         """
         Iteratively finds optimal attack points starting at values at x
 
         :param x: An array with the points that initialize attack points.
         :type x: `np.ndarray`
         :param y: The target labels for
-        :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
+        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :rtype: `(np.ndarray, np.ndarray)`
         """
 
         if y is None:
-            y_attack = self.classifier.predict(x)
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
         else:
             y_attack = np.copy(y)
 
@@ -134,7 +134,7 @@ class PoisoningAttackSVM(PoisoningAttack):
             100 * compute_success(self.classifier, x, y, x_adv, targeted=targeted),
         )
 
-        return x_adv
+        return x_adv, y_attack
 
     def set_params(self, **kwargs):
         """

@@ -29,7 +29,7 @@ x = tf.layers.dense(x, 100, activation=tf.nn.relu)
 logits = tf.layers.dense(x, 10)
 
 loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels_ph))
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
 train = optimizer.minimize(loss)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
@@ -45,6 +45,7 @@ classifier = TFClassifier(
     loss=loss,
     learning=None,
     sess=sess,
+    preprocessing_defences=[]
 )
 
 # Step 4: Train the ART classifier

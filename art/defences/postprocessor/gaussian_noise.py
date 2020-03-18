@@ -77,7 +77,7 @@ class GaussianNoise(Postprocessor):
         post_preds += noise
 
         if preds.shape[1] > 1:
-            # Check if model output is logit or probability
+            # Check if model output is logits or probability
             are_probability = [is_probability(x) for x in preds]
             all_probability = np.sum(are_probability) == preds.shape[0]
 

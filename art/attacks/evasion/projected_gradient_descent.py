@@ -34,6 +34,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -99,15 +100,7 @@ class ProjectedGradientDescent(FastGradientMethod):
             minimal=False,
         )
         if not isinstance(classifier, ClassGradientsMixin):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
+            raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {"max_iter": max_iter, "random_eps": random_eps}
         ProjectedGradientDescent.set_params(self, **kwargs)

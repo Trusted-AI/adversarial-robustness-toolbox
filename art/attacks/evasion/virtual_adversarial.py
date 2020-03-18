@@ -31,6 +31,7 @@ from art.estimators.estimator import NeuralNetworkMixin
 from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -61,15 +62,8 @@ class VirtualAdversarialMethod(EvasionAttack):
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
         if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.estimators.classifiers.classifier.ClassifierNeuralNetworkMixin` and "
-                    "`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is "
-                    "instance of " + str(classifier.__class__.__bases__) + ". "
-                    " The classifier needs to be a Neural Network and provide gradients."
-                )
-            )
+            raise ClassifierError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
+
         kwargs = {"finite_diff": finite_diff, "eps": eps, "max_iter": max_iter, "batch_size": batch_size}
         self.set_params(**kwargs)
 

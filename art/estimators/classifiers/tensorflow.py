@@ -32,7 +32,7 @@ from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradient
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstimator):
+class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
     """
     This class implements a classifier with the TensorFlow framework.
     """
@@ -51,6 +51,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         preprocessing_defences=None,
         postprocessing_defences=None,
         preprocessing=(0, 1),
+        feed_dict={},
     ):
         """
         Initialization specific to TensorFlow models implementation.
@@ -88,6 +89,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
+                          additionally required placeholders except the placeholders defined in this class.
+        :type feed_dict: `dictionary`
         """
         # pylint: disable=E0401
         import tensorflow as tf
@@ -107,7 +111,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         self._train = train
         self._loss = loss
         self._learning = learning
-        self._feed_dict = {}
+        self._feed_dict = feed_dict
 
         # Assign session
         if sess is None:
@@ -120,6 +124,12 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Get the loss gradients graph
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
+
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if len(self._labels_ph.shape) == 1:
+            self._reduce_labels = True
+        else:
+            self._reduce_labels = False
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -179,6 +189,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
+        # Check label shape
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
 
@@ -213,15 +227,18 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :type kwargs: `dict`
         :return: `None`
         """
-        from art.data_generators import TFDataGenerator
+        from art.data_generators import TensorFlowDataGenerator
 
         # Train directly in TensorFlow
-        if isinstance(generator, TFDataGenerator) and not (
-            hasattr(self, "label_smooth") or hasattr(self, "feature_squeeze")
-        ):
+        if isinstance(generator, TensorFlowDataGenerator) and \
+                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
+                self.preprocessing == (0, 1):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):
                     i_batch, o_batch = generator.get_batch()
+
+                    if self._reduce_labels:
+                        o_batch = np.argmax(o_batch, axis=1)
 
                     # Create feed_dict
                     feed_dict = {self._input_ph: i_batch, self._labels_ph: o_batch}
@@ -229,6 +246,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
+        else:
             super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x, label=None, **kwargs):
@@ -311,6 +329,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Check if loss available
         if not hasattr(self, "_loss_grads") or self._loss_grads is None or self._labels_ph is None:
             raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
+
+        # Check label shape
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         # Create feed_dict
         feed_dict = {self._input_ph: x_preprocessed, self._labels_ph: y_preprocessed}
@@ -675,6 +697,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                be divided by the second one.
         :type preprocessing: `tuple`
         """
+        import tensorflow as tf
+
         super(TensorFlowV2Classifier, self).__init__(
             clip_values=clip_values,
             channel_index=channel_index,
@@ -682,11 +706,18 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
+
         self._model = model
         self._nb_classes = nb_classes
         self._input_shape = input_shape
         self._loss_object = loss_object
         self._train_step = train_step
+
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if isinstance(self._loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
+            self._reduce_labels = True
+        else:
+            self._reduce_labels = False
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -743,6 +774,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
+        # Check label shape
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
         train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
         for _ in range(nb_epochs):
@@ -762,7 +797,21 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                TensorFlow and providing it takes no effect.
         :type kwargs: `dict`
         """
-        raise NotImplementedError
+        import tensorflow as tf
+        from art.data_generators import TensorFlowV2DataGenerator
+
+        # Train directly in TensorFlow
+        if isinstance(generator, TensorFlowV2DataGenerator) and \
+                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
+                self.preprocessing == (0, 1):
+            for _ in range(nb_epochs):
+                for i_batch, o_batch in generator.iterator:
+                    if self._reduce_labels:
+                        o_batch = tf.math.argmax(o_batch, axis=1)
+                    self._train_step(i_batch, o_batch)
+        else:
+            # Fit a generic data generator through the API
+            super().fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x, label=None, **kwargs):
         """
@@ -862,7 +911,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
                 tape.watch(x_preprocessed_tf)
                 predictions = self._model(x_preprocessed_tf)
-                if isinstance(self._loss_object, tf.keras.losses.SparseCategoricalCrossentropy):
+                if self._reduce_labels:
                     loss = self._loss_object(np.argmax(y, axis=1), predictions)
                 else:
                     loss = self._loss_object(y, predictions)

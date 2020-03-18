@@ -31,7 +31,6 @@ logger = logging.getLogger(__name__)
 
 
 class TestLightGBMClassifier(TestBase):
-
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234)
@@ -41,17 +40,17 @@ class TestLightGBMClassifier(TestBase):
         cls.y_test_iris_index = np.argmax(cls.y_test_iris, axis=1)
 
         num_round = 10
-        param = {'objective': 'multiclass', 'metric': 'multi_logloss', 'num_class': 3}
+        param = {"objective": "multiclass", "metric": "multi_logloss", "num_class": 3}
         train_data = lgb.Dataset(cls.x_train_iris, label=cls.y_train_iris_index)
         model = lgb.train(param, train_data, num_round, valid_sets=[train_data])
 
         cls.classifier = LightGBMClassifier(model=model)
 
     def test_predict(self):
-        y_predicted = (self.classifier.predict(self.x_test_iris[0:1]))
+        y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[0.14644158, 0.16454982, 0.68900861]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

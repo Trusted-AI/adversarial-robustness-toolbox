@@ -6,14 +6,25 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
+pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evation tests"; fi
+
+#Only classifier tests need to be run for each frameworks
+mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
+for mlFramework in "${mlFrameworkList[@]}"; do
+  echo "Running tests with framework $mlFramework"
+  pytest -q tests/classifiersFrameworks/ --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed tests for framework $mlFramework"; fi
+done
+
+
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
-                    "tests/attacks/test_boundary.py" \
+                    "tests/attacks/test_backdoor_attack.py" \
                     "tests/attacks/test_carlini.py" \
                     "tests/attacks/test_copycat_cnn.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
                     "tests/attacks/test_deepfool.py" \
                     "tests/attacks/test_elastic_net.py" \
-                    "tests/attacks/test_fast_gradient.py" \
                     "tests/attacks/test_functionally_equivalent_extraction.py" \
                     "tests/attacks/test_hclu.py" \
                     "tests/attacks/test_input_filter.py" \
@@ -38,18 +49,17 @@ declare -a classifiers=("tests/estimators/classifiers/test_blackbox.py" \
                         "tests/estimators/classifiers/test_ensemble.py" \
                         "tests/estimators/classifiers/test_GPy.py" \
                         "tests/estimators/classifiers/test_input_filter.py" \
-                        "tests/estimators/classifiers/test_keras.py" \
                         "tests/estimators/classifiers/test_keras_tf.py" \
                         "tests/estimators/classifiers/test_lightgbm.py" \
                         "tests/estimators/classifiers/test_mxnet.py" \
                         "tests/estimators/classifiers/test_pytorch.py" \
                         "tests/estimators/classifiers/test_scikitlearn.py" \
-                        "tests/estimators/classifiers/test_tensorflow.py" \
                         "tests/estimators/classifiers/test_xgboost.py" )
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_adversarial_trainer_madry_pgd.py" \
                      "tests/defences/test_class_labels.py" \
+                     "tests/defences/test_defensive_distillation.py" \
                      "tests/defences/test_feature_squeezing.py" \
                      "tests/defences/test_gaussian_augmentation.py" \
                      "tests/defences/test_gaussian_noise.py" \

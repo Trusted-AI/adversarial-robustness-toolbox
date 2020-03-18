@@ -24,9 +24,9 @@ copyright = '2018, IBM Corporation'
 author = 'Maria-Irina Nicolae'
 
 # The short X.Y version
-version = '1.1'
+version = '1.2'
 # The full version, including alpha/beta/rc tags
-release = '1.1.1'
+release = '1.2.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -96,7 +96,7 @@ if os.environ.get('READTHEDOCS') != 'True':
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = []
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.

@@ -28,6 +28,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
+from art.classifiers.classifier import Classifier
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
@@ -102,6 +103,15 @@ class BoundaryAttack(EvasionAttack):
             "batch_size": 1,
         }
         self.set_params(**params)
+
+    @classmethod
+    def is_valid_classifier_type(cls, classifier):
+        """
+        Checks whether the classifier provided is a classifer which this class can perform an attack on
+        :param classifier:
+        :return:
+        """
+        return True if isinstance(classifier, Classifier) else False
 
     def generate(self, x, y=None, **kwargs):
         """
@@ -300,7 +310,6 @@ class BoundaryAttack(EvasionAttack):
         :rtype: `np.ndarray`
         """
         # Generate perturbation randomly
-        # input_shape = current_sample.shape
         perturb = np.random.randn(*self.classifier.input_shape).astype(ART_NUMPY_DTYPE)
 
         # Rescale the perturbation
@@ -315,7 +324,8 @@ class BoundaryAttack(EvasionAttack):
             direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
             for i in range(direction.shape[0]):
                 direction[i] /= np.linalg.norm(direction[i])
-                perturb[i] -= np.dot(perturb[i], direction[i]) * direction[i]
+                perturb[i] -= np.dot(np.dot(perturb[i], direction[i].T), direction[i])
+
             perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
         elif len(self.classifier.input_shape) == 1:
             direction /= np.linalg.norm(direction)

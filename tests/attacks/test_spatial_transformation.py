@@ -26,7 +26,9 @@ import numpy as np
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
 
 from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt, get_iris_classifier_kr
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr
+from tests.utils import get_image_classifier_pt, get_tabular_classifier_kr
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -42,10 +44,10 @@ class TestSpatialTransformation(TestBase):
 
         cls.n_train = 100
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def test_tensorflow_classifier(self):
         """
@@ -55,11 +57,12 @@ class TestSpatialTransformation(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # Attack
-        attack_st = SpatialTransformation(tfc, max_translation=10.0, num_translations=3, max_rotation=30.0,
-                                          num_rotations=3)
+        attack_st = SpatialTransformation(
+            tfc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+        )
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(x_train_adv[0, 8, 13, 0], 0.49004024, delta=0.01)
@@ -87,11 +90,12 @@ class TestSpatialTransformation(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # Attack
-        attack_st = SpatialTransformation(krc, max_translation=10.0, num_translations=3, max_rotation=30.0,
-                                          num_rotations=3)
+        attack_st = SpatialTransformation(
+            krc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+        )
         x_train_adv = attack_st.generate(self.x_train_mnist)
 
         self.assertAlmostEqual(x_train_adv[0, 8, 13, 0], 0.49004024, delta=0.01)
@@ -120,11 +124,12 @@ class TestSpatialTransformation(TestBase):
         x_test_original = x_test_mnist.copy()
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt(from_logits=True)
+        ptc = get_image_classifier_pt(from_logits=True)
 
         # Attack
-        attack_st = SpatialTransformation(ptc, max_translation=10.0, num_translations=3, max_rotation=30.0,
-                                          num_rotations=3)
+        attack_st = SpatialTransformation(
+            ptc, max_translation=10.0, num_translations=3, max_rotation=30.0, num_rotations=3
+        )
         x_train__mnistadv = attack_st.generate(x_train_mnist)
 
         self.assertAlmostEqual(x_train__mnistadv[0, 0, 13, 18], 0.627451, delta=0.01)
@@ -143,7 +148,7 @@ class TestSpatialTransformation(TestBase):
 
     def test_failure_feature_vectors(self):
         attack_params = {"max_translation": 10.0, "num_translations": 3, "max_rotation": 30.0, "num_rotations": 3}
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         attack = SpatialTransformation(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
@@ -152,21 +157,11 @@ class TestSpatialTransformation(TestBase):
         with self.assertRaises(ValueError) as context:
             attack.generate(data)
 
-        self.assertIn('Feature vectors detected.', str(context.exception))
+        self.assertIn("Feature vectors detected.", str(context.exception))
 
-    # def test_classifier_type_check_fail_classifier(self):
-    #     # Use a useless test classifier to test basic classifier properties
-    #     class ClassifierNoAPI:
-    #         pass
-    #
-    #     classifier = ClassifierNoAPI
-    #     with self.assertRaises(TypeError) as context:
-    #         _ = SpatialTransformation(classifier=classifier)
-    #
-    #     self.assertIn('For `SpatialTransformation` classifier must be an instance of '
-    #                   '`art.estimators.classifiers.classifier.Classifier`, the provided classifier is instance of '
-    #                   '(<class \'object\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(SpatialTransformation)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

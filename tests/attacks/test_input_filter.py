@@ -19,17 +19,18 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
 import numpy as np
 import pandas as pd
 
 from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
 from art.estimators.classifiers.keras import KerasClassifier
+from art.estimators.classifiers.classifier import ClassifierGradients
 from art.utils import load_dataset, get_labels_np_array
 
-from tests.utils import master_seed
-from tests.utils import get_classifier_tf, get_classifier_pt
-from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import get_image_classifier_tf, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr
+from tests.utils import get_tabular_classifier_pt, master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +44,11 @@ class TestInputFilter(unittest.TestCase):
     A unittest class for testing the input filtering using
     PGD tests.
     """
+
     @classmethod
     def setUpClass(cls):
         # MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
         x_train = list(x_train[:NB_TRAIN])
         y_train = list(y_train[:NB_TRAIN])
         x_test = list(x_test[:NB_TEST])
@@ -54,7 +56,7 @@ class TestInputFilter(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Iris
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("iris")
         x_train = pd.DataFrame(x_train)
         y_train = pd.DataFrame(y_train)
         x_test = pd.DataFrame(x_test)
@@ -66,15 +68,15 @@ class TestInputFilter(unittest.TestCase):
 
     def test_tensorflow_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
-        classifier, sess = get_classifier_tf()
+        classifier, sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / len(y_train)
-        logger.info('[TF, MNIST] Accuracy on training set: %.2f%%', acc * 100)
+        logger.info("[TF, MNIST] Accuracy on training set: %.2f%%", acc * 100)
 
         scores = get_labels_np_array(classifier.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(np.array(y_test), axis=1)) / len(y_test)
-        logger.info('[TF, MNIST] Accuracy on test set: %.2f%%', acc * 100)
+        logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", acc * 100)
 
         self._test_backend_mnist(classifier, x_train, y_train, x_test, y_test)
 
@@ -82,15 +84,15 @@ class TestInputFilter(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
         x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
-        classifier = get_classifier_pt()
+        classifier = get_image_classifier_pt()
 
         scores = get_labels_np_array(classifier.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / len(y_train)
-        logger.info('[PyTorch, MNIST] Accuracy on training set: %.2f%%', acc * 100)
+        logger.info("[PyTorch, MNIST] Accuracy on training set: %.2f%%", acc * 100)
 
         scores = get_labels_np_array(classifier.predict(x_test))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(np.array(y_test), axis=1)) / len(y_test)
-        logger.info('[PyTorch, MNIST] Accuracy on test set: %.2f%%', acc * 100)
+        logger.info("[PyTorch, MNIST] Accuracy on test set: %.2f%%", acc * 100)
 
         self._test_backend_mnist(classifier, x_train, y_train, x_test, y_test)
 
@@ -112,10 +114,10 @@ class TestInputFilter(unittest.TestCase):
         self.assertFalse((y_test == test_y_pred).all())
 
         acc = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / len(y_train)
-        logger.info('Accuracy on adversarial train examples: %.2f%%', acc * 100)
+        logger.info("Accuracy on adversarial train examples: %.2f%%", acc * 100)
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(np.array(y_test), axis=1)) / len(y_test)
-        logger.info('Accuracy on adversarial test examples: %.2f%%', acc * 100)
+        logger.info("Accuracy on adversarial test examples: %.2f%%", acc * 100)
 
         # Test PGD with 3 random initialisations
         attack = ProjectedGradientDescent(classifier, num_random_init=3, max_iter=5)
@@ -132,17 +134,20 @@ class TestInputFilter(unittest.TestCase):
         self.assertFalse((y_test == test_y_pred).all())
 
         acc = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / len(y_train)
-        logger.info('Accuracy on adversarial train examples with 3 random initialisations: %.2f%%', acc * 100)
+        logger.info("Accuracy on adversarial train examples with 3 random initialisations: %.2f%%", acc * 100)
 
         acc = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(np.array(y_test), axis=1)) / len(y_test)
-        logger.info('Accuracy on adversarial test examples with 3 random initialisations: %.2f%%', acc * 100)
+        logger.info("Accuracy on adversarial test examples with 3 random initialisations: %.2f%%", acc * 100)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(np.array(x_test_original) - np.array(x_test)))), 0.0, delta=0.00001)
 
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [ClassifierGradients])
+
     def test_keras_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
@@ -154,11 +159,11 @@ class TestInputFilter(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(np.array(y_test), axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
-        logger.info('Accuracy on Iris with PGD adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
 
     def test_keras_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -171,11 +176,11 @@ class TestInputFilter(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(np.array(y_test), axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
-        logger.info('Accuracy on Iris with PGD adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
 
     def test_tensorflow_iris(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
@@ -187,11 +192,11 @@ class TestInputFilter(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(np.array(y_test), axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
-        logger.info('Accuracy on Iris with PGD adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
 
     def test_pytorch_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
 
         # Test untargeted attack
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.1, max_iter=5)
@@ -203,7 +208,7 @@ class TestInputFilter(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(np.array(y_test), axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
-        logger.info('Accuracy on Iris with PGD adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
 
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
@@ -211,9 +216,11 @@ class TestInputFilter(unittest.TestCase):
 
         from art.estimators.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
-        scikitlearn_test_cases = {LogisticRegression: ScikitlearnLogisticRegression,
-                                  SVC: ScikitlearnSVC,
-                                  LinearSVC: ScikitlearnSVC}
+        scikitlearn_test_cases = {
+            LogisticRegression: ScikitlearnLogisticRegression,
+            SVC: ScikitlearnSVC,
+            LinearSVC: ScikitlearnSVC,
+        }
 
         (_, _), (x_test, y_test) = self.iris
         x_test_original = x_test.copy()
@@ -233,8 +240,11 @@ class TestInputFilter(unittest.TestCase):
             preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertFalse((np.argmax(np.array(y_test), axis=1) == preds_adv).all())
             acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
-            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with PGD adversarial examples: '
-                                                                         '%.2f%%', (acc * 100))
+            logger.info(
+                "Accuracy of " + classifier.__class__.__name__ + " on Iris with PGD adversarial examples: " "%.2f%%",
+                (acc * 100),
+            )
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

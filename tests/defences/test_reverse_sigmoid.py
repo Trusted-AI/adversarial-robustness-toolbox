@@ -22,6 +22,7 @@ import numpy as np
 
 from art.utils import load_dataset
 from art.defences.postprocessor import ReverseSigmoid
+
 from tests.utils import master_seed, get_classifier_kr_tf, get_classifier_kr_tf_binary
 
 logger = logging.getLogger(__name__)
@@ -34,7 +35,7 @@ class TestReverseSigmoid(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
@@ -45,17 +46,45 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=1.0, gamma=0.1)
         post_preds = postprocessor(preds=preds)
 
-        classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
-                                                      0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
-                                                    dtype=np.float32)
-        post_classifier_prediction_expected = np.asarray([[0.10733664, 0.07743666, 0.09712707, 0.08230411,
-                                                           0.10377649, 0.0764482, 0.08234023, 0.20600921, 0.08703023,
-                                                           0.08019119]], dtype=np.float32)
+        classifier_prediction_expected = np.asarray(
+            [
+                [
+                    0.12109935,
+                    0.0498215,
+                    0.0993958,
+                    0.06410096,
+                    0.11366928,
+                    0.04645343,
+                    0.06419807,
+                    0.30685693,
+                    0.07616714,
+                    0.05823757,
+                ]
+            ],
+            dtype=np.float32,
+        )
+        post_classifier_prediction_expected = np.asarray(
+            [
+                [
+                    0.10733664,
+                    0.07743666,
+                    0.09712707,
+                    0.08230411,
+                    0.10377649,
+                    0.0764482,
+                    0.08234023,
+                    0.20600921,
+                    0.08703023,
+                    0.08019119,
+                ]
+            ],
+            dtype=np.float32,
+        )
 
         np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
@@ -65,17 +94,45 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter beta.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=0.75, gamma=0.1)
         post_preds = postprocessor(preds=preds)
 
-        classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
-                                                      0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
-                                                    dtype=np.float32)
-        post_classifier_prediction_expected = np.asarray([[0.1097239, 0.07264659, 0.09752058, 0.07914664, 0.10549247,
-                                                           0.07124537, 0.07919333, 0.22350204, 0.08514594, 0.07638316]],
-                                                         dtype=np.float32)
+        classifier_prediction_expected = np.asarray(
+            [
+                [
+                    0.12109935,
+                    0.0498215,
+                    0.0993958,
+                    0.06410096,
+                    0.11366928,
+                    0.04645343,
+                    0.06419807,
+                    0.30685693,
+                    0.07616714,
+                    0.05823757,
+                ]
+            ],
+            dtype=np.float32,
+        )
+        post_classifier_prediction_expected = np.asarray(
+            [
+                [
+                    0.1097239,
+                    0.07264659,
+                    0.09752058,
+                    0.07914664,
+                    0.10549247,
+                    0.07124537,
+                    0.07919333,
+                    0.22350204,
+                    0.08514594,
+                    0.07638316,
+                ]
+            ],
+            dtype=np.float32,
+        )
 
         np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
@@ -85,17 +142,45 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter gamma.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=1.0, gamma=0.5)
         post_preds = postprocessor(preds=preds)
 
-        classifier_prediction_expected = np.asarray([[0.12109935, 0.0498215, 0.0993958, 0.06410096, 0.11366928,
-                                                      0.04645343, 0.06419807, 0.30685693, 0.07616714, 0.05823757]],
-                                                    dtype=np.float32)
-        post_classifier_prediction_expected = np.asarray([[0.09699764, 0.10062696, 0.09689676, 0.09873781, 0.0968849,
-                                                           0.10121989, 0.0987279, 0.11275949, 0.09774373, 0.09940492]],
-                                                         dtype=np.float32)
+        classifier_prediction_expected = np.asarray(
+            [
+                [
+                    0.12109935,
+                    0.0498215,
+                    0.0993958,
+                    0.06410096,
+                    0.11366928,
+                    0.04645343,
+                    0.06419807,
+                    0.30685693,
+                    0.07616714,
+                    0.05823757,
+                ]
+            ],
+            dtype=np.float32,
+        )
+        post_classifier_prediction_expected = np.asarray(
+            [
+                [
+                    0.09699764,
+                    0.10062696,
+                    0.09689676,
+                    0.09873781,
+                    0.0968849,
+                    0.10121989,
+                    0.0987279,
+                    0.11275949,
+                    0.09774373,
+                    0.09940492,
+                ]
+            ],
+            dtype=np.float32,
+        )
 
         np.testing.assert_array_almost_equal(preds, classifier_prediction_expected, decimal=4)
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
@@ -105,7 +190,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid for binary classifier.
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=1.0, gamma=0.1)
         post_preds = postprocessor(preds=preds)
@@ -121,7 +206,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter beta for binary classifier
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=0.75, gamma=0.1)
         post_preds = postprocessor(preds=preds)
@@ -137,7 +222,7 @@ class TestReverseSigmoid(unittest.TestCase):
         Test reverse sigmoid parameter gamma for binary classifier
         """
         (_, _), (x_test, _) = self.mnist
-        classifier = get_classifier_kr_tf_binary()
+        classifier = get_image_classifier_kr_tf_binary()
         preds = classifier.predict(x_test[0:1])
         postprocessor = ReverseSigmoid(beta=1.0, gamma=0.5)
         post_preds = postprocessor(preds=preds)
@@ -149,5 +234,5 @@ class TestReverseSigmoid(unittest.TestCase):
         np.testing.assert_array_almost_equal(post_preds, post_classifier_prediction_expected, decimal=4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

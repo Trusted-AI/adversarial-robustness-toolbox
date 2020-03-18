@@ -31,6 +31,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -89,14 +90,7 @@ class FastGradientMethod(EvasionAttack):
         """
         super(FastGradientMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassGradientsMixin):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is "
-                    "instance of " + str(classifier.__class__.__bases__) + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
+            raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {
             "norm": norm,
@@ -107,9 +101,19 @@ class FastGradientMethod(EvasionAttack):
             "batch_size": batch_size,
             "minimal": minimal,
         }
+
         FastGradientMethod.set_params(self, **kwargs)
 
         self._project = True
+
+    @classmethod
+    def is_valid_classifier_type(cls, classifier):
+        """
+        Checks whether the classifier provided is a classifer which this class can perform an attack on
+        :param classifier:
+        :return:
+        """
+        return True if isinstance(classifier, ClassifierGradients) else False
 
     def _minimal_perturbation(self, x, y):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the

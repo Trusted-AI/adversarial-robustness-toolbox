@@ -39,7 +39,7 @@ NB_TEST = 10
 
 class TestSVMAttack(unittest.TestCase):
     """
-    A unittest class for testing Adversarial Patch attack.
+    A unittest class for testing Poisoning Attack on SVMs.
     """
 
     @classmethod
@@ -86,8 +86,8 @@ class TestSVMAttack(unittest.TestCase):
         x_train = x_train[order]
         y_train = y_train[order].astype(np.float)
 
-        x_train = x_train[:int(.9 * n_sample)]
-        y_train = y_train[:int(.9 * n_sample)]
+        x_train = x_train[: int(0.9 * n_sample)]
+        y_train = y_train[: int(0.9 * n_sample)]
         train_dups = self.find_duplicates(x_train)
         x_train = x_train[np.logical_not(train_dups)]
         y_train = y_train[np.logical_not(train_dups)]
@@ -113,7 +113,8 @@ class TestSVMAttack(unittest.TestCase):
         poison = SklearnClassifier(model=LinearSVC(), clip_values=clip_values)
         poison.fit(x_train, y_train)
         attack = PoisoningAttackSVM(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
-        attack_point = attack.generate(np.array([x_train[0]]))
+        attack_y = np.array([1, 1]) - y_train[0]
+        attack_point, _ = attack.poison(np.array([x_train[0]]), y=np.array([attack_y]))
         poison.fit(x=np.vstack([x_train, attack_point]), y=np.vstack([y_train, np.copy(y_train[0].reshape((1, 2)))]))
 
         acc = np.average(np.all(clean.predict(x_test) == y_test, axis=1)) * 100
@@ -127,17 +128,19 @@ class TestSVMAttack(unittest.TestCase):
 
     def test_unsupported_kernel(self):
         (x_train, y_train), (x_test, y_test), min_, max_ = self.iris
-        model = SVC(kernel='sigmoid', gamma='auto')
+        model = SVC(kernel="sigmoid", gamma="auto")
         with self.assertRaises(TypeError):
-            _ = PoisoningAttackSVM(classifier=model, step=0.01, eps=1.0, x_train=x_train, y_train=y_train,
-                                   x_val=x_test, y_val=y_test)
+            _ = PoisoningAttackSVM(
+                classifier=model, step=0.01, eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test
+            )
 
     def test_unsupported_SVC(self):
         (x_train, y_train), (x_test, y_test), _, _ = self.iris
         model = NuSVC()
         with self.assertRaises(TypeError):
-            _ = PoisoningAttackSVM(classifier=model, step=0.01, eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test,
-                                   y_val=y_test)
+            _ = PoisoningAttackSVM(
+                classifier=model, step=0.01, eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test, y_val=y_test
+            )
 
     def test_SVC_kernels(self):
         """
@@ -150,15 +153,18 @@ class TestSVMAttack(unittest.TestCase):
 
         # Build Scikitlearn Classifier
         clip_values = (min_, max_)
-        for kernel in ['linear', 'poly', 'rbf']:
-            clean = SklearnClassifier(model=SVC(kernel=kernel, gamma='auto'), clip_values=clip_values)
+        for kernel in ["linear", "poly", "rbf"]:
+            clean = SklearnClassifier(model=SVC(kernel=kernel, gamma="auto"), clip_values=clip_values)
             clean.fit(x_train, y_train)
-            poison = SklearnClassifier(model=SVC(kernel=kernel, gamma='auto'), clip_values=clip_values)
+            poison = SklearnClassifier(model=SVC(kernel=kernel, gamma="auto"), clip_values=clip_values)
             poison.fit(x_train, y_train)
             attack = PoisoningAttackSVM(poison, 0.01, 1.0, x_train, y_train, x_test, y_test, 100)
-            attack_point = attack.generate(np.array([x_train[0]]))
-            poison.fit(x=np.vstack([x_train, attack_point]),
-                       y=np.vstack([y_train, np.array([1, 1]) - np.copy(y_train[0].reshape((1, 2)))]))
+            attack_y = np.array([1, 1]) - y_train[0]
+            attack_point, _ = attack.poison(np.array([x_train[0]]), y=np.array([attack_y]))
+            poison.fit(
+                x=np.vstack([x_train, attack_point]),
+                y=np.vstack([y_train, np.array([1, 1]) - np.copy(y_train[0].reshape((1, 2)))]),
+            )
 
             acc = np.average(np.all(clean.predict(x_test) == y_test, axis=1)) * 100
             poison_acc = np.average(np.all(poison.predict(x_test) == y_test, axis=1)) * 100
@@ -170,5 +176,5 @@ class TestSVMAttack(unittest.TestCase):
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

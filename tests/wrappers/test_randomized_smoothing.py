@@ -28,9 +28,9 @@ from art.estimators.classifiers.keras import KerasClassifier
 from art.utils import load_dataset, random_targets, compute_accuracy
 from art.wrappers.randomized_smoothing import RandomizedSmoothing
 
-from tests.utils import master_seed, get_classifier_kr, get_iris_classifier_kr
+from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
 
-os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
+os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
@@ -46,7 +46,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
@@ -60,7 +60,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -108,7 +108,7 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Get Iris
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("iris")
         cls.iris = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
@@ -117,11 +117,11 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
-        krc = get_iris_classifier_kr()
+        krc = get_tabular_classifier_kr()
         rs = RandomizedSmoothing(classifier=krc, sample_size=100, scale=0.01, alpha=0.001)
 
         # Test untargeted attack
-        attack = FastGradientMethod(krc, eps=.1)
+        attack = FastGradientMethod(krc, eps=0.1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -134,10 +134,10 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         pred2 = rs.predict(x_test_adv)
         acc, cov = compute_accuracy(pred, y_test)
         acc2, cov2 = compute_accuracy(pred2, y_test)
-        logger.info('Accuracy on Iris with smoothing on adversarial examples: %.2f%%', (acc * 100))
-        logger.info('Coverage on Iris with smoothing on adversarial examples: %.2f%%', (cov * 100))
-        logger.info('Accuracy on Iris with smoothing: %.2f%%', (acc2 * 100))
-        logger.info('Coverage on Iris with smoothing: %.2f%%', (cov2 * 100))
+        logger.info("Accuracy on Iris with smoothing on adversarial examples: %.2f%%", (acc * 100))
+        logger.info("Coverage on Iris with smoothing on adversarial examples: %.2f%%", (cov * 100))
+        logger.info("Accuracy on Iris with smoothing: %.2f%%", (acc2 * 100))
+        logger.info("Coverage on Iris with smoothing: %.2f%%", (cov2 * 100))
 
         # Check basic functionality of RS object
         # check predict
@@ -162,7 +162,7 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
 
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         krc = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -180,11 +180,11 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         pred2 = rs.predict(x_test_adv)
         acc, cov = compute_accuracy(pred, y_test)
         acc2, cov2 = compute_accuracy(pred2, y_test)
-        logger.info('Accuracy on Iris with smoothing on adversarial examples: %.2f%%', (acc * 100))
-        logger.info('Coverage on Iris with smoothing on adversarial examples: %.2f%%', (cov * 100))
-        logger.info('Accuracy on Iris with smoothing: %.2f%%', (acc2 * 100))
-        logger.info('Coverage on Iris with smoothing: %.2f%%', (cov2 * 100))
+        logger.info("Accuracy on Iris with smoothing on adversarial examples: %.2f%%", (acc * 100))
+        logger.info("Coverage on Iris with smoothing on adversarial examples: %.2f%%", (cov * 100))
+        logger.info("Accuracy on Iris with smoothing: %.2f%%", (acc2 * 100))
+        logger.info("Coverage on Iris with smoothing: %.2f%%", (cov2 * 100))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

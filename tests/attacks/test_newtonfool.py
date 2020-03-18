@@ -26,8 +26,8 @@ from art.attacks.evasion.newtonfool import NewtonFool
 from art.estimators.classifiers.keras import KerasClassifier
 
 from tests.utils import TestBase
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class TestNewtonFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # Attack
         nf = NewtonFool(tfc, max_iter=5, batch_size=100)
@@ -62,7 +62,7 @@ class TestNewtonFool(TestBase):
         y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]
-        self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
+        self.assertTrue((y_pred_max >= 0.9 * y_pred_adv_max).all())
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
@@ -75,7 +75,7 @@ class TestNewtonFool(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # Attack
         nf = NewtonFool(krc, max_iter=5, batch_size=100)
@@ -88,7 +88,7 @@ class TestNewtonFool(TestBase):
         y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]
-        self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
+        self.assertTrue((y_pred_max >= 0.9 * y_pred_adv_max).all())
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
@@ -102,7 +102,7 @@ class TestNewtonFool(TestBase):
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        ptc = get_image_classifier_pt()
 
         # Attack
         nf = NewtonFool(ptc, max_iter=5, batch_size=100)
@@ -115,13 +115,13 @@ class TestNewtonFool(TestBase):
         y_pred_bool = y_pred.max(axis=1, keepdims=1) == y_pred
         y_pred_max = y_pred.max(axis=1)
         y_pred_adv_max = y_pred_adv[y_pred_bool]
-        self.assertTrue((y_pred_max >= .9 * y_pred_adv_max).all())
+        self.assertTrue((y_pred_max >= 0.9 * y_pred_adv_max).all())
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_keras_iris_clipped(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         attack = NewtonFool(classifier, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
@@ -132,10 +132,10 @@ class TestNewtonFool(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with NewtonFool adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with NewtonFool adversarial examples: %.2f%%", (acc * 100))
 
     def test_keras_iris_unbounded(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -146,10 +146,10 @@ class TestNewtonFool(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with NewtonFool adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with NewtonFool adversarial examples: %.2f%%", (acc * 100))
 
     def test_tensorflow_iris(self):
-        classifier, _ = get_iris_classifier_tf()
+        classifier, _ = get_tabular_classifier_tf()
 
         attack = NewtonFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris)
@@ -160,10 +160,10 @@ class TestNewtonFool(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with NewtonFool adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with NewtonFool adversarial examples: %.2f%%", (acc * 100))
 
     def test_pytorch_iris(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
 
         attack = NewtonFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris)
@@ -174,7 +174,7 @@ class TestNewtonFool(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with NewtonFool adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with NewtonFool adversarial examples: %.2f%%", (acc * 100))
 
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
@@ -182,9 +182,11 @@ class TestNewtonFool(TestBase):
 
         from art.estimators.classifiers.scikitlearn import SklearnClassifier
 
-        scikitlearn_test_cases = [LogisticRegression(solver='lbfgs', multi_class='auto'),
-                                  SVC(gamma='auto'),
-                                  LinearSVC()]
+        scikitlearn_test_cases = [
+            LogisticRegression(solver="lbfgs", multi_class="auto"),
+            SVC(gamma="auto"),
+            LinearSVC(),
+        ]
 
         x_test_original = self.x_test_iris.copy()
 
@@ -201,12 +203,15 @@ class TestNewtonFool(TestBase):
             preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
             acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with NewtonFool adversarial examples'
-                                                                         ': %.2f%%', (acc * 100))
+            logger.info(
+                "Accuracy of " + classifier.__class__.__name__ + " on Iris with NewtonFool adversarial examples"
+                ": %.2f%%",
+                (acc * 100),
+            )
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -65,8 +65,8 @@ class TestTotalVarMin(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             preprocess(x)
 
-        self.assertIn('Feature vectors detected.', str(context.exception))
+        self.assertIn("Feature vectors detected.", str(context.exception))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

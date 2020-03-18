@@ -32,7 +32,7 @@ class Preprocessor(abc.ABC):
 
     def __init__(self):
         """
-        Create a preprocessing object
+        Create a preprocessing object.
         """
         self._is_fitted = False
 
@@ -77,7 +77,7 @@ class Preprocessor(abc.ABC):
         :type x: `np.ndarray`
         :param y: Labels to be preprocessed.
         :type y: `np.ndarray`
-        :return: Preprocessed data
+        :return: Preprocessed data.
         """
         raise NotImplementedError
 
@@ -92,7 +92,7 @@ class Preprocessor(abc.ABC):
         :type y: `np.ndarray`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
-        :return: None
+        :return: None.
         """
         raise NotImplementedError
 
@@ -116,7 +116,7 @@ class Preprocessor(abc.ABC):
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
-        :return: `True` when parsing was successful
+        :return: `True` when parsing was successful.
         """
         for key, value in kwargs.items():
             if key in self.params:
