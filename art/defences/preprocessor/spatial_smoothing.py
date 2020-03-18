@@ -22,8 +22,8 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
 
 
 | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
-see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
-https://arxiv.org/abs/1902.06705
+    see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
+    https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -32,8 +32,8 @@ import logging
 import numpy as np
 from scipy import ndimage
 
-from art.defences.preprocessor.preprocessor import Preprocessor
 from art.config import ART_NUMPY_DTYPE
+from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +45,8 @@ class SpatialSmoothing(Preprocessor):
     | Paper link: https://arxiv.org/abs/1704.01155
 
     | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
-    see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
-    https://arxiv.org/abs/1902.06705
+        see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
+        https://arxiv.org/abs/1902.06705
     """
 
     params = ["window_size", "channel_index", "clip_values"]

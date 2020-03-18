@@ -26,7 +26,9 @@ import numpy as np
 from art.attacks.evasion.zoo import ZooAttack
 from art.utils import random_targets
 
-from tests.utils import TestBase, master_seed, get_classifier_kr, get_classifier_pt, get_classifier_tf
+from tests.utils import TestBase, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_image_classifier_tf, master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -43,10 +45,10 @@ class TestZooAttack(TestBase):
 
         cls.n_train = 1
         cls.n_test = 1
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def test_tensorflow_failure_attack(self):
         """
@@ -56,7 +58,7 @@ class TestZooAttack(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # Failure attack
         zoo = ZooAttack(classifier=tfc, max_iter=0, binary_search_steps=0, learning_rate=0)
@@ -80,7 +82,7 @@ class TestZooAttack(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # Targeted attack
         zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=30, binary_search_steps=8, batch_size=128)
@@ -89,11 +91,11 @@ class TestZooAttack(TestBase):
         self.assertFalse((self.x_test_mnist == x_test_mnist_adv).all())
         self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
-        logger.debug('ZOO target: %s', target)
-        logger.debug('ZOO actual: %s', y_pred_adv)
-        logger.info('ZOO success rate on MNIST: %.2f', (sum(target == y_pred_adv) / float(len(target))))
+        logger.debug("ZOO target: %s", target)
+        logger.debug("ZOO actual: %s", y_pred_adv)
+        logger.info("ZOO success rate on MNIST: %.2f", (sum(target == y_pred_adv) / float(len(target))))
 
         # Untargeted attack
         zoo = ZooAttack(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=3)
@@ -103,8 +105,8 @@ class TestZooAttack(TestBase):
         self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
         y_pred = np.argmax(tfc.predict(self.x_test_mnist), axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
-        logger.debug('ZOO actual: %s', y_pred_adv)
-        logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+        logger.debug("ZOO actual: %s", y_pred_adv)
+        logger.info("ZOO success rate on MNIST: %.2f", (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
@@ -121,7 +123,7 @@ class TestZooAttack(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # Targeted attack
         # zoo = ZooAttack(classifier=krc, targeted=True, batch_size=5)
@@ -160,8 +162,8 @@ class TestZooAttack(TestBase):
         self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
         y_pred_adv = np.argmax(krc.predict(x_test_mnist_adv), axis=1)
         y_pred = np.argmax(krc.predict(self.x_test_mnist), axis=1)
-        logger.debug('ZOO actual: %s', y_pred_adv)
-        logger.info('ZOO success rate on MNIST: %.2f', (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+        logger.debug("ZOO actual: %s", y_pred_adv)
+        logger.info("ZOO success rate on MNIST: %.2f", (sum(y_pred != y_pred_adv) / float(len(y_pred))))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
@@ -175,7 +177,7 @@ class TestZooAttack(TestBase):
         :return:
         """
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        ptc = get_image_classifier_pt()
 
         # Get MNIST
         x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
@@ -195,8 +197,16 @@ class TestZooAttack(TestBase):
         # logger.info('ZOO success rate on MNIST: %.2f', (sum(target != y_pred_adv) / float(len(target))))
 
         # Second attack
-        zoo = ZooAttack(classifier=ptc, targeted=False, learning_rate=1e-2, max_iter=10, binary_search_steps=3,
-                        abort_early=False, use_resize=False, use_importance=False)
+        zoo = ZooAttack(
+            classifier=ptc,
+            targeted=False,
+            learning_rate=1e-2,
+            max_iter=10,
+            binary_search_steps=3,
+            abort_early=False,
+            use_resize=False,
+            use_importance=False,
+        )
         x_test_mnist_adv = zoo.generate(x_test_mnist)
         self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
@@ -209,19 +219,9 @@ class TestZooAttack(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    # def test_classifier_type_check_fail_classifier(self):
-    #     # Use a useless test classifier to test basic classifier properties
-    #     class ClassifierNoAPI:
-    #         pass
-    #
-    #     classifier = ClassifierNoAPI
-    #     with self.assertRaises(TypeError) as context:
-    #         _ = ZooAttack(classifier=classifier)
-    #
-    #     self.assertIn('For `ZooAttack` classifier must be an instance of '
-    #                   '`art.estimators.classifiers.classifier.Classifier`, the '
-    #                   'provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(ZooAttack)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

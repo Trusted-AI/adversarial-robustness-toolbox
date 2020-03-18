@@ -31,6 +31,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -97,14 +98,7 @@ class ElasticNet(EvasionAttack):
         """
         super(ElasticNet, self).__init__(classifier)
         if not isinstance(classifier, ClassGradientsMixin):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is "
-                    "instance of " + str(classifier.__class__.__bases__) + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
+            raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -192,9 +186,8 @@ class ElasticNet(EvasionAttack):
         :return: The decayed learning rate
         :rtype: `float`
         """
-        decayed_learning_rate = (self.learning_rate - end_learning_rate) * (
-            1 - global_step / decay_steps
-        ) ** 2 + end_learning_rate
+        learn_rate = self.learning_rate - end_learning_rate
+        decayed_learning_rate = learn_rate * (1 - global_step / decay_steps) ** 2 + end_learning_rate
 
         return decayed_learning_rate
 

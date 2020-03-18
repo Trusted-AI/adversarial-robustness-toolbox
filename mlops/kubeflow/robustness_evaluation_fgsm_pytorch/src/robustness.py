@@ -17,6 +17,10 @@
 # SOFTWARE.
 """Robustness evaluation module."""
 
+import zipfile
+import importlib
+import re
+
 import numpy as np
 from minio import Minio
 
@@ -24,11 +28,7 @@ import torch
 import torch.utils.data
 
 from art.estimators.classifiers import PyTorchClassifier
-from art.attacks.fast_gradient import FastGradientMethod
-
-import zipfile
-import importlib
-import re
+from art.attacks.evasion.fast_gradient import FastGradientMethod
 
 from robustness_util import get_metrics
 

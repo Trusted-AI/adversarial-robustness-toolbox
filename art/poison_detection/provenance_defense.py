@@ -240,7 +240,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         :param labels: The corresponding labels to segment
         :type labels: `np.ndarray`
         :param segment:
-        :return: tupe of (filtered_data, filtered_labels)
+        :return: tuple of (filtered_data, filtered_labels)
         :rtype: (`np.ndarray`, `np.ndarray`)
         """
         filter_mask = np.array([np.isin(data[i, :], segment, invert=True).any() for i in range(data.shape[0])])

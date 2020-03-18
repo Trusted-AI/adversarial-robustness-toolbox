@@ -30,6 +30,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -61,14 +62,7 @@ class DeepFool(EvasionAttack):
         """
         super(DeepFool, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassGradientsMixin):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is "
-                    "instance of " + str(classifier.__class__.__bases__) + ". "
-                    " The classifier needs to be a Neural Network and provide gradients."
-                )
-            )
+            raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
 
         params = {"max_iter": max_iter, "epsilon": epsilon, "nb_grads": nb_grads, "batch_size": batch_size}
         self.set_params(**params)
@@ -130,13 +124,10 @@ class DeepFool(EvasionAttack):
                 value = np.abs(f_diff) / norm
                 value[np.arange(len(value)), labels_indices] = np.inf
                 l_var = np.argmin(value, axis=1)
-                r_var = abs(f_diff[np.arange(len(f_diff)), l_var]) / (
-                    pow(
-                        np.linalg.norm(grad_diff[np.arange(len(grad_diff)), l_var].reshape(len(grad_diff), -1), axis=1),
-                        2,
-                    )
-                    + tol
-                )
+                absolute1 = abs(f_diff[np.arange(len(f_diff)), l_var])
+                draddiff = grad_diff[np.arange(len(grad_diff)), l_var].reshape(len(grad_diff), -1)
+                pow1 = pow(np.linalg.norm(draddiff, axis=1), 2,) + tol
+                r_var = absolute1 / pow1
                 r_var = r_var.reshape((-1,) + (1,) * (len(x.shape) - 1))
                 r_var = r_var * grad_diff[np.arange(len(grad_diff)), l_var]
 
@@ -169,9 +160,9 @@ class DeepFool(EvasionAttack):
                 current_step += 1
 
             # Apply overshoot parameter
-            x_adv[batch_index_1:batch_index_2] = x_adv[batch_index_1:batch_index_2] + (1 + self.epsilon) * (
-                batch - x_adv[batch_index_1:batch_index_2]
-            )
+            x_adv1 = x_adv[batch_index_1:batch_index_2]
+            x_adv2 = (1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2])
+            x_adv[batch_index_1:batch_index_2] = x_adv1 + x_adv2
             if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
                 np.clip(
                     x_adv[batch_index_1:batch_index_2],

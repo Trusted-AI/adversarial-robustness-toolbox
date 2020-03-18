@@ -35,7 +35,7 @@ class Trainer(abc.ABC):
         self._classifier = classifier
 
     @abc.abstractmethod
-    def fit(self, x, y, **kwargs):
+    def fit(self, x, y, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Train the model.
 

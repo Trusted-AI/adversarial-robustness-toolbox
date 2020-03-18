@@ -19,7 +19,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
 import keras.backend as k
 import numpy as np
 
@@ -27,9 +26,11 @@ from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.estimators.classifiers.keras import KerasClassifier
 from art.utils import random_targets
 
-from tests.utils import TestBase, master_seed
-from tests.utils import get_classifier_tf, get_classifier_kr, get_classifier_pt
-from tests.utils import get_iris_classifier_tf, get_iris_classifier_kr, get_iris_classifier_pt
+from tests.utils import TestBase
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr
+from tests.utils import get_tabular_classifier_pt, master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +47,10 @@ class TestHopSkipJump(TestBase):
 
         cls.n_train = 100
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0:cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0:cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0:cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0:cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def setUp(self):
         master_seed(seed=1234, set_tensorflow=True, set_torch=True)
@@ -63,7 +64,7 @@ class TestHopSkipJump(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build TensorFlowClassifier
-        tfc, sess = get_classifier_tf()
+        tfc, sess = get_image_classifier_tf()
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
@@ -74,7 +75,7 @@ class TestHopSkipJump(TestBase):
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
@@ -87,7 +88,7 @@ class TestHopSkipJump(TestBase):
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
@@ -130,7 +131,7 @@ class TestHopSkipJump(TestBase):
         x_test_original = self.x_test_mnist.copy()
 
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
@@ -141,7 +142,7 @@ class TestHopSkipJump(TestBase):
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
@@ -154,7 +155,7 @@ class TestHopSkipJump(TestBase):
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
@@ -197,7 +198,7 @@ class TestHopSkipJump(TestBase):
         x_test_original = x_test.copy()
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        ptc = get_image_classifier_pt()
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
@@ -208,7 +209,7 @@ class TestHopSkipJump(TestBase):
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
@@ -221,7 +222,7 @@ class TestHopSkipJump(TestBase):
         self.assertTrue((x_test_adv <= 1.0001).all())
         self.assertTrue((x_test_adv >= -0.0001).all())
 
-        target = np.argmax(params['y'], axis=1)
+        target = np.argmax(params["y"], axis=1)
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
@@ -252,29 +253,19 @@ class TestHopSkipJump(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    # def test_classifier_type_check_fail_classifier(self):
-    #     # Use a useless test classifier to test basic classifier properties
-    #     class ClassifierNoAPI:
-    #         pass
-    #
-    #     classifier = ClassifierNoAPI
-    #     with self.assertRaises(TypeError) as context:
-    #         _ = HopSkipJump(classifier=classifier)
-    #
-    #     self.assertIn('For `HopSkipJump` classifier must be an instance of '
-    #                   '`art.estimators.classifiers.classifier.Classifier`, the '
-    #                   'provided classifier is instance of (<class \'object\'>,).', str(context.exception))
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(HopSkipJump)
 
     def test_pytorch_resume(self):
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Build PyTorchClassifier
-        ptc = get_classifier_pt()
+        ptc = get_image_classifier_pt()
 
         # HSJ attack
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=10, max_eval=100, init_eval=10)
 
-        params = {'y': self.y_test_mnist[2:3], 'x_adv_init': x_test[2:3]}
+        params = {"y": self.y_test_mnist[2:3], "x_adv_init": x_test[2:3]}
         x_test_adv1 = hsj.generate(x_test[0:1], **params)
         diff1 = np.linalg.norm(x_test_adv1 - x_test)
 
@@ -287,7 +278,7 @@ class TestHopSkipJump(TestBase):
         self.assertGreater(diff1, diff2)
 
     def test_keras_iris_clipped(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Norm=2
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -299,7 +290,7 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Norm=np.inf
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -311,13 +302,13 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Clean-up session
         k.clear_session()
 
     def test_keras_iris_unbounded(self):
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
@@ -330,7 +321,7 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Norm=np.inf
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -340,13 +331,13 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Clean-up session
         k.clear_session()
 
     def test_tensorflow_iris(self):
-        classifier, sess = get_iris_classifier_tf()
+        classifier, sess = get_tabular_classifier_tf()
 
         # Test untargeted attack and norm=2
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -358,7 +349,7 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Test untargeted attack and norm=np.inf
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -370,12 +361,12 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Test targeted attack and norm=2
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = HopSkipJump(classifier, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
+        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
@@ -383,12 +374,12 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Success rate of targeted HopSkipJump on Iris: %.2f%%', (acc * 100))
+        logger.info("Success rate of targeted HopSkipJump on Iris: %.2f%%", (acc * 100))
 
         # Test targeted attack and norm=np.inf
         targets = random_targets(self.y_test_iris, nb_classes=3)
         attack = HopSkipJump(classifier, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        x_test_adv = attack.generate(self.x_test_iris, **{'y': targets})
+        x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
         self.assertTrue((x_test_adv >= 0).all())
@@ -396,14 +387,14 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertTrue((np.argmax(targets, axis=1) == preds_adv).any())
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Success rate of targeted HopSkipJump on Iris: %.2f%%', (acc * 100))
+        logger.info("Success rate of targeted HopSkipJump on Iris: %.2f%%", (acc * 100))
 
         # Clean-up session
         if sess is not None:
             sess.close()
 
     def test_pytorch_iris(self):
-        classifier = get_iris_classifier_pt()
+        classifier = get_tabular_classifier_pt()
         x_test = self.x_test_iris.astype(np.float32)
 
         # Norm=2
@@ -416,7 +407,7 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
         # Norm=np.inf
         attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -428,7 +419,7 @@ class TestHopSkipJump(TestBase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-        logger.info('Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
     def test_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
@@ -439,16 +430,18 @@ class TestHopSkipJump(TestBase):
 
         from art.estimators.classifiers.scikitlearn import SklearnClassifier
 
-        scikitlearn_test_cases = [DecisionTreeClassifier(),
-                                  ExtraTreeClassifier(),
-                                  AdaBoostClassifier(),
-                                  BaggingClassifier(),
-                                  ExtraTreesClassifier(n_estimators=10),
-                                  GradientBoostingClassifier(n_estimators=10),
-                                  RandomForestClassifier(n_estimators=10),
-                                  LogisticRegression(solver='lbfgs', multi_class='auto'),
-                                  SVC(gamma='auto'),
-                                  LinearSVC()]
+        scikitlearn_test_cases = [
+            DecisionTreeClassifier(),
+            ExtraTreeClassifier(),
+            AdaBoostClassifier(),
+            BaggingClassifier(),
+            ExtraTreesClassifier(n_estimators=10),
+            GradientBoostingClassifier(n_estimators=10),
+            RandomForestClassifier(n_estimators=10),
+            LogisticRegression(solver="lbfgs", multi_class="auto"),
+            SVC(gamma="auto"),
+            LinearSVC(),
+        ]
 
         x_test_original = self.x_test_iris.copy()
 
@@ -466,8 +459,11 @@ class TestHopSkipJump(TestBase):
             preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
             acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with HopSkipJump adversarial '
-                                                                         'examples: %.2f%%', (acc * 100))
+            logger.info(
+                "Accuracy of " + classifier.__class__.__name__ + " on Iris with HopSkipJump adversarial "
+                "examples: %.2f%%",
+                (acc * 100),
+            )
 
             # Norm=np.inf
             attack = HopSkipJump(classifier, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -479,12 +475,15 @@ class TestHopSkipJump(TestBase):
             preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
             self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
             acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
-            logger.info('Accuracy of ' + classifier.__class__.__name__ + ' on Iris with HopSkipJump adversarial '
-                                                                         'examples: %.2f%%', (acc * 100))
+            logger.info(
+                "Accuracy of " + classifier.__class__.__name__ + " on Iris with HopSkipJump adversarial "
+                "examples: %.2f%%",
+                (acc * 100),
+            )
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

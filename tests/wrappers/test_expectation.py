@@ -19,15 +19,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-
 import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.estimators.classifiers.keras import KerasClassifier
 from art.utils import load_dataset, random_targets
 from art.wrappers.expectation import ExpectationOverTransformations
-
-from tests.utils import master_seed, get_classifier_kr, get_iris_classifier_kr
+from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +41,7 @@ class TestExpectationOverTransformations(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('mnist')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = (x_train, y_train), (x_test, y_test)
@@ -57,7 +55,7 @@ class TestExpectationOverTransformations(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc = get_classifier_kr()
+        krc = get_image_classifier_kr()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
@@ -86,7 +84,7 @@ class TestExpectationVectors(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Get Iris
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset('iris')
+        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("iris")
         cls.iris = (x_train, y_train), (x_test, y_test)
 
     def setUp(self):
@@ -102,11 +100,11 @@ class TestExpectationVectors(unittest.TestCase):
             while True:
                 yield t
 
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
         classifier = ExpectationOverTransformations(classifier, sample_size=1, transformation=transformation)
 
         # Test untargeted attack
-        attack = FastGradientMethod(classifier, eps=.1)
+        attack = FastGradientMethod(classifier, eps=0.1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -115,11 +113,11 @@ class TestExpectationVectors(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with limited query info: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with limited query info: %.2f%%", (acc * 100))
 
     def test_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
-        classifier = get_iris_classifier_kr()
+        classifier = get_tabular_classifier_kr()
 
         def t(x):
             return x
@@ -140,8 +138,8 @@ class TestExpectationVectors(unittest.TestCase):
         preds_adv = np.argmax(classifier.predict(x_test_adv), axis=1)
         self.assertFalse((np.argmax(y_test, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
-        logger.info('Accuracy on Iris with limited query info: %.2f%%', (acc * 100))
+        logger.info("Accuracy on Iris with limited query info: %.2f%%", (acc * 100))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

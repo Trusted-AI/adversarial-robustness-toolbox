@@ -33,7 +33,6 @@ NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
 
 class TestActivationDefence(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
 
@@ -48,14 +47,15 @@ class TestActivationDefence(unittest.TestCase):
 
         k.set_learning_phase(1)
         model = Sequential()
-        model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]))
+        model.add(Conv2D(32, kernel_size=(3, 3), activation="relu", input_shape=x_train.shape[1:]))
         model.add(MaxPooling2D(pool_size=(3, 3)))
         model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
+        model.add(Dense(10, activation="softmax"))
 
-        model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
         from art.estimators.classifiers.keras import KerasClassifier
+
         cls.classifier = KerasClassifier(model=model, clip_values=(min_, max_))
 
         cls.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=128)
@@ -72,15 +72,15 @@ class TestActivationDefence(unittest.TestCase):
 
     @unittest.expectedFailure
     def test_wrong_parameters_2(self):
-        self.defence.set_params(clustering_method='what')
+        self.defence.set_params(clustering_method="what")
 
     @unittest.expectedFailure
     def test_wrong_parameters_3(self):
-        self.defence.set_params(reduce='what')
+        self.defence.set_params(reduce="what")
 
     @unittest.expectedFailure
     def test_wrong_parameters_4(self):
-        self.defence.set_params(cluster_analysis='what')
+        self.defence.set_params(cluster_analysis="what")
 
     def test_activations(self):
         (x_train, _), (_, _), (_, _) = self.mnist
@@ -110,7 +110,7 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
+        _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
         sum_clean1 = sum(is_clean_lst)
 
         # Check number of items in is_clean
@@ -120,8 +120,9 @@ class TestActivationDefence(unittest.TestCase):
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
         self.assertEqual(found_clusters, 2)
 
-        _, is_clean_lst = self.defence.detect_poison(nb_clusters=3, nb_dims=10, reduce='PCA',
-                                                     cluster_analysis='distance')
+        _, is_clean_lst = self.defence.detect_poison(
+            nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance"
+        )
         self.assertEqual(len(x_train), len(is_clean_lst))
 
         # Test change of state to new number of clusters:
@@ -132,10 +133,10 @@ class TestActivationDefence(unittest.TestCase):
         sum_clean2 = sum(is_clean_lst)
         self.assertNotEqual(sum_clean1, sum_clean2)
 
-        kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA', 'cluster_analysis': 'distance'}
+        kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA", "cluster_analysis": "distance"}
         _, is_clean_lst = self.defence.detect_poison(**kwargs)
         sum_dist = sum(is_clean_lst)
-        kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA', 'cluster_analysis': 'smaller'}
+        kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA", "cluster_analysis": "smaller"}
         _, is_clean_lst = self.defence.detect_poison(**kwargs)
         sum_size = sum(is_clean_lst)
         self.assertNotEqual(sum_dist, sum_size)
@@ -144,7 +145,7 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA'}
+        kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA"}
         _, _ = self.defence.detect_poison(**kwargs)
         is_clean = np.zeros(len(x_train))
         self.defence.evaluate_defence(is_clean)
@@ -153,9 +154,9 @@ class TestActivationDefence(unittest.TestCase):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
-        self.defence.analyze_clusters(cluster_analysis='relative-size')
+        self.defence.analyze_clusters(cluster_analysis="relative-size")
 
-        self.defence.analyze_clusters(cluster_analysis='silhouette-scores')
+        self.defence.analyze_clusters(cluster_analysis="silhouette-scores")
 
         report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis='distance')
         n_classes = self.classifier.nb_classes
@@ -183,16 +184,16 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(len(x_train), n_dp)
 
         # Very unlikely that they are the same
-        self.assertNotEqual(sum_dis, sum_sz, msg='This is very unlikely to happen... there may be an error')
+        self.assertNotEqual(sum_dis, sum_sz, msg="This is very unlikely to happen... there may be an error")
 
     def test_plot_clusters(self):
-        self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce='PCA')
+        self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
         self.defence.plot_clusters(save=False)
 
     def test_pickle(self):
 
         # Test pickle and unpickle:
-        filename = 'test_pickle.h5'
+        filename = "test_pickle.h5"
         ActivationDefence._pickle_classifier(self.classifier, filename)
         loaded = ActivationDefence._unpickle_classifier(filename)
 
@@ -216,10 +217,15 @@ class TestActivationDefence(unittest.TestCase):
         predictions = np.argmax(self.classifier.predict(x_test), axis=1)
         ini_miss = 1 - np.sum(predictions == np.argmax(y_test, axis=1)) / y_test.shape[0]
 
-        improvement, new_classifier = ActivationDefence.relabel_poison_ground_truth(self.classifier, x_poison, y_fix,
-                                                                                    test_set_split=test_set_split,
-                                                                                    tolerable_backdoor=0.01,
-                                                                                    max_epochs=5, batch_epochs=10)
+        improvement, new_classifier = ActivationDefence.relabel_poison_ground_truth(
+            self.classifier,
+            x_poison,
+            y_fix,
+            test_set_split=test_set_split,
+            tolerable_backdoor=0.01,
+            max_epochs=5,
+            batch_epochs=10,
+        )
 
         predictions = np.argmax(new_classifier.predict(x_test), axis=1)
         final_miss = 1 - np.sum(predictions == np.argmax(y_test, axis=1)) / y_test.shape[0]
@@ -227,12 +233,11 @@ class TestActivationDefence(unittest.TestCase):
         self.assertEqual(improvement, ini_miss - final_miss)
 
         # Other method (since it's cross validation we can't assert to a concrete number).
-        improvement, _ = ActivationDefence.relabel_poison_cross_validation(self.classifier, x_poison,
-                                                                           y_fix, n_splits=2,
-                                                                           tolerable_backdoor=0.01,
-                                                                           max_epochs=5, batch_epochs=10)
+        improvement, _ = ActivationDefence.relabel_poison_cross_validation(
+            self.classifier, x_poison, y_fix, n_splits=2, tolerable_backdoor=0.01, max_epochs=5, batch_epochs=10
+        )
         self.assertGreaterEqual(improvement, 0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -34,6 +34,7 @@ from art.estimators.estimator import NeuralNetworkMixin
 from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -95,15 +96,7 @@ class AdversarialPatch(EvasionAttack):
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
         if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.NeuralNetworkMixin` and "
-                    "`art.classifiers.classifier.ClassGradientsMixin`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". The classifier needs to be a Neural Network and provide gradients."
-                )
-            )
+            raise ClassifierError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
         kwargs = {
             "target": target,

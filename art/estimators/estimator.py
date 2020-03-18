@@ -73,7 +73,6 @@ class BaseEstimator(ABC):
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and apply checks before setting them as attributes.
-
         :param kwargs: a dictionary of attributes
         :type kwargs: `dict`
         :return: `self`
@@ -86,6 +85,14 @@ class BaseEstimator(ABC):
                     setattr(self, key, value)
             else:
                 raise ValueError("Unexpected parameter {} found in kwargs.".format(key))
+
+        if self.clip_values is not None:
+            if len(self.clip_values) != 2:
+                raise ValueError(
+                    "`clip_values` should be a tuple of 2 floats or arrays containing the allowed data range."
+                )
+            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+                raise ValueError("Invalid `clip_values`: min >= max.")
 
         if isinstance(self.preprocessing_defences, Preprocessor):
             self.preprocessing_defences = [self.preprocessing_defences]
@@ -411,13 +418,14 @@ class NeuralNetworkMixin(ABC):
             )
 
         for _ in range(nb_epochs):
-            x, y = generator.get_batch()
+            for _ in range(int(generator.size / generator.batch_size)):
+                x, y = generator.get_batch()
 
-            # Apply preprocessing and defences
-            x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+                # Apply preprocessing and defences
+                x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
-            # Fit for current batch
-            self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=len(x), **kwargs)
+                # Fit for current batch
+                self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
 
     @abstractmethod
     def get_activations(self, x, layer, batch_size):

@@ -62,15 +62,15 @@ class TestMetrics(unittest.TestCase):
 
         # Compute minimal perturbations
         params = {"eps_step": 1.1}
-        emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
-        self.assertEqual(emp_robust, 0.)
+        emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
+        self.assertEqual(emp_robust, 0.0)
 
-        params = {"eps_step": 1.0, "eps": 1.}
-        emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
+        params = {"eps_step": 1.0, "eps": 1.0}
+        emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
         self.assertAlmostEqual(emp_robust, 1.000369094488189, 4)
 
         params = {"eps_step": 0.1, "eps": 0.2}
-        emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
+        emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
         self.assertLessEqual(emp_robust, 0.65)
 
     def test_loss_sensitivity(self):
@@ -100,13 +100,14 @@ class TestMetrics(unittest.TestCase):
     def _cnn_mnist_k(input_shape):
         # Create simple CNN
         model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
+        model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=input_shape))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
+        model.add(Dense(10, activation="softmax"))
 
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
+        model.compile(
+            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+        )
 
         classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
         return classifier
@@ -147,8 +148,10 @@ class TestClever(unittest.TestCase):
         :return:
         """
         import tensorflow as tf
-        if tf.__version__[0] == '2':
+
+        if tf.__version__[0] == "2":
             import tensorflow.compat.v1 as tf
+
             tf.disable_eager_execution()
 
         # Define input and output placeholders
@@ -173,8 +176,16 @@ class TestClever(unittest.TestCase):
         sess.run(tf.global_variables_initializer())
 
         # Create the classifier
-        tfc = TensorFlowClassifier(input_ph=input_ph, output=logits, labels_ph=labels_ph, train=train, loss=loss,
-                                   learning=None, sess=sess, clip_values=(0, 1))
+        tfc = TensorFlowClassifier(
+            input_ph=input_ph,
+            output=logits,
+            labels_ph=labels_ph,
+            train=train,
+            loss=loss,
+            learning=None,
+            sess=sess,
+            clip_values=(0, 1),
+        )
 
         return tfc
 
@@ -186,13 +197,14 @@ class TestClever(unittest.TestCase):
         """
         # Create simple CNN
         model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
+        model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=(28, 28, 1)))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
+        model.add(Dense(10, activation="softmax"))
 
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
+        model.compile(
+            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+        )
 
         # Get the classifier
         krc = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
@@ -213,12 +225,13 @@ class TestClever(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10,
-                                clip_values=(0, 1))
+        ptc = PyTorchClassifier(
+            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+        )
 
         return ptc
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2.')
+    @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
     def test_clever_tf(self):
         """
         Test with TensorFlow.
@@ -355,8 +368,8 @@ class TestClever(unittest.TestCase):
         krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=np.argmax(krc.predict(x_test[:1])), c_init=1, pool_factor=10)
-        self.assertIsNone(scores[0], msg='Clever scores for the predicted class should be `None`.')
+        self.assertIsNone(scores[0], msg="Clever scores for the predicted class should be `None`.")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -411,32 +411,34 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         steps_per_epoch = max(int(x_preprocessed.shape[0] / batch_size), 1)
         self._model.fit_generator(gen, steps_per_epoch=steps_per_epoch, epochs=nb_epochs, **kwargs)
 
-    # def fit_generator(self, generator, nb_epochs=20, **kwargs):
-    #     """
-    #     Fit the classifier using the generator that yields batches as specified.
-    #
-    #     :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
-    #                       training in Keras, it will.
-    #     :type generator: :class:`.DataGenerator`
-    #     :param nb_epochs: Number of epochs to use for training.
-    #     :type nb_epochs: `int`
-    #     :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-    #            `fit_generator` function in Keras and will be passed to this function as such. Including the number of
-    #            epochs as part of this argument will result in as error.
-    #     :type kwargs: `dict`
-    #     :return: `None`
-    #     """
-    #     from art.data_generators import KerasDataGenerator
-    #
-    #     # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
-    #     if isinstance(generator, KerasDataGenerator) and not hasattr(self, 'defences'):
-    #         try:
-    #             self._model.fit_generator(generator.generator, epochs=nb_epochs, **kwargs)
-    #         except ValueError:
-    #             logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
-    #             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
-    #     else:
-    #         super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+        """
+        Fit the classifier using the generator that yields batches as specified.
+
+        :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
+                          training in Keras, it will.
+        :type generator: :class:`.DataGenerator`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
+               `fit_generator` function in Keras and will be passed to this function as such. Including the number of
+               epochs as part of this argument will result in as error.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        from art.data_generators import KerasDataGenerator
+
+        # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
+        if isinstance(generator, KerasDataGenerator) and \
+                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
+                self.preprocessing == (0, 1):
+            try:
+                self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
+            except ValueError:
+                logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
+                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+        else:
+            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def get_activations(self, x, layer, batch_size):
         """

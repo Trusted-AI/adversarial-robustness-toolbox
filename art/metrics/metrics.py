@@ -29,10 +29,10 @@ import numpy.linalg as la
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
 
+from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
-from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 

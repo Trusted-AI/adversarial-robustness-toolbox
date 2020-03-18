@@ -42,9 +42,10 @@ class TestBlackBoxClassifier(TestBase):
 
     def test_fit(self):
         classifier = get_classifier_bb()
-        self.assertRaises(NotImplementedError,
-                          lambda: classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size,
-                                                 nb_epochs=2))
+        self.assertRaises(
+            NotImplementedError,
+            lambda: classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size, nb_epochs=2),
+        )
 
     def test_shapes(self):
         classifier = get_classifier_bb()
@@ -75,8 +76,8 @@ class TestBlackBoxClassifier(TestBase):
         np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
 
     def test_save(self):
-        path = 'tmp'
-        filename = 'model.h5'
+        path = "tmp"
+        filename = "model.h5"
 
         classifier = get_classifier_bb()
 
@@ -86,11 +87,11 @@ class TestBlackBoxClassifier(TestBase):
         classifier = get_classifier_bb()
         repr_ = repr(classifier)
 
-        self.assertIn('BlackBoxClassifier', repr_)
-        self.assertIn('clip_values=(0, 255)', repr_)
-        self.assertIn('defences=None', repr_)
-        self.assertIn('preprocessing=(0, 1)', repr_)
+        self.assertIn("BlackBoxClassifier", repr_)
+        self.assertIn("clip_values=(0, 255)", repr_)
+        self.assertIn("defences=None", repr_)
+        self.assertIn("preprocessing=(0, 1)", repr_)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

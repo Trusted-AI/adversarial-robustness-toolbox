@@ -28,7 +28,7 @@ from art.data_generators import DataGenerator
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 from art.utils import load_mnist
 
-from tests.utils import master_seed, get_classifier_tf
+from tests.utils import master_seed, get_image_classifier_tf
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
         cls.mnist = ((x_train, y_train), (x_test, y_test))
 
-        cls.classifier, _ = get_classifier_tf()
+        cls.classifier, _ = get_image_classifier_tf()
 
     def setUp(self):
         master_seed(seed=1234)
@@ -114,8 +114,8 @@ class TestAdversarialTrainer(unittest.TestCase):
                 super().__init__(size=size, batch_size=batch_size)
                 self.x = x
                 self.y = y
-                self.size = size
-                self.batch_size = batch_size
+                self._size = size
+                self._batch_size = batch_size
 
             def get_batch(self):
                 ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
@@ -149,12 +149,12 @@ class TestAdversarialTrainer(unittest.TestCase):
         :return: None
         """
         (x_train, y_train), (_, _) = self.mnist
-        params = {'nb_epochs': 2, 'batch_size': BATCH_SIZE}
+        params = {"nb_epochs": 2, "batch_size": BATCH_SIZE}
 
         adv = FastGradientMethod(self.classifier, targeted=True)
         adv_trainer = AdversarialTrainer(self.classifier, attacks=adv)
         self.assertRaises(NotImplementedError, adv_trainer.fit, x_train, y_train, **params)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

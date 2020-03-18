@@ -26,7 +26,7 @@ import numpy as np
 from art.wrappers.wrapper import ClassifierWrapper
 from art.utils import load_mnist
 
-from tests.utils import master_seed, get_classifier_kr
+from tests.utils import master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Load small Keras model
-        cls.model_mnist = get_classifier_kr()
+        cls.model_mnist = get_image_classifier_kr()
 
     @classmethod
     def tearDownClass(cls):
@@ -120,8 +120,8 @@ class TestMixinWKerasClassifier(unittest.TestCase):
     def test_save(self):
         import os
 
-        path = 'tmp'
-        filename = 'model.h5'
+        path = "tmp"
+        filename = "model.h5"
         classifier = ClassifierWrapper(self.model_mnist)
         classifier.save(filename, path=path)
         self.assertTrue(os.path.isfile(os.path.join(path, filename)))
@@ -130,5 +130,5 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         os.remove(os.path.join(path, filename))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

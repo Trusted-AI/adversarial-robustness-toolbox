@@ -28,8 +28,8 @@ with their adversarial counterpart.
 | Paper link: https://arxiv.org/abs/1705.07204
 
 | Please keep in mind the limitations of defences. While adversarial training is widely regarded as a promising,
-principled approach to making classifiers more robust (see https://arxiv.org/abs/1802.00420), very careful evaluations
-are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
+    principled approach to making classifiers more robust (see https://arxiv.org/abs/1802.00420), very careful
+    evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -57,8 +57,8 @@ class AdversarialTrainer(Trainer):
     | Paper link: https://arxiv.org/abs/1705.07204
 
     | Please keep in mind the limitations of defences. While adversarial training is widely regarded as a promising,
-    principled approach to making classifiers more robust (see https://arxiv.org/abs/1802.00420), very careful
-    evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
+        principled approach to making classifiers more robust (see https://arxiv.org/abs/1802.00420), very careful
+        evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
     """
 
     def __init__(self, classifier, attacks, ratio=0.5):

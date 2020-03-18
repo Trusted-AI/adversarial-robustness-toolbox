@@ -30,6 +30,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format, compute_success
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -58,14 +59,7 @@ class SaliencyMapMethod(EvasionAttack):
         """
         super(SaliencyMapMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassGradientsMixin):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.estimators.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is "
-                    "instance of " + str(classifier.__class__.__bases__) + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
+            raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {"theta": theta, "gamma": gamma, "batch_size": batch_size}
         self.set_params(**kwargs)

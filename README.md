@@ -1,4 +1,4 @@
-# Adversarial Robustness Toolbox (ART) v1.1
+# Adversarial Robustness Toolbox (ART) v1.2
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
@@ -13,6 +13,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/adversarial-robustness-toolbox)](https://pypi.org/project/adversarial-robustness-toolbox/)
+[![slack-img](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://ibm-art.slack.com/)
 
 [中文README请按此处](README-cn.md)
 
@@ -51,7 +52,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 
 **Evasion Attacks:**
 * Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
-* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), and [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations)) 
+* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations))
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * High Confidence Low Uncertainty adversarial samples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
@@ -74,11 +75,13 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 **Extraction Attacks:**
 * Functionally Equivalent Extraction ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
 * Copycat CNN ([Correia-Silva et al., 2018](https://arxiv.org/abs/1806.05476))
+* KnockoffNets ([Orekondy et al., 2018](https://arxiv.org/abs/1812.02766))
 
 **Poisoning Attacks:**
 * Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
+* Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 
-**Defences:**
+**Defences - Preprocessor:**
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
@@ -88,14 +91,20 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * JPEG compression ([Dziugaite et al., 2016](https://arxiv.org/abs/1608.00853))
 * Label smoothing ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * Virtual adversarial training ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
-* Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 
-**Extraction Defences:**
+**Defences - Postprocessor:**
 * Reverse Sigmoid ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
 * Random Noise ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * Class Labels ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * High Confidence ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
 * Rounding ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+
+**Defences - Trainer:**
+* Adversarial training ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
+* Adversarial training Madry PGD ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
+
+**Defences - Transformer:**
+* Defensive Distillation ([Papernot et al., 2015](https://arxiv.org/abs/1511.04508))
 
 **Robustness Metrics, Certifications and Verifications**:
 * Clique Method Robustness Verification ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
@@ -132,7 +141,7 @@ The most recent version of ART can be downloaded or cloned from this repository:
 git clone https://github.com/IBM/adversarial-robustness-toolbox
 ```
 
-Install ART with the following command from the project folder `art`:
+Install ART with the following command from the project folder `adversarial-robustness-toolbox`:
 ```bash
 pip install .
 ```
@@ -178,7 +187,7 @@ git commit -s -m 'Add new feature'
 If you use ART for research, please consider citing the following reference paper:
 ```
 @article{art2018,
-    title = {Adversarial Robustness Toolbox v1.1.1},
+    title = {Adversarial Robustness Toolbox v1.2.0},
     author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Buesser, Beat and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
     volume = {1807.01069},

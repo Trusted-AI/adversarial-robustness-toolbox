@@ -31,8 +31,6 @@ from itertools import product
 
 import numpy as np
 
-from cma import CMAEvolutionStrategy, CMAOptions
-
 # Currently, a modified version of SciPy's differential evolution is used in
 # code. An ideal version would be using the import as follows,
 # from scipy.optimize import differential_evolution
@@ -209,6 +207,7 @@ class PixelThreshold(EvasionAttack):
 
         if self.es == 0:
 
+            from cma import CMAOptions
             opts = CMAOptions()
 
             if not self.verbose:
@@ -224,6 +223,7 @@ class PixelThreshold(EvasionAttack):
             else:
                 std = limit
 
+            from cma import CMAEvolutionStrategy
             strategy = CMAEvolutionStrategy(initial, std / 4, opts)
 
             try:
@@ -236,7 +236,6 @@ class PixelThreshold(EvasionAttack):
             except Exception as exception:
                 if self.verbose:
                     print(exception)
-                pass
 
             adv_x = strategy.result[0]
 

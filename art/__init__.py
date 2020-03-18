@@ -12,7 +12,7 @@ from art import poison_detection
 from art import wrappers
 
 # Semantic Version
-__version__ = "1.1.1"
+__version__ = "1.2.0"
 
 # pylint: disable=C0103
 

@@ -1,5 +1,25 @@
 # Adversarial Robustness Toolbox notebooks
 
+## Video Action Recognition
+
+[adversarial_action_recognition.ipynb](adversarial_action_recognition.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/adversarial_action_recognition.ipynb)]
+shows how to create an adversarial attack on a video action recognition classification task with ART. Experiments in this notebook show how to modify a video sample by employing a Fast Gradient Method attack so that the modified video sample get mis-classified.
+
+<p align="center">
+  <img src="../data/images/basketball.gif?raw=true" width="200" title="benign_basketball_sample">
+  <img src="../data/images/adversarial_basketball.gif?raw=true" width="200" title="adversarial_basketball_sample">
+</p>
+
+
+## Audio
+
+[adversarial_audio_examples.ipynb](adversarial_audio_examples.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/adversarial_audio_examples.ipynb)]
+shows how to create adversarial examples of audio data with ART. Experiments in this notebook show how the waveform of a spoken digit of the AudioMNIST dataset can be modified with almost imperceptible changes so that the waveform gets mis-classified as different digit.
+
+<p align="center">
+  <img src="../data/images/adversarial_audio_waveform.png?raw=true" width="200" title="adversarial_audio_waveform">
+</p>
+
 ## Adversarial training
 
 [adversarial_retraining.ipynb](adversarial_retraining.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/adversarial_retraining.ipynb)]
