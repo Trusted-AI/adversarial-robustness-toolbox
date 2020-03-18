@@ -23,6 +23,8 @@ import numpy as np
 
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
 from art.estimators.classifiers.keras import KerasClassifier
+from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 
 from tests.utils import TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
@@ -129,7 +131,7 @@ class TestUniversalPerturbation(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(UniversalPerturbation, [ClassifierNeuralNetwork, ClassifierGradients])
+        backend_test_classifier_type_check_fail(UniversalPerturbation, [NeuralNetworkMixin, ClassGradientsMixin])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
