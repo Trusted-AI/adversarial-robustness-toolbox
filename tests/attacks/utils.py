@@ -24,8 +24,9 @@ from sklearn.tree import DecisionTreeClassifier
 
 from art.utils import random_targets, get_labels_np_array
 from art.exceptions import ClassifierError
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
-from art.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin, ClassifierMixin
+from art.estimators.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_y
 
@@ -117,12 +118,12 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
         pass
 
     noAPIClassifier = ClassifierNoAPI
-    _backend_test_classifier_list_type_check_fail(attack, noAPIClassifier, [Classifier])
+    _backend_test_classifier_list_type_check_fail(attack, noAPIClassifier, [ClassifierMixin])
 
     if len(classifier_expected_list) > 0:
         # Testing additional types of classifiers expected
         if classifier is None:
-            if ClassifierGradients in classifier_expected_list or ClassifierNeuralNetwork in classifier_expected_list:
+            if ClassGradientsMixin in classifier_expected_list or NeuralNetworkMixin in classifier_expected_list:
                 # Use a test classifier not providing gradients required by white-box attack
                 classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
             else:

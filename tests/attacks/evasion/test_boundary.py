@@ -19,7 +19,7 @@
 import pytest
 import logging
 
-from art.attacks import BoundaryAttack
+from art.attacks.evasion import BoundaryAttack
 
 from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
 from tests.attacks.utils import back_end_untargeted_images, backend_test_classifier_type_check_fail
