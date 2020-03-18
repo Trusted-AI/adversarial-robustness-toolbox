@@ -28,9 +28,9 @@ from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
 
-from art.classifiers import KerasClassifier
-from art.classifiers.keras import generator_fit
-from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.estimators.classifiers import KerasClassifier
+from art.estimators.classifiers.keras import generator_fit
+from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
 
 from tests.utils import ExpectedValue
@@ -194,7 +194,7 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
     predictions = classifier.predict(x_test_mnist)
     assert predictions.shape == y_test_mnist.shape
 
-    assert classifier.nb_classes() == 10
+    assert classifier.nb_classes == 10
 
     class_gradients = classifier.class_gradient(x_test_mnist[:11])
     assert class_gradients.shape == tuple([11, 10] + list(x_test_mnist[1].shape))

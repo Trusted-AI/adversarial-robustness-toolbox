@@ -22,7 +22,8 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.adversarial_patch import AdversarialPatch
-from art.estimators.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 
 from tests.utils import TestBase, master_seed
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr
@@ -129,7 +130,7 @@ class TestAdversarialPatch(TestBase):
         self.assertIn("Feature vectors detected.", str(context.exception))
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(AdversarialPatch, [ClassifierNeuralNetwork, ClassifierGradients])
+        backend_test_classifier_type_check_fail(AdversarialPatch, [NeuralNetworkMixin, ClassGradientsMixin])
 
 
 if __name__ == "__main__":

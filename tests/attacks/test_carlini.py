@@ -25,7 +25,8 @@ import numpy as np
 
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
 from art.estimators.classifiers.keras import KerasClassifier
-from art.estimators.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
+from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin, ClassifierMixin
 from art.utils import random_targets, to_categorical
 
 from tests.utils import TestBase, master_seed
@@ -464,7 +465,7 @@ class TestCarlini(TestBase):
         self.assertTrue((target != y_pred_adv).any())
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassGradientsMixin])
 
     def test_keras_iris_clipped_LInf(self):
         classifier = get_tabular_classifier_kr()

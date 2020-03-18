@@ -110,7 +110,7 @@ def backend_test_class_gradient(get_default_mnist_subset, classifier, expected_v
 
 def backend_test_nb_classes(get_image_classifier_list):
     classifier, _ = get_image_classifier_list(one_classifier=True)
-    assert classifier.nb_classes() == 10
+    assert classifier.nb_classes == 10
 
 
 def backend_test_input_shape(get_image_classifier_list):

@@ -21,7 +21,7 @@ import unittest
 
 import numpy as np
 
-from tests.utils import TestBase, master_seed, get_classifier_kr_tf
+from tests.utils import TestBase, master_seed, get_image_classifier_kr_tf
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ class TestInputFilter(TestBase):
 
     def test_fit(self):
         labels = np.argmax(self.y_test_mnist, axis=1)
-        classifier = get_classifier_kr_tf()
+        classifier = get_image_classifier_kr_tf()
 
         acc = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / NB_TEST
         logger.info('Accuracy: %.2f%%', (acc * 100))

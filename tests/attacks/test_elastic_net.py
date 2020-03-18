@@ -24,7 +24,7 @@ import numpy as np
 
 from art.attacks.evasion.elastic_net import ElasticNet
 from art.estimators.classifiers.keras import KerasClassifier
-from art.estimators.classifiers.classifier import ClassifierGradients
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.utils import random_targets, to_categorical
 
 from tests.utils import TestBase, master_seed
@@ -402,7 +402,7 @@ class TestElasticNet(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ElasticNet, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(ElasticNet, [ClassGradientsMixin])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()

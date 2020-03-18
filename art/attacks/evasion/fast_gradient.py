@@ -113,7 +113,7 @@ class FastGradientMethod(EvasionAttack):
         :param classifier:
         :return:
         """
-        return True if isinstance(classifier, ClassifierGradients) else False
+        return True if isinstance(classifier, ClassGradientsMixin) else False
 
     def _minimal_perturbation(self, x, y):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
