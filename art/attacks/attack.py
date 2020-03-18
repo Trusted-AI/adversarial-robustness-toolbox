@@ -92,7 +92,7 @@ class Attack(abc.ABC, metaclass=input_filter):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         """
-        if not isinstance(classifier, Classifier) and classifier is not None:
+        if not isinstance(classifier, ClassifierMixin) and classifier is not None:
             raise ClassifierError(self.__class__, [ClassifierMixin], classifier)
 
         self.classifier = classifier

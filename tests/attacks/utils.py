@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 def backend_targeted_images(attack, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    targets = random_targets(y_test_mnist, attack.classifier.nb_classes())
+    targets = random_targets(y_test_mnist, attack.classifier.nb_classes)
     x_test_adv = attack.generate(x_test_mnist, y=targets)
     assert bool((x_test_mnist == x_test_adv).all()) is False
 
