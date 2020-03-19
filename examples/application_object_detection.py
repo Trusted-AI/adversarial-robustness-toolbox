@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from art.estimators.object_detectors.PyTorchFasterRCNN import PyTorchFasterRCNN
+from art.attacks.evasion import FastGradientMethod
 
 COCO_INSTANCE_CATEGORY_NAMES = [
     "__background__", "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train", "truck", "boat",
@@ -55,13 +56,13 @@ def plot_image_with_boxes(img, boxes, pred_cls):
         )  # Write the prediction class
 
     plt.axis("off")
-    plt.imshow(img, interpolation="nearest")
+    plt.imshow(img.astype(np.uint8), interpolation="nearest")
     plt.show()
 
 
 def main():
     # Create object detector
-    frcnn = PyTorchFasterRCNN()
+    frcnn = PyTorchFasterRCNN(clip_values=(0, 255))
 
     # Load image 1
     image_1 = cv2.imread("./10best-cars-group-cropped-1542126037.jpg")
@@ -92,17 +93,23 @@ def main():
     # Plot predictions
     plot_image_with_boxes(img=image[0].copy(), boxes=predictions_boxes, pred_cls=predictions_class)
 
-    # Calculate loss gradients
-    gradients = frcnn.loss_gradient(x=image, y=None)
+    # # Calculate loss gradients
+    # gradients = frcnn.loss_gradient(x=image, y=None)
+    #
+    # # Create adversarial image
+    # image_adv = image + np.sign(gradients) * 8 * 1
+    # image_adv = np.clip(image_adv, a_min=0, a_max=255).astype(np.uint8)
 
-    # Create adversarial image
-    image_adv = image + np.sign(gradients) * 8 * 1
-    image_adv = np.clip(image_adv, a_min=0, a_max=255).astype(np.uint8)
+    attack = FastGradientMethod(classifier=frcnn, eps=8)
+    image_adv = attack.generate(x=image, y=None)
+
+    print('np.amax(np.abs(image - image_adv))')
+    print(np.amax(np.abs(image - image_adv)))
 
     for i in range(image_adv.shape[0]):
         plt.axis("off")
         plt.title('image_adv {}'.format(i))
-        plt.imshow(image_adv[i], interpolation="nearest")
+        plt.imshow(image_adv[i].astype(np.uint8), interpolation="nearest")
         plt.show()
 
     predictions_adv = frcnn.predict(x=image_adv)
