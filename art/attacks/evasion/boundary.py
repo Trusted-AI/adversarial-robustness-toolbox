@@ -110,7 +110,7 @@ class BoundaryAttack(EvasionAttack):
     @classmethod
     def is_valid_classifier_type(cls, classifier):
         """
-        Checks whether the classifier provided is a classifer which this class can perform an attack on
+        Checks whether the classifier provided is a classifier which this class can perform an attack on
         :param classifier:
         :return:
         """
