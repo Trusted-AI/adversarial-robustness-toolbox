@@ -24,8 +24,8 @@ from sklearn.tree import DecisionTreeClassifier
 
 from art.utils import random_targets, get_labels_np_array
 from art.exceptions import ClassifierError
-from art.estimators.estimator import NeuralNetworkMixin
-from art.estimators.classifiers.classifier import ClassGradientsMixin, ClassifierMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.classifiers.classifier import ClassGradientsMixin
 from art.estimators.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_y
@@ -35,18 +35,18 @@ logger = logging.getLogger(__name__)
 
 def backend_targeted_images(attack, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-    targets = random_targets(y_test_mnist, attack.classifier.nb_classes)
+    targets = random_targets(y_test_mnist, attack.estimator.nb_classes)
     x_test_adv = attack.generate(x_test_mnist, y=targets)
     assert bool((x_test_mnist == x_test_adv).all()) is False
 
-    y_test_pred_adv = get_labels_np_array(attack.classifier.predict(x_test_adv))
+    y_test_pred_adv = get_labels_np_array(attack.estimator.predict(x_test_adv))
 
     assert targets.shape == y_test_pred_adv.shape
     assert (targets == y_test_pred_adv).sum() >= (x_test_mnist.shape[0] // 2)
 
     check_adverse_example_x(x_test_adv, x_test_mnist)
 
-    y_pred_adv = np.argmax(attack.classifier.predict(x_test_adv), axis=1)
+    y_pred_adv = np.argmax(attack.estimator.predict(x_test_adv), axis=1)
 
     target = np.argmax(targets, axis=1)
     assert (target == y_pred_adv).any()
@@ -79,7 +79,7 @@ def backend_test_random_initialisation_images(attack, mnist_dataset):
 def backend_check_adverse_values(attack, mnist_dataset, expected_values):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
     x_test_adv = attack.generate(x_test_mnist)
-    y_test_pred_adv_matrix = attack.classifier.predict(x_test_adv)
+    y_test_pred_adv_matrix = attack.estimator.predict(x_test_adv)
     y_test_pred_adv = np.argmax(y_test_pred_adv_matrix, axis=1)
 
     if "x_test_mean" in expected_values:
@@ -118,12 +118,12 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
         pass
 
     noAPIClassifier = ClassifierNoAPI
-    _backend_test_classifier_list_type_check_fail(attack, noAPIClassifier, [ClassifierMixin])
+    _backend_test_classifier_list_type_check_fail(attack, noAPIClassifier, [BaseEstimator])
 
     if len(classifier_expected_list) > 0:
         # Testing additional types of classifiers expected
         if classifier is None:
-            if ClassGradientsMixin in classifier_expected_list or NeuralNetworkMixin in classifier_expected_list:
+            if LossGradientsMixin in classifier_expected_list or ClassGradientsMixin in classifier_expected_list or NeuralNetworkMixin in classifier_expected_list:
                 # Use a test classifier not providing gradients required by white-box attack
                 classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
             else:
@@ -151,7 +151,7 @@ def backend_targeted_tabular(attack, fix_get_iris):
 
     check_adverse_example_x(x_test_adv, x_test_iris)
 
-    y_pred_adv = np.argmax(attack.classifier.predict(x_test_adv), axis=1)
+    y_pred_adv = np.argmax(attack.estimator.predict(x_test_adv), axis=1)
     target = np.argmax(targets, axis=1)
     assert (target == y_pred_adv).any()
 
@@ -186,7 +186,7 @@ def backend_untargeted_tabular(attack, iris_dataset, clipped):
     check_adverse_example_x(x_test_adv, x_test_iris)
     # utils_test.check_adverse_example_x(x_test_adv, x_test_iris, bounded=clipped)
 
-    y_pred_test_adv = np.argmax(attack.classifier.predict(x_test_adv), axis=1)
+    y_pred_test_adv = np.argmax(attack.estimator.predict(x_test_adv), axis=1)
     y_test_true = np.argmax(y_test_iris, axis=1)
 
     # assert (y_test_true == y_pred_test_adv).any(), "An untargeted attack should have changed SOME predictions"
@@ -196,6 +196,6 @@ def backend_untargeted_tabular(attack, iris_dataset, clipped):
 
     accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]
     logger.info(
-        "Accuracy of " + attack.classifier.__class__.__name__ + " on Iris with FGM adversarial examples: " "%.2f%%",
+        "Accuracy of " + attack.estimator.__class__.__name__ + " on Iris with FGM adversarial examples: " "%.2f%%",
         (accuracy * 100),
     )

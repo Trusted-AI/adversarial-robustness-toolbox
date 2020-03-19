@@ -95,7 +95,6 @@ class Attack(abc.ABC, metaclass=input_filter):
         if not isinstance(estimator, BaseEstimator) and estimator is not None:
             raise ClassifierError(self.__class__, [BaseEstimator], estimator)
 
-        self.classifier = estimator # Remove in future releases
         self._estimator = estimator
 
     @property

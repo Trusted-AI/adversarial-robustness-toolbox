@@ -27,6 +27,10 @@ class ClassifierError(TypeError):
 
     def __init__(self, this_class, class_expected_list, classifier_given):
 
+        self.this_class = this_class
+        self.class_expected_list = class_expected_list
+        self.classifier_given = classifier_given
+
         classes_expected_message = ""
         for idx, class_expected in enumerate(class_expected_list):
             if idx == 0:

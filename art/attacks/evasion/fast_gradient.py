@@ -28,7 +28,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import LossGradientsMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classifiers.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
@@ -91,7 +91,7 @@ class FastGradientMethod(EvasionAttack):
         """
         super(FastGradientMethod, self).__init__(classifier)
         if not isinstance(classifier, LossGradientsMixin):
-            raise ClassifierError(self.__class__, [LossGradientsMixin], classifier)
+            raise ClassifierError(self.__class__, [LossGradientsMixin, BaseEstimator], classifier)
 
         kwargs = {
             "norm": norm,
@@ -219,7 +219,7 @@ class FastGradientMethod(EvasionAttack):
         else:
 
             if self.minimal:
-                raise ValueError('Minimal perturbation is only supported for classification.')
+                raise ValueError("Minimal perturbation is only supported for classification.")
 
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided

@@ -90,9 +90,12 @@ class BoundaryAttack(EvasionAttack):
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         :type init_size: `int`
         """
-        super(BoundaryAttack, self).__init__(classifier=classifier)
+        super(BoundaryAttack, self).__init__(estimator=classifier)
         if not isinstance(classifier, ClassifierMixin):
             raise ClassifierError(self.__class__, [ClassifierMixin], classifier)
+
+        # TODO: Add this for backward compatibility, will be removed later
+        self.classifier = self.estimator
 
         params = {
             "targeted": targeted,
