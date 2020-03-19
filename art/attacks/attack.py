@@ -24,7 +24,7 @@ import logging
 import abc
 import numpy as np
 
-from art.estimators.classifiers.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
@@ -87,15 +87,19 @@ class Attack(abc.ABC, metaclass=input_filter):
 
     attack_params = list()
 
-    def __init__(self, classifier):
+    def __init__(self, estimator):
         """
-        :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param estimator: An estimator
+        :type estimator: :class:`.BaseEstimator`
         """
-        if not isinstance(classifier, ClassifierMixin) and classifier is not None:
-            raise ClassifierError(self.__class__, [ClassifierMixin], classifier)
+        if not isinstance(estimator, BaseEstimator) and estimator is not None:
+            raise ClassifierError(self.__class__, [BaseEstimator], estimator)
 
-        self.classifier = classifier
+        self._estimator = estimator
+
+    @property
+    def estimator(self):
+        return self._estimator
 
     def set_params(self, **kwargs):
         """
@@ -116,12 +120,12 @@ class EvasionAttack(Attack):
     Abstract base class for evasion attack classes.
     """
 
-    def __init__(self, classifier):
+    def __init__(self, estimator):
         """
-        :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param estimator: An estimator.
+        :type estimator: :class:`.BaseEstimator`
         """
-        super().__init__(classifier)
+        super().__init__(estimator)
 
     @abc.abstractmethod
     def generate(self, x, y=None, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
