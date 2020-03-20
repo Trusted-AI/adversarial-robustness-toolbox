@@ -86,7 +86,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_test_original = x_test.copy()
 
-        attack1 = FastGradientMethod(classifier=self.classifier, batch_size=16)
+        attack1 = FastGradientMethod(estimator=self.classifier, batch_size=16)
         attack2 = DeepFool(classifier=self.classifier, max_iter=5, batch_size=16)
         x_test_adv = attack1.generate(x_test)
         predictions = np.argmax(self.classifier.predict(x_test_adv), axis=1)
@@ -123,7 +123,7 @@ class TestAdversarialTrainer(unittest.TestCase):
 
         generator = MyDataGenerator(x_train, y_train, size=x_train.shape[0], batch_size=16)
 
-        attack1 = FastGradientMethod(classifier=self.classifier, batch_size=16)
+        attack1 = FastGradientMethod(estimator=self.classifier, batch_size=16)
         attack2 = DeepFool(classifier=self.classifier, max_iter=5, batch_size=16)
         x_test_adv = attack1.generate(x_test)
         predictions = np.argmax(self.classifier.predict(x_test_adv), axis=1)

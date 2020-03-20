@@ -61,7 +61,7 @@ class TestExpectationOverTransformations(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # First attack (without EoT):
-        fgsm = FastGradientMethod(classifier=krc, targeted=True)
+        fgsm = FastGradientMethod(estimator=krc, targeted=True)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = fgsm.generate(x_test, **params)
 
@@ -74,7 +74,7 @@ class TestExpectationOverTransformations(unittest.TestCase):
                 yield t
 
         eot = ExpectationOverTransformations(classifier=krc, sample_size=1, transformation=transformation)
-        fgsm_with_eot = FastGradientMethod(classifier=eot, targeted=True)
+        fgsm_with_eot = FastGradientMethod(estimator=eot, targeted=True)
         x_test_adv_with_eot = fgsm_with_eot.generate(x_test, **params)
 
         self.assertTrue((np.abs(x_test_adv - x_test_adv_with_eot) < 0.001).all())

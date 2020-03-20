@@ -66,13 +66,13 @@ class TestRandomizedSmoothing(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # First FGSM attack:
-        fgsm = FastGradientMethod(classifier=krc, targeted=True)
+        fgsm = FastGradientMethod(estimator=krc, targeted=True)
         params = {'y': random_targets(y_test, krc.nb_classes)}
         x_test_adv = fgsm.generate(x_test, **params)
 
         # Initialize RS object and attack with FGSM
         rs = RandomizedSmoothing(classifier=krc, sample_size=100, scale=0.01, alpha=0.001)
-        fgsm_with_rs = FastGradientMethod(classifier=rs, targeted=True)
+        fgsm_with_rs = FastGradientMethod(estimator=rs, targeted=True)
         x_test_adv_with_rs = fgsm_with_rs.generate(x_test, **params)
 
         # Compare results
