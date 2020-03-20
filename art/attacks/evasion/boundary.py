@@ -136,7 +136,7 @@ class BoundaryAttack(EvasionAttack):
         y = check_and_transform_label_format(y, self.classifier.nb_classes, return_one_hot=False)
 
         # Get clip_min and clip_max from the classifier or infer them from data
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+        if self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
         else:
             clip_min, clip_max = np.min(x), np.max(x)

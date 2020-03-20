@@ -315,7 +315,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     )
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)
-    if hasattr(classifier, "clip_values") and classifier.clip_values is not None:
+    if classifier.clip_values is not None:
         np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)

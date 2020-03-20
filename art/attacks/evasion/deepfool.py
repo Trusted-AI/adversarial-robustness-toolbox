@@ -132,7 +132,7 @@ class DeepFool(EvasionAttack):
                 r_var = r_var * grad_diff[np.arange(len(grad_diff)), l_var]
 
                 # Add perturbation and clip result
-                if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+                if self.estimator.clip_values is not None:
                     batch[active_indices] = np.clip(
                         batch[active_indices] + r_var[active_indices],
                         self.estimator.clip_values[0],
@@ -163,7 +163,7 @@ class DeepFool(EvasionAttack):
             x_adv1 = x_adv[batch_index_1:batch_index_2]
             x_adv2 = (1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2])
             x_adv[batch_index_1:batch_index_2] = x_adv1 + x_adv2
-            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            if self.estimator.clip_values is not None:
                 np.clip(
                     x_adv[batch_index_1:batch_index_2],
                     self.estimator.clip_values[0],
