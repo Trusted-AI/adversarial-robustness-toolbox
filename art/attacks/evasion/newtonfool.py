@@ -61,7 +61,8 @@ class NewtonFool(EvasionAttack):
             raise (
                 TypeError(
                     "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradientsMixin`, the provided classifier is instance of "
+                    "`art.estimators.classification.classifier.ClassGradientsMixin`, the provided classifier is "
+                    "instance of "
                     + str(classifier.__class__.__bases__)
                     + ". "
                     " The classifier needs to provide gradients."
