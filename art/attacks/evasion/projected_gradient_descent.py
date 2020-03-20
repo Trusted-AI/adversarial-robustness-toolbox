@@ -31,7 +31,8 @@ import numpy as np
 from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 from art.exceptions import ClassifierError
@@ -51,9 +52,11 @@ class ProjectedGradientDescent(FastGradientMethod):
 
     attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps"]
 
+    estimator_requirements = (BaseEstimator, LossGradientsMixin)
+
     def __init__(
         self,
-        classifier,
+        estimator,
         norm=np.inf,
         eps=0.3,
         eps_step=0.1,
@@ -66,8 +69,8 @@ class ProjectedGradientDescent(FastGradientMethod):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param estimator: An trained estimator.
+        :type estimator: :class:`.BaseEstimator`
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
@@ -90,7 +93,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         :type batch_size: `int`
         """
         super(ProjectedGradientDescent, self).__init__(
-            classifier=classifier,
+            estimator=estimator,
             norm=norm,
             eps=eps,
             eps_step=eps_step,
@@ -99,8 +102,9 @@ class ProjectedGradientDescent(FastGradientMethod):
             batch_size=batch_size,
             minimal=False,
         )
-        if not isinstance(classifier, ClassGradientsMixin):
-            raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
+
+        if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
+            raise ClassifierError(self.__class__, self.estimator_requirements, estimator)
 
         kwargs = {"max_iter": max_iter, "random_eps": random_eps}
         ProjectedGradientDescent.set_params(self, **kwargs)
@@ -126,27 +130,72 @@ class ProjectedGradientDescent(FastGradientMethod):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
-
-        if y is None:
-            # Throw error if attack is targeted, but no targets are provided
-            if self.targeted:
-                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-
-            # Use model predictions as correct outputs
-            targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
-        else:
-            targets = y
-
-        adv_x_best = None
-        rate_best = None
-
         if self.random_eps:
             ratio = self.eps_step / self.eps
             self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
             self.eps_step = ratio * self.eps
 
-        for _ in range(max(1, self.num_random_init)):
+        if isinstance(self.estimator, ClassifierMixin):
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+
+            if y is None:
+                # Throw error if attack is targeted, but no targets are provided
+                if self.targeted:
+                    raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+                # Use model predictions as correct outputs
+                targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+            else:
+                targets = y
+
+            adv_x_best = None
+            rate_best = None
+
+            for _ in range(max(1, self.num_random_init)):
+                adv_x = x.astype(ART_NUMPY_DTYPE)
+
+                for i_max_iter in range(self.max_iter):
+                    adv_x = self._compute(
+                        adv_x,
+                        x,
+                        targets,
+                        self.eps,
+                        self.eps_step,
+                        self._project,
+                        self.num_random_init > 0 and i_max_iter == 0,
+                    )
+
+                if self.num_random_init > 1:
+                    rate = 100 * compute_success(
+                        self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size
+                    )
+                    if rate_best is None or rate > rate_best or adv_x_best is None:
+                        rate_best = rate
+                        adv_x_best = adv_x
+                else:
+                    adv_x_best = adv_x
+
+            logger.info(
+                "Success rate of attack: %.2f%%",
+                rate_best
+                if rate_best is not None
+                else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+            )
+        else:
+
+            if self.num_random_init > 0:
+                raise ValueError("Random initialisation is only supported for classification.")
+
+            if y is None:
+                # Throw error if attack is targeted, but no targets are provided
+                if self.targeted:
+                    raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+                # Use model predictions as correct outputs
+                targets = self.estimator.predict(x, batch_size=self.batch_size)
+            else:
+                targets = y
+
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
@@ -160,22 +209,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                     self.num_random_init > 0 and i_max_iter == 0,
                 )
 
-            if self.num_random_init > 1:
-                rate = 100 * compute_success(
-                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size
-                )
-                if rate_best is None or rate > rate_best or adv_x_best is None:
-                    rate_best = rate
-                    adv_x_best = adv_x
-            else:
-                adv_x_best = adv_x
-
-        logger.info(
-            "Success rate of attack: %.2f%%",
-            rate_best
-            if rate_best is not None
-            else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
-        )
+            adv_x_best = adv_x
 
         return adv_x_best
 

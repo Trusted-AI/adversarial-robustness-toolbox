@@ -123,7 +123,11 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
     if len(classifier_expected_list) > 0:
         # Testing additional types of classifiers expected
         if classifier is None:
-            if LossGradientsMixin in classifier_expected_list or ClassGradientsMixin in classifier_expected_list or NeuralNetworkMixin in classifier_expected_list:
+            if (
+                LossGradientsMixin in classifier_expected_list
+                or ClassGradientsMixin in classifier_expected_list
+                or NeuralNetworkMixin in classifier_expected_list
+            ):
                 # Use a test classifier not providing gradients required by white-box attack
                 classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
             else:
@@ -137,7 +141,7 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
 
 def _backend_test_classifier_list_type_check_fail(attack, classifier, classifier_expected_list):
     with pytest.raises(ClassifierError) as exception:
-        _ = attack(classifier=classifier)
+        _ = attack(classifier)
 
     for classifier_expected in classifier_expected_list:
         assert classifier_expected in exception.value.class_expected_list
@@ -166,8 +170,8 @@ def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_mlFramework):
 
     check_adverse_example_x(x_test_adv, x_test_mnist)
 
-    y_pred = np.argmax(attack.classifier.predict(x_test_mnist), axis=1)
-    y_pred_adv = np.argmax(attack.classifier.predict(x_test_adv), axis=1)
+    y_pred = np.argmax(attack.estimator.predict(x_test_mnist), axis=1)
+    y_pred_adv = np.argmax(attack.estimator.predict(x_test_adv), axis=1)
     assert (y_pred != y_pred_adv).any()
 
     if fix_mlFramework in ["keras"]:
