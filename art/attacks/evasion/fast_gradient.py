@@ -24,6 +24,7 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import warnings
 
 import numpy as np
 
@@ -56,9 +57,11 @@ class FastGradientMethod(EvasionAttack):
         "minimal",
     ]
 
+    estimator_requirements = (BaseEstimator, LossGradientsMixin)
+
     def __init__(
         self,
-        classifier,
+        estimator,
         norm=np.inf,
         eps=0.3,
         eps_step=0.1,
@@ -70,8 +73,8 @@ class FastGradientMethod(EvasionAttack):
         """
         Create a :class:`.FastGradientMethod` instance.
 
-        :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param estimator: A trained estimator.
+        :type estimator: :class:`.BaseEstimator`
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Attack step size (input variation)
@@ -89,9 +92,10 @@ class FastGradientMethod(EvasionAttack):
                         the step size and eps for the maximum perturbation.
         :type minimal: `bool`
         """
-        super(FastGradientMethod, self).__init__(classifier)
-        if not isinstance(classifier, LossGradientsMixin):
-            raise ClassifierError(self.__class__, [LossGradientsMixin, BaseEstimator], classifier)
+        super(FastGradientMethod, self).__init__(estimator=estimator)
+
+        if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
+            raise ClassifierError(self.__class__, self.estimator_requirements, estimator)
 
         kwargs = {
             "norm": norm,
@@ -106,15 +110,6 @@ class FastGradientMethod(EvasionAttack):
         FastGradientMethod.set_params(self, **kwargs)
 
         self._project = True
-
-    @classmethod
-    def is_valid_classifier_type(cls, classifier):
-        """
-        Checks whether the classifier provided is a classifier which this class can perform an attack on
-        :param classifier:
-        :return:
-        """
-        return True if isinstance(classifier, LossGradientsMixin) else False
 
     def _minimal_perturbation(self, x, y):
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
