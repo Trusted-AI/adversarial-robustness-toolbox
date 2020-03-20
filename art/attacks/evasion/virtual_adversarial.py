@@ -60,7 +60,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(VirtualAdversarialMethod, self).__init__(classifier)
+        super(VirtualAdversarialMethod, self).__init__(estimator=classifier)
         if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
             raise ClassifierError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
@@ -79,7 +79,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         :rtype: `np.ndarray`
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
-        preds = self.classifier.predict(x_adv, batch_size=self.batch_size)
+        preds = self.estimator.predict(x_adv, batch_size=self.batch_size)
         if (preds < 0.0).any() or (preds > 1.0).any():
             raise TypeError(
                 "This attack requires a classifier predicting probabilities in the range [0, 1] as output."
@@ -100,7 +100,7 @@ class VirtualAdversarialMethod(EvasionAttack):
             # Main loop of the algorithm
             for _ in range(self.max_iter):
                 var_d = self._normalize(var_d)
-                preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
+                preds_new = self.estimator.predict((batch + var_d).reshape((-1,) + self.estimator.input_shape))
                 if (preds_new < 0.0).any() or (preds_new > 1.0).any():
                     raise TypeError(
                         "This attack requires a classifier predicting probabilities in the range [0, 1] as "
@@ -118,7 +118,7 @@ class VirtualAdversarialMethod(EvasionAttack):
                 var_d_new = np.zeros(var_d.shape).astype(ART_NUMPY_DTYPE)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
-                    preds_new = self.classifier.predict((batch + var_d).reshape((-1,) + self.classifier.input_shape))
+                    preds_new = self.estimator.predict((batch + var_d).reshape((-1,) + self.estimator.input_shape))
                     if (preds_new < 0.0).any() or (preds_new > 1.0).any():
                         raise TypeError(
                             "This attack requires a classifier predicting probabilities in the range [0, 1]"
@@ -135,19 +135,19 @@ class VirtualAdversarialMethod(EvasionAttack):
                 var_d = var_d_new
 
             # Apply perturbation and clip
-            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-                clip_min, clip_max = self.classifier.clip_values
+            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
                 x_adv[batch_index_1:batch_index_2] = np.clip(
                     batch + self.eps * self._normalize(var_d), clip_min, clip_max
-                ).reshape((-1,) + self.classifier.input_shape)
+                ).reshape((-1,) + self.estimator.input_shape)
             else:
                 x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(var_d)).reshape(
-                    (-1,) + self.classifier.input_shape
+                    (-1,) + self.estimator.input_shape
                 )
 
         logger.info(
             "Success rate of virtual adversarial attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
         )
 
         return x_adv

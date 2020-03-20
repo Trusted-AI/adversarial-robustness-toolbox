@@ -57,7 +57,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         :param max_val: maximal value any feature can take, defaults to 1.0
         :type max_val: `float`
         """
-        super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
+        super(HighConfidenceLowUncertainty, self).__init__(estimator=classifier)
         if not isinstance(classifier, GPyGaussianProcessClassifier):
             raise TypeError("Model must be a GPy Gaussian Process classifier!")
         params = {"conf": conf, "unc_increase": unc_increase, "min_val": min_val, "max_val": max_val}
@@ -97,10 +97,10 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             bounds.append((self.min_val, self.max_val))
         for i in range(np.shape(x)[0]):  # go though data amd craft
             # get properties for attack
-            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
-            class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
+            max_uncertainty = self.unc_increase * self.estimator.predict_uncertainty(x_adv[i].reshape(1, -1))
+            class_zero = not self.estimator.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
             init_args = {
-                "classifier": self.classifier,
+                "classifier": self.estimator,
                 "class_zero": class_zero,
                 "max_uncertainty": max_uncertainty,
                 "conf": self.conf,
@@ -110,7 +110,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             args = {"args": init_args, "orig": x[i].reshape(-1)}
             # finally, run optimization
             x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])["x"]
-        logger.info("Success rate of HCLU attack: %.2f%%", 100 * compute_success(self.classifier, x, y, x_adv))
+        logger.info("Success rate of HCLU attack: %.2f%%", 100 * compute_success(self.estimator, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):

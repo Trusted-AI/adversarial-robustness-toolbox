@@ -80,7 +80,7 @@ class UniversalPerturbation(EvasionAttack):
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
         :type norm: `int`
         """
-        super(UniversalPerturbation, self).__init__(classifier)
+        super(UniversalPerturbation, self).__init__(estimator=classifier)
         if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
             raise ClassifierError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
@@ -114,7 +114,7 @@ class UniversalPerturbation(EvasionAttack):
 
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        pred_y = self.classifier.predict(x, batch_size=1)
+        pred_y = self.estimator.predict(x, batch_size=1)
         pred_y_max = np.argmax(pred_y, axis=1)
 
         # Start to generate the adversarial examples
@@ -127,13 +127,13 @@ class UniversalPerturbation(EvasionAttack):
             for j, ex in enumerate(x[rnd_idx]):
                 x_i = ex[None, ...]
 
-                current_label = np.argmax(self.classifier.predict(x_i + noise)[0])
+                current_label = np.argmax(self.estimator.predict(x_i + noise)[0])
                 original_label = np.argmax(pred_y[rnd_idx][j])
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(x_i + noise)
-                    new_label = np.argmax(self.classifier.predict(adv_xi)[0])
+                    new_label = np.argmax(self.estimator.predict(adv_xi)[0])
 
                     # If the class has changed, update v
                     if current_label != new_label:
@@ -145,12 +145,12 @@ class UniversalPerturbation(EvasionAttack):
 
             # Apply attack and clip
             x_adv = x + noise
-            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-                clip_min, clip_max = self.classifier.clip_values
+            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
             # Compute the error rate
-            y_adv = np.argmax(self.classifier.predict(x_adv, batch_size=1), axis=1)
+            y_adv = np.argmax(self.estimator.predict(x_adv, batch_size=1), axis=1)
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
 
         self.fooling_rate = fooling_rate
@@ -204,7 +204,7 @@ class UniversalPerturbation(EvasionAttack):
         """
         try:
             attack_class = self._get_class(self.attacks_dict[a_name])
-            a_instance = attack_class(self.classifier)
+            a_instance = attack_class(self.estimator)
 
             if params:
                 a_instance.set_params(**params)

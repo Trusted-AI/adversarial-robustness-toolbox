@@ -56,7 +56,7 @@ class NewtonFool(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(NewtonFool, self).__init__(classifier)
+        super(NewtonFool, self).__init__(estimator=classifier)
         if not isinstance(classifier, ClassGradientsMixin):
             raise (
                 TypeError(
@@ -85,7 +85,7 @@ class NewtonFool(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Initialize variables
-        y_pred = self.classifier.predict(x, batch_size=self.batch_size)
+        y_pred = self.estimator.predict(x, batch_size=self.batch_size)
         pred_class = np.argmax(y_pred, axis=1)
 
         # Compute perturbation with implicit batching
@@ -96,15 +96,15 @@ class NewtonFool(EvasionAttack):
             # Main algorithm for each batch
             norm_batch = np.linalg.norm(np.reshape(batch, (batch.shape[0], -1)), axis=1)
             l_batch = pred_class[batch_index_1:batch_index_2]
-            l_b = to_categorical(l_batch, self.classifier.nb_classes).astype(bool)
+            l_b = to_categorical(l_batch, self.estimator.nb_classes).astype(bool)
 
             # Main loop of the algorithm
             for _ in range(self.max_iter):
                 # Compute score
-                score = self.classifier.predict(batch)[l_b]
+                score = self.estimator.predict(batch)[l_b]
 
                 # Compute the gradients and norm
-                grads = self.classifier.class_gradient(batch, label=l_batch)
+                grads = self.estimator.class_gradient(batch, label=l_batch)
                 if grads.shape[1] == 1:
                     grads = np.squeeze(grads, axis=1)
                 norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
@@ -119,15 +119,15 @@ class NewtonFool(EvasionAttack):
                 batch += di_batch
 
             # Apply clip
-            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-                clip_min, clip_max = self.classifier.clip_values
+            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
                 x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
             else:
                 x_adv[batch_index_1:batch_index_2] = batch
 
         logger.info(
             "Success rate of NewtonFool attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
         )
         return x_adv
 
@@ -170,7 +170,7 @@ class NewtonFool(EvasionAttack):
         :rtype: `np.ndarray`
         """
         equ1 = self.eta * norm_batch * norm_grad
-        equ2 = score - 1.0 / self.classifier.nb_classes
+        equ2 = score - 1.0 / self.estimator.nb_classes
         result = np.minimum.reduce([equ1, equ2])
 
         return result

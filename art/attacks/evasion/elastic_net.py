@@ -96,7 +96,7 @@ class ElasticNet(EvasionAttack):
         :param decision_rule: Decision rule. 'EN' means Elastic Net rule, 'L1' means L1 rule, 'L2' means L2 rule.
         :type decision_rule: `string`
         """
-        super(ElasticNet, self).__init__(classifier)
+        super(ElasticNet, self).__init__(estimator=classifier)
         if not isinstance(classifier, ClassGradientsMixin):
             raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
 
@@ -127,7 +127,7 @@ class ElasticNet(EvasionAttack):
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        predictions = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
+        predictions = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
         return np.argmax(predictions, axis=1), l1dist, l2dist, endist
 
@@ -147,7 +147,7 @@ class ElasticNet(EvasionAttack):
         :type target: `np.ndarray`
         """
         # Compute the current predictions
-        predictions = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
+        predictions = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
@@ -160,8 +160,8 @@ class ElasticNet(EvasionAttack):
                 predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1
             )
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
+        loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c_weight
@@ -204,7 +204,7 @@ class ElasticNet(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:
@@ -213,7 +213,7 @@ class ElasticNet(EvasionAttack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -226,13 +226,13 @@ class ElasticNet(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(x_batch, y_batch)
 
         # Apply clip
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            x_adv = np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1])
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            x_adv = np.clip(x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1])
 
         # Compute success rate of the EAD attack
         logger.info(
             "Success rate of EAD attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv

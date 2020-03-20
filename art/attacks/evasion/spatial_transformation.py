@@ -65,7 +65,7 @@ class SpatialTransformation(EvasionAttack):
         :param num_rotations: The number of rotations to search on grid spacing.
         :type num_rotations: `int`
         """
-        super(SpatialTransformation, self).__init__(classifier=classifier)
+        super(SpatialTransformation, self).__init__(estimator=classifier)
         kwargs = {
             "max_translation": max_translation,
             "num_translations": num_translations,
@@ -99,7 +99,7 @@ class SpatialTransformation(EvasionAttack):
 
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
-            y_pred = self.classifier.predict(x, batch_size=1)
+            y_pred = self.estimator.predict(x, batch_size=1)
             y_pred_max = np.argmax(y_pred, axis=1)
 
             nb_instances = len(x)
@@ -142,7 +142,7 @@ class SpatialTransformation(EvasionAttack):
                         x_adv_i = self._perturb(x, trans_x_i, trans_y_i, rot_i)
 
                         # Compute the error rate
-                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i, batch_size=1), axis=1)
+                        y_adv_i = np.argmax(self.estimator.predict(x_adv_i, batch_size=1), axis=1)
                         fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
                         if fooling_rate_i > fooling_rate:
@@ -168,17 +168,17 @@ class SpatialTransformation(EvasionAttack):
         return x_adv
 
     def _perturb(self, x, trans_x, trans_y, rot):
-        if self.classifier.channel_index == 3:
+        if self.estimator.channel_index == 3:
             x_adv = shift(x, [0, trans_x, trans_y, 0])
             x_adv = rotate(x_adv, angle=rot, axes=(1, 2), reshape=False)
-        elif self.classifier.channel_index == 1:
+        elif self.estimator.channel_index == 1:
             x_adv = shift(x, [0, 0, trans_x, trans_y])
             x_adv = rotate(x_adv, angle=rot, axes=(2, 3), reshape=False)
         else:
             raise ValueError("Unsupported channel index.")
 
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1], out=x_adv)
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            np.clip(x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1], out=x_adv)
 
         return x_adv
 
