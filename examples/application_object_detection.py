@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-from art.estimators.object_detectors.PyTorchFasterRCNN import PyTorchFasterRCNN
+from art.estimators.object_detection.PyTorchFasterRCNN import PyTorchFasterRCNN
 from art.attacks.evasion import FastGradientMethod
 
 COCO_INSTANCE_CATEGORY_NAMES = [
