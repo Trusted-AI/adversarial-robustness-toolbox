@@ -21,7 +21,7 @@ This module implements the task specific estimator for Faster R-CNN v3 in PyTorc
 import logging
 
 from art.estimators.pytorch import PyTorchEstimator
-from art.estimators.object_detectors.object_detector import ObjectDetectorMixin
+from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
 logger = logging.getLogger(__name__)
 
