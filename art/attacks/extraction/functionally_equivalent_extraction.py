@@ -59,7 +59,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :param num_neurons: The number of neurons in the first dense layer.
         :type num_neurons: `int`
         """
-        super().__init__(classifier)
+        super().__init__(classifier=classifier)
         self.num_neurons = num_neurons
         self.num_classes = classifier.nb_classes
         self.num_features = int(np.prod(classifier.input_shape))
@@ -151,11 +151,11 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         extracted_classifier = BlackBoxClassifier(
             predict,
-            input_shape=self.classifier.input_shape,
-            nb_classes=self.classifier.nb_classes,
-            clip_values=self.classifier.clip_values,
-            preprocessing_defences=self.classifier.preprocessing_defences,
-            preprocessing=self.classifier.preprocessing,
+            input_shape=self.estimator.input_shape,
+            nb_classes=self.estimator.nb_classes,
+            clip_values=self.estimator.clip_values,
+            preprocessing_defences=self.estimator.preprocessing_defences,
+            preprocessing=self.estimator.preprocessing,
         )
 
         return extracted_classifier
@@ -173,7 +173,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         """
         if e_j is not None:
             x = x + e_j
-        return self.classifier.predict(x).astype(NUMPY_DTYPE)
+        return self.estimator.predict(x).astype(NUMPY_DTYPE)
 
     def _get_x(self, var_t):
         """

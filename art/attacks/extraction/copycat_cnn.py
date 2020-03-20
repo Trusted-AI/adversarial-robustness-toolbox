@@ -133,9 +133,9 @@ class CopycatCNN(ExtractionAttack):
         :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :rtype: `np.ndarray`
         """
-        labels = self.classifier.predict(x=x, batch_size=self.batch_size_query)
+        labels = self.estimator.predict(x=x, batch_size=self.batch_size_query)
         labels = np.argmax(labels, axis=1)
-        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes)
+        labels = to_categorical(labels=labels, nb_classes=self.estimator.nb_classes)
 
         return labels
 

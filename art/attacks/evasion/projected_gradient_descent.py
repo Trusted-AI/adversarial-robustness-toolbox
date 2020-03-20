@@ -90,7 +90,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         :type batch_size: `int`
         """
         super(ProjectedGradientDescent, self).__init__(
-            classifier,
+            classifier=classifier,
             norm=norm,
             eps=eps,
             eps_step=eps_step,
@@ -126,7 +126,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
@@ -134,7 +134,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
-            targets = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
+            targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
         else:
             targets = y
 
@@ -162,7 +162,7 @@ class ProjectedGradientDescent(FastGradientMethod):
 
             if self.num_random_init > 1:
                 rate = 100 * compute_success(
-                    self.classifier, x, targets, adv_x, self.targeted, batch_size=self.batch_size
+                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size
                 )
                 if rate_best is None or rate > rate_best or adv_x_best is None:
                     rate_best = rate
@@ -174,7 +174,7 @@ class ProjectedGradientDescent(FastGradientMethod):
             "Success rate of attack: %.2f%%",
             rate_best
             if rate_best is not None
-            else 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+            else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
         )
 
         return adv_x_best

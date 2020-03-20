@@ -113,7 +113,7 @@ class ZooAttack(EvasionAttack):
         :param variable_h: Step size for numerical estimation of derivatives.
         :type variable_h: `float`
         """
-        super(ZooAttack, self).__init__(classifier)
+        super(ZooAttack, self).__init__(estimator=classifier)
 
         if len(classifier.input_shape) == 1:
             self.input_is_feature_vector = True
@@ -154,13 +154,13 @@ class ZooAttack(EvasionAttack):
             logger.info("Disable resizing and importance sampling because feature vector input has been detected.")
 
         if self.use_resize:
-            if self.classifier.channel_index == 3:
-                dims = (batch_size, self._init_size, self._init_size, self.classifier.input_shape[-1])
-            elif self.classifier.channel_index == 1:
-                dims = (batch_size, self.classifier.input_shape[0], self._init_size, self._init_size)
+            if self.estimator.channel_index == 3:
+                dims = (batch_size, self._init_size, self._init_size, self.estimator.input_shape[-1])
+            elif self.estimator.channel_index == 1:
+                dims = (batch_size, self.estimator.input_shape[0], self._init_size, self._init_size)
             self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
         else:
-            self._current_noise = np.zeros((batch_size,) + self.classifier.input_shape, dtype=ART_NUMPY_DTYPE)
+            self._current_noise = np.zeros((batch_size,) + self.estimator.input_shape, dtype=ART_NUMPY_DTYPE)
         self._sample_prob = np.ones(self._current_noise.size, dtype=ART_NUMPY_DTYPE) / self._current_noise.size
 
         self.adam_mean = None
@@ -184,9 +184,9 @@ class ZooAttack(EvasionAttack):
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x_adv.shape[0], -1), axis=1)
         ratios = [1] + [
-            int(new_size) / int(old_size) for new_size, old_size in zip(self.classifier.input_shape, x.shape[1:])
+            int(new_size) / int(old_size) for new_size, old_size in zip(self.estimator.input_shape, x.shape[1:])
         ]
-        preds = self.classifier.predict(np.array(zoom(x_adv, zoom=ratios)), batch_size=self.batch_size)
+        preds = self.estimator.predict(np.array(zoom(x_adv, zoom=ratios)), batch_size=self.batch_size)
         z_target = np.sum(preds * target, axis=1)
         z_other = np.max(preds * (1 - target) + (np.min(preds, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -211,7 +211,7 @@ class ZooAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes)
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:
@@ -219,7 +219,7 @@ class ZooAttack(EvasionAttack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
@@ -235,14 +235,14 @@ class ZooAttack(EvasionAttack):
         x_adv = np.vstack(x_adv)
 
         # Apply clip
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            clip_min, clip_max = self.classifier.clip_values
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
             np.clip(x_adv, clip_min, clip_max, out=x_adv)
 
         # Log success rate of the ZOO attack
         logger.info(
             "Success rate of ZOO attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv
@@ -354,7 +354,7 @@ class ZooAttack(EvasionAttack):
             x_adv = x_orig.copy()
         else:
             x_orig = x_batch
-            self._reset_adam(np.prod(self.classifier.input_shape))
+            self._reset_adam(np.prod(self.estimator.input_shape))
             self._current_noise.fill(0)
             x_adv = x_orig.copy()
 
@@ -418,12 +418,12 @@ class ZooAttack(EvasionAttack):
         # Resize images to original size before returning
         best_attack = np.array(best_attack)
         if self.use_resize:
-            if self.classifier.channel_index == 3:
+            if self.estimator.channel_index == 3:
                 best_attack = zoom(
                     best_attack,
                     [1, int(x_batch.shape[1]) / best_attack.shape[1], int(x_batch.shape[2]) / best_attack.shape[2], 1],
                 )
-            elif self.classifier.channel_index == 1:
+            elif self.estimator.channel_index == 1:
                 best_attack = zoom(
                     best_attack,
                     [1, 1, int(x_batch.shape[2]) / best_attack.shape[2], int(x_batch.shape[2]) / best_attack.shape[3]],
@@ -502,8 +502,8 @@ class ZooAttack(EvasionAttack):
         current_noise[index] -= learning_rate * corr * mean[index] / (np.sqrt(var[index]) + 1e-8)
         adam_epochs[index] += 1
 
-        if proj and hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            clip_min, clip_max = self.classifier.clip_values
+        if proj and hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
             current_noise[index] = np.clip(current_noise[index], clip_min, clip_max)
 
         return current_noise.reshape(orig_shape)
@@ -526,9 +526,9 @@ class ZooAttack(EvasionAttack):
             self.adam_epochs = np.ones(nb_vars, dtype=np.int32)
 
     def _resize_image(self, x, size_x, size_y, reset=False):
-        if self.classifier.channel_index == 3:
+        if self.estimator.channel_index == 3:
             dims = (x.shape[0], size_x, size_y, x.shape[-1])
-        elif self.classifier.channel_index == 1:
+        elif self.estimator.channel_index == 1:
             dims = (x.shape[0], x.shape[1], size_x, size_y)
         nb_vars = np.prod(dims)
 
@@ -557,19 +557,19 @@ class ZooAttack(EvasionAttack):
 
         # Double size if needed
         if double:
-            dims = [2 * size if i not in [0, self.classifier.channel_index] else size for i, size in enumerate(dims)]
+            dims = [2 * size if i not in [0, self.estimator.channel_index] else size for i, size in enumerate(dims)]
 
         prob = np.empty(shape=dims, dtype=np.float32)
         image = np.abs(prev_noise)
 
-        for channel in range(prev_noise.shape[self.classifier.channel_index]):
-            if self.classifier.channel_index == 3:
+        for channel in range(prev_noise.shape[self.estimator.channel_index]):
+            if self.estimator.channel_index == 3:
                 image_pool = self._max_pooling(image[:, :, :, channel], dims[1] // 8)
                 if double:
                     prob[:, :, :, channel] = np.abs(zoom(image_pool, [1, 2, 2]))
                 else:
                     prob[:, :, :, channel] = image_pool
-            elif self.classifier.channel_index == 1:
+            elif self.estimator.channel_index == 1:
                 image_pool = self._max_pooling(image[:, channel, :, :], dims[2] // 8)
                 if double:
                     prob[:, channel, :, :] = np.abs(zoom(image_pool, [1, 2, 2]))

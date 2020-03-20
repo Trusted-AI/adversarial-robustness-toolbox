@@ -75,20 +75,20 @@ class PixelThreshold(EvasionAttack):
         :param verbose: Indicates whether to print verbose messages of ES used
         :type  verbose: `bool`
         """
-        super(PixelThreshold, self).__init__(classifier)
+        super(PixelThreshold, self).__init__(estimator=classifier)
         self._project = True
         kwargs = {"th": th, "es": es, "targeted": targeted, "verbose": verbose}
         PixelThreshold.set_params(self, **kwargs)
         self.type_attack = -1
 
-        if self.classifier.channel_index == 1:
-            self.img_rows = self.classifier.input_shape[-2]
-            self.img_cols = self.classifier.input_shape[-1]
-            self.img_channels = self.classifier.input_shape[-3]
+        if self.estimator.channel_index == 1:
+            self.img_rows = self.estimator.input_shape[-2]
+            self.img_cols = self.estimator.input_shape[-1]
+            self.img_channels = self.estimator.input_shape[-3]
         else:
-            self.img_rows = self.classifier.input_shape[-3]
-            self.img_cols = self.classifier.input_shape[-2]
-            self.img_channels = self.classifier.input_shape[-1]
+            self.img_rows = self.estimator.input_shape[-3]
+            self.img_cols = self.estimator.input_shape[-2]
+            self.img_channels = self.estimator.input_shape[-1]
 
     def set_params(self, **kwargs):
         """
@@ -124,12 +124,12 @@ class PixelThreshold(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes, return_one_hot=False)
+        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         if y is None:
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-            y = np.argmax(self.classifier.predict(x), axis=1)
+            y = np.argmax(self.estimator.predict(x), axis=1)
         else:
             if len(y.shape) > 1:
                 y = np.argmax(y, axis=1)
@@ -169,10 +169,10 @@ class PixelThreshold(EvasionAttack):
             x = x / 255.0
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes)
+            y = to_categorical(y, self.estimator.nb_classes)
 
         logger.info(
-            "Success rate of Attack: %.2f%%", 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, 1)
+            "Success rate of Attack: %.2f%%", 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, 1)
         )
         return adv_x_best
 
@@ -180,7 +180,7 @@ class PixelThreshold(EvasionAttack):
         """
         Checks whether the given perturbation `adv_x` for the image `img` is successful.
         """
-        predicted_class = np.argmax(self.classifier.predict(self._perturb_image(adv_x, x))[0])
+        predicted_class = np.argmax(self.estimator.predict(self._perturb_image(adv_x, x))[0])
         return bool(
             (self.targeted and predicted_class == target_class)
             or (not self.targeted and predicted_class != target_class)
@@ -194,7 +194,7 @@ class PixelThreshold(EvasionAttack):
         bounds, initial = self._get_bounds(image, limit)
 
         def predict_fn(x):
-            predictions = self.classifier.predict(self._perturb_image(x, image))[:, target_class]
+            predictions = self.estimator.predict(self._perturb_image(x, image))[:, target_class]
             return predictions if not self.targeted else 1 - predictions
 
         def callback_fn(x, convergence=None):
@@ -301,7 +301,7 @@ class PixelAttack(PixelThreshold):
         for adv, image in zip(x, imgs):
             for pixel in np.split(adv, len(adv) // (2 + self.img_channels)):
                 x_pos, y_pos, *rgb = pixel
-                if self.classifier.channel_index == 3:
+                if self.estimator.channel_index == 3:
                     image[x_pos % self.img_rows, y_pos % self.img_cols] = rgb
                 else:
                     image[:, x_pos % self.img_rows, y_pos % self.img_cols] = rgb
@@ -316,7 +316,7 @@ class PixelAttack(PixelThreshold):
             for count, (i, j) in enumerate(product(range(self.img_rows), range(self.img_cols))):
                 initial += [i, j]
                 for k in range(self.img_channels):
-                    if self.classifier.channel_index == 3:
+                    if self.estimator.channel_index == 3:
                         initial += [img[i, j, k]]
                     else:
                         initial += [img[k, i, j]]
