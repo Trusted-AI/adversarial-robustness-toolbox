@@ -30,7 +30,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class DeepFool(EvasionAttack):
         """
         super(DeepFool, self).__init__(estimator=classifier)
         if not isinstance(classifier, ClassGradientsMixin):
-            raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
+            raise EstimatorError(self.__class__, [ClassGradientsMixin], classifier)
 
         params = {"max_iter": max_iter, "epsilon": epsilon, "nb_grads": nb_grads, "batch_size": batch_size}
         self.set_params(**params)

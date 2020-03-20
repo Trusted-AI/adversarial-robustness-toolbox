@@ -32,7 +32,7 @@ from art.estimators.estimator import NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import projection
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +82,7 @@ class UniversalPerturbation(EvasionAttack):
         """
         super(UniversalPerturbation, self).__init__(estimator=classifier)
         if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
-            raise ClassifierError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
+            raise EstimatorError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
         kwargs = {
             "attacker": attacker,

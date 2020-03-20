@@ -2,6 +2,6 @@
 =====================
 .. automodule:: art.exceptions
 
-ClassifierError
+EstimatorError
 ---------------
-.. autoexception:: ClassifierError
+.. autoexception:: EstimatorError

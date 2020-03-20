@@ -32,7 +32,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ class BoundaryAttack(EvasionAttack):
         super(BoundaryAttack, self).__init__(estimator=estimator)
 
         if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
-            raise ClassifierError(self.__class__, self.estimator_requirements, estimator)
+            raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         params = {
             "targeted": targeted,

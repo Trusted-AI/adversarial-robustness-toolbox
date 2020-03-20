@@ -20,9 +20,9 @@ Module containing ART's exceptions.
 """
 
 
-class ClassifierError(TypeError):
+class EstimatorError(TypeError):
     """
-    Basic exception for errors raised by unexpected classifier types.
+    Basic exception for errors raised by unexpected estimator types.
     """
 
     def __init__(self, this_class, class_expected_list, classifier_given):

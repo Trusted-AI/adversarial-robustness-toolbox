@@ -35,7 +35,7 @@ from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
 from art.utils import check_and_transform_label_format
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ class CarliniL2Method(EvasionAttack):
         """
         super(CarliniL2Method, self).__init__(estimator=classifier)
         if not isinstance(classifier, ClassGradientsMixin):
-            raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
+            raise EstimatorError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -564,7 +564,7 @@ class CarliniLInfMethod(EvasionAttack):
         """
         super(CarliniLInfMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassGradientsMixin):
-            raise ClassifierError(self.__class__, [ClassGradientsMixin], classifier)
+            raise EstimatorError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {
             "confidence": confidence,
