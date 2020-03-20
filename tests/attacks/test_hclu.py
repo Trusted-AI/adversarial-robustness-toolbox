@@ -24,7 +24,7 @@ import numpy as np
 import GPy
 
 from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
-from art.estimators.classifiers.GPy import GPyGaussianProcessClassifier
+from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 
 from tests.utils import TestBase
 

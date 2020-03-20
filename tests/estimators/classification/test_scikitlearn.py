@@ -35,11 +35,11 @@ from sklearn.svm import SVC, LinearSVC
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 
-from art.estimators.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier, \
+from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier, ScikitlearnExtraTreeClassifier, \
     ScikitlearnAdaBoostClassifier, ScikitlearnBaggingClassifier, ScikitlearnExtraTreesClassifier, \
     ScikitlearnGradientBoostingClassifier, ScikitlearnRandomForestClassifier, ScikitlearnLogisticRegression, \
     ScikitlearnSVC
-from art.estimators.classifiers.scikitlearn import SklearnClassifier
+from art.estimators.classification.scikitlearn import SklearnClassifier
 
 from tests.utils import TestBase, master_seed
 

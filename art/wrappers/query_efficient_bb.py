@@ -27,7 +27,7 @@ from scipy.stats import entropy
 
 from art.wrappers.wrapper import ClassifierWrapper
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
-from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 from art.utils import clip_and_round
 

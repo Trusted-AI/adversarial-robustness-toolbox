@@ -22,9 +22,9 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
-from art.estimators.classifiers.keras import KerasClassifier
+from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import NeuralNetworkMixin
-from art.estimators.classifiers.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassGradientsMixin
 
 from tests.utils import TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt

@@ -29,7 +29,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classifiers.classifier import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
 from art.exceptions import ClassifierError

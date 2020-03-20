@@ -25,8 +25,8 @@ from sklearn.tree import DecisionTreeClassifier
 from art.utils import random_targets, get_labels_np_array
 from art.exceptions import ClassifierError
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
-from art.estimators.classifiers.classifier import ClassGradientsMixin
-from art.estimators.classifiers.scikitlearn import ScikitlearnDecisionTreeClassifier
+from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_y
 

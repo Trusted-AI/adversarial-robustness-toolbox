@@ -28,8 +28,7 @@ from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
 
-from art.estimators.classifiers import KerasClassifier
-from art.estimators.classifiers.keras import generator_fit
+from art.estimators.classification.keras import KerasClassifier, generator_fit
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
 

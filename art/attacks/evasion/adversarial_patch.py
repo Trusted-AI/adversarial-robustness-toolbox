@@ -31,7 +31,7 @@ from scipy.ndimage import rotate, shift, zoom
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import NeuralNetworkMixin
-from art.estimators.classifiers.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format
 from art.exceptions import ClassifierError

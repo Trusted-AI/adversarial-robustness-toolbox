@@ -7,8 +7,8 @@ The parameters are chosen for reduced computational requirements of the script a
 import lightgbm as lgb
 import numpy as np
 
-from art.attacks import ZooAttack
-from art.estimators.classifiers import LightGBMClassifier
+from art.attacks.evasion import ZooAttack
+from art.estimators.classification import LightGBMClassifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset

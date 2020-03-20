@@ -24,7 +24,7 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 
-from art.estimators.classifiers.pytorch import PyTorchClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
 from art.defences.preprocessor import PixelDefend
 from art.utils import load_mnist
 

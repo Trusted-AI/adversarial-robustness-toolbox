@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 import keras.backend as k
 
-from art.estimators.classifiers.ensemble import EnsembleClassifier
+from art.estimators.classification.ensemble import EnsembleClassifier
 
 from tests.utils import TestBase, get_image_classifier_kr
 
@@ -252,7 +252,7 @@ class TestEnsembleClassifier(TestBase):
 
     def test_repr(self):
         repr_ = repr(self.ensemble)
-        self.assertIn('art.estimators.classifiers.ensemble.EnsembleClassifier', repr_)
+        self.assertIn('art.estimators.classification.ensemble.EnsembleClassifier', repr_)
         self.assertIn('classifier_weights=array([0.5, 0.5])', repr_)
         self.assertIn('channel_index=3, clip_values=(0, 1), preprocessing_defences=None, '
                       'postprocessing_defences=None, preprocessing=(0, 1)', repr_)

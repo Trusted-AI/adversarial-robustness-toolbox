@@ -27,7 +27,7 @@ from minio import Minio
 import torch
 import torch.utils.data
 
-from art.estimators.classifiers import PyTorchClassifier
+from art.estimators.classification import PyTorchClassifier
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 
 from robustness_util import get_metrics

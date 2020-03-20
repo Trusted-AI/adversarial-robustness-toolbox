@@ -23,7 +23,7 @@ import unittest
 import numpy as np
 import GPy
 
-from art.estimators.classifiers.GPy import GPyGaussianProcessClassifier
+from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 
 from tests.utils import TestBase, master_seed
 

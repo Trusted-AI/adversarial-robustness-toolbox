@@ -54,7 +54,7 @@ class TestActivationDefence(unittest.TestCase):
 
         model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
-        from art.estimators.classifiers.keras import KerasClassifier
+        from art.estimators.classification.keras import KerasClassifier
 
         cls.classifier = KerasClassifier(model=model, clip_values=(min_, max_))
 

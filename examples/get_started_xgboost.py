@@ -7,8 +7,8 @@ The parameters are chosen for reduced computational requirements of the script a
 import xgboost as xgb
 import numpy as np
 
-from art.attacks import ZooAttack
-from art.estimators.classifiers import XGBoostClassifier
+from art.attacks.evasion import ZooAttack
+from art.estimators.classification import XGBoostClassifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset

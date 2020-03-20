@@ -149,7 +149,7 @@ class PixelDefend(Preprocessor):
         :param pixel_cnn: Pre-trained PixelCNN model.
         :type pixel_cnn: :class:`.Classifier`
         """
-        from art.estimators.classifiers.classifier import ClassifierMixin
+        from art.estimators.classification.classifier import ClassifierMixin
 
         # Save defence-specific parameters
         super(PixelDefend, self).set_params(**kwargs)

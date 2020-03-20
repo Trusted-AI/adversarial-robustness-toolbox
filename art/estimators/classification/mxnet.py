@@ -27,7 +27,7 @@ import six
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.mxnet import MXEstimator
-from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 

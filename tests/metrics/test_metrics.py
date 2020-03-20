@@ -29,9 +29,9 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.estimators.classifiers.keras import KerasClassifier
-from art.estimators.classifiers.pytorch import PyTorchClassifier
-from art.estimators.classifiers.tensorflow import TensorFlowClassifier
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import TensorFlowClassifier
 from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist
 
