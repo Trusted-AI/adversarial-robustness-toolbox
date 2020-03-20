@@ -53,7 +53,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         Initialize an SVM poisoning attack
 
         :param classifier: A trained ScikitlearnSVC classifier
-        :type classifier: `art.classifiers.scikitlearn.ScikitlearnSVC`
+        :type classifier: `art.estimators.classification.scikitlearn.ScikitlearnSVC`
         :param step: The step size of the classifier
         :type step: `float`
         :param eps: The minimum difference in loss before convergence of the classifier
@@ -162,7 +162,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :param y_attack: the initial attack label
         :type y_attack: `np.ndarray`
         :return: a tuple containing the final attack point and the poisoned model
-        :rtype: (`np.ndarray`, `art.classifiers.ScikitlearnSVC`)
+        :rtype: (`np.ndarray`, `art.estimators.classification.scikitlearn.ScikitlearnSVC`)
         """
         # pylint: disable=W0212
         from sklearn.preprocessing import normalize
