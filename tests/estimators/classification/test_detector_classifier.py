@@ -27,8 +27,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from art.estimators.classifiers.pytorch import PyTorchClassifier
-from art.estimators.classifiers.detector_classifier import DetectorClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.detector_classifier import DetectorClassifier
 
 from tests.utils import TestBase, get_image_classifier_pt
 
@@ -170,7 +170,7 @@ class TestDetectorClassifier(TestBase):
 
     def test_repr(self):
         repr_ = repr(self.detector_classifier)
-        self.assertIn('art.estimators.classifiers.detector_classifier.DetectorClassifier', repr_)
+        self.assertIn('art.estimators.classification.detector_classifier.DetectorClassifier', repr_)
         self.assertIn('preprocessing=(0, 1)', repr_)
 
 

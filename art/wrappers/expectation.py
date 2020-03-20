@@ -26,7 +26,7 @@ import logging
 
 from art.wrappers.wrapper import ClassifierWrapper
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
-from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 

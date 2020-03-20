@@ -26,7 +26,7 @@ import logging
 import six
 
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
-from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 

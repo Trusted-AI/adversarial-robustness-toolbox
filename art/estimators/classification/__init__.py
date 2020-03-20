@@ -1,6 +1,6 @@
 """
 Classifier API for applying all attacks. Use the :class:`.Classifier` wrapper to be able to apply an attack to a
-existing model.
+preexisting model.
 """
 from art.estimators.classification.blackbox import BlackBoxClassifier
 from art.estimators.classification.catboost import CatBoostARTClassifier

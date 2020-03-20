@@ -25,7 +25,7 @@ import logging
 import numpy as np
 
 from art.attacks.attack import PoisoningAttackWhiteBox
-from art.estimators.classifiers.scikitlearn import ScikitlearnSVC
+from art.estimators.classification.scikitlearn import ScikitlearnSVC
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)

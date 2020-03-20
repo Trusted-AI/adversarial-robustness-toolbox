@@ -34,8 +34,8 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from art.attacks.attack import ExtractionAttack
-from art.estimators.classifiers.keras import KerasClassifier
-from art.estimators.classifiers.blackbox import BlackBoxClassifier
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.blackbox import BlackBoxClassifier
 
 NUMPY_DTYPE = np.float64
 

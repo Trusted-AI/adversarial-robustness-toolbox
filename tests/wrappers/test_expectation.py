@@ -22,7 +22,7 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.estimators.classifiers.keras import KerasClassifier
+from art.estimators.classification.keras import KerasClassifier
 from art.utils import load_dataset, random_targets
 from art.wrappers.expectation import ExpectationOverTransformations
 from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr

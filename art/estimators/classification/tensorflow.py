@@ -27,7 +27,7 @@ import numpy as np
 import six
 
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
-from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 

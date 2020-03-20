@@ -34,7 +34,7 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 import numpy as np
 
 from art.config import ART_DATA_PATH
-from art.estimators.classifiers.keras import KerasClassifier, generator_fit
+from art.estimators.classification.keras import KerasClassifier, generator_fit
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
 
@@ -571,7 +571,7 @@ class TestKerasClassifierTensorFlow(TestBase):
     def test_repr(self):
         classifier = get_image_classifier_kr_tf()
         repr_ = repr(classifier)
-        self.assertIn('art.estimators.classifiers.keras.KerasClassifier', repr_)
+        self.assertIn('art.estimators.classification.keras.KerasClassifier', repr_)
         self.assertIn('use_logits=False, channel_index=3', repr_)
         self.assertIn('clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, '
                       'preprocessing=(0, 1)', repr_)

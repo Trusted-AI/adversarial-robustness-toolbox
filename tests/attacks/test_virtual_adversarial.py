@@ -22,9 +22,9 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
-from art.estimators.classifiers.keras import KerasClassifier
+from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import NeuralNetworkMixin
-from art.estimators.classifiers.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import get_labels_np_array
 
 from tests.utils import TestBase

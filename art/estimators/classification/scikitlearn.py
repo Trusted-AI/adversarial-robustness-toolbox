@@ -26,7 +26,7 @@ import importlib
 import numpy as np
 
 from art.estimators.estimator import DecisionTreeMixin, LossGradientsMixin
-from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 from art.estimators.scikitlearn import ScikitlearnEstimator
 from art.utils import to_categorical
 
@@ -59,7 +59,7 @@ def SklearnClassifier(
         raise TypeError("Model is not an sklearn model. Received '%s'" % model.__class__)
 
     sklearn_name = model.__class__.__name__
-    module = importlib.import_module("art.estimators.classifiers.scikitlearn")
+    module = importlib.import_module("art.estimators.classification.scikitlearn")
     if hasattr(module, "Scikitlearn%s" % sklearn_name):
         return getattr(module, "Scikitlearn%s" % sklearn_name)(
             model=model,

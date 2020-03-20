@@ -25,7 +25,7 @@ import logging
 import numpy as np
 
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 

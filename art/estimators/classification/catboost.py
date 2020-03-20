@@ -16,41 +16,37 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `LightGBMClassifier` for LightGBM models.
+This module implements the classifier `CatBoostARTClassifier` for CatBoost models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
-import numpy as np
-
 from art.estimators.estimator import BaseEstimator, DecisionTreeMixin
-from art.estimators.classifiers.classifier import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin
 
 logger = logging.getLogger(__name__)
 
 
-class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
+class CatBoostARTClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
     """
-    Wrapper class for importing LightGBM models.
+    Wrapper class for importing CatBoost models.
     """
 
     def __init__(
         self,
         model=None,
-        clip_values=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
         preprocessing=None,
+        clip_values=None,
+        nb_features=None,
     ):
         """
-        Create a `Classifier` instance from a LightGBM model.
+        Create a `Classifier` instance from a CatBoost model.
 
-        :param model: LightGBM model.
-        :type model: `lightgbm.Booster`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
+        :param model: CatBoost model.
+        :type model: `catboost.core.CatBoostClassifier`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
@@ -59,13 +55,19 @@ class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :type clip_values: `tuple`
+        :param nb_features: Number of features.
+        :type nb_features: `int`
         """
-        from lightgbm import Booster
+        # pylint: disable=E0611,E0401
+        from catboost.core import CatBoostClassifier
 
-        if not isinstance(model, Booster):
-            raise TypeError("Model must be of type lightgbm.Booster")
+        if not isinstance(model, CatBoostClassifier):
+            raise TypeError("Model must be of type catboost.core.CatBoostClassifier")
 
-        super(LightGBMClassifier, self).__init__(
+        super(CatBoostARTClassifier, self).__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -73,7 +75,7 @@ class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
         )
 
         self._model = model
-        self._input_shape = (self._model.num_feature(),)
+        self._input_shape = (nb_features,)
         self._nb_classes = self._get_nb_classes()
 
     def fit(self, x, y, **kwargs):
@@ -86,12 +88,15 @@ class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
                   (nb_samples,).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
-               `fit` function in `lightgbm.Booster` and will be passed to this function as such.
+               `fit` function in `catboost.core.CatBoostClassifier` and will be passed to this function as such.
         :type kwargs: `dict`
-        :raises: `NotImplementedException`
         :return: `None`
         """
-        raise NotImplementedError
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+
+        self._model.fit(x_preprocessed, y_preprocessed, **kwargs)
+        self._nb_classes = self._get_nb_classes()
 
     def predict(self, x, **kwargs):
         """
@@ -106,7 +111,7 @@ class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Perform prediction
-        predictions = self._model.predict(x_preprocessed)
+        predictions = self._model.predict_proba(x_preprocessed)
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)
@@ -120,8 +125,10 @@ class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
         :return: Number of classes in the data.
         :rtype: `int`
         """
-        # pylint: disable=W0212
-        return self._model._Booster__num_class
+        if self._model.classes_ is not None:
+            return len(self._model.classes_)
+
+        return None
 
     def save(self, filename, path=None):
         import pickle
@@ -130,71 +137,4 @@ class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
             pickle.dump(self._model, file=file_pickle)
 
     def get_trees(self):
-        """
-        Get the decision trees.
-
-        :return: A list of decision trees.
-        :rtype: `[Tree]`
-        """
-        from art.metrics.verification_decisions_trees import Box, Tree
-
-        booster_dump = self._model.dump_model()["tree_info"]
-        trees = list()
-
-        for i_tree, tree_dump in enumerate(booster_dump):
-            box = Box()
-
-            # pylint: disable=W0212
-            if self._model._Booster__num_class == 2:
-                class_label = -1
-            else:
-                class_label = i_tree % self._model._Booster__num_class
-
-            trees.append(
-                Tree(
-                    class_id=class_label,
-                    leaf_nodes=self._get_leaf_nodes(tree_dump["tree_structure"], i_tree, class_label, box),
-                )
-            )
-
-        return trees
-
-    def _get_leaf_nodes(self, node, i_tree, class_label, box):
-        from copy import deepcopy
-        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
-
-        leaf_nodes = list()
-
-        if "split_index" in node:
-            node_left = node["left_child"]
-            node_right = node["right_child"]
-
-            box_left = deepcopy(box)
-            box_right = deepcopy(box)
-
-            feature = node["split_feature"]
-            box_split_left = Box(intervals={feature: Interval(-np.inf, node["threshold"])})
-            box_split_right = Box(intervals={feature: Interval(node["threshold"], np.inf)})
-
-            if box.intervals:
-                box_left.intersect_with_box(box_split_left)
-                box_right.intersect_with_box(box_split_right)
-            else:
-                box_left = box_split_left
-                box_right = box_split_right
-
-            leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
-            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
-
-        if "leaf_index" in node:
-            leaf_nodes.append(
-                LeafNode(
-                    tree_id=i_tree,
-                    class_label=class_label,
-                    node_id=node["leaf_index"],
-                    box=box,
-                    value=node["leaf_value"],
-                )
-            )
-
-        return leaf_nodes
+        raise NotImplementedError

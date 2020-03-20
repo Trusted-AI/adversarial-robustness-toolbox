@@ -21,7 +21,7 @@ import unittest
 from catboost import CatBoostClassifier
 import numpy as np
 
-from art.estimators.classifiers.catboost import CatBoostARTClassifier
+from art.estimators.classification.catboost import CatBoostARTClassifier
 
 from tests.utils import TestBase, master_seed
 

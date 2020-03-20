@@ -23,7 +23,7 @@ import numpy as np
 
 from art.attacks.evasion.adversarial_patch import AdversarialPatch
 from art.estimators.estimator import NeuralNetworkMixin
-from art.estimators.classifiers.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassGradientsMixin
 
 from tests.utils import TestBase, master_seed
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr

@@ -32,7 +32,7 @@ from torch.utils.data import DataLoader
 
 from art.config import ART_DATA_PATH
 from art.data_generators import PyTorchDataGenerator
-from art.estimators.classifiers.pytorch import PyTorchClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
 
 from tests.utils import TestBase, get_image_classifier_pt, master_seed
 
@@ -575,7 +575,7 @@ class TestPyTorchClassifier(TestBase):
 
     def test_repr(self):
         repr_ = repr(self.module_classifier)
-        self.assertIn('art.estimators.classifiers.pytorch.PyTorchClassifier', repr_)
+        self.assertIn('art.estimators.classification.pytorch.PyTorchClassifier', repr_)
         self.assertIn('input_shape=(1, 28, 28), nb_classes=10, channel_index=1', repr_)
         self.assertIn('clip_values=(0, 1)', repr_)
         self.assertIn('defences=None, preprocessing=(0, 1)', repr_)

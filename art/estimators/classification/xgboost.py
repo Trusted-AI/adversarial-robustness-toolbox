@@ -24,7 +24,7 @@ import logging
 import numpy as np
 
 from art.estimators.estimator import BaseEstimator, DecisionTreeMixin
-from art.estimators.classifiers.classifier import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin
 
 logger = logging.getLogger(__name__)
 

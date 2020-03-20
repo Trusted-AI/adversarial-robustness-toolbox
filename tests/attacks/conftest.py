@@ -1,7 +1,7 @@
 import pytest
 import logging
 from tests import utils
-from art.estimators.classifiers import KerasClassifier
+from art.estimators.classification import KerasClassifier
 from art.defences.preprocessor import FeatureSqueezing
 
 logger = logging.getLogger(__name__)

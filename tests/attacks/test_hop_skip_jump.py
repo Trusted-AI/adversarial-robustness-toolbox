@@ -23,7 +23,7 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
-from art.estimators.classifiers.keras import KerasClassifier
+from art.estimators.classification.keras import KerasClassifier
 from art.utils import random_targets
 
 from tests.utils import TestBase
@@ -428,7 +428,7 @@ class TestHopSkipJump(TestBase):
         from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
         from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 
-        from art.estimators.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
             DecisionTreeClassifier(),

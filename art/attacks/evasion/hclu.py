@@ -29,7 +29,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.classifiers.GPy import GPyGaussianProcessClassifier
+from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)

@@ -31,7 +31,7 @@ import numpy as np
 from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classifiers.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 from art.exceptions import ClassifierError

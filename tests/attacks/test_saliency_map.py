@@ -22,8 +22,8 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
-from art.estimators.classifiers.keras import KerasClassifier
-from art.estimators.classifiers.classifier import ClassGradientsMixin
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import get_labels_np_array, to_categorical
 
 from tests.utils import TestBase
@@ -255,7 +255,7 @@ class TestSaliencyMap(TestBase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.estimators.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
             LogisticRegression(solver="lbfgs", multi_class="auto"),

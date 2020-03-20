@@ -24,9 +24,9 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
-from art.estimators.classifiers.keras import KerasClassifier
+from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import NeuralNetworkMixin
-from art.estimators.classifiers.classifier import ClassGradientsMixin, ClassifierMixin
+from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.utils import random_targets, to_categorical
 
 from tests.utils import TestBase, master_seed
@@ -281,7 +281,7 @@ class TestCarlini(TestBase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.estimators.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
             LogisticRegression(solver="lbfgs", multi_class="auto"),
@@ -539,7 +539,7 @@ class TestCarlini(TestBase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.estimators.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
             LogisticRegression(solver="lbfgs", multi_class="auto"),

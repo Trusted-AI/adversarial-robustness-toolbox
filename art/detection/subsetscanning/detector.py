@@ -28,7 +28,7 @@ import numpy as np
 import six
 
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
-from art.estimators.classifiers.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 from art.detection.subsetscanning.scanner import Scanner
 

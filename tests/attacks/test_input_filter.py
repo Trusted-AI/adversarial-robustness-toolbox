@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 
 from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
-from art.estimators.classifiers.keras import KerasClassifier
+from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import load_dataset, get_labels_np_array
 
@@ -214,7 +214,7 @@ class TestInputFilter(unittest.TestCase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.estimators.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.estimators.classification.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
         scikitlearn_test_cases = {
             LogisticRegression: ScikitlearnLogisticRegression,
