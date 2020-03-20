@@ -23,7 +23,7 @@ import numpy as np
 
 from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
 from art.estimators.classifiers.keras import KerasClassifier
-from art.estimators.classifiers.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import get_labels_np_array, random_targets
 
 from tests.utils import TestBase
@@ -135,7 +135,7 @@ class TestPGD(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [ClassGradientsMixin])
+        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()

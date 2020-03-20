@@ -20,7 +20,7 @@ import numpy as np
 
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
 from art.estimators.classifiers.keras import KerasClassifier
-from art.estimators.classifiers.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import get_labels_np_array, random_targets
 
 from tests.utils import TestBase
@@ -148,7 +148,7 @@ class TestIterativeAttack(TestBase):
         self._test_mnist_targeted(classifier, x_test)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(BasicIterativeMethod, [ClassGradientsMixin])
+        backend_test_classifier_type_check_fail(BasicIterativeMethod, [BaseEstimator, LossGradientsMixin])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
