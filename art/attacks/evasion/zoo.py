@@ -235,7 +235,7 @@ class ZooAttack(EvasionAttack):
         x_adv = np.vstack(x_adv)
 
         # Apply clip
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             np.clip(x_adv, clip_min, clip_max, out=x_adv)
 
@@ -502,7 +502,7 @@ class ZooAttack(EvasionAttack):
         current_noise[index] -= learning_rate * corr * mean[index] / (np.sqrt(var[index]) + 1e-8)
         adam_epochs[index] += 1
 
-        if proj and hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if proj and self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             current_noise[index] = np.clip(current_noise[index], clip_min, clip_max)
 

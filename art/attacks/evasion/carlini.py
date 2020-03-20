@@ -230,7 +230,7 @@ class CarliniL2Method(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
         else:
             clip_min, clip_max = np.amin(x), np.amax(x)
@@ -657,7 +657,7 @@ class CarliniLInfMethod(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             clip_min_per_pixel, clip_max_per_pixel = self.estimator.clip_values
         else:
             clip_min_per_pixel, clip_max_per_pixel = np.amin(x), np.amax(x)

@@ -145,7 +145,7 @@ class UniversalPerturbation(EvasionAttack):
 
             # Apply attack and clip
             x_adv = x + noise
-            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            if self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
