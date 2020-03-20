@@ -60,7 +60,7 @@ def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack, fram
 
     for classifier in classifier_list:
 
-        attack = BoundaryAttack(classifier=classifier, targeted=targeted, max_iter=20)
+        attack = BoundaryAttack(estimator=classifier, targeted=targeted, max_iter=20)
         if targeted:
             backend_targeted_images(attack, fix_get_mnist_subset)
         else:
