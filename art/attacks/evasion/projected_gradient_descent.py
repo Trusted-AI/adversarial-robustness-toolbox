@@ -35,7 +35,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -104,7 +104,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         )
 
         if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
-            raise ClassifierError(self.__class__, self.estimator_requirements, estimator)
+            raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         kwargs = {"max_iter": max_iter, "random_eps": random_eps}
         ProjectedGradientDescent.set_params(self, **kwargs)

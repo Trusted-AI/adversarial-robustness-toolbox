@@ -25,7 +25,7 @@ import abc
 import numpy as np
 
 from art.estimators.estimator import BaseEstimator
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class Attack(abc.ABC, metaclass=input_filter):
         :type estimator: :class:`.BaseEstimator`
         """
         if not isinstance(estimator, BaseEstimator) and estimator is not None:
-            raise ClassifierError(self.__class__, [BaseEstimator], estimator)
+            raise EstimatorError(self.__class__, [BaseEstimator], estimator)
 
         self._estimator = estimator
 

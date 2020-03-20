@@ -23,7 +23,7 @@ import keras.backend as k
 from sklearn.tree import DecisionTreeClassifier
 
 from art.utils import random_targets, get_labels_np_array
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
@@ -140,7 +140,7 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
 
 
 def _backend_test_classifier_list_type_check_fail(attack, classifier, classifier_expected_list):
-    with pytest.raises(ClassifierError) as exception:
+    with pytest.raises(EstimatorError) as exception:
         _ = attack(classifier)
 
     for classifier_expected in classifier_expected_list:
