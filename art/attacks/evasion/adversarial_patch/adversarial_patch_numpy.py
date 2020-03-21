@@ -38,7 +38,7 @@ from art.exceptions import ClassifierError
 logger = logging.getLogger(__name__)
 
 
-class AdversarialPatch(EvasionAttack):
+class AdversarialPatchNumpy(EvasionAttack):
     """
     Implementation of the adversarial patch attack.
 
