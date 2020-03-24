@@ -27,8 +27,49 @@ logger = logging.getLogger(__name__)
 
 
 class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
-    def __init__(self, model=None, clip_values=None, channel_index=None, preprocessing_defences=None,
-                 postprocessing_defences=None, preprocessing=None):
+    """
+    This class implements a model-specific object detector using Faster-RCNN and PyTorch.
+    """
+
+    def __init__(
+        self,
+        model=None,
+        clip_values=None,
+        channel_index=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=None,
+        attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+    ):
+        """
+        Initialization.
+
+        :param model: Faster-RCNN model. The output of the model is `List[Dict[Tensor]]`, one for each input image. The
+                      fields of the Dict are as follows:
+                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+                        between 0 and H and 0 and W
+                      - labels (Int64Tensor[N]): the predicted labels for each image
+                      - scores (Tensor[N]): the scores or each prediction
+        :type model: `torchvision.models.detection.fasterrcnn_resnet50_fpn`
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :type clip_values: `tuple`
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :type preprocessing: `tuple`
+        :param attack_losses: Tuple of any combinaiton of strings of loss components: 'loss_classifier', 'loss_box_reg',
+                              'loss_objectness', and 'loss_rpn_box_reg'.
+        :type attack_losses: `Tuple[str]`
+        """
 
         super().__init__(
             clip_values=clip_values,
@@ -48,41 +89,31 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             self._model = model
         self._model.eval()
 
-    def fit(self):
-        raise NotImplementedError
-
-    def get_activations(self):
-        raise NotImplementedError
+        self.attack_losses = attack_losses
 
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
-        :param x: Sample input with shape as expected by the model.
+        :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
+        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
+                  fields of the Dict are as follows:
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+                    between 0 and H and 0 and W
+                  - labels (Int64Tensor[N]): the predicted labels for each image
+                  - scores (Tensor[N]): the scores or each prediction.
         :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
+        :return: Loss gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-
-        import torch
         import torchvision
         import numpy as np
 
+        # Apply preprocessing
+        x, _ = self._apply_preprocessing(x, y=None, fit=False)
+
         self._model.train()
-
-        # For training
-        # images = torch.rand(4, 3, 600, 1200)
-        # boxes = torch.rand(4, 11, 4)
-        # labels = torch.randint(1, 91, (4, 11))
-
-        # images = list(image for image in images)
-
-        # transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        # image = transform(x)
-        # images = [image]
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
@@ -90,10 +121,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         for i in range(x.shape[0]):
             img = transform(x[i])
-            # print('print(x[i].shape)')
-            # print(x[i].shape)
-            # print('img')
-            # print(img.shape)
             img.requires_grad = True
             image_tensor_list.append(img)
 
@@ -104,49 +131,30 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         self._model.train()
 
-        # predictions[0]["labels"].numpy())]  # Get the Prediction Score
-        # print(pred_class)
-        # pred_boxes = [[(i[0], i[1]), (i[2], i[3])] for i in
-        #               list(predictions[0]["boxes"].detach().numpy())]  # Bounding boxes
-        # pred_score = list(predictions[0]["scores"].
-
         targets = []
 
         for i in range(len(image_tensor_list)):
             d = {}
-            # d['boxes'] = boxes[i]
-            d['boxes'] = predictions[i]["boxes"]
-            # d['labels'] = labels[i]
-            d['labels'] = predictions[i]["labels"]
+            d["boxes"] = predictions[i]["boxes"]
+            d["labels"] = predictions[i]["labels"]
             targets.append(d)
 
         output = self._model(image_tensor_list, targets)
 
-        print(output)
-        print(output['loss_classifier'])
-
-        # Apply preprocessing
-        # x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
-
-        # Convert the inputs to Tensors
-        # inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
-        # inputs_t.requires_grad = True
-
-        # Convert the labels to Tensors
-        # labels_t = torch.from_numpy(np.argmax(y_preprocessed, axis=1)).to(self._device)
-
         # Compute the gradient and return
-        # model_outputs = self._model(inputs_t)
-        # loss = self._loss(model_outputs[-1], labels_t)
-        loss = output['loss_classifier']
+        loss = None
+        for loss_name in self.attack_losses:
+            if loss is None:
+                loss = output[loss_name]
+            else:
+                loss = loss + output[loss_name]
 
         # Clean gradients
         self._model.zero_grad()
 
         # Compute gradients
         loss.backward()
-        # grads = inputs_t.grad.cpu().numpy().copy()
-        # grads = image.grad.cpu().numpy().copy()
+
         grad_list = list()
         for img in image_tensor_list:
             gradients = img.grad.cpu().numpy().copy()
@@ -154,19 +162,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         grads = np.stack(grad_list, axis=0)
 
-        # grads = self._apply_preprocessing_gradient(x, grads)
+        # BB
+        grads = self._apply_preprocessing_gradient(x, grads)
 
-        # print(grads.shape)
-        # print(type(grads))
-
-        # if len(image_tensor_list) == 1:
-        #     grads = np.newaxis(grads, axis=0)
-
-        # print(grads.shape)
         grads = np.swapaxes(grads, 1, 3)
         grads = np.swapaxes(grads, 1, 2)
-        # print(x.shape)
-        # print(grads.shape)
+
         assert grads.shape == x.shape
 
         return grads
@@ -175,11 +176,16 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :type x: `np.ndarray`
-        :param batch_size: Size of batches.
+        :param batch_size: Batch size.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        :return: Predictions of format `List[Dict[Tensor]]`, one for each input image. The
+                 fields of the Dict are as follows:
+                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+                   between 0 and H and 0 and W
+                 - labels (Int64Tensor[N]): the predicted labels for each image
+                 - scores (Tensor[N]): the scores or each prediction.
         :rtype: `np.ndarray`
         """
         import torchvision
@@ -194,6 +200,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             image_tensor_list.append(transform(x[i]))
         predictions = self._model(image_tensor_list)
         return predictions
+
+    def fit(self):
+        raise NotImplementedError
+
+    def get_activations(self):
+        raise NotImplementedError
 
     def set_learning_phase(self):
         raise NotImplementedError
