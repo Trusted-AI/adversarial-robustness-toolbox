@@ -1,6 +1,16 @@
-:mod:`art.classifiers`
-======================
-.. automodule:: art.classifiers
+:mod:`art.estimators.classification`
+====================================
+.. automodule:: art.estimators.classification
+
+Mixin Base Class Classifier
+---------------------------
+.. autoclass:: ClassifierMixin
+   :members:
+
+Mixin Base Class Class Gradients
+--------------------------------
+.. autoclass:: ClassGradientsMixin
+   :members:
 
 BlackBox Wrapper
 ----------------
@@ -53,18 +63,3 @@ GPy Gaussian Process Wrapper
 .. autoclass:: GPyGaussianProcessClassifier
    :members:
    :special-members:
-
-Base Class
-----------
-.. autoclass:: Classifier
-   :members:
-
-Base Class Neural Network
--------------------------
-.. autoclass:: ClassifierNeuralNetwork
-   :members:
-
-Base Class Gradients
---------------------
-.. autoclass:: ClassifierGradients
-   :members:

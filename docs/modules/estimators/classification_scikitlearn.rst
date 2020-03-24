@@ -1,6 +1,11 @@
-:mod:`art.classifiers.scikitlearn`
-==================================
-.. automodule:: art.classifiers.scikitlearn
+:mod:`art.estimators.classification.scikitlearn`
+================================================
+.. automodule:: art.estimators.classification.scikitlearn
+
+Base Class Scikit-learn
+-----------------------
+.. autoclass:: ScikitlearnClassifier
+   :members:
 
 Scikit-learn DecisionTreeClassifier Wrapper
 -------------------------------------------
@@ -55,8 +60,3 @@ Scikit-learn SVC Wrapper
 .. autoclass:: ScikitlearnSVC
    :members:
    :special-members:
-
-Base Class Scikit-learn
------------------------
-.. autoclass:: ScikitlearnClassifier
-   :members:
