@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements base class for all estimators in ART.
+This module implements abstract base and mixin classes for framework- and model-independent estimators in ART.
 """
 
 from abc import ABC, abstractmethod
@@ -29,8 +29,8 @@ from art.defences.postprocessor.postprocessor import Postprocessor
 
 class BaseEstimator(ABC):
     """
-    Base class defining the minimum requirements of a ART estimator. An estimator of this type can be combined with
-    black-box attacks.
+    The abstract base class `BaseEstimator` defines the basic requirements of an estimator in ART. The BaseEstimator is
+    is the highest abstraction of a machine learning model in ART.
     """
 
     estimator_params = ["model", "clip_values", "preprocessing_defences", "postprocessing_defences", "preprocessing"]
@@ -109,13 +109,13 @@ class BaseEstimator(ABC):
 
     @abstractmethod
     def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
+        r"""
         Perform prediction of the classifier for input `x`.
 
-        :param x: Samples in an ndarray.
-        :type x: `np.ndarray`
-        :return: Array of predictions by the model of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
+        :param x: Samples.
+        :type x: Format as expected by the `model`
+        :return: Array of predictions by the model.
+        :rtype: Format as produced by the `model`
         """
         raise NotImplementedError
 
@@ -125,11 +125,9 @@ class BaseEstimator(ABC):
         Fit the classifier using the training data `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
-        :param y: Target data.
-        :type y: `np.ndarray`
-        :param kwargs: Dictionary of estimator-specific arguments.
-        :type kwargs: `dict`
+        :type x: Format as expected by the `model`
+        :param y: Target values.
+        :type y: Format as expected by the `model`
         :return: `None`
         """
         raise NotImplementedError
@@ -156,17 +154,17 @@ class BaseEstimator(ABC):
 
     def _apply_preprocessing(self, x, y, fit):
         """
-        Apply all defences and preprocessing operations on the inputs `(x, y)`. This function has to be applied to all
-        raw inputs (x, y) provided to the estimator.
+        Apply all defences and preprocessing operations on the inputs `x` and `y`. This function has to be applied to
+        all raw inputs `x` and `y` provided to the estimator.
 
-        :param x: Features, where first dimension is the number of samples.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels), where first dimension is the number of samples.
-        :type y: `np.ndarray` or `None`
+        :param x: Samples.
+        :type x: Format as expected by the `model`
+        :param y: Target values.
+        :type y: Format as expected by the `model` or `None`
         :param fit: `True` if the defences are applied during training.
         :type fit: `bool`
-        :return: Value of the data after applying the defences.
-        :rtype: `np.ndarray`
+        :return: Tuple of `x` and `y` after applying the defences and standardisation.
+        :rtype: Format as expected by the `model`
         """
         # y = check_and_transform_label_format(y, self.nb_classes)
         x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
@@ -175,18 +173,18 @@ class BaseEstimator(ABC):
 
     def _apply_preprocessing_defences(self, x, y, fit=False):
         """
-        Apply all preprocessing defences of the estimator on the raw inputs `(x, y)`. This function is intended to
+        Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
         only be called from function `_apply_preprocessing`.
 
-        :param x: Features, where first dimension is the number of samples.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels), where first dimension is the number of samples.
-        :type y: `np.ndarray`
+        :param x: Samples.
+        :type x: Format as expected by the `model`
+        :param y: Target values.
+        :type y: Format as expected by the `model`
         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
                     predict operation.
         :type fit: `bool`
-        :return: Arrays for `x` and `y` after applying the defences.
-        :rtype: `np.ndarray`
+        :return: Tuple of `x` and `y` after applying the defences and standardisation.
+        :rtype: Format as expected by the `model`
         """
         if self.preprocessing_defences is not None:
             for defence in self.preprocessing_defences:
@@ -203,10 +201,10 @@ class BaseEstimator(ABC):
         """
         Apply standardisation to input data `x`.
 
-        :param x: Input data, where first dimension is the number of samples.
-        :type x: `np.ndarray`
-        :return: Array for `x` with the standardized data.
-        :rtype: `np.ndarray`
+        :param x: Samples.
+        :type x: Format as expected by the `model`
+        :return: Standardized `x`.
+        :rtype: Format as expected by the `model`
         :raises: `TypeError`
         """
         if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
@@ -229,28 +227,28 @@ class BaseEstimator(ABC):
 
         return res
 
-    def _apply_postprocessing(self, preds, fit):
+    def _apply_postprocessing(self, predictions, fit):
         """
-        Apply all postprocessing defences on model output.
+        Apply all postprocessing defences on model predictions.
 
-        :param preds: model output to be post-processed.
-        :type preds: `np.ndarray`
+        :param predictions: model output to be post-processed.
+        :type predictions: Format as expected by the `model`
         :param fit: `True` if the defences are applied during training.
         :type fit: `bool`
-        :return: Post-processed model output.
+        :return: Post-processed model predictions.
         :rtype: `np.ndarray`
         """
-        post_preds = preds.copy()
+        post_predictions = predictions.copy()
         if self.postprocessing_defences is not None:
             for defence in self.postprocessing_defences:
                 if fit:
                     if defence.apply_fit:
-                        post_preds = defence(post_preds)
+                        post_predictions = defence(post_predictions)
                 else:
                     if defence.apply_predict:
-                        post_preds = defence(post_preds)
+                        post_predictions = defence(post_predictions)
 
-        return post_preds
+        return post_predictions
 
     def __repr__(self):
         class_name = self.__class__.__name__
@@ -262,9 +260,9 @@ class BaseEstimator(ABC):
 
 class LossGradientsMixin(ABC):
     """
-    Base class defining additional classifier functionality for classifiers providing access to loss and class
-    gradients. A classifier of this type can be combined with white-box attacks. This base class has to be mixed in with
-    class `Classifier` and optionally class `ClassifierNeuralNetwork` to extend the minimum classifier functionality.
+    Mixin abstract base class defining additional functionality for estimators providing loss gradients. An estimator
+    of this type can be combined with white-box attacks. This mixin abstract base class has to be mixed in with
+    class `BaseEstimator`.
     """
 
     @abstractmethod
@@ -272,29 +270,27 @@ class LossGradientsMixin(ABC):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
-        :param x: Input with shape as expected by the classifier's model.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
+        :param x: Samples.
+        :type x: Format as expected by the `model`
+        :param y: Target values.
+        :type y: Format as expected by the `model`
+        :return: Loss gradients w.r.t. `x` in the same format as `x`.
+        :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
 
     def _apply_preprocessing_gradient(self, x, gradients):
         """
-        Apply the backward pass through all preprocessing operations to the gradients.
-
-        Apply the backward pass through all preprocessing operations and defences on the inputs `(x, y)`. This function
-        has to be applied to all gradients returned by the classifier.
+        Apply the backward pass to the gradients through all normalization and preprocessing defences that have been
+        applied to `x` and `y` in the forward pass. This function has to be applied to all gradients w.r.t. `x`
+        calculated by the estimator.
 
         :param x: Features, where first dimension is the number of samples.
-        :type x: `np.ndarray`
-        :param gradients: Input gradients.
-        :type gradients: `np.ndarray`
-        :return: Gradients after backward step through preprocessing operations and defences.
-        :rtype: `np.ndarray`
+        :type x: Format as expected by the `model`
+        :param gradients: Gradients before backward pass through normalization and preprocessing defences.
+        :type gradients: Format as expected by the `model`
+        :return: Gradients after backward pass through normalization and preprocessing defences.
+        :rtype: Format as expected by the `model`
         """
         gradients = self._apply_preprocessing_normalization_gradient(gradients)
         gradients = self._apply_preprocessing_defences_gradient(x, gradients)
@@ -302,18 +298,17 @@ class LossGradientsMixin(ABC):
 
     def _apply_preprocessing_defences_gradient(self, x, gradients, fit=False):
         """
-        Apply the backward pass through the preprocessing defences.
+        Apply the backward pass to the gradients through all preprocessing defences that have been applied to `x`
+        and `y` in the forward pass. This function is should only be called from function
+        `_apply_preprocessing_gradient`.
 
-        Apply the backward pass through all preprocessing defences of the classifier on the gradients. This function is
-        intended to only be called from function `_apply_preprocessing_gradient`.
-
-        :param x: Features, where first dimension is the number of samples.
-        :type x: `np.ndarray`
-        :param gradients: Input gradient.
-        :type gradients: `np.ndarray`
-        :param fit: `True` if the gradient is computed during training.
-        :return: Gradients after backward step through defences.
-        :rtype: `np.ndarray`
+        :param x: Samples.
+        :type x: Format as expected by the `model`
+        :param gradients: Gradients before backward pass through preprocessing defences.
+        :type gradients: Format as expected by the `model`
+        :param fit: `True` if the gradients are computed during training.
+        :return: Gradients after backward pass through preprocessing defences.
+        :rtype: Format as expected by the `model`
         """
         if self.preprocessing_defences is not None:
             for defence in self.preprocessing_defences[::-1]:
@@ -330,10 +325,13 @@ class LossGradientsMixin(ABC):
         """
         Apply the backward pass through standardisation of `x` to `gradients`.
 
-        :param gradients: Input gradients.
-        :type gradients: `np.ndarray`
-        :return: Gradients after backward step through standardisation.
-        :rtype: `np.ndarray
+        Apply the backward pass to the gradients through normalization that has been applied to `x` in the forward
+        pass. This function is should only be called from function `_apply_preprocessing_gradient`.
+
+        :param gradients: Gradients before backward pass through normalization.
+        :type gradients: Format as expected by the `model`
+        :return: Gradients after backward pass through normalization.
+        :rtype: normalization
         """
         if self.preprocessing is not None:
             _, div = self.preprocessing
@@ -347,15 +345,15 @@ class LossGradientsMixin(ABC):
 
 class NeuralNetworkMixin(ABC):
     """
-    Base class defining additional classifier functionality required for neural network classifiers. This base class
-    has to be mixed in with class `Classifier` to extend the minimum classifier functionality.
+    Mixin abstract base class defining additional functionality required for neural network estimators. This base class
+    has to be mixed in with class `BaseEstimator`.
     """
 
     def __init__(self, channel_index=None, **kwargs):
         """
-        Initialize a `ClassifierNeuralNetwork` object.
+        Initialize a neural network attributes.
 
-        :param channel_index: Index of the axis in input (feature) array `x` representing the color channels.
+        :param channel_index: Index of the axis in samples `x` representing the color channels.
         :type channel_index: `int`
         """
         self._channel_index = channel_index
@@ -364,50 +362,45 @@ class NeuralNetworkMixin(ABC):
     @abstractmethod
     def predict(self, x, batch_size=128, **kwargs):
         """
-        Perform prediction of the classifier for input `x`.
+        Perform prediction of the neural network for samples `x`.
 
-        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
         :type x: `np.ndarray`
-        :param batch_size: The batch size used for evaluating the classifer's `model`.
+        :param batch_size: Batch size.
         :type batch_size: `int`
-        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
+        :return: Predictions.
+        :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
 
     @abstractmethod
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
-        Fit the classifier on the training set `(x, y)`.
+        Fit the model of the estimator on the training data `x` and `y`.
 
-        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray`
-        :param batch_size: The batch size used for evaluating the classifer's `model`.
+        :param y: Target values.
+        :type y: Format as expected by the `model`
+        :param batch_size: Batch size.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training.
+        :param nb_epochs: Number of training epochs.
         :type nb_epochs: `int`
-        :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
         :return: `None`
         """
         raise NotImplementedError
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
-        Fit the classifier using `generator` yielding training batches as specified. Framework implementations can
+        Fit the estimator using a `generator` yielding training batches. Implementations can
         provide framework-specific versions of this function to speed-up computation.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :type generator: :class:`.DataGenerator`
-        :param nb_epochs: Number of epochs to use for training.
+        :param nb_epochs: Number of training epochs.
         :type nb_epochs: `int`
-        :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
         :return: `None`
         """
         from art.data_generators import DataGenerator
@@ -430,15 +423,15 @@ class NeuralNetworkMixin(ABC):
     @abstractmethod
     def get_activations(self, x, layer, batch_size):
         """
-        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `layer_names`.
+        Return the output of a specific layer for samples `x` where `layer` is the index of the layer between 0 and
+        `nb_layers - 1 or the name of the layer. The number of layers can be determined by counting the results
+        returned by calling `layer_names`.
 
-        :param x: Input for computing the activations.
+        :param x: Samples
         :type x: `np.ndarray`
-        :param layer: Layer for computing the activations
+        :param layer: Index or name of the layer.
         :type layer: `int` or `str`
-        :param batch_size: Size of batches.
+        :param batch_size: Batch size.
         :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
@@ -450,7 +443,7 @@ class NeuralNetworkMixin(ABC):
         """
         Set the learning phase for the backend framework.
 
-        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
+        :param train: `True` if the learning phase is training, otherwise `False`.
         :type train: `bool`
         """
         raise NotImplementedError
@@ -458,7 +451,7 @@ class NeuralNetworkMixin(ABC):
     @property
     def channel_index(self):
         """
-        :return: Index of the axis in input data containing the color channels.
+        :return: Index of the axis containing the color channels in the samples `x`.
         :rtype: `int`
         """
         return self._channel_index
@@ -466,13 +459,12 @@ class NeuralNetworkMixin(ABC):
     @property
     def learning_phase(self):
         """
-        Return the learning phase set by the user for the current classifier. Possible values are `True` for training,
-        `False` for prediction and `None` if it has not been set through the library. In the latter case, the library
-        does not do any explicit learning phase manipulation and the current value of the backend framework is used.
-        If a value has been set by the user for this property, it will impact all following computations for
-        model fitting, prediction and gradients.
+        The learning phase set by the user. Possible values are `True` for training or `False` for prediction and
+        `None` if it has not been set by the library. In the latter case, the library does not do any explicit learning
+        phase manipulation and the current value of the backend framework is used. If a value has been set by the user
+        for this property, it will impact all following computations for model fitting, prediction and gradients.
 
-        :return: Value of the learning phase.
+        :return: Learning phase.
         :rtype: `bool` or `None`
         """
         return self._learning_phase
@@ -480,9 +472,9 @@ class NeuralNetworkMixin(ABC):
     @property
     def layer_names(self):
         """
-        Return the hidden layers in the model, if applicable.
+        Return the names of the hidden layers in the model, if applicable.
 
-        :return: The hidden layers in the model, input and output layers excluded.
+        :return: The names of the hidden layers in the model, input and output layers are ignored.
         :rtype: `list`
 
         .. warning:: `layer_names` tries to infer the internal structure of the model.
@@ -504,8 +496,8 @@ class NeuralNetworkMixin(ABC):
 
 class DecisionTreeMixin(ABC):
     """
-    Base class defining additional classifier functionality for decision-tree-based classifiers This base class has to
-    be mixed in with class `Classifier` to extend the minimum classifier functionality.
+    Mixin abstract base class defining additional functionality for decision-tree-based estimators. This mixin abstract
+    base class has to be mixed in with class `BaseEstimator`.
     """
 
     @abstractmethod
