@@ -18,6 +18,7 @@ COCO_INSTANCE_CATEGORY_NAMES = [
 
 
 def extract_predictions(predictions_):
+
     # for key, item in predictions[0].items():
     #     print(key, item)
 
@@ -48,12 +49,15 @@ def plot_image_with_boxes(img, boxes, pred_cls):
     rect_th = 6
 
     for i in range(len(boxes)):
+        # Draw Rectangle with the coordinates
         cv2.rectangle(
             img, boxes[i][0], boxes[i][1], color=(0, 255, 0), thickness=rect_th
-        )  # Draw Rectangle with the coordinates
+        )
+
+        # Write the prediction class
         cv2.putText(
             img, pred_cls[i], boxes[i][0], cv2.FONT_HERSHEY_SIMPLEX, text_size, (0, 255, 0), thickness=text_th
-        )  # Write the prediction class
+        )
 
     plt.axis("off")
     plt.imshow(img.astype(np.uint8), interpolation="nearest")
