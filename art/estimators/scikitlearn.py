@@ -24,5 +24,5 @@ from art.estimators.estimator import BaseEstimator
 
 class ScikitlearnEstimator(BaseEstimator):
     """
-    Wrapper class for scikit-learn estimator models.
+    Estimator class for scikit-learn models.
     """

@@ -29,5 +29,5 @@ logger = logging.getLogger(__name__)
 
 class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
-    Estimator class for importing Keras models.
+    Estimator class for Keras models.
     """
