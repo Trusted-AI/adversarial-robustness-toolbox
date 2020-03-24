@@ -29,5 +29,5 @@ logger = logging.getLogger(__name__)
 
 class MXEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
-    Wrapper class for importing MXNet Gluon models.
+    Estimator for MXNet Gluon models.
     """

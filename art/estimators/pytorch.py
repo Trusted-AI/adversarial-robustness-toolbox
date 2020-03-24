@@ -27,5 +27,5 @@ logger = logging.getLogger(__name__)
 
 class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
-    This class implements an estimator with the PyTorch framework.
+    Estimator class for PyTorch models.
     """

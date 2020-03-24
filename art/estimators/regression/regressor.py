@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements mix-in base class for all regressors in ART.
+This module implements mixin abstract base class for all regressors in ART.
 """
 
 from abc import ABC
@@ -24,5 +24,5 @@ from abc import ABC
 
 class RegressorMixin(ABC):
     """
-    Mix-in Base class defining the minimum requirements of a ART regressors.
+    Mixin abstract Base class for ART regressors.
     """

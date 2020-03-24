@@ -27,11 +27,11 @@ logger = logging.getLogger(__name__)
 
 class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
-    This class implements an estimator with the TensorFlow framework.
+    Estimator class for TensorFlow models.
     """
 
 
 class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
-    This class implements an estimator with the TensorFlow framework.
+    Estimator class for TensorFlow v2 models.
     """
