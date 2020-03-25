@@ -227,28 +227,28 @@ class BaseEstimator(ABC):
 
         return res
 
-    def _apply_postprocessing(self, predictions, fit):
+    def _apply_postprocessing(self, preds, fit):
         """
         Apply all postprocessing defences on model predictions.
 
-        :param predictions: model output to be post-processed.
-        :type predictions: Format as expected by the `model`
+        :param preds: model output to be post-processed.
+        :type preds: Format as expected by the `model`
         :param fit: `True` if the defences are applied during training.
         :type fit: `bool`
         :return: Post-processed model predictions.
         :rtype: `np.ndarray`
         """
-        post_predictions = predictions.copy()
+        post_preds = preds.copy()
         if self.postprocessing_defences is not None:
             for defence in self.postprocessing_defences:
                 if fit:
                     if defence.apply_fit:
-                        post_predictions = defence(post_predictions)
+                        post_preds = defence(post_preds)
                 else:
                     if defence.apply_predict:
-                        post_predictions = defence(post_predictions)
+                        post_preds = defence(post_preds)
 
-        return post_predictions
+        return post_preds
 
     def __repr__(self):
         class_name = self.__class__.__name__
