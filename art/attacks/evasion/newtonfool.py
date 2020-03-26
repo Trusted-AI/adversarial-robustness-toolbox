@@ -29,7 +29,7 @@ from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 from art.utils import to_categorical, compute_success
 
 logger = logging.getLogger(__name__)
@@ -41,6 +41,7 @@ class NewtonFool(EvasionAttack):
 
     | Paper link: http://doi.acm.org/10.1145/3134600.3134635
     """
+
     attack_params = EvasionAttack.attack_params + ["max_iter", "eta", "batch_size"]
 
     def __init__(self, classifier, max_iter=100, eta=0.01, batch_size=1):
@@ -58,10 +59,15 @@ class NewtonFool(EvasionAttack):
         """
         super(NewtonFool, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '. '
-                             ' The classifier needs to provide gradients.'))
+            raise (
+                TypeError(
+                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
+                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    + str(classifier.__class__.__bases__)
+                    + ". "
+                    " The classifier needs to provide gradients."
+                )
+            )
 
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)
@@ -114,14 +120,16 @@ class NewtonFool(EvasionAttack):
                 batch += di_batch
 
             # Apply clip
-            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
             else:
                 x_adv[batch_index_1:batch_index_2] = batch
 
-        logger.info('Success rate of NewtonFool attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
+        logger.info(
+            "Success rate of NewtonFool attack: %.2f%%",
+            100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+        )
         return x_adv
 
     def set_params(self, **kwargs):
@@ -145,7 +153,7 @@ class NewtonFool(EvasionAttack):
             raise ValueError("The eta coefficient must be a positive float.")
 
         if self.batch_size <= 0:
-            raise ValueError('The batch size `batch_size` has to be positive.')
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
         return True
 

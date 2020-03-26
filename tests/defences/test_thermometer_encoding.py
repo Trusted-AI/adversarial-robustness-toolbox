@@ -23,7 +23,8 @@ import unittest
 import numpy as np
 
 from art.defences import ThermometerEncoding
-from art.utils import master_seed
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -31,14 +32,22 @@ logger = logging.getLogger(__name__)
 class TestThermometerEncoding(unittest.TestCase):
     def setUp(self):
         # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_channel_last(self):
         # Test data
-        x = np.array([[[[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
-                       [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]],
-                      [[[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
-                       [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]]]])
+        x = np.array(
+            [
+                [
+                    [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
+                    [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
+                ],
+                [
+                    [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
+                    [[0.2, 0.6, 0.8], [0.9, 0.4, 0.3], [0.2, 0.8, 0.5]],
+                ],
+            ]
+        )
 
         # Create an instance of ThermometerEncoding
         th_encoder = ThermometerEncoding(clip_values=(0, 1), num_space=4)
@@ -49,14 +58,34 @@ class TestThermometerEncoding(unittest.TestCase):
         # Test
         self.assertEqual(x_preproc.shape, (2, 2, 3, 12))
 
-        true_value = np.array([[[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                                 [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                                                                         [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                                                                         [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]],
-                               [[[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1], [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                                 [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]], [[1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                                                                         [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                                                                         [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1]]]])
+        true_value = np.array(
+            [
+                [
+                    [
+                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
+                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                    ],
+                    [
+                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
+                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                    ],
+                ],
+                [
+                    [
+                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
+                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                    ],
+                    [
+                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
+                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
+                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                    ],
+                ],
+            ]
+        )
         self.assertTrue((x_preproc == true_value).all())
 
     def test_channel_first(self):
@@ -87,5 +116,5 @@ class TestThermometerEncoding(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

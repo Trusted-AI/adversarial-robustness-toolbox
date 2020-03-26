@@ -7,6 +7,11 @@ Activation Defence
 .. autoclass:: ActivationDefence
    :members:
 
+Data Provenance Defense
+-----------------------
+.. autoclass:: ProvenanceDefense
+   :members:
+
 Base Class
 ----------
 .. autoclass:: PoisonFilteringDefence

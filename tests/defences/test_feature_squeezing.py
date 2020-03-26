@@ -23,15 +23,15 @@ import unittest
 import numpy as np
 
 from art.defences import FeatureSqueezing
-from art.utils import master_seed
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
 
 class TestFeatureSqueezing(unittest.TestCase):
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_ones(self):
         m, n = 10, 2
@@ -51,14 +51,14 @@ class TestFeatureSqueezing(unittest.TestCase):
 
         preproc = FeatureSqueezing(clip_values=(0, 1), bit_depth=1)
         x_squeezed, _ = preproc(x)
-        self.assertTrue((x_squeezed[x_zero] == 0.).all())
-        self.assertTrue((x_squeezed[x_one] == 1.).all())
+        self.assertTrue((x_squeezed[x_zero] == 0.0).all())
+        self.assertTrue((x_squeezed[x_one] == 1.0).all())
 
         preproc = FeatureSqueezing(clip_values=(0, 1), bit_depth=2)
         x_squeezed, _ = preproc(x)
-        self.assertFalse(np.logical_and(0. < x_squeezed, x_squeezed < 0.33).any())
+        self.assertFalse(np.logical_and(0.0 < x_squeezed, x_squeezed < 0.33).any())
         self.assertFalse(np.logical_and(0.34 < x_squeezed, x_squeezed < 0.66).any())
-        self.assertFalse(np.logical_and(0.67 < x_squeezed, x_squeezed < 1.).any())
+        self.assertFalse(np.logical_and(0.67 < x_squeezed, x_squeezed < 1.0).any())
         # Check that x has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
 
@@ -70,5 +70,5 @@ class TestFeatureSqueezing(unittest.TestCase):
         self.assertTrue(np.allclose(x_squeezed, [0, 1.33, 2.67, 2.67, 4], atol=1e-1))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

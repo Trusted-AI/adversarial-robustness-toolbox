@@ -23,7 +23,8 @@ import unittest
 import numpy as np
 
 from art.defences import GaussianAugmentation
-from art.utils import master_seed
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 class TestGaussianAugmentation(unittest.TestCase):
     def setUp(self):
         # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_small_size(self):
         x = np.arange(15).reshape((5, 3))
@@ -79,9 +80,11 @@ class TestGaussianAugmentation(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _ = GaussianAugmentation(augmentation=True, apply_fit=True, apply_predict=True)
 
-        self.assertTrue('If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`'
-                        ' must be `False`.' in str(context.exception))
+        self.assertTrue(
+            "If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`"
+            " must be `False`." in str(context.exception)
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

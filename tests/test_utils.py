@@ -24,9 +24,12 @@ import numpy as np
 import tensorflow as tf
 
 from art.utils import projection, random_sphere, to_categorical, least_likely_class, check_and_transform_label_format
-from art.utils import load_iris, load_mnist, master_seed
+from art.utils import load_iris, load_mnist
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
 from art.utils import segment_by_class, performance_diff
+from art.utils import is_probability
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -37,16 +40,16 @@ NB_TEST = 100
 
 class TestUtils(unittest.TestCase):
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_master_seed_mx(self):
         import mxnet as mx
 
-        master_seed(1234)
+        master_seed(seed=1234, set_mxnet=True)
         x = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
         y = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
 
-        master_seed(1234)
+        master_seed(seed=1234, set_mxnet=True)
         z = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
         self.assertFalse((x == y).any())
         self.assertTrue((x == z).all())
@@ -54,11 +57,11 @@ class TestUtils(unittest.TestCase):
     def test_master_seed_pytorch(self):
         import torch
 
-        master_seed(1234)
+        master_seed(seed=1234, set_torch=True)
         x = torch.randn(5, 5)
         y = torch.randn(5, 5)
 
-        master_seed(1234)
+        master_seed(seed=1234, set_torch=True)
         z = torch.randn(5, 5)
         self.assertFalse((x == y).any())
         self.assertTrue((x == z).all())
@@ -66,36 +69,36 @@ class TestUtils(unittest.TestCase):
     def test_master_seed_py(self):
         import random
 
-        master_seed(1234)
+        master_seed(seed=1234)
         x = random.getrandbits(128)
         y = random.getrandbits(128)
 
-        master_seed(1234)
+        master_seed(seed=1234)
         z = random.getrandbits(128)
         self.assertNotEqual(x, y)
         self.assertEqual(z, x)
 
     def test_master_seed_np(self):
-        master_seed(1234)
+        master_seed(seed=1234)
         x = np.random.uniform(size=10)
         y = np.random.uniform(size=10)
 
-        master_seed(1234)
+        master_seed(seed=1234)
         z = np.random.uniform(size=10)
         self.assertTrue((x != y).any())
         self.assertTrue((z == x).all())
 
-    @unittest.skipIf(tf.__version__[0] != '1', reason='Skip unittests if not TensorFlow v1.')
+    @unittest.skipIf(tf.__version__[0] != "1", reason="Skip unittests if not TensorFlow v1.")
     def test_master_seed_tf(self):
         tf.reset_default_graph()
-        master_seed(1234)
+        master_seed(seed=1234, set_tensorflow=True)
         with tf.Session() as sess:
             x = tf.random_uniform(shape=(1, 10))
             y = tf.random_uniform(shape=(1, 10))
             xv, yv = sess.run([x, y])
 
         tf.reset_default_graph()
-        master_seed(1234)
+        master_seed(seed=1234, set_tensorflow=True)
         with tf.Session() as sess:
             z = tf.random_uniform(shape=(1, 10))
             zv = sess.run([z])[0]
@@ -103,14 +106,14 @@ class TestUtils(unittest.TestCase):
         self.assertTrue((xv != yv).any())
         np.testing.assert_array_almost_equal(zv, xv, decimal=4)
 
-    @unittest.skipIf(tf.__version__[0] != '2', reason='Skip unittests if not TensorFlow v2.')
+    @unittest.skipIf(tf.__version__[0] != "2", reason="Skip unittests if not TensorFlow v2.")
     def test_master_seed_tf_v2(self):
-        master_seed(1234)
+        master_seed(seed=1234, set_tensorflow=True)
         x = tf.random.uniform(shape=(1, 10))
         y = tf.random.uniform(shape=(1, 10))
         xv, yv = x.numpy(), y.numpy()
 
-        master_seed(1234)
+        master_seed(seed=1234, set_tensorflow=True)
         z = tf.random.uniform(shape=(1, 10))
         zv = z.numpy()
 
@@ -267,7 +270,7 @@ class TestUtils(unittest.TestCase):
     def test_preprocess(self):
         (x, y), (_, _), _, _ = load_mnist()
 
-        x = (255 * x).astype('int')[:100]
+        x = (255 * x).astype("int")[:100]
         y = np.argmax(y, axis=1)[:100]
 
         x_, y_ = preprocess(x, y, clip_values=(0, 255))
@@ -278,7 +281,7 @@ class TestUtils(unittest.TestCase):
 
         (x, y), (_, _), _, _ = load_mnist()
 
-        x = (5 * x).astype('int')[:100]
+        x = (5 * x).astype("int")[:100]
         y = np.argmax(y, axis=1)[:100]
         x_, y_ = preprocess(x, y, nb_classes=20, clip_values=(0, 5))
         self.assertEqual(x_.shape, x.shape)
@@ -325,28 +328,48 @@ class TestUtils(unittest.TestCase):
 
         (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()
 
-        full_model = SklearnClassifier(model=SVC(kernel='linear'), clip_values=(min_, max_))
+        full_model = SklearnClassifier(model=SVC(kernel="linear", gamma="auto"), clip_values=(min_, max_))
         full_model.fit(x_train, y_train)
 
-        limited_model = SklearnClassifier(model=SVC(kernel='linear'), clip_values=(min_, max_))
+        limited_model = SklearnClassifier(model=SVC(kernel="linear", gamma="auto"), clip_values=(min_, max_))
         limited_model.fit(x_train[:10], y_train[:10])
 
-        self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20],
-                                          perf_function='accuracy'), 0.35)
+        self.assertEqual(
+            performance_diff(full_model, limited_model, x_test[:20], y_test[:20], perf_function="accuracy"), 0.35
+        )
         self.assertEqual(performance_diff(full_model, limited_model, x_test[:20], y_test[:20]), 0.35)
-        diff = performance_diff(full_model, limited_model, x_test[:20], y_test[:20], perf_function='f1',
-                                average='weighted')
+        diff = performance_diff(
+            full_model, limited_model, x_test[:20], y_test[:20], perf_function="f1", average="weighted"
+        )
         self.assertGreater(diff, 0.43)
         self.assertLess(diff, 0.44)
 
         def first_class(true_labels, model_labels, idx=0):
             return np.average(np.argmax(model_labels, axis=1) == idx)
 
-        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class),
-                         1.0 / 3)
-        self.assertEqual(performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class, idx=1),
-                         -1.0 / 3)
+        self.assertEqual(
+            performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class), 1.0 / 3
+        )
+        self.assertEqual(
+            performance_diff(full_model, limited_model, x_test, y_test, perf_function=first_class, idx=1), -1.0 / 3
+        )
+
+    def test_is_probability(self):
+        probabilities = np.array([0.1, 0.3, 0.6])
+        self.assertTrue(is_probability(probabilities))
+
+        not_probabilities = np.array([0.1, 0.3, 0.8])
+        self.assertFalse(is_probability(not_probabilities))
+
+        not_probabilities = np.array([0.1, 0.3, 1.8])
+        self.assertFalse(is_probability(not_probabilities))
+
+        not_probabilities = np.array([-1.1, 0.3, 1.8])
+        self.assertFalse(is_probability(not_probabilities))
+
+        not_probabilities = np.array([-1.1, 0.3, 0.7])
+        self.assertFalse(is_probability(not_probabilities))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

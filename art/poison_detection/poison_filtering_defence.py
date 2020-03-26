@@ -27,14 +27,15 @@ import sys
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
-    ABC = abc.ABCMeta(str('ABC'), (), {})
+    ABC = abc.ABCMeta(str("ABC"), (), {})
 
 
 class PoisonFilteringDefence(ABC):
     """
     Base class for all poison filtering defences.
     """
-    defence_params = ['classifier']
+
+    defence_params = ["classifier"]
 
     def __init__(self, classifier, x_train, y_train):
         """

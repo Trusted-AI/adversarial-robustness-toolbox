@@ -30,8 +30,9 @@ import numpy as np
 from tqdm import tqdm
 
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 from art.utils import projection
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -43,21 +44,24 @@ class UniversalPerturbation(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1610.08401
     """
-    attacks_dict = {'carlini': 'art.attacks.evasion.carlini.CarliniL2Method',
-                    'carlini_inf': 'art.attacks.evasion.carlini.CarliniLInfMethod',
-                    'deepfool': 'art.attacks.evasion.deepfool.DeepFool',
-                    'ead': 'art.attacks.evasion.elastic_net.ElasticNet',
-                    'fgsm': 'art.attacks.evasion.fast_gradient.FastGradientMethod',
-                    'bim': 'art.attacks.evasion.iterative_method.BasicIterativeMethod',
-                    'pgd': 'art.attacks.evasion.projected_gradient_descent.ProjectedGradientDescent',
-                    'newtonfool': 'art.attacks.evasion.newtonfool.NewtonFool',
-                    'jsma': 'art.attacks.evasion.saliency_map.SaliencyMapMethod',
-                    'vat': 'art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod'
-                    }
-    attack_params = EvasionAttack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
-    def __init__(self, classifier, attacker='deepfool', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
-                 norm=np.inf):
+    attacks_dict = {
+        "carlini": "art.attacks.evasion.carlini.CarliniL2Method",
+        "carlini_inf": "art.attacks.evasion.carlini.CarliniLInfMethod",
+        "deepfool": "art.attacks.evasion.deepfool.DeepFool",
+        "ead": "art.attacks.evasion.elastic_net.ElasticNet",
+        "fgsm": "art.attacks.evasion.fast_gradient.FastGradientMethod",
+        "bim": "art.attacks.evasion.iterative_method.BasicIterativeMethod",
+        "pgd": "art.attacks.evasion.projected_gradient_descent.ProjectedGradientDescent",
+        "newtonfool": "art.attacks.evasion.newtonfool.NewtonFool",
+        "jsma": "art.attacks.evasion.saliency_map.SaliencyMapMethod",
+        "vat": "art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod",
+    }
+    attack_params = EvasionAttack.attack_params + ["attacker", "attacker_params", "delta", "max_iter", "eps", "norm"]
+
+    def __init__(
+        self, classifier, attacker="deepfool", attacker_params=None, delta=0.2, max_iter=20, eps=10.0, norm=np.inf
+    ):
         """
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
@@ -78,19 +82,16 @@ class UniversalPerturbation(EvasionAttack):
         """
         super(UniversalPerturbation, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierNeuralNetwork` and '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '. '
-                             ' The classifier needs to be a Neural Network and provide gradients.'))
+            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
-        kwargs = {'attacker': attacker,
-                  'attacker_params': attacker_params,
-                  'delta': delta,
-                  'max_iter': max_iter,
-                  'eps': eps,
-                  'norm': norm
-                  }
+        kwargs = {
+            "attacker": attacker,
+            "attacker_params": attacker_params,
+            "delta": delta,
+            "max_iter": max_iter,
+            "eps": eps,
+            "norm": norm,
+        }
         self.set_params(**kwargs)
 
     def generate(self, x, y=None, **kwargs):
@@ -104,7 +105,7 @@ class UniversalPerturbation(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        logger.info('Computing universal perturbation based on %s attack.', self.attacker)
+        logger.info("Computing universal perturbation based on %s attack.", self.attacker)
 
         # Init universal perturbation
         noise = 0
@@ -118,7 +119,7 @@ class UniversalPerturbation(EvasionAttack):
 
         # Generate the adversarial examples
         nb_iter = 0
-        pbar = tqdm(self.max_iter, desc='Universal perturbation')
+        pbar = tqdm(self.max_iter, desc="Universal perturbation")
         while fooling_rate < 1. - self.delta and nb_iter < self.max_iter:
             # Go through all the examples randomly
             rnd_idx = random.sample(range(nb_instances), nb_instances)
@@ -146,7 +147,7 @@ class UniversalPerturbation(EvasionAttack):
 
             # Apply attack and clip
             x_adv = x + noise
-            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
@@ -158,7 +159,7 @@ class UniversalPerturbation(EvasionAttack):
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
-        logger.info('Success rate of universal perturbation attack: %.2f%%', 100 * fooling_rate)
+        logger.info("Success rate of universal perturbation attack: %.2f%%", 100 * fooling_rate)
 
         return x_adv
 

@@ -29,15 +29,24 @@ x = tf.layers.dense(x, 100, activation=tf.nn.relu)
 logits = tf.layers.dense(x, 10)
 
 loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=labels_ph))
-optimizer = tf.train.GradientDescentOptimizer(learning_rate=0.01)
+optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
 train = optimizer.minimize(loss)
 sess = tf.Session()
 sess.run(tf.global_variables_initializer())
 
 # Step 3: Create the ART classifier
 
-classifier = TFClassifier(clip_values=(min_pixel_value, max_pixel_value), input_ph=input_ph, output=logits,
-                          labels_ph=labels_ph, train=train, loss=loss, learning=None, sess=sess)
+classifier = TFClassifier(
+    clip_values=(min_pixel_value, max_pixel_value),
+    input_ph=input_ph,
+    output=logits,
+    labels_ph=labels_ph,
+    train=train,
+    loss=loss,
+    learning=None,
+    sess=sess,
+    preprocessing_defences=[]
+)
 
 # Step 4: Train the ART classifier
 
@@ -47,7 +56,7 @@ classifier.fit(x_train, y_train, batch_size=64, nb_epochs=3)
 
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print('Accuracy on benign test examples: {}%'.format(accuracy * 100))
+print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
 attack = FastGradientMethod(classifier=classifier, eps=0.2)
@@ -57,4 +66,4 @@ x_test_adv = attack.generate(x=x_test)
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print('Accuracy on adversarial test examples: {}%'.format(accuracy * 100))
+print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))

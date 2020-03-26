@@ -39,7 +39,8 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
 
     | Paper link: https://arxiv.org/abs/1712.07113
     """
-    attack_params = ['num_basis', 'sigma', 'round_samples']
+
+    attack_params = ["num_basis", "sigma", "round_samples"]
 
     def __init__(self, classifier, num_basis, sigma, round_samples=0):
         """
@@ -134,7 +135,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         epsilon_map = self.sigma * np.random.normal(size=([self.num_basis] + list(self.input_shape)))
         grads = []
         for i in range(len(x)):
-            minus, plus = self._generate_samples(x[i:i + 1], epsilon_map)
+            minus, plus = self._generate_samples(x[i : i + 1], epsilon_map)
 
             # Vectorized; small tests weren't faster
             # ent_vec = np.vectorize(lambda p: entropy(y[i], p), signature='(n)->()')
@@ -143,10 +144,13 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
             # Vanilla
             new_y_minus = np.array([entropy(y[i], p) for p in self.predict(minus)])
             new_y_plus = np.array([entropy(y[i], p) for p in self.predict(plus)])
-            query_efficient_grad = 2 * np.mean(np.multiply(
-                epsilon_map.reshape(self.num_basis, -1),
-                (new_y_plus - new_y_minus).reshape(self.num_basis, -1) /
-                (2 * self.sigma)).reshape([-1] + list(self.input_shape)), axis=0)
+            query_efficient_grad = 2 * np.mean(
+                np.multiply(
+                    epsilon_map.reshape(self.num_basis, -1),
+                    (new_y_plus - new_y_minus).reshape(self.num_basis, -1) / (2 * self.sigma),
+                ).reshape([-1] + list(self.input_shape)),
+                axis=0,
+            )
             grads.append(query_efficient_grad)
         grads = self._apply_preprocessing_normalization_gradient(np.array(grads))
         return grads
@@ -162,7 +166,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{'batch_size': batch_size})
+        return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{"batch_size": batch_size})
 
     def nb_classes(self):
         """

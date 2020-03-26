@@ -26,25 +26,26 @@ import numpy as np
 
 from art.attacks import DecisionTreeAttack
 from art.classifiers import SklearnClassifier
-from art.utils import master_seed
+
+from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
 
 
-class TestDecisionTreeAttack(unittest.TestCase):
+class TestDecisionTreeAttack(TestBase):
     """
     A unittest class for testing the decision tree attack.
     """
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
+        super().setUpClass()
+
         # Get MNIST
         digits = load_digits()
         cls.X = digits.data
         cls.y = digits.target
-
-    def setUp(self):
-        master_seed(1234)
 
     def test_scikitlearn(self):
         clf = DecisionTreeClassifier()
@@ -63,5 +64,5 @@ class TestDecisionTreeAttack(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(X_original - self.X))), 0.0, delta=0.00001)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

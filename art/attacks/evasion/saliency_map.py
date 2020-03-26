@@ -29,8 +29,9 @@ from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format, compute_success
+from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +42,8 @@ class SaliencyMapMethod(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1511.07528
     """
-    attack_params = EvasionAttack.attack_params + ['theta', 'gamma', 'batch_size']
+
+    attack_params = EvasionAttack.attack_params + ["theta", "gamma", "batch_size"]
 
     def __init__(self, classifier, theta=0.1, gamma=1.0, batch_size=1):
         """
@@ -58,12 +60,9 @@ class SaliencyMapMethod(EvasionAttack):
         """
         super(SaliencyMapMethod, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '. '
-                             ' The classifier needs to provide gradients.'))
+            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
-        kwargs = {'theta': theta, 'gamma': gamma, 'batch_size': batch_size}
+        kwargs = {"theta": theta, "gamma": gamma, "batch_size": batch_size}
         self.set_params(**kwargs)
 
     def generate(self, x, y=None, **kwargs):
@@ -90,6 +89,7 @@ class SaliencyMapMethod(EvasionAttack):
         if y is None:
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
+
             targets = np.argmax(random_targets(preds, self.classifier.nb_classes()), axis=1)
         else:
             targets = np.argmax(y, axis=1)
@@ -102,7 +102,7 @@ class SaliencyMapMethod(EvasionAttack):
             # Main algorithm for each batch
             # Initialize the search space; optimize to remove features that can't be changed
             search_space = np.zeros(batch.shape)
-            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
                 clip_min, clip_max = self.classifier.clip_values
                 if self.theta > 0:
                     search_space[batch < clip_max] = 1
@@ -117,15 +117,18 @@ class SaliencyMapMethod(EvasionAttack):
 
             while active_indices.size != 0:
                 # Compute saliency map
-                feat_ind = self._saliency_map(np.reshape(batch, [batch.shape[0]] + dims)[active_indices],
-                                              target[active_indices], search_space[active_indices])
+                feat_ind = self._saliency_map(
+                    np.reshape(batch, [batch.shape[0]] + dims)[active_indices],
+                    target[active_indices],
+                    search_space[active_indices],
+                )
 
                 # Update used features
                 all_feat[active_indices, feat_ind[:, 0]] = 1
                 all_feat[active_indices, feat_ind[:, 1]] = 1
 
                 # Apply attack with clipping
-                if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+                if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
                     # Prepare update depending of theta
                     if self.theta > 0:
                         clip_func, clip_value = np.minimum, clip_max
@@ -134,10 +137,12 @@ class SaliencyMapMethod(EvasionAttack):
 
                     # Update adversarial examples
                     tmp_batch = batch[active_indices]
-                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] = \
-                        clip_func(clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta)
-                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] = \
-                        clip_func(clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta)
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] = clip_func(
+                        clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta
+                    )
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] = clip_func(
+                        clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta
+                    )
                     batch[active_indices] = tmp_batch
 
                     # Remove indices from search space if max/min values were reached
@@ -154,16 +159,20 @@ class SaliencyMapMethod(EvasionAttack):
                 current_pred = np.argmax(self.classifier.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1)
 
                 # Update active_indices
-                active_indices = np.where((current_pred != target) *
-                                          (np.sum(all_feat, axis=1) / self._nb_features <= self.gamma) *
-                                          (np.sum(search_space, axis=1) > 0))[0]
+                active_indices = np.where(
+                    (current_pred != target)
+                    * (np.sum(all_feat, axis=1) / self._nb_features <= self.gamma)
+                    * (np.sum(search_space, axis=1) > 0)
+                )[0]
 
             x_adv[batch_index_1:batch_index_2] = batch
 
         x_adv = np.reshape(x_adv, x.shape)
 
-        logger.info('Success rate of JSMA attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size))
+        logger.info(
+            "Success rate of JSMA attack: %.2f%%",
+            100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+        )
 
         return x_adv
 
@@ -185,7 +194,7 @@ class SaliencyMapMethod(EvasionAttack):
             raise ValueError("The total perturbation percentage `gamma` must be between 0 and 1.")
 
         if self.batch_size <= 0:
-            raise ValueError('The batch size `batch_size` has to be positive.')
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
         return True
 

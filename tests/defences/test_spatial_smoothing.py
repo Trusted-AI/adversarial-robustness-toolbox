@@ -23,15 +23,15 @@ import unittest
 import numpy as np
 
 from art.defences import SpatialSmoothing
-from art.utils import master_seed
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
 
 class TestLocalSpatialSmoothing(unittest.TestCase):
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_ones(self):
         m, n = 10, 2
@@ -39,7 +39,7 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
         # Start to test
         for window_size in range(1, 10):
-            logger.info('Window size: {}'.format(window_size))
+            logger.info("Window size: {}".format(window_size))
             preprocess = SpatialSmoothing(window_size=window_size)
             smoothed_x, _ = preprocess(x)
             np.testing.assert_array_almost_equal(smoothed_x, x, decimal=2)
@@ -51,8 +51,12 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         # Start to test
         preprocess = SpatialSmoothing(window_size=3)
         x_smooth, _ = preprocess(x)
-        self.assertTrue((x_smooth == np.array(
-            [[[[0.2], [0.3], [0.3]], [[0.4], [0.5], [0.6]], [[0.5], [0.6], [0.6]]]]).astype(np.float32)).all())
+        self.assertTrue(
+            (
+                x_smooth
+                == np.array([[[[0.2], [0.3], [0.3]], [[0.4], [0.5], [0.6]], [[0.5], [0.6], [0.6]]]]).astype(np.float32)
+            ).all()
+        )
 
         preprocess = SpatialSmoothing(window_size=1)
         x_smooth, _ = preprocess(x)
@@ -60,8 +64,12 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
 
         preprocess = SpatialSmoothing(window_size=2)
         x_smooth, _ = preprocess(x)
-        self.assertTrue((x_smooth == np.array(
-            [[[[0.1], [0.2], [0.3]], [[0.7], [0.7], [0.8]], [[0.7], [0.7], [0.8]]]]).astype(np.float32)).all())
+        self.assertTrue(
+            (
+                x_smooth
+                == np.array([[[[0.1], [0.2], [0.3]], [[0.7], [0.7], [0.8]], [[0.7], [0.7], [0.8]]]]).astype(np.float32)
+            ).all()
+        )
 
         # Check that x has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_original - x))), 0.0, delta=0.00001)
@@ -83,8 +91,8 @@ class TestLocalSpatialSmoothing(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             preprocess(x)
 
-        self.assertIn('Feature vectors detected.', str(context.exception))
+        self.assertIn("Feature vectors detected.", str(context.exception))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

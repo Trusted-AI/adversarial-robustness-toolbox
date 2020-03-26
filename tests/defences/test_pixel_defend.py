@@ -26,7 +26,9 @@ import torch.optim as optim
 
 from art.classifiers import PyTorchClassifier
 from art.defences import PixelDefend
-from art.utils import load_mnist, master_seed
+from art.utils import load_mnist
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +62,7 @@ class Model(nn.Module):
 class TestPixelDefend(unittest.TestCase):
     def setUp(self):
         # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_one_channel(self):
         (x_train, _), (_, _), _, _ = load_mnist()
@@ -72,8 +74,9 @@ class TestPixelDefend(unittest.TestCase):
         model = ModelImage()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        self.pixelcnn = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28),
-                                          nb_classes=10, clip_values=(0, 1))
+        self.pixelcnn = PyTorchClassifier(
+            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+        )
         preprocess = PixelDefend(eps=5, pixel_cnn=self.pixelcnn)
         x_defended, _ = preprocess(x_train)
 
@@ -89,8 +92,9 @@ class TestPixelDefend(unittest.TestCase):
         model = Model()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        pixel_cnn = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,),
-                                      nb_classes=2, clip_values=(0, 1))
+        pixel_cnn = PyTorchClassifier(
+            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=2, clip_values=(0, 1)
+        )
 
         x = np.random.rand(5, 4).astype(np.float32)
         preprocess = PixelDefend(eps=5, pixel_cnn=pixel_cnn)
@@ -101,5 +105,5 @@ class TestPixelDefend(unittest.TestCase):
         self.assertTrue((x_defended >= 0.0).all())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

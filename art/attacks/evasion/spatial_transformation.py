@@ -30,7 +30,7 @@ import numpy as np
 from scipy.ndimage import rotate, shift
 from tqdm import tqdm
 
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 
 logger = logging.getLogger(__name__)
 
@@ -44,8 +44,12 @@ class SpatialTransformation(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1712.02779
     """
 
-    attack_params = EvasionAttack.attack_params + ['max_translation', 'num_translations', 'max_rotation',
-                                                   'num_rotations']
+    attack_params = EvasionAttack.attack_params + [
+        "max_translation",
+        "num_translations",
+        "max_rotation",
+        "num_rotations",
+    ]
 
     def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1):
         """
@@ -63,11 +67,12 @@ class SpatialTransformation(EvasionAttack):
         :type num_rotations: `int`
         """
         super(SpatialTransformation, self).__init__(classifier=classifier)
-        kwargs = {'max_translation': max_translation,
-                  'num_translations': num_translations,
-                  'max_rotation': max_rotation,
-                  'num_rotations': num_rotations
-                  }
+        kwargs = {
+            "max_translation": max_translation,
+            "num_translations": num_translations,
+            "max_rotation": max_rotation,
+            "num_rotations": num_rotations,
+        }
         self.set_params(**kwargs)
 
         self.fooling_rate = None
@@ -86,11 +91,12 @@ class SpatialTransformation(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        logger.info('Computing spatial transformation based on grid search.')
+        logger.info("Computing spatial transformation based on grid search.")
 
         if len(x.shape) == 2:
-            raise ValueError('Feature vectors detected. The attack can only be applied to data with spatial'
-                             'dimensions.')
+            raise ValueError(
+                "Feature vectors detected. The attack can only be applied to data with spatial" "dimensions."
+            )
 
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
@@ -103,10 +109,14 @@ class SpatialTransformation(EvasionAttack):
             max_num_pixel_trans_x = int(round((x.shape[1] * self.max_translation / 100.0)))
             max_num_pixel_trans_y = int(round((x.shape[2] * self.max_translation / 100.0)))
 
-            grid_trans_x = [int(round(g)) for g in
-                            list(np.linspace(-max_num_pixel_trans_x, max_num_pixel_trans_x, num=self.num_translations))]
-            grid_trans_y = [int(round(g)) for g in
-                            list(np.linspace(-max_num_pixel_trans_y, max_num_pixel_trans_y, num=self.num_translations))]
+            grid_trans_x = [
+                int(round(g))
+                for g in list(np.linspace(-max_num_pixel_trans_x, max_num_pixel_trans_x, num=self.num_translations))
+            ]
+            grid_trans_y = [
+                int(round(g))
+                for g in list(np.linspace(-max_num_pixel_trans_y, max_num_pixel_trans_y, num=self.num_translations))
+            ]
             grid_rot = list(np.linspace(-self.max_rotation, self.max_rotation, num=self.num_rotations))
 
             # Remove duplicates
@@ -153,10 +163,10 @@ class SpatialTransformation(EvasionAttack):
             self.attack_trans_y = trans_y
             self.attack_rot = rot
 
-            logger.info('Success rate of spatial transformation attack: %.2f%%', 100 * self.fooling_rate)
-            logger.info('Attack-translation in x: %.2f%%', self.attack_trans_x)
-            logger.info('Attack-translation in y: %.2f%%', self.attack_trans_y)
-            logger.info('Attack-rotation: %.2f%%', self.attack_rot)
+            logger.info("Success rate of spatial transformation attack: %.2f%%", 100 * self.fooling_rate)
+            logger.info("Attack-translation in x: %.2f%%", self.attack_trans_x)
+            logger.info("Attack-translation in y: %.2f%%", self.attack_trans_y)
+            logger.info("Attack-rotation: %.2f%%", self.attack_rot)
 
         else:
             x_adv = self._perturb(x, self.attack_trans_x, self.attack_trans_y, self.attack_rot)
@@ -173,7 +183,7 @@ class SpatialTransformation(EvasionAttack):
         else:
             raise ValueError("Unsupported channel index.")
 
-        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
             np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1], out=x_adv)
 
         return x_adv

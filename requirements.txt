@@ -1,6 +1,7 @@
 matplotlib
 numpy
+Pillow==7.0.0
 scipy
-six
-scikit-learn==0.21.3
+six==1.13.0
+scikit-learn==0.22.1
 tqdm

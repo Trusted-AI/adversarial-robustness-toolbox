@@ -7,6 +7,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
+from art.attacks.poisoning.perturbations.image_perturbations import add_pattern_bd, add_single_bd
 from art.classifiers import KerasClassifier
 from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
@@ -25,7 +26,7 @@ def main():
     y_raw = y_raw[random_selection_indices]
 
     # Poison training data
-    perc_poison = .33
+    perc_poison = 0.33
     (is_poison_train, x_poisoned_raw, y_poisoned_raw) = generate_backdoor(x_raw, y_raw, perc_poison)
     x_train, y_train = preprocess(x_poisoned_raw, y_poisoned_raw)
     # Add channel axis:
@@ -48,16 +49,16 @@ def main():
     # Create Keras convolutional neural network - basic architecture from Keras examples
     # Source here: https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py
     model = Sequential()
-    model.add(Conv2D(32, kernel_size=(3, 3), activation='relu', input_shape=x_train.shape[1:]))
-    model.add(Conv2D(64, (3, 3), activation='relu'))
+    model.add(Conv2D(32, kernel_size=(3, 3), activation="relu", input_shape=x_train.shape[1:]))
+    model.add(Conv2D(64, (3, 3), activation="relu"))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Dropout(0.25))
     model.add(Flatten())
-    model.add(Dense(128, activation='relu'))
+    model.add(Dense(128, activation="relu"))
     model.add(Dropout(0.5))
-    model.add(Dense(10, activation='softmax'))
+    model.add(Dense(10, activation="softmax"))
 
-    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
 
     classifier = KerasClassifier(model=model, clip_values=(min_, max_))
 
@@ -87,7 +88,7 @@ def main():
     defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
 
     # Evaluate method when ground truth is known:
-    is_clean = (is_poison_train == 0)
+    is_clean = is_poison_train == 0
     confusion_matrix = defence.evaluate_defence(is_clean)
     print("Evaluation defence results for size-based metric: ")
     jsonObject = json.loads(confusion_matrix)
@@ -97,11 +98,12 @@ def main():
 
     # Visualize clusters:
     print("Visualize clusters")
-    sprites_by_class = defence.visualize_clusters(x_train, 'mnist_poison_demo')
+    sprites_by_class = defence.visualize_clusters(x_train, "mnist_poison_demo")
     # Show plots for clusters of class 5
     n_class = 5
     try:
         import matplotlib.pyplot as plt
+
         plt.imshow(sprites_by_class[n_class][0])
         plt.title("Class " + str(n_class) + " cluster: 0")
         plt.show()
@@ -114,7 +116,7 @@ def main():
     # Try again using distance analysis this time:
     print("------------------- Results using distance metric -------------------")
     print(defence.get_params())
-    defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA", cluster_analysis='distance')
+    defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA", cluster_analysis="distance")
     confusion_matrix = defence.evaluate_defence(is_clean)
     print("Evaluation defence results for distance-based metric: ")
     jsonObject = json.loads(confusion_matrix)
@@ -123,22 +125,23 @@ def main():
         pprint.pprint(jsonObject[label])
 
     # Other ways to invoke the defence:
-    kwargs = {'nb_clusters': 2, 'nb_dims': 10, 'reduce': 'PCA'}
+    kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA"}
     defence.cluster_activations(**kwargs)
 
-    kwargs = {'cluster_analysis': 'distance'}
+    kwargs = {"cluster_analysis": "distance"}
     defence.analyze_clusters(**kwargs)
     defence.evaluate_defence(is_clean)
 
-    kwargs = {'cluster_analysis': 'smaller'}
+    kwargs = {"cluster_analysis": "smaller"}
     defence.analyze_clusters(**kwargs)
     defence.evaluate_defence(is_clean)
 
     print("done :) ")
 
 
-def generate_backdoor(x_clean, y_clean, percent_poison, backdoor_type='pattern', sources=np.arange(10),
-                      targets=(np.arange(10) + 1) % 10):
+def generate_backdoor(
+    x_clean, y_clean, percent_poison, backdoor_type="pattern", sources=np.arange(10), targets=(np.arange(10) + 1) % 10
+):
     """
     Creates a backdoor in MNIST images by adding a pattern or pixel to the image and changing the label to a targeted
     class. Default parameters poison each digit so that it gets classified to the next digit.
@@ -179,9 +182,9 @@ def generate_backdoor(x_clean, y_clean, percent_poison, backdoor_type='pattern',
         indices_to_be_poisoned = np.random.choice(n_points_in_src, num_poison)
 
         imgs_to_be_poisoned = np.copy(src_imgs[indices_to_be_poisoned])
-        if backdoor_type == 'pattern':
+        if backdoor_type == "pattern":
             imgs_to_be_poisoned = add_pattern_bd(x=imgs_to_be_poisoned, pixel_value=max_val)
-        elif backdoor_type == 'pixel':
+        elif backdoor_type == "pixel":
             imgs_to_be_poisoned = add_single_bd(imgs_to_be_poisoned, pixel_value=max_val)
         x_poison = np.append(x_poison, imgs_to_be_poisoned, axis=0)
         y_poison = np.append(y_poison, np.ones(num_poison) * tgt, axis=0)
@@ -192,66 +195,5 @@ def generate_backdoor(x_clean, y_clean, percent_poison, backdoor_type='pattern',
     return is_poison, x_poison, y_poison
 
 
-def add_single_bd(x, distance=2, pixel_value=1):
-    """
-    Augments a matrix by setting value some `distance` away from the bottom-right edge to 1. Works for single images
-    or a batch of images.
-    :param x: N X W X H matrix or W X H matrix. will apply to last 2
-    :type x: `np.ndarray`
-
-    :param distance: distance from bottom-right walls. defaults to 2
-    :type distance: `int`
-
-    :param pixel_value: Value used to replace the entries of the image matrix
-    :type pixel_value: `int`
-
-    :return: augmented matrix
-    :rtype: `np.ndarray`
-    """
-    x = np.array(x)
-    shape = x.shape
-    if len(shape) == 3:
-        width, height = x.shape[1:]
-        x[:, width - distance, height - distance] = pixel_value
-    elif len(shape) == 2:
-        width, height = x.shape
-        x[width - distance, height - distance] = pixel_value
-    else:
-        raise RuntimeError('Do not support numpy arrays of shape ' + str(shape))
-    return x
-
-
-def add_pattern_bd(x, distance=2, pixel_value=1):
-    """
-    Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
-    edge to 1. Works for single images or a batch of images.
-    :param x: N X W X H matrix or W X H matrix. will apply to last 2
-    :type x: `np.ndarray`
-    :param distance: distance from bottom-right walls. defaults to 2
-    :type distance: `int`
-    :param pixel_value: Value used to replace the entries of the image matrix
-    :type pixel_value: `int`
-    :return: augmented matrix
-    :rtype: np.ndarray
-    """
-    x = np.array(x)
-    shape = x.shape
-    if len(shape) == 3:
-        width, height = x.shape[1:]
-        x[:, width - distance, height - distance] = pixel_value
-        x[:, width - distance - 1, height - distance - 1] = pixel_value
-        x[:, width - distance, height - distance - 2] = pixel_value
-        x[:, width - distance - 2, height - distance] = pixel_value
-    elif len(shape) == 2:
-        width, height = x.shape
-        x[width - distance, height - distance] = pixel_value
-        x[width - distance - 1, height - distance - 1] = pixel_value
-        x[width - distance, height - distance - 2] = pixel_value
-        x[width - distance - 2, height - distance] = pixel_value
-    else:
-        raise RuntimeError('Do not support numpy arrays of shape ' + str(shape))
-    return x
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

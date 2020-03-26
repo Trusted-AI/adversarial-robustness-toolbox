@@ -32,33 +32,43 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=C0103
-def SklearnClassifier(model, clip_values=None, defences=None, preprocessing=(0, 1)):
+def SklearnClassifier(
+    model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+):
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that
-    instantiates the correct wrapper
-    class for the given scikit-learn model
+    instantiates the correct wrapper class for the given scikit-learn model.
 
     :param model: scikit-learn Classifier model.
     :type model: `sklearn.base.BaseEstimator`
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
             for features.
     :type clip_values: `tuple`
-    :param defences: Defences to be activated with the classifier.
-    :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+    :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+    :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+    :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+    :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
     :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
             used for data preprocessing. The first value will be subtracted from the input. The input will then
             be divided by the second one.
     :type preprocessing: `tuple`
     """
-    if model.__class__.__module__.split('.')[0] != 'sklearn':
+    if model.__class__.__module__.split(".")[0] != "sklearn":
         raise TypeError("Model is not an sklearn model. Received '%s'" % model.__class__)
+
     sklearn_name = model.__class__.__name__
-    module = importlib.import_module('art.classifiers.scikitlearn')
-    if hasattr(module, 'Scikitlearn%s' % sklearn_name):
-        return getattr(module, 'Scikitlearn%s' % sklearn_name)(model=model, clip_values=clip_values, defences=defences,
-                                                               preprocessing=preprocessing)
+    module = importlib.import_module("art.classifiers.scikitlearn")
+    if hasattr(module, "Scikitlearn%s" % sklearn_name):
+        return getattr(module, "Scikitlearn%s" % sklearn_name)(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
+
     # This basic class at least generically handles `fit`, `predict` and `save`
-    return ScikitlearnClassifier(model, clip_values, defences, preprocessing)
+    return ScikitlearnClassifier(model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing)
 
 
 class ScikitlearnClassifier(Classifier):
@@ -66,25 +76,32 @@ class ScikitlearnClassifier(Classifier):
     Wrapper class for scikit-learn classifier models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn classifier model.
 
+        :param model: scikit-learn classifier model.
+        :type model: `sklearn.base.BaseEstimator`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param model: scikit-learn classifier model.
-        :type model: `sklearn.base.BaseEstimator`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-        super(ScikitlearnClassifier, self).__init__(clip_values=clip_values, defences=defences,
-                                                    preprocessing=preprocessing)
-
+        super(ScikitlearnClassifier, self).__init__(
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
         self._input_shape = self._get_input_shape(model)
         self._nb_classes = self._get_nb_classes()
@@ -123,14 +140,17 @@ class ScikitlearnClassifier(Classifier):
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        if hasattr(self._model, 'predict_proba') and callable(getattr(self._model, 'predict_proba')):
+        if hasattr(self._model, "predict_proba") and callable(getattr(self._model, "predict_proba")):
             y_pred = self._model.predict_proba(x_preprocessed)
-        elif hasattr(self._model, 'predict') and callable(getattr(self._model, 'predict')):
+        elif hasattr(self._model, "predict") and callable(getattr(self._model, "predict")):
             y_pred = to_categorical(self._model.predict(x_preprocessed), nb_classes=self._model.classes_.shape[0])
         else:
-            raise ValueError('The provided model does not have methods `predict_proba` or `predict`.')
+            raise ValueError("The provided model does not have methods `predict_proba` or `predict`.")
 
-        return y_pred
+        # Apply postprocessing
+        predictions = self._apply_postprocessing(preds=y_pred, fit=False)
+
+        return predictions
 
     def nb_classes(self):
         """
@@ -139,7 +159,7 @@ class ScikitlearnClassifier(Classifier):
         :return: Number of classes in the data.
         :rtype: `int` or `None`
         """
-        if hasattr(self._model, 'n_classes_'):
+        if hasattr(self._model, "n_classes_"):
             _nb_classes = self._model.n_classes_
         else:
             _nb_classes = None
@@ -147,35 +167,36 @@ class ScikitlearnClassifier(Classifier):
 
     def save(self, filename, path=None):
         import pickle
-        with open(filename + '.pickle', 'wb') as file_pickle:
+
+        with open(filename + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
     def _get_input_shape(self, model):
-        if hasattr(model, 'n_features_'):
+        if hasattr(model, "n_features_"):
             _input_shape = (model.n_features_,)
-        elif hasattr(model, 'feature_importances_'):
+        elif hasattr(model, "feature_importances_"):
             _input_shape = (len(model.feature_importances_),)
-        elif hasattr(model, 'coef_'):
+        elif hasattr(model, "coef_"):
             if len(model.coef_.shape) == 1:
                 _input_shape = (model.coef_.shape[0],)
             else:
                 _input_shape = (model.coef_.shape[1],)
-        elif hasattr(model, 'support_vectors_'):
+        elif hasattr(model, "support_vectors_"):
             _input_shape = (model.support_vectors_.shape[1],)
-        elif hasattr(model, 'steps'):
+        elif hasattr(model, "steps"):
             _input_shape = self._get_input_shape(model.steps[0][1])
         else:
-            logger.warning('Input shape not recognised. The model might not have been fitted.')
+            logger.warning("Input shape not recognised. The model might not have been fitted.")
             _input_shape = None
         return _input_shape
 
     def _get_nb_classes(self):
-        if hasattr(self._model, 'n_classes_'):
+        if hasattr(self._model, "n_classes_"):
             _nb_classes = self._model.n_classes_
-        elif hasattr(self._model, 'classes_'):
+        elif hasattr(self._model, "classes_"):
             _nb_classes = self._model.classes_.shape[0]
         else:
-            logger.warning('Number of classes not recognised. The model might not have been fitted.')
+            logger.warning("Number of classes not recognised. The model might not have been fitted.")
             _nb_classes = None
         return _nb_classes
 
@@ -185,7 +206,9 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Decision Tree Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
 
@@ -194,8 +217,10 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -205,53 +230,58 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         from sklearn.tree import DecisionTreeClassifier
 
         if not isinstance(model, DecisionTreeClassifier) and model is not None:
-            raise TypeError('Model must be of type sklearn.tree.DecisionTreeClassifier')
+            raise TypeError("Model must be of type sklearn.tree.DecisionTreeClassifier.")
 
-        super(ScikitlearnDecisionTreeClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
-                                                                preprocessing=preprocessing)
+        super(ScikitlearnDecisionTreeClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_classes_at_node(self, node_id):
         """
-        Returns the classification for a given node
+        Returns the classification for a given node.
 
-        :return: major class in node
+        :return: major class in node.
         :rtype: `float`
         """
         return np.argmax(self._model.tree_.value[node_id])
 
     def get_threshold_at_node(self, node_id):
         """
-        Returns the threshold of given id for a node
+        Returns the threshold of given id for a node.
 
-        :return: threshold value of feature split in this node
+        :return: threshold value of feature split in this node.
         :rtype: `float`
         """
         return self._model.tree_.threshold[node_id]
 
     def get_feature_at_node(self, node_id):
         """
-        Returns the feature of given id for a node
+        Returns the feature of given id for a node.
 
-        :return: feature index of feature split in this node
+        :return: feature index of feature split in this node.
         :rtype: `int`
         """
         return self._model.tree_.feature[node_id]
 
     def get_left_child(self, node_id):
         """
-        Returns the id of the left child node of node_id
+        Returns the id of the left child node of node_id.
 
-        :return: the indices of the left child in the tree
+        :return: the indices of the left child in the tree.
         :rtype: `int`
         """
         return self._model.tree_.children_left[node_id]
 
     def get_right_child(self, node_id):
         """
-        Returns the id of the right child node of node_id
+        Returns the id of the right child node of node_id.
 
-        :return: the indices of the right child in the tree
+        :return: the indices of the right child in the tree.
         :rtype: `int`
         """
         return self._model.tree_.children_right[node_id]
@@ -270,7 +300,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
     def get_values_at_node(self, node_id):
         """
-        Returns the feature of given id for a node
+        Returns the feature of given id for a node.
 
         :return: Normalized values at node node_id.
         :rtype: `nd.array`
@@ -306,8 +336,15 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
             leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
 
         else:
-            leaf_nodes.append(LeafNode(tree_id=i_tree, class_label=class_label, node_id=node_id, box=box,
-                                       value=self.get_values_at_node(node_id)[0, class_label]))
+            leaf_nodes.append(
+                LeafNode(
+                    tree_id=i_tree,
+                    class_label=class_label,
+                    node_id=node_id,
+                    box=box,
+                    value=self.get_values_at_node(node_id)[0, class_label],
+                )
+            )
 
         return leaf_nodes
 
@@ -317,7 +354,9 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
     Wrapper class for scikit-learn Decision Tree Regressor models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Regressor` instance from a scikit-learn Decision Tree Regressor model.
 
@@ -326,8 +365,10 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -337,15 +378,21 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         from sklearn.tree import DecisionTreeRegressor
 
         if not isinstance(model, DecisionTreeRegressor):
-            raise TypeError('Model must be of type sklearn.tree.DecisionTreeRegressor')
+            raise TypeError("Model must be of type sklearn.tree.DecisionTreeRegressor.")
 
-        ScikitlearnDecisionTreeClassifier.__init__(self, model=None, clip_values=clip_values, defences=defences,
-                                                   preprocessing=preprocessing)
+        ScikitlearnDecisionTreeClassifier.__init__(
+            self,
+            model=None,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_values_at_node(self, node_id):
         """
-        Returns the feature of given id for a node
+        Returns the feature of given id for a node.
 
         :return: Normalized values at node node_id.
         :rtype: `nd.array`
@@ -381,8 +428,15 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
             leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
 
         else:
-            leaf_nodes.append(LeafNode(tree_id=i_tree, class_label=class_label, node_id=node_id, box=box,
-                                       value=self.get_values_at_node(node_id)[0, 0]))
+            leaf_nodes.append(
+                LeafNode(
+                    tree_id=i_tree,
+                    class_label=class_label,
+                    node_id=node_id,
+                    box=box,
+                    value=self.get_values_at_node(node_id)[0, 0],
+                )
+            )
 
         return leaf_nodes
 
@@ -392,7 +446,9 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
     Wrapper class for scikit-learn Extra TreeClassifier Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
 
@@ -401,8 +457,10 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -412,10 +470,15 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
         from sklearn.tree import ExtraTreeClassifier
 
         if not isinstance(model, ExtraTreeClassifier):
-            raise TypeError('Model must be of type sklearn.tree.ExtraTreeClassifier')
+            raise TypeError("Model must be of type sklearn.tree.ExtraTreeClassifier.")
 
-        super(ScikitlearnExtraTreeClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
-                                                             preprocessing=preprocessing)
+        super(ScikitlearnExtraTreeClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
 
@@ -424,7 +487,9 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn AdaBoost Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn AdaBoost Classifier model.
 
@@ -433,8 +498,10 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -444,10 +511,15 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import AdaBoostClassifier
 
         if not isinstance(model, AdaBoostClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.AdaBoostClassifier')
+            raise TypeError("Model must be of type sklearn.ensemble.AdaBoostClassifier.")
 
-        super(ScikitlearnAdaBoostClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
-                                                            preprocessing=preprocessing)
+        super(ScikitlearnAdaBoostClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
 
@@ -456,7 +528,9 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Bagging Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Bagging Classifier model.
 
@@ -465,8 +539,10 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -476,10 +552,15 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import BaggingClassifier
 
         if not isinstance(model, BaggingClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.BaggingClassifier')
+            raise TypeError("Model must be of type sklearn.ensemble.BaggingClassifier.")
 
-        super(ScikitlearnBaggingClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
-                                                           preprocessing=preprocessing)
+        super(ScikitlearnBaggingClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
 
@@ -488,7 +569,9 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
     Wrapper class for scikit-learn Extra Trees Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
 
@@ -497,8 +580,10 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -508,10 +593,15 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
         from sklearn.ensemble import ExtraTreesClassifier
 
         if not isinstance(model, ExtraTreesClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.ExtraTreesClassifier')
+            raise TypeError("Model must be of type sklearn.ensemble.ExtraTreesClassifier.")
 
-        super(ScikitlearnExtraTreesClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
-                                                              preprocessing=preprocessing)
+        super(ScikitlearnExtraTreesClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_trees(self):  # lgtm [py/similar-function]
@@ -539,8 +629,12 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
                 class_label = i_class
 
                 # pylint: disable=W0212
-                trees.append(Tree(class_id=class_label,
-                                  leaf_nodes=extra_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
+                trees.append(
+                    Tree(
+                        class_id=class_label,
+                        leaf_nodes=extra_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box),
+                    )
+                )
 
         return trees
 
@@ -550,7 +644,9 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
     Wrapper class for scikit-learn Gradient Boosting Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Gradient Boosting Classifier model.
 
@@ -559,8 +655,10 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -570,10 +668,15 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
         from sklearn.ensemble import GradientBoostingClassifier
 
         if not isinstance(model, GradientBoostingClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.GradientBoostingClassifier')
+            raise TypeError("Model must be of type sklearn.ensemble.GradientBoostingClassifier.")
 
-        super(ScikitlearnGradientBoostingClassifier, self).__init__(model=model, clip_values=clip_values,
-                                                                    defences=defences, preprocessing=preprocessing)
+        super(ScikitlearnGradientBoostingClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_trees(self):
@@ -593,7 +696,8 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
 
             for i_class in range(num_classes):
                 decision_tree_classifier = ScikitlearnDecisionTreeRegressor(
-                    model=self._model.estimators_[i_tree, i_class])
+                    model=self._model.estimators_[i_tree, i_class]
+                )
 
                 if num_classes == 2:
                     class_label = None
@@ -601,8 +705,12 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, ClassifierDec
                     class_label = i_class
 
                 # pylint: disable=W0212
-                trees.append(Tree(class_id=class_label,
-                                  leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
+                trees.append(
+                    Tree(
+                        class_id=class_label,
+                        leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box),
+                    )
+                )
 
         return trees
 
@@ -612,7 +720,9 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
     Wrapper class for scikit-learn Random Forest Classifier models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Random Forest Classifier model.
 
@@ -621,8 +731,10 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -632,10 +744,15 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         from sklearn.ensemble import RandomForestClassifier
 
         if not isinstance(model, RandomForestClassifier):
-            raise TypeError('Model must be of type sklearn.ensemble.RandomForestClassifier')
+            raise TypeError("Model must be of type sklearn.ensemble.RandomForestClassifier.")
 
-        super(ScikitlearnRandomForestClassifier, self).__init__(model=model, clip_values=clip_values, defences=defences,
-                                                                preprocessing=preprocessing)
+        super(ScikitlearnRandomForestClassifier, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def get_trees(self):  # lgtm [py/similar-function]
@@ -663,8 +780,12 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
                 class_label = i_class
 
                 # pylint: disable=W0212
-                trees.append(Tree(class_id=class_label,
-                                  leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box)))
+                trees.append(
+                    Tree(
+                        class_id=class_label,
+                        leaf_nodes=decision_tree_classifier._get_leaf_nodes(0, i_tree, class_label, box),
+                    )
+                )
 
         return trees
 
@@ -674,7 +795,9 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     Wrapper class for scikit-learn Logistic Regression models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn Logistic Regression model.
 
@@ -683,16 +806,22 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
         """
-
-        super(ScikitlearnLogisticRegression, self).__init__(model=model, clip_values=clip_values, defences=defences,
-                                                            preprocessing=preprocessing)
+        super(ScikitlearnLogisticRegression, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
 
     def nb_classes(self):
@@ -702,7 +831,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         :return: Number of classes in the data.
         :rtype: `int` or `None`
         """
-        if hasattr(self._model, 'coef_'):
+        if hasattr(self._model, "coef_"):
             _nb_classes = self._model.classes_.shape[0]
         else:
             _nb_classes = None
@@ -727,9 +856,11 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         :rtype: `np.ndarray`
         """
-        if not hasattr(self._model, 'coef_'):
-            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
-            fitted model.""")
+        if not hasattr(self._model, "coef_"):
+            raise ValueError(
+                """Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
+            fitted model."""
+            )
 
         nb_samples = x.shape[0]
 
@@ -744,7 +875,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
         def _f_class_gradient(i_class, i_sample):
             if self.nb_classes() == 2:
-                return (-1.)**(i_class + 1.0) * y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :]
+                return (-1.0) ** (i_class + 1.0) * y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :]
 
             return weights[i_class, :] - w_weighted[i_sample, :]
 
@@ -768,8 +899,11 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
 
             gradients = np.swapaxes(np.array([class_gradient]), 0, 1)
 
-        elif (isinstance(label, list) and len(label) == nb_samples) or \
-                isinstance(label, np.ndarray) and label.shape == (nb_samples,):
+        elif (
+            (isinstance(label, list) and len(label) == nb_samples)
+            or isinstance(label, np.ndarray)
+            and label.shape == (nb_samples,)
+        ):
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             class_gradients = list()
             unique_labels = list(np.unique(label))
@@ -788,7 +922,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
         else:
-            raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
+            raise TypeError("Unrecognized type for argument `label` with type " + str(type(label)))
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
@@ -812,9 +946,11 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         # pylint: disable=E0001
         from sklearn.utils.class_weight import compute_class_weight
 
-        if not hasattr(self._model, 'coef_'):
-            raise ValueError("""Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
-            fitted model.""")
+        if not hasattr(self._model, "coef_"):
+            raise ValueError(
+                """Model has not been fitted. Run function `fit(x, y)` of classifier first or provide a
+            fitted model."""
+            )
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -823,11 +959,12 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         gradients = np.zeros(x_preprocessed.shape)
 
         y_index = np.argmax(y_preprocessed, axis=1)
-        if self._model.class_weight is None or self._model.class_weight == 'balanced':
+        if self._model.class_weight is None or self._model.class_weight == "balanced":
             class_weight = np.ones(self.nb_classes())
         else:
-            class_weight = compute_class_weight(class_weight=self._model.class_weight, classes=self._model.classes_,
-                                                y=y_index)
+            class_weight = compute_class_weight(
+                class_weight=self._model.class_weight, classes=self._model.classes_, y=y_index
+            )
 
         y_pred = self._model.predict_proba(X=x_preprocessed)
         weights = self._model.coef_
@@ -835,16 +972,20 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         # Consider the special case of a binary logistic regression model:
         if self.nb_classes() == 2:
             for i_sample in range(num_samples):
-                gradients[i_sample, :] += (class_weight[1] * (1.0 - y_preprocessed[i_sample, 1]) -
-                                           class_weight[0] * (1.0 - y_preprocessed[i_sample, 0])) * \
-                                          (y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :])
+                gradients[i_sample, :] += (
+                    class_weight[1] * (1.0 - y_preprocessed[i_sample, 1])
+                    - class_weight[0] * (1.0 - y_preprocessed[i_sample, 0])
+                ) * (y_pred[i_sample, 0] * y_pred[i_sample, 1] * weights[0, :])
         else:
             w_weighted = np.matmul(y_pred, weights)
 
             for i_sample in range(num_samples):
                 for i_class in range(self.nb_classes()):
-                    gradients[i_sample, :] += class_weight[i_class] * (1.0 - y_preprocessed[i_sample, i_class]) * (
-                        weights[i_class, :] - w_weighted[i_sample, :])
+                    gradients[i_sample, :] += (
+                        class_weight[i_class]
+                        * (1.0 - y_preprocessed[i_sample, i_class])
+                        * (weights[i_class, :] - w_weighted[i_sample, :])
+                    )
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
@@ -856,7 +997,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
     Wrapper class for scikit-learn C-Support Vector Classification models.
     """
 
-    def __init__(self, model, clip_values=None, defences=None, preprocessing=(0, 1)):
+    def __init__(
+        self, model, clip_values=None, preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)
+    ):
         """
         Create a `Classifier` instance from a scikit-learn C-Support Vector Classification model.
 
@@ -865,8 +1008,10 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :type clip_values: `tuple`
-        :param defences: Defences to be activated with the classifier.
-        :type defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
@@ -876,11 +1021,17 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         from sklearn.svm import SVC, LinearSVC
 
         if not isinstance(model, SVC) and not isinstance(model, LinearSVC):
-            raise TypeError('Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {}'
-                            .format(type(model)))
+            raise TypeError(
+                "Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {}".format(type(model))
+            )
 
-        super(ScikitlearnSVC, self).__init__(model=model, clip_values=clip_values, defences=defences,
-                                             preprocessing=preprocessing)
+        super(ScikitlearnSVC, self).__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
         self._model = model
         self._kernel = self._kernel_func()
 
@@ -910,7 +1061,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         if isinstance(self._model, SVC):
             if self._model.fit_status_:
-                raise AssertionError('Model has not been fitted correctly.')
+                raise AssertionError("Model has not been fitted correctly.")
 
             support_indices = [0] + list(np.cumsum(self._model.n_support_))
 
@@ -922,26 +1073,28 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             if label is None:
                 gradients = np.zeros((x_preprocessed.shape[0], self.nb_classes(), x_preprocessed.shape[1]))
 
-                for label in range(self.nb_classes()):
+                for i_label in range(self.nb_classes()):
                     for i_sample in range(num_samples):
                         for not_label in range(self.nb_classes()):
-                            if label != not_label:
-                                if not_label < label:
+                            if i_label != not_label:
+                                if not_label < i_label:
                                     label_multiplier = -1
                                 else:
                                     label_multiplier = 1
 
-                                for label_sv in range(support_indices[label], support_indices[label + 1]):
+                                for label_sv in range(support_indices[i_label], support_indices[i_label + 1]):
                                     alpha_i_k_y_i = self._model.dual_coef_[
-                                        not_label if not_label < label else not_label - 1, label_sv]
+                                        not_label if not_label < i_label else not_label - 1, label_sv
+                                    ]
                                     grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
-                                    gradients[i_sample, label] += label_multiplier * alpha_i_k_y_i * grad_kernel
+                                    gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
                                 for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
                                     alpha_i_k_y_i = self._model.dual_coef_[
-                                        label if label < not_label else label - 1, not_label_sv]
+                                        i_label if i_label < not_label else i_label - 1, not_label_sv
+                                    ]
                                     grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
-                                    gradients[i_sample, label] += label_multiplier * alpha_i_k_y_i * grad_kernel
+                                    gradients[i_sample, i_label] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
             elif isinstance(label, (int, np.integer)):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
@@ -955,19 +1108,24 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                                 label_multiplier = 1
 
                             for label_sv in range(support_indices[label], support_indices[label + 1]):
-                                alpha_i_k_y_i = self._model.dual_coef_[not_label if not_label < label else
-                                                                       not_label - 1, label_sv]
+                                alpha_i_k_y_i = self._model.dual_coef_[
+                                    not_label if not_label < label else not_label - 1, label_sv
+                                ]
                                 grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
                             for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
-                                alpha_i_k_y_i = self._model.dual_coef_[label if label < not_label else
-                                                                       label - 1, not_label_sv]
+                                alpha_i_k_y_i = self._model.dual_coef_[
+                                    label if label < not_label else label - 1, not_label_sv
+                                ]
                                 grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
-            elif (isinstance(label, list) and len(label) == num_samples) or \
-                    isinstance(label, np.ndarray) and label.shape == (num_samples,):
+            elif (
+                (isinstance(label, list) and len(label) == num_samples)
+                or isinstance(label, np.ndarray)
+                and label.shape == (num_samples,)
+            ):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
@@ -978,21 +1136,25 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                             else:
                                 label_multiplier = 1
 
-                            for label_sv in range(support_indices[label[i_sample]],
-                                                  support_indices[label[i_sample] + 1]):
-                                alpha_i_k_y_i = self._model.dual_coef_[not_label if not_label < label[i_sample] else
-                                                                       not_label - 1, label_sv]
+                            for label_sv in range(
+                                support_indices[label[i_sample]], support_indices[label[i_sample] + 1]
+                            ):
+                                alpha_i_k_y_i = self._model.dual_coef_[
+                                    not_label if not_label < label[i_sample] else not_label - 1, label_sv
+                                ]
                                 grad_kernel = self._get_kernel_gradient_sv(label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
                             for not_label_sv in range(support_indices[not_label], support_indices[not_label + 1]):
-                                alpha_i_k_y_i = self._model.dual_coef_[label[i_sample] if label[i_sample] < not_label
-                                                                       else label[i_sample] - 1, not_label_sv]
+                                alpha_i_k_y_i = self._model.dual_coef_[
+                                    label[i_sample] if label[i_sample] < not_label else label[i_sample] - 1,
+                                    not_label_sv,
+                                ]
                                 grad_kernel = self._get_kernel_gradient_sv(not_label_sv, x_preprocessed[i_sample])
                                 gradients[i_sample, 0] += label_multiplier * alpha_i_k_y_i * grad_kernel
 
             else:
-                raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
+                raise TypeError("Unrecognized type for argument `label` with type " + str(type(label)))
 
             gradients = self._apply_preprocessing_gradient(x, gradients * sign_multiplier)
 
@@ -1016,8 +1178,11 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                     else:
                         gradients[i_sample, 0] = self._model.coef_[label]
 
-            elif (isinstance(label, list) and len(label) == num_samples) or \
-                    isinstance(label, np.ndarray) and label.shape == (num_samples,):
+            elif (
+                (isinstance(label, list) and len(label) == num_samples)
+                or isinstance(label, np.ndarray)
+                and label.shape == (num_samples,)
+            ):
                 gradients = np.zeros((x_preprocessed.shape[0], 1, x_preprocessed.shape[1]))
 
                 for i_sample in range(num_samples):
@@ -1027,7 +1192,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                         gradients[i_sample, 0] = self._model.coef_[label[i_sample]]
 
             else:
-                raise TypeError('Unrecognized type for argument `label` with type ' + str(type(label)))
+                raise TypeError("Unrecognized type for argument `label` with type " + str(type(label)))
 
             gradients = self._apply_preprocessing_gradient(x, gradients)
 
@@ -1035,40 +1200,49 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
     def _kernel_grad(self, sv, x_sample):
         """
-        Applies the kernel gradient to a support vector
-        :param sv: A support vector
+        Applies the kernel gradient to a support vector.
+
+        :param sv: A support vector.
         :type sv: `np.ndarray`
-        :param x_sample: The sample the gradient is taken with respect to
+        :param x_sample: The sample the gradient is taken with respect to.
         :type x_sample: `np.ndarray`
-        :return: the kernel gradient
+        :return: the kernel gradient.
         :rtype: `np.ndarray`
         """
         # pylint: disable=W0212
-        if self._model.kernel == 'linear':
+        if self._model.kernel == "linear":
             grad = sv
-        elif self._model.kernel == 'poly':
-            grad = self._model.degree * (self._model._gamma * np.sum(x_sample * sv) + self._model.coef0) ** (
-                self._model.degree - 1) * sv
-        elif self._model.kernel == 'rbf':
-            grad = 2 * self._model._gamma * (-1) * np.exp(
-                -self._model._gamma * np.linalg.norm(x_sample - sv, ord=2)) * (x_sample - sv)
-        elif self._model.kernel == 'sigmoid':
+        elif self._model.kernel == "poly":
+            grad = (
+                self._model.degree
+                * (self._model._gamma * np.sum(x_sample * sv) + self._model.coef0) ** (self._model.degree - 1)
+                * sv
+            )
+        elif self._model.kernel == "rbf":
+            grad = (
+                2
+                * self._model._gamma
+                * (-1)
+                * np.exp(-self._model._gamma * np.linalg.norm(x_sample - sv, ord=2))
+                * (x_sample - sv)
+            )
+        elif self._model.kernel == "sigmoid":
             raise NotImplementedError
         else:
-            raise NotImplementedError(
-                'Loss gradients for kernel \'{}\' are not implemented.'.format(self._model.kernel))
+            raise NotImplementedError("Loss gradients for kernel '{}' are not implemented.".format(self._model.kernel))
         return grad
 
     def _get_kernel_gradient_sv(self, i_sv, x_sample):
         """
-                Applies the kernel gradient to all of a model's support vectors
-                :param i_sv: A support vector index
-                :type i_sv: `int`
-                :param x_sample: A sample vector
-                :return: The kernelized product of the vectors
-                :rtype: `np.ndarray`
-                """
+        Applies the kernel gradient to all of a model's support vectors.
 
+        :param i_sv: A support vector index.
+        :type i_sv: `int`
+        :param x_sample: A sample vector.
+        :type x_sample: `np.ndarray`
+        :return: The kernelized product of the vectors.
+        :rtype: `np.ndarray`
+        """
         x_i = self._model.support_vectors_[i_sv, :]
         return self._kernel_grad(x_i, x_sample)
 
@@ -1101,7 +1275,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         if isinstance(self._model, SVC):
 
             if self._model.fit_status_:
-                raise AssertionError('Model has not been fitted correctly.')
+                raise AssertionError("Model has not been fitted correctly.")
 
             if y_preprocessed.shape[1] == 2:
                 sign_multiplier = 1
@@ -1150,15 +1324,14 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                     elif i_label == 1:
                         label_multiplier = -1
                     else:
-                        raise ValueError(
-                            'Label index not recognized because it is not 0 or 1.')
+                        raise ValueError("Label index not recognized because it is not 0 or 1.")
                 else:
                     i_label_i = i_label
                     label_multiplier = -1
 
                 gradients[i_sample] = label_multiplier * self._model.coef_[i_label_i]
         else:
-            raise TypeError('Model not recognized.')
+            raise TypeError("Model not recognized.")
 
         gradients = self._apply_preprocessing_gradient(x, gradients)
 
@@ -1166,43 +1339,44 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
     def _kernel_func(self):
         """
-        Return the function for the kernel of this SVM
-        :param kernel: A string preloaded function or callable Python function
-        :type kernel: `str` or callable
-        :return: A callable kernel function
+        Return the function for the kernel of this SVM.
+
+        :return: A callable kernel function.
+        :rtype: `str` or callable
         """
         # pylint: disable=E0001
         from sklearn.svm import SVC, LinearSVC
         from sklearn.metrics.pairwise import polynomial_kernel, linear_kernel, rbf_kernel
 
         if isinstance(self._model, LinearSVC):
-            kernel = 'linear'
+            kernel = "linear"
         elif isinstance(self._model, SVC):
             kernel = self._model.kernel
         else:
-            raise NotImplementedError("SVM model not yet supported")
+            raise NotImplementedError("SVM model not yet supported.")
 
-        if kernel == 'linear':
+        if kernel == "linear":
             kernel_func = linear_kernel
-        elif kernel == 'poly':
+        elif kernel == "poly":
             kernel_func = polynomial_kernel
-        elif kernel == 'rbf':
+        elif kernel == "rbf":
             kernel_func = rbf_kernel
         elif callable(kernel):
             kernel_func = kernel
         else:
-            raise NotImplementedError("Kernel '{}' not yet supported")
+            raise NotImplementedError("Kernel '{}' not yet supported.".format(kernel))
 
         return kernel_func
 
     def q_submatrix(self, rows, cols):
         """
-        Returns the q submatrix of this SVM indexed by the arrays at rows and columns
-        :param rows: the row vectors
+        Returns the q submatrix of this SVM indexed by the arrays at rows and columns.
+
+        :param rows: the row vectors.
         :type rows: `np.ndarray`
-        :param cols: the column vectors
+        :param cols: the column vectors.
         :type cols: `np.ndarray`
-        :return: a submatrix of Q
+        :return: a submatrix of Q.
         :rtype: `np.ndarray`
         """
         submatrix_shape = (rows.shape[0], cols.shape[0])
@@ -1249,7 +1423,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         :return: Number of classes in the data.
         :rtype: `int` or `None`
         """
-        if hasattr(self._model, 'classes_'):
+        if hasattr(self._model, "classes_"):
             _nb_classes = len(self._model.classes_)
         else:
             _nb_classes = None

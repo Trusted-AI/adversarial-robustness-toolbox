@@ -1,10 +1,19 @@
-# Adversarial Robustness 360 Toolbox (ART) v1.0
+# Adversarial Robustness Toolbox (ART) v1.2
 <p align="center">
   <img src="docs/images/art_logo.png?raw=true" width="200" title="ART logo">
 </p>
 <br />
 
-[![Build Status](https://travis-ci.org/IBM/adversarial-robustness-toolbox.svg?branch=master)](https://travis-ci.org/IBM/adversarial-robustness-toolbox) [![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest) [![GitHub version](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox) [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/context:python) [![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/)
+[![Build Status](https://travis-ci.org/IBM/adversarial-robustness-toolbox.svg?branch=master)](https://travis-ci.org/IBM/adversarial-robustness-toolbox)
+[![Documentation Status](https://readthedocs.org/projects/adversarial-robustness-toolbox/badge/?version=latest)](http://adversarial-robustness-toolbox.readthedocs.io/en/latest/?badge=latest)
+[![GitHub version](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox.svg)](https://badge.fury.io/gh/IBM%2Fadversarial-robustness-toolbox)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/context:python)
+[![Total alerts](https://img.shields.io/lgtm/alerts/g/IBM/adversarial-robustness-toolbox.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/IBM/adversarial-robustness-toolbox/alerts/)
+[![codecov](https://codecov.io/gh/IBM/adversarial-robustness-toolbox/branch/master/graph/badge.svg)](https://codecov.io/gh/IBM/adversarial-robustness-toolbox)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/adversarial-robustness-toolbox)](https://pypi.org/project/adversarial-robustness-toolbox/)
+[![slack-img](https://img.shields.io/badge/chat-on%20slack-yellow.svg)](https://ibm-art.slack.com/)
 
 Adversarial Robustness Toolbox（ART）是一个Python库，支持研发人员保护机器学习模型（深度神经网络，梯度提升决策树，支持向量机，随机森林，Logistic回归，高斯过程，决策树，Scikit-learn管道，等）抵御对抗性威胁，使AI系统更安全。机器学习模型容易受到对抗性示例的影响，这些示例是经过特殊修改的输入（图像，文本，表格数据等），以通过机器学习模型达到预期的效果。 ART提供了构建和部署防御的工具， 并使用对抗性攻击对其进行测试。
 防御机器学习模型主要用于验证模型的稳健性和模型强化. 所用方法包括前期处理输入，利用对抗样本增加训练数据以及利用实时检测方法来标记可能已被对手修改的输入等。 ART中实施的攻击使用目前最先进的威胁模型测试防御， 以此来制造机器学习模型的对抗性攻击。 
@@ -25,11 +34,12 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * LightGBM (https://lightgbm.readthedocs.io)
 * CatBoost (www.catboost.ai)
 * GPy (https://sheffieldml.github.io/GPy/)
-* Tesseract (https://github.com/tesseract-ocr/tesseract)
 
 ## ART中实施的攻击，防御，检测，指标，认证和验证
 
 **逃避攻击：**
+* Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
+* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations)) 
 * HopSkipJump攻击 ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * 高可信度低不确定性对抗性例子 ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * 预计梯度下降 ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
@@ -49,13 +59,16 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * 虚拟对抗方法 ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * 快速梯度法 ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
 
-**中毒攻击**
-* 对SVM的中毒攻击 ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
-
 **提取攻击:**
 * 功能等效提取 ([Jagielski et al., 2019](https://arxiv.org/abs/1909.01838))
+* Copycat CNN ([Correia-Silva et al., 2018](https://arxiv.org/abs/1806.05476))
+* KnockoffNets ([Orekondy et al., 2018](https://arxiv.org/abs/1812.02766))
 
-**防御：**
+**中毒攻击**
+* 对SVM的中毒攻击 ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
+* Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
+
+**防御 - 预处理器：**
 * 温度计编码 ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * 总方差最小化 ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
@@ -65,14 +78,20 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * JPEG压缩 ([Dziugaite et al., 2016](https://arxiv.org/abs/1608.00853))
 * 标签平滑 ([Warde-Farley and Goodfellow, 2016](https://pdfs.semanticscholar.org/b5ec/486044c6218dd41b17d8bba502b32a12b91a.pdf))
 * 虚拟对抗训练 ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
-* 对抗训练 ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
 
-**提取防御:**
+**防御 - 后处理器:**
 * 反向乙状结肠 ([Lee et al., 2018](https://arxiv.org/abs/1806.00054))
 * 随机噪声 ([Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * 类标签 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943), [Chandrasekaranet al., 2018](https://arxiv.org/abs/1811.02054))
 * 高信心 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
 * 四舍五入 ([Tramer et al., 2016](https://arxiv.org/abs/1609.02943))
+
+**防御 - 培训师:**
+* 对抗训练 ([Szegedy et al., 2013](http://arxiv.org/abs/1312.6199))
+* 对抗训练 Madry PGD ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
+
+**防御 - 变压器:**
+* 防御蒸馏 ([Papernot et al., 2015](https://arxiv.org/abs/1511.04508))
 
 **稳健性指标，认证和验证：**
 * Clique方法稳健性验证 ([Hongge et al., 2019](https://arxiv.org/abs/1906.03849))
@@ -88,6 +107,8 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 
 **检测中毒攻击：**
 * 基于激活分析的探测器 ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
+* 根据数据来源进行检测 ([Baracaldo et al., 2018](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440))
+
 
 ## 建立
 ### 用`pip`安装
@@ -134,7 +155,7 @@ git commit -s -m 'Add new feature'
 如果您使用ART进行研究，请考虑引用以下参考文件：
 ```
 @article{art2018,
-    title = {Adversarial Robustness Toolbox v1.0.1},
+    title = {Adversarial Robustness Toolbox v1.2.0},
     author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Buesser, Beat and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
     volume = {1807.01069},

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) IBM Corporation 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -29,7 +29,7 @@ import numpy as np
 from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks import EvasionAttack
+from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -42,8 +42,17 @@ class HopSkipJump(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1904.02144
     """
-    attack_params = EvasionAttack.attack_params + ['targeted', 'norm', 'max_iter', 'max_eval', 'init_eval', 'init_size',
-                                                   'curr_iter', 'batch_size']
+
+    attack_params = EvasionAttack.attack_params + [
+        "targeted",
+        "norm",
+        "max_iter",
+        "max_eval",
+        "init_eval",
+        "init_size",
+        "curr_iter",
+        "batch_size",
+    ]
 
     def __init__(self, classifier, targeted=False, norm=2, max_iter=50, max_eval=10000, init_eval=100, init_size=100):
         """
@@ -65,16 +74,19 @@ class HopSkipJump(EvasionAttack):
         :type init_size: `int`
         """
         super(HopSkipJump, self).__init__(classifier=classifier)
-        params = {'targeted': targeted,
-                  'norm': norm,
-                  'max_iter': max_iter,
-                  'max_eval': max_eval,
-                  'init_eval': init_eval,
-                  'init_size': init_size,
-                  'curr_iter': 0,
-                  'batch_size': 1
-                  }
+        params = {
+            "targeted": targeted,
+            "norm": norm,
+            "max_iter": max_iter,
+            "max_eval": max_eval,
+            "init_eval": init_eval,
+            "init_size": init_size,
+            "curr_iter": 0,
+            "batch_size": 1,
+        }
         self.set_params(**params)
+
+        self.curr_iter = 0
 
         # Set binary search threshold
         if norm == 2:
@@ -101,7 +113,7 @@ class HopSkipJump(EvasionAttack):
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         # Check whether users need a stateful attack
-        resume = kwargs.get('resume')
+        resume = kwargs.get("resume")
 
         if resume is not None and resume:
             start = self.curr_iter
@@ -109,7 +121,7 @@ class HopSkipJump(EvasionAttack):
             start = 0
 
         # Get clip_min and clip_max from the classifier or infer them from data
-        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
         else:
             clip_min, clip_max = np.min(x), np.max(x)
@@ -118,7 +130,7 @@ class HopSkipJump(EvasionAttack):
         preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
-        x_adv_init = kwargs.get('x_adv_init')
+        x_adv_init = kwargs.get("x_adv_init")
 
         if x_adv_init is not None:
             init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
@@ -128,7 +140,7 @@ class HopSkipJump(EvasionAttack):
 
         # Assert that, if attack is targeted, y is provided
         if self.targeted and y is None:
-            raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # Some initial setups
         x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -139,17 +151,33 @@ class HopSkipJump(EvasionAttack):
         for ind, val in enumerate(tqdm(x_adv, desc='HopSkipJump')):
             self.curr_iter = start
             if self.targeted:
-                x_adv[ind] = self._perturb(x=val, y=y[ind], y_p=preds[ind], init_pred=init_preds[ind],
-                                           adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
+                x_adv[ind] = self._perturb(
+                    x=val,
+                    y=y[ind],
+                    y_p=preds[ind],
+                    init_pred=init_preds[ind],
+                    adv_init=x_adv_init[ind],
+                    clip_min=clip_min,
+                    clip_max=clip_max,
+                )
             else:
-                x_adv[ind] = self._perturb(x=val, y=-1, y_p=preds[ind], init_pred=init_preds[ind],
-                                           adv_init=x_adv_init[ind], clip_min=clip_min, clip_max=clip_max)
+                x_adv[ind] = self._perturb(
+                    x=val,
+                    y=-1,
+                    y_p=preds[ind],
+                    init_pred=init_preds[ind],
+                    adv_init=x_adv_init[ind],
+                    clip_min=clip_min,
+                    clip_max=clip_max,
+                )
 
         if y is not None:
             y = to_categorical(y, self.classifier.nb_classes())
 
-        logger.info('Success rate of HopSkipJump attack: %.2f%%',
-                    100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size))
+        logger.info(
+            "Success rate of HopSkipJump attack: %.2f%%",
+            100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+        )
 
         return x_adv
 
@@ -222,19 +250,27 @@ class HopSkipJump(EvasionAttack):
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
-                                         axis=1)[0]
+                random_class = np.argmax(
+                    self.classifier.predict(np.array([random_img]), batch_size=self.batch_size), axis=1
+                )[0]
 
                 if random_class == y:
                     # Binary search to reduce the l2 distance to the original image
-                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y, norm=2,
-                                                     clip_min=clip_min, clip_max=clip_max, threshold=0.001)
+                    random_img = self._binary_search(
+                        current_sample=random_img,
+                        original_sample=x,
+                        target=y,
+                        norm=2,
+                        clip_min=clip_min,
+                        clip_max=clip_max,
+                        threshold=0.001,
+                    )
                     initial_sample = random_img, random_class
 
-                    logger.info('Found initial adversarial image for targeted attack.')
+                    logger.info("Found initial adversarial image for targeted attack.")
                     break
             else:
-                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning("Failed to draw a random image that is adversarial, attack failed.")
 
         else:
             # The initial image satisfied
@@ -244,19 +280,27 @@ class HopSkipJump(EvasionAttack):
             # The initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
-                random_class = np.argmax(self.classifier.predict(np.array([random_img]), batch_size=self.batch_size),
-                                         axis=1)[0]
+                random_class = np.argmax(
+                    self.classifier.predict(np.array([random_img]), batch_size=self.batch_size), axis=1
+                )[0]
 
                 if random_class != y_p:
                     # Binary search to reduce the l2 distance to the original image
-                    random_img = self._binary_search(current_sample=random_img, original_sample=x, target=y_p, norm=2,
-                                                     clip_min=clip_min, clip_max=clip_max, threshold=0.001)
+                    random_img = self._binary_search(
+                        current_sample=random_img,
+                        original_sample=x,
+                        target=y_p,
+                        norm=2,
+                        clip_min=clip_min,
+                        clip_max=clip_max,
+                        threshold=0.001,
+                    )
                     initial_sample = random_img, y_p
 
-                    logger.info('Found initial adversarial image for untargeted attack.')
+                    logger.info("Found initial adversarial image for untargeted attack.")
                     break
             else:
-                logger.warning('Failed to draw a random image that is adversarial, attack failed.')
+                logger.warning("Failed to draw a random image that is adversarial, attack failed.")
 
         return initial_sample
 
@@ -283,17 +327,30 @@ class HopSkipJump(EvasionAttack):
         # Main loop to wander around the boundary
         for _ in range(self.max_iter):
             # First compute delta
-            delta = self._compute_delta(current_sample=current_sample, original_sample=original_sample,
-                                        clip_min=clip_min, clip_max=clip_max)
+            delta = self._compute_delta(
+                current_sample=current_sample, original_sample=original_sample, clip_min=clip_min, clip_max=clip_max
+            )
 
             # Then run binary search
-            current_sample = self._binary_search(current_sample=current_sample, original_sample=original_sample,
-                                                 norm=self.norm, target=target, clip_min=clip_min, clip_max=clip_max)
+            current_sample = self._binary_search(
+                current_sample=current_sample,
+                original_sample=original_sample,
+                norm=self.norm,
+                target=target,
+                clip_min=clip_min,
+                clip_max=clip_max,
+            )
 
             # Next compute the number of evaluations and compute the update
             num_eval = min(int(self.init_eval * np.sqrt(self.curr_iter + 1)), self.max_eval)
-            update = self._compute_update(current_sample=current_sample, num_eval=num_eval, delta=delta,
-                                          target=target, clip_min=clip_min, clip_max=clip_max)
+            update = self._compute_update(
+                current_sample=current_sample,
+                num_eval=num_eval,
+                delta=delta,
+                target=target,
+                clip_min=clip_min,
+                clip_max=clip_max,
+            )
 
             # Finally run step size search by first computing epsilon
             if self.norm == 2:
@@ -307,8 +364,9 @@ class HopSkipJump(EvasionAttack):
             while not success:
                 epsilon /= 2.0
                 potential_sample = current_sample + epsilon * update
-                success = self._adversarial_satisfactory(samples=potential_sample[None], target=target,
-                                                         clip_min=clip_min, clip_max=clip_max)
+                success = self._adversarial_satisfactory(
+                    samples=potential_sample[None], target=target, clip_min=clip_min, clip_max=clip_max
+                )
 
             # Update current sample
             current_sample = np.clip(potential_sample, clip_min, clip_max)
@@ -356,19 +414,20 @@ class HopSkipJump(EvasionAttack):
         while (upper_bound - lower_bound) > threshold:
             # Interpolation point
             alpha = (upper_bound + lower_bound) / 2.0
-            interpolated_sample = self._interpolate(current_sample=current_sample,
-                                                    original_sample=original_sample,
-                                                    alpha=alpha, norm=norm)
+            interpolated_sample = self._interpolate(
+                current_sample=current_sample, original_sample=original_sample, alpha=alpha, norm=norm
+            )
 
             # Update upper_bound and lower_bound
-            satisfied = self._adversarial_satisfactory(samples=interpolated_sample[None], target=target,
-                                                       clip_min=clip_min, clip_max=clip_max)[0]
+            satisfied = self._adversarial_satisfactory(
+                samples=interpolated_sample[None], target=target, clip_min=clip_min, clip_max=clip_max
+            )[0]
             lower_bound = np.where(satisfied == 0, alpha, lower_bound)
             upper_bound = np.where(satisfied == 1, alpha, upper_bound)
 
-        result = self._interpolate(current_sample=current_sample,
-                                   original_sample=original_sample,
-                                   alpha=upper_bound, norm=norm)
+        result = self._interpolate(
+            current_sample=current_sample, original_sample=original_sample, alpha=upper_bound, norm=norm
+        )
 
         return result
 
@@ -428,15 +487,17 @@ class HopSkipJump(EvasionAttack):
             rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(ART_NUMPY_DTYPE)
 
         # Normalize random noise to fit into the range of input data
-        rnd_noise = rnd_noise / np.sqrt(np.sum(rnd_noise ** 2, axis=tuple(range(len(rnd_noise_shape)))[1:],
-                                               keepdims=True))
+        rnd_noise = rnd_noise / np.sqrt(
+            np.sum(rnd_noise ** 2, axis=tuple(range(len(rnd_noise_shape)))[1:], keepdims=True)
+        )
         eval_samples = np.clip(current_sample + delta * rnd_noise, clip_min, clip_max)
         rnd_noise = (eval_samples - current_sample) / delta
 
         # Compute gradient: This is a bit different from the original paper, instead we keep those that are
         # implemented in the original source code of the authors
-        satisfied = self._adversarial_satisfactory(samples=eval_samples, target=target,
-                                                   clip_min=clip_min, clip_max=clip_max)
+        satisfied = self._adversarial_satisfactory(
+            samples=eval_samples, target=target, clip_min=clip_min, clip_max=clip_max
+        )
         f_val = 2 * satisfied.reshape([num_eval] + [1] * len(self.classifier.input_shape)) - 1.0
         f_val = f_val.astype(ART_NUMPY_DTYPE)
 
@@ -475,9 +536,9 @@ class HopSkipJump(EvasionAttack):
         preds = np.argmax(self.classifier.predict(samples, batch_size=self.batch_size), axis=1)
 
         if self.targeted:
-            result = (preds == target)
+            result = preds == target
         else:
-            result = (preds != target)
+            result = preds != target
 
         return result
 
@@ -526,7 +587,7 @@ class HopSkipJump(EvasionAttack):
 
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [np.inf, int(2)]:
-            raise ValueError('Norm order must be either `np.inf` or 2.')
+            raise ValueError("Norm order must be either `np.inf` or 2.")
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")

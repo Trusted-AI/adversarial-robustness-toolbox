@@ -27,19 +27,20 @@ from art.attacks import PoisoningAttackSVM
 from art.classifiers import SklearnClassifier
 from art.classifiers.scikitlearn import ScikitlearnSVC
 from art.poison_detection.roni import RONIDefense
-from art.utils import load_mnist, master_seed
+from art.utils import load_mnist
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
-NB_TRAIN, NB_POISON, NB_VALID, NB_TRUSTED = 40, 5, 40, 25
-kernel = 'linear'
+NB_TRAIN, NB_POISON, NB_VALID, NB_TRUSTED = 40, 5, 40, 15
+kernel = "linear"
 
 
 class TestRONI(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
-        master_seed(301)
+        master_seed(seed=1234)
         (x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
         y_train = np.argmax(y_train, axis=1)
         y_test = np.argmax(y_test, axis=1)
@@ -78,35 +79,49 @@ class TestRONI(unittest.TestCase):
         x_test = x_test[NB_VALID:]
         y_test = y_test[NB_VALID:]
 
-        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel), clip_values=(min_, max_))
+        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel, gamma="auto"), clip_values=(min_, max_))
         no_defense.fit(x=x_train, y=y_train)
         poison_points = np.random.randint(no_defense._model.support_vectors_.shape[0], size=NB_POISON)
         all_poison_init = np.copy(no_defense._model.support_vectors_[poison_points])
         poison_labels = np.array([1, 1]) - no_defense.predict(all_poison_init)
 
-        svm_attack = PoisoningAttackSVM(classifier=no_defense, x_train=x_train, y_train=y_train,
-                                        step=0.1, eps=1.0, x_val=valid_data, y_val=valid_labels, max_iters=200)
+        svm_attack = PoisoningAttackSVM(
+            classifier=no_defense,
+            x_train=x_train,
+            y_train=y_train,
+            step=0.1,
+            eps=1.0,
+            x_val=valid_data,
+            y_val=valid_labels,
+            max_iters=200,
+        )
 
-        poisoned_data = svm_attack.generate(all_poison_init, y=poison_labels)
+        poisoned_data, _ = svm_attack.poison(all_poison_init, y=poison_labels)
 
         # Stack on poison to data and add provenance of bad actor
         all_data = np.vstack([x_train, poisoned_data])
         all_labels = np.vstack([y_train, poison_labels])
 
-        model = SVC(kernel=kernel)
-        cls.mnist = (all_data, all_labels), (x_test, y_test), (trusted_data, trusted_labels), \
-                    (valid_data, valid_labels), (min_, max_)
+        model = SVC(kernel=kernel, gamma="auto")
+        cls.mnist = (
+            (all_data, all_labels),
+            (x_test, y_test),
+            (trusted_data, trusted_labels),
+            (valid_data, valid_labels),
+            (min_, max_),
+        )
         cls.classifier = SklearnClassifier(model=model, clip_values=(min_, max_))
 
         cls.classifier.fit(all_data, all_labels)
-        cls.defense_cal = RONIDefense(cls.classifier, all_data, all_labels, trusted_data, trusted_labels, eps=0.1,
-                                      calibrated=True)
-        cls.defence_no_cal = RONIDefense(cls.classifier, all_data, all_labels, trusted_data, trusted_labels, eps=0.1,
-                                         calibrated=False)
+        cls.defense_cal = RONIDefense(
+            cls.classifier, all_data, all_labels, trusted_data, trusted_labels, eps=0.1, calibrated=True
+        )
+        cls.defence_no_cal = RONIDefense(
+            cls.classifier, all_data, all_labels, trusted_data, trusted_labels, eps=0.1, calibrated=False
+        )
 
     def setUp(self):
-        # Set master seed
-        master_seed(301)
+        master_seed(seed=1234)
 
     def test_wrong_parameters_1(self):
         self.assertRaises(ValueError, self.defence_no_cal.set_params, eps=-2.0)
@@ -139,5 +154,5 @@ class TestRONI(unittest.TestCase):
         logger.info(self.defence_no_cal.evaluate_defence(real_clean))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

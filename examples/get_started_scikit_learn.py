@@ -24,7 +24,7 @@ x_test = x_test.reshape((nb_samples_test, 28 * 28))
 
 # Step 2: Create the model
 
-model = SVC(C=1.0, kernel='rbf')
+model = SVC(C=1.0, kernel="rbf")
 
 # Step 3: Create the ART classifier
 
@@ -38,7 +38,7 @@ classifier.fit(x_train, y_train)
 
 predictions = classifier.predict(x_test)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print('Accuracy on benign test examples: {}%'.format(accuracy * 100))
+print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
 attack = FastGradientMethod(classifier=classifier, eps=0.2)
@@ -48,4 +48,4 @@ x_test_adv = attack.generate(x=x_test)
 
 predictions = classifier.predict(x_test_adv)
 accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) / len(y_test)
-print('Accuracy on adversarial test examples: {}%'.format(accuracy * 100))
+print("Accuracy on adversarial test examples: {}%".format(accuracy * 100))

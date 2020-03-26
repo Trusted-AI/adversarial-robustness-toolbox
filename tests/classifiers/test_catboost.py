@@ -29,7 +29,7 @@
 # logger = logging.getLogger(__name__)
 #
 #
-# class TestCatBoostClassifier(unittest.TestCase):
+# class TestCatBoostClassifier(TestBase):
 #
 #     @classmethod
 #     def setUpClass(cls):
@@ -45,7 +45,7 @@
 #         cls.classifier.fit(cls.x_train, cls.y_train, cat_features=[], eval_set=[])
 #
 #    def setUp(self):
-#         master_seed(1234)
+#         master_seed(seed=1234)
 
 
 #     def test_predict(self):
