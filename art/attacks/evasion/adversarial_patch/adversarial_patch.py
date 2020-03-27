@@ -66,6 +66,7 @@ class AdversarialPatch(EvasionAttack):
             max_iter=500,
             clip_patch=None,
             batch_size=16,
+            patch_shape=None,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
@@ -91,6 +92,10 @@ class AdversarialPatch(EvasionAttack):
         :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
+        :param patch_shape: The shape of the adversarial path as a tuple of shape (width, height, nb_channels).
+                            Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
+                            the patch_shape is set to the shape of the image samples.
+        :type patch_shape: (`int`, `int`, `int`)
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
@@ -100,7 +105,8 @@ class AdversarialPatch(EvasionAttack):
             self._attack = AdversarialPatchTensorFlow(classifier=classifier, target=target, rotation_max=rotation_max,
                                                       scale_min=scale_min, scale_max=scale_max,
                                                       learning_rate=learning_rate, max_iter=max_iter,
-                                                      clip_patch=clip_patch, batch_size=batch_size)
+                                                      clip_patch=clip_patch, batch_size=batch_size,
+                                                      patch_shape=patch_shape)
         else:
             self._attack = AdversarialPatchNumpy(classifier=classifier, target=target, rotation_max=rotation_max,
                                                  scale_min=scale_min, scale_max=scale_max, learning_rate=learning_rate,
@@ -167,39 +173,39 @@ class AdversarialPatch(EvasionAttack):
         """
         super(AdversarialPatch, self).set_params(**kwargs)
 
-        if not isinstance(self.target, (int, np.int)):
+        if not isinstance(self._attack.target, (int, np.int)):
             raise ValueError("The target labels must be of type np.ndarray.")
 
-        if not isinstance(self.rotation_max, (float, int)):
+        if not isinstance(self._attack.rotation_max, (float, int)):
             raise ValueError("The maximum rotation of the random patches must be of type float.")
-        if self.rotation_max < 0 or self.rotation_max > 180.0:
+        if self._attack.rotation_max < 0 or self._attack.rotation_max > 180.0:
             raise ValueError("The maximum rotation of the random patches must be between 0 and 180 degrees.")
 
-        if not isinstance(self.scale_min, float):
+        if not isinstance(self._attack.scale_min, float):
             raise ValueError("The minimum scale of the random patched must be of type float.")
-        if self.scale_min < 0 or self.scale_min >= self.scale_max:
+        if self._attack.scale_min < 0 or self._attack.scale_min >= self._attack.scale_max:
             raise ValueError(
                 "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling."
             )
 
-        if not isinstance(self.scale_max, float):
+        if not isinstance(self._attack.scale_max, float):
             raise ValueError("The maximum scale of the random patched must be of type float.")
-        if self.scale_max > 1:
+        if self._attack.scale_max > 1:
             raise ValueError("The maximum scale of the random patched must not be greater than 1.")
 
-        if not isinstance(self.learning_rate, float):
+        if not isinstance(self._attack.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate > 0.0:
+        if not self._attack.learning_rate > 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
-        if not isinstance(self.max_iter, int):
+        if not isinstance(self._attack.max_iter, int):
             raise ValueError("The number of optimization steps must be of type int.")
-        if not self.max_iter > 0:
+        if not self._attack.max_iter > 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
-        if not isinstance(self.batch_size, int):
+        if not isinstance(self._attack.batch_size, int):
             raise ValueError("The batch size must be of type int.")
-        if not self.batch_size > 0:
+        if not self._attack.batch_size > 0:
             raise ValueError("The batch size must be greater than 0.")
 
         return True
