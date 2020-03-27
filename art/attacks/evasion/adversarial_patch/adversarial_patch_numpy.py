@@ -93,7 +93,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
         """
-        super(AdversarialPatch, self).__init__(classifier=classifier)
+        super(AdversarialPatchNumpy, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
@@ -205,7 +205,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
         """
-        super(AdversarialPatch, self).set_params(**kwargs)
+        super(AdversarialPatchNumpy, self).set_params(**kwargs)
 
         if not isinstance(self.target, (int, np.int)):
             raise ValueError("The target labels must be of type np.ndarray.")
