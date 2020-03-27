@@ -24,18 +24,24 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import math
+
+import numpy as np
 
 from art.attacks.attack import EvasionAttack
+from art.exceptions import ClassifierError
+from art.classifiers.classifier import ClassifierGradients, ClassifierNeuralNetwork
 
 logger = logging.getLogger(__name__)
 
 
-class AdversarialPatchTensorFlow(EvasionAttack):
+class AdversarialPatchTensorFlowV2(EvasionAttack):
     """
     Implementation of the adversarial patch attack.
 
     | Paper link: https://arxiv.org/abs/1712.09665
     """
+
     attack_params = EvasionAttack.attack_params + [
         "target",
         "rotation_max",
@@ -43,21 +49,23 @@ class AdversarialPatchTensorFlow(EvasionAttack):
         "scale_max",
         "learning_rate",
         "max_iter",
-        "batch_size",
         "clip_patch",
+        "batch_size",
+        "patch_shape",
     ]
 
     def __init__(
-            self,
-            classifier,
-            target=0,
-            rotation_max=22.5,
-            scale_min=0.1,
-            scale_max=1.0,
-            learning_rate=5.0,
-            max_iter=500,
-            clip_patch=None,
-            batch_size=16,
+        self,
+        classifier,
+        target=0,
+        rotation_max=22.5,
+        scale_min=0.1,
+        scale_max=1.0,
+        learning_rate=5.0,
+        max_iter=500,
+        clip_patch=None,
+        batch_size=16,
+        patch_shape=None,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
@@ -83,8 +91,14 @@ class AdversarialPatchTensorFlow(EvasionAttack):
         :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
+        :param patch_shape: The shape of the adversarial path as a tuple of shape (width, height, nb_channels).
+                            Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
+                            the patch_shape is set to the shape of the image samples.
+        :type patch_shape: (`int`, `int`, `int`)
         """
-        super(AdversarialPatchTensorFlow, self).__init__(classifier=classifier)
+        import tensorflow as tf
+
+        super(AdversarialPatchTensorFlowV2, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
@@ -97,6 +111,139 @@ class AdversarialPatchTensorFlow(EvasionAttack):
             "max_iter": max_iter,
             "batch_size": batch_size,
             "clip_patch": clip_patch,
+            "patch_shape": patch_shape,
         }
         self.set_params(**kwargs)
-        self.patch = None
+
+        self.image_shape = classifier.input_shape
+
+        assert self.image_shape[2] in [1, 3], "Color channel need to be in last dimension"
+        assert self.patch_shape[2] in [1, 3], "Color channel need to be in last dimension"
+        assert self.patch_shape[0] == self.patch_shape[1], "Patch height and width need to be the same."
+
+        patch_test = np.zeros(shape=self.patch_shape)
+        self._patch = tf.Variable(patch_test, shape=self.patch_shape, dtype=tf.float32)
+
+        self._train_op = tf.keras.optimizers.SGD(
+            learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
+        )
+
+    def _train_step(self, images=None, target_ys=None):
+
+        import tensorflow as tf
+
+        if target_ys is None:
+            target_ys = self.classifier.predict(x=images)
+            self.targeted = False
+        else:
+            self.targeted = True
+
+        with tf.GradientTape() as tape:
+            tape.watch(self._patch)
+            loss = self._loss(images, target_ys)
+
+        gradients = tape.gradient(loss, [self._patch])
+
+        if not self.targeted:
+            gradients = -gradients
+
+        self._train_op.apply_gradients(zip(gradients, [self._patch]))
+
+        return loss
+
+    def _probabilities(self, images):
+
+        import tensorflow as tf
+
+        patched_input = self._random_overlay(images, self._patch)
+
+        patched_input = tf.clip_by_value(
+            patched_input, clip_value_min=self.classifier.clip_values[0], clip_value_max=self.classifier.clip_values[1]
+        )
+
+        probabilities = self.classifier._model(patched_input)
+
+        return probabilities
+
+    def _loss(self, images, target_ys):
+
+        import tensorflow as tf
+
+        probabilities = self._probabilities(images)
+
+        self._loss_per_example = tf.keras.losses.categorical_crossentropy(
+            y_true=target_ys, y_pred=probabilities, from_logits=False, label_smoothing=0
+        )
+
+        loss = tf.reduce_mean(self._loss_per_example)
+
+        return loss
+
+    def _random_overlay(self, images, patch):
+
+        import tensorflow as tf
+
+        sharpness = 40
+        diameter = self.image_shape[0]
+
+        x = np.linspace(-1, 1, diameter)
+        y = np.linspace(-1, 1, diameter)
+        xx, yy = np.meshgrid(x, y, sparse=True)
+        z = (xx ** 2 + yy ** 2) ** sharpness
+
+        image_mask = 1 - np.clip(z, -1, 1)
+        image_mask = np.expand_dims(image_mask, axis=2)
+        image_mask = np.broadcast_to(image_mask, self.image_shape).astype(np.float32)
+        image_mask = tf.stack([image_mask] * self.batch_size)
+        padded_patch = tf.stack([patch] * self.batch_size)
+
+        transform_vectors = list()
+
+        for i in range(self.batch_size):
+            im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
+            padding_after_scaling = (1 - im_scale) * self.image_shape[0]
+            x_shift = np.random.uniform(-padding_after_scaling, padding_after_scaling)
+            y_shift = np.random.uniform(-padding_after_scaling, padding_after_scaling)
+            phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max)) / 90.0 * (math.pi / 2.0)
+
+            # Rotation
+            rotation_matrix = np.array(
+                [[math.cos(-phi_rotate), -math.sin(-phi_rotate)], [math.sin(-phi_rotate), math.cos(-phi_rotate)]]
+            )
+
+            # Scale
+            xform_matrix = rotation_matrix * (1.0 / im_scale)
+            a0, a1 = xform_matrix[0]
+            b0, b1 = xform_matrix[1]
+
+            x_origin = float(self.image_shape[0]) / 2
+            y_origin = float(self.image_shape[1]) / 2
+
+            x_origin_shifted, y_origin_shifted = np.matmul(xform_matrix, np.array([x_origin, y_origin]))
+
+            x_origin_delta = x_origin - x_origin_shifted
+            y_origin_delta = y_origin - y_origin_shifted
+
+            a2 = x_origin_delta - (x_shift / (2 * im_scale))
+            b2 = y_origin_delta - (y_shift / (2 * im_scale))
+
+            transform_vectors.append(np.array([a0, a1, a2, b0, b1, b2, 0, 0]).astype(np.float32))
+
+        import tensorflow_addons as tfa
+
+        image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR")
+        padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR")
+
+        inverted_mask = 1 - image_mask
+
+        return images * inverted_mask + padded_patch * image_mask
+
+    def generate(self, x, y=None, **kwargs):
+
+        for i_iter in range(self.max_iter):
+            loss = self._train_step(images=x, target_ys=y)
+
+            if divmod(i_iter, 10)[1] == 0:
+                print("Iteration: {} Loss: {}".format(iter, loss))
+
+        return self._patch.numpy(), None

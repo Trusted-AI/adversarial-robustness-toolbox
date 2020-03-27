@@ -28,7 +28,7 @@ import logging
 import numpy as np
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
-from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlow
+from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
 from art.classifiers import TensorFlowV2Classifier
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
@@ -56,17 +56,17 @@ class AdversarialPatch(EvasionAttack):
     ]
 
     def __init__(
-            self,
-            classifier,
-            target=0,
-            rotation_max=22.5,
-            scale_min=0.1,
-            scale_max=1.0,
-            learning_rate=5.0,
-            max_iter=500,
-            clip_patch=None,
-            batch_size=16,
-            patch_shape=None,
+        self,
+        classifier,
+        target=0,
+        rotation_max=22.5,
+        scale_min=0.1,
+        scale_max=1.0,
+        learning_rate=5.0,
+        max_iter=500,
+        clip_patch=None,
+        batch_size=16,
+        patch_shape=None,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
@@ -102,15 +102,30 @@ class AdversarialPatch(EvasionAttack):
             raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         if isinstance(self.classifier, TensorFlowV2Classifier):
-            self._attack = AdversarialPatchTensorFlow(classifier=classifier, target=target, rotation_max=rotation_max,
-                                                      scale_min=scale_min, scale_max=scale_max,
-                                                      learning_rate=learning_rate, max_iter=max_iter,
-                                                      clip_patch=clip_patch, batch_size=batch_size,
-                                                      patch_shape=patch_shape)
+            self._attack = AdversarialPatchTensorFlowV2(
+                classifier=classifier,
+                target=target,
+                rotation_max=rotation_max,
+                scale_min=scale_min,
+                scale_max=scale_max,
+                learning_rate=learning_rate,
+                max_iter=max_iter,
+                clip_patch=clip_patch,
+                batch_size=batch_size,
+                patch_shape=patch_shape,
+            )
         else:
-            self._attack = AdversarialPatchNumpy(classifier=classifier, target=target, rotation_max=rotation_max,
-                                                 scale_min=scale_min, scale_max=scale_max, learning_rate=learning_rate,
-                                                 max_iter=max_iter, clip_patch=clip_patch, batch_size=batch_size)
+            self._attack = AdversarialPatchNumpy(
+                classifier=classifier,
+                target=target,
+                rotation_max=rotation_max,
+                scale_min=scale_min,
+                scale_max=scale_max,
+                learning_rate=learning_rate,
+                max_iter=max_iter,
+                clip_patch=clip_patch,
+                batch_size=batch_size,
+            )
 
     def generate(self, x, y=None, **kwargs):
         """

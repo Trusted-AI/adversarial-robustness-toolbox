@@ -61,13 +61,14 @@ class TestAdversarialPatch(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         attack_ap = AdversarialPatch(
-            tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500
+            tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500,
+            patch_shape=(28, 28, 1)
         )
         patch_adv, _ = attack_ap.generate(self.x_train_mnist)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106631027725005, delta=0.4)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101, delta=0.2)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 624.867, delta=70.0)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.1786922, delta=0.1)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.4886672, delta=0.2)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 85.99330139160156, delta=5.0)
 
         if sess is not None:
             sess.close()
