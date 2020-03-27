@@ -145,7 +145,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         gradients = tape.gradient(loss, [self._patch])
 
         if not self.targeted:
-            gradients = -gradients
+            gradients = [-g for g in gradients]
 
         self._train_op.apply_gradients(zip(gradients, [self._patch]))
 
@@ -244,6 +244,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             loss = self._train_step(images=x, target_ys=y)
 
             if divmod(i_iter, 10)[1] == 0:
-                print("Iteration: {} Loss: {}".format(iter, loss))
+                print("Iteration: {} Loss: {}".format(i_iter, loss))
 
         return self._patch.numpy(), None
