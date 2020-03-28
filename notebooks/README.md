@@ -7,7 +7,7 @@ shows how to create an adversarial attack on a video action recognition classifi
 
 <p align="center">
   <img src="../data/images/basketball.gif?raw=true" width="200" title="benign_basketball_sample">
-  <img src="../data/images/adversarial_basketball.gif?raw=true" width="200" title="adversarial_basketball_sample">
+  <img src="../data/images/adversarial_basketball_8-255.gif?raw=true" width="200" title="adversarial_basketball_sample">
 </p>
 
 
