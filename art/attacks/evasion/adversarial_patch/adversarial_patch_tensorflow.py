@@ -115,6 +115,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         assert self.image_shape[2] in [1, 3], "Color channel need to be in last dimension"
         assert self.patch_shape[2] in [1, 3], "Color channel need to be in last dimension"
         assert self.patch_shape[0] == self.patch_shape[1], "Patch height and width need to be the same."
+        assert self.classifier.postprocessing_defences is not None or self.classifier.postprocessing_defences != [], \
+            "Framework-specific implementation of Adversarial Patch attack does not yet support postprocessing defences."
 
         mean_value = (self.classifier.clip_values[1] - self.classifier.clip_values[0]) / 2.0 + \
                      self.classifier.clip_values[0]
