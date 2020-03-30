@@ -69,9 +69,9 @@ class TestAdversarialPatch(TestBase):
         patch_adv, _ = attack_ap.generate(self.x_train_mnist)
 
         if tf.__version__[0] == '2':
-            self.assertAlmostEqual(patch_adv[8, 8, 0], -0.033090025, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], -0.052067317, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), -39.156219482421875, delta=5.0)
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.98589176, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.9937059, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 667.9495849609375, delta=5.0)
         else:
             self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106646, delta=0.05)
             self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101444, delta=0.05)
@@ -93,9 +93,9 @@ class TestAdversarialPatch(TestBase):
         master_seed(seed=1234)
         patch_adv, _ = attack_ap.generate(self.x_train_mnist)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.494, delta=0.2)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.402, delta=0.2)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 1099.293, delta=50)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.9927957, delta=0.05)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.0, delta=0.2)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 325.15228271484375, delta=50)
 
     def test_pytorch(self):
         """
@@ -112,9 +112,9 @@ class TestAdversarialPatch(TestBase):
 
         patch_adv, _ = attack_ap.generate(x_train)
 
-        self.assertAlmostEqual(patch_adv[0, 8, 8], -3.143605902784875, delta=0.1)
-        self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=0.1)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 383.068, delta=0.1)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.52099717, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5109714, delta=0.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 398.3957214355469, delta=0.1)
 
     def test_failure_feature_vectors(self):
         attack_params = {
@@ -126,6 +126,8 @@ class TestAdversarialPatch(TestBase):
             "batch_size": 10,
         }
         classifier = get_tabular_classifier_kr()
+        classifier._clip_values = (0, 1)
+        print(classifier.clip_values)
         attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
