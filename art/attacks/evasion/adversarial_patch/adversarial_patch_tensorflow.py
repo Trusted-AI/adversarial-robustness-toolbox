@@ -55,17 +55,17 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
     ]
 
     def __init__(
-        self,
-        classifier,
-        target=0,
-        rotation_max=22.5,
-        scale_min=0.1,
-        scale_max=1.0,
-        learning_rate=5.0,
-        max_iter=500,
-        clip_patch=None,
-        batch_size=16,
-        patch_shape=None,
+            self,
+            classifier,
+            target=0,
+            rotation_max=22.5,
+            scale_min=0.1,
+            scale_max=1.0,
+            learning_rate=5.0,
+            max_iter=500,
+            clip_patch=None,
+            batch_size=16,
+            patch_shape=None,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
@@ -121,15 +121,18 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         assert self.patch_shape[2] in [1, 3], "Color channel need to be in last dimension"
         assert self.patch_shape[0] == self.patch_shape[1], "Patch height and width need to be the same."
 
-        patch_test = np.zeros(shape=self.patch_shape)
-        self._patch = tf.Variable(patch_test, shape=self.patch_shape, dtype=tf.float32)
+        mean_value = (self.classifier.clip_values[1] - self.classifier.clip_values[0]) / 2.0 + \
+                     self.classifier.clip_values[0]
+        initial_value = np.ones(self.patch_shape) * mean_value
+        self._patch = tf.Variable(initial_value=initial_value, shape=self.patch_shape, dtype=tf.float32,
+                                  constraint=lambda x: tf.clip_by_value(x, self.classifier.clip_values[0],
+                                                                        self.classifier.clip_values[1]))
 
         self._train_op = tf.keras.optimizers.SGD(
             learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
         )
 
     def _train_step(self, images=None, target_ys=None):
-
         import tensorflow as tf
 
         if target_ys is None:
@@ -152,7 +155,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return loss
 
     def _probabilities(self, images):
-
         import tensorflow as tf
 
         patched_input = self._random_overlay(images, self._patch)
@@ -161,12 +163,11 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             patched_input, clip_value_min=self.classifier.clip_values[0], clip_value_max=self.classifier.clip_values[1]
         )
 
-        probabilities = self.classifier._model(patched_input)
+        probabilities = self.classifier._predict_framework(patched_input)
 
         return probabilities
 
     def _loss(self, images, target_ys):
-
         import tensorflow as tf
 
         probabilities = self._probabilities(images)
@@ -179,8 +180,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _random_overlay(self, images, patch):
-
+    def _random_overlay(self, images, patch, scale=None):
         import tensorflow as tf
 
         sharpness = 40
@@ -200,7 +200,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         transform_vectors = list()
 
         for i in range(self.batch_size):
-            im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
+            if scale is None:
+                im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
+            else:
+                im_scale = scale
             padding_after_scaling = (1 - im_scale) * self.image_shape[0]
             x_shift = np.random.uniform(-padding_after_scaling, padding_after_scaling)
             y_shift = np.random.uniform(-padding_after_scaling, padding_after_scaling)
@@ -239,7 +242,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return images * inverted_mask + padded_patch * image_mask
 
     def generate(self, x, y=None, **kwargs):
-
         for i_iter in range(self.max_iter):
             loss = self._train_step(images=x, target_ys=y)
 
@@ -247,3 +249,23 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 print("Iteration: {} Loss: {}".format(i_iter, loss))
 
         return self._patch.numpy(), None
+
+    def apply_patch(self, x, scale):
+        """
+        A function to apply the learned adversarial patch to images.
+
+        :param x: Instances to apply randomly transformed patch.
+        :type x: `np.ndarray`
+        :param scale: Scale of the applied patch in relation to the classifier input shape.
+        :type scale: `float`
+        :return: The patched samples.
+        :rtype: `np.ndarray`
+        """
+        return self._random_overlay(images=x, patch=self._patch, scale=scale).numpy()
+
+    def reset_patch(self, initial_patch_value):
+        """
+        Reset the adversarial patch.
+        """
+        initial_value = np.ones(self.patch_shape) * initial_patch_value
+        self._patch.assign(np.ones(shape=self.patch_shape) * initial_value)
