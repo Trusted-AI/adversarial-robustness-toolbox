@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `MXClassifier` for MXNet Gluon models.
+This module implements the abstract estimator `MXEstimator` for MXNet Gluon models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 

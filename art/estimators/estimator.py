@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements abstract base and mixin classes for framework- and model-independent estimators in ART.
+This module implements abstract base and mixin classes for estimators in ART.
 """
 
 from abc import ABC, abstractmethod
@@ -44,7 +44,7 @@ class BaseEstimator(ABC):
         preprocessing=None,
     ):
         """
-        Initialize a `Estimator` object.
+        Initialize a `BaseEstimator` object.
 
         :param model: The model
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
@@ -52,9 +52,9 @@ class BaseEstimator(ABC):
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
-        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the estimator.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
-        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the estimator.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input and the results will be
@@ -72,7 +72,7 @@ class BaseEstimator(ABC):
 
     def set_params(self, **kwargs):
         """
-        Take in a dictionary of parameters and apply checks before setting them as attributes.
+        Take a dictionary of parameters and apply checks before setting them as attributes.
         :param kwargs: a dictionary of attributes
         :type kwargs: `dict`
         :return: `self`
@@ -110,7 +110,7 @@ class BaseEstimator(ABC):
     @abstractmethod
     def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         r"""
-        Perform prediction of the classifier for input `x`.
+        Perform prediction of the estimator for input `x`.
 
         :param x: Samples.
         :type x: Format as expected by the `model`
@@ -122,7 +122,7 @@ class BaseEstimator(ABC):
     @abstractmethod
     def fit(self, x, y, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
-        Fit the classifier using the training data `(x, y)`.
+        Fit the estimator using the training data `(x, y)`.
 
         :param x: Training data.
         :type x: Format as expected by the `model`

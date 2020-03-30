@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the estimator for scikit-learn models.
+This module implements the abstract estimator for scikit-learn models.
 """
 
 from art.estimators.estimator import BaseEstimator
