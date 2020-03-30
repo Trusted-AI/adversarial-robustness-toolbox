@@ -58,6 +58,8 @@ class TestAdversarialPatch(TestBase):
         First test with the TensorFlowClassifier.
         :return:
         """
+        import tensorflow as tf
+
         tfc, sess = get_image_classifier_tf()
 
         attack_ap = AdversarialPatch(
@@ -66,9 +68,14 @@ class TestAdversarialPatch(TestBase):
         )
         patch_adv, _ = attack_ap.generate(self.x_train_mnist)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], -0.033090025, delta=0.05)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], -0.052067317, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), -39.156219482421875, delta=5.0)
+        if tf.__version__[0] == '2':
+            self.assertAlmostEqual(patch_adv[8, 8, 0], -0.033090025, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], -0.052067317, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), -39.156219482421875, delta=5.0)
+        else:
+            self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106646, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101444, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 624.8677978515625, delta=5.0)
 
         if sess is not None:
             sess.close()
