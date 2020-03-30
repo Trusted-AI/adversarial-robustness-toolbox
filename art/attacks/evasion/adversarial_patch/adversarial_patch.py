@@ -97,7 +97,7 @@ class AdversarialPatch(EvasionAttack):
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
-        assert self.classifier.clip_values is None, "Adversarial Patch attack requires a classifier with clip_values."
+        assert self.classifier.clip_values is not None, "Adversarial Patch attack requires a classifier with clip_values."
 
         if isinstance(self.classifier, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
