@@ -124,7 +124,10 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "dimensions."
             )
 
-        self.patch = ((np.random.standard_normal(size=self.classifier.input_shape)) * 20.0).astype(ART_NUMPY_DTYPE)
+        # self.patch = ((np.random.standard_normal(size=self.classifier.input_shape)) * 20.0).astype(ART_NUMPY_DTYPE)
+        mean_value = (self.classifier.clip_values[1] - self.classifier.clip_values[0]) / 2.0 + \
+                     self.classifier.clip_values[0]
+        self.patch = np.ones(shape=self.classifier.input_shape).astype(np.float32) * mean_value
 
         y_target = check_and_transform_label_format(
             labels=np.broadcast_to(np.array(self.target), x.shape[0]), nb_classes=self.classifier.nb_classes()
@@ -133,8 +136,6 @@ class AdversarialPatchNumpy(EvasionAttack):
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
-
-            self.patch = np.clip(self.patch, a_min=self.classifier.clip_values[0], a_max=self.classifier.clip_values[1])
 
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
 
@@ -157,6 +158,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
             patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
+            self.patch = np.clip(self.patch, a_min=self.classifier.clip_values[0], a_max=self.classifier.clip_values[1])
 
         return self.patch, self._get_circular_patch_mask()
 
