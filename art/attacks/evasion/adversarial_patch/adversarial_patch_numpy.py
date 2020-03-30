@@ -200,7 +200,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param clip_batch: The minimum and maximum values for each channel
+        :param clip_patch: The minimum and maximum values for each channel
         :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
