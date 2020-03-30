@@ -52,21 +52,19 @@ class AdversarialPatch(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
-        "clip_patch",
     ]
 
     def __init__(
-        self,
-        classifier,
-        target=0,
-        rotation_max=22.5,
-        scale_min=0.1,
-        scale_max=1.0,
-        learning_rate=5.0,
-        max_iter=500,
-        clip_patch=None,
-        batch_size=16,
-        patch_shape=None,
+            self,
+            classifier,
+            target=0,
+            rotation_max=22.5,
+            scale_min=0.1,
+            scale_max=1.0,
+            learning_rate=5.0,
+            max_iter=500,
+            batch_size=16,
+            patch_shape=None,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
@@ -88,8 +86,6 @@ class AdversarialPatch(EvasionAttack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param clip_patch: The minimum and maximum values for each channel
-        :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
         :param patch_shape: The shape of the adversarial path as a tuple of shape (width, height, nb_channels).
@@ -101,6 +97,8 @@ class AdversarialPatch(EvasionAttack):
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
+        assert self.classifier.clip_values is None, "Adversarial Patch attack requires a classifier with clip_values."
+
         if isinstance(self.classifier, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
                 classifier=classifier,
@@ -110,7 +108,6 @@ class AdversarialPatch(EvasionAttack):
                 scale_max=scale_max,
                 learning_rate=learning_rate,
                 max_iter=max_iter,
-                clip_patch=clip_patch,
                 batch_size=batch_size,
                 patch_shape=patch_shape,
             )
@@ -123,7 +120,6 @@ class AdversarialPatch(EvasionAttack):
                 scale_max=scale_max,
                 learning_rate=learning_rate,
                 max_iter=max_iter,
-                clip_patch=clip_patch,
                 batch_size=batch_size,
             )
 
@@ -180,8 +176,6 @@ class AdversarialPatch(EvasionAttack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param clip_patch: The minimum and maximum values for each channel
-        :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
         """

@@ -53,7 +53,6 @@ class AdversarialPatchNumpy(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
-        "clip_patch",
     ]
 
     def __init__(
@@ -65,7 +64,6 @@ class AdversarialPatchNumpy(EvasionAttack):
         scale_max=1.0,
         learning_rate=5.0,
         max_iter=500,
-        clip_patch=None,
         batch_size=16,
     ):
         """
@@ -88,8 +86,6 @@ class AdversarialPatchNumpy(EvasionAttack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param clip_patch: The minimum and maximum values for each channel
-        :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
         """
@@ -105,7 +101,6 @@ class AdversarialPatchNumpy(EvasionAttack):
             "learning_rate": learning_rate,
             "max_iter": max_iter,
             "batch_size": batch_size,
-            "clip_patch": clip_patch,
         }
         self.set_params(**kwargs)
         self.patch = None
@@ -139,9 +134,7 @@ class AdversarialPatchNumpy(EvasionAttack):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
 
-            if self.clip_patch is not None:
-                for i_channel, (a_min, a_max) in enumerate(self.clip_patch):
-                    self.patch[:, :, i_channel] = np.clip(self.patch[:, :, i_channel], a_min=a_min, a_max=a_max)
+            self.patch = np.clip(self.patch, a_min=self.classifier.clip_values[0], a_max=self.classifier.clip_values[1])
 
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
 
@@ -200,8 +193,6 @@ class AdversarialPatchNumpy(EvasionAttack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param clip_patch: The minimum and maximum values for each channel
-        :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
         """

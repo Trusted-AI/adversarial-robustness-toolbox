@@ -49,7 +49,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         "scale_max",
         "learning_rate",
         "max_iter",
-        "clip_patch",
         "batch_size",
         "patch_shape",
     ]
@@ -63,7 +62,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             scale_max=1.0,
             learning_rate=5.0,
             max_iter=500,
-            clip_patch=None,
             batch_size=16,
             patch_shape=None,
     ):
@@ -87,8 +85,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
         :type max_iter: `int`
-        :param clip_patch: The minimum and maximum values for each channel
-        :type clip_patch: [(float, float), (float, float), (float, float)]
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
         :param patch_shape: The shape of the adversarial path as a tuple of shape (width, height, nb_channels).
@@ -110,7 +106,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             "learning_rate": learning_rate,
             "max_iter": max_iter,
             "batch_size": batch_size,
-            "clip_patch": clip_patch,
             "patch_shape": patch_shape,
         }
         self.set_params(**kwargs)
