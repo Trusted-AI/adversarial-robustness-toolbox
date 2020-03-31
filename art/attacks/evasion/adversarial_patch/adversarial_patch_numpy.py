@@ -118,8 +118,9 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "dimensions."
             )
 
-        mean_value = (self.classifier.clip_values[1] - self.classifier.clip_values[0]) / 2.0 + \
-                     self.classifier.clip_values[0]
+        mean_value = (
+            self.classifier.clip_values[1] - self.classifier.clip_values[0]
+        ) / 2.0 + self.classifier.clip_values[0]
         self.patch = np.ones(shape=self.classifier.input_shape).astype(np.float32) * mean_value
 
         y_target = check_and_transform_label_format(labels=y)

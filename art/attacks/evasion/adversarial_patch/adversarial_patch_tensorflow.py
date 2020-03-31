@@ -54,15 +54,15 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
     ]
 
     def __init__(
-            self,
-            classifier,
-            rotation_max=22.5,
-            scale_min=0.1,
-            scale_max=1.0,
-            learning_rate=5.0,
-            max_iter=500,
-            batch_size=16,
-            patch_shape=None,
+        self,
+        classifier,
+        rotation_max=22.5,
+        scale_min=0.1,
+        scale_max=1.0,
+        learning_rate=5.0,
+        max_iter=500,
+        batch_size=16,
+        patch_shape=None,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
@@ -111,15 +111,20 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         assert self.image_shape[2] in [1, 3], "Color channel need to be in last dimension"
         assert self.patch_shape[2] in [1, 3], "Color channel need to be in last dimension"
         assert self.patch_shape[0] == self.patch_shape[1], "Patch height and width need to be the same."
-        assert self.classifier.postprocessing_defences is not None or self.classifier.postprocessing_defences != [], \
-            "Framework-specific implementation of Adversarial Patch attack does not yet support postprocessing defences."
+        assert (
+            self.classifier.postprocessing_defences is not None or self.classifier.postprocessing_defences != []
+        ), "Framework-specific implementation of Adversarial Patch attack does not yet support postprocessing defences."
 
-        mean_value = (self.classifier.clip_values[1] - self.classifier.clip_values[0]) / 2.0 + \
-                     self.classifier.clip_values[0]
+        mean_value = (
+            self.classifier.clip_values[1] - self.classifier.clip_values[0]
+        ) / 2.0 + self.classifier.clip_values[0]
         initial_value = np.ones(self.patch_shape) * mean_value
-        self._patch = tf.Variable(initial_value=initial_value, shape=self.patch_shape, dtype=tf.float32,
-                                  constraint=lambda x: tf.clip_by_value(x, self.classifier.clip_values[0],
-                                                                        self.classifier.clip_values[1]))
+        self._patch = tf.Variable(
+            initial_value=initial_value,
+            shape=self.patch_shape,
+            dtype=tf.float32,
+            constraint=lambda x: tf.clip_by_value(x, self.classifier.clip_values[0], self.classifier.clip_values[1]),
+        )
 
         self._train_op = tf.keras.optimizers.SGD(
             learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"

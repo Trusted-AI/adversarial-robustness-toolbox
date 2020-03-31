@@ -63,13 +63,19 @@ class TestAdversarialPatch(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         attack_ap = AdversarialPatch(
-            tfc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=500,
-            patch_shape=(28, 28, 1)
+            tfc,
+            rotation_max=0.5,
+            scale_min=0.4,
+            scale_max=0.41,
+            learning_rate=5.0,
+            batch_size=10,
+            max_iter=500,
+            patch_shape=(28, 28, 1),
         )
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target)
 
-        if tf.__version__[0] == '2':
+        if tf.__version__[0] == "2":
             self.assertAlmostEqual(patch_adv[8, 8, 0], 0.14372873, delta=0.05)
             self.assertAlmostEqual(patch_adv[14, 14, 0], 0.38899645, delta=0.05)
             self.assertAlmostEqual(float(np.sum(patch_adv)), 417.5904846191406, delta=5.0)
