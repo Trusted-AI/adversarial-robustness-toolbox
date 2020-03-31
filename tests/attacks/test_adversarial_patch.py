@@ -74,9 +74,9 @@ class TestAdversarialPatch(TestBase):
             self.assertAlmostEqual(patch_adv[14, 14, 0], 0.38899645, delta=0.05)
             self.assertAlmostEqual(float(np.sum(patch_adv)), 417.5904846191406, delta=5.0)
         else:
-            self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106646, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101444, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 624.8677978515625, delta=5.0)
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.22166277, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.4620863, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 391.069091796875, delta=5.0)
 
         if sess is not None:
             sess.close()
