@@ -43,7 +43,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
-        "target",
         "rotation_max",
         "scale_min",
         "scale_max",
@@ -56,7 +55,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
     def __init__(
             self,
             classifier,
-            target=0,
             rotation_max=22.5,
             scale_min=0.1,
             scale_max=1.0,
@@ -70,8 +68,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
-        :param target: The target label for the created patch.
-        :type target: `int`
         :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
                range `[0, 180]`.
         :type rotation_max: `float`
@@ -99,7 +95,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         kwargs = {
-            "target": target,
             "rotation_max": rotation_max,
             "scale_min": scale_min,
             "scale_max": scale_max,

@@ -46,7 +46,6 @@ class AdversarialPatchNumpy(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
-        "target",
         "rotation_max",
         "scale_min",
         "scale_max",
@@ -58,7 +57,6 @@ class AdversarialPatchNumpy(EvasionAttack):
     def __init__(
         self,
         classifier,
-        target=0,
         rotation_max=22.5,
         scale_min=0.1,
         scale_max=1.0,
@@ -71,8 +69,6 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
-        :param target: The target label for the created patch.
-        :type target: `int`
         :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
                range `[0, 180]`.
         :type rotation_max: `float`
@@ -94,7 +90,6 @@ class AdversarialPatchNumpy(EvasionAttack):
             raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         kwargs = {
-            "target": target,
             "rotation_max": rotation_max,
             "scale_min": scale_min,
             "scale_max": scale_max,
@@ -124,14 +119,11 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "dimensions."
             )
 
-        # self.patch = ((np.random.standard_normal(size=self.classifier.input_shape)) * 20.0).astype(ART_NUMPY_DTYPE)
         mean_value = (self.classifier.clip_values[1] - self.classifier.clip_values[0]) / 2.0 + \
                      self.classifier.clip_values[0]
         self.patch = np.ones(shape=self.classifier.input_shape).astype(np.float32) * mean_value
 
-        y_target = check_and_transform_label_format(
-            labels=np.broadcast_to(np.array(self.target), x.shape[0]), nb_classes=self.classifier.nb_classes()
-        )
+        y_target = check_and_transform_label_format(labels=y)
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
@@ -199,9 +191,6 @@ class AdversarialPatchNumpy(EvasionAttack):
         :type batch_size: `int`
         """
         super(AdversarialPatchNumpy, self).set_params(**kwargs)
-
-        if not isinstance(self.target, (int, np.int)):
-            raise ValueError("The target labels must be of type np.ndarray.")
 
         if not isinstance(self.rotation_max, (float, int)):
             raise ValueError("The maximum rotation of the random patches must be of type float.")

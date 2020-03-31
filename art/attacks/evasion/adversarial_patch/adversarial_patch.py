@@ -45,7 +45,6 @@ class AdversarialPatch(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
-        "target",
         "rotation_max",
         "scale_min",
         "scale_max",
@@ -57,7 +56,6 @@ class AdversarialPatch(EvasionAttack):
     def __init__(
             self,
             classifier,
-            target=0,
             rotation_max=22.5,
             scale_min=0.1,
             scale_max=1.0,
@@ -71,8 +69,6 @@ class AdversarialPatch(EvasionAttack):
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
-        :param target: The target label for the created patch.
-        :type target: `int`
         :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
                range `[0, 180]`.
         :type rotation_max: `float`
@@ -102,7 +98,6 @@ class AdversarialPatch(EvasionAttack):
         if isinstance(self.classifier, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
                 classifier=classifier,
-                target=target,
                 rotation_max=rotation_max,
                 scale_min=scale_min,
                 scale_max=scale_max,
@@ -114,7 +109,6 @@ class AdversarialPatch(EvasionAttack):
         else:
             self._attack = AdversarialPatchNumpy(
                 classifier=classifier,
-                target=target,
                 rotation_max=rotation_max,
                 scale_min=scale_min,
                 scale_max=scale_max,
@@ -135,6 +129,8 @@ class AdversarialPatch(EvasionAttack):
         :rtype: `np.ndarray`
         """
         logger.info("Creating adversarial patch.")
+
+        assert y is not None, "Adversarial Patch attack requires target values `y`."
 
         if len(x.shape) == 2:
             raise ValueError(
@@ -161,8 +157,6 @@ class AdversarialPatch(EvasionAttack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        :param target: The target label.
-        :type target: `int`
         :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
                range `[0, 180]`.
         :type rotation_max: `float`
@@ -180,9 +174,6 @@ class AdversarialPatch(EvasionAttack):
         :type batch_size: `int`
         """
         super(AdversarialPatch, self).set_params(**kwargs)
-
-        if not isinstance(self._attack.target, (int, np.int)):
-            raise ValueError("The target labels must be of type np.ndarray.")
 
         if not isinstance(self._attack.rotation_max, (float, int)):
             raise ValueError("The maximum rotation of the random patches must be of type float.")
