@@ -29,7 +29,8 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
-from art.attacks.attack import EvasionAttack, ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod
+from art.attacks.attack import EvasionAttack
+from art.attacks.evasion import ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod
 from art.utils import compute_success_array, get_labels_np_array, check_and_transform_label_format
 from art.exceptions import ClassifierError
 
@@ -45,9 +46,9 @@ class FrameSaliencyAttack(EvasionAttack):
     """
 
     method_list = ["iterative_saliency", "iterative_saliency_refresh", "one_shot"]
-    attack_params = EvasionAttack.attack_params + ["attacker", "method"]
+    attack_params = EvasionAttack.attack_params + ["attacker", "method", "batch_size"]
 
-    def __init__(self, classifier, attacker, method="iterative-saliency"):
+    def __init__(self, classifier, attacker, method="iterative_saliency", batch_size=1):
         """
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
@@ -59,6 +60,8 @@ class FrameSaliencyAttack(EvasionAttack):
                        perturbation after each iteration), "one_shot" (adds all perturbations at once, i.e. defaults to
                        original attack).
         :type method: `str`
+        :param batch_size: Size of the batch on which adversarial samples are generated.
+        :type batch_size: `int`
         """
         super(FrameSaliencyAttack, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
@@ -66,7 +69,8 @@ class FrameSaliencyAttack(EvasionAttack):
 
         kwargs = {
             "attacker": attacker,
-            "method": method
+            "method": method,
+            "batch_size": batch_size
         }
         self.set_params(**kwargs)
 
@@ -88,8 +92,12 @@ class FrameSaliencyAttack(EvasionAttack):
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         if self.method == "one_shot":
-            return self.attacker.generate(x, y)
+            if y is None:
+                return self.attacker.generate(x)
+            else:
+                return self.attacker.generate(x, y)
 
+        targets = None
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.attacker.targeted:
@@ -116,10 +124,10 @@ class FrameSaliencyAttack(EvasionAttack):
         if self.method == "iterative_saliency_refresh":
             mask = np.zeros(x.shape)
             mask[:, frames_to_perturb[:, 0], ::] = 1
-            disregard = np.zeros((nb_samples. nb_frames))
+            disregard = np.zeros((nb_samples, nb_frames))
             disregard[:, frames_to_perturb[:, 0]] = np.inf
 
-        x_adv_new = self.attacker.generate(x, y, mask=mask)
+        x_adv_new = self.attacker.generate(x, targets, mask=mask)
 
         # Here starts the main iteration:
         for i in range(nb_frames):
@@ -141,7 +149,7 @@ class FrameSaliencyAttack(EvasionAttack):
                 mask = np.zeros(x.shape)
                 mask[:, frames_to_perturb[:, i+1], ::] = 1
                 disregard[:, frames_to_perturb[:, i+1]] = np.inf
-                x_adv_new = self.attacker.generate(x_adv, y, mask=mask)
+                x_adv_new = self.attacker.generate(x_adv, targets, mask=mask)
 
         return x_adv
 
@@ -180,6 +188,9 @@ class FrameSaliencyAttack(EvasionAttack):
 
         if self.method not in self.method_list:
             raise ValueError("Method must be either 'iterative_saliency', 'iterative_saliency_refresh' or 'one_shot'.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not self.classifier == self.attacker.classifier:
             raise Warning("Different classifiers given for computation of saliency scores and adversarial noise.")
