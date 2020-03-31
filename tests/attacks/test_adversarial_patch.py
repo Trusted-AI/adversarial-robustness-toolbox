@@ -63,15 +63,16 @@ class TestAdversarialPatch(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         attack_ap = AdversarialPatch(
-            tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500,
+            tfc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=500,
             patch_shape=(28, 28, 1)
         )
-        patch_adv, _ = attack_ap.generate(self.x_train_mnist)
+        target = np.zeros(self.x_train_mnist.shape[0])
+        patch_adv, _ = attack_ap.generate(self.x_train_mnist, target)
 
         if tf.__version__[0] == '2':
-            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.98589176, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.9937059, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 667.9495849609375, delta=5.0)
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.14372873, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.38899645, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 417.5904846191406, delta=5.0)
         else:
             self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106646, delta=0.05)
             self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101444, delta=0.05)
@@ -88,14 +89,15 @@ class TestAdversarialPatch(TestBase):
         krc = get_image_classifier_kr()
 
         attack_ap = AdversarialPatch(
-            krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500
+            krc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=500
         )
         master_seed(seed=1234)
-        patch_adv, _ = attack_ap.generate(self.x_train_mnist)
+        target = np.zeros(self.x_train_mnist.shape[0])
+        patch_adv, _ = attack_ap.generate(self.x_train_mnist, target)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.9927957, delta=0.05)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.0, delta=0.2)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 325.15228271484375, delta=50)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.048357856, delta=0.05)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.26751685, delta=0.2)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 458.03973388671875, delta=50)
 
     def test_pytorch(self):
         """
@@ -107,14 +109,17 @@ class TestAdversarialPatch(TestBase):
         x_train = np.reshape(self.x_train_mnist, (self.n_train, 1, 28, 28)).astype(np.float32)
 
         attack_ap = AdversarialPatch(
-            ptc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500
+            ptc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=500
         )
+        master_seed(seed=1234)
+        target = np.zeros(self.x_train_mnist.shape[0])
+        patch_adv, _ = attack_ap.generate(x_train, target)
 
-        patch_adv, _ = attack_ap.generate(x_train)
+        # patch_adv = np.reshape(patch_adv, (28, 28, 1)).astype(np.float32)
 
-        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.52099717, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.4008162, delta=0.05)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5109714, delta=0.1)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 398.3957214355469, delta=0.1)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 382.944091796875, delta=0.1)
 
     def test_failure_feature_vectors(self):
         attack_params = {
@@ -127,14 +132,14 @@ class TestAdversarialPatch(TestBase):
         }
         classifier = get_tabular_classifier_kr()
         classifier._clip_values = (0, 1)
-        print(classifier.clip_values)
         attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
+        labels = np.random.randint(0, 3, 10)
 
         # Assert that value error is raised for feature vectors
         with self.assertRaises(ValueError) as context:
-            attack.generate(data)
+            attack.generate(data, labels)
 
         self.assertIn("Feature vectors detected.", str(context.exception))
 

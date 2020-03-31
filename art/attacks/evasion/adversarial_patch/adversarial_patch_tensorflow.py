@@ -31,6 +31,7 @@ import numpy as np
 from art.attacks.attack import EvasionAttack
 from art.exceptions import ClassifierError
 from art.classifiers.classifier import ClassifierGradients, ClassifierNeuralNetwork
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -124,18 +125,18 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
         )
 
-    def _train_step(self, images=None, target_ys=None):
+    def _train_step(self, images=None, target=None):
         import tensorflow as tf
 
-        if target_ys is None:
-            target_ys = self.classifier.predict(x=images)
+        if target is None:
+            target = self.classifier.predict(x=images)
             self.targeted = False
         else:
             self.targeted = True
 
         with tf.GradientTape() as tape:
             tape.watch(self._patch)
-            loss = self._loss(images, target_ys)
+            loss = self._loss(images, target)
 
         gradients = tape.gradient(loss, [self._patch])
 
@@ -159,13 +160,13 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return probabilities
 
-    def _loss(self, images, target_ys):
+    def _loss(self, images, target):
         import tensorflow as tf
 
         probabilities = self._probabilities(images)
 
         self._loss_per_example = tf.keras.losses.categorical_crossentropy(
-            y_true=target_ys, y_pred=probabilities, from_logits=False, label_smoothing=0
+            y_true=target, y_pred=probabilities, from_logits=False, label_smoothing=0
         )
 
         loss = tf.reduce_mean(self._loss_per_example)
@@ -234,8 +235,11 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return images * inverted_mask + padded_patch * image_mask
 
     def generate(self, x, y=None, **kwargs):
+
+        y = check_and_transform_label_format(labels=y)
+
         for i_iter in range(self.max_iter):
-            loss = self._train_step(images=x, target_ys=y)
+            loss = self._train_step(images=x, target=y)
 
             if divmod(i_iter, 10)[1] == 0:
                 print("Iteration: {} Loss: {}".format(i_iter, loss))
