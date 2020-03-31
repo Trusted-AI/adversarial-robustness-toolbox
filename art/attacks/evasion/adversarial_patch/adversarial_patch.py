@@ -54,15 +54,15 @@ class AdversarialPatch(EvasionAttack):
     ]
 
     def __init__(
-            self,
-            classifier,
-            rotation_max=22.5,
-            scale_min=0.1,
-            scale_max=1.0,
-            learning_rate=5.0,
-            max_iter=500,
-            batch_size=16,
-            patch_shape=None,
+        self,
+        classifier,
+        rotation_max=22.5,
+        scale_min=0.1,
+        scale_max=1.0,
+        learning_rate=5.0,
+        max_iter=500,
+        batch_size=16,
+        patch_shape=None,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
@@ -93,7 +93,9 @@ class AdversarialPatch(EvasionAttack):
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
-        assert self.classifier.clip_values is not None, "Adversarial Patch attack requires a classifier with clip_values."
+        assert (
+            self.classifier.clip_values is not None
+        ), "Adversarial Patch attack requires a classifier with clip_values."
 
         if isinstance(self.classifier, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
