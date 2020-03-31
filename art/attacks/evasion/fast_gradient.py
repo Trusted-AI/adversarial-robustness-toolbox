@@ -139,8 +139,15 @@ class FastGradientMethod(EvasionAttack):
             batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
+            mask_batch = mask
+            if mask is not None:
+                # Here we need to make a distinction: if the masks are different for each input, we need to index
+                # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                if len(mask.shape) == len(x.shape):
+                    mask_batch = mask[batch_index_1:batch_index_2]
+
             # Get perturbation
-            perturbation = self._compute_perturbation(batch, batch_labels, mask)
+            perturbation = self._compute_perturbation(batch, batch_labels, mask_batch)
 
             # Get current predictions
             active_indices = np.arange(len(batch))
@@ -192,7 +199,11 @@ class FastGradientMethod(EvasionAttack):
             y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
         y = y / np.sum(y, axis=1, keepdims=True)
 
-        mask = kwargs.get("rmask")
+        mask = kwargs.get("mask")
+        if mask is not None:
+            # ensure the mask is broadcastable:
+            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
+                raise ValueError("mask shape must be broadcastable to input shape")
 
         # Return adversarial examples computed with minimal perturbation if option is active
         if self.minimal:
@@ -330,8 +341,15 @@ class FastGradientMethod(EvasionAttack):
             batch = x_adv[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
+            mask_batch = mask
+            if mask is not None:
+                # Here we need to make a distinction: if the masks are different for each input, we need to index
+                # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                if len(mask.shape) == len(x.shape):
+                    mask_batch = mask[batch_index_1:batch_index_2]
+
             # Get perturbation
-            perturbation = self._compute_perturbation(batch, batch_labels, mask)
+            perturbation = self._compute_perturbation(batch, batch_labels, mask_batch)
 
             # Apply perturbation and clip
             x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
