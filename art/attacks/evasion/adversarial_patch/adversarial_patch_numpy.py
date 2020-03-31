@@ -148,7 +148,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                     )
                     patch_gradients += patch_gradients_i
 
-            patch_gradients = patch_gradients / (num_batches * self.batch_size)
+            # patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
             self.patch = np.clip(self.patch, a_min=self.classifier.clip_values[0], a_max=self.classifier.clip_values[1])
 
