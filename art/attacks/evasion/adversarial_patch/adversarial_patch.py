@@ -142,7 +142,7 @@ class AdversarialPatch(EvasionAttack):
 
         return self._attack.generate(x=x, y=y, **kwargs)
 
-    def apply_patch(self, x, scale):
+    def apply_patch(self, x, scale, patch_external=None):
         """
         A function to apply the learned adversarial patch to images.
 
@@ -150,10 +150,12 @@ class AdversarialPatch(EvasionAttack):
         :type x: `np.ndarray`
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :type scale: `float`
+        :param patch_external: External patch to apply to images `x`.
+        :type patch_external: `np.ndarray`
         :return: The patched instances.
         :rtype: `np.ndarray`
         """
-        return self._attack.apply_patch(x, scale)
+        return self._attack.apply_patch(x, scale, patch_external=patch_external)
 
     def set_params(self, **kwargs):
         """
