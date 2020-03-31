@@ -78,11 +78,11 @@ class TestAdversarialPatch(TestBase):
         if tf.__version__[0] == "2":
             self.assertAlmostEqual(patch_adv[8, 8, 0], 0.14372873, delta=0.05)
             self.assertAlmostEqual(patch_adv[14, 14, 0], 0.38899645, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 417.5904846191406, delta=5.0)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 417.5904846191406, delta=1.0)
         else:
-            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.22166277, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.4620863, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 391.069091796875, delta=5.0)
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.048357915, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.26751655, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 458.03973388671875, delta=1.0)
 
         if sess is not None:
             sess.close()
@@ -101,9 +101,9 @@ class TestAdversarialPatch(TestBase):
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.048357856, delta=0.05)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.26751685, delta=0.2)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 458.03973388671875, delta=50)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.12921186, delta=0.05)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.030846387, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 466.4248352050781, delta=1.0)
 
     def test_pytorch(self):
         """
@@ -123,9 +123,9 @@ class TestAdversarialPatch(TestBase):
 
         # patch_adv = np.reshape(patch_adv, (28, 28, 1)).astype(np.float32)
 
-        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.4008162, delta=0.05)
-        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5109714, delta=0.1)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 382.944091796875, delta=0.1)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.18794201, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5109714, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 365.93072509765625, delta=1.0)
 
     def test_failure_feature_vectors(self):
         attack_params = {
