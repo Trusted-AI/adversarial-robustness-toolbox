@@ -205,7 +205,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         if not isinstance(self.scale_min, float):
             raise ValueError("The minimum scale of the random patched must be of type float.")
-        if self.scale_min < 0 or self.scale_min >= self.scale_max:
+        if self.scale_min < 0 or self.scale_min > self.scale_max:
             raise ValueError(
                 "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling."
             )
