@@ -247,7 +247,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             loss = self._train_step(images=x, target=y)
 
             if divmod(i_iter, 10)[1] == 0:
-                print("Iteration: {} Loss: {}".format(i_iter, loss))
+                logger.info("Iteration: {} Loss: {}".format(i_iter, loss))
 
         return self._patch.numpy(), None
 
