@@ -154,7 +154,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         return self.patch, self._get_circular_patch_mask()
 
-    def apply_patch(self, x, scale):
+    def apply_patch(self, x, scale, patch_external=None):
         """
         A function to apply the learned adversarial patch to images.
 
@@ -162,9 +162,15 @@ class AdversarialPatchNumpy(EvasionAttack):
         :type x: `np.ndarray`
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :type scale: `float`
+        :param patch_external: External patch to apply to images `x`.
+        :type patch_external: `np.ndarray`
         :return: The patched instances.
         :rtype: `np.ndarray`
         """
+        if patch_external is not None:
+            patched_x, _, _ = self._augment_images_with_random_patch(x, patch_external, scale)
+            return patched_x
+
         patched_x, _, _ = self._augment_images_with_random_patch(x, self.patch, scale)
         return patched_x
 

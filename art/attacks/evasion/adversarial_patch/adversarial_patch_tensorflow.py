@@ -251,7 +251,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return self._patch.numpy(), None
 
-    def apply_patch(self, x, scale):
+    def apply_patch(self, x, scale, patch_external=None):
         """
         A function to apply the learned adversarial patch to images.
 
@@ -259,9 +259,14 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :type x: `np.ndarray`
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :type scale: `float`
+        :param patch_external: External patch to apply to images `x`.
+        :type patch_external: `np.ndarray`
         :return: The patched samples.
         :rtype: `np.ndarray`
         """
+        if patch_external is not None:
+            return self._random_overlay(images=x, patch=patch_external, scale=scale).numpy()
+
         return self._random_overlay(images=x, patch=self._patch, scale=scale).numpy()
 
     def reset_patch(self, initial_patch_value):
