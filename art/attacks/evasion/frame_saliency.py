@@ -46,9 +46,9 @@ class FrameSaliencyAttack(EvasionAttack):
     """
 
     method_list = ["iterative_saliency", "iterative_saliency_refresh", "one_shot"]
-    attack_params = EvasionAttack.attack_params + ["attacker", "method", "batch_size"]
+    attack_params = EvasionAttack.attack_params + ["attacker", "method", "frame_index", "batch_size"]
 
-    def __init__(self, classifier, attacker, method="iterative_saliency", batch_size=1):
+    def __init__(self, classifier, attacker, method="iterative_saliency", frame_index=1, batch_size=1):
         """
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
@@ -60,6 +60,8 @@ class FrameSaliencyAttack(EvasionAttack):
                        perturbation after each iteration), "one_shot" (adds all perturbations at once, i.e. defaults to
                        original attack).
         :type method: `str`
+        :param frame_index: Index of the axis in input (feature) array `x` representing the frame dimension.
+        :type frame_index: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
@@ -70,6 +72,7 @@ class FrameSaliencyAttack(EvasionAttack):
         kwargs = {
             "attacker": attacker,
             "method": method,
+            "frame_index": frame_index,
             "batch_size": batch_size
         }
         self.set_params(**kwargs)
@@ -89,6 +92,9 @@ class FrameSaliencyAttack(EvasionAttack):
         if len(x.shape) < 3:
             raise ValueError("Frame saliency attack works only on inputs of dimension greater than 2.")
 
+        if self.frame_index >= len(x.shape):
+            raise ValueError("Frame index is out of bounds for the given input shape.")
+
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         if self.method == "one_shot":
@@ -97,7 +103,6 @@ class FrameSaliencyAttack(EvasionAttack):
             else:
                 return self.attacker.generate(x, y)
 
-        targets = None
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if self.attacker.targeted:
@@ -108,7 +113,8 @@ class FrameSaliencyAttack(EvasionAttack):
         else:
             targets = y
 
-        nb_samples, nb_frames = x.shape[:2]
+        nb_samples = x.shape[0]
+        nb_frames = x.shape[self.frame_index]
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Determine for which adversarial examples the attack fails:
@@ -123,7 +129,9 @@ class FrameSaliencyAttack(EvasionAttack):
         mask = np.ones(x.shape)
         if self.method == "iterative_saliency_refresh":
             mask = np.zeros(x.shape)
+            mask = np.swapaxes(mask, 1, self.frame_index)
             mask[:, frames_to_perturb[:, 0], ::] = 1
+            mask = np.swapaxes(mask, 1, self.frame_index)
             disregard = np.zeros((nb_samples, nb_frames))
             disregard[:, frames_to_perturb[:, 0]] = np.inf
 
@@ -136,8 +144,12 @@ class FrameSaliencyAttack(EvasionAttack):
                 break
 
             # Update designated frames with adversarial perturbations:
+            x_adv = np.swapaxes(x_adv, 1, self.frame_index)
+            x_adv_new = np.swapaxes(x_adv_new, 1, self.frame_index)
             x_adv[attack_failure, frames_to_perturb[:, i][attack_failure], ::] = \
                 x_adv_new[attack_failure, frames_to_perturb[:, i][attack_failure], ::]
+            x_adv = np.swapaxes(x_adv, 1, self.frame_index)
+            x_adv_new = np.swapaxes(x_adv_new, 1, self.frame_index)
 
             # Update for which adversarial examples the attack still fails:
             attack_failure = self._compute_attack_failure_array(x, targets, x_adv)
@@ -147,7 +159,9 @@ class FrameSaliencyAttack(EvasionAttack):
             if self.method == "iterative_saliency_refresh" and i < nb_frames - 1:
                 frames_to_perturb = self._compute_frames_to_perturb(x_adv, targets, disregard)
                 mask = np.zeros(x.shape)
+                mask = np.swapaxes(mask, 1, self.frame_index)
                 mask[:, frames_to_perturb[:, i+1], ::] = 1
+                mask = np.swapaxes(mask, 1, self.frame_index)
                 disregard[:, frames_to_perturb[:, i+1]] = np.inf
                 x_adv_new = self.attacker.generate(x_adv, targets, mask=mask)
 
@@ -159,7 +173,8 @@ class FrameSaliencyAttack(EvasionAttack):
 
     def _compute_frames_to_perturb(self, x_adv, targets, disregard = None):
         saliency_score = self.classifier.loss_gradient(x_adv, targets)
-        saliency_score = saliency_score.reshape((x_adv.shape[:2] + (np.prod(x_adv.shape[2:]), )))
+        saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)
+        saliency_score = saliency_score.reshape((saliency_score.shape[:2] + (np.prod(saliency_score.shape[2:]), )))
         saliency_score = np.mean(np.abs(saliency_score), axis=2)
 
         if disregard is not None:
@@ -188,6 +203,9 @@ class FrameSaliencyAttack(EvasionAttack):
 
         if self.method not in self.method_list:
             raise ValueError("Method must be either 'iterative_saliency', 'iterative_saliency_refresh' or 'one_shot'.")
+
+        if self.frame_index < 1:
+            raise ValueError("The index `frame_index` of the frame dimension has to be >=1.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
