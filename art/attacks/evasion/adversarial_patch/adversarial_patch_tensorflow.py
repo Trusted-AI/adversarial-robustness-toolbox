@@ -178,21 +178,30 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _random_overlay(self, images, patch, scale=None):
+    def _get_circular_patch_mask(self, sharpness=40):
+        """
+        Return a circular patch mask
+        """
         import tensorflow as tf
 
-        sharpness = 40
         diameter = self.image_shape[0]
 
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
-        xx, yy = np.meshgrid(x, y, sparse=True)
-        z = (xx ** 2 + yy ** 2) ** sharpness
+        x_grid, y_grid = np.meshgrid(x, y, sparse=True)
+        z_grid = (x_grid ** 2 + y_grid ** 2) ** sharpness
 
-        image_mask = 1 - np.clip(z, -1, 1)
+        image_mask = 1 - np.clip(z_grid, -1, 1)
         image_mask = np.expand_dims(image_mask, axis=2)
         image_mask = np.broadcast_to(image_mask, self.image_shape).astype(np.float32)
         image_mask = tf.stack([image_mask] * self.batch_size)
+        return image_mask
+
+    def _random_overlay(self, images, patch, scale=None):
+        import tensorflow as tf
+
+        image_mask = self._get_circular_patch_mask()
+
         padded_patch = tf.stack([patch] * self.batch_size)
 
         transform_vectors = list()
@@ -249,7 +258,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             if divmod(i_iter, 10)[1] == 0:
                 logger.info("Iteration: {} Loss: {}".format(i_iter, loss))
 
-        return self._patch.numpy(), None
+        return self._patch.numpy(), self._get_circular_patch_mask().numpy()[0]
 
     def apply_patch(self, x, scale, patch_external=None):
         """
