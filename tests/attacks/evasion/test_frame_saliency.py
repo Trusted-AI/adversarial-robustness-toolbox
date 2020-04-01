@@ -65,14 +65,22 @@ def test_iterative_saliency(fix_get_mnist_subset, get_image_classifier_list_for_
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    expected_values = {
+    expected_values_axis_1 = {
         "nb_perturbed_frames": ExpectedValue(np.asarray([10, 1, 2, 12, 16, 1, 2, 7, 4, 11, 5]), 2)
+    }
+
+    expected_values_axis_2 = {
+        "nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)
     }
 
     for classifier in classifier_list:
         attacker = FastGradientMethod(classifier, eps=.3, batch_size=128)
         attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency")
-        backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values)
+        backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values_axis_1)
+
+        # test with non-default frame index:
+        attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency", frame_index=2)
+        backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values_axis_2)
 
 
 def test_iterative_saliency_refresh(fix_get_mnist_subset, get_image_classifier_list_for_attack):
@@ -82,14 +90,22 @@ def test_iterative_saliency_refresh(fix_get_mnist_subset, get_image_classifier_l
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    expected_values = {
+    expected_values_axis_1 = {
         "nb_perturbed_frames": ExpectedValue(np.asarray([5, 1, 3, 10, 8, 1, 3, 8, 4, 7, 7]), 2)
+    }
+
+    expected_values_axis_2 = {
+        "nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)
     }
 
     for classifier in classifier_list:
         attacker = FastGradientMethod(classifier, eps=.3, batch_size=128)
         attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency_refresh")
-        backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values)
+        backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values_axis_1)
+
+        # test with non-default frame index:
+        attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency", frame_index=2)
+        backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values_axis_2)
 
 
 if __name__ == "__main__":
