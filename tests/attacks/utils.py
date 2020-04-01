@@ -116,6 +116,7 @@ def backend_check_adverse_frames(attack, mnist_dataset, expected_values):
     x_test_adv = attack.generate(x_test_mnist)
 
     x_diff = x_test_adv - x_test_mnist
+    x_diff = np.swapaxes(x_diff, 1, attack.frame_index)
     x_diff = np.reshape(x_diff, x_diff.shape[:2] + (np.prod(x_diff.shape[2:]), ))
     x_diff_norm = np.round(np.linalg.norm(x_diff, axis=-1), decimals=4)
     x_diff_norm = np.linalg.norm(x_diff_norm, ord=0, axis=-1)
