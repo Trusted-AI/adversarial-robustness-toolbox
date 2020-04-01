@@ -178,7 +178,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _get_circular_patch_mask(self, sharpness=40):
+    def _get_circular_patch_mask(self, nb_images, sharpness=40):
         """
         Return a circular patch mask
         """
@@ -194,19 +194,21 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         image_mask = 1 - np.clip(z_grid, -1, 1)
         image_mask = np.expand_dims(image_mask, axis=2)
         image_mask = np.broadcast_to(image_mask, self.image_shape).astype(np.float32)
-        image_mask = tf.stack([image_mask] * self.batch_size)
+        image_mask = tf.stack([image_mask] * nb_images)
         return image_mask
 
     def _random_overlay(self, images, patch, scale=None):
         import tensorflow as tf
 
-        image_mask = self._get_circular_patch_mask()
+        nb_images = images.shape[0]
 
-        padded_patch = tf.stack([patch] * self.batch_size)
+        image_mask = self._get_circular_patch_mask(nb_images=nb_images)
+
+        padded_patch = tf.stack([patch] * nb_images)
 
         transform_vectors = list()
 
-        for i in range(self.batch_size):
+        for i in range(nb_images):
             if scale is None:
                 im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
             else:
@@ -250,15 +252,32 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
     def generate(self, x, y=None, **kwargs):
 
+        import tensorflow as tf
+
         y = check_and_transform_label_format(labels=y)
 
-        for i_iter in range(self.max_iter):
-            loss = self._train_step(images=x, target=y)
+        ds = (
+            tf.data.Dataset.from_tensor_slices((x, y))
+            .shuffle(10000)
+            .batch(self.batch_size)
+            .repeat(math.ceil(self.max_iter / (x.shape[0] / self.batch_size)))
+        )
+
+        i_iter = 0
+
+        for images, target in ds:
+
+            if i_iter >= self.max_iter:
+                break
+
+            loss = self._train_step(images=images, target=target)
 
             if divmod(i_iter, 10)[1] == 0:
                 logger.info("Iteration: {} Loss: {}".format(i_iter, loss))
 
-        return self._patch.numpy(), self._get_circular_patch_mask().numpy()[0]
+            i_iter += 1
+
+        return self._patch.numpy(), self._get_circular_patch_mask(nb_images=1).numpy()[0]
 
     def apply_patch(self, x, scale, patch_external=None):
         """
