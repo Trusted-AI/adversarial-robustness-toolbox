@@ -648,6 +648,8 @@ def get_file(filename, url, path=None, extract=False):
             try:
                 from six.moves.urllib.error import HTTPError, URLError
                 from six.moves.urllib.request import urlretrieve
+                import ssl
+                ssl._create_default_https_context = ssl._create_unverified_context
 
                 urlretrieve(url, full_path)
             except HTTPError as exception:
