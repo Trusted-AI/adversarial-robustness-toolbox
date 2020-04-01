@@ -73,7 +73,7 @@ class TestAdversarialPatch(TestBase):
             patch_shape=(28, 28, 1),
         )
         target = np.zeros(self.x_train_mnist.shape[0])
-        patch_adv, _ = attack_ap.generate(self.x_train_mnist, target)
+        patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
 
         if tf.__version__[0] == "2":
             self.assertAlmostEqual(patch_adv[8, 8, 0], 0.14372873, delta=0.05)

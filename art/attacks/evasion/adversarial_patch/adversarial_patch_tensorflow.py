@@ -193,7 +193,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         image_mask = 1 - np.clip(z_grid, -1, 1)
         image_mask = np.expand_dims(image_mask, axis=2)
-        image_mask = np.broadcast_to(image_mask, self.image_shape).astype(np.float32)
+        image_mask = np.broadcast_to(image_mask, self.image_shape)
         image_mask = tf.stack([image_mask] * nb_images)
         return image_mask
 
@@ -203,6 +203,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         nb_images = images.shape[0]
 
         image_mask = self._get_circular_patch_mask(nb_images=nb_images)
+
+        image_mask = tf.cast(image_mask, images.dtype)
+        patch = tf.cast(patch, images.dtype)
 
         padded_patch = tf.stack([patch] * nb_images)
 
@@ -256,12 +259,21 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         y = check_and_transform_label_format(labels=y)
 
-        ds = (
-            tf.data.Dataset.from_tensor_slices((x, y))
-            .shuffle(10000)
-            .batch(self.batch_size)
-            .repeat(math.ceil(self.max_iter / (x.shape[0] / self.batch_size)))
-        )
+        shuffle = kwargs.get('shuffle', True)
+
+        if shuffle:
+            ds = (
+                tf.data.Dataset.from_tensor_slices((x, y))
+                .shuffle(10000)
+                .batch(self.batch_size)
+                .repeat(math.ceil(self.max_iter / (x.shape[0] / self.batch_size)))
+            )
+        else:
+            ds = (
+                tf.data.Dataset.from_tensor_slices((x, y))
+                .batch(self.batch_size)
+                .repeat(math.ceil(self.max_iter / (x.shape[0] / self.batch_size)))
+            )
 
         i_iter = 0
 
