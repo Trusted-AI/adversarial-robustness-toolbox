@@ -20,6 +20,8 @@ This module implements the task specific estimator for Faster R-CNN v3 in PyTorc
 """
 import logging
 
+import numpy as np
+
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
@@ -79,6 +81,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
+        assert preprocessing is None, "This estimator does not support `preprocessing`."
+        assert postprocessing_defences is None, "This estimator does not support `postprocessing_defences`."
+
         if model is None:
             import torchvision
 
@@ -108,12 +113,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :rtype: `np.ndarray`
         """
         import torchvision
-        import numpy as np
+
+        self._model.train()
 
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
-
-        self._model.train()
+        x = x.astype(np.uint8)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
@@ -191,6 +196,10 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         import torchvision
 
         self._model.eval()
+
+        # Apply preprocessing
+        x, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x = x.astype(np.uint8)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
