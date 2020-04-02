@@ -130,7 +130,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             image_tensor_list.append(img)
 
         if y is None:
-            predictions = self.predict(x=x)
+            predictions = self.predict(x=x.astype(np.float32))
         else:
             predictions = y
 
@@ -158,7 +158,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         self._model.zero_grad()
 
         # Compute gradients
-        loss.backward()
+        loss.backward(retain_graph=True)
 
         grad_list = list()
         for img in image_tensor_list:
