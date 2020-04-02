@@ -129,22 +129,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             img.requires_grad = True
             image_tensor_list.append(img)
 
-        if y is None:
-            predictions = self.predict(x=x.astype(np.float32))
-        else:
-            predictions = y
-
-        self._model.train()
-
-        targets = []
-
-        for i in range(len(image_tensor_list)):
-            d = {}
-            d["boxes"] = predictions[i]["boxes"]
-            d["labels"] = predictions[i]["labels"]
-            targets.append(d)
-
-        output = self._model(image_tensor_list, targets)
+        output = self._model(image_tensor_list, y)
 
         # Compute the gradient and return
         loss = None
