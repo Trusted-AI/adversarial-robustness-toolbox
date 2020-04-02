@@ -82,13 +82,13 @@ def main():
     print("image_1.shape:", image_1.shape)
 
     # Stack images
-    image = np.stack([image_0, image_1], axis=0)
+    image = np.stack([image_0, image_1], axis=0).astype(np.float32)
     print("image.shape:", image.shape)
 
     for i in range(image.shape[0]):
         plt.axis("off")
         plt.title("image {}".format(i))
-        plt.imshow(image[i], interpolation="nearest")
+        plt.imshow(image[i].astype(np.uint8), interpolation="nearest")
         plt.show()
 
     # Make prediction on benign samples
@@ -104,7 +104,7 @@ def main():
         plot_image_with_boxes(img=image[i].copy(), boxes=predictions_boxes, pred_cls=predictions_class)
 
     # Create and run attack
-    eps = 8
+    eps = 32
     attack = FastGradientMethod(estimator=frcnn, eps=eps)
     image_adv = attack.generate(x=image, y=None)
 
