@@ -160,9 +160,9 @@ class FrameSaliencyAttack(EvasionAttack):
                 frames_to_perturb = self._compute_frames_to_perturb(x_adv, targets, disregard)
                 mask = np.zeros(x.shape)
                 mask = np.swapaxes(mask, 1, self.frame_index)
-                mask[:, frames_to_perturb[:, i+1], ::] = 1
+                mask[:, frames_to_perturb[:, i + 1], ::] = 1
                 mask = np.swapaxes(mask, 1, self.frame_index)
-                disregard[:, frames_to_perturb[:, i+1]] = np.inf
+                disregard[:, frames_to_perturb[:, i + 1]] = np.inf
                 x_adv_new = self.attacker.generate(x_adv, targets, mask=mask)
 
         return x_adv
@@ -171,7 +171,7 @@ class FrameSaliencyAttack(EvasionAttack):
         attack_success = compute_success_array(self.attacker.classifier, x, targets, x_adv, self.attacker.targeted)
         return np.invert(attack_success)
 
-    def _compute_frames_to_perturb(self, x_adv, targets, disregard = None):
+    def _compute_frames_to_perturb(self, x_adv, targets, disregard=None):
         saliency_score = self.classifier.loss_gradient(x_adv, targets)
         saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)
         saliency_score = saliency_score.reshape((saliency_score.shape[:2] + (np.prod(saliency_score.shape[2:]), )))
