@@ -92,6 +92,18 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             )
         else:
             self._model = model
+
+        # Set device
+        import torch
+
+        if torch.cuda.is_available():
+            cuda_idx = torch.cuda.current_device()
+            self._device = torch.device("cuda:{}".format(cuda_idx))
+        else:
+            self._device = torch.device("cpu")
+
+        self._model.to(self._device)
+
         self._model.eval()
 
         self.attack_losses = attack_losses
@@ -127,6 +139,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         for i in range(x.shape[0]):
             img = transform(x[i])
             img.requires_grad = True
+            img = img.to(self._device)
             image_tensor_list.append(img)
 
         output = self._model(image_tensor_list, y)
@@ -138,6 +151,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                 loss = output[loss_name]
             else:
                 loss = loss + output[loss_name]
+
+        print('loss', loss)
 
         # Clean gradients
         self._model.zero_grad()
@@ -191,7 +206,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         image_tensor_list = list()
 
         for i in range(x.shape[0]):
-            image_tensor_list.append(transform(x[i]))
+            image_tensor_list.append(transform(x[i]).to(self._device))
         predictions = self._model(image_tensor_list)
         return predictions
 
