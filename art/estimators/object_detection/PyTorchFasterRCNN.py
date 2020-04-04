@@ -137,9 +137,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         image_tensor_list = list()
 
         for i in range(x.shape[0]):
-            img = transform(x[i])
+            img = transform(x[i]).to(self._device)
             img.requires_grad = True
-            img = img.to(self._device)
             image_tensor_list.append(img)
 
         output = self._model(image_tensor_list, y)
