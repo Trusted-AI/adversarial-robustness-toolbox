@@ -1,3 +1,4 @@
+cma
 matplotlib
 numpy
 Pillow==7.0.0

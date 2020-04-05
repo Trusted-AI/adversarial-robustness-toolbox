@@ -45,7 +45,15 @@ class AdversarialTrainerMadryPGD(Trainer):
     """
 
     def __init__(
-        self, classifier, nb_epochs=391, batch_size=128, eps=8, eps_step=2, max_iter=7, num_random_init=True, **kwargs
+        self,
+        classifier,
+        nb_epochs=391,
+        batch_size=128,
+        eps=8,
+        eps_step=2,
+        max_iter=7,
+        num_random_init=True,
+        **kwargs
     ):
         """
         Create an :class:`.AdversarialTrainerMadryPGD` instance.
@@ -68,13 +76,17 @@ class AdversarialTrainerMadryPGD(Trainer):
             starting at the original input.
         :type num_random_init: `int`
         """
-
+        super(AdversarialTrainerMadryPGD, self).__init__(classifier=classifier)
         self.batch_size = batch_size
         self.nb_epochs = nb_epochs
 
         # Setting up adversary and perform adversarial training:
         self.attack = ProjectedGradientDescent(
-            classifier, eps=eps, eps_step=eps_step, max_iter=max_iter, num_random_init=num_random_init
+            classifier,
+            eps=eps,
+            eps_step=eps_step,
+            max_iter=max_iter,
+            num_random_init=num_random_init,
         )
 
         self.trainer = AdversarialTrainer(classifier, self.attack, ratio=1.0)
@@ -92,7 +104,12 @@ class AdversarialTrainerMadryPGD(Trainer):
         :return: `None`
         """
         self.trainer.fit(
-            x, y, validation_data=validation_data, nb_epochs=self.nb_epochs, batch_size=self.batch_size, **kwargs
+            x,
+            y,
+            validation_data=validation_data,
+            nb_epochs=self.nb_epochs,
+            batch_size=self.batch_size,
+            **kwargs
         )
 
     def get_classifier(self):

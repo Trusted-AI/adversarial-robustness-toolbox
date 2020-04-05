@@ -25,6 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import tqdm
 
 from art.wrappers.wrapper import ClassifierWrapper
 from art.classifiers.classifier import Classifier, ClassifierGradients
@@ -77,8 +78,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         logger.info("Applying randomized smoothing.")
         n_abstained = 0
         prediction = []
-        for x_i in x:
-
+        for x_i in tqdm(x, desc="Randomized smoothing"):
             # get class counts
             counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]
@@ -87,7 +87,9 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
 
             # predict or abstain
             smooth_prediction = np.zeros(counts_pred.shape)
-            if (not is_abstain) or (binom_test(count1, count1 + count2, p=0.5) <= self.alpha):
+            if (not is_abstain) or (
+                binom_test(count1, count1 + count2, p=0.5) <= self.alpha
+            ):
                 smooth_prediction[np.argmax(counts_pred)] = 1
             elif is_abstain:
                 n_abstained += 1
@@ -226,7 +228,9 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         """
         from statsmodels.stats.proportion import proportion_confint
 
-        return proportion_confint(n_class_samples, n_total_samples, alpha=2 * self.alpha, method="beta")[0]
+        return proportion_confint(
+            n_class_samples, n_total_samples, alpha=2 * self.alpha, method="beta"
+        )[0]
 
     def fit(self, x, y, **kwargs):
         """

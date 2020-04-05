@@ -25,6 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import Classifier
@@ -108,11 +109,15 @@ class KnockoffNets(ExtractionAttack):
         """
         # Check prerequisite for random strategy
         if self.sampling_strategy == "random" and y is not None:
-            logger.warning("This attack with random sampling strategy does not use the provided label y.")
+            logger.warning(
+                "This attack with random sampling strategy does not use the provided label y."
+            )
 
         # Check prerequisite for adaptive strategy
         if self.sampling_strategy == "adaptive" and y is None:
-            raise ValueError("This attack with adaptive sampling strategy needs label y.")
+            raise ValueError(
+                "This attack with adaptive sampling strategy needs label y."
+            )
 
         # Check the size of the source input vs nb_stolen
         if x.shape[0] < self.nb_stolen:
@@ -153,7 +158,11 @@ class KnockoffNets(ExtractionAttack):
 
         # Train the thieved classifier
         thieved_classifier.fit(
-            x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs, verbose=0
+            x=selected_x,
+            y=fake_labels,
+            batch_size=self.batch_size_fit,
+            nb_epochs=self.nb_epochs,
+            verbose=0,
         )
 
         return thieved_classifier
@@ -226,7 +235,7 @@ class KnockoffNets(ExtractionAttack):
         queried_labels = []
 
         avg_reward = 0
-        for it in range(1, self.nb_stolen + 1):
+        for it in trange(1, self.nb_stolen + 1, desc="Knock-off nets"):
             # Sample an action
             action = np.random.choice(np.arange(0, nb_actions), p=probs)
 
@@ -235,18 +244,28 @@ class KnockoffNets(ExtractionAttack):
             selected_x.append(sampled_x)
 
             # Query the victim classifier
-            y_output = self.classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
+            y_output = self.classifier.predict(
+                x=np.array([sampled_x]), batch_size=self.batch_size_query
+            )
             fake_label = np.argmax(y_output, axis=1)
-            fake_label = to_categorical(labels=fake_label, nb_classes=self.classifier.nb_classes())
+            fake_label = to_categorical(
+                labels=fake_label, nb_classes=self.classifier.nb_classes()
+            )
             queried_labels.append(fake_label[0])
 
             # Train the thieved classifier
             thieved_classifier.fit(
-                x=np.array([sampled_x]), y=fake_label, batch_size=self.batch_size_fit, nb_epochs=1, verbose=0
+                x=np.array([sampled_x]),
+                y=fake_label,
+                batch_size=self.batch_size_fit,
+                nb_epochs=1,
+                verbose=0,
             )
 
             # Test new labels
-            y_hat = thieved_classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
+            y_hat = thieved_classifier.predict(
+                x=np.array([sampled_x]), batch_size=self.batch_size_query
+            )
 
             # Compute rewards
             reward = self._reward(y_output, y_hat, it)
@@ -258,9 +277,14 @@ class KnockoffNets(ExtractionAttack):
             # Update H function
             for a in range(nb_actions):
                 if a != action:
-                    h_func[a] = h_func[a] - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[a]
+                    h_func[a] = (
+                        h_func[a]
+                        - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[a]
+                    )
                 else:
-                    h_func[a] = h_func[a] + 1.0 / learning_rate[action] * (reward - avg_reward) * (1 - probs[a])
+                    h_func[a] = h_func[a] + 1.0 / learning_rate[action] * (
+                        reward - avg_reward
+                    ) * (1 - probs[a])
 
             # Update probs
             aux_exp = np.exp(h_func)
@@ -268,7 +292,10 @@ class KnockoffNets(ExtractionAttack):
 
         # Train the thieved classifier the final time
         thieved_classifier.fit(
-            x=np.array(selected_x), y=np.array(queried_labels), batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs
+            x=np.array(selected_x),
+            y=np.array(queried_labels),
+            batch_size=self.batch_size_fit,
+            nb_epochs=self.nb_epochs,
         )
 
         return thieved_classifier
@@ -400,7 +427,9 @@ class KnockoffNets(ExtractionAttack):
         reward_loss = self._reward_loss(y_output, y_hat)
         reward = [reward_cert, reward_div, reward_loss]
         self.reward_avg = self.reward_avg + (1.0 / n) * (reward - self.reward_avg)
-        self.reward_var = self.reward_var + (1.0 / n) * ((reward - self.reward_avg) ** 2 - self.reward_var)
+        self.reward_var = self.reward_var + (1.0 / n) * (
+            (reward - self.reward_avg) ** 2 - self.reward_var
+        )
 
         # Normalize rewards
         if n > 1:
@@ -430,17 +459,29 @@ class KnockoffNets(ExtractionAttack):
         # Save attack-specific parameters
         super(KnockoffNets, self).set_params(**kwargs)
 
-        if not isinstance(self.batch_size_fit, (int, np.int)) or self.batch_size_fit <= 0:
-            raise ValueError("The size of batches for fitting the thieved classifier must be a positive integer.")
+        if (
+            not isinstance(self.batch_size_fit, (int, np.int))
+            or self.batch_size_fit <= 0
+        ):
+            raise ValueError(
+                "The size of batches for fitting the thieved classifier must be a positive integer."
+            )
 
-        if not isinstance(self.batch_size_query, (int, np.int)) or self.batch_size_query <= 0:
-            raise ValueError("The size of batches for querying the victim classifier must be a positive integer.")
+        if (
+            not isinstance(self.batch_size_query, (int, np.int))
+            or self.batch_size_query <= 0
+        ):
+            raise ValueError(
+                "The size of batches for querying the victim classifier must be a positive integer."
+            )
 
         if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")
 
         if not isinstance(self.nb_stolen, (int, np.int)) or self.nb_stolen <= 0:
-            raise ValueError("The number of queries submitted to the victim classifier must be a positive integer.")
+            raise ValueError(
+                "The number of queries submitted to the victim classifier must be a positive integer."
+            )
 
         if self.sampling_strategy not in ["random", "adaptive"]:
             raise ValueError("Sampling strategy must be either `random` or `adaptive`.")
