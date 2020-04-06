@@ -65,7 +65,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         patch_shape=None,
     ):
         """
-        Create an instance of the :class:`.AdversarialPatch`.
+        Create an instance of the :class:`.AdversarialPatchTensorFlowV2`.
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
