@@ -109,6 +109,9 @@ poisoning the training dataset.
 
 `poisoning_attack_svm.ipynb`_ demonstrates the generation of malicious poisoning examples on Support Vector Machines.
 
+`poisoning_attack_feature_collision.ipynb`_ demonstrates the generation of a feature collision clean-label attack on a
+Keras classifier.
+
 Certification and Verification
 ------------------------------
 
@@ -146,5 +149,6 @@ Trees, Random Forests, etc.) using XGBoost, LightGBM and Scikit-learn.
 .. _detection_adversarial_samples_cifar10.ipynb: https://github.com/IBM/adversarial-robustness-toolbox/blob/master/notebooks/detection_adversarial_samples_cifar10.ipynb
 .. _poisoning_dataset_mnist.ipynb: https://github.com/IBM/adversarial-robustness-toolbox/blob/master/notebooks/poisoning_dataset_mnist.ipynb
 .. _poisoning_attack_svm.ipynb: https://github.com/IBM/adversarial-robustness-toolbox/blob/master/notebooks/poisoning_attack_svm.ipynb
+.. _poisoning_attack_feature_collision.ipynb: https://github.com/IBM/adversarial-robustness-toolbox/blob/master/notebooks/poisoning_attack_feature_collision.ipynb
 .. _output_randomized_smoothing_mnist.ipynb: https://github.com/IBM/adversarial-robustness-toolbox/blob/master/notebooks/output_randomized_smoothing_mnist.ipynb
 .. _robustness_verification_clique_method_tree_ensembles_gradient_boosted_decision_trees_classifiers.ipynb: https://github.com/IBM/adversarial-robustness-toolbox/blob/master/notebooks/robustness_verification_clique_method_tree_ensembles_gradient_boosted_decision_trees_classifiers.ipynb
