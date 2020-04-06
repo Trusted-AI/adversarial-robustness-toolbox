@@ -162,7 +162,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :param y_attack: the initial attack label
         :type y_attack: `np.ndarray`
         :return: a tuple containing the final attack point and the poisoned model
-        :rtype: (`np.ndarray`, `art.classifiers.ScikitlearnSVC`)
+        :rtype: (`np.ndarray`, `art.classifiers.scikitlearn.ScikitlearnSVC`)
         """
         # pylint: disable=W0212
         from sklearn.preprocessing import normalize

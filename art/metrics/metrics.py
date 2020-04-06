@@ -49,7 +49,7 @@ def get_crafter(classifier, attack, params=None):
     Create an attack instance to craft adversarial samples.
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param attack: adversarial attack name
     :type attack: `str`
     :param params: Parameters specific to the adversarial attack
@@ -77,7 +77,7 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     | Paper link: https://arxiv.org/abs/1511.04599
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
     :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
@@ -156,7 +156,7 @@ def loss_sensitivity(classifier, x, y):
     | Paper link: https://arxiv.org/abs/1706.05394
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.ClassifierGradients`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
     :param y: Labels for sample `x`, one-hot encoded.
@@ -179,7 +179,7 @@ def clever(
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param nb_batches: Number of repetitions of the estimate
@@ -233,7 +233,7 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param nb_batches: Number of repetitions of the estimate
@@ -272,7 +272,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param target_class: Targeted class
