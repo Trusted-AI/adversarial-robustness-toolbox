@@ -25,8 +25,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-import numpy as np
-
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
 from art.classifiers import TensorFlowV2Classifier
