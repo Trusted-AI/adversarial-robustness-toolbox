@@ -159,7 +159,7 @@ class AdversarialPatch(EvasionAttack):
 
     def set_params(self, **kwargs):
         """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
 
         :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
                range `[0, 180]`.
