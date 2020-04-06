@@ -304,10 +304,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :return: The patched samples.
         :rtype: `np.ndarray`
         """
-        if patch_external is not None:
-            return self._random_overlay(images=x, patch=patch_external, scale=scale).numpy()
-
-        return self._random_overlay(images=x, patch=self._patch, scale=scale).numpy()
+        patch = patch_external if patch_external is not None else self._patch
+        return self._random_overlay(images=x, patch=patch, scale=scale).numpy()
 
     def reset_patch(self, initial_patch_value):
         """
