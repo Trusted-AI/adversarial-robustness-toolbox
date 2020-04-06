@@ -123,6 +123,10 @@ class ProjectedGradientDescent(FastGradientMethod):
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :type y: `np.ndarray`
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -137,6 +141,12 @@ class ProjectedGradientDescent(FastGradientMethod):
             targets = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
         else:
             targets = y
+
+        mask = kwargs.get("mask")
+        if mask is not None:
+            # ensure the mask is broadcastable:
+            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
+                raise ValueError("mask shape must be broadcastable to input shape")
 
         adv_x_best = None
         rate_best = None
@@ -154,6 +164,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                     adv_x,
                     x,
                     targets,
+                    mask,
                     self.eps,
                     self.eps_step,
                     self._project,
