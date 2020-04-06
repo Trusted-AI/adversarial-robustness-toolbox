@@ -86,7 +86,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :type batch_size: `int`
         :param patch_shape: The shape of the adversarial path as a tuple of shape (width, height, nb_channels).
                             Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
-                            the patch_shape is set to the shape of the image samples.
+                            the `patch_shape` is set to the shape of the image samples.
         :type patch_shape: (`int`, `int`, `int`)
         """
         import tensorflow as tf
