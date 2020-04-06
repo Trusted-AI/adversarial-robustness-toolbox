@@ -64,7 +64,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         batch_size=16,
     ):
         """
-        Create an instance of the :class:`.AdversarialPatch`.
+        Create an instance of the :class:`.AdversarialPatchNumpy`.
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
