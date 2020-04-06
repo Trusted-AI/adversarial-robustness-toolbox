@@ -16,7 +16,7 @@ matrix:
 
 before_install:
   - sed -i "s/^tensorflow$/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
-  - sed -i "s/keras\b/keras==${KERAS_V}/" test_requirements.txt
+  - sed -i "s/^keras$/keras==${KERAS_V}/" test_requirements.txt
 
 install:
   - python -m pip install --upgrade pip==19.3.1 setuptools wheel
