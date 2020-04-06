@@ -121,8 +121,6 @@ class TestAdversarialPatch(TestBase):
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(x_train, target)
 
-        # patch_adv = np.reshape(patch_adv, (28, 28, 1)).astype(np.float32)
-
         self.assertAlmostEqual(patch_adv[0, 8, 8], 0.18794201, delta=0.05)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5109714, delta=0.05)
         self.assertAlmostEqual(float(np.sum(patch_adv)), 365.93072509765625, delta=1.0)
