@@ -167,11 +167,8 @@ class AdversarialPatchNumpy(EvasionAttack):
         :return: The patched instances.
         :rtype: `np.ndarray`
         """
-        if patch_external is not None:
-            patched_x, _, _ = self._augment_images_with_random_patch(x, patch_external, scale)
-            return patched_x
-
-        patched_x, _, _ = self._augment_images_with_random_patch(x, self.patch, scale)
+        patch = patch_external if patch_external is not None else self.patch
+        patched_x, _, _ = self._augment_images_with_random_patch(x, patch, scale)
         return patched_x
 
     def set_params(self, **kwargs):
