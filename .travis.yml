@@ -15,7 +15,7 @@ matrix:
         - py.test --pep8 -m pep8
 
 before_install:
-  - sed -i "s/tensorflow\b/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
+  - sed -i "s/^tensorflow$/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
   - sed -i "s/keras\b/keras==${KERAS_V}/" test_requirements.txt
 
 install:
