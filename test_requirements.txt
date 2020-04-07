@@ -8,6 +8,7 @@ keras
 mxnet
 #torch>=1.2.0
 tensorflow
+tensorflow_addons
 scikit-learn==0.22.1
 xgboost==1.0.0
 lightgbm==2.3.1
