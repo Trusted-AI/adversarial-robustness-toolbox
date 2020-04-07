@@ -124,6 +124,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        import torch
         import torchvision
 
         self._model.train()
@@ -131,6 +132,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
         x = x.astype(np.uint8)
+
+        if y is not None:
+            for i, y_i in enumerate(y):
+                y[i]["boxes"] = torch.FloatTensor(y_i["boxes"]).to(self._device)
+                y[i]["labels"] = torch.LongTensor(y_i["labels"]).to(self._device)
+                y[i]["scores"] = torch.Tensor(y_i["scores"]).to(self._device)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
@@ -151,7 +158,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             else:
                 loss = loss + output[loss_name]
 
-        print('loss', loss)
+        print("loss", loss)
 
         # Clean gradients
         self._model.zero_grad()
