@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -395,7 +395,26 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def get_activations(self, x, layer, batch_size=128):
+    def custom_gradient(self, nn_function):
+        return
+
+    @property
+    def layer_names(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either. In addition, the function can only infer the internal layers if the input
+                     model is of type `nn.Sequential`, otherwise, it will only return the logit layer.
+        """
+        return self._layer_names
+
+    def get_activations(self, x, layer, batch_size=128, intermediate=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -427,9 +446,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             raise TypeError("Layer must be of type str or int")
 
+        if intermediate:
+            return self._model(torch.from_numpy(x).to(self._device))[layer_index]
+
         # Run prediction with batch processing
         results = []
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+
         for m in range(num_batch):
             # Batch indexes
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
@@ -441,6 +464,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         results = np.concatenate(results)
 
         return results
+
+    def custom_gradient(self, nn_function):
+        return
+
+    def get_input_layer(self):
+        return self._input
 
     def set_learning_phase(self, train):
         """

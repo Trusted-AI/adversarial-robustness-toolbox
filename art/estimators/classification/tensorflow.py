@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -413,7 +413,22 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return result
 
-    def get_activations(self, x, layer, batch_size=128):
+    @property
+    def layer_names(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either.
+        """
+        return self._layer_names
+
+    def get_activations(self, x, layer, batch_size=128, intermediate=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -446,6 +461,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         else:
             raise TypeError("Layer must be of type `str` or `int`. Received %s." % layer)
 
+        if intermediate:
+            return layer_tensor
+
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
@@ -467,6 +485,20 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         results = np.concatenate(results)
 
         return results
+
+    def custom_gradient(self, nn_function):
+        """
+        Returns the gradient of the nn_function with respect to vars
+
+        :param nn_function: an intermediate tensor representation of the gradient function
+        :type nn_function: a Keras tensor
+        :param vars: the variables to differentiate
+        :type vars: `list`
+        :return: the gradient of the function w.r.t vars
+        :rtype: `np.ndarray`
+        """
+    def get_input_layer(self):
+        return self._input
 
     def set_learning_phase(self, train):
         """
