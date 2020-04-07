@@ -101,46 +101,58 @@ class DPatch(EvasionAttack):
             x.shape[self.estimator.channel_index] == self.patch_shape[self.estimator.channel_index - 1]
         ), "The color channel index of the images and the patch have to be identical."
 
+        assert y is None, "The DPatch attack does not use target labels."
+
         assert len(x.shape) == 4, "The adversarial patch can only be applied to images."
 
-        if y is None:
-            y = self.estimator.predict(x=x)
-
         for i_step in range(self.max_iter):
-            print('i_step', i_step)
+            print("i_step", i_step)
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
 
             patched_images, transforms = self._augment_images_with_patch(x, self._patch, random_location=True)
 
+            patch_target = list()
+
+            for i_image in range(patched_images.shape[0]):
+
+                i_x_1 = transforms[i_image]["i_x_1"]
+                i_x_2 = transforms[i_image]["i_x_2"]
+                i_y_1 = transforms[i_image]["i_y_1"]
+                i_y_2 = transforms[i_image]["i_y_2"]
+
+                target_dict = dict()
+                target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
+                target_dict["labels"] = np.asarray([0,])
+                target_dict["scores"] = np.asarray([1.0,])
+
+                patch_target.append(target_dict)
+
             num_batches = math.ceil(x.shape[0] / self.batch_size)
 
             patch_gradients = np.zeros_like(self._patch)
-
-            print('num_batches', num_batches)
 
             for i_batch in range(num_batches):
                 i_batch_start = i_batch * self.batch_size
                 i_batch_end = min((i_batch + 1) * self.batch_size, patched_images.shape[0])
 
                 gradients = self.estimator.loss_gradient(
-                    patched_images[i_batch_start:i_batch_end], y[i_batch_start:i_batch_end]
+                    x=patched_images[i_batch_start:i_batch_end], y=patch_target[i_batch_start:i_batch_end]
                 )
 
                 for i_image in range(self.batch_size):
-                    i_w_0 = transforms[i_image]['width']
-                    i_h_0 = transforms[i_image]['height']
+
+                    i_x_1 = transforms[i_image]["i_x_1"]
+                    i_x_2 = transforms[i_image]["i_x_2"]
+                    i_y_1 = transforms[i_image]["i_y_1"]
+                    i_y_2 = transforms[i_image]["i_y_2"]
 
                     if self.estimator.channel_index == 3:
-                        i_w_1 = i_w_0 + self.patch_shape[0]
-                        i_h_1 = i_h_0 + self.patch_shape[1]
-                        patch_gradients_i = gradients[i_image, i_w_0:i_w_1, i_h_0:i_h_1, :]
+                        patch_gradients_i = gradients[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :]
                     elif self.estimator.channel_index == 1:
-                        i_w_1 = i_w_0 + self.patch_shape[1]
-                        i_h_1 = i_h_0 + self.patch_shape[2]
-                        patch_gradients_i = gradients[i_image, :, i_w_0:i_w_1, i_h_0:i_h_1]
+                        patch_gradients_i = gradients[i_image, :, i_x_1:i_x_2, i_y_1:i_y_2]
                     else:
-                        raise ValueError('Unrecognized channel index.')
+                        raise ValueError("Unrecognized channel index.")
 
                     patch_gradients += patch_gradients_i
 
@@ -164,17 +176,18 @@ class DPatch(EvasionAttack):
         for i_image in range(x.shape[0]):
 
             if random_location:
-                i_w_0 = random.randint(0, x.shape[1] - 1 - patch_copy.shape[0])
-                i_h_0 = random.randint(0, x.shape[2] - 1 - patch_copy.shape[1])
+                i_x_1 = random.randint(0, x.shape[1] - 1 - patch_copy.shape[0])
+                i_y_1 = random.randint(0, x.shape[2] - 1 - patch_copy.shape[1])
             else:
-                i_w_0 = 0
-                i_h_0 = 0
+                i_x_1 = 0
+                i_y_1 = 0
 
-            transformations.append({'width': i_w_0, 'height': i_h_0})
+            i_x_2 = i_x_1 + patch_copy.shape[0]
+            i_y_2 = i_y_1 + patch_copy.shape[1]
 
-            i_w_1 = i_w_0 + patch_copy.shape[0]
-            i_h_1 = i_h_0 + patch_copy.shape[1]
-            x_copy[i_image, i_w_0:i_w_1, i_h_0:i_h_1, :] = patch_copy
+            transformations.append({"i_x_1": i_x_1, "i_y_1": i_y_1, "i_x_2": i_x_2, "i_y_2": i_y_2})
+
+            x_copy[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :] = patch_copy
 
         if self.estimator.channel_index == 1:
             x_copy = np.swapaxes(x_copy, 1, 3)
