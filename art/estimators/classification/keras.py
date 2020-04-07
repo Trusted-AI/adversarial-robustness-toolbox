@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -442,7 +442,22 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    def get_activations(self, x, layer, batch_size):
+    @property
+    def layer_names(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either.
+        """
+        return self._layer_names
+
+    def get_activations(self, x, layer, batch_size, intermediate=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -478,6 +493,10 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             raise TypeError("Layer must be of type `str` or `int`.")
 
         layer_output = self._model.get_layer(layer_name).output
+
+        if intermediate:
+            return layer_output
+
         output_func = k.function([self._input], [layer_output])
 
         if x.shape == self.input_shape:
@@ -498,6 +517,29 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             activations[begin:end] = output_func([x_preprocessed[begin:end]])[0]
 
         return activations
+
+    def custom_gradient(self, nn_function, vars):
+        """
+        Returns the gradient of the nn_function with respect to vars
+
+        :param nn_function: an intermediate tensor representation of the gradient function
+        :type nn_function: a Keras tensor
+        :param vars: the variables to differentiate
+        :type vars: `list`
+        :return: the gradient of the function w.r.t vars
+        :rtype: `np.ndarray`
+        """
+        import keras.backend as k
+
+        if not k.is_keras_tensor(nn_function):
+            raise TypeError("function must be a Keras tensor")
+        if not all(k.is_keras_tensor(v) for v in vars):
+            raise TypeError("variables must be Keras tensors")
+
+        return k.eval(k.gradients(nn_function, vars))
+
+    def get_input_layer(self):
+        return self._input
 
     def _init_class_gradients(self, label=None):
         # pylint: disable=E0401
