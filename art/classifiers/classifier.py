@@ -276,8 +276,10 @@ class Classifier(abc.ABC, metaclass=input_filter):
 
         if self.preprocessing is not None:
             sub, div = self.preprocessing
-            sub = np.asarray(sub, dtype=x.dtype)
-            div = np.asarray(div, dtype=x.dtype)
+
+            if isinstance(x, np.ndarray):
+                sub = np.asarray(sub, dtype=x.dtype)
+                div = np.asarray(div, dtype=x.dtype)
 
             res = x - sub
             res = res / div
