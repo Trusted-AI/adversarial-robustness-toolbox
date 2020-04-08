@@ -90,7 +90,7 @@ class Attack(abc.ABC, metaclass=input_filter):
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         """
         if not isinstance(classifier, Classifier) and classifier is not None:
             raise ClassifierError(self.__class__, [Classifier], classifier)
@@ -119,7 +119,7 @@ class EvasionAttack(Attack):
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         """
         super().__init__(classifier)
 
@@ -140,7 +140,35 @@ class EvasionAttack(Attack):
         raise NotImplementedError
 
 
-class PoisoningAttackBlackBox(Attack):
+class PoisoningAttack(Attack):
+    """
+    Abstract base class for poisoning attack classes
+    """
+
+    def __init__(self, classifier):
+        """
+        :param classifier: A trained classifier (or none if no classifier is needed)
+        :type classifier: `art.classifiers.Classifier` or `None`
+        """
+        super().__init__(classifier)
+
+    @abc.abstractmethod
+    def poison(self, x, y=None, **kwargs):
+        """
+        Generate poisoning examples and return them as an array. This method should be overridden by all concrete
+        poisoning attack implementations.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y:  Target labels for `x`. Untargeted attacks set this value to None.
+        :type y: `np.ndarray`
+        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :rtype: `(np.ndarray, np.ndarray)`
+        """
+        raise NotImplementedError
+
+
+class PoisoningAttackBlackBox(PoisoningAttack):
     """
     Abstract base class for poisoning attack classes that have no access to the model (classifier object)
     """
@@ -167,7 +195,7 @@ class PoisoningAttackBlackBox(Attack):
         raise NotImplementedError
 
 
-class PoisoningAttackWhiteBox(Attack):
+class PoisoningAttackWhiteBox(PoisoningAttack):
     """
     Abstract base class for poisoning attack classes that have white-box access to the model (classifier object)
     """
@@ -175,9 +203,9 @@ class PoisoningAttackWhiteBox(Attack):
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         """
-        super(PoisoningAttackWhiteBox, self).__init__(classifier)
+        super().__init__(classifier)
 
     @abc.abstractmethod
     def poison(self, x, y=None, **kwargs):
@@ -204,7 +232,7 @@ class ExtractionAttack(Attack):
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier targeted for extraction.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         """
         super().__init__(classifier)
 
@@ -220,6 +248,6 @@ class ExtractionAttack(Attack):
                or not. This parameter is only used by some of the attacks.
         :type y: `np.ndarray`
         :return: ART classifier of the extracted model.
-        :rtype: :class:`.Classifier`
+        :rtype: :class:`art.classifiers.Classifier`
         """
         raise NotImplementedError
