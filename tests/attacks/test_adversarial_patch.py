@@ -21,7 +21,7 @@ import logging
 import unittest
 import numpy as np
 
-from art.attacks.evasion.adversarial_patch import AdversarialPatch
+from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch
 from art.estimators.estimator import NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassGradientsMixin
 
@@ -70,20 +70,20 @@ class TestAdversarialPatch(TestBase):
             scale_max=0.41,
             learning_rate=5.0,
             batch_size=10,
-            max_iter=500,
+            max_iter=5,
             patch_shape=(28, 28, 1),
         )
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
 
         if tf.__version__[0] == "2":
-            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.14372873, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.38899645, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 417.5904846191406, delta=1.0)
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.55935985, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.5917497, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 400.0701904296875, delta=1.0)
         else:
-            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.048357915, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.26751655, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 458.03973388671875, delta=1.0)
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.5332792, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.54590017, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 398.8515625, delta=1.0)
 
         if sess is not None:
             sess.close()
@@ -96,15 +96,15 @@ class TestAdversarialPatch(TestBase):
         krc = get_image_classifier_kr()
 
         attack_ap = AdversarialPatch(
-            krc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=500
+            krc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=5
         )
         master_seed(seed=1234)
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.12921186, delta=0.05)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.030846387, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 466.4248352050781, delta=1.0)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.7993435, delta=0.05)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 1.0, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 392.3392333984375, delta=1.0)
 
     def test_pytorch(self):
         """
@@ -116,15 +116,15 @@ class TestAdversarialPatch(TestBase):
         x_train = np.reshape(self.x_train_mnist, (self.n_train, 1, 28, 28)).astype(np.float32)
 
         attack_ap = AdversarialPatch(
-            ptc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=500
+            ptc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=5
         )
         master_seed(seed=1234)
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(x_train, target)
 
-        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.18794201, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.5002671, delta=0.05)
         self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5109714, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 365.93072509765625, delta=1.0)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 393.09832763671875, delta=1.0)
 
     def test_failure_feature_vectors(self):
         attack_params = {

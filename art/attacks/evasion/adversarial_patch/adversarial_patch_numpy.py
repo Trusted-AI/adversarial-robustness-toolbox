@@ -29,7 +29,6 @@ import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 
-from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
@@ -125,7 +124,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         ) / 2.0 + self.estimator.clip_values[0]
         self.patch = np.ones(shape=self.estimator.input_shape).astype(np.float32) * mean_value
 
-        y_target = check_and_transform_label_format(labels=y)
+        y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
@@ -152,7 +151,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
             # patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
-            self.patch = np.clip(self.patch, a_min=self.classifier.clip_values[0], a_max=self.classifier.clip_values[1])
+            self.patch = np.clip(self.patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
 
         return self.patch, self._get_circular_patch_mask()
 
