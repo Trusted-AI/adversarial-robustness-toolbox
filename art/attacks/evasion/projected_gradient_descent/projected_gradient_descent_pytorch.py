@@ -28,7 +28,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
-import tensorflow as tf
+import torch
 from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
@@ -40,7 +40,7 @@ from art.exceptions import ClassifierError
 logger = logging.getLogger(__name__)
 
 
-class ProjectedGradientDescentTensorFlow(EvasionAttack):
+class ProjectedGradientDescentPytorch(EvasionAttack):
     """
     The Projected Gradient Descent attack is an iterative method in which,
     after each iteration, the perturbation is projected on an lp-ball of specified radius (in
@@ -100,7 +100,7 @@ class ProjectedGradientDescentTensorFlow(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(ProjectedGradientDescentTensorFlow, self).__init__(classifier)
+        super(ProjectedGradientDescentPytorch, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
@@ -148,14 +148,8 @@ class ProjectedGradientDescentTensorFlow(EvasionAttack):
         else:
             targets = y
 
-        fd =             {
-                self.classifier.get_input_ph: x,
-                self.classifier.get_label_ph: targets
-            }
-
-
-        adv_x_best = None
-        rate_best = None
+        inputs = torch.from_numpy(x).to(self.classifier._device)
+        targets = torch.from_numpy(targets.astype(float)).to(self.classifier._device)
 
         # TODO
         # if self.random_eps:
@@ -166,26 +160,19 @@ class ProjectedGradientDescentTensorFlow(EvasionAttack):
         # for _ in range(max(1, self.num_random_init)):
         #     adv_x = x.astype(ART_NUMPY_DTYPE)
 
-        adv_x = self.classifier.get_input_ph
+        adv_x = inputs
 
-        def stop_cond(i, _):
-            return tf.less(i, self.max_iter)
+        for _ in range(self.max_iter):
 
-        pr = []
-        def main_body(i, adv_x):
             adv_x = self._compute(
                 adv_x,
-                self.classifier.get_input_ph,
-                self.classifier.get_label_ph,
+                inputs,
+                targets,
                 self.eps,
                 self.eps_step,
                 False
                 # self.num_random_init > 0 and i_max_iter == 0,
             )
-            adv_x = tf.Print(adv_x, [tf.reduce_mean(adv_x)], summarize=100)
-            return i + 1, adv_x
-
-        _, adv_x = tf.while_loop(stop_cond, main_body, [tf.zeros([]), adv_x], back_prop=True)
 
             # TODO
             # if self.num_random_init > 1:
@@ -198,42 +185,26 @@ class ProjectedGradientDescentTensorFlow(EvasionAttack):
             # else:
             #     adv_x_best = adv_x
 
-        #self.classifier.get_session.run(pr, fd)
 
-        adv_x_best = self.classifier.get_session.run(
-            adv_x,
-            {
-                self.classifier.get_input_ph: x,
-                self.classifier.get_label_ph: targets
-            }
-        )
-        
-        logger.info(
-            "Success rate of attack: %.2f%%",
-            rate_best
-            if rate_best is not None
-            else 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
-        )
+        # logger.info(
+        #     "Success rate of attack: %.2f%%",
+        #     rate_best
+        #     if rate_best is not None
+        #     else 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+        # )
 
-        return adv_x_best
+        return adv_x.cpu().detach().numpy()
 
     def _compute_perturbation(self, batch, batch_labels):
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
-        #logits = self.classifier.
-        loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
-
-
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.classifier.loss_gradient_framework(batch) * (1 - 2 * int(self.targeted))
-
-        grad = tf.Print(grad, [tf.reduce_mean(grad)], summarize=100)
+        grad = self.classifier.loss_gradient_framework(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
         if self.norm == np.inf:
-            grad = tf.sign(grad)
-            grad = tf.stop_gradient(grad)
+            grad = grad.sign()
         elif self.norm == 1:
             pass
             # TODO
@@ -253,7 +224,7 @@ class ProjectedGradientDescentTensorFlow(EvasionAttack):
 
         if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
-            batch = tf.clip_by_value(batch, clip_min, clip_max)
+            batch = torch.clamp(batch, clip_min, clip_max)
 
         return batch
 
@@ -315,7 +286,7 @@ class ProjectedGradientDescentTensorFlow(EvasionAttack):
             #     np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1
             # )
         elif norm_p == np.inf:
-            values = tf.clip_by_value(values, -eps, eps)
+            values = torch.clamp(values, -eps, eps)
         else:
             raise NotImplementedError(
                 "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
@@ -340,7 +311,7 @@ class ProjectedGradientDescentTensorFlow(EvasionAttack):
         :type batch_size: `int`
         """
         # Save attack-specific parameters
-        super(ProjectedGradientDescentTensorFlow, self).set_params(**kwargs)
+        super(ProjectedGradientDescentPytorch, self).set_params(**kwargs)
 
         if self.eps_step > self.eps:
             raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
