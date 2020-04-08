@@ -401,13 +401,14 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         :rtype: `np.ndarray`
         """
         import torch
+        from torch.autograd import Variable
 
         # Check label shape
         if self._reduce_labels:
             y = torch.argmax(y, dim=1)
 
-        # Convert the inputs to Tensors
-        x.requires_grad = True
+        # Convert the inputs to Variable
+        x = Variable(x, requires_grad=True)
 
         # Compute the gradient and return
         model_outputs = self._model(x)
