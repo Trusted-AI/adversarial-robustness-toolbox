@@ -29,7 +29,7 @@ import math
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 from art.classifiers.classifier import ClassifierGradients, ClassifierNeuralNetwork
 from art.utils import check_and_transform_label_format
 
@@ -93,7 +93,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         super(AdversarialPatchTensorFlowV2, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+            raise EstimatorError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         kwargs = {
             "rotation_max": rotation_max,
