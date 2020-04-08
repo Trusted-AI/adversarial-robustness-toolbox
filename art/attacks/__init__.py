@@ -3,7 +3,7 @@ Module providing adversarial attacks under a common interface.
 """
 from art.attacks.attack import Attack, EvasionAttack, PoisoningAttackBlackBox, PoisoningAttackWhiteBox, ExtractionAttack
 
-from art.attacks.evasion.adversarial_patch import AdversarialPatch
+from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch
 from art.attacks.evasion.boundary import BoundaryAttack
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
 from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack
@@ -22,6 +22,7 @@ from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.zoo import ZooAttack
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.pixel_threshold import ThresholdAttack
+from art.attacks.evasion.frame_saliency import FrameSaliencyAttack
 
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
