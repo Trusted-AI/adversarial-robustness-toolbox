@@ -26,6 +26,7 @@ import tensorflow as tf
 from art.utils import projection, random_sphere, to_categorical, least_likely_class, check_and_transform_label_format
 from art.utils import load_iris, load_mnist
 from art.utils import second_most_likely_class, random_targets, get_label_conf, get_labels_np_array, preprocess
+from art.utils import compute_success_array, compute_success
 from art.utils import segment_by_class, performance_diff
 from art.utils import is_probability
 
@@ -268,6 +269,38 @@ class TestUtils(unittest.TestCase):
         labels = get_labels_np_array(ps)
         self.assertEqual(labels.shape, y_.shape)
         self.assertTrue(np.all(labels == y_))
+
+    def test_compute_success_array(self):
+        class DummyClassifier:
+            def predict(self, x, batch_size):
+                return x
+
+        classifier = DummyClassifier()
+        x_clean = np.array([[0, 1], [1, 0]])
+        x_adv = np.array([[1, 0], [0, 1]])
+        labels = np.array([[1, 0], [0, 1]])
+
+        attack_success_targeted = compute_success_array(classifier, x_clean, labels, x_adv, targeted=True)
+        attack_success_untargeted = compute_success_array(classifier, x_clean, labels, x_adv, targeted=False)
+
+        self.assertTrue((attack_success_targeted == np.array([True, True])).all())
+        self.assertTrue((attack_success_untargeted == np.array([True, True])).all())
+
+    def test_compute_success(self):
+        class DummyClassifier:
+            def predict(self, x, batch_size):
+                return x
+
+        classifier = DummyClassifier()
+        x_clean = np.array([[0, 1], [1, 0]])
+        x_adv = np.array([[1, 0], [0, 1]])
+        labels = np.array([[1, 0], [0, 1]])
+
+        attack_success_targeted = compute_success(classifier, x_clean, labels, x_adv, targeted=True)
+        attack_success_untargeted = compute_success(classifier, x_clean, labels, x_adv, targeted=False)
+
+        self.assertEqual(attack_success_targeted, 1.)
+        self.assertEqual(attack_success_untargeted, 1.)
 
     def test_preprocess(self):
         (x, y), (_, _), _, _ = load_mnist()

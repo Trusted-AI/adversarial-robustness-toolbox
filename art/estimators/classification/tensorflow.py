@@ -748,6 +748,22 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return predictions
 
+    def _predict_framework(self, x, **kwargs):
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Test set.
+        :type x: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        return self._model(x_preprocessed)
+
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
