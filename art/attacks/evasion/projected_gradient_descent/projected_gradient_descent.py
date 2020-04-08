@@ -31,9 +31,9 @@ import numpy as np
 
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import \
     ProjectedGradientDescentNumpy
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow import \
-    ProjectedGradientDescentTensorFlow
-from art.classifiers import TensorFlowClassifier
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_pytorch import \
+    ProjectedGradientDescentPytorch
+from art.classifiers import PyTorchClassifier
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
 from art.exceptions import ClassifierError
@@ -105,8 +105,8 @@ class ProjectedGradientDescent(EvasionAttack):
         if not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
-        if isinstance(self.classifier, TensorFlowClassifier):
-            self._attack = ProjectedGradientDescentTensorFlow(
+        if isinstance(self.classifier, PyTorchClassifier):
+            self._attack = ProjectedGradientDescentPytorch(
                 classifier=classifier,
                 norm=norm,
                 eps=eps,
