@@ -388,6 +388,41 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         return grads
 
+    def loss_gradient_framework(self, x, y, **kwargs):
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :return: Array of gradients of the same shape as `x`.
+        :rtype: `np.ndarray`
+        """
+        import torch
+
+        # Check label shape
+        if self._reduce_labels:
+            y = torch.argmax(y, dim=1)
+
+        # Convert the inputs to Tensors
+        x.requires_grad = True
+
+        # Compute the gradient and return
+        model_outputs = self._model(x)
+        loss = self._loss(model_outputs[-1], y)
+
+        # Clean gradients
+        self._model.zero_grad()
+
+        # Compute gradients
+        loss.backward()
+        grads = x.grad
+        assert grads.shape == x.shape
+
+        return grads
+
     @property
     def layer_names(self):
         """
