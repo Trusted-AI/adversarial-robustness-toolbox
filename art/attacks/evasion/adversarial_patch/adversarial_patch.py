@@ -27,8 +27,9 @@ import logging
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
-from art.classifiers import TensorFlowV2Classifier
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.classification import TensorFlowV2Classifier
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.exceptions import EstimatorError
 
@@ -87,15 +88,15 @@ class AdversarialPatch(EvasionAttack):
                             the `patch_shape` is set to the shape of the image samples.
         :type patch_shape: (`int`, `int`, `int`)
         """
-        super(AdversarialPatch, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise EstimatorError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+        super(AdversarialPatch, self).__init__(estimator=classifier)
+        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
+            raise EstimatorError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
         assert (
-            self.classifier.clip_values is not None
+            self.estimator.clip_values is not None
         ), "Adversarial Patch attack requires a classifier with clip_values."
 
-        if isinstance(self.classifier, TensorFlowV2Classifier):
+        if isinstance(self.estimator, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
                 classifier=classifier,
                 rotation_max=rotation_max,
