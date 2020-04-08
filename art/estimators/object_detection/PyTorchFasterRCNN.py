@@ -131,8 +131,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
-        # x = x.astype(np.uint8)
-        x = x / self.clip_values[1]
 
         if y is not None:
             for i, y_i in enumerate(y):
@@ -145,7 +143,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         image_tensor_list = list()
 
         for i in range(x.shape[0]):
-            img = transform(x[i]).to(self._device)
+            img = transform(x[i] / self.clip_values[1]).to(self._device)
             img.requires_grad = True
             image_tensor_list.append(img)
 
@@ -208,15 +206,13 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
-        # x = x.astype(np.uint8)
-        x = x / self.clip_values[1]
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
         image_tensor_list = list()
 
         for i in range(x.shape[0]):
-            image_tensor_list.append(transform(x[i]).to(self._device))
+            image_tensor_list.append(transform(x[i] / self.clip_values[1]).to(self._device))
         predictions = self._model(image_tensor_list)
         return predictions
 
