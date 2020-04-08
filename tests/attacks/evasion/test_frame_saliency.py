@@ -21,7 +21,7 @@ import logging
 import numpy as np
 import pytest
 
-from art.attacks import FastGradientMethod, FrameSaliencyAttack
+from art.attacks.evasion import FastGradientMethod, FrameSaliencyAttack
 
 from tests.utils import ExpectedValue
 from tests.attacks.utils import backend_check_adverse_values, backend_check_adverse_frames
