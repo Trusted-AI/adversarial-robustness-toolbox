@@ -83,7 +83,7 @@ class DPatch(EvasionAttack):
             "batch_size": batch_size,
         }
         self.set_params(**kwargs)
-        self._patch = np.zeros(shape=patch_shape)
+        self._patch = np.ones(shape=patch_shape) * self.estimator.clip_values[1] / 2.0
 
     def generate(self, x, y=None, **kwargs):
         """
@@ -123,7 +123,7 @@ class DPatch(EvasionAttack):
 
                 target_dict = dict()
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                target_dict["labels"] = np.asarray([0,])
+                target_dict["labels"] = np.asarray([1,])
                 target_dict["scores"] = np.asarray([1.0,])
 
                 patch_target.append(target_dict)
@@ -142,10 +142,10 @@ class DPatch(EvasionAttack):
 
                 for i_image in range(self.batch_size):
 
-                    i_x_1 = transforms[i_image]["i_x_1"]
-                    i_x_2 = transforms[i_image]["i_x_2"]
-                    i_y_1 = transforms[i_image]["i_y_1"]
-                    i_y_2 = transforms[i_image]["i_y_2"]
+                    i_x_1 = transforms[i_batch_start + i_image]["i_x_1"]
+                    i_x_2 = transforms[i_batch_start + i_image]["i_x_2"]
+                    i_y_1 = transforms[i_batch_start + i_image]["i_y_1"]
+                    i_y_2 = transforms[i_batch_start + i_image]["i_y_2"]
 
                     if self.estimator.channel_index == 3:
                         patch_gradients_i = gradients[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :]
@@ -171,19 +171,21 @@ class DPatch(EvasionAttack):
 
         if self.estimator.channel_index == 1:
             x_copy = np.swapaxes(x_copy, 1, 3)
+            x_copy = np.swapaxes(x_copy, 2, 3)
             patch_copy = np.swapaxes(patch_copy, 0, 2)
+            patch_copy = np.swapaxes(patch_copy, 1, 2)
 
         for i_image in range(x.shape[0]):
 
             if random_location:
-                i_x_1 = random.randint(0, x.shape[1] - 1 - patch_copy.shape[0])
-                i_y_1 = random.randint(0, x.shape[2] - 1 - patch_copy.shape[1])
+                i_x_1 = random.randint(0, x.shape[1] - 1 - patch.shape[0])
+                i_y_1 = random.randint(0, x.shape[2] - 1 - patch.shape[1])
             else:
                 i_x_1 = 0
                 i_y_1 = 0
 
-            i_x_2 = i_x_1 + patch_copy.shape[0]
-            i_y_2 = i_y_1 + patch_copy.shape[1]
+            i_x_2 = i_x_1 + patch.shape[0]
+            i_y_2 = i_y_1 + patch.shape[1]
 
             transformations.append({"i_x_1": i_x_1, "i_y_1": i_y_1, "i_x_2": i_x_2, "i_y_2": i_y_2})
 
@@ -191,6 +193,7 @@ class DPatch(EvasionAttack):
 
         if self.estimator.channel_index == 1:
             x_copy = np.swapaxes(x_copy, 1, 3)
+            x_copy = np.swapaxes(x_copy, 2, 3)
 
         return x_copy, transformations
 
