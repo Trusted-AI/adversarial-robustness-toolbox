@@ -59,16 +59,31 @@ class TestAdversarialPatch(TestBase):
         First test with the TensorFlowClassifier.
         :return:
         """
+        import tensorflow as tf
+
         tfc, sess = get_image_classifier_tf()
 
         attack_ap = AdversarialPatch(
-            tfc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500
+            tfc,
+            rotation_max=0.5,
+            scale_min=0.4,
+            scale_max=0.41,
+            learning_rate=5.0,
+            batch_size=10,
+            max_iter=500,
+            patch_shape=(28, 28, 1),
         )
-        patch_adv, _ = attack_ap.generate(self.x_train_mnist)
+        target = np.zeros(self.x_train_mnist.shape[0])
+        patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.1106631027725005, delta=0.4)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.101, delta=0.2)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 624.867, delta=70.0)
+        if tf.__version__[0] == "2":
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.14372873, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.38899645, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 417.5904846191406, delta=1.0)
+        else:
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.048357915, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.26751655, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 458.03973388671875, delta=1.0)
 
         if sess is not None:
             sess.close()
@@ -81,14 +96,15 @@ class TestAdversarialPatch(TestBase):
         krc = get_image_classifier_kr()
 
         attack_ap = AdversarialPatch(
-            krc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500
+            krc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=500
         )
         master_seed(seed=1234)
-        patch_adv, _ = attack_ap.generate(self.x_train_mnist)
+        target = np.zeros(self.x_train_mnist.shape[0])
+        patch_adv, _ = attack_ap.generate(self.x_train_mnist, target)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], -3.494, delta=0.2)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 18.402, delta=0.2)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 1099.293, delta=50)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.12921186, delta=0.05)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.030846387, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 466.4248352050781, delta=1.0)
 
     def test_pytorch(self):
         """
@@ -100,14 +116,15 @@ class TestAdversarialPatch(TestBase):
         x_train = np.reshape(self.x_train_mnist, (self.n_train, 1, 28, 28)).astype(np.float32)
 
         attack_ap = AdversarialPatch(
-            ptc, rotation_max=22.5, scale_min=0.1, scale_max=1.0, learning_rate=5.0, batch_size=10, max_iter=500
+            ptc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=500
         )
+        master_seed(seed=1234)
+        target = np.zeros(self.x_train_mnist.shape[0])
+        patch_adv, _ = attack_ap.generate(x_train, target)
 
-        patch_adv, _ = attack_ap.generate(x_train)
-
-        self.assertAlmostEqual(patch_adv[0, 8, 8], -3.143605902784875, delta=0.1)
-        self.assertAlmostEqual(patch_adv[0, 14, 14], 19.790434152473054, delta=0.1)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 383.068, delta=0.1)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.18794201, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5109714, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 365.93072509765625, delta=1.0)
 
     def test_failure_feature_vectors(self):
         attack_params = {
@@ -119,13 +136,15 @@ class TestAdversarialPatch(TestBase):
             "batch_size": 10,
         }
         classifier = get_tabular_classifier_kr()
+        classifier._clip_values = (0, 1)
         attack = AdversarialPatch(classifier=classifier)
         attack.set_params(**attack_params)
         data = np.random.rand(10, 4)
+        labels = np.random.randint(0, 3, 10)
 
         # Assert that value error is raised for feature vectors
         with self.assertRaises(ValueError) as context:
-            attack.generate(data)
+            attack.generate(data, labels)
 
         self.assertIn("Feature vectors detected.", str(context.exception))
 

@@ -134,6 +134,15 @@ class TestPGD(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
+        # Test the masking:
+        attack = ProjectedGradientDescent(classifier, num_random_init=1)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test.shape))
+        mask = mask.reshape(x_test.shape)
+
+        x_test_adv = attack.generate(x_test, mask=mask)
+        mask_diff = (1 - mask) * (x_test_adv - x_test)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 

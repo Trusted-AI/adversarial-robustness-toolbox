@@ -27,7 +27,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from tests.utils import ExpectedValue
 from tests.attacks.utils import backend_check_adverse_values, backend_test_defended_images
 from tests.attacks.utils import backend_test_random_initialisation_images, backend_targeted_images
-from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular
+from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_masked_images
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,18 @@ def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list_for_att
         attack.set_params(**attack_params)
 
         backend_targeted_images(attack, fix_get_mnist_subset)
+
+
+def test_masked_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
+    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
+    # TODO this if statement must be removed once we have a classifier for both image and tabular data
+    if classifier_list is None:
+        logging.warning("Couldn't perform  this test because no classifier is defined")
+        return
+
+    for classifier in classifier_list:
+        attack = FastGradientMethod(classifier, eps=1.0, num_random_init=1)
+        backend_masked_images(attack, fix_get_mnist_subset)
 
 
 def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):

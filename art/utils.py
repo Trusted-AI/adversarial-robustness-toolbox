@@ -284,7 +284,7 @@ def get_labels_np_array(preds):
     return y
 
 
-def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
+def compute_success_array(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
     """
     Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
 
@@ -306,12 +306,39 @@ def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_si
     """
     adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
     if targeted:
-        rate = np.sum(adv_preds == np.argmax(labels, axis=1)) / x_adv.shape[0]
+        attack_success = (adv_preds == np.argmax(labels, axis=1))
     else:
         preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
-        rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+        attack_success = (adv_preds != preds)
 
-    return rate
+    return attack_success
+
+
+def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
+    """
+    Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
+
+    :param classifier: Classifier used for prediction.
+    :type classifier: :class:`.Classifier`
+    :param x_clean: Original clean samples.
+    :type x_clean: `np.ndarray`
+    :param labels: Correct labels of `x_clean` if the attack is untargeted, or target labels of the attack otherwise.
+    :type labels: `np.ndarray`
+    :param x_adv: Adversarial samples to be evaluated.
+    :type x_adv: `np.ndarray`
+    :param targeted: `True` if the attack is targeted. In that case, `labels` are treated as target classes instead of
+           correct labels of the clean samples.s
+    :type targeted: `bool`
+    :param batch_size: Batch size
+    :type batch_size: `int`
+    :param rate: `True` in order to return the success rate; `False` in order to return array with information for each
+           individual input.
+    :type rate: `bool`
+    :return: Percentage of successful adversarial samples.
+    :rtype: `float`
+    """
+    attack_success = compute_success_array(classifier, x_clean, labels, x_adv, targeted, batch_size)
+    return np.sum(attack_success) / x_adv.shape[0]
 
 
 def compute_accuracy(preds, labels, abstain=True):
@@ -648,6 +675,8 @@ def get_file(filename, url, path=None, extract=False):
             try:
                 from six.moves.urllib.error import HTTPError, URLError
                 from six.moves.urllib.request import urlretrieve
+                # The following two lines should prevent occasionally occurring
+                # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                 import ssl
                 ssl._create_default_https_context = ssl._create_unverified_context
 

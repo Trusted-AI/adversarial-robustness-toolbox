@@ -112,6 +112,21 @@ def backend_check_adverse_values(attack, mnist_dataset, expected_values):
         np.testing.assert_array_equal(y_test_pred_adv, expected_values["y_test_pred_adv_expected"].value)
 
 
+def backend_check_adverse_frames(attack, mnist_dataset, expected_values):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
+    x_test_adv = attack.generate(x_test_mnist)
+
+    x_diff = x_test_adv - x_test_mnist
+    x_diff = np.swapaxes(x_diff, 1, attack.frame_index)
+    x_diff = np.reshape(x_diff, x_diff.shape[:2] + (np.prod(x_diff.shape[2:]), ))
+    x_diff_norm = np.round(np.linalg.norm(x_diff, axis=-1), decimals=4)
+    x_diff_norm = np.linalg.norm(x_diff_norm, ord=0, axis=-1)
+
+    print(x_diff_norm)
+
+    np.testing.assert_array_equal(x_diff_norm, expected_values["nb_perturbed_frames"].value)
+
+
 def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[], classifier=None):
     # Use a useless test classifier to test basic classifier properties
     class ClassifierNoAPI:
@@ -203,3 +218,15 @@ def backend_untargeted_tabular(attack, iris_dataset, clipped):
         "Accuracy of " + attack.estimator.__class__.__name__ + " on Iris with FGM adversarial examples: " "%.2f%%",
         (accuracy * 100),
     )
+
+
+def backend_masked_images(attack, fix_get_mnist_subset):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    # generate a random mask:
+    mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test_mnist.shape))
+    mask = mask.reshape(x_test_mnist.shape)
+
+    x_test_adv = attack.generate(x_test_mnist, mask=mask)
+    mask_diff = (1 - mask) * (x_test_adv - x_test_mnist)
+    np.testing.assert_array_almost_equal(mask_diff, np.zeros(mask_diff.shape), decimal=3)
