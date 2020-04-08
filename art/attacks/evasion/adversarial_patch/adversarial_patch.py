@@ -30,7 +30,7 @@ from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import A
 from art.classifiers import TensorFlowV2Classifier
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -89,7 +89,7 @@ class AdversarialPatch(EvasionAttack):
         """
         super(AdversarialPatch, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+            raise EstimatorError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         assert (
             self.classifier.clip_values is not None

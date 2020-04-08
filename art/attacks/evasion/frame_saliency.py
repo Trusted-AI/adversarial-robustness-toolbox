@@ -32,7 +32,7 @@ from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradie
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion import ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod
 from art.utils import compute_success_array, get_labels_np_array, check_and_transform_label_format
-from art.exceptions import ClassifierError
+from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +67,7 @@ class FrameSaliencyAttack(EvasionAttack):
         """
         super(FrameSaliencyAttack, self).__init__(classifier)
         if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+            raise EstimatorError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
 
         kwargs = {
             "attacker": attacker,
