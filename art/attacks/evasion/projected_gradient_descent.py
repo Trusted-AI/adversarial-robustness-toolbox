@@ -169,6 +169,7 @@ class ProjectedGradientDescent(FastGradientMethod):
                         adv_x,
                         x,
                         targets,
+                        mask,
                         self.eps,
                         self.eps_step,
                         self._project,
