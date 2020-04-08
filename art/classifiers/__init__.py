@@ -15,4 +15,3 @@ from art.classifiers.xgboost import XGBoostClassifier
 from art.classifiers.catboost import CatBoostARTClassifier
 from art.classifiers.GPy import GPyGaussianProcessClassifier
 from art.classifiers.detector_classifier import DetectorClassifier
-
