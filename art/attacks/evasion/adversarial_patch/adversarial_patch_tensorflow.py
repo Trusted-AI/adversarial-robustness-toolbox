@@ -258,7 +258,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         import tensorflow as tf
 
-        y = check_and_transform_label_format(labels=y, nb_classes=self.classifier.nb_classes())
+        y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes())
 
         shuffle = kwargs.get('shuffle', True)
 
