@@ -97,7 +97,10 @@ class AdversarialPatchNumpy(EvasionAttack):
             "batch_size": batch_size,
         }
         self.set_params(**kwargs)
-        self.patch = None
+        mean_value = (
+            self.classifier.clip_values[1] - self.classifier.clip_values[0]
+        ) / 2.0 + self.classifier.clip_values[0]
+        self.patch = np.ones(shape=self.classifier.input_shape).astype(np.float32) * mean_value
 
     def generate(self, x, y=None, **kwargs):
         """
@@ -118,12 +121,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "dimensions."
             )
 
-        mean_value = (
-            self.classifier.clip_values[1] - self.classifier.clip_values[0]
-        ) / 2.0 + self.classifier.clip_values[0]
-        self.patch = np.ones(shape=self.classifier.input_shape).astype(np.float32) * mean_value
-
-        y_target = check_and_transform_label_format(labels=y)
+        y_target = check_and_transform_label_format(labels=y, nb_classes=self.classifier.nb_classes())
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
