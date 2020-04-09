@@ -23,6 +23,7 @@ import numpy as np
 
 from art.attacks import ProjectedGradientDescent
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import ProjectedGradientDescentNumpy
+
 from art.classifiers import KerasClassifier
 from art.classifiers.classifier import ClassifierGradients
 from art.utils import get_labels_np_array, random_targets
@@ -59,44 +60,44 @@ class TestPGD(TestBase):
     #         classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
     #     )
 
-    def test_tensorflow_mnist(self):
-        classifier, sess = get_image_classifier_tf()
-
-        scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
-        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
-        logger.info("[TF, MNIST] Accuracy on training set: %.2f%%", acc * 100)
-
-        scores = get_labels_np_array(classifier.predict(self.x_test_mnist))
-        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[0]
-        logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", acc * 100)
-
-        self._test_backend_mnist(
-            classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
-        )
-
-    # def test_pytorch_mnist(self):
-    #     x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
-    #     x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
-    #     classifier = get_image_classifier_pt()
+    # def test_tensorflow_mnist(self):
+    #     classifier, sess = get_image_classifier_tf()
     #
-    #     scores = get_labels_np_array(classifier.predict(x_train_mnist))
+    #     scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
     #     acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
-    #     logger.info("[PyTorch, MNIST] Accuracy on training set: %.2f%%", acc * 100)
+    #     logger.info("[TF, MNIST] Accuracy on training set: %.2f%%", acc * 100)
     #
-    #     scores = get_labels_np_array(classifier.predict(x_test_mnist))
+    #     scores = get_labels_np_array(classifier.predict(self.x_test_mnist))
     #     acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[0]
-    #     logger.info("[PyTorch, MNIST] Accuracy on test set: %.2f%%", acc * 100)
+    #     logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", acc * 100)
     #
-    #     self._test_backend_mnist(classifier, x_train_mnist, self.y_train_mnist, x_test_mnist, self.y_test_mnist)
+    #     self._test_backend_mnist(
+    #         classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
+    #     )
+
+    def test_pytorch_mnist(self):
+        x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
+        x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
+        classifier = get_image_classifier_pt()
+
+        scores = get_labels_np_array(classifier.predict(x_train_mnist))
+        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
+        logger.info("[PyTorch, MNIST] Accuracy on training set: %.2f%%", acc * 100)
+
+        scores = get_labels_np_array(classifier.predict(x_test_mnist))
+        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[0]
+        logger.info("[PyTorch, MNIST] Accuracy on test set: %.2f%%", acc * 100)
+
+        self._test_backend_mnist(classifier, x_train_mnist, self.y_train_mnist, x_test_mnist, self.y_test_mnist)
 
     def _test_backend_mnist(self, classifier, x_train, y_train, x_test, y_test):
         x_test_original = x_test.copy()
 
         # This is for testing the numpy version
         # Test PGD with np.inf norm
-    #    attack = ProjectedGradientDescentNumpy(classifier, eps=1, eps_step=0.1, max_iter=10)
+        attack = ProjectedGradientDescentNumpy(classifier, eps=1, eps_step=0.1, max_iter=10)
         #x_train_adv_np = attack.generate(x_train)
-    #    x_test_adv_np = attack.generate(x_test)
+        x_test_adv_np = attack.generate(x_test)
 
 
         # This is for testing the framework-dependent version
@@ -105,7 +106,7 @@ class TestPGD(TestBase):
         #x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
-    #    print(np.mean(x_test_adv_np), np.mean(x_test_adv))
+        print(np.mean(x_test_adv_np), np.mean(x_test_adv))
         print(np.mean(x_test_adv))
         self.assertFalse(True)
 
