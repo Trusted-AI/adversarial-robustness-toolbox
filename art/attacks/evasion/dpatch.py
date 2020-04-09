@@ -158,7 +158,8 @@ class DPatch(EvasionAttack):
 
         return self._patch
 
-    def _augment_images_with_patch(self, x, patch, random_location):
+    @staticmethod
+    def _augment_images_with_patch(x, patch, random_location, channel_index):
         """
         Augment images with randomly shifted patch.
         :param x: Sample images.
@@ -167,12 +168,14 @@ class DPatch(EvasionAttack):
         :param patch: `np.ndarray`
         :param random_location: If True apply patch at randomly shifted locations.
         :type random_location: `bool`
+        :param channel_index: Index of the color channel.
+        :type channel_index: `Int`
         """
         transformations = list()
         x_copy = x.copy()
         patch_copy = patch.copy()
 
-        if self.estimator.channel_index == 1:
+        if channel_index == 1:
             x_copy = np.swapaxes(x_copy, 1, 3)
             x_copy = np.swapaxes(x_copy, 2, 3)
             patch_copy = np.swapaxes(patch_copy, 0, 2)
@@ -194,7 +197,7 @@ class DPatch(EvasionAttack):
 
             x_copy[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :] = patch_copy
 
-        if self.estimator.channel_index == 1:
+        if channel_index == 1:
             x_copy = np.swapaxes(x_copy, 1, 3)
             x_copy = np.swapaxes(x_copy, 2, 3)
 
