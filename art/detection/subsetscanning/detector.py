@@ -49,7 +49,7 @@ class SubsetScanningDetector(
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
         :param classifier: The model being evaluated for its robustness to anomalies (eg. adversarial samples)
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         :bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
         :type bgd_data: `np.ndarray`
         :layer: The layer from which to extract activations to perform scan

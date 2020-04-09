@@ -66,7 +66,7 @@ class AdversarialTrainer(Trainer):
         Create an :class:`.AdversarialTrainer` instance.
 
         :param classifier: Model to train adversarially.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         :param attacks: attacks to use for data augmentation in adversarial training
         :type attacks: :class:`.EvasionAttack` or `list(EvasionAttack)`
         :param ratio: The proportion of samples in each batch to be replaced with their adversarial counterparts.
