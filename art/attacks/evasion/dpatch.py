@@ -27,7 +27,7 @@ import random
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.attacks.attack import EvasionAttack
 from art.exceptions import EstimatorError
@@ -49,7 +49,7 @@ class DPatch(EvasionAttack):
         "batch_size",
     ]
 
-    estimator_requirements = (BaseEstimator, ObjectDetectorMixin)
+    estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
 
     def __init__(
         self, estimator, patch_shape=(40, 40, 3), learning_rate=5.0, max_iter=500, batch_size=16,
@@ -161,6 +161,12 @@ class DPatch(EvasionAttack):
     def _augment_images_with_patch(self, x, patch, random_location):
         """
         Augment images with randomly shifted patch.
+        :param x: Sample images.
+        :type x: `np.ndarray`
+        :param patch: The patch to be applied.
+        :param patch: `np.ndarray`
+        :param random_location: If True apply patch at randomly shifted locations.
+        :type random_location: `bool`
         """
         transformations = list()
         x_copy = x.copy()
