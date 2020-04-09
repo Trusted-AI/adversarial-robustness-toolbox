@@ -122,7 +122,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "dimensions."
             )
 
-        y_target = check_and_transform_label_format(labels=y, nb_classes=self.classifier.nb_classes)
+        y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
