@@ -163,7 +163,7 @@ class FeatureAdversaries(EvasionAttack):
 
         x_0 = x.copy()
 
-        options = {"eps": 1e-3, "ftol": 1e-2}
+        options = {"eps": 1e-3, "ftol": 1e-3}
         options_allowed_keys = [
             "disp",
             "maxcor",
