@@ -24,7 +24,7 @@ import logging
 
 import numpy as np
 
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers.classifier import ClassifierNeuralNetwork
 from art.attacks.attack import EvasionAttack
 from art.exceptions import ClassifierError
 
@@ -45,7 +45,7 @@ class FeatureAdversaries(EvasionAttack):
     ]
 
     def __init__(
-        self, classifier, delta, layer, batch_size=32,
+        self, classifier, delta=None, layer=None, batch_size=32,
     ):
         """
         Create a :class:`.FeatureAdversaries` instance.
@@ -61,8 +61,8 @@ class FeatureAdversaries(EvasionAttack):
         """
         super(FeatureAdversaries, self).__init__(classifier)
 
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork):
+            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork], classifier)
 
         kwargs = {
             "delta": delta,
