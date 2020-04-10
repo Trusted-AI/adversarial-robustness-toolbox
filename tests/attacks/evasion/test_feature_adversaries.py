@@ -45,7 +45,7 @@ def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
         return
 
     for classifier in classifier_list:
-        attack = FeatureAdversaries(classifier, delta=0.2, layer=2, batch_size=32)
+        attack = FeatureAdversaries(classifier, delta=0.2, layer=1, batch_size=32)
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:3], maxiter=1)
         assert np.mean(x_train_mnist[0:3]) == pytest.approx(0.13015706282513004, 0.01)
         assert np.mean(x_train_mnist_adv) == pytest.approx(0.1592448561261751, 0.01)
