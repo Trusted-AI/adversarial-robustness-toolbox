@@ -68,6 +68,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Basic iterative method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
 * Jacobian saliency map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
+* Feature Adversaries ([Sabour et al., 2016](https://arxiv.org/abs/1511.05122))
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
