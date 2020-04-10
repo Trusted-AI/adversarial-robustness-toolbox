@@ -20,3 +20,4 @@ from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.zoo import ZooAttack
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.pixel_threshold import ThresholdAttack
+from art.attacks.evasion.feature_adversaries import FeatureAdversaries
