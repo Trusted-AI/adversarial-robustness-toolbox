@@ -172,7 +172,7 @@ class RONIDefense(PoisonFilteringDefence):
         Returns True if a given performance shift is suspicious
 
         :param before_classifier: The classifier without untrusted data
-        :type before_classifier: `art.classifiers.classifier.Classifier`
+        :type before_classifier: `art.classifiers.Classifier`
         :param perf_shift: a shift in performance
         :type perf_shift: `float`
         :return: True if a given performance shift is suspicious. False otherwise.
@@ -190,7 +190,7 @@ class RONIDefense(PoisonFilteringDefence):
         by the calibration set.
 
         :param before_classifier: The classifier trained without suspicious point
-        :type before_classifier: `art.classifiers.classifier.Classifier`
+        :type before_classifier: `art.classifiers.Classifier`
         :return: a tuple consisting of (`median`, `std_dev`)
         :rtype: (`float`, `float`)
         """
