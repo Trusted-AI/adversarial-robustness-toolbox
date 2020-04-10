@@ -45,7 +45,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         Initialization for the DetectorClassifier.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         :param detector: A trained detector applied for the binary classification.
         :type detector: :class:`.Detector`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier. Not applicable
