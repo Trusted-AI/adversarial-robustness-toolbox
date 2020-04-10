@@ -74,6 +74,15 @@ class FeatureAdversaries(EvasionAttack):
 
         self.norm = np.inf
 
+    @classmethod
+    def is_valid_classifier_type(cls, classifier):
+        """
+        Checks whether the classifier provided is a classifer which this class can perform an attack on
+        :param classifier:
+        :return:
+        """
+        return True if isinstance(classifier, ClassifierNeuralNetwork) else False
+
     def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
@@ -191,7 +200,7 @@ class FeatureAdversaries(EvasionAttack):
 
         x_adv = res.x
 
-        return x_adv
+        return x_adv.reshape(-1, *self.classifier.input_shape)
 
     def set_params(self, **kwargs):
         """
