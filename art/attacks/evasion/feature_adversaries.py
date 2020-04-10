@@ -96,12 +96,13 @@ class FeatureAdversaries(EvasionAttack):
 
         bound = Bounds(lb=lb, ub=ub, keep_feasible=False)
 
+        guide_representation = self.classifier.get_activations(
+            x=y.reshape(-1, *self.classifier.input_shape), layer=self.layer, batch_size=self.batch_size
+        )
+
         def func(x_i):
             source_representation = self.classifier.get_activations(
                 x=x_i.reshape(-1, *self.classifier.input_shape), layer=self.layer, batch_size=self.batch_size
-            )
-            guide_representation = self.classifier.get_activations(
-                x=y.reshape(-1, *self.classifier.input_shape), layer=self.layer, batch_size=self.batch_size
             )
 
             n = norm(source_representation.flatten() - guide_representation.flatten(), ord=2) ** 2
@@ -110,7 +111,7 @@ class FeatureAdversaries(EvasionAttack):
 
         x_0 = x.copy()
 
-        res = minimize(func, x_0, method="L-BFGS-B", bounds=bound, options={"eps": 1e-3, "ftol": 1e-3})
+        res = minimize(func, x_0, method="L-BFGS-B", bounds=bound, options={"eps": 1e-3, "ftol": 1e-2})
         logger.info(res)
 
         x_adv = res.x
