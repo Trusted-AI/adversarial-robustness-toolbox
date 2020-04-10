@@ -83,8 +83,7 @@ class FeatureAdversaries(EvasionAttack):
         :param y: Guide samples.
         :type y: `np.ndarray`
         :param kwargs: The kwargs are used as `options` for the minimisation with `scipy.optimize.minimize` using
-                       `method="L-BFGS-B".`
-                       Valid options are based on the output of
+                       `method="L-BFGS-B"`. Valid options are based on the output of
                        `scipy.optimize.show_options(solver='minimize', method='L-BFGS-B')`:
                        Minimize a scalar function of one or more variables using the L-BFGS-B algorithm.
 
