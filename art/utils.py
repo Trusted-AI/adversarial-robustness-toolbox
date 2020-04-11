@@ -306,10 +306,10 @@ def compute_success_array(classifier, x_clean, labels, x_adv, targeted=False, ba
     """
     adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
     if targeted:
-        attack_success = (adv_preds == np.argmax(labels, axis=1))
+        attack_success = adv_preds == np.argmax(labels, axis=1)
     else:
         preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
-        attack_success = (adv_preds != preds)
+        attack_success = adv_preds != preds
 
     return attack_success
 
@@ -675,9 +675,11 @@ def get_file(filename, url, path=None, extract=False):
             try:
                 from six.moves.urllib.error import HTTPError, URLError
                 from six.moves.urllib.request import urlretrieve
+
                 # The following two lines should prevent occasionally occurring
                 # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                 import ssl
+
                 ssl._create_default_https_context = ssl._create_unverified_context
 
                 urlretrieve(url, full_path)

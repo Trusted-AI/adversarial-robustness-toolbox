@@ -230,9 +230,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         from art.data_generators import TensorFlowDataGenerator
 
         # Train directly in TensorFlow
-        if isinstance(generator, TensorFlowDataGenerator) and \
-                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
-                self.preprocessing == (0, 1):
+        if (
+            isinstance(generator, TensorFlowDataGenerator)
+            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
+            and self.preprocessing == (0, 1)
+        ):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):
                     i_batch, o_batch = generator.get_batch()
@@ -817,9 +819,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         from art.data_generators import TensorFlowV2DataGenerator
 
         # Train directly in TensorFlow
-        if isinstance(generator, TensorFlowV2DataGenerator) and \
-                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
-                self.preprocessing == (0, 1):
+        if (
+            isinstance(generator, TensorFlowV2DataGenerator)
+            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
+            and self.preprocessing == (0, 1)
+        ):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
                     if self._reduce_labels:

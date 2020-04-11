@@ -31,7 +31,6 @@ NB_TEST = 100
 
 
 class TestInputFilter(TestBase):
-
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234)
@@ -46,11 +45,11 @@ class TestInputFilter(TestBase):
         classifier = get_image_classifier_kr_tf()
 
         acc = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc * 100))
+        logger.info("Accuracy: %.2f%%", (acc * 100))
 
         classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=BATCH_SIZE, nb_epochs=2)
         acc2 = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels) / NB_TEST
-        logger.info('Accuracy: %.2f%%', (acc2 * 100))
+        logger.info("Accuracy: %.2f%%", (acc2 * 100))
 
         self.assertEqual(acc, 0.32)
         self.assertEqual(acc2, 0.73)

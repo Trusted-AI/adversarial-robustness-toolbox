@@ -67,7 +67,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
 
         # First FGSM attack:
         fgsm = FastGradientMethod(estimator=krc, targeted=True)
-        params = {'y': random_targets(y_test, krc.nb_classes)}
+        params = {"y": random_targets(y_test, krc.nb_classes)}
         x_test_adv = fgsm.generate(x_test, **params)
 
         # Initialize RS object and attack with FGSM

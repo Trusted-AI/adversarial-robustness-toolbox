@@ -575,10 +575,10 @@ class TestPyTorchClassifier(TestBase):
 
     def test_repr(self):
         repr_ = repr(self.module_classifier)
-        self.assertIn('art.estimators.classification.pytorch.PyTorchClassifier', repr_)
-        self.assertIn('input_shape=(1, 28, 28), nb_classes=10, channel_index=1', repr_)
-        self.assertIn('clip_values=(0, 1)', repr_)
-        self.assertIn('defences=None, preprocessing=(0, 1)', repr_)
+        self.assertIn("art.estimators.classification.pytorch.PyTorchClassifier", repr_)
+        self.assertIn("input_shape=(1, 28, 28), nb_classes=10, channel_index=1", repr_)
+        self.assertIn("clip_values=(0, 1)", repr_)
+        self.assertIn("defences=None, preprocessing=(0, 1)", repr_)
 
     def test_pickle(self):
         full_path = os.path.join(ART_DATA_PATH, "my_classifier")

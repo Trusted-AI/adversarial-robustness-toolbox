@@ -188,9 +188,11 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
 
-        if isinstance(generator, MXDataGenerator) and \
-                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
-                self.preprocessing == (0, 1):
+        if (
+            isinstance(generator, MXDataGenerator)
+            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
+            and self.preprocessing == (0, 1)
+        ):
             # Train directly in MXNet
             for _ in range(nb_epochs):
                 for x_batch, y_batch in generator.iterator:

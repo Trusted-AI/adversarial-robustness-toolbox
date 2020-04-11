@@ -252,10 +252,13 @@ class TestEnsembleClassifier(TestBase):
 
     def test_repr(self):
         repr_ = repr(self.ensemble)
-        self.assertIn('art.estimators.classification.ensemble.EnsembleClassifier', repr_)
-        self.assertIn('classifier_weights=array([0.5, 0.5])', repr_)
-        self.assertIn('channel_index=3, clip_values=(0, 1), preprocessing_defences=None, '
-                      'postprocessing_defences=None, preprocessing=(0, 1)', repr_)
+        self.assertIn("art.estimators.classification.ensemble.EnsembleClassifier", repr_)
+        self.assertIn("classifier_weights=array([0.5, 0.5])", repr_)
+        self.assertIn(
+            "channel_index=3, clip_values=(0, 1), preprocessing_defences=None, "
+            "postprocessing_defences=None, preprocessing=(0, 1)",
+            repr_,
+        )
 
 
 if __name__ == "__main__":

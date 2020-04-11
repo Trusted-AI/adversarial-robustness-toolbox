@@ -28,7 +28,6 @@ logger = logging.getLogger(__name__)
 
 
 class TestActivationDefence(unittest.TestCase):
-
     def test_size_analyzer(self):
         nb_clusters = 2
         nb_classes = 3

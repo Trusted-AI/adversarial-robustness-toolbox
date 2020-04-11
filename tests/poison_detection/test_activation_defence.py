@@ -158,7 +158,7 @@ class TestActivationDefence(unittest.TestCase):
 
         self.defence.analyze_clusters(cluster_analysis="silhouette-scores")
 
-        report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis='distance')
+        report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis="distance")
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(dist_clean_by_class))
 
@@ -168,7 +168,7 @@ class TestActivationDefence(unittest.TestCase):
             n_dp += len(dist_clean_by_class[i])
         self.assertEqual(len(x_train), n_dp)
 
-        report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis='smaller')
+        report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis="smaller")
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(sz_clean_by_class))
 

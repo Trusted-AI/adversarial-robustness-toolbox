@@ -299,8 +299,8 @@ class TestUtils(unittest.TestCase):
         attack_success_targeted = compute_success(classifier, x_clean, labels, x_adv, targeted=True)
         attack_success_untargeted = compute_success(classifier, x_clean, labels, x_adv, targeted=False)
 
-        self.assertEqual(attack_success_targeted, 1.)
-        self.assertEqual(attack_success_untargeted, 1.)
+        self.assertEqual(attack_success_targeted, 1.0)
+        self.assertEqual(attack_success_untargeted, 1.0)
 
     def test_preprocess(self):
         (x, y), (_, _), _, _ = load_mnist()

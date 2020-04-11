@@ -213,6 +213,7 @@ class PixelThreshold(EvasionAttack):
         if self.es == 0:
 
             from cma import CMAOptions
+
             opts = CMAOptions()
 
             if not self.verbose:
@@ -229,6 +230,7 @@ class PixelThreshold(EvasionAttack):
                 std = limit
 
             from cma import CMAEvolutionStrategy
+
             strategy = CMAEvolutionStrategy(initial, std / 4, opts)
 
             try:

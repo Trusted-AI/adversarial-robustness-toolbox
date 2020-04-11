@@ -152,7 +152,7 @@ class ProjectedGradientDescent(FastGradientMethod):
             mask = kwargs.get("mask")
             if mask is not None:
                 # ensure the mask is broadcastable:
-                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
+                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
                     raise ValueError("mask shape must be broadcastable to input shape")
 
             adv_x_best = None

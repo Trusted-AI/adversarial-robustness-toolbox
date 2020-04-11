@@ -135,9 +135,7 @@ class DecisionTreeAttack(EvasionAttack):
                     if y is None:
                         adv_path = self._df_subtree(self.estimator.get_left_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._df_subtree(
-                            self.estimator.get_left_child(ancestor), legitimate_class, y[index]
-                        )
+                        adv_path = self._df_subtree(self.estimator.get_left_child(ancestor), legitimate_class, y[index])
                 position = position - 1  # we are going the decision path upwards
             adv_path.append(ancestor)
             # we figured out which is the way to the target, now perturb

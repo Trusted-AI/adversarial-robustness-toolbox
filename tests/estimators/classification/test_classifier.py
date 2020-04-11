@@ -47,8 +47,9 @@ class ClassifierInstance(ClassifierMixin, BaseEstimator):
         pass
 
 
-class ClassifierNeuralNetworkInstance(ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin,
-                                      BaseEstimator):
+class ClassifierNeuralNetworkInstance(
+    ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
+):
     def __init__(self, clip_values, channel_index=1):
         super(ClassifierNeuralNetworkInstance, self).__init__(clip_values=clip_values, channel_index=channel_index)
 

@@ -139,7 +139,9 @@ class TestKerasClassifierTensorFlow(TestBase):
         keras_gen.fit(self.x_train_mnist)
         data_gen = KerasDataGenerator(
             iterator=keras_gen.flow(self.x_train_mnist, self.y_train_mnist, batch_size=self.batch_size),
-            size=self.n_train, batch_size=self.batch_size)
+            size=self.n_train,
+            batch_size=self.batch_size,
+        )
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
         acc2 = np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == labels_test) / self.n_test
         logger.info("Accuracy: %.2f%%", (acc2 * 100))
@@ -571,14 +573,18 @@ class TestKerasClassifierTensorFlow(TestBase):
     def test_repr(self):
         classifier = get_image_classifier_kr_tf()
         repr_ = repr(classifier)
-        self.assertIn('art.estimators.classification.keras.KerasClassifier', repr_)
-        self.assertIn('use_logits=False, channel_index=3', repr_)
-        self.assertIn('clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, '
-                      'preprocessing=(0, 1)', repr_)
-        self.assertIn('input_layer=0, output_layer=0', repr_)
+        self.assertIn("art.estimators.classification.keras.KerasClassifier", repr_)
+        self.assertIn("use_logits=False, channel_index=3", repr_)
+        self.assertIn(
+            "clip_values=(0, 1), preprocessing_defences=None, postprocessing_defences=None, " "preprocessing=(0, 1)",
+            repr_,
+        )
+        self.assertIn("input_layer=0, output_layer=0", repr_)
 
-    @unittest.skipIf(int(tf.__version__.split('.')[0]) == 1 and int(tf.__version__.split('.')[1]) < 14,
-                     reason='Only for TensorFlow 1.14 and higher.')
+    @unittest.skipIf(
+        int(tf.__version__.split(".")[0]) == 1 and int(tf.__version__.split(".")[1]) < 14,
+        reason="Only for TensorFlow 1.14 and higher.",
+    )
     def test_loss_functions(self):
 
         # prediction and class_gradient should be independent of logits/probabilities and of loss function
