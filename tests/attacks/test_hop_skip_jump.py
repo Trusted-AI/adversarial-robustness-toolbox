@@ -70,7 +70,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -83,7 +83,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -137,7 +137,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {'y': random_targets(self.y_test_mnist, krc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -150,7 +150,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {'y': random_targets(self.y_test_mnist, krc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -204,7 +204,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -217,7 +217,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())

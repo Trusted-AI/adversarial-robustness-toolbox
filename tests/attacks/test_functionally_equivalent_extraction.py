@@ -923,7 +923,9 @@ class TestFastGradientMethodImages(TestBase):
         np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected, decimal=4)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(FunctionallyEquivalentExtraction, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])
+        backend_test_classifier_type_check_fail(
+            FunctionallyEquivalentExtraction, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin]
+        )
 
 
 if __name__ == "__main__":

@@ -29,7 +29,6 @@ logger = logging.getLogger(__name__)
 
 
 class TestCatBoostClassifier(TestBase):
-
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234)
@@ -38,15 +37,15 @@ class TestCatBoostClassifier(TestBase):
         cls.y_train_iris_index = np.argmax(cls.y_train_iris, axis=1)
         cls.y_test_iris_index = np.argmax(cls.y_test_iris, axis=1)
 
-        model = CatBoostClassifier(custom_loss=['Accuracy'], random_seed=42, logging_level='Silent')
+        model = CatBoostClassifier(custom_loss=["Accuracy"], random_seed=42, logging_level="Silent")
         cls.classifier = CatBoostARTClassifier(model=model)
         cls.classifier.fit(cls.x_train_iris, cls.y_train_iris_index, cat_features=[], eval_set=[])
 
     def test_predict(self):
-        y_predicted = (self.classifier.predict(self.x_test_iris[0:1]))
+        y_predicted = self.classifier.predict(self.x_test_iris[0:1])
         y_expected = np.asarray([[0.00106307, 0.00118028, 0.99775665]])
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

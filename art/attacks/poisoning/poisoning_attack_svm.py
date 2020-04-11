@@ -50,7 +50,18 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
     _estimator_requirements = (ScikitlearnSVC,)
 
-    def __init__(self, classifier, step=None, eps=None, x_train=None, y_train=None, x_val=None, y_val=None, max_iter=100, **kwargs):
+    def __init__(
+        self,
+        classifier,
+        step=None,
+        eps=None,
+        x_train=None,
+        y_train=None,
+        x_val=None,
+        y_val=None,
+        max_iter=100,
+        **kwargs
+    ):
         """
         Initialize an SVM poisoning attack
 

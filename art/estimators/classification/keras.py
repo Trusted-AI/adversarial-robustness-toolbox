@@ -429,13 +429,15 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         from art.data_generators import KerasDataGenerator
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
-        if isinstance(generator, KerasDataGenerator) and \
-                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
-                self.preprocessing == (0, 1):
+        if (
+            isinstance(generator, KerasDataGenerator)
+            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
+            and self.preprocessing == (0, 1)
+        ):
             try:
                 self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
             except ValueError:
-                logger.info('Unable to use data generator as Keras generator. Now treating as framework-independent.')
+                logger.info("Unable to use data generator as Keras generator. Now treating as framework-independent.")
                 super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:
             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)

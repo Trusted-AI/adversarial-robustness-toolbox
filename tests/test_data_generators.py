@@ -155,8 +155,9 @@ class TestKerasDataGenerator(unittest.TestCase):
         datagen.fit(x_train)
 
         # Create wrapper and get batch
-        data_gen = KerasDataGenerator(datagen.flow(x_train, y_train, batch_size=batch_size), size=None,
-                                      batch_size=batch_size)
+        data_gen = KerasDataGenerator(
+            datagen.flow(x_train, y_train, batch_size=batch_size), size=None, batch_size=batch_size
+        )
         x, y = next(data_gen.iterator)
 
         # Check return types
@@ -260,7 +261,7 @@ class TestMXGenerator(unittest.TestCase):
         self.assertEqual(y.shape, (5,))
 
 
-@unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for TensorFlow v2.')
+@unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
 class TestTensorFlowDataGenerator(unittest.TestCase):
     def setUp(self):
         master_seed(seed=42)
@@ -279,8 +280,9 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
 
     def test_init(self):
         iter_ = tf.compat.v1.data.make_initializable_iterator(self.dataset)
-        data_gen = TensorFlowDataGenerator(sess=self.sess, iterator=iter_, iterator_type='initializable',
-                                           iterator_arg={}, size=10, batch_size=5)
+        data_gen = TensorFlowDataGenerator(
+            sess=self.sess, iterator=iter_, iterator_type="initializable", iterator_arg={}, size=10, batch_size=5
+        )
         x, y = data_gen.get_batch()
 
         # Check return types
@@ -296,8 +298,9 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
             tf.compat.v1.data.get_output_types(self.dataset), tf.compat.v1.data.get_output_shapes(self.dataset)
         )
         init_op = iter_.make_initializer(self.dataset)
-        data_gen = TensorFlowDataGenerator(sess=self.sess, iterator=iter_, iterator_type='reinitializable',
-                                           iterator_arg=init_op, size=10, batch_size=5)
+        data_gen = TensorFlowDataGenerator(
+            sess=self.sess, iterator=iter_, iterator_type="reinitializable", iterator_arg=init_op, size=10, batch_size=5
+        )
         x, y = data_gen.get_batch()
 
         # Check return types
@@ -315,8 +318,14 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
         )
         feed_iterator = tf.compat.v1.data.make_initializable_iterator(self.dataset)
         feed_handle = self.sess.run(feed_iterator.string_handle())
-        data_gen = TensorFlowDataGenerator(sess=self.sess, iterator=iter_, iterator_type='feedable',
-                                           iterator_arg=(feed_iterator, {handle: feed_handle}), size=10, batch_size=5)
+        data_gen = TensorFlowDataGenerator(
+            sess=self.sess,
+            iterator=iter_,
+            iterator_type="feedable",
+            iterator_arg=(feed_iterator, {handle: feed_handle}),
+            size=10,
+            batch_size=5,
+        )
         x, y = data_gen.get_batch()
 
         # Check return types
@@ -328,7 +337,7 @@ class TestTensorFlowDataGenerator(unittest.TestCase):
         self.assertEqual(y.shape, (5, 10))
 
 
-@unittest.skipIf(tf.__version__[0] == '1', reason='Skip unittests for TensorFlow v1.')
+@unittest.skipIf(tf.__version__[0] == "1", reason="Skip unittests for TensorFlow v1.")
 class TestTensorFlowV2DataGenerator(unittest.TestCase):
     def setUp(self):
         master_seed(seed=42)

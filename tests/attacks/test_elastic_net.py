@@ -66,9 +66,10 @@ class TestElasticNet(TestBase):
         tfc, sess = get_image_classifier_tf()
 
         # Failure attack
-        ead = ElasticNet(classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0,
-                         initial_const=1)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes)}
+        ead = ElasticNet(
+            classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0, initial_const=1
+        )
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -90,7 +91,7 @@ class TestElasticNet(TestBase):
 
         # First attack
         ead = ElasticNet(classifier=tfc, targeted=True, max_iter=2)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
         expected_x_test_adv = np.asarray(
             [
@@ -136,7 +137,7 @@ class TestElasticNet(TestBase):
 
         # Second attack
         ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -195,7 +196,7 @@ class TestElasticNet(TestBase):
 
         # First attack without batching
         ead_wob = ElasticNet(classifier=tfc, targeted=True, max_iter=2, batch_size=1)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead_wob.generate(self.x_test_mnist, **params)
         expected_x_test_adv = np.asarray(
             [
@@ -241,7 +242,7 @@ class TestElasticNet(TestBase):
 
         # Second attack without batching
         ead_wob = ElasticNet(classifier=tfc, targeted=False, max_iter=2, batch_size=1)
-        params = {'y': random_targets(self.y_test_mnist, tfc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead_wob.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -346,7 +347,7 @@ class TestElasticNet(TestBase):
 
         # First attack
         ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2)
-        params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         expected_x_test_adv = np.asarray(
             [
@@ -389,7 +390,7 @@ class TestElasticNet(TestBase):
 
         # Second attack
         ead = ElasticNet(classifier=ptc, targeted=False, max_iter=2)
-        params = {'y': random_targets(self.y_test_mnist, ptc.nb_classes)}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)

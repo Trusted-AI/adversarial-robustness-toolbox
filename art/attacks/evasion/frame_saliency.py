@@ -69,12 +69,7 @@ class FrameSaliencyAttack(EvasionAttack):
         """
         super(FrameSaliencyAttack, self).__init__(classifier)
 
-        kwargs = {
-            "attacker": attacker,
-            "method": method,
-            "frame_index": frame_index,
-            "batch_size": batch_size
-        }
+        kwargs = {"attacker": attacker, "method": method, "frame_index": frame_index, "batch_size": batch_size}
         self.set_params(**kwargs)
 
     def generate(self, x, y=None, **kwargs):
@@ -146,8 +141,9 @@ class FrameSaliencyAttack(EvasionAttack):
             # Update designated frames with adversarial perturbations:
             x_adv = np.swapaxes(x_adv, 1, self.frame_index)
             x_adv_new = np.swapaxes(x_adv_new, 1, self.frame_index)
-            x_adv[attack_failure, frames_to_perturb[:, i][attack_failure], ::] = \
-                x_adv_new[attack_failure, frames_to_perturb[:, i][attack_failure], ::]
+            x_adv[attack_failure, frames_to_perturb[:, i][attack_failure], ::] = x_adv_new[
+                attack_failure, frames_to_perturb[:, i][attack_failure], ::
+            ]
             x_adv = np.swapaxes(x_adv, 1, self.frame_index)
             x_adv_new = np.swapaxes(x_adv_new, 1, self.frame_index)
 
@@ -174,7 +170,7 @@ class FrameSaliencyAttack(EvasionAttack):
     def _compute_frames_to_perturb(self, x_adv, targets, disregard=None):
         saliency_score = self.estimator.loss_gradient(x_adv, targets)
         saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)
-        saliency_score = saliency_score.reshape((saliency_score.shape[:2] + (np.prod(saliency_score.shape[2:]), )))
+        saliency_score = saliency_score.reshape((saliency_score.shape[:2] + (np.prod(saliency_score.shape[2:]),)))
         saliency_score = np.mean(np.abs(saliency_score), axis=2)
 
         if disregard is not None:
@@ -195,11 +191,15 @@ class FrameSaliencyAttack(EvasionAttack):
         """
         super(FrameSaliencyAttack, self).set_params(**kwargs)
 
-        if not isinstance(self.attacker, ProjectedGradientDescent) and \
-                not isinstance(self.attacker, BasicIterativeMethod) and \
-                not isinstance(self.attacker, FastGradientMethod):
-            raise ValueError("The attacker must be either of class 'ProjectedGradientDescent', \
-                              'BasicIterativeMethod' or 'FastGradientMethod'")
+        if (
+            not isinstance(self.attacker, ProjectedGradientDescent)
+            and not isinstance(self.attacker, BasicIterativeMethod)
+            and not isinstance(self.attacker, FastGradientMethod)
+        ):
+            raise ValueError(
+                "The attacker must be either of class 'ProjectedGradientDescent', \
+                              'BasicIterativeMethod' or 'FastGradientMethod'"
+            )
 
         if self.method not in self.method_list:
             raise ValueError("Method must be either 'iterative_saliency', 'iterative_saliency_refresh' or 'one_shot'.")

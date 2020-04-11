@@ -1,8 +1,7 @@
 """
 Module providing adversarial attacks under a common interface.
 """
-from art.attacks.attack import Attack, EvasionAttack, PoisoningAttackBlackBox, PoisoningAttackWhiteBox, \
-ExtractionAttack
+from art.attacks.attack import Attack, EvasionAttack, PoisoningAttackBlackBox, PoisoningAttackWhiteBox, ExtractionAttack
 
 # from art.attacks.evasion.adversarial_patch import AdversarialPatch
 # from art.attacks.evasion.boundary import BoundaryAttack

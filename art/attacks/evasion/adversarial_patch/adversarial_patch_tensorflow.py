@@ -115,9 +115,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self.estimator.postprocessing_defences is not None or self.estimator.postprocessing_defences != []
         ), "Framework-specific implementation of Adversarial Patch attack does not yet support postprocessing defences."
 
-        mean_value = (
-            self.estimator.clip_values[1] - self.estimator.clip_values[0]
-        ) / 2.0 + self.estimator.clip_values[0]
+        mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
+            0
+        ]
         initial_value = np.ones(self.patch_shape) * mean_value
         self._patch = tf.Variable(
             initial_value=initial_value,
@@ -259,7 +259,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
-        shuffle = kwargs.get('shuffle', True)
+        shuffle = kwargs.get("shuffle", True)
 
         if shuffle:
             ds = (
