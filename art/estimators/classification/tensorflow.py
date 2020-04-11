@@ -991,7 +991,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         import tensorflow as tf
         from art.config import ART_NUMPY_DTYPE
 
-        if isinstance(self._model, tf.keras.model.Sequential):
+        if isinstance(self._model, tf.keras.models.Sequential):
             i_layer = None
             if isinstance(layer, six.string_types):
                 if layer not in self.layer_names:
