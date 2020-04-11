@@ -38,6 +38,10 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 ## ART中实施的攻击，防御，检测，指标，认证和验证
 
 **逃避攻击：**
+* Auto Attack ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Auto Projected Gradient Descent ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Square Attack ([Andriushchenko et al., 2020](https://arxiv.org/abs/1912.00049))
+* Fast Adaptive Boundary Attack ([Croce and Hein, 2019](https://arxiv.org/abs/1907.02044))
 * Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
 * Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations)) 
 * HopSkipJump攻击 ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
