@@ -27,7 +27,7 @@ from art.attacks.attack import EvasionAttack
 logger = logging.getLogger(__name__)
 
 
-class SqaureAttack(EvasionAttack):
+class SquareAttack(EvasionAttack):
 
     def generate(self, x, y=None, **kwargs):
         pass
