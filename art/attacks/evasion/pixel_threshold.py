@@ -43,6 +43,8 @@ from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
 
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -61,6 +63,8 @@ class PixelThreshold(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params + ["th", "es", "targeted", "verbose"]
 
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
+
     def __init__(self, classifier, th, es, targeted, verbose):
         """
         Create a :class:`.PixelThreshold` instance.
@@ -76,6 +80,7 @@ class PixelThreshold(EvasionAttack):
         :type  verbose: `bool`
         """
         super(PixelThreshold, self).__init__(estimator=classifier)
+
         self._project = True
         kwargs = {"th": th, "es": es, "targeted": targeted, "verbose": verbose}
         PixelThreshold.set_params(self, **kwargs)

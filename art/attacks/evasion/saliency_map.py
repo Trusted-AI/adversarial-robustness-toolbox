@@ -27,10 +27,10 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
+from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format, compute_success
-from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +43,8 @@ class SaliencyMapMethod(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + ["theta", "gamma", "batch_size"]
+
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(self, classifier, theta=0.1, gamma=1.0, batch_size=1):
         """
@@ -58,8 +60,6 @@ class SaliencyMapMethod(EvasionAttack):
         :type batch_size: `int`
         """
         super(SaliencyMapMethod, self).__init__(estimator=classifier)
-        if not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {"theta": theta, "gamma": gamma, "batch_size": batch_size}
         self.set_params(**kwargs)

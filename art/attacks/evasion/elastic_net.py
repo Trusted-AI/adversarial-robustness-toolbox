@@ -55,6 +55,8 @@ class ElasticNet(EvasionAttack):
         "decision_rule",
     ]
 
+    _estimator_requirements = (ClassGradientsMixin,)
+
     def __init__(
         self,
         classifier,
@@ -97,8 +99,6 @@ class ElasticNet(EvasionAttack):
         :type decision_rule: `string`
         """
         super(ElasticNet, self).__init__(estimator=classifier)
-        if not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {
             "confidence": confidence,

@@ -44,6 +44,8 @@ class DeepFool(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params + ["max_iter", "epsilon", "nb_grads", "batch_size"]
 
+    _estimator_requirements = (ClassGradientsMixin,)
+
     def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=1):
         """
         Create a DeepFool attack instance.
@@ -61,8 +63,6 @@ class DeepFool(EvasionAttack):
         :type batch_size: `int`
         """
         super(DeepFool, self).__init__(estimator=classifier)
-        if not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [ClassGradientsMixin], classifier)
 
         params = {"max_iter": max_iter, "epsilon": epsilon, "nb_grads": nb_grads, "batch_size": batch_size}
         self.set_params(**params)

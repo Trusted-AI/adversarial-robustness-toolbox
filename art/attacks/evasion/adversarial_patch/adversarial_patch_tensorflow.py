@@ -29,9 +29,8 @@ import math
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.exceptions import EstimatorError
-from art.estimators.estimator import NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -53,6 +52,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         "batch_size",
         "patch_shape",
     ]
+
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
         self,
@@ -93,8 +94,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         import tensorflow as tf
 
         super(AdversarialPatchTensorFlowV2, self).__init__(estimator=classifier)
-        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
         kwargs = {
             "rotation_max": rotation_max,

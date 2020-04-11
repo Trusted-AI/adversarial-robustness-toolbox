@@ -29,10 +29,13 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.pixel_threshold import ThresholdAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array
 
 from tests.utils import TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +141,9 @@ class TestThresholdAttack(TestBase):
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(ThresholdAttack, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])
 
 
 if __name__ == "__main__":

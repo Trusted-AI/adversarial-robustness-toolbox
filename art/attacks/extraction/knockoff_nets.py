@@ -28,6 +28,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
+from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import to_categorical
 
@@ -50,6 +51,8 @@ class KnockoffNets(ExtractionAttack):
         "sampling_strategy",
         "reward",
     ]
+
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,

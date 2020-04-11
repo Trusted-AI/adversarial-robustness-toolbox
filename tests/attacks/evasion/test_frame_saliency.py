@@ -22,9 +22,11 @@ import numpy as np
 import pytest
 
 from art.attacks.evasion import FastGradientMethod, FrameSaliencyAttack
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 
 from tests.utils import ExpectedValue
 from tests.attacks.utils import backend_check_adverse_values, backend_check_adverse_frames
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +108,10 @@ def test_iterative_saliency_refresh(fix_get_mnist_subset, get_image_classifier_l
         # test with non-default frame index:
         attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency", frame_index=2)
         backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values_axis_2)
+
+
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(FastGradientMethod, [LossGradientsMixin, BaseEstimator])
 
 
 if __name__ == "__main__":

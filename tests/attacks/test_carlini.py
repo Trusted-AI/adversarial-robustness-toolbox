@@ -25,8 +25,8 @@ import numpy as np
 
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
 from art.estimators.classification.keras import KerasClassifier
-from art.estimators.estimator import NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import random_targets, to_categorical
 
 from tests.utils import TestBase, master_seed
@@ -207,7 +207,7 @@ class TestCarlini(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(CarliniL2Method, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(CarliniL2Method, [BaseEstimator, ClassGradientsMixin])
 
     def test_keras_iris_clipped_L2(self):
         classifier = get_tabular_classifier_kr()
@@ -465,7 +465,7 @@ class TestCarlini(TestBase):
         self.assertTrue((target != y_pred_adv).any())
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassGradientsMixin])
+        backend_test_classifier_type_check_fail(CarliniLInfMethod, [BaseEstimator, ClassGradientsMixin])
 
     def test_keras_iris_clipped_LInf(self):
         classifier = get_tabular_classifier_kr()

@@ -28,12 +28,11 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion import ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod
 from art.utils import compute_success_array, get_labels_np_array, check_and_transform_label_format
-from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +47,8 @@ class FrameSaliencyAttack(EvasionAttack):
 
     method_list = ["iterative_saliency", "iterative_saliency_refresh", "one_shot"]
     attack_params = EvasionAttack.attack_params + ["attacker", "method", "frame_index", "batch_size"]
+
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
 
     def __init__(self, classifier, attacker, method="iterative_saliency", frame_index=1, batch_size=1):
         """
@@ -67,8 +68,6 @@ class FrameSaliencyAttack(EvasionAttack):
         :type batch_size: `int`
         """
         super(FrameSaliencyAttack, self).__init__(classifier)
-        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
         kwargs = {
             "attacker": attacker,

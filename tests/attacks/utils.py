@@ -20,13 +20,9 @@ import numpy as np
 import logging
 
 import keras.backend as k
-from sklearn.tree import DecisionTreeClassifier
 
 from art.utils import random_targets, get_labels_np_array
 from art.exceptions import EstimatorError
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassGradientsMixin
-from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 from tests.utils import check_adverse_example_x, check_adverse_predicted_sample_y
 
@@ -128,33 +124,21 @@ def backend_check_adverse_frames(attack, mnist_dataset, expected_values):
 
 
 def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[], classifier=None):
+
+    assert len(classifier_expected_list) == len(attack._estimator_requirements)
+
+    for cls in classifier_expected_list:
+        assert cls in classifier_expected_list
+
+    for cls in attack._estimator_requirements:
+        assert cls in classifier_expected_list
+
     # Use a useless test classifier to test basic classifier properties
     class ClassifierNoAPI:
         pass
 
-    noAPIClassifier = ClassifierNoAPI
-    _backend_test_classifier_list_type_check_fail(attack, noAPIClassifier, [BaseEstimator])
+    classifier = ClassifierNoAPI
 
-    if len(classifier_expected_list) > 0:
-        # Testing additional types of classifiers expected
-        if classifier is None:
-            if (
-                LossGradientsMixin in classifier_expected_list
-                or ClassGradientsMixin in classifier_expected_list
-                or NeuralNetworkMixin in classifier_expected_list
-            ):
-                # Use a test classifier not providing gradients required by white-box attack
-                classifier = ScikitlearnDecisionTreeClassifier(model=DecisionTreeClassifier())
-            else:
-                raise Exception(
-                    "a test classifier must be provided if classifiers other than "
-                    "ClassifierGradients and ClassifierNeuralNetwork are expected"
-                )
-
-        _backend_test_classifier_list_type_check_fail(attack, classifier, classifier_expected_list)
-
-
-def _backend_test_classifier_list_type_check_fail(attack, classifier, classifier_expected_list):
     with pytest.raises(EstimatorError) as exception:
         _ = attack(classifier)
 

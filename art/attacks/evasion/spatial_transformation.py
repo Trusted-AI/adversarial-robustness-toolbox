@@ -30,6 +30,7 @@ import numpy as np
 from scipy.ndimage import rotate, shift
 
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,8 @@ class SpatialTransformation(EvasionAttack):
         "max_rotation",
         "num_rotations",
     ]
+
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
 
     def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1):
         """

@@ -27,6 +27,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
+from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import to_categorical, compute_success
@@ -43,6 +44,8 @@ class NewtonFool(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params + ["max_iter", "eta", "batch_size"]
 
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
+
     def __init__(self, classifier, max_iter=100, eta=0.01, batch_size=1):
         """
         Create a NewtonFool attack instance.
@@ -57,17 +60,6 @@ class NewtonFool(EvasionAttack):
         :type batch_size: `int`
         """
         super(NewtonFool, self).__init__(estimator=classifier)
-        if not isinstance(classifier, ClassGradientsMixin):
-            raise (
-                TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
-                    "`art.estimators.classification.classifier.ClassGradientsMixin`, the provided classifier is "
-                    "instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
 
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)

@@ -29,6 +29,8 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -53,6 +55,8 @@ class HopSkipJump(EvasionAttack):
         "batch_size",
     ]
 
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+
     def __init__(self, classifier, targeted=False, norm=2, max_iter=50, max_eval=10000, init_eval=100, init_size=100):
         """
         Create a HopSkipJump attack instance.
@@ -73,6 +77,7 @@ class HopSkipJump(EvasionAttack):
         :type init_size: `int`
         """
         super(HopSkipJump, self).__init__(estimator=classifier)
+
         params = {
             "targeted": targeted,
             "norm": norm,

@@ -28,11 +28,10 @@ import random
 
 import numpy as np
 
-from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import projection
-from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +58,8 @@ class UniversalPerturbation(EvasionAttack):
     }
     attack_params = EvasionAttack.attack_params + ["attacker", "attacker_params", "delta", "max_iter", "eps", "norm"]
 
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
+
     def __init__(
         self, classifier, attacker="deepfool", attacker_params=None, delta=0.2, max_iter=20, eps=10.0, norm=np.inf
     ):
@@ -81,8 +82,6 @@ class UniversalPerturbation(EvasionAttack):
         :type norm: `int`
         """
         super(UniversalPerturbation, self).__init__(estimator=classifier)
-        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
         kwargs = {
             "attacker": attacker,

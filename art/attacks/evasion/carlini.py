@@ -31,11 +31,11 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
+from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
 from art.utils import check_and_transform_label_format
-from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +61,8 @@ class CarliniL2Method(EvasionAttack):
         "max_doubling",
         "batch_size",
     ]
+
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
         self,
@@ -107,8 +109,6 @@ class CarliniL2Method(EvasionAttack):
         :type batch_size: `int`
         """
         super(CarliniL2Method, self).__init__(estimator=classifier)
-        if not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -523,6 +523,8 @@ class CarliniLInfMethod(EvasionAttack):
         "batch_size",
     ]
 
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
+
     def __init__(
         self,
         classifier,
@@ -563,8 +565,6 @@ class CarliniLInfMethod(EvasionAttack):
         :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniLInfMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [ClassGradientsMixin], classifier)
 
         kwargs = {
             "confidence": confidence,

@@ -23,6 +23,8 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
 from art.utils import random_targets
 
@@ -253,9 +255,6 @@ class TestHopSkipJump(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(HopSkipJump)
-
     def test_pytorch_resume(self):
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
@@ -483,6 +482,9 @@ class TestHopSkipJump(TestBase):
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(HopSkipJump, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":
