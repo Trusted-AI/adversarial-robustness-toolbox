@@ -24,6 +24,8 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.zoo import ZooAttack
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import random_targets
 
 from tests.utils import TestBase, get_image_classifier_kr, get_image_classifier_pt
@@ -220,7 +222,7 @@ class TestZooAttack(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ZooAttack)
+        backend_test_classifier_type_check_fail(ZooAttack, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":

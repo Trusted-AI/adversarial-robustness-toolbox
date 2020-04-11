@@ -44,6 +44,8 @@ class HighConfidenceLowUncertainty(EvasionAttack):
 
     attack_params = ["conf", "unc_increase", "min_val", "max_val"]
 
+    _estimator_requirements = (GPyGaussianProcessClassifier,)
+
     def __init__(self, classifier, conf=0.95, unc_increase=100.0, min_val=0.0, max_val=1.0):
         """
         :param classifier: A trained model of type GPYGaussianProcessClassifier.
@@ -58,8 +60,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         :type max_val: `float`
         """
         super(HighConfidenceLowUncertainty, self).__init__(estimator=classifier)
-        if not isinstance(classifier, GPyGaussianProcessClassifier):
-            raise TypeError("Model must be a GPy Gaussian Process classifier!")
+
         params = {"conf": conf, "unc_increase": unc_increase, "min_val": min_val, "max_val": max_val}
         self.set_params(**params)
 

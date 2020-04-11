@@ -48,7 +48,9 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         "y_val",
     ]
 
-    def __init__(self, classifier, step, eps, x_train, y_train, x_val, y_val, max_iter=100, **kwargs):
+    _estimator_requirements = (ScikitlearnSVC,)
+
+    def __init__(self, classifier, step=None, eps=None, x_train=None, y_train=None, x_val=None, y_val=None, max_iter=100, **kwargs):
         """
         Initialize an SVM poisoning attack
 
@@ -75,8 +77,6 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
         super(PoisoningAttackSVM, self).__init__(classifier)
 
-        if not isinstance(classifier, ScikitlearnSVC):
-            raise TypeError("Classifier must be a SVC")
         if isinstance(self.estimator._model, LinearSVC):
             self._estimator = ScikitlearnSVC(
                 model=SVC(C=self.estimator._model.C, kernel="linear"), clip_values=self.estimator.clip_values

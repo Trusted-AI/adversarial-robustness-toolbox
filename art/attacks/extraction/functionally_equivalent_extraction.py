@@ -34,6 +34,8 @@ import numpy as np
 from scipy.optimize import least_squares
 
 from art.attacks.attack import ExtractionAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.blackbox import BlackBoxClassifier
 
@@ -50,7 +52,9 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
     | Paper link: https://arxiv.org/abs/1909.01838
     """
 
-    def __init__(self, classifier, num_neurons):
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
+
+    def __init__(self, classifier, num_neurons=None):
         """
         Create a `FunctionallyEquivalentExtraction` instance.
 

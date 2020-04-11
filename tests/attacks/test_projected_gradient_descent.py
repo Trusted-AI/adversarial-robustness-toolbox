@@ -143,9 +143,6 @@ class TestPGD(TestBase):
         mask_diff = (1 - mask) * (x_test_adv - x_test)
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
-
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
@@ -296,6 +293,9 @@ class TestPGD(TestBase):
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
 
 if __name__ == "__main__":

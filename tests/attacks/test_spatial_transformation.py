@@ -24,6 +24,7 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 from tests.utils import TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr
@@ -160,7 +161,7 @@ class TestSpatialTransformation(TestBase):
         self.assertIn("Feature vectors detected.", str(context.exception))
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(SpatialTransformation)
+        backend_test_classifier_type_check_fail(SpatialTransformation, [BaseEstimator, NeuralNetworkMixin])
 
 
 if __name__ == "__main__":

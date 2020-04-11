@@ -57,7 +57,7 @@ class BoundaryAttack(EvasionAttack):
         "batch_size",
     ]
 
-    estimator_requirements = (BaseEstimator, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
@@ -94,9 +94,6 @@ class BoundaryAttack(EvasionAttack):
         :type init_size: `int`
         """
         super(BoundaryAttack, self).__init__(estimator=estimator)
-
-        if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
-            raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         params = {
             "targeted": targeted,

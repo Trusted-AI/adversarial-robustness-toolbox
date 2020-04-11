@@ -23,6 +23,7 @@ import numpy as np
 
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import get_labels_np_array, to_categorical
 
@@ -197,9 +198,6 @@ class TestSaliencyMap(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(SaliencyMapMethod, [ClassGradientsMixin])
-
     def test_keras_iris_vector_clipped(self):
         classifier = get_tabular_classifier_kr()
 
@@ -285,6 +283,9 @@ class TestSaliencyMap(TestBase):
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(SaliencyMapMethod, [BaseEstimator, ClassGradientsMixin])
 
 
 if __name__ == "__main__":

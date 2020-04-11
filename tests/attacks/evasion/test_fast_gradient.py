@@ -170,7 +170,7 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targe
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(FastGradientMethod, [LossGradientsMixin, BaseEstimator])
+    backend_test_classifier_type_check_fail(FastGradientMethod, [BaseEstimator, LossGradientsMixin])
 
 
 if __name__ == "__main__":

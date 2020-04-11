@@ -24,10 +24,11 @@ import numpy as np
 from sklearn.svm import LinearSVC, NuSVC, SVC
 
 from art.attacks.poisoning import PoisoningAttackSVM
-from art.estimators.classification.scikitlearn import SklearnClassifier
+from art.estimators.classification.scikitlearn import SklearnClassifier, ScikitlearnSVC
 from art.utils import load_iris
 
 from tests.utils import master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -174,6 +175,9 @@ class TestSVMAttack(unittest.TestCase):
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(PoisoningAttackSVM, [ScikitlearnSVC])
 
 
 if __name__ == "__main__":

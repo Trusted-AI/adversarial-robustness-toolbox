@@ -52,7 +52,7 @@ class ProjectedGradientDescent(FastGradientMethod):
 
     attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps"]
 
-    estimator_requirements = (BaseEstimator, LossGradientsMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
         self,
@@ -102,9 +102,6 @@ class ProjectedGradientDescent(FastGradientMethod):
             batch_size=batch_size,
             minimal=False,
         )
-
-        if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
-            raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         kwargs = {"max_iter": max_iter, "random_eps": random_eps}
         ProjectedGradientDescent.set_params(self, **kwargs)

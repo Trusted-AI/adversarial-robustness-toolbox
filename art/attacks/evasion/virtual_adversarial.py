@@ -27,11 +27,10 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
-from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +43,8 @@ class VirtualAdversarialMethod(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + ["eps", "finite_diff", "max_iter", "batch_size"]
+
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
 
     def __init__(self, classifier, max_iter=10, finite_diff=1e-6, eps=0.1, batch_size=1):
         """
@@ -61,8 +62,6 @@ class VirtualAdversarialMethod(EvasionAttack):
         :type batch_size: `int`
         """
         super(VirtualAdversarialMethod, self).__init__(estimator=classifier)
-        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
         kwargs = {"finite_diff": finite_diff, "eps": eps, "max_iter": max_iter, "batch_size": batch_size}
         self.set_params(**kwargs)

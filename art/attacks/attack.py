@@ -92,14 +92,18 @@ class Attack(abc.ABC, metaclass=input_filter):
         :param estimator: An estimator
         :type estimator: :class:`art.estimators.estimator.BaseEstimator`
         """
-        if not isinstance(estimator, BaseEstimator) and estimator is not None:
-            raise EstimatorError(self.__class__, [BaseEstimator], estimator)
+        if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
+            raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         self._estimator = estimator
 
     @property
     def estimator(self):
         return self._estimator
+
+    @property
+    def estimator_requirements(self):
+        return self._estimator_requirements
 
     def set_params(self, **kwargs):
         """

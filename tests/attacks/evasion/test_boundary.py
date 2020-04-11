@@ -20,6 +20,8 @@ import pytest
 import logging
 
 from art.attacks.evasion import BoundaryAttack
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_targeted_images
 from tests.attacks.utils import back_end_untargeted_images, backend_test_classifier_type_check_fail
@@ -68,8 +70,8 @@ def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack, fram
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(BoundaryAttack)
+    backend_test_classifier_type_check_fail(BoundaryAttack, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
+    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

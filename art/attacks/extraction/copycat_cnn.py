@@ -28,6 +28,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
+from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import to_categorical
 
@@ -43,6 +44,8 @@ class CopycatCNN(ExtractionAttack):
     """
 
     attack_params = ExtractionAttack.attack_params + ["batch_size_fit", "batch_size_query", "nb_epochs", "nb_stolen"]
+
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(self, classifier, batch_size_fit=1, batch_size_query=1, nb_epochs=10, nb_stolen=1):
         """

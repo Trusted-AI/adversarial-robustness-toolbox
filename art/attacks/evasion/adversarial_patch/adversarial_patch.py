@@ -27,11 +27,10 @@ import logging
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
-from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification import TensorFlowV2Classifier
-from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
-from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +50,8 @@ class AdversarialPatch(EvasionAttack):
         "max_iter",
         "batch_size",
     ]
+
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
         self,
@@ -89,8 +90,6 @@ class AdversarialPatch(EvasionAttack):
         :type patch_shape: (`int`, `int`, `int`)
         """
         super(AdversarialPatch, self).__init__(estimator=classifier)
-        if not isinstance(classifier, NeuralNetworkMixin) or not isinstance(classifier, ClassGradientsMixin):
-            raise EstimatorError(self.__class__, [NeuralNetworkMixin, ClassGradientsMixin], classifier)
 
         assert (
             self.estimator.clip_values is not None
