@@ -61,7 +61,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         Create an :class:`.ProvenanceDefense` object with the provided classifier.
 
         :param classifier: Model evaluated for poison.
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.classifier.ClassifierMixin`
         :param x_train: dataset used to train the classifier.
         :type x_train: `np.ndarray`
         :param y_train: labels used to train the classifier.

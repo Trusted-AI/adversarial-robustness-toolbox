@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import GaussianAugmentation
+from art.defences.preprocessor import GaussianAugmentation
 
 from tests.utils import master_seed
 

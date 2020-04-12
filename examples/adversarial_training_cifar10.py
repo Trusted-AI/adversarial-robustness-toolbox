@@ -11,8 +11,8 @@ from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Activation, Dropout
 import numpy as np
 
-from art.attacks import DeepFool
-from art.classifiers import KerasClassifier
+from art.attacks.evasion import DeepFool
+from art.estimators.classification import KerasClassifier
 from art.utils import load_dataset
 
 # Configure a logger to capture ART outputs; these are printed in console and the level of detail is set to INFO

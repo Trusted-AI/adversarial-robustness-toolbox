@@ -42,8 +42,9 @@ class TestBackdoorAttack(TestBase):
 
     def setUp(self):
         master_seed(seed=301)
-        self.backdoor_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-                                          "data", "backdoors", "alert.png")
+        self.backdoor_path = os.path.join(
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "data", "backdoors", "alert.png"
+        )
         super().setUp()
 
     @staticmethod

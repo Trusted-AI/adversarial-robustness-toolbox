@@ -23,9 +23,8 @@ import unittest
 import numpy as np
 from sklearn.svm import SVC
 
-from art.attacks import PoisoningAttackSVM
-from art.classifiers import SklearnClassifier
-from art.classifiers.scikitlearn import ScikitlearnSVC
+from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
+from art.estimators.classification.scikitlearn import SklearnClassifier, ScikitlearnSVC
 from art.poison_detection.roni import RONIDefense
 from art.utils import load_mnist
 

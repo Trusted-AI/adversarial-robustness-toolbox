@@ -28,10 +28,13 @@ import tensorflow as tf
 tf.compat.v1.disable_eager_execution()
 from tensorflow.keras.models import load_model
 
-from art.attacks import FunctionallyEquivalentExtraction
-from art.classifiers import KerasClassifier
+from art.attacks.extraction.functionally_equivalent_extraction import FunctionallyEquivalentExtraction
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.utils import TestBase, master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -918,6 +921,11 @@ class TestFastGradientMethodImages(TestBase):
             ]
         )
         np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected, decimal=4)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(
+            FunctionallyEquivalentExtraction, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin]
+        )
 
 
 if __name__ == "__main__":

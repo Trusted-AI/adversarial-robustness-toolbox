@@ -29,8 +29,8 @@ import math
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.exceptions import ClassifierError
-from art.classifiers.classifier import ClassifierGradients, ClassifierNeuralNetwork
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -52,6 +52,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         "batch_size",
         "patch_shape",
     ]
+
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
         self,
@@ -91,9 +93,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         import tensorflow as tf
 
-        super(AdversarialPatchTensorFlowV2, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+        super(AdversarialPatchTensorFlowV2, self).__init__(estimator=classifier)
 
         kwargs = {
             "rotation_max": rotation_max,
@@ -112,18 +112,18 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         assert self.patch_shape[2] in [1, 3], "Color channel need to be in last dimension"
         assert self.patch_shape[0] == self.patch_shape[1], "Patch height and width need to be the same."
         assert (
-            self.classifier.postprocessing_defences is not None or self.classifier.postprocessing_defences != []
+            self.estimator.postprocessing_defences is not None or self.estimator.postprocessing_defences != []
         ), "Framework-specific implementation of Adversarial Patch attack does not yet support postprocessing defences."
 
-        mean_value = (
-            self.classifier.clip_values[1] - self.classifier.clip_values[0]
-        ) / 2.0 + self.classifier.clip_values[0]
+        mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
+            0
+        ]
         initial_value = np.ones(self.patch_shape) * mean_value
         self._patch = tf.Variable(
             initial_value=initial_value,
             shape=self.patch_shape,
             dtype=tf.float32,
-            constraint=lambda x: tf.clip_by_value(x, self.classifier.clip_values[0], self.classifier.clip_values[1]),
+            constraint=lambda x: tf.clip_by_value(x, self.estimator.clip_values[0], self.estimator.clip_values[1]),
         )
 
         self._train_op = tf.keras.optimizers.SGD(
@@ -134,7 +134,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         import tensorflow as tf
 
         if target is None:
-            target = self.classifier.predict(x=images)
+            target = self.estimator.predict(x=images)
             self.targeted = False
         else:
             self.targeted = True
@@ -158,10 +158,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         patched_input = self._random_overlay(images, self._patch)
 
         patched_input = tf.clip_by_value(
-            patched_input, clip_value_min=self.classifier.clip_values[0], clip_value_max=self.classifier.clip_values[1]
+            patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1]
         )
 
-        probabilities = self.classifier._predict_framework(patched_input)
+        probabilities = self.estimator._predict_framework(patched_input)
 
         return probabilities
 
@@ -257,9 +257,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         import tensorflow as tf
 
-        y = check_and_transform_label_format(labels=y, nb_classes=self.classifier.nb_classes())
+        y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
-        shuffle = kwargs.get('shuffle', True)
+        shuffle = kwargs.get("shuffle", True)
 
         if shuffle:
             ds = (
