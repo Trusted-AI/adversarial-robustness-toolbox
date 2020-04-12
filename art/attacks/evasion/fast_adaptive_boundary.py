@@ -18,7 +18,7 @@
 """
 This module implements the `Fast Adaptive Boundary` attack.
 
-| Paper link: https://arxiv.org/abs/2003.01690
+| Paper link: https://arxiv.org/abs/1907.02044
 """
 import logging
 

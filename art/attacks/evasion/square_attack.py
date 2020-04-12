@@ -18,7 +18,7 @@
 """
 This module implements the `Square Attack` attack.
 
-| Paper link: https://arxiv.org/abs/2003.01690
+| Paper link: https://arxiv.org/abs/1912.00049
 """
 import logging
 
