@@ -21,9 +21,10 @@ import logging
 import unittest
 import numpy as np
 
-from art.attacks import VirtualAdversarialMethod
-from art.classifiers import KerasClassifier
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
+from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import get_labels_np_array
 
 from tests.utils import TestBase
@@ -101,11 +102,6 @@ class TestVirtualAdversarial(TestBase):
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
-
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            VirtualAdversarialMethod, [ClassifierNeuralNetwork, ClassifierGradients]
-        )
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
@@ -195,6 +191,11 @@ class TestVirtualAdversarial(TestBase):
             "This attack requires a classifier predicting probabilities in the range [0, 1] as output."
             "Values smaller than 0.0 or larger than 1.0 have been detected.",
             str(context.exception),
+        )
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(
+            VirtualAdversarialMethod, [BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin]
         )
 
 

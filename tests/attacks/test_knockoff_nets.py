@@ -24,11 +24,13 @@ import numpy as np
 import keras.backend as k
 
 from art.attacks.extraction.knockoff_nets import KnockoffNets
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.utils import TestBase, master_seed
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr
-from tests.utils import get_image_classifier_pt, get_tabular_classifier_tf
-from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -200,6 +202,9 @@ class TestKnockoffNets(TestBase):
         self.assertGreater(acc, 0.4)
 
         self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 28, 28, 1)).astype(np.float32)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(KnockoffNets, [BaseEstimator, ClassifierMixin])
 
 
 class TestKnockoffNetsVectors(TestBase):

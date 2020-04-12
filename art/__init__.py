@@ -1,13 +1,12 @@
 """
 The Adversarial Robustness Toolbox (ART).
 """
-import logging
 import logging.config
 
 # Project Imports
 from art import attacks
-from art import classifiers
 from art import defences
+from art import estimators
 from art import metrics
 from art import poison_detection
 from art import wrappers

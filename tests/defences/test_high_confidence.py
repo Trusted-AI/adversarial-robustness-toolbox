@@ -20,7 +20,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import HighConfidence
+from art.defences.postprocessor import HighConfidence
 from art.utils import load_dataset
 
 from tests.utils import master_seed, get_image_classifier_kr_tf, get_image_classifier_kr_tf_binary
