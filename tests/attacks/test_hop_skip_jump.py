@@ -22,8 +22,10 @@ import unittest
 import keras.backend as k
 import numpy as np
 
-from art.attacks import HopSkipJump
-from art.classifiers import KerasClassifier
+from art.attacks.evasion.hop_skip_jump import HopSkipJump
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification import ClassifierMixin
+from art.estimators.classification.keras import KerasClassifier
 from art.utils import random_targets
 
 from tests.utils import TestBase
@@ -68,7 +70,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -81,7 +83,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -135,7 +137,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -148,7 +150,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
         x_test_adv = hsj.generate(self.x_test_mnist, **params)
 
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
@@ -202,7 +204,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=2
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10)
-        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -215,7 +217,7 @@ class TestHopSkipJump(TestBase):
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
-        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = hsj.generate(x_test, **params)
 
         self.assertFalse((x_test == x_test_adv).all())
@@ -252,9 +254,6 @@ class TestHopSkipJump(TestBase):
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
-
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(HopSkipJump)
 
     def test_pytorch_resume(self):
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
@@ -428,7 +427,7 @@ class TestHopSkipJump(TestBase):
         from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
         from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
 
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
             DecisionTreeClassifier(),
@@ -483,6 +482,9 @@ class TestHopSkipJump(TestBase):
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(HopSkipJump, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":

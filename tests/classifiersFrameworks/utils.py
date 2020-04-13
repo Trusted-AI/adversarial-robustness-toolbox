@@ -37,14 +37,9 @@ def backend_test_layers(
 
 
 def backend_test_repr(classifier, message_list):
-    # classifier, _ = get_image_classifier_list(one_classifier=True)
     repr_ = repr(classifier)
-    try:
-        for message in message_list:
-            assert message in repr_, "{0}: was not contained within repr".format(message)
-    except:
-        print(repr_)
-        tmp = ""
+    for message in message_list:
+        assert message in repr_, "{0}: was not contained within repr".format(message)
 
 
 def backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels):
@@ -110,7 +105,7 @@ def backend_test_class_gradient(get_default_mnist_subset, classifier, expected_v
 
 def backend_test_nb_classes(get_image_classifier_list):
     classifier, _ = get_image_classifier_list(one_classifier=True)
-    assert classifier.nb_classes() == 10
+    assert classifier.nb_classes == 10
 
 
 def backend_test_input_shape(get_image_classifier_list):

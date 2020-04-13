@@ -17,18 +17,18 @@
 # SOFTWARE.
 """Robustness evaluation module."""
 
+import zipfile
+import importlib
+import re
+
 import numpy as np
 from minio import Minio
 
 import torch
 import torch.utils.data
 
-from art.classifiers.pytorch import PyTorchClassifier
+from art.estimators.classification import PyTorchClassifier
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-
-import zipfile
-import importlib
-import re
 
 from robustness_util import get_metrics
 

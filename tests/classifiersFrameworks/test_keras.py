@@ -28,9 +28,8 @@ from keras.callbacks import LearningRateScheduler
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.preprocessing.image import load_img, img_to_array
 
-from art.classifiers import KerasClassifier
-from art.classifiers.keras import generator_fit
-from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.estimators.classification.keras import KerasClassifier, generator_fit
+from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
 
 from tests.utils import ExpectedValue
@@ -155,9 +154,11 @@ def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_i
         cval=0,
     )
     keras_gen.fit(x_train_mnist)
-    data_gen = KerasDataGenerator(iterator=keras_gen.flow(x_train_mnist, y_train_mnist,
-                                                          batch_size=default_batch_size),
-                                  size=x_train_mnist.shape[0], batch_size=default_batch_size)
+    data_gen = KerasDataGenerator(
+        iterator=keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size),
+        size=x_train_mnist.shape[0],
+        batch_size=default_batch_size,
+    )
     classifier.fit_generator(generator=data_gen, nb_epochs=5)
     accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]
     logger.info("Accuracy: %.2f%%", (accuracy_2 * 100))
@@ -194,7 +195,7 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
     predictions = classifier.predict(x_test_mnist)
     assert predictions.shape == y_test_mnist.shape
 
-    assert classifier.nb_classes() == 10
+    assert classifier.nb_classes == 10
 
     class_gradients = classifier.class_gradient(x_test_mnist[:11])
     assert class_gradients.shape == tuple([11, 10] + list(x_test_mnist[1].shape))
@@ -721,9 +722,9 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
 @pytest.mark.only_with_platform("keras")
 def test_repr(get_image_classifier_list):
     backend_test_repr(
-        get_image_classifier_list,
+        get_image_classifier_list(),
         [
-            "art.classifiers.keras.KerasClassifier",
+            "art.estimators.classification.keras.KerasClassifier",
             "use_logits=False, channel_index=3",
             "clip_values=(0, 1), preprocessing_defences=None, " "postprocessing_defences=None, preprocessing=(0, 1)",
             "input_layer=0, output_layer=0",

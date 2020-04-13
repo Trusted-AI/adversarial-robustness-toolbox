@@ -29,7 +29,9 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.classifiers import KerasClassifier, PyTorchClassifier, TensorFlowClassifier
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import TensorFlowClassifier
 from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
 from art.utils import load_mnist
 
@@ -342,7 +344,7 @@ class TestClever(unittest.TestCase):
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
-        self.assertEqual(scores.shape, (krc.nb_classes() - 1,))
+        self.assertEqual(scores.shape, (krc.nb_classes - 1,))
 
     def test_clever_l2_no_target_sorted(self):
         batch_size = 100
@@ -355,7 +357,7 @@ class TestClever(unittest.TestCase):
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         # Should approx. be in decreasing value
-        self.assertEqual(scores.shape, (krc.nb_classes() - 1,))
+        self.assertEqual(scores.shape, (krc.nb_classes - 1,))
 
     def test_clever_l2_same_target(self):
         batch_size = 100

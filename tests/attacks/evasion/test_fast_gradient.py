@@ -18,12 +18,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import unittest
 import numpy as np
 import pytest
 
-from art.attacks import FastGradientMethod
-from art.classifiers.classifier import ClassifierGradients
+from art.attacks.evasion import FastGradientMethod
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 
 from tests.utils import ExpectedValue
 from tests.attacks.utils import backend_check_adverse_values, backend_test_defended_images
@@ -171,7 +170,7 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targe
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(FastGradientMethod, [ClassifierGradients])
+    backend_test_classifier_type_check_fail(FastGradientMethod, [BaseEstimator, LossGradientsMixin])
 
 
 if __name__ == "__main__":

@@ -40,6 +40,8 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
 
     attack_params = PoisoningAttackBlackBox.attack_params + ["perturbation"]
 
+    _estimator_requirements = ()
+
     def __init__(self, perturbation, **kwargs):
         """
         Initialize a backdoor poisoning attack

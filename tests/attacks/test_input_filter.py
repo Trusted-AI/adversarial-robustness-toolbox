@@ -22,9 +22,9 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from art.classifiers.classifier import ClassifierGradients
-from art.attacks import ProjectedGradientDescent
-from art.classifiers import KerasClassifier
+from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import load_dataset, get_labels_np_array
 
 from tests.utils import get_image_classifier_tf, get_image_classifier_pt
@@ -143,7 +143,7 @@ class TestInputFilter(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(np.array(x_test_original) - np.array(x_test)))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
     def test_keras_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
@@ -214,7 +214,7 @@ class TestInputFilter(unittest.TestCase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.estimators.classification.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
         scikitlearn_test_cases = {
             LogisticRegression: ScikitlearnLogisticRegression,

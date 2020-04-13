@@ -1,8 +1,8 @@
 import pytest
 import logging
 from tests import utils
-from art.classifiers import KerasClassifier
-from art.defences import FeatureSqueezing
+from art.estimators.classification import KerasClassifier
+from art.defences.preprocessor import FeatureSqueezing
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +49,9 @@ def get_image_classifier_list_for_attack(get_image_classifier_list, get_image_cl
             return None
 
         return [
-            potential_classier
-            for potential_classier in classifier_list
-            if attack.is_valid_classifier_type(potential_classier)
+            potential_classifier
+            for potential_classifier in classifier_list
+            if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
         ]
 
     return get_image_classifier_list_for_attack
@@ -65,9 +65,9 @@ def get_tabular_classifier_list(get_tabular_classifier_list):
             return None
 
         return [
-            potential_classier
-            for potential_classier in classifier_list
-            if attack.is_valid_classifier_type(potential_classier)
+            potential_classifier
+            for potential_classifier in classifier_list
+            if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
         ]
 
     return _tabular_classifier_list
