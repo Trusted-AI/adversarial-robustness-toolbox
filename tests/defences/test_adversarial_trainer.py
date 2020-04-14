@@ -22,9 +22,10 @@ import unittest
 
 import numpy as np
 
-from art.attacks import FastGradientMethod, DeepFool
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.attacks.evasion.deepfool import DeepFool
 from art.data_generators import DataGenerator
-from art.defences import AdversarialTrainer
+from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 from art.utils import load_mnist
 
 from tests.utils import master_seed, get_image_classifier_tf
@@ -58,7 +59,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         adv_trainer = AdversarialTrainer(self.classifier, attack)
 
         self.assertEqual(len(adv_trainer.attacks), 1)
-        self.assertEqual(adv_trainer.attacks[0].classifier, adv_trainer.classifier)
+        self.assertEqual(adv_trainer.attacks[0].estimator, adv_trainer.classifier)
 
     def test_fit_predict(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -85,7 +86,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_test_original = x_test.copy()
 
-        attack1 = FastGradientMethod(classifier=self.classifier, batch_size=16)
+        attack1 = FastGradientMethod(estimator=self.classifier, batch_size=16)
         attack2 = DeepFool(classifier=self.classifier, max_iter=5, batch_size=16)
         x_test_adv = attack1.generate(x_test)
         predictions = np.argmax(self.classifier.predict(x_test_adv), axis=1)
@@ -122,7 +123,7 @@ class TestAdversarialTrainer(unittest.TestCase):
 
         generator = MyDataGenerator(x_train, y_train, size=x_train.shape[0], batch_size=16)
 
-        attack1 = FastGradientMethod(classifier=self.classifier, batch_size=16)
+        attack1 = FastGradientMethod(estimator=self.classifier, batch_size=16)
         attack2 = DeepFool(classifier=self.classifier, max_iter=5, batch_size=16)
         x_test_adv = attack1.generate(x_test)
         predictions = np.argmax(self.classifier.predict(x_test_adv), axis=1)

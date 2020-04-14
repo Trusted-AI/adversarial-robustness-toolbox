@@ -40,7 +40,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         Create robustness verification for a decision-tree-based classifier.
 
         :param classifier: A trained decision-tree-based classifier.
-        :type classifier: `art.classifiers.ClassifierDecisionTree`
+        :type classifier: `art.estimators.estimator.DecisionTreeMixin`
         """
         self._classifier = classifier
         self._trees = self._classifier.get_trees()
@@ -94,13 +94,13 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
                 is_robust = True
 
-                if self._classifier.nb_classes() <= 2:
+                if self._classifier.nb_classes <= 2:
                     best_score = self._get_best_score(i_sample, eps, norm, target_label=None)
                     is_robust = (self.y[i_sample] < 0.5 and best_score < 0) or (
                         self.y[i_sample] > 0.5 and best_score > 0
                     )
                 else:
-                    for i_class in range(self._classifier.nb_classes()):
+                    for i_class in range(self._classifier.nb_classes):
                         if i_class != self.y[i_sample]:
                             best_score = self._get_best_score(i_sample, eps, norm, target_label=i_class)
                             is_robust = is_robust and (best_score > 0)
@@ -169,7 +169,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             # Start searching for cliques
             for accessible_leaf in accessible_leaves[start_tree]:
                 if (
-                    self._classifier.nb_classes() > 2
+                    self._classifier.nb_classes > 2
                     and target_label is not None
                     and target_label == accessible_leaf.class_label
                 ):
@@ -188,7 +188,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                         leaf_box = accessible_leaf.box.get_intersection(clique["box"])
                         if leaf_box.intervals:
                             if (
-                                self._classifier.nb_classes() > 2
+                                self._classifier.nb_classes > 2
                                 and target_label is not None
                                 and target_label == accessible_leaf.class_label
                             ):
@@ -210,7 +210,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 if i == 0:
                     best_score = clique["value"]
                 else:
-                    if label < 0.5 and self._classifier.nb_classes() <= 2:
+                    if label < 0.5 and self._classifier.nb_classes <= 2:
                         best_score = max(best_score, clique["value"])
                     else:
                         best_score = min(best_score, clique["value"])
@@ -239,7 +239,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         best_score = None
 
         for i_level in range(self.max_level):
-            if self._classifier.nb_classes() > 2 and i_level > 0:
+            if self._classifier.nb_classes > 2 and i_level > 0:
                 target_label = None
             best_score, nodes = self._get_k_partite_clique(nodes, label=self.y[i_sample], target_label=target_label)
 
@@ -308,7 +308,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
         for tree in self._trees:
             if (
-                self._classifier.nb_classes() <= 2
+                self._classifier.nb_classes <= 2
                 or target_label is None
                 or tree.class_id in [self.y[i_sample], target_label]
             ):

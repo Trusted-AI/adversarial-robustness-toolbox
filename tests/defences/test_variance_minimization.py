@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import TotalVarMin
+from art.defences.preprocessor import TotalVarMin
 
 from tests.utils import master_seed
 

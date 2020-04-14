@@ -63,7 +63,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         preds = classifier.predict(self.mnist[1][0])
         self.assertEqual(preds.shape, y_test.shape)
 
-        self.assertEqual(classifier.nb_classes(), 10)
+        self.assertEqual(classifier.nb_classes, 10)
 
         class_grads = classifier.class_gradient(x_test[:11])
         self.assertEqual(class_grads.shape, tuple([11, 10] + list(x_test[1].shape)))
