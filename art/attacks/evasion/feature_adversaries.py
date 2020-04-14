@@ -24,9 +24,8 @@ import logging
 
 import numpy as np
 
-from art.classifiers.classifier import ClassifierNeuralNetwork
 from art.attacks.attack import EvasionAttack
-from art.exceptions import ClassifierError
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +43,8 @@ class FeatureAdversaries(EvasionAttack):
         "batch_size",
     ]
 
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
+
     def __init__(
         self, classifier, delta=None, layer=None, batch_size=32,
     ):
@@ -60,9 +61,6 @@ class FeatureAdversaries(EvasionAttack):
         :type batch_size: `int`
         """
         super(FeatureAdversaries, self).__init__(classifier)
-
-        if not isinstance(classifier, ClassifierNeuralNetwork):
-            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork], classifier)
 
         kwargs = {
             "delta": delta,
@@ -157,13 +155,13 @@ class FeatureAdversaries(EvasionAttack):
 
         bound = Bounds(lb=lb, ub=ub, keep_feasible=False)
 
-        guide_representation = self.classifier.get_activations(
-            x=y.reshape(-1, *self.classifier.input_shape), layer=self.layer, batch_size=self.batch_size
+        guide_representation = self.estimator.get_activations(
+            x=y.reshape(-1, *self.estimator.input_shape), layer=self.layer, batch_size=self.batch_size
         )
 
         def func(x_i):
-            source_representation = self.classifier.get_activations(
-                x=x_i.reshape(-1, *self.classifier.input_shape), layer=self.layer, batch_size=self.batch_size
+            source_representation = self.estimator.get_activations(
+                x=x_i.reshape(-1, *self.estimator.input_shape), layer=self.layer, batch_size=self.batch_size
             )
 
             n = norm(source_representation.flatten() - guide_representation.flatten(), ord=2) ** 2
@@ -200,7 +198,7 @@ class FeatureAdversaries(EvasionAttack):
 
         x_adv = res.x
 
-        return x_adv.reshape(-1, *self.classifier.input_shape)
+        return x_adv.reshape(-1, *self.estimator.input_shape)
 
     def set_params(self, **kwargs):
         """
