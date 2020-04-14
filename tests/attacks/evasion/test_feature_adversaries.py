@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 from art.attacks.evasion import FeatureAdversaries
-from art.classifiers.classifier import ClassifierNeuralNetwork
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
@@ -52,7 +52,7 @@ def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(FeatureAdversaries, [ClassifierNeuralNetwork])
+    backend_test_classifier_type_check_fail(FeatureAdversaries, [BaseEstimator, NeuralNetworkMixin])
 
 
 if __name__ == "__main__":
