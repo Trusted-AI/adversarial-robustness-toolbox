@@ -9,8 +9,8 @@ import torch.nn.functional as F
 import torch.optim as optim
 import numpy as np
 
-from art.attacks import FastGradientMethod
-from art.classifiers import PyTorchClassifier
+from art.attacks.evasion import FastGradientMethod
+from art.estimators.classification import PyTorchClassifier
 from art.utils import load_mnist
 
 

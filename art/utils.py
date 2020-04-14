@@ -240,7 +240,7 @@ def least_likely_class(x, classifier):
     :return: Least-likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes())
+    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
 def second_most_likely_class(x, classifier):
@@ -255,7 +255,7 @@ def second_most_likely_class(x, classifier):
     :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes())
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes)
 
 
 def get_label_conf(y_vec):
@@ -306,10 +306,10 @@ def compute_success_array(classifier, x_clean, labels, x_adv, targeted=False, ba
     """
     adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
     if targeted:
-        attack_success = (adv_preds == np.argmax(labels, axis=1))
+        attack_success = adv_preds == np.argmax(labels, axis=1)
     else:
         preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
-        attack_success = (adv_preds != preds)
+        attack_success = adv_preds != preds
 
     return attack_success
 
@@ -675,9 +675,11 @@ def get_file(filename, url, path=None, extract=False):
             try:
                 from six.moves.urllib.error import HTTPError, URLError
                 from six.moves.urllib.request import urlretrieve
+
                 # The following two lines should prevent occasionally occurring
                 # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
                 import ssl
+
                 ssl._create_default_https_context = ssl._create_unverified_context
 
                 urlretrieve(url, full_path)

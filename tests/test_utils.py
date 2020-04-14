@@ -209,6 +209,7 @@ class TestUtils(unittest.TestCase):
 
     def test_least_likely_class(self):
         class DummyClassifier:
+            @property
             def nb_classes(self):
                 return 4
 
@@ -220,13 +221,14 @@ class TestUtils(unittest.TestCase):
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
         predictions = least_likely_class(x, classifier)
-        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes()))
+        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes))
 
         expected_predictions = np.array([[0, 0, 1, 0]] * batch_size)
         self.assertTrue((predictions == expected_predictions).all())
 
     def test_second_most_likely_class(self):
         class DummyClassifier:
+            @property
             def nb_classes(self):
                 return 4
 
@@ -238,7 +240,7 @@ class TestUtils(unittest.TestCase):
         x = np.random.rand(batch_size, 10, 10, 1)
         classifier = DummyClassifier()
         predictions = second_most_likely_class(x, classifier)
-        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes()))
+        self.assertEqual(predictions.shape, (batch_size, classifier.nb_classes))
 
         expected_predictions = np.array([[0, 1, 0, 0]] * batch_size)
         self.assertTrue((predictions == expected_predictions).all())
@@ -297,8 +299,8 @@ class TestUtils(unittest.TestCase):
         attack_success_targeted = compute_success(classifier, x_clean, labels, x_adv, targeted=True)
         attack_success_untargeted = compute_success(classifier, x_clean, labels, x_adv, targeted=False)
 
-        self.assertEqual(attack_success_targeted, 1.)
-        self.assertEqual(attack_success_untargeted, 1.)
+        self.assertEqual(attack_success_targeted, 1.0)
+        self.assertEqual(attack_success_untargeted, 1.0)
 
     def test_preprocess(self):
         (x, y), (_, _), _, _ = load_mnist()
@@ -356,7 +358,7 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(len(segments), num_classes)
 
     def test_performance_diff(self):
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
         from sklearn.svm import SVC
 
         (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()

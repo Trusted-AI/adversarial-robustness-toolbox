@@ -232,7 +232,7 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
         import tensorflow.compat.v1 as tf
 
         tf.disable_eager_execution()
-    from art.classifiers import TensorFlowClassifier
+    from art.estimators.classification.tensorflow import TensorFlowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
@@ -325,7 +325,7 @@ def get_image_classifier_tf_v2(from_logits=False):
     from tensorflow.keras import Model
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
-    from art.classifiers import TensorFlowV2Classifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
     if tf.__version__[0] != "2":
         raise ImportError("This function requires TensorFlow v2.")
@@ -406,7 +406,7 @@ def get_image_classifier_kr(
     from keras.models import Sequential
     from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-    from art.classifiers import KerasClassifier
+    from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -563,7 +563,7 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-    from art.classifiers import KerasClassifier
+    from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -714,7 +714,7 @@ def get_image_classifier_kr_tf_binary():
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-    from art.classifiers import KerasClassifier
+    from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -750,7 +750,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     """
     import torch
 
-    from art.classifiers import PyTorchClassifier
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):
         """
@@ -825,7 +825,7 @@ def get_classifier_bb(defences=None):
 
     :return: BlackBoxClassifier
     """
-    from art.classifiers import BlackBoxClassifier
+    from art.estimators.classification.blackbox import BlackBoxClassifier
     from art.utils import to_categorical
 
     # define blackbox classifier
@@ -848,7 +848,7 @@ def get_classifier_mx():
     """
     import mxnet
     from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
-    from art.classifiers import MXClassifier
+    from art.estimators.classification import MXClassifier
 
     model = mxnet.gluon.nn.Sequential()
     with model.name_scope():
@@ -928,7 +928,7 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
         import tensorflow.compat.v1 as tf
 
         tf.disable_eager_execution()
-    from art.classifiers import TensorFlowClassifier
+    from art.estimators.classification.tensorflow import TensorFlowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 4])
@@ -1008,7 +1008,7 @@ def get_tabular_classifier_tf_v2():
     import tensorflow as tf
     from tensorflow.keras import Model
     from tensorflow.keras.layers import Dense
-    from art.classifiers import TensorFlowV2Classifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
     if tf.__version__[0] != "2":
         raise ImportError("This function requires TensorFlow v2.")
@@ -1131,7 +1131,7 @@ def get_tabular_classifier_kr(load_init=True):
     from keras.models import Sequential
     from keras.layers import Dense
 
-    from art.classifiers import KerasClassifier
+    from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -1186,7 +1186,7 @@ def get_tabular_classifier_pt(load_init=True):
     """
     import torch
 
-    from art.classifiers import PyTorchClassifier
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):
         """

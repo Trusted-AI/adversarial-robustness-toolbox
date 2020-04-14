@@ -73,7 +73,7 @@ class AdversarialTrainer(Trainer):
                       Setting this value to 1 allows to train only on adversarial samples.
         :type ratio: `float`
         """
-        from art.attacks import EvasionAttack
+        from art.attacks.attack import EvasionAttack
 
         self.classifier = classifier
         if isinstance(attacks, EvasionAttack):
@@ -119,7 +119,7 @@ class AdversarialTrainer(Trainer):
                 if attack.targeted:
                     raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
-            if attack.classifier != self.classifier:
+            if attack.estimator != self.classifier:
                 if not logged:
                     logger.info("Precomputing transferred adversarial samples.")
                     logged = True
@@ -158,7 +158,7 @@ class AdversarialTrainer(Trainer):
                     np.random.shuffle(adv_ids)
 
                 # If source and target models are the same, craft fresh adversarial samples
-                if attack.classifier == self.classifier:
+                if attack.estimator == self.classifier:
                     x_batch[adv_ids] = attack.generate(x_batch[adv_ids], y=y_batch[adv_ids])
 
                 # Otherwise, use precomputed adversarial samples
@@ -201,7 +201,7 @@ class AdversarialTrainer(Trainer):
                 if attack.targeted:
                     raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
-            if attack.classifier != self.classifier:
+            if attack.estimator != self.classifier:
                 if not logged:
                     logger.info("Precomputing transferred adversarial samples.")
                     logged = True
@@ -230,7 +230,7 @@ class AdversarialTrainer(Trainer):
                     np.random.shuffle(adv_ids)
 
                 # If source and target models are the same, craft fresh adversarial samples
-                if attack.classifier == self.classifier:
+                if attack.estimator == self.classifier:
                     x_batch[adv_ids] = attack.generate(x_batch[adv_ids], y=y_batch[adv_ids])
 
                 # Otherwise, use precomputed adversarial samples

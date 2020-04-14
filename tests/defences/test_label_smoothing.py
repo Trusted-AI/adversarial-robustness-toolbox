@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import LabelSmoothing
+from art.defences.preprocessor import LabelSmoothing
 
 from tests.utils import master_seed
 
