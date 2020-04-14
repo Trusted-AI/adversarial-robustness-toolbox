@@ -49,7 +49,7 @@ class DPatch(EvasionAttack):
         "batch_size",
     ]
 
-    estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
 
     def __init__(
         self, estimator, patch_shape=(40, 40, 3), learning_rate=5.0, max_iter=500, batch_size=16,

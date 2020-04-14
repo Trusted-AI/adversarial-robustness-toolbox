@@ -115,7 +115,7 @@ def test_augment_images_with_patch(random_location, fix_get_mnist_subset):
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(DPatch, [ObjectDetectorMixin, LossGradientsMixin, BaseEstimator])
+    backend_test_classifier_type_check_fail(DPatch, [BaseEstimator, LossGradientsMixin, ObjectDetectorMixin])
 
 
 if __name__ == "__main__":
