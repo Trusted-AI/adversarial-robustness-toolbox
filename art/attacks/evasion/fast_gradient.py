@@ -53,6 +53,7 @@ class FastGradientMethod(EvasionAttack):
         "num_random_init",
         "batch_size",
         "minimal",
+        "random_eps"
     ]
 
     def __init__(
@@ -65,6 +66,7 @@ class FastGradientMethod(EvasionAttack):
         num_random_init=0,
         batch_size=1,
         minimal=False,
+        random_eps=False,
     ):
         """
         Create a :class:`.FastGradientMethod` instance.
@@ -101,6 +103,7 @@ class FastGradientMethod(EvasionAttack):
             "num_random_init": num_random_init,
             "batch_size": batch_size,
             "minimal": minimal,
+            "random_eps": random_eps
         }
 
         FastGradientMethod.set_params(self, **kwargs)
