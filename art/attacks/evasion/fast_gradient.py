@@ -26,6 +26,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from scipy.stats import uniform
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -107,6 +108,8 @@ class FastGradientMethod(EvasionAttack):
 
         FastGradientMethod.set_params(self, **kwargs)
 
+        if self.random_eps:
+            self.dist = uniform(-np.abs(self.eps),2*np.abs(self.eps))
         self._project = True
 
     def _minimal_perturbation(self, x, y, mask):
