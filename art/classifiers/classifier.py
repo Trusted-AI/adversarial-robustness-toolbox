@@ -516,6 +516,28 @@ class ClassifierGradients(abc.ABC, metaclass=input_filter):
         """
         raise NotImplementedError
 
+    def is_obfuscated(self, x, y):
+        """
+        Compute the gradient of the loss function w.r.t. `x` and identify points where the gradient is zero, nan, or inf
+
+        :param x: Input with shape as expected by the classifier's model.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :return: Array of booleans with the shape (len(x), 3). If true means the gradient of the loss w.r.t. the 
+                 particular `x` was bad (zero, nan, inf) 
+        :rtype: `np.ndarray, np.ndarray`
+        """
+        assert len(x) == len(y), "x and y must be the same length"
+
+        is_bad = []
+        for i in range(len(x)):
+            grad = self.loss_gradient([x[i]], [y[i]])
+            is_bad.append([(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)),  np.any(np.isinf(grad))])
+
+        return np.array(is_bad, dtype=bool)
+
     def _apply_preprocessing_gradient(self, x, gradients):
         """
         Apply the backward pass through all preprocessing operations to the gradients.
