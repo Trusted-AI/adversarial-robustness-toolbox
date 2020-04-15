@@ -33,7 +33,7 @@ from art.attacks.evasion.fast_gradient import FastGradientMethod
 logger = logging.getLogger(__name__)
 
 
-class AdversarialTrainerFBF(Trainer):
+class AdversarialTrainerFB(Trainer):
     """
     Class performing adversarial training following Madry's Protocol.
 
