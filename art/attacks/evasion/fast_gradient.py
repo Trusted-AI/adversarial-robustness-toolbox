@@ -26,6 +26,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from scipy.stats import uniform
 
 from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
@@ -108,6 +109,8 @@ class FastGradientMethod(EvasionAttack):
 
         FastGradientMethod.set_params(self, **kwargs)
 
+        if self.random_eps:
+            self.dist = uniform(-np.abs(self.eps),2*np.abs(self.eps))
         self._project = True
 
     @classmethod
@@ -175,6 +178,9 @@ class FastGradientMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        if self.random_eps:
+            self.eps = np.round(self.dist.rvs(1)[0], 10)
+
         y = check_and_transform_label_format(y, self.classifier.nb_classes())
 
         if y is None:
