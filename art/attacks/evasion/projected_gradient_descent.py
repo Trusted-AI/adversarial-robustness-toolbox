@@ -98,11 +98,12 @@ class ProjectedGradientDescent(FastGradientMethod):
             num_random_init=num_random_init,
             batch_size=batch_size,
             minimal=False,
+            random_eps=random_eps
         )
         if not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
-        kwargs = {"max_iter": max_iter, "random_eps": random_eps}
+        kwargs = {"max_iter": max_iter}
         ProjectedGradientDescent.set_params(self, **kwargs)
 
         if self.random_eps:
