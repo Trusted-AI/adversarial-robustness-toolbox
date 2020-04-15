@@ -25,16 +25,15 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
+from art.attacks import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.attacks.evasion import FastGradientMethod
-from art.utils import get_labels_np_array, check_and_transform_label_format
-
+from art.utils import get_labels_np_array, check_and_transform_label_format, projection
 
 logger = logging.getLogger(__name__)
 
 
-class AutoProjectedGradientDescent(FastGradientMethod):
-
+class AutoProjectedGradientDescent(EvasionAttack):
     attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps"]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
@@ -148,6 +147,7 @@ class AutoProjectedGradientDescent(FastGradientMethod):
                         # print(DLR)
 
                         return DLR
+
                     loss_object = custom_loss
             elif loss_type is None:
                 loss_object = estimator._loss_object
@@ -170,21 +170,31 @@ class AutoProjectedGradientDescent(FastGradientMethod):
         else:
             raise Exception
 
-        super().__init__(
-            estimator=estimator_apgd,
-            norm=norm,
-            eps=eps,
-            eps_step=eps_step,
-            targeted=targeted,
-            num_random_init=0,
-            batch_size=batch_size,
-            minimal=False,
-        )
+        # super().__init__(
+        #     estimator=estimator_apgd,
+        #     norm=norm,
+        #     eps=eps,
+        #     eps_step=eps_step,
+        #     targeted=targeted,
+        #     num_random_init=0,
+        #     batch_size=batch_size,
+        #     minimal=False,
+        # )
 
-        kwargs = {"max_iter": max_iter, "random_eps": False}
+        super().__init__(estimator=estimator_apgd)
+
+        kwargs = {"max_iter": max_iter,
+                  # "random_eps": False,
+                  # "estimator": estimator_apgd,
+                  "norm": norm,
+                  "eps": eps,
+                  "eps_step": eps_step,
+                  "targeted": targeted,
+                  # "num_random_init": 0,
+                  "batch_size": batch_size,
+                  # "minimal": False,
+                  }
         self.set_params(**kwargs)
-
-        self._project = True
 
     def generate(self, x, y=None, **kwargs):
         """
@@ -212,9 +222,7 @@ class AutoProjectedGradientDescent(FastGradientMethod):
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
-            targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
-        else:
-            targets = y
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         mask = kwargs.get("mask")
         if mask is not None:
@@ -225,16 +233,71 @@ class AutoProjectedGradientDescent(FastGradientMethod):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         for i_max_iter in range(self.max_iter):
-            x_adv = self._compute(
-                x_adv,
-                x,
-                targets,
-                mask,
-                self.eps,
-                self.eps_step,
-                self._project,
-                self.num_random_init > 0 and i_max_iter == 0,
-            )
+            # x_adv = self._compute(
+            #     x_adv,
+            #     x,
+            #     targets,
+            #     mask,
+            #     self.eps,
+            #     self.eps_step,
+            #     self._project,
+            #     self.num_random_init > 0 and i_max_iter == 0,
+            # )
+            # def _compute(self, x, x_init, y, mask, eps, eps_step, project, random_init):
+
+            # Compute perturbation with implicit batching
+            for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
+
+                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+                batch = x_adv[batch_index_1:batch_index_2]
+                batch_labels = y[batch_index_1:batch_index_2]
+
+                x_init = x[batch_index_1:batch_index_2]
+
+                mask_batch = mask
+                if mask is not None:
+                    # Here we need to make a distinction: if the masks are different for each input, we need to index
+                    # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                    if len(mask.shape) == len(x.shape):
+                        mask_batch = mask[batch_index_1:batch_index_2]
+
+                # Get perturbation
+                # Pick a small scalar to avoid division by 0
+                tol = 10e-8
+
+                # Get gradient wrt loss; invert it if attack is targeted
+                grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
+
+                # Apply norm bound
+                if self.norm == np.inf:
+                    grad = np.sign(grad)
+                elif self.norm == 1:
+                    ind = tuple(range(1, len(batch.shape)))
+                    grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
+                elif self.norm == 2:
+                    ind = tuple(range(1, len(batch.shape)))
+                    grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
+                assert batch.shape == grad.shape
+
+                if mask_batch is None:
+                    perturbation = grad
+                else:
+                    perturbation = grad * (mask_batch.astype(ART_NUMPY_DTYPE))
+
+                # Apply perturbation and clip
+                eps_step = self.eps_step
+
+                batch = batch + eps_step * perturbation
+
+                if self.estimator.clip_values is not None:
+                    clip_min, clip_max = self.estimator.clip_values
+                    batch = np.clip(batch, clip_min, clip_max)
+
+                x_adv[batch_index_1:batch_index_2] = batch
+
+                perturbation = projection(x_adv[batch_index_1:batch_index_2] - x_init, self.eps, self.norm)
+
+                x_adv[batch_index_1:batch_index_2] = x_init + perturbation
 
         return x_adv
 
