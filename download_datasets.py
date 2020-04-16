@@ -11,4 +11,3 @@ for file_name, url in art_datasets_urls.items():
     path = get_file(file_name, path=ART_DATA_PATH, url=url)
 
 logger.info("Finished downloading datasets")
-
