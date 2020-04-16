@@ -76,7 +76,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
             elif loss_type == "difference_logits_ratio":
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                     raise ValueError(
-                        "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' the estimator has to to predict logits."
+                        "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
+                        "the estimator has to to predict logits."
                     )
                 else:
 
@@ -115,9 +116,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 self._loss_object = estimator._loss_object
             else:
                 raise ValueError(
-                    "The argument loss_type has an invalid value. The following options for loss_type are supported: {}".format(
-                        [None, "cross_entropy", "difference_logits_ratio"]
-                    )
+                    "The argument loss_type has an invalid value. The following options for loss_type are "
+                    "supported: {}".format([None, "cross_entropy", "difference_logits_ratio"])
                 )
 
             estimator_apgd = TensorFlowV2Classifier(
