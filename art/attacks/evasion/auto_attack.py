@@ -22,15 +22,62 @@ This module implements the `Auto Attack` attack.
 """
 import logging
 
+import numpy as np
+
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator
 
 logger = logging.getLogger(__name__)
 
 
 class AutoAttack(EvasionAttack):
+    attack_params = EvasionAttack.attack_params + [
+        "norm",
+        "eps",
+        "eps_step",
+        "max_iter",
+        "targeted",
+        "batch_size",
+        "loss_type",
+    ]
+
+    _estimator_requirements = (BaseEstimator,)
+
+    def __init__(
+            self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, batch_size=43
+    ):
+        """
+        Create a :class:`.ProjectedGradientDescent` instance.
+
+        :param estimator: An trained estimator.
+        :type estimator: :class:`.BaseEstimator`
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :type norm: `int`
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :type eps: `float`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
+        :type targeted: `bool`
+        :param batch_size: Size of the batch on which adversarial samples are generated.
+        :type batch_size: `int`
+        """
+        super().__init__(estimator=estimator)
+
+        kwargs = {
+            "max_iter": max_iter,
+            "norm": norm,
+            "eps": eps,
+            "eps_step": eps_step,
+            "targeted": targeted,
+            "batch_size": batch_size,
+        }
+        self.set_params(**kwargs)
 
     def generate(self, x, y=None, **kwargs):
         pass
 
     def set_params(self, **kwargs):
-        pass
+        super().set_params(**kwargs)
