@@ -82,7 +82,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
             elif loss_type == 'difference_logits_ratio':
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                    raise Exception
+                    raise ValueError(
+                        "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' the estimator has to to predict logits.")
                 else:
                     def difference_logits_ratio(y_true, y_pred):
 
@@ -118,7 +119,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
             elif loss_type is None:
                 self._loss_object = estimator._loss_object
             else:
-                raise Exception
+                raise ValueError(
+                    "The argument loss_type has an invalid value. The following options for loss_type are supported: {}".format(
+                        [None, 'cross_entropy', 'difference_logits_ratio']))
 
             estimator_apgd = TensorFlowV2Classifier(model=estimator._model,
                                                     nb_classes=estimator.nb_classes,
@@ -295,7 +298,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                         rho = 0.75
 
-                        condition_1 = self.count_condition_1 < rho * (k_iter - W[W.index(k_iter)-1])
+                        condition_1 = self.count_condition_1 < rho * (k_iter - W[W.index(k_iter) - 1])
                         condition_2 = self.eta_w_j_m_1 == eta and self.f_max_w_j_m_1 == self.f_max
 
                         if condition_1 or condition_2:
