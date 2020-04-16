@@ -30,10 +30,11 @@ logger = logging.getLogger(__name__)
 
 ART_NUMPY_DTYPE = np.float32
 
-_folder = os.path.expanduser("~")
-if not os.access(_folder, os.W_OK):
-    _folder = "/tmp"
-_folder = os.path.join(_folder, ".art")
+# _folder = os.path.expanduser("~")
+# if not os.access(_folder, os.W_OK):
+#     _folder = "/tmp"
+# _folder = os.path.join(_folder, ".art")
+_folder = "./datasets/"
 
 # Load data from configuration file if it exists. Otherwise create one.
 _config_path = os.path.expanduser(os.path.join(_folder, "config.json"))
