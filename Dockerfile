@@ -21,17 +21,6 @@ RUN mkdir /project; mkdir /project/TMP
 VOLUME /project/TMP
 WORKDIR /project
 
-RUN mkdir /tmp/.art
-COPY ./data_original/ /tmp/.art/
-#For some reason the tests within docker are looking for iris.data directly in .art and not in .art/data
-COPY ./data_original/data/ /tmp/.art/
-
-#TODO check why I need this data both in /tmp and /root
-#RUN mkdir /root/.art
-#COPY ./data_original/ /root/.art/
-##For some reason the tests within docker are looking for iris.data directly in .art and not in .art/data
-#COPY ./data_original/data/ /root/.art/
-
 RUN echo "You should think about possibly upgrading these outdated packages"
 RUN pip3 list --outdated
 
@@ -40,3 +29,6 @@ EXPOSE 8888
 CMD bash run_tests.sh
 
 #Check the Dockerfile here https://www.fromlatest.io/#/
+
+#NOTE to contributors: When changing/adding packages, please make sure that the packages are consitent with those
+# present within the requirements.txt and test_requirements.txt files
