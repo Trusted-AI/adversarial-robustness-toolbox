@@ -38,18 +38,10 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
-    _predefined_losses = [None, 'cross_entropy', 'difference_logits_ratio']
+    _predefined_losses = [None, "cross_entropy", "difference_logits_ratio"]
 
     def __init__(
-            self,
-            estimator,
-            norm=np.inf,
-            eps=0.3,
-            eps_step=0.1,
-            max_iter=100,
-            targeted=False,
-            batch_size=1,
-            loss_type=None
+        self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, batch_size=1, loss_type=None
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -70,21 +62,24 @@ class AutoProjectedGradientDescent(EvasionAttack):
         :type batch_size: `int`
         """
         from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
+
         if isinstance(estimator, TensorFlowV2Classifier):
 
             import tensorflow as tf
             from art.utils import is_probability
 
-            if loss_type == 'cross_entropy':
+            if loss_type == "cross_entropy":
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                     self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
                 else:
                     self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-            elif loss_type == 'difference_logits_ratio':
+            elif loss_type == "difference_logits_ratio":
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                     raise ValueError(
-                        "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' the estimator has to to predict logits.")
+                        "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' the estimator has to to predict logits."
+                    )
                 else:
+
                     def difference_logits_ratio(y_true, y_pred):
 
                         i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
@@ -111,7 +106,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         z_i = tf.linalg.diag_part(z_i)
                         z_y = tf.linalg.diag_part(z_y)
 
-                        dlr = - (z_y - z_i) / (z_1 - z_3)
+                        dlr = -(z_y - z_i) / (z_1 - z_3)
 
                         return tf.reduce_mean(dlr)
 
@@ -121,19 +116,22 @@ class AutoProjectedGradientDescent(EvasionAttack):
             else:
                 raise ValueError(
                     "The argument loss_type has an invalid value. The following options for loss_type are supported: {}".format(
-                        [None, 'cross_entropy', 'difference_logits_ratio']))
+                        [None, "cross_entropy", "difference_logits_ratio"]
+                    )
+                )
 
-            estimator_apgd = TensorFlowV2Classifier(model=estimator._model,
-                                                    nb_classes=estimator.nb_classes,
-                                                    input_shape=estimator.input_shape,
-                                                    loss_object=self._loss_object,
-                                                    train_step=estimator._train_step,
-                                                    channel_index=estimator.channel_index,
-                                                    clip_values=estimator.clip_values,
-                                                    preprocessing_defences=estimator.preprocessing_defences,
-                                                    postprocessing_defences=estimator.postprocessing_defences,
-                                                    preprocessing=estimator.preprocessing,
-                                                    )
+            estimator_apgd = TensorFlowV2Classifier(
+                model=estimator._model,
+                nb_classes=estimator.nb_classes,
+                input_shape=estimator.input_shape,
+                loss_object=self._loss_object,
+                train_step=estimator._train_step,
+                channel_index=estimator.channel_index,
+                clip_values=estimator.clip_values,
+                preprocessing_defences=estimator.preprocessing_defences,
+                postprocessing_defences=estimator.postprocessing_defences,
+                preprocessing=estimator.preprocessing,
+            )
         elif isinstance(estimator, PyTorchClassifier):
             pass
         else:
@@ -141,13 +139,14 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         super().__init__(estimator=estimator_apgd)
 
-        kwargs = {"max_iter": max_iter,
-                  "norm": norm,
-                  "eps": eps,
-                  "eps_step": eps_step,
-                  "targeted": targeted,
-                  "batch_size": batch_size,
-                  }
+        kwargs = {
+            "max_iter": max_iter,
+            "norm": norm,
+            "eps": eps,
+            "eps_step": eps_step,
+            "targeted": targeted,
+            "batch_size": batch_size,
+        }
         self.set_params(**kwargs)
 
     def generate(self, x, y=None, **kwargs):
@@ -181,7 +180,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         mask = kwargs.get("mask")
         if mask is not None:
             # ensure the mask is broadcastable:
-            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
+            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
                 raise ValueError("mask shape must be broadcastable to input shape")
 
         x_adv = np.zeros_like(x)
