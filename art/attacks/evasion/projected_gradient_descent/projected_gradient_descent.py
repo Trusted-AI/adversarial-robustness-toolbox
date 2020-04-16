@@ -33,7 +33,10 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
     ProjectedGradientDescentNumpy
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_pytorch import \
     ProjectedGradientDescentPytorch
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import \
+    ProjectedGradientDescentTensorflowV2
 from art.classifiers import PyTorchClassifier
+from art.classifiers import TensorFlowV2Classifier
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
 from art.exceptions import ClassifierError
@@ -117,6 +120,20 @@ class ProjectedGradientDescent(EvasionAttack):
                 batch_size=batch_size,
                 random_eps=random_eps
             )
+
+        elif isinstance(self.classifier, TensorFlowV2Classifier):
+            self._attack = ProjectedGradientDescentTensorflowV2(
+                classifier=classifier,
+                norm=norm,
+                eps=eps,
+                eps_step=eps_step,
+                max_iter=max_iter,
+                targeted=targeted,
+                num_random_init=num_random_init,
+                batch_size=batch_size,
+                random_eps=random_eps
+            )
+
         else:
             self._attack = ProjectedGradientDescentNumpy(
                 classifier=classifier,
