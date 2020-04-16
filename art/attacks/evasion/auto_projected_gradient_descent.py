@@ -77,24 +77,16 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             if loss_type == 'cross_entropy':
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                    loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
+                    self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
                 else:
-                    loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+                    self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
             elif loss_type == 'difference_logits_ratio':
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                     raise Exception
                 else:
-                    def custom_loss(y_true, y_pred):
-
-                        # print('y_true')
-                        # print(y_true)
-                        # print('y_pred')
-                        # print(y_pred)
+                    def difference_logits_ratio(y_true, y_pred):
 
                         i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
-
-                        # print('i_y_true')
-                        # print(i_y_true)
 
                         i_y_pred_arg = tf.argsort(y_pred, axis=1)
 
@@ -108,56 +100,30 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                         i_z_i = tf.stack(i_z_i_list)
 
-                        # print('i_z_i')
-                        # print(i_z_i)
-
                         z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
                         z_3 = tf.gather(y_pred, i_y_pred_arg[:, -3], axis=1, batch_dims=0)
                         z_i = tf.gather(y_pred, i_z_i, axis=1, batch_dims=0)
                         z_y = tf.gather(y_pred, i_y_true, axis=1, batch_dims=0)
-
-                        # print('--- gather')
-                        # print('z_1')
-                        # print(z_1)
-                        # print('z_3')
-                        # print(z_3)
-                        # print('z_i')
-                        # print(z_i)
-                        # print('z_y')
-                        # print(z_y)
 
                         z_1 = tf.linalg.diag_part(z_1)
                         z_3 = tf.linalg.diag_part(z_3)
                         z_i = tf.linalg.diag_part(z_i)
                         z_y = tf.linalg.diag_part(z_y)
 
-                        # print('--- diag_part')
-                        # print('z_1')
-                        # print(z_1)
-                        # print('z_3')
-                        # print(z_3)
-                        # print('z_i')
-                        # print(z_i)
-                        # print('z_y')
-                        # print(z_y)
+                        dlr = - (z_y - z_i) / (z_1 - z_3)
 
-                        DLR = - (z_y - z_i) / (z_1 - z_3)
+                        return tf.reduce_mean(dlr)
 
-                        # print('DLR')
-                        # print(DLR)
-
-                        return DLR
-
-                    loss_object = custom_loss
+                    self._loss_object = difference_logits_ratio
             elif loss_type is None:
-                loss_object = estimator._loss_object
+                self._loss_object = estimator._loss_object
             else:
                 raise Exception
 
             estimator_apgd = TensorFlowV2Classifier(model=estimator._model,
                                                     nb_classes=estimator.nb_classes,
                                                     input_shape=estimator.input_shape,
-                                                    loss_object=loss_object,
+                                                    loss_object=self._loss_object,
                                                     train_step=estimator._train_step,
                                                     channel_index=estimator.channel_index,
                                                     clip_values=estimator.clip_values,
@@ -170,29 +136,14 @@ class AutoProjectedGradientDescent(EvasionAttack):
         else:
             raise Exception
 
-        # super().__init__(
-        #     estimator=estimator_apgd,
-        #     norm=norm,
-        #     eps=eps,
-        #     eps_step=eps_step,
-        #     targeted=targeted,
-        #     num_random_init=0,
-        #     batch_size=batch_size,
-        #     minimal=False,
-        # )
-
         super().__init__(estimator=estimator_apgd)
 
         kwargs = {"max_iter": max_iter,
-                  # "random_eps": False,
-                  # "estimator": estimator_apgd,
                   "norm": norm,
                   "eps": eps,
                   "eps_step": eps_step,
                   "targeted": targeted,
-                  # "num_random_init": 0,
                   "batch_size": batch_size,
-                  # "minimal": False,
                   }
         self.set_params(**kwargs)
 
@@ -230,54 +181,62 @@ class AutoProjectedGradientDescent(EvasionAttack):
             if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
                 raise ValueError("mask shape must be broadcastable to input shape")
 
-        x_adv = x.astype(ART_NUMPY_DTYPE)
+        x_adv = np.zeros_like(x)
 
-        for i_max_iter in range(self.max_iter):
-            # x_adv = self._compute(
-            #     x_adv,
-            #     x,
-            #     targets,
-            #     mask,
-            #     self.eps,
-            #     self.eps_step,
-            #     self._project,
-            #     self.num_random_init > 0 and i_max_iter == 0,
-            # )
-            # def _compute(self, x, x_init, y, mask, eps, eps_step, project, random_init):
+        # Compute perturbation with implicit batching
+        for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
 
-            # Compute perturbation with implicit batching
-            for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
+            self.eta = 2 * self.eps_step
 
-                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                batch = x_adv[batch_index_1:batch_index_2]
-                batch_labels = y[batch_index_1:batch_index_2]
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
-                x_init = x[batch_index_1:batch_index_2]
+            x_k = x[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
+            x_init = x[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
 
-                mask_batch = mask
-                if mask is not None:
-                    # Here we need to make a distinction: if the masks are different for each input, we need to index
-                    # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
-                    if len(mask.shape) == len(x.shape):
-                        mask_batch = mask[batch_index_1:batch_index_2]
+            y_batch = y[batch_index_1:batch_index_2]
 
-                # Get perturbation
-                # Pick a small scalar to avoid division by 0
+            mask_batch = mask
+            # if mask is not None:
+            #     # Here we need to make a distinction: if the masks are different for each input, we need to index
+            #     # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+            #     if len(mask.shape) == len(x.shape):
+            #         mask_batch = mask[batch_index_1:batch_index_2]
+
+            p_0 = 0
+            p_1 = 0.22
+            W = [p_0, p_1]
+
+            while True:
+                p_j_p_1 = W[-1] + max(W[-1] - W[-2] - 0.03, 0.06)
+                if p_j_p_1 > 1:
+                    break
+                W.append(p_j_p_1)
+
+            import math
+
+            W = [math.ceil(p * self.max_iter) for p in W]
+
+            eta = self.eps_step
+            self.count_condition_1 = 0
+
+            for k_iter in range(self.max_iter):
+
+                # Get perturbation, use small scalar to avoid division by 0
                 tol = 10e-8
 
                 # Get gradient wrt loss; invert it if attack is targeted
-                grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
+                grad = self.estimator.loss_gradient(x_k, y_batch) * (1 - 2 * int(self.targeted))
 
                 # Apply norm bound
                 if self.norm == np.inf:
                     grad = np.sign(grad)
                 elif self.norm == 1:
-                    ind = tuple(range(1, len(batch.shape)))
+                    ind = tuple(range(1, len(x_k.shape)))
                     grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
                 elif self.norm == 2:
-                    ind = tuple(range(1, len(batch.shape)))
+                    ind = tuple(range(1, len(x_k.shape)))
                     grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
-                assert batch.shape == grad.shape
+                assert x_k.shape == grad.shape
 
                 if mask_batch is None:
                     perturbation = grad
@@ -285,19 +244,77 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     perturbation = grad * (mask_batch.astype(ART_NUMPY_DTYPE))
 
                 # Apply perturbation and clip
-                eps_step = self.eps_step
-
-                batch = batch + eps_step * perturbation
+                z_k_p_1 = x_k + eta * perturbation
 
                 if self.estimator.clip_values is not None:
                     clip_min, clip_max = self.estimator.clip_values
-                    batch = np.clip(batch, clip_min, clip_max)
+                    z_k_p_1 = np.clip(z_k_p_1, clip_min, clip_max)
 
-                x_adv[batch_index_1:batch_index_2] = batch
+                if k_iter == 0:
+                    x_1 = z_k_p_1
+                    perturbation = projection(x_1 - x_init, self.eps, self.norm)
+                    x_1 = x_init + perturbation
 
-                perturbation = projection(x_adv[batch_index_1:batch_index_2] - x_init, self.eps, self.norm)
+                    f_0 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k)))
+                    f_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_1)))
 
-                x_adv[batch_index_1:batch_index_2] = x_init + perturbation
+                    self.eta_w_j_m_1 = eta
+                    self.f_max_w_j_m_1 = f_0
+
+                    if f_1 >= f_0:
+                        self.f_max = f_1
+                        self.x_max = x_1
+                        self.count_condition_1 += 1
+                    else:
+                        self.f_max = f_0
+                        self.x_max = x_k.copy()
+
+                    # Settings for next iteration k
+                    x_k_m_1 = x_k.copy()
+                    x_k = x_1
+
+                else:
+                    perturbation = projection(z_k_p_1 - x_init, self.eps, self.norm)
+                    z_k_p_1 = x_init + perturbation
+
+                    alpha = 0.75
+
+                    x_k_p_1 = x_k + alpha * (z_k_p_1 - x_k) + (1 - alpha) * (x_k - x_k_m_1)
+                    perturbation = projection(x_k_p_1 - x_init, self.eps, self.norm)
+                    x_k_p_1 = x_init + perturbation
+
+                    f_k_p_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k_p_1)))
+
+                    if f_k_p_1 > self.f_max:
+                        self.count_condition_1 += 1
+                        self.x_max = x_k_p_1
+                        self.x_max_m_1 = x_k
+                        self.f_max = f_k_p_1
+
+                    if k_iter in W:
+
+                        rho = 0.75
+
+                        condition_1 = self.count_condition_1 < rho * (k_iter - W[W.index(k_iter)-1])
+                        condition_2 = self.eta_w_j_m_1 == eta and self.f_max_w_j_m_1 == self.f_max
+
+                        if condition_1 or condition_2:
+                            eta = eta / 2
+                            x_k_m_1 = self.x_max_m_1
+                            x_k = self.x_max
+                        else:
+                            x_k_m_1 = x_k
+                            x_k = x_k_p_1.copy()
+
+                        self.count_condition_1 = 0
+                        self.eta_w_j_m_1 = eta
+                        self.f_max_w_j_m_1 = self.f_max
+
+                    else:
+                        x_k_m_1 = x_k
+                        x_k = x_k_p_1.copy()
+
+            x_adv[batch_index_1:batch_index_2] = x_k
 
         return x_adv
 
