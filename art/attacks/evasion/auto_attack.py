@@ -142,6 +142,9 @@ class AutoAttack(EvasionAttack):
             y_pred = self.estimator.predict(x_adv)
             sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
+            if np.sum(sample_is_robust) == 0:
+                break
+
             x_robust = x_adv[sample_is_robust]
             y_robust = y[sample_is_robust]
 
