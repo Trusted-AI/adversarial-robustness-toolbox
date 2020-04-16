@@ -133,9 +133,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 preprocessing=estimator.preprocessing,
             )
         elif isinstance(estimator, PyTorchClassifier):
-            pass
+            raise NotImplementedError
         else:
-            raise Exception
+            raise NotImplementedError
 
         super().__init__(estimator=estimator_apgd)
 
