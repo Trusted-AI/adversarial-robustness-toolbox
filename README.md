@@ -135,7 +135,6 @@ pip install adversarial-robustness-toolbox
 ```
 
 ### Manual installation
-
 The most recent version of ART can be downloaded or cloned from this repository:
 
 ```bash
@@ -143,15 +142,33 @@ git clone https://github.com/IBM/adversarial-robustness-toolbox
 ```
 
 Install ART with the following command from the project folder `adversarial-robustness-toolbox`:
+Using pip:
 ```bash
 pip install .
 ```
 
-ART provides unit tests that can be run with the following command:
+Using Docker:
+* Build the ART docker image: `make build`
+* To enter the ART docker environment run: `make run-bash`
+* To run the Jupyter notebooks from the container run `make run-jupyter` and copy and paste the url generated \
+to connect to that container.  
 
+#### Running ART Unit tests
+ART provides unit tests that can be ran within the ART environment with the following command:
+* Note: If you wish to run the unit tests using the Tensorflow 1 environment simply comment out the tensorflow 2 \
+packages within either the `test_requirements.txt` or `Dockerfile` as needed
+
+Using pip:
 ```bash
+pip install -r test_requirements.txt
+python download_datasets.py
 bash run_tests.sh
 ```
+
+Using Docker:
+`make run-test`
+
+
 
 ## Get Started with ART
 
@@ -176,6 +193,9 @@ Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide
 
 This project uses [DCO](https://developercertificate.org/). Be sure to sign off your commits using the `-s` flag or 
 adding `Signed-off-By: Name<Email>` in the commit message.
+
+When submitting additional unit tests for ART, in order to keep the code base maintinable, please make sure each 
+can run in less than 15 seconds.
 
 #### Example
 
