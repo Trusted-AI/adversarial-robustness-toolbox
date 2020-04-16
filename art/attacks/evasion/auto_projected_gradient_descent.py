@@ -27,14 +27,13 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.attacks import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.attacks.evasion import FastGradientMethod
 from art.utils import get_labels_np_array, check_and_transform_label_format, projection
 
 logger = logging.getLogger(__name__)
 
 
 class AutoProjectedGradientDescent(EvasionAttack):
-    attack_params = FastGradientMethod.attack_params + [
+    attack_params = EvasionAttack.attack_params + [
         "norm",
         "eps",
         "eps_step",
