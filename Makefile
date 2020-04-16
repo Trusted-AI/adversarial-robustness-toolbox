@@ -4,14 +4,17 @@ build:
 	docker build -t project-art-tensorflow .
 
 run-bash:
-	docker  run -it -v ${PWD}:/project/ -p 8888:8888 project-art-tensorflow  /bin/bash
+	docker  run -it -v ${PWD}:/project/ -v ~/.art/:/root/.art/ -p 8888:8888 project-art-tensorflow  /bin/bash
+
+run-download-datasets:
+	docker  run --rm  -v ${PWD}:/project/ -v ~/.art/:/root/.art/ -p 8888:8888 project-art-tensorflow python3 download_datasets.py
 
 run-test:
-	docker  run --rm  -v ${PWD}:/project/ -p 8888:8888 project-art-tensorflow
+	docker  run --rm  -v ${PWD}:/project/ -v ~/.art/:/root/.art/ -p 8888:8888 project-art-tensorflow
 
 run-pep:
-	docker  run --rm -v ${PWD}:/project/ -p 8888:8888 project-art-tensorflow py.test --pep8 -m pep8
+	docker  run --rm -v ${PWD}:/project/ -v ~/.art/:/root/.art/ -p 8888:8888 project-art-tensorflow py.test --pep8 -m pep8
 
 run-jupyter:
-	docker  run --rm  -v ${PWD}:/project/ -p 8888:8888 project-art-tensorflow jupyter notebook --ip 0.0.0.0 --no-browser --allow-root
+	docker  run --rm  -v ${PWD}:/project/ -v ~/.art/:/root/.art/ -p 8888:8888 project-art-tensorflow jupyter notebook --ip 0.0.0.0 --no-browser --allow-root
 

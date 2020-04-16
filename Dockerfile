@@ -5,7 +5,6 @@ RUN pip3 install keras==2.3.1
 #FROM tensorflow/tensorflow:1.15.2-py3
 #RUN pip3 install keras==2.2.5
 
-
 RUN pip3 install matplotlib==3.2.1 numpy==1.18.1 scipy==1.4.1 six==1.13.0 Pillow==7.0.0 scikit-learn==0.22.1 lightgbm==2.3.1
 RUN pip3 install pytest-pep8==1.0.6 codecov==2.0.22 h5py==2.10.0 requests==2.23.0 statsmodels==0.11.0  cma==2.7.0
 
@@ -13,11 +12,8 @@ RUN pip3 install pytest-pep8==1.0.6 codecov==2.0.22 h5py==2.10.0 requests==2.23.
 RUN pip3 install jupyter==1.0.0 && pip3 install jupyterlab==2.1.0
 # https://stackoverflow.com/questions/49024624/how-to-dockerize-jupyter-lab
 
-#RUN pip3 install jupyterlab==2.1.0
-
 RUN pip3 install mxnet==1.6.0
 RUN pip3 install xgboost==1.0.0
-
 RUN pip3 install GPy==1.9.9
 RUN pip3 install torch==1.4.0 torchvision==0.5.0
 

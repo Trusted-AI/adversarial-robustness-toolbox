@@ -1,22 +1,23 @@
-pytest-pep8
-codecov
-
-h5py
-requests
-
-keras
-mxnet
-#torch>=1.2.0
-tensorflow
-tensorflow_addons
-scikit-learn==0.22.1
-xgboost==1.0.0
-lightgbm==2.3.1
+pytest-pep8==1.0.6
+codecov==2.0.22
+h5py==2.10.0
+requests==2.23.0
 # Comment out because of compatibility issues with numpy versions
 catboost==0.22
 GPy==1.9.9
-
-numpy==1.18.1
-scipy==1.4.1
 statsmodels==0.11.0
 cma==2.7.0
+
+#ART supported Frameworks
+tensorflow==2.1.0
+keras==2.3.1
+# tensorflow==1.15.2
+# keras==2.2.5
+tensorflow_addons
+
+mxnet==1.6.0
+xgboost==1.0.0
+lightgbm==2.3.1
+#torch>=1.2.0
+torch==1.4.0
+torchvision==0.5.0
