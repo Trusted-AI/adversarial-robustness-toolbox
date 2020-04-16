@@ -24,8 +24,14 @@ import logging
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
+from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
+from art.attacks.evasion.fast_adaptive_boundary import FastAdaptiveBoundary
+from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
+from art.utils import get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -34,18 +40,14 @@ class AutoAttack(EvasionAttack):
     attack_params = EvasionAttack.attack_params + [
         "norm",
         "eps",
-        "eps_step",
-        "max_iter",
+        "attacks",
         "targeted",
         "batch_size",
-        "loss_type",
     ]
 
     _estimator_requirements = (BaseEstimator,)
 
-    def __init__(
-            self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, batch_size=43
-    ):
+    def __init__(self, estimator, norm=np.inf, eps=0.3, attacks=None, targeted=False, batch_size=32):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
@@ -55,10 +57,9 @@ class AutoAttack(EvasionAttack):
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
+        :param attacks: The list of `art.attacks.EvasionAttack` attacks to be used for AutoAttack. If it is `None` the original
+                        AutoAttack (PGD, APGD-ce, APGD-dlr, FAB, Square) will be used.
+        :type attacks: `[.art.attacks.EvasionAttack]`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
         :param batch_size: Size of the batch on which adversarial samples are generated.
@@ -66,18 +67,102 @@ class AutoAttack(EvasionAttack):
         """
         super().__init__(estimator=estimator)
 
+        if attacks is None:
+            attacks = list()
+            attacks.append(
+                ProjectedGradientDescent(
+                    estimator=estimator, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=2, targeted=False, batch_size=2,
+                )
+            )
+            attacks.append(
+                AutoProjectedGradientDescent(
+                    estimator=estimator,
+                    norm=np.inf,
+                    eps=0.3,
+                    eps_step=0.1,
+                    max_iter=3,
+                    targeted=False,
+                    batch_size=2,
+                    loss_type="cross_entropy",
+                )
+            )
+            attacks.append(
+                AutoProjectedGradientDescent(
+                    estimator=estimator,
+                    norm=np.inf,
+                    eps=0.3,
+                    eps_step=0.1,
+                    max_iter=5,
+                    targeted=False,
+                    batch_size=2,
+                    loss_type="difference_logits_ratio",
+                )
+            )
+            # attacks.append(FastAdaptiveBoundary())
+            # attacks.append(SquareAttack())
+
         kwargs = {
-            "max_iter": max_iter,
             "norm": norm,
             "eps": eps,
-            "eps_step": eps_step,
+            "attacks": attacks,
             "targeted": targeted,
             "batch_size": batch_size,
         }
         self.set_params(**kwargs)
 
     def generate(self, x, y=None, **kwargs):
-        pass
+        """
+        Generate adversarial samples and return them in an array.
+
+        :param x: An array with the original inputs.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :type y: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        x_adv = x.astype(ART_NUMPY_DTYPE)
+
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+
+        if y is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+            # Use model predictions as correct outputs
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+
+        for attack in self.attacks:
+
+            # Determine correctly predicted samples
+            y_pred = self.estimator.predict(x_adv)
+            sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+
+            x_robust = x_adv[sample_is_robust]
+            y_robust = y[sample_is_robust]
+
+            # Generate adversarial examples
+            x_robust_adv = attack.generate(x=x_robust, y=y_robust)
+            y_pred_robust_adv = self.estimator.predict(x_robust_adv)
+
+            sample_is_not_robust = np.invert(np.argmax(y_pred_robust_adv, axis=1) == np.argmax(y_robust, axis=1))
+
+            x_robust[sample_is_not_robust] = x_robust_adv[sample_is_not_robust]
+            x_adv[sample_is_robust] = x_robust
+
+        return x_adv
 
     def set_params(self, **kwargs):
         super().set_params(**kwargs)
+
+    def get_attacks(self):
+        """
+        Return the list of evasion attacks applied in this AutoAttack instance.
+
+        :return: [.art.attacks.EvasionAttack]
+        """
+        return self.attacks
