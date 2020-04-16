@@ -40,7 +40,7 @@ from art.exceptions import ClassifierError
 logger = logging.getLogger(__name__)
 
 
-class ProjectedGradientDescentPytorch(EvasionAttack):
+class ProjectedGradientDescentTensorflowV2(EvasionAttack):
     """
     The Projected Gradient Descent attack is an iterative method in which,
     after each iteration, the perturbation is projected on an lp-ball of specified radius (in
@@ -75,7 +75,7 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
         random_eps=False
     ):
         """
-        Create a :class:`.ProjectedGradientDescentTensorFlow` instance.
+        Create a :class:`.ProjectedGradientDescentTensorFlowV2` instance.
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
@@ -100,7 +100,7 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(ProjectedGradientDescentPytorch, self).__init__(classifier)
+        super(ProjectedGradientDescentTensorflowV2, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
@@ -311,7 +311,7 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
         :type batch_size: `int`
         """
         # Save attack-specific parameters
-        super(ProjectedGradientDescentPytorch, self).set_params(**kwargs)
+        super(ProjectedGradientDescentTensorflowV2, self).set_params(**kwargs)
 
         if self.eps_step > self.eps:
             raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
