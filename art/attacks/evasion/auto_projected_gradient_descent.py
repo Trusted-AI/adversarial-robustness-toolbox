@@ -34,7 +34,15 @@ logger = logging.getLogger(__name__)
 
 
 class AutoProjectedGradientDescent(EvasionAttack):
-    attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps"]
+    attack_params = FastGradientMethod.attack_params + [
+        "norm",
+        "eps",
+        "eps_step",
+        "max_iter",
+        "targeted",
+        "batch_size",
+        "loss_type",
+    ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
