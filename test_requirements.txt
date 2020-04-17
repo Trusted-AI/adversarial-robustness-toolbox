@@ -5,11 +5,9 @@ requests>=2.23.0
 statsmodels>=0.11.0
 cma>=2.7.0
 
-#ART supported Frameworks
-tensorflow==2.1.0
-keras==2.3.1
-# tensorflow==1.15.2
-# keras==2.2.5
+#ART supported Frameworks (tensorflow==2.1.0 with keras==2.3.1) or (tensorflow==1.15.2 with keras==2.2.5)
+tensorflow
+keras
 tensorflow_addons
 
 mxnet>=1.6.0
