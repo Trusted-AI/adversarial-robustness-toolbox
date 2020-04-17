@@ -29,13 +29,14 @@ import logging
 
 import numpy as np
 import torch
+import tensorflow as tf
 from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
-from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +63,11 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         "random_eps"
     ]
 
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin)
+
     def __init__(
         self,
-        classifier,
+        estimator,
         norm=np.inf,
         eps=0.3,
         eps_step=0.1,
@@ -100,9 +103,9 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(ProjectedGradientDescentTensorflowV2, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
+        super(ProjectedGradientDescentTensorflowV2, self).__init__(estimator)
+#        if not isinstance(classifier, ClassifierGradients):
+#            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "norm": norm,
@@ -136,7 +139,9 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        import tensorflow as tf
+
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
@@ -144,12 +149,10 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
-            targets = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
+            targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
         else:
             targets = y
 
-        inputs = torch.from_numpy(x).to(self.classifier._device)
-        targets = torch.from_numpy(targets.astype(float)).to(self.classifier._device)
 
         # TODO
         # if self.random_eps:
@@ -160,7 +163,32 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         # for _ in range(max(1, self.num_random_init)):
         #     adv_x = x.astype(ART_NUMPY_DTYPE)
 
+        #inputs = tf.keras.Input(shape=x.shape[1:])
+
+        #print(inputs.shape, x.shape)
+        #inputs = self.estimator.mymodel.input
+        inputs = x
         adv_x = inputs
+
+
+        # def stop_cond(i, _):
+        #     return tf.less(i, self.max_iter)
+        #
+        # def main_body(i, adv_x):
+        #
+        #     adv_x = self._compute(
+        #         adv_x,
+        #         inputs,
+        #         targets,
+        #         self.eps,
+        #         self.eps_step,
+        #         False
+        #         # self.num_random_init > 0 and i_max_iter == 0,
+        #     )
+        #
+        #     return i + 1, adv_x
+        #
+        # _, adv_x = tf.while_loop(stop_cond, main_body, [tf.zeros([]), adv_x], back_prop=True)
 
         for _ in range(self.max_iter):
 
@@ -192,19 +220,22 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         #     if rate_best is not None
         #     else 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
         # )
+        #mymodel = tf.keras.Model(inputs=inputs, outputs=adv_x)
+        #z = mymodel(x)
 
-        return adv_x.cpu().detach().numpy()
+        return adv_x
 
     def _compute_perturbation(self, batch, batch_labels):
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.classifier.loss_gradient_framework(batch, batch_labels) * (1 - 2 * int(self.targeted))
+        grad = self.estimator.loss_gradient_framework(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
         if self.norm == np.inf:
-            grad = grad.sign()
+            #grad = grad.sign()
+            grad = tf.sign(grad)
         elif self.norm == 1:
             pass
             # TODO
@@ -222,9 +253,10 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
     def _apply_perturbation(self, batch, perturbation, eps_step):
         batch = batch + eps_step * perturbation
 
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            clip_min, clip_max = self.classifier.clip_values
-            batch = torch.clamp(batch, clip_min, clip_max)
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
+            #batch = torch.clamp(batch, clip_min, clip_max)
+            batch = tf.clip_by_value(batch, clip_min, clip_max)
 
         return batch
 
@@ -251,7 +283,14 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
 
         # Do projection
         perturbation = self._projection(x_adv - x_init, eps, self.norm)
-        x_adv = x_init + perturbation
+
+
+#        plus = lambda a, b: tf.add(a, b)
+
+#        x_adv = tf.keras.layers.Lambda(plus)((x_init, perturbation))
+
+        #x_adv = perturbation + x_init
+        x_adv = tf.add(x_init, perturbation)
 
         return x_adv
 
@@ -286,7 +325,8 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
             #     np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1
             # )
         elif norm_p == np.inf:
-            values = torch.clamp(values, -eps, eps)
+            #values = torch.clamp(values, -eps, eps)
+            values = tf.clip_by_value(values, -eps, eps)
         else:
             raise NotImplementedError(
                 "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
