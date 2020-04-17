@@ -28,11 +28,6 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-art_datasets_urls = {"mnist.npz": "https://s3.amazonaws.com/img-datasets/mnist.npz",
-                     "cifar-10-batches-py": "http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
-                     "iris.data": "https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
-                     "stl10_binary": "https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz"}
-
 
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
@@ -418,7 +413,7 @@ def load_cifar10(raw=False):
         "cifar-10-batches-py",
         extract=True,
         path=ART_DATA_PATH,
-        url=art_datasets_urls["cifar-10-batches-py"],
+        url="http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
     )
 
     num_train_samples = 50000
@@ -461,7 +456,7 @@ def load_mnist(raw=False):
     """
     from art.config import ART_DATA_PATH
 
-    path = get_file("mnist.npz", path=ART_DATA_PATH, url=art_datasets_urls["mnist.npz"])
+    path = get_file("mnist.npz", path=ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz")
 
     dict_mnist = np.load(path)
     x_train = dict_mnist["x_train"]
@@ -495,11 +490,12 @@ def load_stl():
     min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
+
     path = get_file(
         "stl10_binary",
         path=ART_DATA_PATH,
         extract=True,
-        url=art_datasets_urls["stl10_binary"],
+        url="https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz",
     )
 
     with open(join(path, "train_X.bin"), "rb") as f_numpy:
@@ -546,7 +542,7 @@ def load_iris(raw=False, test_set=0.3):
         "iris.data",
         path=ART_DATA_PATH,
         extract=False,
-        url=art_datasets_urls["iris.data"],
+        url="https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
     )
 
     data = np.loadtxt(path, delimiter=",", usecols=(0, 1, 2, 3), dtype=ART_NUMPY_DTYPE)
