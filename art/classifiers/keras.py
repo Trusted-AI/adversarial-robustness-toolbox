@@ -169,16 +169,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
                 else:
                     loss_function = getattr(keras.backend, self._model.loss.__name__)
 
-            elif isinstance(
-                self._model.loss,
-                (
-                    keras.losses.CategoricalHinge,
-                    keras.losses.CategoricalCrossentropy,
-                    keras.losses.SparseCategoricalCrossentropy,
-                    keras.losses.BinaryCrossentropy,
-                    keras.losses.KLDivergence,
-                ),
-            ):
+            elif isinstance(self._model.loss, keras.losses.LossFunctionWrapper):
                 loss_function = self._model.loss
             else:
                 loss_function = getattr(k, self._model.loss.__name__)
@@ -186,15 +177,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         # Check if loss function is an instance of loss function generator, the try is required because some of the
         # modules are not available in older Keras versions
         try:
-            flag_is_instance = isinstance(
-                loss_function,
-                (
-                    keras.losses.CategoricalHinge,
-                    keras.losses.CategoricalCrossentropy,
-                    keras.losses.BinaryCrossentropy,
-                    keras.losses.KLDivergence,
-                ),
-            )
+            flag_is_instance = isinstance(loss_function, keras.losses.LossFunctionWrapper)
         except AttributeError:
             flag_is_instance = False
 
@@ -211,8 +194,9 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         ) or isinstance(loss_function, keras.losses.SparseCategoricalCrossentropy):
             self._reduce_labels = True
             label_ph = k.placeholder(shape=[None,])
-        else:
-            raise ValueError("Loss function not recognised.")
+        else:  # Assume the following for unknown loss functions.
+            self._reduce_labels = False
+            label_ph = k.placeholder(shape=self._output.shape)
 
         # Define the loss using the loss function
         if "__name__" in dir(loss_function,) and loss_function.__name__ in [
@@ -228,16 +212,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         ]:
             loss_ = loss_function(label_ph, self._output)
 
-        elif isinstance(
-            loss_function,
-            (
-                keras.losses.CategoricalHinge,
-                keras.losses.CategoricalCrossentropy,
-                keras.losses.SparseCategoricalCrossentropy,
-                keras.losses.KLDivergence,
-                keras.losses.BinaryCrossentropy,
-            ),
-        ):
+        elif isinstance(loss_function, LossFunctionWrapper):
             loss_ = loss_function(label_ph, self._output)
 
         # Define loss gradients
