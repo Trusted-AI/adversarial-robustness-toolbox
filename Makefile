@@ -6,11 +6,9 @@ build:
 	docker build -t project-art-tensorflow .
 
 run-bash:
-	docker  run -it --name project-art-run-bash -v ${PWD}:/project/ -v ~/.art/:/root/.art/ project-art-tensorflow  /bin/bash
+	docker  run --rm -it --name project-art-run-bash -v ${PWD}:/project/ -v ~/.art/:/root/.art/ project-art-tensorflow  /bin/bash
 
 run-test:
-	#Download datasets needed for the unit tests at ` ~/.art/data`
-	docker  run --rm --name project-art-run-test -v ${PWD}:/project/ -v ~/.art/:/root/.art/  project-art-tensorflow python3 download_datasets.py
 	docker  run --rm --name project-art-run-test -v ${PWD}:/project/ -v ~/.art/:/root/.art/  project-art-tensorflow
 
 run-pep:
