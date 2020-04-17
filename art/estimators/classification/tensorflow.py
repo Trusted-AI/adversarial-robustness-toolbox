@@ -721,6 +721,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         else:
             self._reduce_labels = False
 
+        #inputs = tf.keras.Input(shape=(28, 28, 1), sparse=False)
+        #self.mymodel = tf.keras.Model(inputs=inputs, outputs=self._model(inputs))
+
     def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
@@ -909,6 +912,35 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             raise ValueError("Expecting eager execution.")
 
         return gradients
+
+    def loss_gradient_framework(self, x, y):
+        """
+        Get the loss gradient operator.
+
+        :return: The loss gradient operator.
+        :rtype: `tf.Tensor`
+        """
+        import tensorflow as tf
+
+        if tf.executing_eagerly():
+            with tf.GradientTape() as tape:
+                x = tf.convert_to_tensor(x)
+                tape.watch(x)
+
+                #func = lambda m: self._model(m)
+                #predictions = tf.keras.layers.Lambda(func)(x)
+                #inputs1 = tf.keras.Input(shape=(28, 28, 1), sparse=False)
+                #mymodel = tf.keras.Model(inputs=inputs1, outputs=self.mymodel(inputs1))
+                predictions = self._model(x)
+
+                if self._reduce_labels:
+                    loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                else:
+                    loss = self._loss_object(y, predictions)
+            #    tape.watch(loss)
+                loss_grads = tape.gradient(loss, x)
+
+        return loss_grads
 
     def loss_gradient(self, x, y, **kwargs):
         """
