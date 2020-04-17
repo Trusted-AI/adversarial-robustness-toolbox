@@ -9,7 +9,6 @@ cma>=2.7.0
 tensorflow
 keras
 tensorflow_addons
-
 mxnet>=1.6.0
 xgboost>=1.0.0
 lightgbm>=2.3.1
