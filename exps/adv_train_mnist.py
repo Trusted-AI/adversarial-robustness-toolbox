@@ -9,7 +9,7 @@ from keras.layers import Conv2D, MaxPooling2D
 from keras.models import load_model
 from art.classifiers import KerasClassifier
 from art.utils import load_dataset
-from art.defences.trainer import AdversarialTrainerFB
+from art.defences.trainer import AdversarialTrainerFBF
 
 
 model = load_model('mnist-keras-2-1-5.h5')
@@ -34,7 +34,7 @@ model.compile(loss=keras.losses.categorical_crossentropy,
 
 
 classifier = KerasClassifier(clip_values=(min_, max_), model=model, use_logits=False)
-trainer = AdversarialTrainerFB(classifier, nb_epochs=1, batch_size=50, ratio=0.5)
+trainer = AdversarialTrainerFBF(classifier, eps=0.1)
 trainer.fit(x_train, y_train)
 
 x_test_robust_pred = np.argmax(classifier.predict(x_test), axis=1)
