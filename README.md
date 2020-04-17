@@ -201,8 +201,7 @@ git commit -s -m 'Informative commit message'
 
 #### Unit tests
 When submitting additional unit tests for ART, in order to keep the code base maintainable, please make sure each unit 
-test can run in less than 10 seconds.
-
+test can run ideally in a few seconds.
 
 
 ## Citing ART
