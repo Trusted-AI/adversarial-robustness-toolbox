@@ -24,8 +24,10 @@ import logging
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
+from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +101,26 @@ class FastAdaptiveBoundary(EvasionAttack):
         self.set_params(**kwargs)
 
     def generate(self, x, y=None, **kwargs):
-        pass
+
+        """
+        Generate adversarial samples and return them in an array.
+
+        :param x: An array with the original inputs.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :type y: `np.ndarray`
+        :return: An array holding the adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        x_adv = x.astype(ART_NUMPY_DTYPE)
+
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+
+        return x_adv
+
 
     def set_params(self, **kwargs):
         super().set_params(**kwargs)
