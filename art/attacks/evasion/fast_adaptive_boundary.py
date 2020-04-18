@@ -22,15 +22,84 @@ This module implements the `Fast Adaptive Boundary` attack.
 """
 import logging
 
+import numpy as np
+
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator
 
 logger = logging.getLogger(__name__)
 
 
 class FastAdaptiveBoundary(EvasionAttack):
 
+    attack_params = EvasionAttack.attack_params + [
+        "norm",
+        "eps",
+        "max_iter",
+        "nb_restarts",
+        "alpha_max",
+        "eta",
+        "beta",
+        "targeted",
+        "batch_size",
+    ]
+
+    _estimator_requirements = (BaseEstimator,)
+
+    def __init__(
+        self,
+        estimator,
+        norm=np.inf,
+        eps=0.3,
+        max_iter=100,
+        nb_restarts=1,
+        alpha_max=0.1,
+        eta=1.05,
+        beta=0.9,
+        targeted=False,
+        batch_size=32,
+    ):
+        """
+        Create a :class:`.ProjectedGradientDescent` instance.
+
+        :param estimator: An trained estimator.
+        :type estimator: :class:`.BaseEstimator`
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :type norm: `int`
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :type eps: `float`
+        :param max_iter: Maximum number of iterations.
+        :type max_iter: `int`
+        :param nb_restarts: Number of random restarts.
+        :type nb_restarts: `int`
+        :param alpha_max: Maximum biased gradient step scaling factor in range [0, 1].
+        :type alpha_max: `float`
+        :param eta: Overshoot parameter, eta >= 1
+        :type eta: `float`
+        :param beta: Backward step scaling factor in range [0, 1].
+        :type beta: `float`
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
+        :type targeted: `bool`
+        :param batch_size: Size of the batch on which adversarial samples are generated.
+        :type batch_size: `int`
+        """
+        super().__init__(estimator=estimator)
+
+        kwargs = {
+            "norm": norm,
+            "eps": eps,
+            "max_iter": max_iter,
+            "nb_restarts": nb_restarts,
+            "alpha_max": alpha_max,
+            "eta": eta,
+            "beta": beta,
+            "targeted": targeted,
+            "batch_size": batch_size,
+        }
+        self.set_params(**kwargs)
+
     def generate(self, x, y=None, **kwargs):
         pass
 
     def set_params(self, **kwargs):
-        pass
+        super().set_params(**kwargs)
