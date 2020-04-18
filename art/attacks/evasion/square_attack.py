@@ -81,7 +81,6 @@ class SquareAttack(EvasionAttack):
         return self.p_init * p_ratio[i_ratio]
 
     def generate(self, x, y=None, **kwargs):
-
         """
         Generate adversarial samples and return them in an array.
 

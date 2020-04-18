@@ -121,6 +121,5 @@ class FastAdaptiveBoundary(EvasionAttack):
 
         return x_adv
 
-
     def set_params(self, **kwargs):
         super().set_params(**kwargs)
