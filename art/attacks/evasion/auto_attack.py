@@ -99,7 +99,9 @@ class AutoAttack(EvasionAttack):
                 )
             )
             # attacks.append(FastAdaptiveBoundary())
-            # attacks.append(SquareAttack())
+            attacks.append(
+                SquareAttack(estimator=estimator, norm=np.inf, max_iter=100, eps=0.6, p_init=0.8, nb_restarts=100,)
+            )
 
         kwargs = {
             "norm": norm,
