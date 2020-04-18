@@ -23,6 +23,7 @@ This module implements the `Square Attack` attack.
 import logging
 import math
 import bisect
+import random
 
 import numpy as np
 
@@ -116,7 +117,8 @@ class SquareAttack(EvasionAttack):
             if np.sum(sample_is_robust) == 0:
                 break
 
-            x_robust = x_adv[sample_is_robust]
+            # x_robust = x_adv[sample_is_robust]
+            x_robust = x[sample_is_robust]
             y_robust = y[sample_is_robust]
             sample_logits_diff_init = self.get_logits_diff(x_robust, y_robust)
 
@@ -162,19 +164,19 @@ class SquareAttack(EvasionAttack):
 
                     sample_logits_diff_init = self.get_logits_diff(x_robust, y_robust)
 
-                    h = max(int(round(math.sqrt(p * height * width))), 1)
+                    h_tile = max(int(round(math.sqrt(p * height * width))), 1)
 
-                    h_center = np.random.randint(0, height - h)
-                    w_center = np.random.randint(0, width - h)
+                    h_mid = np.random.randint(0, height - h_tile)
+                    w_start = np.random.randint(0, width - h_tile)
 
                     delta_new = np.zeros(self.estimator.input_shape)
 
                     if self.estimator.channel_index == 1:
-                        delta_new[:, h_center : h_center + h, w_center : w_center + h] = np.random.choice(
+                        delta_new[:, h_mid : h_mid + h_tile, w_start : w_start + h_tile] = np.random.choice(
                             [-2 * self.eps, 2 * self.eps], size=[channels, 1, 1]
                         )
                     elif self.estimator.channel_index == 3:
-                        delta_new[h_center : h_center + h, w_center : w_center + h, :] = np.random.choice(
+                        delta_new[h_mid : h_mid + h_tile, w_start : w_start + h_tile, :] = np.random.choice(
                             [-2 * self.eps, 2 * self.eps], size=[1, 1, channels]
                         )
 
@@ -194,7 +196,210 @@ class SquareAttack(EvasionAttack):
                     x_adv[sample_is_robust] = x_robust
 
             elif self.norm == 2:
-                pass
+
+                n_tiles = 5
+
+                h_tile = height // n_tiles
+
+                def _get_perturbation(h):
+                    delta = np.zeros([h, h])
+                    gaussian_perturbation = np.zeros([h // 2, h])
+
+                    x_c = h // 4
+                    y_c = h // 2
+
+                    for i_y in range(y_c):
+                        gaussian_perturbation[
+                            max(x_c, 0) : min(x_c + (2 * i_y + 1), h // 2), max(0, y_c) : min(y_c + (2 * i_y + 1), h)
+                        ] += 1.0 / ((i_y + 1) ** 2)
+                        x_c -= 1
+                        y_c -= 1
+
+                    gaussian_perturbation /= np.sqrt(np.sum(gaussian_perturbation ** 2))
+
+                    delta[: h // 2] = gaussian_perturbation
+                    delta[h // 2 : h // 2 + gaussian_perturbation.shape[0]] = -gaussian_perturbation
+
+                    delta /= np.sqrt(np.sum(delta ** 2))
+
+                    if random.random() > 0.5:
+                        delta = np.transpose(delta)
+
+                    if random.random() > 0.5:
+                        delta = -delta
+
+                    return delta
+
+                delta_init = np.zeros(x_robust.shape)
+
+                h_start = 0
+                for _ in range(n_tiles):
+                    w_start = 0
+                    for _ in range(n_tiles):
+                        if self.estimator.channel_index == 1:
+                            perturbation_size = (1, 1, h_tile, h_tile)
+                            random_size = (x_robust.shape[0], channels, 1, 1)
+                        elif self.estimator.channel_index == 3:
+                            perturbation_size = (1, h_tile, h_tile, 1)
+                            random_size = (x_robust.shape[0], 1, 1, channels)
+
+                        perturbation = _get_perturbation(h_tile).reshape(perturbation_size) * np.random.choice(
+                            [-1, 1], size=random_size
+                        )
+
+                        if self.estimator.channel_index == 1:
+                            delta_init[:, :, h_start : h_start + h_tile, w_start : w_start + h_tile] += perturbation
+                        elif self.estimator.channel_index == 3:
+                            delta_init[:, h_start : h_start + h_tile, w_start : w_start + h_tile, :] += perturbation
+                        w_start += h_tile
+                    h_start += h_tile
+
+                x_robust_new = np.clip(
+                    x_robust + delta_init / np.sqrt(np.sum(delta_init ** 2, axis=(1, 2, 3), keepdims=True)) * self.eps,
+                    self.estimator.clip_values[0],
+                    self.estimator.clip_values[1],
+                )
+
+                sample_logits_diff_new = self.get_logits_diff(x_robust_new, y_robust)
+                logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+
+                x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+
+                x_adv[sample_is_robust] = x_robust
+
+                for i_iter in range(self.max_iter):
+
+                    print("i_iter:", i_iter)
+
+                    p = self._get_p(i_iter)
+
+                    # Determine correctly predicted samples
+                    y_pred = self.estimator.predict(x_adv)
+                    sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+
+                    print("np.sum(sample_is_robust):", np.sum(sample_is_robust))
+
+                    if np.sum(sample_is_robust) == 0:
+                        break
+
+                    x_robust = x_adv[sample_is_robust]
+                    x_init = x[sample_is_robust]
+                    y_robust = y[sample_is_robust]
+
+                    sample_logits_diff_init = self.get_logits_diff(x_robust, y_robust)
+
+                    delta_x_robust_init = x_robust - x_init
+
+                    h_tile = max(int(round(math.sqrt(p * height * width))), 3)
+
+                    if h_tile % 2 == 0:
+                        h_tile += 1
+                    h_tile_2 = h_tile
+
+                    h_start = np.random.randint(0, height - h_tile)
+                    w_start = np.random.randint(0, width - h_tile)
+
+                    new_deltas_mask = np.zeros(x_init.shape)
+                    if self.estimator.channel_index == 1:
+                        new_deltas_mask[:, :, h_start : h_start + h_tile, w_start : w_start + h_tile] = 1.0
+                        W_1_norm = np.sqrt(
+                            np.sum(
+                                delta_x_robust_init[:, :, h_start : h_start + h_tile, w_start : w_start + h_tile] ** 2,
+                                axis=(2, 3),
+                                keepdims=True,
+                            )
+                        )
+                    elif self.estimator.channel_index == 3:
+                        new_deltas_mask[:, h_start : h_start + h_tile, w_start : w_start + h_tile, :] = 1.0
+                        W_1_norm = np.sqrt(
+                            np.sum(
+                                delta_x_robust_init[:, h_start : h_start + h_tile, w_start : w_start + h_tile, :] ** 2,
+                                axis=(1, 2),
+                                keepdims=True,
+                            )
+                        )
+
+                    h_2_start = np.random.randint(0, height - h_tile_2)
+                    w_2_start = np.random.randint(0, width - h_tile_2)
+
+                    new_deltas_mask_2 = np.zeros(x_init.shape)
+                    if self.estimator.channel_index == 1:
+                        new_deltas_mask_2[
+                            :, :, h_2_start : h_2_start + h_tile_2, w_2_start : w_2_start + h_tile_2
+                        ] = 1.0
+                    elif self.estimator.channel_index == 3:
+                        new_deltas_mask_2[
+                            :, h_2_start : h_2_start + h_tile_2, w_2_start : w_2_start + h_tile_2, :
+                        ] = 1.0
+
+                    norms_x_robust = np.sqrt(np.sum((x_robust - x_init) ** 2, axis=(1, 2, 3), keepdims=True))
+                    W_norm = np.sqrt(
+                        np.sum(
+                            (delta_x_robust_init * np.maximum(new_deltas_mask, new_deltas_mask_2)) ** 2,
+                            axis=(1, 2, 3),
+                            keepdims=True,
+                        )
+                    )
+
+                    if self.estimator.channel_index == 1:
+                        new_deltas_size = [x_init.shape[0], channels, h_tile, h_tile]
+                        random_choice_size = [x_init.shape[0], channels, 1, 1]
+                        perturbation_size = [1, 1, h_tile, h_tile]
+                    elif self.estimator.channel_index == 3:
+                        new_deltas_size = [x_init.shape[0], h_tile, h_tile, channels]
+                        random_choice_size = [x_init.shape[0], 1, 1, channels]
+                        perturbation_size = [1, h_tile, h_tile, 1]
+
+                    delta_new = (
+                        np.ones(new_deltas_size)
+                        * _get_perturbation(h_tile).reshape(perturbation_size)
+                        * np.random.choice([-1, 1], size=random_choice_size)
+                    )
+
+                    if self.estimator.channel_index == 1:
+                        delta_new += delta_x_robust_init[
+                            :, :, h_start : h_start + h_tile, w_start : w_start + h_tile
+                        ] / (np.maximum(1e-9, W_1_norm))
+                    elif self.estimator.channel_index == 3:
+                        delta_new += delta_x_robust_init[
+                            :, h_start : h_start + h_tile, w_start : w_start + h_tile, :
+                        ] / (np.maximum(1e-9, W_1_norm))
+
+                    diff_norm = (self.eps * np.ones(delta_new.shape)) ** 2 - norms_x_robust ** 2
+                    diff_norm[diff_norm < 0.0] = 0.0
+
+                    if self.estimator.channel_index == 1:
+                        delta_new /= np.sqrt(np.sum(delta_new ** 2, axis=(2, 3), keepdims=True)) * np.sqrt(
+                            diff_norm / channels + W_norm ** 2
+                        )
+                        delta_x_robust_init[
+                            :, :, h_2_start : h_2_start + h_tile_2, w_2_start : w_2_start + h_tile_2
+                        ] = 0.0
+                        delta_x_robust_init[:, :, h_start : h_start + h_tile, w_start : w_start + h_tile] = delta_new
+                    elif self.estimator.channel_index == 3:
+                        delta_new /= np.sqrt(np.sum(delta_new ** 2, axis=(1, 2), keepdims=True)) * np.sqrt(
+                            diff_norm / channels + W_norm ** 2
+                        )
+                        delta_x_robust_init[
+                            :, h_2_start : h_2_start + h_tile_2, w_2_start : w_2_start + h_tile_2, :
+                        ] = 0.0
+                        delta_x_robust_init[:, h_start : h_start + h_tile, w_start : w_start + h_tile, :] = delta_new
+
+                    x_robust_new = np.clip(
+                        x_init
+                        + self.eps
+                        * delta_x_robust_init
+                        / np.sqrt(np.sum(delta_x_robust_init ** 2, axis=(1, 2, 3), keepdims=True)),
+                        self.estimator.clip_values[0],
+                        self.estimator.clip_values[1],
+                    )
+
+                    sample_logits_diff_new = self.get_logits_diff(x_robust_new, y_robust)
+                    logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
+
+                    x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
+
+                    x_adv[sample_is_robust] = x_robust
 
         return x_adv
 
