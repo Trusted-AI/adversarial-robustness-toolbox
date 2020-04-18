@@ -73,7 +73,7 @@ class GPyGaussianProcessClassifier(ClassGradientsMixin, LossGradientsMixin, Clas
             preprocessing=preprocessing,
         )
         self._nb_classes = 2  # always binary
-        self.model = model
+        self._model = model
 
     # pylint: disable=W0221
     def class_gradient(self, x, label=None, eps=0.0001):
