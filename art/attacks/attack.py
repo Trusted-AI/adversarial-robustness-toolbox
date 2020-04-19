@@ -223,3 +223,31 @@ class ExtractionAttack(Attack):
         :rtype: :class:`.Classifier`
         """
         raise NotImplementedError
+
+
+class InferenceAttack(Attack):
+    """
+    Abstract base class for inference attack classes.
+    """
+
+    def __init__(self, classifier):
+        """
+        :param classifier: A trained classifier targeted for inference attack.
+        :type classifier: :class:`.Classifier`
+        """
+        super().__init__(classifier)
+
+    @abc.abstractmethod
+    def infer(self, x, y=None, **kwargs):
+        """
+        Infer sensitive properties (attributes, membership training records) from the targeted classifier. This method
+        should be overridden by all concrete inference attack implementations.
+
+        :param x: An array with reference inputs to be used in the attack.
+        :type x: `np.ndarray`
+        :param y: Labels for `x`. This parameter is only used by some of the attacks.
+        :type y: `np.ndarray`
+        :return: An array holding the inferred properties.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError

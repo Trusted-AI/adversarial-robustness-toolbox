@@ -2,6 +2,7 @@
 Module providing adversarial attacks under a common interface.
 """
 from art.attacks.attack import Attack, EvasionAttack, PoisoningAttackBlackBox, PoisoningAttackWhiteBox, ExtractionAttack
+from art.attacks.attack import InferenceAttack
 
 from art.attacks.evasion.adversarial_patch import AdversarialPatch
 from art.attacks.evasion.boundary import BoundaryAttack
@@ -28,3 +29,5 @@ from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
 
 from art.attacks.extraction.functionally_equivalent_extraction import FunctionallyEquivalentExtraction
 from art.attacks.extraction.copycat_cnn import CopycatCNN
+
+from art.attacks.inference.model_inversion import MIFace
