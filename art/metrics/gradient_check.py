@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) IBM Corporation 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -19,10 +19,15 @@
 This module implements gradient check functions for estimators
 """
 
-def loss_gradient_check(classifier, x, y):
-        """
+import numpy as np
+
+
+def loss_gradient_check(estimator, x, y):
+    """
         Compute the gradient of the loss function w.r.t. `x` and identify points where the gradient is zero, nan, or inf
 
+        :param estimator: The classifier to be analyzed.
+        :type estimator: `art.estimators.estimator.BaseEstimator`
         :param x: Input with shape as expected by the classifier's model.
         :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
@@ -32,11 +37,11 @@ def loss_gradient_check(classifier, x, y):
                  particular `x` was bad (zero, nan, inf) 
         :rtype: `np.ndarray, np.ndarray`
         """
-        assert len(x) == len(y), "x and y must be the same length"
+    assert len(x) == len(y), "x and y must be the same length"
 
-        is_bad = []
-        for i in range(len(x)):
-            grad = classifier.loss_gradient([x[i]], [y[i]])
-            is_bad.append([(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)),  np.any(np.isinf(grad))])
+    is_bad = []
+    for i in range(len(x)):
+        grad = estimator.loss_gradient([x[i]], [y[i]])
+        is_bad.append([(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)), np.any(np.isinf(grad))])
 
-        return np.array(is_bad, dtype=bool)
+    return np.array(is_bad, dtype=bool)
