@@ -1,6 +1,4 @@
 from __future__ import print_function
-import sys
-sys.path.append('/Users/ambrish/github/adversarial-robustness-toolbox/')
 import keras
 import numpy as np
 from keras.models import Sequential
@@ -11,8 +9,6 @@ from art.classifiers import KerasClassifier
 from art.utils import load_dataset
 from art.defences.trainer import AdversarialTrainerFBF
 
-
-model = load_model('mnist-keras-2-1-5.h5')
 (x_train, y_train), (x_test, y_test), min_, max_ = load_dataset('mnist')
 
 input_shape = (28, 28, 1)
