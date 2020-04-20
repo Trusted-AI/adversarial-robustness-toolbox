@@ -163,6 +163,8 @@ class PixelThreshold(EvasionAttack):
                     if success:
                         self.min_th = threshold
                     if end < start:
+                        if isinstance(image_result, list) and not image_result:
+                            image_result = image
                         break
             else:
                 success, image_result = self._attack(image, target_class, self.th, maxiter)
