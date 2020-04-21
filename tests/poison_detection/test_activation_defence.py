@@ -24,6 +24,7 @@ import numpy as np
 
 from art.poison_detection import ActivationDefence
 from art.utils import load_mnist
+from art.visualization import convert_to_rgb
 
 from tests.utils import master_seed
 
@@ -237,6 +238,14 @@ class TestActivationDefence(unittest.TestCase):
             self.classifier, x_poison, y_fix, n_splits=2, tolerable_backdoor=0.01, max_epochs=5, batch_epochs=10
         )
         self.assertGreaterEqual(improvement, 0)
+
+    def test_visualizations(self):
+        # test that visualization doesn't error in grayscale and RGB settings
+        (x_train, _), (_, _), (_, _) = self.mnist
+        self.defence.visualize_clusters(x_train)
+
+        x_train_rgb = convert_to_rgb(x_train)
+        self.defence.visualize_clusters(x_train_rgb)
 
 
 if __name__ == "__main__":
