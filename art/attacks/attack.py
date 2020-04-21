@@ -266,17 +266,17 @@ class InferenceAttack(Attack):
     Abstract base class for inference attack classes.
     """
 
-    def __init__(self, classifier):
+    def __init__(self, estimator):
         """
-        :param classifier: A trained classifier targeted for inference attack.
-        :type classifier: :class:`.Classifier`
+        :param estimator: A trained estimator targeted for inference attack.
+        :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
         """
-        super().__init__(classifier)
+        super().__init__(estimator)
 
     @abc.abstractmethod
     def infer(self, x, y=None, **kwargs):
         """
-        Infer sensitive properties (attributes, membership training records) from the targeted classifier. This method
+        Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.
 
         :param x: An array with reference inputs to be used in the attack.

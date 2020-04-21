@@ -27,8 +27,9 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import InferenceAttack
+from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import BaseEstimator
+from art.attacks import InferenceAttack
 from art.utils import get_labels_np_array, check_and_transform_label_format
 
 
@@ -47,6 +48,8 @@ class MIFace(InferenceAttack):
     attack_params = InferenceAttack.attack_params + ["max_iter", "window_length", "threshold", "learning_rate",
                                                      "batch_size"]
 
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
+
     def __init__(self, classifier, max_iter=10000, window_length=100, threshold=0.99, learning_rate=0.1, batch_size=1):
         """
         Create an MIFace attack instance.
@@ -62,7 +65,7 @@ class MIFace(InferenceAttack):
         :param batch_size: Size of internal batches.
         :type batch_size: `int`
         """
-        super(MIFace, self).__init__(classifier=classifier)
+        super(MIFace, self).__init__(estimator=classifier)
 
         params = {
             "max_iter": max_iter,
@@ -72,15 +75,6 @@ class MIFace(InferenceAttack):
             "batch_size": batch_size
         }
         self.set_params(**params)
-
-    @classmethod
-    def is_valid_classifier_type(cls, classifier):
-        """
-        Checks whether the classifier provided is a classifer which this class can perform an attack on
-        :param classifier:
-        :return:
-        """
-        return True if isinstance(classifier, ClassifierGradients) else False
 
     def infer(self, x, y=None, **kwargs):
         """
