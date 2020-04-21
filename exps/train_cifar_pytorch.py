@@ -140,7 +140,7 @@ def main():
 
     trainset = torchvision.datasets.CIFAR10(root='./../../cifar-data/', train=True,
                                             download=True, transform=transform)
-    train_batches = Batches(trainset, args.batch_size, shuffle=True, set_random_choices=True, num_workers=2)
+    train_batches = Batches(trainset, args.batch_size, shuffle=True, set_random_choices=False, num_workers=2)
     # train_batches = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
     #                                           shuffle=True, num_workers=1)
 
