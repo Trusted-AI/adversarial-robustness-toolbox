@@ -120,19 +120,15 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     # instances that more closely resemble the original instances:
 
     (x_train_mnist, y_train_mnist, _, _) = mnist_dataset
-    print(np.argmax(y_train_mnist[:10], axis=1))
-    print(np.argmax(classifier.predict(x_train_mnist[:10]), axis=1))
     x_original = x_train_mnist[:10]
     x_noisy = np.clip(x_original + np.random.uniform(-0.01, 0.01, x_original.shape), 0, 1)
     x_train_infer_from_noisy = attack.infer(x_noisy, y=y_train_mnist[:10])
-
-    print(np.argmax(classifier.predict(x_noisy), axis=1))
-    print(np.argmax(classifier.predict(x_train_infer_from_noisy), axis=1))
 
     diff_noisy = np.mean(np.reshape(np.abs(x_original - x_noisy), (len(x_original), -1)), axis=1)
     diff_inferred = np.mean(np.reshape(np.abs(x_original - x_train_infer_from_noisy), (len(x_original), -1)), axis=1)
 
     np.testing.assert_array_less(diff_inferred, diff_noisy)
+
 
 def backend_check_adverse_frames(attack, mnist_dataset, expected_values):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
@@ -143,8 +139,6 @@ def backend_check_adverse_frames(attack, mnist_dataset, expected_values):
     x_diff = np.reshape(x_diff, x_diff.shape[:2] + (np.prod(x_diff.shape[2:]),))
     x_diff_norm = np.round(np.linalg.norm(x_diff, axis=-1), decimals=4)
     x_diff_norm = np.linalg.norm(x_diff_norm, ord=0, axis=-1)
-
-    print(x_diff_norm)
 
     np.testing.assert_array_equal(x_diff_norm, expected_values["nb_perturbed_frames"].value)
 
