@@ -173,6 +173,11 @@ class BaseEstimator(ABC):
 
     @property
     def model(self):
+        """
+        Return the model.
+
+        :return: The model.
+        """
         return self._model
 
     @property
