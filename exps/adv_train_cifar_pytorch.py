@@ -6,6 +6,7 @@ import random
 import sys
 import time
 
+sys.path.append('./../')
 from art.classifiers import PyTorchClassifier
 from art.defences.trainer import AdversarialTrainerFBF
 from art.utils import load_cifar10
