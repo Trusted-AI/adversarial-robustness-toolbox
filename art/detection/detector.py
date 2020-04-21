@@ -25,12 +25,13 @@ import logging
 
 import six
 
-from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
@@ -41,7 +42,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
 
         :param detector: The detector architecture to be trained and applied for the binary classification.
-        :type detector: :class:`.Classifier`
+        :type detector: :class:`art.classifiers.Classifier`
         """
         super(BinaryInputDetector, self).__init__(
             clip_values=detector.clip_values,
@@ -93,7 +94,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         raise NotImplementedError
 
     def nb_classes(self):
-        return self.detector.nb_classes()
+        return self.detector.nb_classes
 
     @property
     def input_shape(self):
@@ -134,7 +135,9 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class BinaryActivationDetector(
+    ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
+):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
@@ -146,7 +149,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
         The shape of the input of the detector has to match that of the output of the chosen layer.
 
         :param classifier: The classifier of which the activation information is to be used for detection.
-        :type classifier: `art.classifier.Classifier`
+        :type classifier: `art.classifiers.Classifier`
         :param detector: The detector architecture to be trained and applied for the binary classification.
         :type detector: `art.classifier.Classifier`
         :param layer: Layer for computing the activations to use for training the detector.
@@ -218,7 +221,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
         raise NotImplementedError
 
     def nb_classes(self):
-        return self.detector.nb_classes()
+        return self.detector.nb_classes
 
     @property
     def input_shape(self):

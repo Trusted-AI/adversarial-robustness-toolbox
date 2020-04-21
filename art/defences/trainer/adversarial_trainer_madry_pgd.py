@@ -53,7 +53,7 @@ class AdversarialTrainerMadryPGD(Trainer):
         Default values are for CIFAR-10 in pixel range 0-255.
 
         :param classifier: Classifier to train adversarially.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         :param nb_epochs: Number of training epochs.
         :type nb_epochs: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.

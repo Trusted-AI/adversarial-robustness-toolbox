@@ -27,8 +27,9 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import Classifier
 from art.attacks.attack import ExtractionAttack
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import to_categorical
 
 
@@ -43,6 +44,8 @@ class CopycatCNN(ExtractionAttack):
     """
 
     attack_params = ExtractionAttack.attack_params + ["batch_size_fit", "batch_size_query", "nb_epochs", "nb_stolen"]
+
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(self, classifier, batch_size_fit=1, batch_size_query=1, nb_epochs=10, nb_stolen=1):
         """
@@ -96,7 +99,7 @@ class CopycatCNN(ExtractionAttack):
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs.get("thieved_classifier")
-        if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
+        if thieved_classifier is None or not isinstance(thieved_classifier, ClassifierMixin):
             raise ValueError("A thieved classifier is needed.")
 
         # Select data to attack
@@ -133,9 +136,9 @@ class CopycatCNN(ExtractionAttack):
         :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :rtype: `np.ndarray`
         """
-        labels = self.classifier.predict(x=x, batch_size=self.batch_size_query)
+        labels = self.estimator.predict(x=x, batch_size=self.batch_size_query)
         labels = np.argmax(labels, axis=1)
-        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
+        labels = to_categorical(labels=labels, nb_classes=self.estimator.nb_classes)
 
         return labels
 

@@ -8,11 +8,12 @@ keras
 mxnet
 #torch>=1.2.0
 tensorflow
+tensorflow_addons
 scikit-learn==0.22.1
 xgboost==1.0.0
 lightgbm==2.3.1
 # Comment out because of compatibility issues with numpy versions
-# catboost
+catboost==0.22
 GPy==1.9.9
 
 numpy==1.18.1

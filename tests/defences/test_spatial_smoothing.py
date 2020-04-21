@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import SpatialSmoothing
+from art.defences.preprocessor import SpatialSmoothing
 
 from tests.utils import master_seed
 

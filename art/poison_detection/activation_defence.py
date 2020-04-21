@@ -63,7 +63,7 @@ class ActivationDefence(PoisonFilteringDefence):
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
         :param classifier: Model evaluated for poison.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         :param x_train: dataset used to train the classifier.
         :type x_train: `np.ndarray`
         :param y_train: labels used to train the classifier.
@@ -245,7 +245,7 @@ class ActivationDefence(PoisonFilteringDefence):
         to use for test set.
 
         :param classifier: Classifier to be fixed
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         :param x: samples
         :type x: `np.ndarray`
         :param y_fix: true label of x_poison
@@ -301,7 +301,7 @@ class ActivationDefence(PoisonFilteringDefence):
         number of cross validation splits.
 
         :param classifier: Classifier to be fixed
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         :param x: Samples that were miss-labeled.
         :type x: `np.ndarray`
         :param y_fix: True label of `x`.
@@ -361,7 +361,7 @@ class ActivationDefence(PoisonFilteringDefence):
         Pickles the self.classifier and stores it using the provided file_name in folder `art.ART_DATA_PATH`.
 
         :param classifier: Classifier to be pickled.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         :param file_name: Name of the file where the classifier will be pickled
         :return: None
         """
@@ -429,7 +429,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.cluster_activations()
 
         x_raw_by_class = self._segment_by_class(x_raw, self.y_train)
-        x_raw_by_cluster = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes())]
+        x_raw_by_cluster = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
 
         # Get all data in x_raw in the right cluster
         for n_class, cluster in enumerate(self.clusters_by_class):
@@ -437,7 +437,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 x_raw_by_cluster[n_class][assigned_cluster].append(x_raw_by_class[n_class][j])
 
         # Now create sprites:
-        sprites_by_class = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes())]
+        sprites_by_class = [[[] for _ in range(self.nb_clusters)] for y in range(self.classifier.nb_classes)]
         for i, class_i in enumerate(x_raw_by_cluster):
             for j, images_cluster in enumerate(class_i):
                 title = "Class_" + str(i) + "_cluster_" + str(j) + "_clusterSize_" + str(len(images_cluster))
@@ -545,7 +545,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :return: segmented data according to specified features.
         :rtype: `list`
         """
-        n_classes = self.classifier.nb_classes()
+        n_classes = self.classifier.nb_classes
         return segment_by_class(data, features, n_classes)
 
 
@@ -570,7 +570,7 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
     Trains the provider classifier until the tolerance or number of maximum epochs are reached.
 
     :param classifier: art.classifier to be used for predictions
-    :type classifier: `art.classifier`
+    :type classifier: `art.classifiers.Classifier`
     :param x_train: training set
     :type x_train: `np.darray`
     :param y_train: labels used for training

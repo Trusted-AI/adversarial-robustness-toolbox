@@ -30,7 +30,8 @@ from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks import FastGradientMethod, HopSkipJump
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
 
 logger = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ def get_crafter(classifier, attack, params=None):
     Create an attack instance to craft adversarial samples.
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param attack: adversarial attack name
     :type attack: `str`
     :param params: Parameters specific to the adversarial attack
@@ -77,7 +78,7 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     | Paper link: https://arxiv.org/abs/1511.04599
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
     :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
@@ -156,7 +157,7 @@ def loss_sensitivity(classifier, x, y):
     | Paper link: https://arxiv.org/abs/1706.05394
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.ClassifierGradients`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
     :param y: Labels for sample `x`, one-hot encoded.
@@ -179,7 +180,7 @@ def clever(
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param nb_batches: Number of repetitions of the estimate
@@ -210,7 +211,7 @@ def clever(
         if target_sort:
             target_classes = np.argsort(y_pred)[0][:-1]
         else:
-            target_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
+            target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
     elif isinstance(target, (int, np.integer)):
         target_classes = [target]
     else:
@@ -233,7 +234,7 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param nb_batches: Number of repetitions of the estimate
@@ -254,7 +255,7 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
     # Get a list of untargeted classes
     y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
-    untarget_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
+    untarget_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
 
     # Compute CLEVER score for each untargeted class
     score_list = []
@@ -272,7 +273,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.classifiers.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param target_class: Targeted class
@@ -314,7 +315,7 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     )
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)
-    if hasattr(classifier, "clip_values") and classifier.clip_values is not None:
+    if classifier.clip_values is not None:
         np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)

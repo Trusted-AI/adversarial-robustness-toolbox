@@ -3,16 +3,17 @@
  and runs activation defence to find poison."""
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import pprint
+import json
+
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D, Dropout
 import numpy as np
 
 from art.attacks.poisoning.perturbations.image_perturbations import add_pattern_bd, add_single_bd
-from art.classifiers import KerasClassifier
+from art.estimators.classification import KerasClassifier
 from art.utils import load_mnist, preprocess
 from art.poison_detection import ActivationDefence
-import pprint
-import json
 
 
 def main():

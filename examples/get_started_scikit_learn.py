@@ -7,8 +7,8 @@ The parameters are chosen for reduced computational requirements of the script a
 from sklearn.svm import SVC
 import numpy as np
 
-from art.attacks import FastGradientMethod
-from art.classifiers import SklearnClassifier
+from art.attacks.evasion import FastGradientMethod
+from art.estimators.classification import SklearnClassifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset

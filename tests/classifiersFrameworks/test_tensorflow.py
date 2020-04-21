@@ -73,8 +73,9 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
         dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
 
         iterator = dataset.make_initializable_iterator()
-        data_gen = TensorFlowDataGenerator(sess=sess, iterator=iterator, iterator_type='initializable', iterator_arg={},
-                                           size=1000, batch_size=100)
+        data_gen = TensorFlowDataGenerator(
+            sess=sess, iterator=iterator, iterator_type="initializable", iterator_arg={}, size=1000, batch_size=100
+        )
 
         expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
 
@@ -434,9 +435,9 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
             classifier,
             [
                 "TensorFlowClassifier",
-                "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) " "dtype=float32>",
+                "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
                 "output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>",
-                "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) " "dtype=int32>",
+                "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
                 "train=<tf.Operation 'Adam' type=NoOp>",
                 "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
                 "learning=None",

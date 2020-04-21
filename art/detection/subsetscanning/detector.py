@@ -27,13 +27,17 @@ import logging
 import numpy as np
 import six
 
-from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
+
 from art.detection.subsetscanning.scanner import Scanner
 
 logger = logging.getLogger(__name__)
 
 
-class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class SubsetScanningDetector(
+    ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
+):
     """
     Fast generalized subset scan based detector by McFowland, E., Speakman, S., and Neill, D. B. (2013).
 
@@ -45,7 +49,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
         :param classifier: The model being evaluated for its robustness to anomalies (eg. adversarial samples)
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.classifiers.Classifier`
         :bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
         :type bgd_data: `np.ndarray`
         :layer: The layer from which to extract activations to perform scan
@@ -202,7 +206,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         raise NotImplementedError
 
     def nb_classes(self):
-        return self.detector.nb_classes()
+        return self.detector.nb_classes
 
     @property
     def input_shape(self):
