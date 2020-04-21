@@ -2,8 +2,9 @@
 ================================
 .. automodule:: art.estimators.regression
 
-Mixin Base Class Regressors
----------------------------
+Mixin Base Class Regressor
+--------------------------
 .. autoclass:: RegressorMixin
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
