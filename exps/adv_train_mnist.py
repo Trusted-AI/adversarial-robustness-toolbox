@@ -40,7 +40,7 @@ print('Time taken(sec): ',train_time-start_start_time)
 x_test_robust_pred = np.argmax(classifier.predict(x_test), axis=1)
 nb_correct_robust_pred = np.sum(x_test_robust_pred == np.argmax(y_test, axis=1))
 
-classifier.save('mnist-robust.h5','./')
+classifier.save('mnist-robust.h5','./exps/')
 print("Original test data (first 100 images):")
 print("accuracy: {}".format(nb_correct_robust_pred/x_test.shape[0]))
 
@@ -56,4 +56,4 @@ for eps in [0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8
     acc.append(nb_correct_attack_pred / x_test.shape[0])
 
 print(acc)
-np.save('acc.npy',acc)
+np.save('./exps/acc.npy',acc)
