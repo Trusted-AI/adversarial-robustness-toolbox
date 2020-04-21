@@ -2,14 +2,16 @@
 ======================================
 .. automodule:: art.estimators.object_detection
 
-Mixin Base Class Object Detectors
----------------------------------
+Mixin Base Class Object Detector
+--------------------------------
 .. autoclass:: ObjectDetectorMixin
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
 
 Object Detector PyTorch Faster-RCNN
 -----------------------------------
 .. autoclass:: PyTorchFasterRCNN
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
