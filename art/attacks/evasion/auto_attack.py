@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the `Auto Attack` attack.
+This module implements the `AutoAttack` attack.
 
 | Paper link: https://arxiv.org/abs/2003.01690
 """
@@ -76,6 +76,7 @@ class AutoAttack(EvasionAttack):
                     eps_step=eps_step,
                     max_iter=100,
                     targeted=targeted,
+                    nb_random_init=5,
                     batch_size=batch_size,
                     loss_type="cross_entropy",
                 )
@@ -88,12 +89,13 @@ class AutoAttack(EvasionAttack):
                     eps_step=eps_step,
                     max_iter=100,
                     targeted=targeted,
+                    nb_random_init=5,
                     batch_size=batch_size,
                     loss_type="difference_logits_ratio",
                 )
             )
             attacks.append(
-                DeepFool(estimator=estimator, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size)
+                DeepFool(classifier=estimator, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size)
             )
             attacks.append(
                 SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=1)

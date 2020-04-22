@@ -21,6 +21,7 @@ This module implements the `Auto Projected Gradient Descent` attack.
 | Paper link: https://arxiv.org/abs/2003.01690
 """
 import logging
+import math
 
 import numpy as np
 
@@ -39,6 +40,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         "eps_step",
         "max_iter",
         "targeted",
+        "nb_random_init",
         "batch_size",
         "loss_type",
     ]
@@ -48,7 +50,16 @@ class AutoProjectedGradientDescent(EvasionAttack):
     _predefined_losses = [None, "cross_entropy", "difference_logits_ratio"]
 
     def __init__(
-        self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, batch_size=1, loss_type=None
+        self,
+        estimator,
+        norm=np.inf,
+        eps=0.3,
+        eps_step=0.1,
+        max_iter=100,
+        targeted=False,
+        nb_random_init=5,
+        batch_size=32,
+        loss_type=None,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -65,6 +76,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
         :type max_iter: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
+        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
+            starting at the original input.
+        :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
@@ -152,6 +166,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             "eps": eps,
             "eps_step": eps_step,
             "targeted": targeted,
+            "nb_random_init": nb_random_init,
             "batch_size": batch_size,
         }
         self.set_params(**kwargs)
@@ -177,153 +192,150 @@ class AutoProjectedGradientDescent(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
-            # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-
-            # Use model predictions as correct outputs
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
-        mask = kwargs.get("mask")
-        if mask is not None:
-            # ensure the mask is broadcastable:
-            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                raise ValueError("mask shape must be broadcastable to input shape")
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        x_adv = np.zeros_like(x)
+        for i_restart in range(max(1, self.nb_random_init)):
 
-        # Compute perturbation with implicit batching
-        for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
+            # Determine correctly predicted samples
+            y_pred = self.estimator.predict(x_adv)
+            sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
-            self.eta = 2 * self.eps_step
+            if np.sum(sample_is_robust) == 0:
+                break
 
-            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            x_robust = x_adv[sample_is_robust]
+            y_robust = y[sample_is_robust]
 
-            x_k = x[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
-            x_init = x[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
+            # Compute perturbation with implicit batching
+            for batch_id in range(int(np.ceil(x_robust.shape[0] / float(self.batch_size)))):
 
-            y_batch = y[batch_index_1:batch_index_2]
+                self.eta = 2 * self.eps_step
 
-            mask_batch = mask
-            # if mask is not None:
-            #     # Here we need to make a distinction: if the masks are different for each input, we need to index
-            #     # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
-            #     if len(mask.shape) == len(x.shape):
-            #         mask_batch = mask[batch_index_1:batch_index_2]
+                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
-            p_0 = 0
-            p_1 = 0.22
-            W = [p_0, p_1]
+                x_k = x_robust[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
+                x_init = x_robust[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
 
-            while True:
-                p_j_p_1 = W[-1] + max(W[-1] - W[-2] - 0.03, 0.06)
-                if p_j_p_1 > 1:
-                    break
-                W.append(p_j_p_1)
+                y_batch = y_robust[batch_index_1:batch_index_2]
 
-            import math
+                p_0 = 0
+                p_1 = 0.22
+                W = [p_0, p_1]
 
-            W = [math.ceil(p * self.max_iter) for p in W]
+                while True:
+                    p_j_p_1 = W[-1] + max(W[-1] - W[-2] - 0.03, 0.06)
+                    if p_j_p_1 > 1:
+                        break
+                    W.append(p_j_p_1)
 
-            eta = self.eps_step
-            self.count_condition_1 = 0
+                W = [math.ceil(p * self.max_iter) for p in W]
 
-            for k_iter in range(self.max_iter):
+                eta = self.eps_step
+                self.count_condition_1 = 0
 
-                # Get perturbation, use small scalar to avoid division by 0
-                tol = 10e-8
+                for k_iter in range(self.max_iter):
 
-                # Get gradient wrt loss; invert it if attack is targeted
-                grad = self.estimator.loss_gradient(x_k, y_batch) * (1 - 2 * int(self.targeted))
+                    # Get perturbation, use small scalar to avoid division by 0
+                    tol = 10e-8
 
-                # Apply norm bound
-                if self.norm == np.inf:
-                    grad = np.sign(grad)
-                elif self.norm == 1:
-                    ind = tuple(range(1, len(x_k.shape)))
-                    grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
-                elif self.norm == 2:
-                    ind = tuple(range(1, len(x_k.shape)))
-                    grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
-                assert x_k.shape == grad.shape
+                    # Get gradient wrt loss; invert it if attack is targeted
+                    grad = self.estimator.loss_gradient(x_k, y_batch) * (1 - 2 * int(self.targeted))
 
-                if mask_batch is None:
-                    perturbation = grad
-                else:
-                    perturbation = grad * (mask_batch.astype(ART_NUMPY_DTYPE))
+                    # Apply norm bound
+                    if self.norm == np.inf:
+                        grad = np.sign(grad)
+                    elif self.norm == 1:
+                        ind = tuple(range(1, len(x_k.shape)))
+                        grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
+                    elif self.norm == 2:
+                        ind = tuple(range(1, len(x_k.shape)))
+                        grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
+                    assert x_k.shape == grad.shape
 
-                # Apply perturbation and clip
-                z_k_p_1 = x_k + eta * perturbation
-
-                if self.estimator.clip_values is not None:
-                    clip_min, clip_max = self.estimator.clip_values
-                    z_k_p_1 = np.clip(z_k_p_1, clip_min, clip_max)
-
-                if k_iter == 0:
-                    x_1 = z_k_p_1
-                    perturbation = projection(x_1 - x_init, self.eps, self.norm)
-                    x_1 = x_init + perturbation
-
-                    f_0 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k)))
-                    f_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_1)))
-
-                    self.eta_w_j_m_1 = eta
-                    self.f_max_w_j_m_1 = f_0
-
-                    if f_1 >= f_0:
-                        self.f_max = f_1
-                        self.x_max = x_1
-                        self.count_condition_1 += 1
+                    mask_batch = None
+                    if mask_batch is None:
+                        perturbation = grad
                     else:
-                        self.f_max = f_0
-                        self.x_max = x_k.copy()
+                        perturbation = grad * (mask_batch.astype(ART_NUMPY_DTYPE))
 
-                    # Settings for next iteration k
-                    x_k_m_1 = x_k.copy()
-                    x_k = x_1
+                    # Apply perturbation and clip
+                    z_k_p_1 = x_k + eta * perturbation
 
-                else:
-                    perturbation = projection(z_k_p_1 - x_init, self.eps, self.norm)
-                    z_k_p_1 = x_init + perturbation
+                    if self.estimator.clip_values is not None:
+                        clip_min, clip_max = self.estimator.clip_values
+                        z_k_p_1 = np.clip(z_k_p_1, clip_min, clip_max)
 
-                    alpha = 0.75
+                    if k_iter == 0:
+                        x_1 = z_k_p_1
+                        perturbation = projection(x_1 - x_init, self.eps, self.norm)
+                        x_1 = x_init + perturbation
 
-                    x_k_p_1 = x_k + alpha * (z_k_p_1 - x_k) + (1 - alpha) * (x_k - x_k_m_1)
-                    perturbation = projection(x_k_p_1 - x_init, self.eps, self.norm)
-                    x_k_p_1 = x_init + perturbation
+                        f_0 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k)))
+                        f_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_1)))
 
-                    f_k_p_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k_p_1)))
+                        self.eta_w_j_m_1 = eta
+                        self.f_max_w_j_m_1 = f_0
 
-                    if f_k_p_1 > self.f_max:
-                        self.count_condition_1 += 1
-                        self.x_max = x_k_p_1
-                        self.x_max_m_1 = x_k
-                        self.f_max = f_k_p_1
+                        if f_1 >= f_0:
+                            self.f_max = f_1
+                            self.x_max = x_1
+                            self.count_condition_1 += 1
+                        else:
+                            self.f_max = f_0
+                            self.x_max = x_k.copy()
 
-                    if k_iter in W:
+                        # Settings for next iteration k
+                        x_k_m_1 = x_k.copy()
+                        x_k = x_1
 
-                        rho = 0.75
+                    else:
+                        perturbation = projection(z_k_p_1 - x_init, self.eps, self.norm)
+                        z_k_p_1 = x_init + perturbation
 
-                        condition_1 = self.count_condition_1 < rho * (k_iter - W[W.index(k_iter) - 1])
-                        condition_2 = self.eta_w_j_m_1 == eta and self.f_max_w_j_m_1 == self.f_max
+                        alpha = 0.75
 
-                        if condition_1 or condition_2:
-                            eta = eta / 2
-                            x_k_m_1 = self.x_max_m_1
-                            x_k = self.x_max
+                        x_k_p_1 = x_k + alpha * (z_k_p_1 - x_k) + (1 - alpha) * (x_k - x_k_m_1)
+                        perturbation = projection(x_k_p_1 - x_init, self.eps, self.norm)
+                        x_k_p_1 = x_init + perturbation
+
+                        f_k_p_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k_p_1)))
+
+                        if f_k_p_1 > self.f_max:
+                            self.count_condition_1 += 1
+                            self.x_max = x_k_p_1
+                            self.x_max_m_1 = x_k
+                            self.f_max = f_k_p_1
+
+                        if k_iter in W:
+
+                            rho = 0.75
+
+                            condition_1 = self.count_condition_1 < rho * (k_iter - W[W.index(k_iter) - 1])
+                            condition_2 = self.eta_w_j_m_1 == eta and self.f_max_w_j_m_1 == self.f_max
+
+                            if condition_1 or condition_2:
+                                eta = eta / 2
+                                x_k_m_1 = self.x_max_m_1
+                                x_k = self.x_max
+                            else:
+                                x_k_m_1 = x_k
+                                x_k = x_k_p_1.copy()
+
+                            self.count_condition_1 = 0
+                            self.eta_w_j_m_1 = eta
+                            self.f_max_w_j_m_1 = self.f_max
+
                         else:
                             x_k_m_1 = x_k
                             x_k = x_k_p_1.copy()
 
-                        self.count_condition_1 = 0
-                        self.eta_w_j_m_1 = eta
-                        self.f_max_w_j_m_1 = self.f_max
+                x_robust[batch_index_1:batch_index_2] = x_k
 
-                    else:
-                        x_k_m_1 = x_k
-                        x_k = x_k_p_1.copy()
-
-            x_adv[batch_index_1:batch_index_2] = x_k
+            x_adv[sample_is_robust] = x_robust
 
         return x_adv
 
