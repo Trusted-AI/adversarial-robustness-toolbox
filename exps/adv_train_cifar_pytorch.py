@@ -6,7 +6,7 @@ import random
 import sys
 import time
 
-sys.path.append('./../')
+sys.path.append('/home/ambrish/github/adversarial-robustness-toolbox')
 from art.classifiers import PyTorchClassifier
 from art.defences.trainer import AdversarialTrainerFBF
 from art.utils import load_cifar10
@@ -32,6 +32,8 @@ mu = torch.tensor(cifar10_mean).view(3,1,1).cuda()
 std = torch.tensor(cifar10_std).view(3,1,1).cuda()
 upper_limit = ((1 - mu)/ std)
 lower_limit = ((0 - mu)/ std)
+print(upper_limit, lower_limit)
+print(upper_limit.size(), lower_limit.size())
 
 import torch
 
@@ -105,6 +107,9 @@ def main():
     x_test[:, :, :, 1] /= cifar10_std[1]
     x_test[:, :, :, 2] /= cifar10_std[2]
 
+    x_train = x_train.transpose(0, 3, 1, 2)
+    x_test = x_test.transpose(0, 3, 1, 2)
+
     model = PreActResNet18().cuda()
     model.apply(initialize_weights)
     model.train()
@@ -119,12 +124,16 @@ def main():
 
     classifier = PyTorchClassifier(
         model=model,
+        clip_values=(-1.9887, 2.1158),
         loss=criterion,
         optimizer=opt,
-        input_shape=(32, 32, 3),
+        input_shape=(32,32,3),
         nb_classes=10,
     )
-    trainer = AdversarialTrainerFBF(classifier, eps=8)
+    epsilon = (args.epsilon / 255.) / 0.24
+    #pgd_alpha = (args.pgd_alpha / 255.) / std
+
+    trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
     trainer.fit(x_train, y_train)
 
     best_state_dict = copy.deepcopy(model.state_dict())
