@@ -33,13 +33,9 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import \
-    ProjectedGradientDescentNumpy
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_pytorch import \
-    ProjectedGradientDescentPytorch
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import \
-    ProjectedGradientDescentTensorflowV2
-
+from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescentNumpy
+from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescentPytorch
+from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescentTensorflowV2
 
 logger = logging.getLogger(__name__)
 
