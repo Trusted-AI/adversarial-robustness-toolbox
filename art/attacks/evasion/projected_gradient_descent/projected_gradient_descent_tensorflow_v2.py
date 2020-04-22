@@ -28,7 +28,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
-import torch
 import tensorflow as tf
 from scipy.stats import truncnorm
 
@@ -36,7 +35,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, random_sphere
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +79,8 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         """
         Create a :class:`.ProjectedGradientDescentTensorFlowV2` instance.
 
-        :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param estimator: An trained estimator.
+        :type estimator: :class:`.BaseEstimator`
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
@@ -104,8 +103,6 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         :type batch_size: `int`
         """
         super(ProjectedGradientDescentTensorflowV2, self).__init__(estimator)
-#        if not isinstance(classifier, ClassifierGradients):
-#            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "norm": norm,
@@ -117,13 +114,12 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
             "batch_size": batch_size,
             "random_eps": random_eps
         }
-        self.set_params(**kwargs)
+        ProjectedGradientDescentTensorflowV2.set_params(**kwargs)
 
-        # TODO
-        # if self.random_eps:
-        #     lower, upper = 0, eps
-        #     mu, sigma = 0, (eps / 2)
-        #     self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+        if self.random_eps:
+            lower, upper = 0, eps
+            mu, sigma = 0, (eps / 2)
+            self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
     def generate(self, x, y=None, **kwargs):
         """
@@ -136,10 +132,19 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :type y: `np.ndarray`
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         import tensorflow as tf
+
+        if self.random_eps:
+            ratio = self.eps_step / self.eps
+            self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
+            self.eps_step = ratio * self.eps
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
@@ -153,54 +158,28 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         else:
             targets = y
 
+        mask = kwargs.get("mask")
+        if mask is not None:
+            # Ensure the mask is broadcastable
+            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
+                raise ValueError("Mask shape must be broadcastable to input shape.")
 
-        # TODO
-        # if self.random_eps:
-        #     ratio = self.eps_step / self.eps
-        #     self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
-        #     self.eps_step = ratio * self.eps
+        adv_x_best = None
+        rate_best = None
 
-        # for _ in range(max(1, self.num_random_init)):
-        #     adv_x = x.astype(ART_NUMPY_DTYPE)
+        for _ in range(max(1, self.num_random_init)):
+            adv_x = x.astype(ART_NUMPY_DTYPE)
 
-        #inputs = tf.keras.Input(shape=x.shape[1:])
-
-        #print(inputs.shape, x.shape)
-        #inputs = self.estimator.mymodel.input
-        inputs = x
-        adv_x = inputs
-
-
-        # def stop_cond(i, _):
-        #     return tf.less(i, self.max_iter)
-        #
-        # def main_body(i, adv_x):
-        #
-        #     adv_x = self._compute(
-        #         adv_x,
-        #         inputs,
-        #         targets,
-        #         self.eps,
-        #         self.eps_step,
-        #         False
-        #         # self.num_random_init > 0 and i_max_iter == 0,
-        #     )
-        #
-        #     return i + 1, adv_x
-        #
-        # _, adv_x = tf.while_loop(stop_cond, main_body, [tf.zeros([]), adv_x], back_prop=True)
-
-        for _ in range(self.max_iter):
-
-            adv_x = self._compute(
-                adv_x,
-                inputs,
-                targets,
-                self.eps,
-                self.eps_step,
-                False
-                # self.num_random_init > 0 and i_max_iter == 0,
-            )
+            for i_max_iter in range(self.max_iter):
+                adv_x = self._compute(
+                    adv_x,
+                    x,
+                    targets,
+                    mask,
+                    self.eps,
+                    self.eps_step,
+                    self.num_random_init > 0 and i_max_iter == 0,
+                )
 
             # TODO
             # if self.num_random_init > 1:
@@ -260,20 +239,45 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
 
         return batch
 
-    def _compute(self, x, x_init, y, eps, eps_step, random_init):
-        # TODO
-        # if random_init:
-        #     n = x.shape[0]
-        #     m = np.prod(x.shape[1:])
-        #     x_adv = x.astype(ART_NUMPY_DTYPE) + (
-        #         random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
-        #     )
-        #
-        #     if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-        #         clip_min, clip_max = self.classifier.clip_values
-        #         x_adv = np.clip(x_adv, clip_min, clip_max)
-        # else:
-        #     x_adv = x.astype(ART_NUMPY_DTYPE)
+    def _compute(self, x, x_init, y, mask, eps, eps_step, random_init):
+        """
+        Compute adversarial examples for one iteration.
+
+        :param x: Current adversarial examples.
+        :type x: `np.ndarray` or `Tensor`
+        :param x_init: An array with the original inputs.
+        :type x_init: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :type y: `np.ndarray`
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :type eps: `float`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
+        :param random_init: Random initialisation within the epsilon ball. For random_init=False
+            starting at the original input.
+        :type random_init: `bool`
+        :return: Adversarial examples.
+        :rtype: `Tensor`
+        """
+        if random_init:
+            n = x.shape[0]
+            m = np.prod(x.shape[1:])
+            x_adv = x.astype(ART_NUMPY_DTYPE) + (
+                random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            )
+
+            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+                clip_min, clip_max = self.classifier.clip_values
+                x_adv = np.clip(x_adv, clip_min, clip_max)
+        else:
+            x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Get perturbation
         perturbation = self._compute_perturbation(x, y)
