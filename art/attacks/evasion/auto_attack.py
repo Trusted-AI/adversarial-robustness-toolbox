@@ -133,18 +133,17 @@ class AutoAttack(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
-            # Throw error if attack is targeted, but no targets are provided
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-
-            # Use model predictions as correct outputs
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+
+        # Determine correctly predicted samples
+        y_pred = self.estimator.predict(x_adv)
+        sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
         for attack in self.attacks:
 
-            # Determine correctly predicted samples
-            y_pred = self.estimator.predict(x_adv)
-            sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+            print('AutoAttack - np.sum(sample_is_robust)', np.sum(sample_is_robust))
 
             if np.sum(sample_is_robust) == 0:
                 break
@@ -160,6 +159,8 @@ class AutoAttack(EvasionAttack):
 
             x_robust[sample_is_not_robust] = x_robust_adv[sample_is_not_robust]
             x_adv[sample_is_robust] = x_robust
+
+            sample_is_robust[sample_is_robust] = np.invert(sample_is_not_robust)
 
         return x_adv
 

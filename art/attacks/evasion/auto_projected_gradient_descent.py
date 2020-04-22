@@ -200,13 +200,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         for i_restart in range(max(1, self.nb_random_init)):
 
-            print('i_restart', i_restart)
+            # print('i_restart', i_restart)
 
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
             sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
-            print('np.sum(sample_is_robust)', np.sum(sample_is_robust))
+            # print('np.sum(sample_is_robust)', np.sum(sample_is_robust))
 
             if np.sum(sample_is_robust) == 0:
                 break
@@ -358,7 +358,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             x_adv[sample_is_robust] = x_robust
 
-            print('APGD-norm:', np.max(np.abs(x_adv - x)))
+            # print('APGD-norm:', np.max(np.abs(x_adv - x)))
 
         return x_adv
 
