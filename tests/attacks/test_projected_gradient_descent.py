@@ -21,7 +21,11 @@ import logging
 import unittest
 import numpy as np
 
+<<<<<<< HEAD
 from art.attacks.evasion import ProjectedGradientDescent
+=======
+from art.attacks import ProjectedGradientDescent
+>>>>>>> pgd_pt
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import ProjectedGradientDescentNumpy
 
 from art.classifiers import KerasClassifier
@@ -74,6 +78,7 @@ class TestPGD(TestBase):
     #     self._test_backend_mnist(
     #         classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
     #     )
+<<<<<<< HEAD
 
     # def test_pytorch_mnist(self):
     #     x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
@@ -106,6 +111,8 @@ class TestPGD(TestBase):
         self._test_backend_mnist(
             classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
         )
+=======
+>>>>>>> pgd_pt
 
 
 
@@ -118,8 +125,11 @@ class TestPGD(TestBase):
         attack = ProjectedGradientDescentNumpy(classifier, eps=1, eps_step=0.1, max_iter=10)
         #x_train_adv_np = attack.generate(x_train)
         x_test_adv_np = attack.generate(x_test)
+<<<<<<< HEAD
 
         print(np.mean(x_test_adv_np))
+=======
+>>>>>>> pgd_pt
 
 
         # This is for testing the framework-dependent version

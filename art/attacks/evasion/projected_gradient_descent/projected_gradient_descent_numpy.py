@@ -35,7 +35,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
-from art.exceptions import EstimatorError
+
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +136,7 @@ class ProjectedGradientDescentNumpy(FastGradientMethod):
             self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
             self.eps_step = ratio * self.eps
 
+        mask = kwargs.get("mask")
         if isinstance(self.estimator, ClassifierMixin):
             y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
@@ -149,10 +150,9 @@ class ProjectedGradientDescentNumpy(FastGradientMethod):
             else:
                 targets = y
 
-            mask = kwargs.get("mask")
             if mask is not None:
                 # ensure the mask is broadcastable:
-                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
+                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
                     raise ValueError("mask shape must be broadcastable to input shape")
 
             adv_x_best = None
@@ -190,11 +190,10 @@ class ProjectedGradientDescentNumpy(FastGradientMethod):
                 else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
             )
         else:
-
             if self.num_random_init > 0:
                 raise ValueError("Random initialisation is only supported for classification.")
 
-            if kwargs.get("mask") is not None:
+            if mask is not None:
                 raise ValueError("Mask is only supported for classification.")
 
             if y is None:
