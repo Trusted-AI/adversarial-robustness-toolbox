@@ -29,29 +29,17 @@ import logging
 
 import numpy as np
 
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import \
     ProjectedGradientDescentNumpy
-<<<<<<< HEAD
-#from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_pytorch import \
-#    ProjectedGradientDescentPytorch
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import \
-    ProjectedGradientDescentTensorflowV2
-from art.classifiers import PyTorchClassifier
-from art.classifiers import TensorFlowV2Classifier
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin
-
-#from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import EvasionAttack
-#from art.exceptions import ClassifierError
-=======
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_pytorch import \
     ProjectedGradientDescentPytorch
-from art.classifiers import PyTorchClassifier
-from art.classifiers.classifier import ClassifierGradients
-from art.attacks.attack import EvasionAttack
-from art.exceptions import ClassifierError
->>>>>>> pgd_pt
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import \
+    ProjectedGradientDescentTensorflowV2
+
 
 logger = logging.getLogger(__name__)
 
@@ -78,17 +66,11 @@ class ProjectedGradientDescent(EvasionAttack):
         "random_eps"
     ]
 
-<<<<<<< HEAD
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
         self,
         estimator,
-=======
-    def __init__(
-        self,
-        classifier,
->>>>>>> pgd_pt
         norm=np.inf,
         eps=0.3,
         eps_step=0.1,
@@ -101,8 +83,8 @@ class ProjectedGradientDescent(EvasionAttack):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param estimator: An trained estimator.
+        :type estimator: :class:`.BaseEstimator`
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
@@ -124,37 +106,11 @@ class ProjectedGradientDescent(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-<<<<<<< HEAD
         super(ProjectedGradientDescent, self).__init__(estimator=estimator)
-#        if not isinstance(classifier, ClassifierGradients):
-#            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
         if isinstance(self.estimator, PyTorchClassifier):
-            # self._attack = ProjectedGradientDescentPytorch(
-            #     estimator=estimator,
-            #     norm=norm,
-            #     eps=eps,
-            #     eps_step=eps_step,
-            #     max_iter=max_iter,
-            #     targeted=targeted,
-            #     num_random_init=num_random_init,
-            #     batch_size=batch_size,
-            #     random_eps=random_eps
-            # )
-            pass
-
-        elif isinstance(self.estimator, TensorFlowV2Classifier):
-            self._attack = ProjectedGradientDescentTensorflowV2(
-                estimator=estimator,
-=======
-        super(ProjectedGradientDescent, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
-
-        if isinstance(self.classifier, PyTorchClassifier):
             self._attack = ProjectedGradientDescentPytorch(
-                classifier=classifier,
->>>>>>> pgd_pt
+                estimator=estimator,
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
@@ -164,16 +120,23 @@ class ProjectedGradientDescent(EvasionAttack):
                 batch_size=batch_size,
                 random_eps=random_eps
             )
-<<<<<<< HEAD
+
+        elif isinstance(self.estimator, TensorFlowV2Classifier):
+            self._attack = ProjectedGradientDescentTensorflowV2(
+                estimator=estimator,
+                norm=norm,
+                eps=eps,
+                eps_step=eps_step,
+                max_iter=max_iter,
+                targeted=targeted,
+                num_random_init=num_random_init,
+                batch_size=batch_size,
+                random_eps=random_eps
+            )
 
         else:
             self._attack = ProjectedGradientDescentNumpy(
                 estimator=estimator,
-=======
-        else:
-            self._attack = ProjectedGradientDescentNumpy(
-                classifier=classifier,
->>>>>>> pgd_pt
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
