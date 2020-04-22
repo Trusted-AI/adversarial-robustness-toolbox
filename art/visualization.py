@@ -24,22 +24,20 @@ import logging
 import os.path
 
 import numpy as np
+from PIL import Image
 
 from art.config import ART_DATA_PATH
 
 logger = logging.getLogger(__name__)
 
 
-def create_sprite(images):
+def create_sprite(images: np.ndarray) -> np.ndarray:
     """
     Creates a sprite of provided images.
 
     :param images: Images to construct the sprite.
-    :type images: `np.array`
     :return: An image array containing the sprite.
-    :rtype: `np.ndarray`
     """
-
     shape = np.shape(images)
 
     if len(shape) < 3 or len(shape) > 4:
@@ -66,15 +64,13 @@ def create_sprite(images):
     return sprite
 
 
-def convert_to_rgb(images):
+def convert_to_rgb(images: np.ndarray) -> np.ndarray:
     """
     Converts grayscale images to RGB. It changes NxHxWx1 to a NxHxWx3 array, where N is the number of figures,
     H is the high and W the width.
 
     :param images: Grayscale images of shape (NxHxWx1).
-    :type images: `np.ndarray`
     :return: Images in RGB format of shape (NxHxWx3).
-    :rtype: `np.ndarray`
     """
     dims = np.shape(images)
     if not ((len(dims) == 4 and dims[-1] == 1) or len(dims) == 3):
@@ -104,8 +100,6 @@ def save_image(image_array, f_name):
     folder = os.path.split(file_name)[0]
     if not os.path.exists(folder):
         os.makedirs(folder)
-
-    from PIL import Image
 
     image = Image.fromarray(image_array)
     image.save(file_name)

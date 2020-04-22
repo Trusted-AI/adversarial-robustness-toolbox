@@ -25,7 +25,7 @@ class ClassifierError(TypeError):
     Basic exception for errors raised by unexpected classifier types.
     """
 
-    def __init__(self, this_class, class_expected_list, classifier_given):
+    def __init__(self, this_class, class_expected_list, classifier_given) -> None:
         self.this_class = this_class
         self.class_expected_list = class_expected_list
         self.classifier_given = classifier_given
