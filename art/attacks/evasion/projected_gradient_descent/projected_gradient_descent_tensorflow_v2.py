@@ -204,32 +204,63 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
 
         return adv_x
 
-    def _compute_perturbation(self, batch, batch_labels):
+    def _compute_perturbation(self, x, y, mask):
+        """
+        Compute perturbations.
+
+        :param x: Current adversarial examples.
+        :type x: `Tensor`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :type y: `np.ndarray`
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: Perturbations.
+        :rtype: `Tensor`
+        """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient_framework(batch, batch_labels) * (1 - 2 * int(self.targeted))
+        grad = self.estimator.loss_gradient_framework(x, y) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
         if self.norm == np.inf:
-            #grad = grad.sign()
             grad = tf.sign(grad)
         elif self.norm == 1:
-            pass
-            # TODO
-            # ind = tuple(range(1, len(batch.shape)))
-            # grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
+            ind = tuple(range(1, len(x.shape)))
+            grad = grad / (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol)
         elif self.norm == 2:
-            pass
-            # TODO
-            # ind = tuple(range(1, len(batch.shape)))
-            # grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
-        #assert batch.shape == grad.shape
+            ind = tuple(range(1, len(x.shape)))
+            grad = grad / (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
 
-        return grad
+        assert x.shape == grad.shape
 
-    def _apply_perturbation(self, batch, perturbation, eps_step):
+        if mask is None:
+            return grad
+        else:
+            return grad * (mask.astype(ART_NUMPY_DTYPE))
+
+    def _apply_perturbation(self, x, perturbation, eps_step):
+        """
+        Apply perturbation on examples.
+
+        :param x: Current adversarial examples.
+        :type x: `Tensor`
+        :param perturbation: Current perturbations.
+        :type perturbation: `Tensor`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
+
+        :param batch:
+        :param perturbation:
+        :param eps_step:
+        :return:
+        """
         batch = batch + eps_step * perturbation
 
         if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
@@ -273,14 +304,18 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
                 random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             )
 
-            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-                clip_min, clip_max = self.classifier.clip_values
+            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
+            x_adv = tf.convert_to_tensor(x_adv)
         else:
-            x_adv = x.astype(ART_NUMPY_DTYPE)
+            if isinstance(x, np.ndarray):
+                x_adv = tf.convert_to_tensor(x.astype(ART_NUMPY_DTYPE))
+            else:
+                x_adv = x
 
         # Get perturbation
-        perturbation = self._compute_perturbation(x, y)
+        perturbation = self._compute_perturbation(x_adv, y)
 
         # Apply perturbation and clip
         x_adv = self._apply_perturbation(x, perturbation, eps_step)
@@ -343,19 +378,43 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
-        :type norm: `int`
+        :type norm: `int` or `float`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
+        :param targeted: Should the attack target one specific class
+        :type targeted: `bool`
+        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
+                                the original input.
         :type num_random_init: `int`
-        :param batch_size: Batch size
+        :param batch_size: Batch size.
         :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(ProjectedGradientDescentTensorflowV2, self).set_params(**kwargs)
+
+        # Check if order of the norm is acceptable given current implementation
+        if self.norm not in [np.inf, int(1), int(2)]:
+            raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
+
+        if self.eps <= 0:
+            raise ValueError("The perturbation size `eps` has to be positive.")
+
+        if self.eps_step <= 0:
+            raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+
+        if not isinstance(self.targeted, bool):
+            raise ValueError("The flag `targeted` has to be of type bool.")
+
+        if not isinstance(self.num_random_init, (int, np.int)):
+            raise TypeError("The number of random initialisations has to be of type integer")
+
+        if self.num_random_init < 0:
+            raise ValueError("The number of random initialisations `random_init` has to be greater than or equal to 0.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
         if self.eps_step > self.eps:
             raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
