@@ -36,7 +36,6 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -151,9 +150,9 @@ class ProjectedGradientDescentNumpy(FastGradientMethod):
                 targets = y
 
             if mask is not None:
-                # ensure the mask is broadcastable:
+                # Ensure the mask is broadcastable
                 if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
-                    raise ValueError("mask shape must be broadcastable to input shape")
+                    raise ValueError("Mask shape must be broadcastable to input shape.")
 
             adv_x_best = None
             rate_best = None
