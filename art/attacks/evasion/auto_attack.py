@@ -39,6 +39,7 @@ class AutoAttack(EvasionAttack):
     attack_params = EvasionAttack.attack_params + [
         "norm",
         "eps",
+        "eps_step",
         "attacks",
         "targeted",
         "batch_size",
@@ -56,6 +57,8 @@ class AutoAttack(EvasionAttack):
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
         :param attacks: The list of `art.attacks.EvasionAttack` attacks to be used for AutoAttack. If it is `None` the original
                         AutoAttack (PGD, APGD-ce, APGD-dlr, FAB, Square) will be used.
         :type attacks: `[.art.attacks.EvasionAttack]`
@@ -104,6 +107,7 @@ class AutoAttack(EvasionAttack):
         kwargs = {
             "norm": norm,
             "eps": eps,
+            "eps_step": eps_step,
             "attacks": attacks,
             "targeted": targeted,
             "batch_size": batch_size,
