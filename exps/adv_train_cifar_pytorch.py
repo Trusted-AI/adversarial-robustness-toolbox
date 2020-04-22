@@ -134,7 +134,7 @@ def main():
     #pgd_alpha = (args.pgd_alpha / 255.) / std
 
     # trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
-    classifier.fit(x_train, y_train)
+    classifier.fit(x_train, y_train, nb_epochs=15)
 
     best_state_dict = copy.deepcopy(model.state_dict())
 
