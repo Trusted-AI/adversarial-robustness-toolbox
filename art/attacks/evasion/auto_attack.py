@@ -26,9 +26,8 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
-from art.attacks.evasion.fast_adaptive_boundary import FastAdaptiveBoundary
+from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
 from art.utils import get_labels_np_array, check_and_transform_label_format
@@ -47,7 +46,7 @@ class AutoAttack(EvasionAttack):
 
     _estimator_requirements = (BaseEstimator,)
 
-    def __init__(self, estimator, norm=np.inf, eps=0.3, attacks=None, targeted=False, batch_size=32):
+    def __init__(self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, targeted=False, batch_size=32):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
@@ -70,37 +69,34 @@ class AutoAttack(EvasionAttack):
         if attacks is None:
             attacks = list()
             attacks.append(
-                ProjectedGradientDescent(
-                    estimator=estimator, norm=np.inf, eps=0.3, eps_step=0.1, max_iter=2, targeted=False, batch_size=2,
-                )
-            )
-            attacks.append(
                 AutoProjectedGradientDescent(
                     estimator=estimator,
-                    norm=np.inf,
-                    eps=0.3,
-                    eps_step=0.1,
-                    max_iter=3,
-                    targeted=False,
-                    batch_size=2,
+                    norm=norm,
+                    eps=eps,
+                    eps_step=eps_step,
+                    max_iter=100,
+                    targeted=targeted,
+                    batch_size=batch_size,
                     loss_type="cross_entropy",
                 )
             )
             attacks.append(
                 AutoProjectedGradientDescent(
                     estimator=estimator,
-                    norm=np.inf,
-                    eps=0.3,
-                    eps_step=0.1,
-                    max_iter=5,
-                    targeted=False,
-                    batch_size=2,
+                    norm=norm,
+                    eps=eps,
+                    eps_step=eps_step,
+                    max_iter=100,
+                    targeted=targeted,
+                    batch_size=batch_size,
                     loss_type="difference_logits_ratio",
                 )
             )
-            # attacks.append(FastAdaptiveBoundary())
             attacks.append(
-                SquareAttack(estimator=estimator, norm=np.inf, max_iter=100, eps=0.6, p_init=0.8, nb_restarts=100,)
+                DeepFool(estimator=estimator, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size)
+            )
+            attacks.append(
+                SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=1)
             )
 
         kwargs = {
