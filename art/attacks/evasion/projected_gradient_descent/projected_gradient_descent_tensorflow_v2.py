@@ -255,20 +255,16 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         :type perturbation: `Tensor`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
-
-        :param batch:
-        :param perturbation:
-        :param eps_step:
-        :return:
+        :return: Adversarial examples.
+        :rtype: `Tensor`
         """
-        batch = batch + eps_step * perturbation
+        x = x + eps_step * perturbation
 
         if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            #batch = torch.clamp(batch, clip_min, clip_max)
-            batch = tf.clip_by_value(batch, clip_min, clip_max)
+            x = tf.clip_by_value(x, clip_min, clip_max)
 
-        return batch
+        return x
 
     def _compute(self, x, x_init, y, mask, eps, eps_step, random_init):
         """
