@@ -28,7 +28,7 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.attacks import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.utils import get_labels_np_array, check_and_transform_label_format, projection
+from art.utils import get_labels_np_array, check_and_transform_label_format, projection, random_sphere
 
 logger = logging.getLogger(__name__)
 
@@ -200,15 +200,34 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         for i_restart in range(max(1, self.nb_random_init)):
 
+            print('i_restart', i_restart)
+
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
             sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+
+            print('np.sum(sample_is_robust)', np.sum(sample_is_robust))
 
             if np.sum(sample_is_robust) == 0:
                 break
 
             x_robust = x_adv[sample_is_robust]
             y_robust = y[sample_is_robust]
+
+            x_init = x[sample_is_robust]
+
+            n = x_robust.shape[0]
+            m = np.prod(x_robust.shape[1:])
+            random_perturbation = random_sphere(n, m, self.eps, self.norm).reshape(x_robust.shape).astype(ART_NUMPY_DTYPE)
+
+            x_robust = x_robust + random_perturbation
+
+            if self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
+                x_robust = np.clip(x_robust, clip_min, clip_max)
+
+            perturbation = projection(x_robust - x_init, self.eps, self.norm)
+            x_robust = x_init + perturbation
 
             # Compute perturbation with implicit batching
             for batch_id in range(int(np.ceil(x_robust.shape[0] / float(self.batch_size)))):
@@ -218,7 +237,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
                 x_k = x_robust[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
-                x_init = x_robust[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
+                x_init_batch = x_init[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
 
                 y_batch = y_robust[batch_index_1:batch_index_2]
 
@@ -271,8 +290,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                     if k_iter == 0:
                         x_1 = z_k_p_1
-                        perturbation = projection(x_1 - x_init, self.eps, self.norm)
-                        x_1 = x_init + perturbation
+                        perturbation = projection(x_1 - x_init_batch, self.eps, self.norm)
+                        x_1 = x_init_batch + perturbation
 
                         f_0 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k)))
                         f_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_1)))
@@ -283,24 +302,26 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         if f_1 >= f_0:
                             self.f_max = f_1
                             self.x_max = x_1
+                            self.x_max_m_1 = x_init_batch
                             self.count_condition_1 += 1
                         else:
                             self.f_max = f_0
                             self.x_max = x_k.copy()
+                            self.x_max_m_1 = x_init_batch
 
                         # Settings for next iteration k
                         x_k_m_1 = x_k.copy()
                         x_k = x_1
 
                     else:
-                        perturbation = projection(z_k_p_1 - x_init, self.eps, self.norm)
-                        z_k_p_1 = x_init + perturbation
+                        perturbation = projection(z_k_p_1 - x_init_batch, self.eps, self.norm)
+                        z_k_p_1 = x_init_batch + perturbation
 
                         alpha = 0.75
 
                         x_k_p_1 = x_k + alpha * (z_k_p_1 - x_k) + (1 - alpha) * (x_k - x_k_m_1)
-                        perturbation = projection(x_k_p_1 - x_init, self.eps, self.norm)
-                        x_k_p_1 = x_init + perturbation
+                        perturbation = projection(x_k_p_1 - x_init_batch, self.eps, self.norm)
+                        x_k_p_1 = x_init_batch + perturbation
 
                         f_k_p_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k_p_1)))
 
@@ -336,6 +357,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 x_robust[batch_index_1:batch_index_2] = x_k
 
             x_adv[sample_is_robust] = x_robust
+
+            print('APGD-norm:', np.max(np.abs(x_adv - x)))
 
         return x_adv
 
