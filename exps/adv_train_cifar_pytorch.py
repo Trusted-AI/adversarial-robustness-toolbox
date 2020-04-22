@@ -138,6 +138,11 @@ def main():
 
     best_state_dict = copy.deepcopy(model.state_dict())
 
+    #accuracy
+    output = classifier.predict(x_test)
+    nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
+    print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]))
+
     train_time = time.time()
     torch.save(best_state_dict, args.fname + '.pth')
     logger.info('Total time: %.4f', train_time - start_start_time)
