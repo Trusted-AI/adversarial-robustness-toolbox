@@ -231,9 +231,11 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         # Apply norm bound
         if self.norm == np.inf:
             grad = tf.sign(grad)
+
         elif self.norm == 1:
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol)
+
         elif self.norm == 2:
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
@@ -304,6 +306,7 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
             x_adv = tf.convert_to_tensor(x_adv)
+
         else:
             if isinstance(x, np.ndarray):
                 x_adv = tf.convert_to_tensor(x.astype(ART_NUMPY_DTYPE))
@@ -334,39 +337,39 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         """
         Project `values` on the L_p norm ball of size `eps`.
 
-        :param values: Tensor of perturbations to clip.
-        :type values: `tf.Tensor`
+        :param values: Values to clip.
+        :type values: `Tensor`
         :param eps: Maximum norm allowed.
         :type eps: `float`
         :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
         :type norm_p: `int`
         :return: Values of `values` after projection.
-        :rtype: `np.ndarray`
+        :rtype: `Tensor`
         """
         # Pick a small scalar to avoid division by 0
-        #tol = 10e-8
-        #values_tmp = values.reshape((values.shape[0], -1))
+        tol = 10e-8
+        values_tmp = tf.reshape(values, (values.shape[0], -1))
 
         if norm_p == 2:
-            pass
-            # TODO
-            # values_tmp = values_tmp * np.expand_dims(
-            #     np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
-            # )
+            values_tmp = values_tmp * tf.expand_dims(
+                tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=2, axis=1) + tol)), axis=1
+            )
+
         elif norm_p == 1:
-            pass
-            # TODO
-            # values_tmp = values_tmp * np.expand_dims(
-            #     np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1
-            # )
+            values_tmp = values_tmp * tf.expand_dims(
+                tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=1, axis=1) + tol)), axis=1
+            )
+
         elif norm_p == np.inf:
-            #values = torch.clamp(values, -eps, eps)
-            values = tf.clip_by_value(values, -eps, eps)
+            values_tmp = tf.sign(values_tmp) * tf.minimum(tf.math.abs(values_tmp), eps)
+
         else:
             raise NotImplementedError(
-                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
+                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported."
+            )
 
-        # values = values_tmp.reshape(values.shape)
+        values = tf.reshape(values_tmp, values.shape)
+
         return values
 
     def set_params(self, **kwargs):
