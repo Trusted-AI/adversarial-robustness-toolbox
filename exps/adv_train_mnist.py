@@ -37,21 +37,21 @@ trainer.fit(x_train, y_train)
 train_time = time.time()
 print('Time taken(sec): ',train_time-start_start_time)
 
-x_test_robust_pred = np.argmax(classifier.predict(x_test), axis=1)
+x_test_robust_pred = np.argmax(trainer.predict(x_test), axis=1)
 nb_correct_robust_pred = np.sum(x_test_robust_pred == np.argmax(y_test, axis=1))
 
-classifier.save('mnist-robust.h5','./exps/')
+# classifier.save('mnist-robust.h5','./exps/')
 print("Original test data (first 100 images):")
 print("accuracy: {}".format(nb_correct_robust_pred/x_test.shape[0]))
 
 acc = []
 for eps in [0.01, 0.02, 0.03, 0.04, 0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]:
     eps_step = (1.5 * eps) / 40
-    attack_test = ProjectedGradientDescent(classifier=classifier, norm=np.inf, eps=eps,
+    attack_test = ProjectedGradientDescent(classifier=trainer.classifier, norm=np.inf, eps=eps,
                                            eps_step=eps_step, max_iter=40, targeted=False,
                                            num_random_init=5, batch_size=32)
     x_test_attack = attack_test.generate(x_test)
-    x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
+    x_test_attack_pred = np.argmax(trainer.predict(x_test_attack), axis=1)
     nb_correct_attack_pred = np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
     acc.append(nb_correct_attack_pred / x_test.shape[0])
 
