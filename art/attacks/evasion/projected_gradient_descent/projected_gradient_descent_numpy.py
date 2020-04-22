@@ -67,7 +67,7 @@ class ProjectedGradientDescentNumpy(FastGradientMethod):
         random_eps=False,
     ):
         """
-        Create a :class:`.ProjectedGradientDescent` instance.
+        Create a :class:`.ProjectedGradientDescentNumpy` instance.
 
         :param estimator: An trained estimator.
         :type estimator: :class:`.BaseEstimator`
