@@ -134,12 +134,13 @@ def main():
     #pgd_alpha = (args.pgd_alpha / 255.) / std
 
     # trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
-    classifier.fit(x_train, y_train, nb_epochs=15)
+    classifier.fit(x_train, y_train, nb_epochs=3)
 
     best_state_dict = copy.deepcopy(model.state_dict())
 
     #accuracy
     output = classifier.predict(x_test)
+    print(output)
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]))
 
