@@ -109,7 +109,7 @@ class BaseEstimator(ABC):
 
     @abstractmethod
     def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
-        r"""
+        """
         Perform prediction of the estimator for input `x`.
 
         :param x: Samples.
