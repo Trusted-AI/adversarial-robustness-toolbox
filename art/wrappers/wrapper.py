@@ -19,7 +19,10 @@
 Wrapper class for any classifier. Subclass of the ClassifierWrapper can override the behavior of key functions, such as
 loss_gradient, to facilitate new attacks.
 """
-from art.classifiers.classifier import Classifier
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from art.classifiers.classifier import Classifier
 
 
 class ClassifierWrapper:
@@ -29,7 +32,7 @@ class ClassifierWrapper:
 
     attack_params = ["classifier"]
 
-    def __init__(self, classifier: Classifier) -> None:
+    def __init__(self, classifier: "Classifier") -> None:
         """
         Initialize a :class:`.ClassifierWrapper` object.
 

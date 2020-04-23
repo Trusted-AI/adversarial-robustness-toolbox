@@ -23,17 +23,20 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from functools import reduce
 import logging
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 import numpy.linalg as la
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
 
-from art.classifiers.classifier import Classifier, ClassifierGradients
 from art.config import ART_NUMPY_DTYPE
-from art.attacks import EvasionAttack, FastGradientMethod, HopSkipJump
+from art.attacks import FastGradientMethod, HopSkipJump
 from art.utils import random_sphere
+
+if TYPE_CHECKING:
+    from art.attacks import EvasionAttack
+    from art.classifiers.classifier import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +58,7 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
 
 
 def get_crafter(
-    classifier: Classifier, attack: str, params: Optional[Dict[str, Any]] = None
+    classifier: "Classifier", attack: str, params: Optional[Dict[str, Any]] = None
 ) -> EvasionAttack:
     """
     Create an attack instance to craft adversarial samples.
@@ -160,7 +163,7 @@ def empirical_robustness(
 
 
 def loss_sensitivity(
-    classifier: ClassifierGradients, x: np.ndarray, y: np.ndarray
+    classifier: "ClassifierGradients", x: np.ndarray, y: np.ndarray
 ) -> np.ndarray:
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`.

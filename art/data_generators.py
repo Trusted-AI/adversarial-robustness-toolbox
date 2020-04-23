@@ -26,7 +26,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import abc
 import inspect
 import logging
-from typing import Optional
+from typing import Any, Dict, Generator, Optional, Tuple, Union, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    import keras
+    import mxnet
+    import tensorflow as tf
+    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +50,9 @@ class DataGenerator(abc.ABC):
         :param batch_size: Size of the minibatches.
         """
         if size is not None and (not isinstance(size, int) or size < 1):
-            raise ValueError("The total size of the dataset must be an integer greater than zero.")
+            raise ValueError(
+                "The total size of the dataset must be an integer greater than zero."
+            )
         self._size = size
 
         if not isinstance(batch_size, int) or batch_size < 1:
@@ -54,7 +62,7 @@ class DataGenerator(abc.ABC):
         if size is not None and batch_size > size:
             raise ValueError("The batch size must be smaller than the dataset size.")
 
-        self._iterator = None
+        self._iterator: Optional[Any] = None
 
     @abc.abstractmethod
     def get_batch(self) -> tuple:
@@ -94,7 +102,12 @@ class KerasDataGenerator(DataGenerator):
     `keras.utils.Sequence` or Keras-specific data generators (`keras.preprocessing.image.ImageDataGenerator`).
     """
 
-    def __init__(self, iterator, size: Optional[int], batch_size: int) -> None:
+    def __init__(
+        self,
+        iterator: Union["keras.utils.Sequence", "tf.keras.utils.Sequence", Generator],
+        size: Optional[int],
+        batch_size: int,
+    ) -> None:
         """
         Create a Keras data generator wrapper instance.
 
@@ -128,7 +141,9 @@ class PyTorchDataGenerator(DataGenerator):
     Wrapper class on top of the PyTorch native data loader :class:`torch.utils.data.DataLoader`.
     """
 
-    def __init__(self, iterator: "torch.utils.data.DataLoader", size: int, batch_size: int) -> None:
+    def __init__(
+        self, iterator: "torch.utils.data.DataLoader", size: int, batch_size: int
+    ) -> None:
         """
         Create a data generator wrapper on top of a PyTorch :class:`DataLoader`.
 
@@ -140,9 +155,12 @@ class PyTorchDataGenerator(DataGenerator):
 
         super(PyTorchDataGenerator, self).__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, DataLoader):
-            raise TypeError("Expected instance of PyTorch `DataLoader, received %s instead.`" % str(type(iterator)))
+            raise TypeError(
+                "Expected instance of PyTorch `DataLoader, received %s instead.`"
+                % str(type(iterator))
+            )
 
-        self._iterator = iterator
+        self._iterator: DataLoader = iterator
 
     def get_batch(self) -> tuple:
         """
@@ -166,7 +184,9 @@ class MXDataGenerator(DataGenerator):
     Wrapper class on top of the MXNet/Gluon native data loader :class:`mxnet.gluon.data.DataLoader`.
     """
 
-    def __init__(self, iterator, size: int, batch_size: int) -> None:
+    def __init__(
+        self, iterator: "mxnet.gluon.data.DataLoader", size: int, batch_size: int
+    ) -> None:
         """
         Create a data generator wrapper on top of an MXNet :class:`DataLoader`.
 
@@ -175,11 +195,14 @@ class MXDataGenerator(DataGenerator):
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
         """
-        from mxnet.gluon.data import DataLoader
+        import mxnet
 
         super(MXDataGenerator, self).__init__(size=size, batch_size=batch_size)
-        if not isinstance(iterator, DataLoader):
-            raise TypeError("Expected instance of Gluon `DataLoader, received %s instead.`" % str(type(iterator)))
+        if not isinstance(iterator, mxnet.gluon.data.DataLoader):
+            raise TypeError(
+                "Expected instance of Gluon `DataLoader, received %s instead.`"
+                % str(type(iterator))
+            )
 
         self._iterator = iterator
 
@@ -204,19 +227,24 @@ class TensorFlowDataGenerator(DataGenerator):
     Wrapper class on top of the TensorFlow native iterators :class:`tf.data.Iterator`.
     """
 
-    def __init__(self, sess, iterator, iterator_type: str, iterator_arg, size: int, batch_size: int) -> None:
+    def __init__(
+        self,
+        sess: "tf.Session",
+        iterator: "tf.data.Iterator",
+        iterator_type: str,
+        iterator_arg: Union[Dict, Tuple, "tf.Operation"],
+        size: int,
+        batch_size: int,
+    ) -> None:
         """
         Create a data generator wrapper for TensorFlow. Supported iterators: initializable, reinitializable, feedable.
 
         :param sess: TensorFlow session.
-        :type sess: `tf.Session`
         :param iterator: Data iterator from TensorFlow.
-        :type iterator: `tensorflow.python.data.ops.iterator_ops.Iterator`
         :param iterator_type: Type of the iterator. Supported types: `initializable`, `reinitializable`, `feedable`.
-        :type iterator_type: `string`
         :param iterator_arg: Argument to initialize the iterator. It is either a feed_dict used for the initializable
         and feedable mode, or an init_op used for the reinitializable mode.
-        :type iterator_arg: `dict`, `tuple` or `tensorflow.python.framework.ops.Operation`
+        :type iterator_arg: Arguments of the iterator.
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
         :raises `TypeError`, `ValueError`:
@@ -235,13 +263,20 @@ class TensorFlowDataGenerator(DataGenerator):
 
         if iterator_type == "initializable":
             if not isinstance(iterator_arg, dict):
-                raise TypeError("Need to pass a dictionary for iterator type %s" % iterator_type)
+                raise TypeError(
+                    "Need to pass a dictionary for iterator type %s" % iterator_type
+                )
         elif iterator_type == "reinitializable":
             if not isinstance(iterator_arg, tf.Operation):
-                raise TypeError("Need to pass a TensorFlow operation for iterator type %s" % iterator_type)
+                raise TypeError(
+                    "Need to pass a TensorFlow operation for iterator type %s"
+                    % iterator_type
+                )
         elif iterator_type == "feedable":
             if not isinstance(iterator_arg, tuple):
-                raise TypeError("Need to pass a tuple for iterator type %s" % iterator_type)
+                raise TypeError(
+                    "Need to pass a tuple for iterator type %s" % iterator_type
+                )
         else:
             raise TypeError("Iterator type %s not supported" % iterator_type)
 
@@ -281,12 +316,11 @@ class TensorFlowV2DataGenerator(DataGenerator):
     Wrapper class on top of the TensorFlow v2 native iterators :class:`tf.data.Iterator`.
     """
 
-    def __init__(self, iterator, size: int, batch_size: int) -> None:
+    def __init__(self, iterator: "tf.data.Dataset", size: int, batch_size: int) -> None:
         """
         Create a data generator wrapper for TensorFlow. Supported iterators: initializable, reinitializable, feedable.
 
         :param iterator: TensorFlow Dataset.
-        :type iterator: `tensorflow.data.Dataset`
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
         :raises `TypeError`, `ValueError`:
@@ -294,7 +328,9 @@ class TensorFlowV2DataGenerator(DataGenerator):
         # pylint: disable=E0401
         import tensorflow as tf
 
-        super(TensorFlowV2DataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super(TensorFlowV2DataGenerator, self).__init__(
+            size=size, batch_size=batch_size
+        )
         self._iterator = iterator
         self._iterator_iter = iter(iterator)
 

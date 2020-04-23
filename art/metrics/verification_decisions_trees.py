@@ -21,11 +21,12 @@ This module implements robustness verifications for decision-tree-based models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.classifiers.classifier import ClassifierDecisionTree
+if TYPE_CHECKING:
+    from art.classifiers.classifier import ClassifierDecisionTree
 
 logger = logging.getLogger(__name__)
 
@@ -165,7 +166,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
     | Paper link: https://arxiv.org/abs/1906.03849
     """
 
-    def __init__(self, classifier: ClassifierDecisionTree) -> None:
+    def __init__(self, classifier: "ClassifierDecisionTree") -> None:
         """
         Create robustness verification for a decision-tree-based classifier.
 

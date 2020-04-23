@@ -26,7 +26,7 @@ import os
 import shutil
 import sys
 import tarfile
-from typing import Callable, List, Optional, Tuple, Union
+from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 import zipfile
 
 import numpy as np
@@ -35,7 +35,9 @@ import six
 from sklearn.metrics import accuracy_score, f1_score
 
 from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
-from art.classifiers.classifier import Classifier
+
+if TYPE_CHECKING:
+    from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -226,7 +228,7 @@ def random_targets(labels: np.ndarray, nb_classes: int) -> np.ndarray:
     return to_categorical(result, nb_classes)
 
 
-def least_likely_class(x: np.ndarray, classifier: Classifier) -> np.ndarray:
+def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
     """
     Compute the least likely class predictions for sample `x`. This strategy for choosing attack targets was used in
     (Kurakin et al., 2016).
