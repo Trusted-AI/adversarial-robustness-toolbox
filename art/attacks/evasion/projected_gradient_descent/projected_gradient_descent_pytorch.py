@@ -201,6 +201,38 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
 
         return adv_x_best
 
+    def _generate_batch(self, x, targets, mask):
+        """
+        Generate a batch of adversarial samples and return them in an array.
+
+        :param x: An array with the original inputs.
+        :type x: `np.ndarray`
+        :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+        :type targets: `np.ndarray`
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: Adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        inputs = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self.estimator.get_device)
+        targets = torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)).to(self.estimator.get_device)
+        adv_x = inputs
+
+        for i_max_iter in range(self.max_iter):
+            adv_x = self._compute(
+                adv_x,
+                inputs,
+                targets,
+                mask,
+                self.eps,
+                self.eps_step,
+                self.num_random_init > 0 and i_max_iter == 0,
+            )
+
+        return adv_x.cpu().detach().numpy()
+
 
 
 
