@@ -131,10 +131,19 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :type y: `np.ndarray`
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        if self.random_eps:
+            ratio = self.eps_step / self.eps
+            self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
+            self.eps_step = ratio * self.eps
+
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
@@ -142,80 +151,22 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
-            targets = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
+            targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
         else:
             targets = y
 
-        inputs = torch.from_numpy(x).to(self.classifier._device)
-        targets = torch.from_numpy(targets.astype(float)).to(self.classifier._device)
+        mask = kwargs.get("mask")
+        if mask is not None:
+            # Ensure the mask is broadcastable
+            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
+                raise ValueError("Mask shape must be broadcastable to input shape.")
 
-        # TODO
-        # if self.random_eps:
-        #     ratio = self.eps_step / self.eps
-        #     self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
-        #     self.eps_step = ratio * self.eps
-
-        # for _ in range(max(1, self.num_random_init)):
-        #     adv_x = x.astype(ART_NUMPY_DTYPE)
-
-        adv_x = inputs
-
-        for _ in range(self.max_iter):
-
-            adv_x = self._compute(
-                adv_x,
-                inputs,
-                targets,
-                self.eps,
-                self.eps_step,
-                False
-                # self.num_random_init > 0 and i_max_iter == 0,
-            )
-
-            # TODO
-            # if self.num_random_init > 1:
-            #     rate = 100 * compute_success(
-            #         self.classifier, x, targets, adv_x, self.targeted, batch_size=self.batch_size
-            #     )
-            #     if rate_best is None or rate > rate_best or adv_x_best is None:
-            #         rate_best = rate
-            #         adv_x_best = adv_x
-            # else:
-            #     adv_x_best = adv_x
+        adv_x_best = None
+        rate_best = None
 
 
-        # logger.info(
-        #     "Success rate of attack: %.2f%%",
-        #     rate_best
-        #     if rate_best is not None
-        #     else 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
-        # )
 
-        return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation(self, batch, batch_labels):
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-
-        # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.classifier.loss_gradient_framework(batch, batch_labels) * (1 - 2 * int(self.targeted))
-
-        # Apply norm bound
-        if self.norm == np.inf:
-            grad = grad.sign()
-        elif self.norm == 1:
-            pass
-            # TODO
-            # ind = tuple(range(1, len(batch.shape)))
-            # grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
-        elif self.norm == 2:
-            pass
-            # TODO
-            # ind = tuple(range(1, len(batch.shape)))
-            # grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
-        #assert batch.shape == grad.shape
-
-        return grad
 
     def _apply_perturbation(self, batch, perturbation, eps_step):
         batch = batch + eps_step * perturbation
