@@ -5,40 +5,16 @@ import math
 import random
 import sys
 import time
-
 sys.path.append('/home/ambrish/github/adversarial-robustness-toolbox')
+
 from art.classifiers import PyTorchClassifier
 from art.defences.trainer import AdversarialTrainerFBF
 from art.utils import load_cifar10
-import apex.amp as amp
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from exps.preact_resnet import PreActResNet18
-
-
-logger = logging.getLogger(__name__)
-logging.basicConfig(
-    format='[%(asctime)s] - %(message)s',
-    datefmt='%Y/%m/%d %H:%M:%S',
-    level=logging.DEBUG)
-
-
-cifar10_mean = (0.4914, 0.4822, 0.4465)
-cifar10_std = (0.2471, 0.2435, 0.2616)
-mu = torch.tensor(cifar10_mean).view(3,1,1).cuda()
-std = torch.tensor(cifar10_std).view(3,1,1).cuda()
-upper_limit = ((1 - mu)/ std)
-lower_limit = ((0 - mu)/ std)
-
-
-import torch
-
-
-
-
 
 def clamp(X, lower_limit, upper_limit):
     return torch.max(torch.min(X, upper_limit), lower_limit)
@@ -55,8 +31,6 @@ def initialize_weights(module):
         module.bias.data.zero_()
     elif isinstance(module, nn.Linear):
         module.bias.data.zero_()
-
-
 
 
 def get_args():
@@ -81,7 +55,6 @@ def get_args():
 
 def main():
     args = get_args()
-    logger.info(args)
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
@@ -91,21 +64,10 @@ def main():
 
     (x_train, y_train), (x_test, y_test), min_pixel_value, max_pixel_value = load_cifar10()
 
-    x_train[:, :, :, 0] -= cifar10_mean[0]
-    x_train[:, :, :, 1] -= cifar10_mean[1]
-    x_train[:, :, :, 2] -= cifar10_mean[2]
-
-    x_train[:, :, :, 0] /= cifar10_std[0]
-    x_train[:, :, :, 1] /= cifar10_std[1]
-    x_train[:, :, :, 2] /= cifar10_std[2]
-
-    x_test[:, :, :, 0] -= cifar10_mean[0]
-    x_test[:, :, :, 1] -= cifar10_mean[1]
-    x_test[:, :, :, 2] -= cifar10_mean[2]
-
-    x_test[:, :, :, 0] /= cifar10_std[0]
-    x_test[:, :, :, 1] /= cifar10_std[1]
-    x_test[:, :, :, 2] /= cifar10_std[2]
+    cifar_mu = np.mean(x_train)
+    cifar_std = np.std(x_train)
+    # upper_limit = ((1.0 - mu) / std)
+    # lower_limit = ((0.0 - mu) / std)
 
     x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
     x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
@@ -124,15 +86,15 @@ def main():
 
     classifier = PyTorchClassifier(
         model=model,
-        clip_values=(-1.9887, 2.1158),
+        clip_values=(0.0,1.0),
+        preprocessing=(cifar_mu,cifar_std),
         loss=criterion,
         optimizer=opt,
         input_shape=(32,32,3),
         nb_classes=10,
     )
 
-    epsilon = (args.epsilon / 255.) / 0.24
-    #pgd_alpha = (args.pgd_alpha / 255.) / std
+    epsilon = (args.epsilon / 255.)
 
     # trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
     classifier.fit(x_train, y_train, nb_epochs=3)
@@ -147,7 +109,7 @@ def main():
 
     train_time = time.time()
     torch.save(best_state_dict, args.fname + '.pth')
-    logger.info('Total time: %.4f', train_time - start_start_time)
+
 
 
 if __name__ == "__main__":
