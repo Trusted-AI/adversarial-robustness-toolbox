@@ -113,7 +113,7 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
             "batch_size": batch_size,
             "random_eps": random_eps
         }
-        ProjectedGradientDescentTensorflowV2.set_params(**kwargs)
+        ProjectedGradientDescentTensorflowV2.set_params(self, **kwargs)
 
         if self.random_eps:
             lower, upper = 0, eps
