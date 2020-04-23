@@ -359,45 +359,46 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
 
 
 
-
     @staticmethod
     def _projection(values, eps, norm_p):
         """
         Project `values` on the L_p norm ball of size `eps`.
 
-        :param values: Tensor of perturbations to clip.
-        :type values: `tf.Tensor`
+        :param values: Values to clip.
+        :type values: `Tensor`
         :param eps: Maximum norm allowed.
         :type eps: `float`
         :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
         :type norm_p: `int`
         :return: Values of `values` after projection.
-        :rtype: `np.ndarray`
+        :rtype: `Tensor`
         """
         # Pick a small scalar to avoid division by 0
-        #tol = 10e-8
-        #values_tmp = values.reshape((values.shape[0], -1))
+        tol = 10e-8
+        values_tmp = values.reshape(values.shape[0], -1)
 
         if norm_p == 2:
-            pass
-            # TODO
-            # values_tmp = values_tmp * np.expand_dims(
-            #     np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
-            # )
+            values_tmp = values_tmp * torch.min(
+                torch.FloatTensor([1.0]), eps / (torch.norm(values_tmp, p=2, dim=1) + tol)
+            ).unsqueeze_(-1)
+
         elif norm_p == 1:
-            pass
-            # TODO
-            # values_tmp = values_tmp * np.expand_dims(
-            #     np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1
-            # )
+            values_tmp = values_tmp * torch.min(
+                torch.FloatTensor([1.0]), eps / (torch.norm(values_tmp, p=1, dim=1) + tol)
+            ).unsqueeze_(-1)
+
         elif norm_p == np.inf:
-            values = torch.clamp(values, -eps, eps)
+            values_tmp = values_tmp.sign() * torch.min(values_tmp.abs(), torch.FloatTensor([eps]))
+
         else:
             raise NotImplementedError(
-                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
+                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported."
+            )
 
-        # values = values_tmp.reshape(values.shape)
+        values = values_tmp.reshape(values.shape)
+
         return values
+
 
     def set_params(self, **kwargs):
         """
