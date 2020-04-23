@@ -66,6 +66,7 @@ def main():
 
     cifar_mu = np.mean(x_train)
     cifar_std = np.std(x_train)
+    print(cifar_mu,cifar_std)
     # upper_limit = ((1.0 - mu) / std)
     # lower_limit = ((0.0 - mu) / std)
 
