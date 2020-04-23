@@ -16,7 +16,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from exps.preact_resnet import PreActResNet18
+from .preact_resnet import PreActResNet18
 
 
 logger = logging.getLogger(__name__)
@@ -32,8 +32,7 @@ mu = torch.tensor(cifar10_mean).view(3,1,1).cuda()
 std = torch.tensor(cifar10_std).view(3,1,1).cuda()
 upper_limit = ((1 - mu)/ std)
 lower_limit = ((0 - mu)/ std)
-print(upper_limit, lower_limit)
-print(upper_limit.size(), lower_limit.size())
+
 
 import torch
 
