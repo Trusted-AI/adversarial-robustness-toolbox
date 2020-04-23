@@ -166,41 +166,69 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
 
         adv_x_best = None
         rate_best = None
-
         for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
-            for i_max_iter in range(self.max_iter):
-                adv_x = self._compute(
-                    adv_x,
-                    x,
-                    targets,
-                    mask,
-                    self.eps,
-                    self.eps_step,
-                    self.num_random_init > 0 and i_max_iter == 0,
+            # Compute perturbation with implicit batching
+            for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
+                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+                batch = x[batch_index_1:batch_index_2]
+                batch_labels = targets[batch_index_1:batch_index_2]
+
+                mask_batch = mask
+                if mask is not None:
+                    # Here we need to make a distinction: if the masks are different for each input, we need to index
+                    # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+                    if len(mask.shape) == len(x.shape):
+                        mask_batch = mask[batch_index_1:batch_index_2]
+
+                adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
+
+            if self.num_random_init > 1:
+                rate = 100 * compute_success(
+                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size
                 )
+                if rate_best is None or rate > rate_best or adv_x_best is None:
+                    rate_best = rate
+                    adv_x_best = adv_x
+            else:
+                adv_x_best = adv_x
 
-            # TODO
-            # if self.num_random_init > 1:
-            #     rate = 100 * compute_success(
-            #         self.classifier, x, targets, adv_x, self.targeted, batch_size=self.batch_size
-            #     )
-            #     if rate_best is None or rate > rate_best or adv_x_best is None:
-            #         rate_best = rate
-            #         adv_x_best = adv_x
-            # else:
-            #     adv_x_best = adv_x
+        logger.info(
+            "Success rate of attack: %.2f%%",
+            rate_best
+            if rate_best is not None
+            else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+        )
 
+        return adv_x_best
 
-        # logger.info(
-        #     "Success rate of attack: %.2f%%",
-        #     rate_best
-        #     if rate_best is not None
-        #     else 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
-        # )
-        #mymodel = tf.keras.Model(inputs=inputs, outputs=adv_x)
-        #z = mymodel(x)
+    def _generate_batch(self, x, targets, mask):
+        """
+        Generate a batch of adversarial samples and return them in an array.
+
+        :param x: An array with the original inputs.
+        :type x: `np.ndarray`
+        :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+        :type targets: `np.ndarray`
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: Adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        adv_x = x.astype(ART_NUMPY_DTYPE)
+        for i_max_iter in range(self.max_iter):
+            adv_x = self._compute(
+                adv_x,
+                x.astype(ART_NUMPY_DTYPE),
+                targets,
+                mask,
+                self.eps,
+                self.eps_step,
+                self.num_random_init > 0 and i_max_iter == 0,
+            )
 
         return adv_x
 
@@ -314,21 +342,16 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
                 x_adv = x
 
         # Get perturbation
-        perturbation = self._compute_perturbation(x_adv, y)
+        perturbation = self._compute_perturbation(x_adv, y, mask)
 
         # Apply perturbation and clip
-        x_adv = self._apply_perturbation(x, perturbation, eps_step)
+        x_adv = self._apply_perturbation(x_adv, perturbation, eps_step)
 
         # Do projection
         perturbation = self._projection(x_adv - x_init, eps, self.norm)
 
-
-#        plus = lambda a, b: tf.add(a, b)
-
-#        x_adv = tf.keras.layers.Lambda(plus)((x_init, perturbation))
-
-        #x_adv = perturbation + x_init
-        x_adv = tf.add(x_init, perturbation)
+        # Recompute x_adv
+        x_adv = tf.add(perturbation, x_init)
 
         return x_adv
 
@@ -384,6 +407,8 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         :type eps_step: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
                                 the original input.
         :type num_random_init: `int`
