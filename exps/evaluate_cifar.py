@@ -87,7 +87,7 @@ class Batches():
     def __iter__(self):
         if self.set_random_choices:
             self.dataset.set_random_choices()
-        return ({'input': x.to(device).float(), 'target': y.to(device).long()} for (x,y) in self.dataloader)
+        return ({'input': x.to('cuda').float(), 'target': y.to('cuda').long()} for (x,y) in self.dataloader)
 
     def __len__(self):
         return len(self.dataloader)
