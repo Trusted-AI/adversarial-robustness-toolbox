@@ -33,7 +33,6 @@ from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, random_sphere
 
@@ -139,8 +138,6 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        import tensorflow as tf
-
         if self.random_eps:
             ratio = self.eps_step / self.eps
             self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
