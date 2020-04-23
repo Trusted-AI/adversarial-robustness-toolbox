@@ -518,25 +518,42 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return activations
 
-    def custom_gradient(self, nn_function, vars):
+    def custom_gradient(self, nn_function, tensors, input_values):
         """
         Returns the gradient of the nn_function with respect to vars
 
         :param nn_function: an intermediate tensor representation of the gradient function
         :type nn_function: a Keras tensor
-        :param vars: the variables to differentiate
-        :type vars: `list`
+        :param tensors: the variables to differentiate
+        :type tensors: `list`
         :return: the gradient of the function w.r.t vars
         :rtype: `np.ndarray`
         """
         import keras.backend as k
+        # TODO: ensure the right type
+        # if not k.is_keras_tensor(nn_function):
+        #     raise TypeError("function must be a Keras tensor")
+        # if not all(k.is_keras_tensor(v) for v in tensors):
+        #     raise TypeError("variables must be Keras tensors")
 
-        if not k.is_keras_tensor(nn_function):
-            raise TypeError("function must be a Keras tensor")
-        if not all(k.is_keras_tensor(v) for v in vars):
-            raise TypeError("variables must be Keras tensors")
+        # loss_output = k.function([tensors], [nn_function])
+        # print(loss_output([input_values]))
+        grads = k.gradients(nn_function, tensors)[0]
+        # print("grad func: " + str(grads))
+        # TODO: this only real works with tensors = model.input
+        outputs = k.function([tensors], [grads])
+        # print("tensors shape: " + str(tensors))
+        # print("input values shape: " + str(input_values.shape))
+        return outputs([input_values])
 
-        return k.eval(k.gradients(nn_function, vars))
+    def normalize_tensor(self, tensor):
+        """
+        Normalize an intermediate tensor
+        :param tensor:
+        :return:
+        """
+        import keras.backend as k
+        return k.l2_normalize(tensor)
 
     def get_input_layer(self):
         return self._input
