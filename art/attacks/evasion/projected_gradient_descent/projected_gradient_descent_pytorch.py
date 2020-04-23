@@ -233,6 +233,48 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
 
         return adv_x.cpu().detach().numpy()
 
+    def _compute_perturbation(self, x, y, mask):
+        """
+        Compute perturbations.
+
+        :param x: Current adversarial examples.
+        :type x: `Tensor`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :type y: `Tensor`
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: Perturbations.
+        :rtype: `Tensor`
+        """
+        # Pick a small scalar to avoid division by 0
+        tol = 10e-8
+
+        # Get gradient wrt loss; invert it if attack is targeted
+        grad = self.estimator.loss_gradient_framework(x, y) * (1 - 2 * int(self.targeted))
+
+        # Apply norm bound
+        if self.norm == np.inf:
+            grad = grad.sign()
+
+        elif self.norm == 1:
+            ind = tuple(range(1, len(x.shape)))
+            grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)
+
+        elif self.norm == 2:
+            ind = tuple(range(1, len(x.shape)))
+            grad = grad / (torch.sqrt(torch.sum(grad * grad, axis=ind, keepdims=True)) + tol)
+
+        assert x.shape == grad.shape
+
+        if mask is None:
+            return grad
+        else:
+            return grad * (mask.astype(ART_NUMPY_DTYPE))
 
 
 
