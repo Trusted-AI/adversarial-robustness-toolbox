@@ -122,6 +122,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             self._reduce_labels = False
 
+    @property
+    def get_device(self):
+        """
+        Get current used device.
+
+        :return: Current used device.
+        :rtype: `torch.device`
+        """
+        return self._device
+
     def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
