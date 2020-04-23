@@ -173,6 +173,8 @@ class ProjectedGradientDescent(EvasionAttack):
         :type eps_step: `float`
         :param targeted: Should the attack target one specific class
         :type targeted: `bool`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
                                 the original input.
         :type num_random_init: `int`

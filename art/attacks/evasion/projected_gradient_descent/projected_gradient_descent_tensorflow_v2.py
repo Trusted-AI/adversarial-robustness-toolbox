@@ -163,6 +163,7 @@ class ProjectedGradientDescentTensorflowV2(EvasionAttack):
 
         adv_x_best = None
         rate_best = None
+
         for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
