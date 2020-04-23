@@ -108,7 +108,7 @@ class ProjectedGradientDescent(EvasionAttack):
         super(ProjectedGradientDescent, self).__init__(estimator=estimator)
 
         if isinstance(self.estimator, PyTorchClassifier):
-            self._attack = ProjectedGradientDescentNumpy(
+            self._attack = ProjectedGradientDescentPytorch(
                 estimator=estimator,
                 norm=norm,
                 eps=eps,
