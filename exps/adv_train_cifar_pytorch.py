@@ -16,7 +16,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .preact_resnet import PreActResNet18
+from exps.preact_resnet import PreActResNet18
 
 
 logger = logging.getLogger(__name__)

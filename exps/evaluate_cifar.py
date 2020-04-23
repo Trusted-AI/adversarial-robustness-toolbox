@@ -12,7 +12,7 @@ import torchvision
 import torch
 import torchvision.transforms as transforms
 
-from .preact_resnet import PreActResNet18
+from exps.preact_resnet import PreActResNet18
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
