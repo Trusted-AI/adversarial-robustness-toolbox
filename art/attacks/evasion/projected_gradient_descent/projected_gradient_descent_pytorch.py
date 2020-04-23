@@ -32,10 +32,9 @@ import torch
 from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
-from art.exceptions import ClassifierError
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, random_sphere
 
 logger = logging.getLogger(__name__)
 
@@ -62,9 +61,11 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
         "random_eps"
     ]
 
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin)
+
     def __init__(
         self,
-        classifier,
+        estimator,
         norm=np.inf,
         eps=0.3,
         eps_step=0.1,
@@ -75,10 +76,10 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
         random_eps=False
     ):
         """
-        Create a :class:`.ProjectedGradientDescentTensorFlow` instance.
+        Create a :class:`.ProjectedGradientDescentPytorch` instance.
 
-        :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param estimator: An trained estimator.
+        :type estimator: :class:`.BaseEstimator`
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
@@ -100,9 +101,7 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(ProjectedGradientDescentPytorch, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
+        super(ProjectedGradientDescentPytorch, self).__init__(estimator)
 
         kwargs = {
             "norm": norm,
@@ -114,13 +113,12 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
             "batch_size": batch_size,
             "random_eps": random_eps
         }
-        self.set_params(**kwargs)
+        ProjectedGradientDescentPytorch.set_params(self, **kwargs)
 
-        # TODO
-        # if self.random_eps:
-        #     lower, upper = 0, eps
-        #     mu, sigma = 0, (eps / 2)
-        #     self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+        if self.random_eps:
+            lower, upper = 0, eps
+            mu, sigma = 0, (eps / 2)
+            self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
     def generate(self, x, y=None, **kwargs):
         """
