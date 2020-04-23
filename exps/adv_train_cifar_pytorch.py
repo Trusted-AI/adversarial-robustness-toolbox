@@ -116,7 +116,7 @@ def main():
 
     opt = torch.optim.SGD(model.parameters(), lr=args.lr_max, momentum=0.9, weight_decay=5e-4)
 
-    model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
+    # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
 
     criterion = nn.CrossEntropyLoss()
 
@@ -130,11 +130,12 @@ def main():
         input_shape=(32,32,3),
         nb_classes=10,
     )
+
     epsilon = (args.epsilon / 255.) / 0.24
     #pgd_alpha = (args.pgd_alpha / 255.) / std
 
     # trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
-    # classifier.fit(x_train, y_train, nb_epochs=1)
+    classifier.fit(x_train, y_train, nb_epochs=3)
 
     best_state_dict = copy.deepcopy(model.state_dict())
 
