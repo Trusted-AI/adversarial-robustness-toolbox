@@ -91,6 +91,7 @@ def main():
     start_start_time = time.time()
 
     (x_train, y_train), (x_test, y_test), min_pixel_value, max_pixel_value = load_cifar10()
+
     x_train[:, :, :, 0] -= cifar10_mean[0]
     x_train[:, :, :, 1] -= cifar10_mean[1]
     x_train[:, :, :, 2] -= cifar10_mean[2]
@@ -107,8 +108,9 @@ def main():
     x_test[:, :, :, 1] /= cifar10_std[1]
     x_test[:, :, :, 2] /= cifar10_std[2]
 
-    x_train = x_train.transpose(0, 3, 1, 2)
-    x_test = x_test.transpose(0, 3, 1, 2)
+    x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
+    x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
+
 
     model = PreActResNet18().cuda()
     model.apply(initialize_weights)
