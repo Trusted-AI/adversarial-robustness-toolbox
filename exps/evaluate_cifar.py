@@ -125,9 +125,9 @@ def main():
          transforms.ToTensor(),
          transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
 
-    trainset = torchvision.datasets.CIFAR10(root='./../cifar-data/', train=True,
+    testset = torchvision.datasets.CIFAR10(root='./../cifar-data/', train=False,
                                             download=True, transform=transform)
-    batches = Batches(trainset, args.batch_size, shuffle=True, set_random_choices=False, num_workers=2)
+    batches = Batches(testset, args.batch_size, shuffle=True, set_random_choices=False, num_workers=2)
 
     epsilon = (args.epsilon / 255.) / std
     alpha = (args.alpha / 255.) / std
