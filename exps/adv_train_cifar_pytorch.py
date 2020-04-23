@@ -111,12 +111,11 @@ def main():
     x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
     x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
 
-
     model = PreActResNet18().cuda()
     model.apply(initialize_weights)
     model.train()
 
-    opt = torch.optim.SGD(model.parameters(), lr=args.lr_max, momentum=0.9, weight_decay=5e-4)
+    opt = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9, weight_decay=5e-4)
 
     # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
 
