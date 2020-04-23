@@ -18,6 +18,7 @@
 """
 Subset scanning based on FGSS
 """
+from typing import Callable, Tuple
 
 import numpy as np
 
@@ -33,7 +34,13 @@ class Scanner:
     """
 
     @staticmethod
-    def fgss_individ_for_nets(pvalues, a_max=0.5, score_function=ScoringFunctions.get_score_bj_fast):
+    def fgss_individ_for_nets(
+        pvalues: np.ndarray,
+        a_max: float = 0.5,
+        score_function: Callable[
+            [list, list, np.ndarray], np.ndarray
+        ] = ScoringFunctions.get_score_bj_fast,
+    ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
         maximizes the score.
@@ -47,29 +54,30 @@ class Scanner:
         the next largest pmax. There are at most O(N) of these subsets to consider. Sorting requires O(N ln N). There is
         no iterative ascent required and no special choice of alpha thresholds for speed improvements.
 
-        :param pvalues: pvalue ranges
-        :type pvalues `np.ndarray`
+        :param pvalues: pvalue ranges.
         :param a_max: alpha max. determines the significance level threshold
-        :type a_max `float`
         :param score_function: scoring function
-        :type score_function `.ScoringFunctions`
         :return: (best_score, image_sub, node_sub, optimal_alpha)
-        :rtype: `float`, `list`, `list`, `float`
         """
-
-        pmaxes = np.reshape(pvalues[:, 1], pvalues.shape[0])  # should be number of columns/nodes
+        pmaxes = np.reshape(
+            pvalues[:, 1], pvalues.shape[0]
+        )  # should be number of columns/nodes
         # we can ignore any pmax that is greater than a_max; this makes sorting faster
         # all the pvalues less than equal a_max are kept by nonzero result of the comparison
         potential_thresholds = pmaxes[np.flatnonzero(pmaxes <= a_max)]
 
         # sorrted_unique provides our alpha thresholds that we will scan
         # count_unique (in cumulative format) will provide the number of observations less than corresponding alpha
-        sorted_unique, count_unique = np.unique(potential_thresholds, return_counts=True)
+        sorted_unique, count_unique = np.unique(
+            potential_thresholds, return_counts=True
+        )
 
         cumulative_count = np.cumsum(count_unique)
         # In individual input case we have n_a = N, so cumulative count is used for both.
         # sorted_unique provides the increasing alpha values that need to be checked.
-        vector_of_scores = score_function(cumulative_count, cumulative_count, sorted_unique)
+        vector_of_scores = score_function(
+            cumulative_count, cumulative_count, sorted_unique
+        )
 
         # scoring completed, now grab the max (and index)
         best_score_idx = np.argmax(vector_of_scores)
@@ -86,31 +94,33 @@ class Scanner:
 
     @staticmethod
     def fgss_for_nets(
-        pvalues, a_max=0.5, restarts=10, image_to_node_init=False, score_function=ScoringFunctions.get_score_bj_fast
-    ):
+        pvalues: np.ndarray,
+        a_max: float = 0.5,
+        restarts: int = 10,
+        image_to_node_init: bool = False,
+        score_function: Callable[
+            [list, list, np.ndarray], np.ndarray
+        ] = ScoringFunctions.get_score_bj_fast,
+    ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
         maximizes the score iterates between images and nodes, each time performing NPSS efficient maximization.
 
-        :param pvalues: pvalue ranges
-        :type pvalues `np.ndarray`
+        :param pvalues: pvalue ranges.
         :param a_max: alpha threshold
-        :type a_max `float`
         :param restarts: number of iterative restarts
-        :type restarts `int`
         :param image_to_node_init: intializes what direction to begin the search: image to node or vice-versa
-        :type image_to_node_init `bool`
         :param score_function: scoring function
-        :type score_function `.ScoringFunctions`
         :return: (best_score, image_sub, node_sub, optimal_alpha)
-        :rtype: `float`, `list`, `list`, `float`
         """
-        best_score = -100000
+        best_score = -100000.0
 
         if len(pvalues) < restarts:
             restarts = len(pvalues)
 
-        for r_indx in range(0, restarts):  # do random restarts to come close to global maximum
+        for r_indx in range(
+            0, restarts
+        ):  # do random restarts to come close to global maximum
             image_to_node = image_to_node_init
             if r_indx == 0:
                 if image_to_node:
@@ -125,7 +135,9 @@ class Scanner:
                     best_image_sub_from_restart,
                     best_node_sub_from_restart,
                     best_alpha_from_restart,
-                ) = ScanningOps.single_restart(pvalues, a_max, indices_of_seeds, image_to_node, score_function)
+                ) = ScanningOps.single_restart(
+                    pvalues, a_max, indices_of_seeds, image_to_node, score_function
+                )
 
                 if best_score_from_restart > best_score:
                     best_score = best_score_from_restart
@@ -140,22 +152,30 @@ class Scanner:
                 prob = np.random.uniform(0, 1)
                 if image_to_node:
                     indices_of_seeds = np.random.choice(
-                        np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False
+                        np.arange(pvalues.shape[0]),
+                        int(pvalues.shape[0] * prob),
+                        replace=False,
                     )
                 else:
                     indices_of_seeds = np.random.choice(
-                        np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False
+                        np.arange(pvalues.shape[1]),
+                        int(pvalues.shape[1] * prob),
+                        replace=False,
                     )
                 while indices_of_seeds.size == 0:
                     # eventually will make non zero
                     prob = np.random.uniform(0, 1)
                     if image_to_node:
                         indices_of_seeds = np.random.choice(
-                            np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False
+                            np.arange(pvalues.shape[0]),
+                            int(pvalues.shape[0] * prob),
+                            replace=False,
                         )
                     else:
                         indices_of_seeds = np.random.choice(
-                            np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False
+                            np.arange(pvalues.shape[1]),
+                            int(pvalues.shape[1] * prob),
+                            replace=False,
                         )
 
                 indices_of_seeds.astype(int)
@@ -165,7 +185,9 @@ class Scanner:
                     best_image_sub_from_restart,
                     best_node_sub_from_restart,
                     best_alpha_from_restart,
-                ) = ScanningOps.single_restart(pvalues, a_max, indices_of_seeds, image_to_node, score_function)
+                ) = ScanningOps.single_restart(
+                    pvalues, a_max, indices_of_seeds, image_to_node, score_function
+                )
 
                 if best_score_from_restart > best_score:
                     best_score = best_score_from_restart

@@ -22,13 +22,21 @@ This module implements the fast generalized subset scan based detector.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 # pylint: disable=E0001
 import numpy as np
-import six
+from sklearn import metrics
 
-from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.classifiers.classifier import (
+    Classifier,
+    ClassifierNeuralNetwork,
+    ClassifierGradients,
+)
 from art.detection.subsetscanning.scanner import Scanner
+
+if TYPE_CHECKING:
+    from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -40,16 +48,15 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
-    def __init__(self, classifier, bgd_data, layer):
+    def __init__(
+        self, classifier: Classifier, bgd_data: np.ndarray, layer: Union[int, str]
+    ) -> None:
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
-        :param classifier: The model being evaluated for its robustness to anomalies (eg. adversarial samples)
-        :type classifier: :class:`.Classifier`
+        :param classifier: The model being evaluated for its robustness to anomalies (e.g. adversarial samples).
         :bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
-        :type bgd_data: `np.ndarray`
         :layer: The layer from which to extract activations to perform scan
-        :type layer: `int` or `str`
         """
         super(SubsetScanningDetector, self).__init__(
             clip_values=classifier.clip_values,
@@ -60,43 +67,55 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         self.classifier = classifier
         self.bgd_data = bgd_data
 
-        # Ensure that layer is well-defined:
-        if isinstance(layer, six.string_types):
-            if layer not in classifier.layer_names:
-                raise ValueError("Layer name %s is not part of the graph." % layer)
-            self._layer_name = layer
-        elif isinstance(layer, int):
+        # Ensure that layer is well-defined
+        if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(
-                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(classifier.layer_names) - 1)
+                    "Layer index %d is outside of range (0 to %d included)."
+                    % (layer, len(classifier.layer_names) - 1)
                 )
             self._layer_name = classifier.layer_names[layer]
         else:
-            raise TypeError("Layer must be of type `str` or `int`.")
+            if layer not in classifier.layer_names:
+                raise ValueError("Layer name %s is not part of the graph." % layer)
+            self._layer_name = layer
 
-        bgd_activations = classifier.get_activations(bgd_data, self._layer_name, batch_size=128)
+        bgd_activations = classifier.get_activations(
+            bgd_data, self._layer_name, batch_size=128
+        )
         if len(bgd_activations.shape) == 4:
-            dim2 = bgd_activations.shape[1] * bgd_activations.shape[2] * bgd_activations.shape[3]
-            bgd_activations = np.reshape(bgd_activations, (bgd_activations.shape[0], dim2))
+            dim2 = (
+                bgd_activations.shape[1]
+                * bgd_activations.shape[2]
+                * bgd_activations.shape[3]
+            )
+            bgd_activations = np.reshape(
+                bgd_activations, (bgd_activations.shape[0], dim2)
+            )
 
         self.sorted_bgd_activations = np.sort(bgd_activations, axis=0)
 
-    def calculate_pvalue_ranges(self, eval_x):
+    def calculate_pvalue_ranges(self, eval_x: np.ndarray) -> np.ndarray:
         """
         Returns computed p-value ranges.
 
         :param eval_x: Data being evaluated for anomalies.
-        :type eval_x: `np.ndarray`
         :return: P-value ranges.
-        :rtype: `np.ndarray`
         """
-
         bgd_activations = self.sorted_bgd_activations
-        eval_activations = self.classifier.get_activations(eval_x, self._layer_name, batch_size=128)
+        eval_activations = self.classifier.get_activations(
+            eval_x, self._layer_name, batch_size=128
+        )
 
         if len(eval_activations.shape) == 4:
-            dim2 = eval_activations.shape[1] * eval_activations.shape[2] * eval_activations.shape[3]
-            eval_activations = np.reshape(eval_activations, (eval_activations.shape[0], dim2))
+            dim2 = (
+                eval_activations.shape[1]
+                * eval_activations.shape[2]
+                * eval_activations.shape[3]
+            )
+            eval_activations = np.reshape(
+                eval_activations, (eval_activations.shape[0], dim2)
+            )
 
         bgrecords_n = bgd_activations.shape[0]
         records_n = eval_activations.shape[0]
@@ -105,8 +124,12 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         pvalue_ranges = np.empty((records_n, atrr_n, 2))
 
         for j in range(atrr_n):
-            pvalue_ranges[:, j, 0] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side="right")
-            pvalue_ranges[:, j, 1] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side="left")
+            pvalue_ranges[:, j, 0] = np.searchsorted(
+                bgd_activations[:, j], eval_activations[:, j], side="right"
+            )
+            pvalue_ranges[:, j, 1] = np.searchsorted(
+                bgd_activations[:, j], eval_activations[:, j], side="left"
+            )
 
         pvalue_ranges = bgrecords_n - pvalue_ranges
 
@@ -115,23 +138,24 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
 
         return pvalue_ranges
 
-    def scan(self, clean_x, adv_x, clean_size=None, advs_size=None, run=10):
+    def scan(
+        self,
+        clean_x: np.ndarray,
+        adv_x: np.ndarray,
+        clean_size: Optional[int] = None,
+        advs_size: Optional[int] = None,
+        run: int = 10,
+    ) -> Tuple[list, list, float]:
         """
         Returns scores of highest scoring subsets.
 
         :param clean_x: Data presumably without anomalies.
-        :type clean_x: `np.ndarray`
         :param adv_x: Data presumably with anomalies (adversarial samples).
-        :type adv_x: `np.ndarray`
         :param clean_size:
-        :type clean_size: `int`
         :param advs_size:
-        :param advs_size: `int`
-        :return: (clean_scores, adv_scores, detectionpower)
-        :rtype: `list`, `list`, `float`
+        :param run:
+        :return: (clean_scores, adv_scores, detectionpower).
         """
-        from sklearn import metrics
-
         clean_pvalranges = self.calculate_pvalue_ranges(clean_x)
         adv_pvalranges = self.calculate_pvalue_ranges(adv_x)
 
@@ -139,7 +163,6 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         adv_scores = []
 
         if clean_size is None and advs_size is None:
-
             # Individual scan
             for j, _ in enumerate(clean_pvalranges):
                 best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
@@ -147,9 +170,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
             for j, _ in enumerate(adv_pvalranges):
                 best_score, _, _, _ = Scanner.fgss_individ_for_nets(adv_pvalranges[j])
                 adv_scores.append(best_score)
-
         else:
-
             len_adv_x = len(adv_x)
             len_clean_x = len(clean_x)
 
@@ -157,11 +178,17 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
                 np.random.seed()
 
                 advchoice = np.random.choice(range(len_adv_x), advs_size, replace=False)
-                cleanchoice = np.random.choice(range(len_clean_x), clean_size, replace=False)
+                cleanchoice = np.random.choice(
+                    range(len_clean_x), clean_size, replace=False
+                )
 
-                combined_pvals = np.concatenate((clean_pvalranges[cleanchoice], adv_pvalranges[advchoice]), axis=0)
+                combined_pvals = np.concatenate(
+                    (clean_pvalranges[cleanchoice], adv_pvalranges[advchoice]), axis=0
+                )
 
-                best_score, _, _, _ = Scanner.fgss_for_nets(clean_pvalranges[cleanchoice])
+                best_score, _, _, _ = Scanner.fgss_for_nets(
+                    clean_pvalranges[cleanchoice]
+                )
                 clean_scores.append(best_score)
                 best_score, _, _, _ = Scanner.fgss_for_nets(combined_pvals)
                 adv_scores.append(best_score)
@@ -175,16 +202,22 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
 
         return clean_scores, adv_scores, detectionpower
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 20,
+        **kwargs
+    ) -> None:
         """
-        Fit the detector using training data.
-        Assume that the classifier is already trained
+        Fit the detector using training data. Assumes that the classifier is already trained.
 
         :raises: `NotImplementedException`
         """
         raise NotImplementedError
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform detection of adversarial data and return prediction as tuple.
 
@@ -192,7 +225,9 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(
+        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
+    ) -> None:
         """
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
@@ -201,32 +236,36 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         raise NotImplementedError
 
-    def nb_classes(self):
+    def nb_classes(self) -> int:
         return self.detector.nb_classes()
 
     @property
-    def input_shape(self):
+    def input_shape(self) -> Tuple[int, ...]:
         return self.detector.input_shape
 
     @property
-    def clip_values(self):
+    def clip_values(self) -> tuple:
         return self.detector.clip_values
 
     @property
-    def channel_index(self):
+    def channel_index(self) -> int:
         return self.detector.channel_index
 
     @property
-    def learning_phase(self):
+    def learning_phase(self) -> bool:
         return self.detector._learning_phase
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
+    ) -> np.ndarray:
         return self.detector.class_gradient(x, label=label)
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         return self.detector.loss_gradient(x, y)
 
-    def get_activations(self, x, layer, batch_size):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -236,8 +275,8 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         self.detector.set_learning_phase(train)
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         self.detector.save(filename, path)

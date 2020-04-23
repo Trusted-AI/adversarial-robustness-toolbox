@@ -22,10 +22,18 @@ detectors.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
-import six
+import numpy as np
 
-from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.classifiers.classifier import (
+    Classifier,
+    ClassifierNeuralNetwork,
+    ClassifierGradients,
+)
+
+if TYPE_CHECKING:
+    from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +44,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
 
-    def __init__(self, detector):
+    def __init__(self, detector: Classifier) -> None:
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
 
@@ -51,39 +59,40 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         )
         self.detector = detector
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 20,
+        **kwargs
+    ) -> None:
         """
         Fit the detector using clean and adversarial samples.
 
         :param x: Training set to fit the detector.
-        :type x: `np.ndarray`
         :param y: Labels for the training set.
-        :type y: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
-        :return: None
         """
         self.detector.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform detection of adversarial data and return prediction as tuple.
 
         :param x: Data sample on which to perform detection.
-        :type x: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Per-sample prediction whether data is adversarial or not, where `0` means non-adversarial.
                  Return variable has the same `batch_size` (first dimension) as `x`.
-        :rtype: `np.ndarray`
         """
         return self.detector.predict(x, batch_size=batch_size)
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(
+        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
+    ) -> None:
         """
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
@@ -92,32 +101,36 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         """
         raise NotImplementedError
 
-    def nb_classes(self):
+    def nb_classes(self) -> int:
         return self.detector.nb_classes()
 
     @property
-    def input_shape(self):
+    def input_shape(self) -> Tuple[int, ...]:
         return self.detector.input_shape
 
     @property
-    def clip_values(self):
+    def clip_values(self) -> tuple:
         return self.detector.clip_values
 
     @property
-    def channel_index(self):
+    def channel_index(self) -> int:
         return self.detector.channel_index
 
     @property
-    def learning_phase(self):
+    def learning_phase(self) -> bool:
         return self.detector._learning_phase
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
+    ) -> np.ndarray:
         return self.detector.class_gradient(x, label=label)
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         return self.detector.loss_gradient(x, y)
 
-    def get_activations(self, x, layer, batch_size):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -127,30 +140,31 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         self.detector.set_learning_phase(train)
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class BinaryActivationDetector(
+    ClassifierNeuralNetwork, ClassifierGradients, Classifier
+):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
 
-    def __init__(self, classifier, detector, layer):  # lgtm [py/similar-function]
+    def __init__(
+        self, classifier: Classifier, detector: Classifier, layer: Union[int, str]
+    ) -> None:  # lgtm [py/similar-function]
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
         The shape of the input of the detector has to match that of the output of the chosen layer.
 
         :param classifier: The classifier of which the activation information is to be used for detection.
-        :type classifier: `art.classifier.Classifier`
         :param detector: The detector architecture to be trained and applied for the binary classification.
-        :type detector: `art.classifier.Classifier`
         :param layer: Layer for computing the activations to use for training the detector.
-        :type layer: `int` or `str`
         """
         super(BinaryActivationDetector, self).__init__(
             clip_values=detector.clip_values,
@@ -162,102 +176,110 @@ class BinaryActivationDetector(ClassifierNeuralNetwork, ClassifierGradients, Cla
         self.detector = detector
 
         # Ensure that layer is well-defined:
-        if isinstance(layer, six.string_types):
-            if layer not in classifier.layer_names:
-                raise ValueError("Layer name %s is not part of the graph." % layer)
-            self._layer_name = layer
-        elif isinstance(layer, int):
+        if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(
-                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(classifier.layer_names) - 1)
+                    "Layer index %d is outside of range (0 to %d included)."
+                    % (layer, len(classifier.layer_names) - 1)
                 )
             self._layer_name = classifier.layer_names[layer]
         else:
-            raise TypeError("Layer must be of type `str` or `int`.")
+            if layer not in classifier.layer_names:
+                raise ValueError("Layer name %s is not part of the graph." % layer)
+            self._layer_name = layer
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 20,
+        **kwargs
+    ) -> None:
         """
         Fit the detector using training data.
 
         :param x: Training set to fit the detector.
-        :type x: `np.ndarray`
         :param y: Labels for the training set.
-        :type y: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Other parameters.
         :type kwargs: `dict`
-        :return: `None`
         """
         x_activations = self.classifier.get_activations(x, self._layer_name, batch_size)
-        self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        self.detector.fit(
+            x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs
+        )
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform detection of adversarial data and return prediction as tuple.
 
         :param x: Data sample on which to perform detection.
-        :type x: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Per-sample prediction whether data is adversarial or not, where `0` means non-adversarial.
                  Return variable has the same `batch_size` (first dimension) as `x`.
-        :rtype: `np.ndarray`
         """
-        return self.detector.predict(self.classifier.get_activations(x, self._layer_name, batch_size))
+        return self.detector.predict(
+            self.classifier.get_activations(x, self._layer_name, batch_size)
+        )
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(
+        self, generator: DataGenerator, nb_epochs: int = 20, **kwargs
+    ) -> None:
         """
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`:
         """
         raise NotImplementedError
 
-    def nb_classes(self):
+    def nb_classes(self) -> int:
         return self.detector.nb_classes()
 
     @property
-    def input_shape(self):
+    def input_shape(self) -> Tuple[int, ...]:
         return self.detector.input_shape
 
     @property
-    def clip_values(self):
+    def clip_values(self) -> tuple:
         return self.detector.clip_values
 
     @property
-    def channel_index(self):
+    def channel_index(self) -> int:
         return self.detector.channel_index
 
     @property
-    def learning_phase(self):
+    def learning_phase(self) -> bool:
         return self.detector._learning_phase
 
     @property
-    def layer_names(self):
+    def layer_names(self) -> list:
         raise NotImplementedError
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
+    ) -> np.ndarray:
         return self.detector.class_gradient(x, label=label)
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         return self.detector.loss_gradient(x, y)
 
-    def get_activations(self, x, layer, batch_size):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`. This function is not supported for this detector.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`:
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         self.detector.set_learning_phase(train)
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         self.detector.save(filename, path)

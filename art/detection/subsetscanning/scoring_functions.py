@@ -16,9 +16,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-Scanner scoring functions
+Scanner scoring functions.
 """
-
 import numpy as np
 
 
@@ -28,30 +27,31 @@ class ScoringFunctions:
     """
 
     @staticmethod
-    def get_score_bj_fast(n_alpha, no_records, alpha):
+    def get_score_bj_fast(
+        n_alpha: list, no_records: list, alpha: np.ndarray
+    ) -> np.ndarray:
         """
         BerkJones
 
-        :param n_alpha: no of records less than alpha
-        :type n_alpha: `list`
-        :param no_records: no of records
-        :type no_records: `list`
-        :param alpha: alpha threshold
-        :type alpha: `np.ndarray`
-        :return: score
-        :rtype: `list`
+        :param n_alpha: Number of records less than alpha.
+        :param no_records: Number of records.
+        :param alpha: Alpha threshold.
+        :return: Score.
         """
-
         score = np.zeros(alpha.shape[0])
         inds_tie = n_alpha == no_records
         inds_not_tie = np.logical_not(inds_tie)
         inds_pos = n_alpha > no_records * alpha
         inds_pos_not_tie = np.logical_and(inds_pos, inds_not_tie)
-
-        score[inds_tie] = no_records[inds_tie] * np.log(np.true_divide(1, alpha[inds_tie]))
+        score[inds_tie] = no_records[inds_tie] * np.log(
+            np.true_divide(1, alpha[inds_tie])
+        )
 
         factor1 = n_alpha[inds_pos_not_tie] * np.log(
-            np.true_divide(n_alpha[inds_pos_not_tie], no_records[inds_pos_not_tie] * alpha[inds_pos_not_tie])
+            np.true_divide(
+                n_alpha[inds_pos_not_tie],
+                no_records[inds_pos_not_tie] * alpha[inds_pos_not_tie],
+            )
         )
 
         factor2 = no_records[inds_pos_not_tie] - n_alpha[inds_pos_not_tie]
@@ -64,25 +64,22 @@ class ScoringFunctions:
         )
 
         score[inds_pos_not_tie] = factor1 + factor2 * factor3
-
         return score
 
     @staticmethod
-    def get_score_hc_fast(n_alpha, no_records, alpha):
+    def get_score_hc_fast(
+        n_alpha: list, no_records: list, alpha: np.ndarray
+    ) -> np.ndarray:
         """
         Higher criticism
         Similar to a traditional wald test statistic: (Observed - expected) / standard deviation.
         In this case we use the binomial distribution. The observed is N_a.  The expected (under null) is N*a
         and the standard deviation is sqrt(N*a(1-a)).
 
-        :param n_alpha: no of records less than alpha
-        :type n_alpha: `list`
-        :param no_records: no of records
-        :type no_records: `list`
-        :param alpha: alpha threshold
-        :type alpha: `list`
-        :return: score
-        :rtype: `list`
+        :param n_alpha: Number of records less than alpha.
+        :param no_records: Number of records.
+        :param alpha: Alpha threshold.
+        :return: Score.
         """
         score = np.zeros(alpha.shape[0])
         inds = n_alpha > no_records * alpha
@@ -92,20 +89,20 @@ class ScoringFunctions:
         return score
 
     @staticmethod
-    def get_score_ks_fast(n_alpha, no_records, alpha):
+    def get_score_ks_fast(
+        n_alpha: list, no_records: list, alpha: np.ndarray
+    ) -> np.ndarray:
         """
         KolmarovSmirnov
 
-        :param n_alpha: no of records less than alpha
-        :type n_alpha: `list`
-        :param no_records: no of records
-        :type no_records: `list`
-        :param alpha: alpha threshold
-        :type alpha: `np.ndarray`
-        :return: score
-        :rtype: `list`
+        :param n_alpha: Number of records less than alpha.
+        :param no_records: Number of records.
+        :param alpha: Alpha threshold.
+        :return: Score.
         """
         score = np.zeros(alpha.shape[0])
         inds = n_alpha > no_records * alpha
-        score[inds] = np.true_divide(n_alpha[inds] - no_records[inds] * alpha[inds], np.sqrt(no_records[inds]))
+        score[inds] = np.true_divide(
+            n_alpha[inds] - no_records[inds] * alpha[inds], np.sqrt(no_records[inds])
+        )
         return score
