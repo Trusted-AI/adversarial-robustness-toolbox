@@ -276,17 +276,30 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
         else:
             return grad * (mask.astype(ART_NUMPY_DTYPE))
 
+    def _apply_perturbation(self, x, perturbation, eps_step):
+        """
+        Apply perturbation on examples.
+
+        :param x: Current adversarial examples.
+        :type x: `Tensor`
+        :param perturbation: Current perturbations.
+        :type perturbation: `Tensor`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
+        :return: Adversarial examples.
+        :rtype: `Tensor`
+        """
+        x = x + eps_step * perturbation
+
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
+            x = torch.clamp(x, clip_min, clip_max)
+
+        return x
 
 
 
-    def _apply_perturbation(self, batch, perturbation, eps_step):
-        batch = batch + eps_step * perturbation
 
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            clip_min, clip_max = self.classifier.clip_values
-            batch = torch.clamp(batch, clip_min, clip_max)
-
-        return batch
 
     def _compute(self, x, x_init, y, eps, eps_step, random_init):
         # TODO
