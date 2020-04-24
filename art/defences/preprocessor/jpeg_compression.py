@@ -28,8 +28,10 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from io import BytesIO
 import logging
+from typing import Optional, Tuple
 
 import numpy as np
+from PIL import Image
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
@@ -51,53 +53,55 @@ class JpegCompression(Preprocessor):
 
     params = ["quality", "channel_index", "clip_values"]
 
-    def __init__(self, clip_values, quality=50, channel_index=3, apply_fit=True, apply_predict=False):
+    def __init__(
+        self,
+        clip_values: tuple,
+        quality: int = 50,
+        channel_index: int = 3,
+        apply_fit: bool = True,
+        apply_predict: bool = False,
+    ):
         """
         Create an instance of JPEG compression.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
-        :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         super(JpegCompression, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(quality=quality, channel_index=channel_index, clip_values=clip_values)
+        self.set_params(
+            quality=quality, channel_index=channel_index, clip_values=clip_values
+        )
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, x, y=None):
+    def __call__(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply JPEG compression to sample `x`.
 
         :param x: Sample to compress with shape `(batch_size, width, height, depth)`. `x` values are expected to be in
                the data range [0, 1].
-        :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :type y: `np.ndarray`
         :return: compressed sample.
-        :rtype: `np.ndarray`
         """
-        from PIL import Image
-
         if len(x.shape) == 2:
             raise ValueError(
-                "Feature vectors detected. JPEG compression can only be applied to data with spatial" "dimensions."
+                "Feature vectors detected. JPEG compression can only be applied to data with spatial"
+                "dimensions."
             )
 
         if self.channel_index >= len(x.shape):
@@ -105,7 +109,8 @@ class JpegCompression(Preprocessor):
 
         if np.min(x) < 0.0:
             raise ValueError(
-                "Negative values in input `x` detected. The JPEG compression defence requires unnormalized" "input."
+                "Negative values in input `x` detected. The JPEG compression defence requires unnormalized"
+                "input."
             )
 
         # Swap channel index
@@ -131,7 +136,9 @@ class JpegCompression(Preprocessor):
                 x_i = Image.fromarray(x_i, mode="RGB")
             else:
                 logger.log(level=40, msg="Currently only support `RGB` and `L` images.")
-                raise NotImplementedError("Currently only support `RGB` and `L` images.")
+                raise NotImplementedError(
+                    "Currently only support `RGB` and `L` images."
+                )
 
             out = BytesIO()
             x_i.save(out, format="jpeg", quality=self.quality)
@@ -155,16 +162,16 @@ class JpegCompression(Preprocessor):
 
         return x_local, y
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> bool:
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
@@ -179,13 +186,21 @@ class JpegCompression(Preprocessor):
         # Save defense-specific parameters
         super(JpegCompression, self).set_params(**kwargs)
 
-        if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
+        if (
+            not isinstance(self.quality, (int, np.int))
+            or self.quality <= 0
+            or self.quality > 100
+        ):
             logger.error("Image quality must be a positive integer <= 100.")
             raise ValueError("Image quality must be a positive integer <= 100.")
 
         if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
-            logger.error("Data channel must be a positive integer. The batch dimension is not a valid channel.")
-            raise ValueError("Data channel must be a positive integer. The batch dimension is not a valid channel.")
+            logger.error(
+                "Data channel must be a positive integer. The batch dimension is not a valid channel."
+            )
+            raise ValueError(
+                "Data channel must be a positive integer. The batch dimension is not a valid channel."
+            )
 
         if len(self.clip_values) != 2:
             raise ValueError(
