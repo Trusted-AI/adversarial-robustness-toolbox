@@ -23,6 +23,7 @@ This module implements the Knockoff Nets attack `KnockoffNets`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
 
@@ -53,32 +54,25 @@ class KnockoffNets(ExtractionAttack):
 
     def __init__(
         self,
-        classifier,
-        batch_size_fit=1,
-        batch_size_query=1,
-        nb_epochs=10,
-        nb_stolen=1,
-        sampling_strategy="random",
-        reward="all",
-    ):
+        classifier: Classifier,
+        batch_size_fit: int = 1,
+        batch_size_query: int = 1,
+        nb_epochs: int = 10,
+        nb_stolen: int = 1,
+        sampling_strategy: str = "random",
+        reward: str = "all",
+    ) -> None:
         """
         Create a KnockoffNets attack instance. Note, it is assumed that both the victim classifier and the thieved
         classifier produce logit outputs.
 
         :param classifier: A victim classifier.
-        :type classifier: :class:`.Classifier`
         :param batch_size_fit: Size of batches for fitting the thieved classifier.
-        :type batch_size_fit: `int`
         :param batch_size_query: Size of batches for querying the victim classifier.
-        :type batch_size_query: `int`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
-        :type nb_stolen: `int`
         :param sampling_strategy: Sampling strategy, either `random` or `adaptive`.
-        :type sampling_strategy: `string`
         :param reward: Reward type, in ['cert', 'div', 'loss', 'all'].
-        :type reward: `string`
         """
         super(KnockoffNets, self).__init__(classifier=classifier)
 
@@ -92,27 +86,28 @@ class KnockoffNets(ExtractionAttack):
         }
         self.set_params(**params)
 
-    def extract(self, x, y=None, **kwargs):
+    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Classifier:
         """
         Extract a thieved classifier.
 
         :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray` or `None`
+                  `(nb_samples,)`.
         :param thieved_classifier: A thieved classifier to be stolen.
         :type thieved_classifier: :class:`.Classifier`
         :return: The stolen classifier.
-        :rtype: :class:`.Classifier`
         """
         # Check prerequisite for random strategy
         if self.sampling_strategy == "random" and y is not None:
-            logger.warning("This attack with random sampling strategy does not use the provided label y.")
+            logger.warning(
+                "This attack with random sampling strategy does not use the provided label y."
+            )
 
         # Check prerequisite for adaptive strategy
         if self.sampling_strategy == "adaptive" and y is None:
-            raise ValueError("This attack with adaptive sampling strategy needs label y.")
+            raise ValueError(
+                "This attack with adaptive sampling strategy needs label y."
+            )
 
         # Check the size of the source input vs nb_stolen
         if x.shape[0] < self.nb_stolen:
@@ -134,16 +129,15 @@ class KnockoffNets(ExtractionAttack):
 
         return thieved_classifier
 
-    def _random_extraction(self, x, thieved_classifier):
+    def _random_extraction(
+        self, x: np.ndarray, thieved_classifier: Classifier
+    ) -> Classifier:
         """
         Extract with the random sampling strategy.
 
         :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
         :param thieved_classifier: A thieved classifier to be stolen.
-        :type thieved_classifier: :class:`.Classifier`
         :return: The stolen classifier.
-        :rtype: :class:`.Classifier`
         """
         # Select data to attack
         selected_x = self._select_data(x)
@@ -153,33 +147,33 @@ class KnockoffNets(ExtractionAttack):
 
         # Train the thieved classifier
         thieved_classifier.fit(
-            x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs, verbose=0
+            x=selected_x,
+            y=fake_labels,
+            batch_size=self.batch_size_fit,
+            nb_epochs=self.nb_epochs,
+            verbose=0,
         )
 
         return thieved_classifier
 
-    def _select_data(self, x):
+    def _select_data(self, x: np.ndarray) -> np.ndarray:
         """
         Select data to attack.
 
         :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
         :return: An array with the selected input to the victim classifier.
-        :rtype: `np.ndarray`
         """
         nb_stolen = np.minimum(self.nb_stolen, x.shape[0])
         rnd_index = np.random.choice(x.shape[0], nb_stolen, replace=False)
 
         return x[rnd_index].astype(ART_NUMPY_DTYPE)
 
-    def _query_label(self, x):
+    def _query_label(self, x: np.ndarray) -> np.ndarray:
         """
         Query the victim classifier.
 
         :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
-        :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
-        :rtype: `np.ndarray`
+        :return: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
         """
         labels = self.classifier.predict(x=x, batch_size=self.batch_size_query)
         labels = np.argmax(labels, axis=1)
@@ -187,19 +181,17 @@ class KnockoffNets(ExtractionAttack):
 
         return labels
 
-    def _adaptive_extraction(self, x, y, thieved_classifier):
+    def _adaptive_extraction(
+        self, x: np.ndarray, y: np.ndarray, thieved_classifier: Classifier
+    ) -> Classifier:
         """
         Extract with the adaptive sampling strategy.
 
         :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
         :param thieved_classifier: A thieved classifier to be stolen.
-        :type thieved_classifier: :class:`.Classifier`
         :return: The stolen classifier.
-        :rtype: :class:`.Classifier`
         """
         # Compute number of actions
         if len(y.shape) == 2:
@@ -235,18 +227,28 @@ class KnockoffNets(ExtractionAttack):
             selected_x.append(sampled_x)
 
             # Query the victim classifier
-            y_output = self.classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
+            y_output = self.classifier.predict(
+                x=np.array([sampled_x]), batch_size=self.batch_size_query
+            )
             fake_label = np.argmax(y_output, axis=1)
-            fake_label = to_categorical(labels=fake_label, nb_classes=self.classifier.nb_classes())
+            fake_label = to_categorical(
+                labels=fake_label, nb_classes=self.classifier.nb_classes()
+            )
             queried_labels.append(fake_label[0])
 
             # Train the thieved classifier
             thieved_classifier.fit(
-                x=np.array([sampled_x]), y=fake_label, batch_size=self.batch_size_fit, nb_epochs=1, verbose=0
+                x=np.array([sampled_x]),
+                y=fake_label,
+                batch_size=self.batch_size_fit,
+                nb_epochs=1,
+                verbose=0,
             )
 
             # Test new labels
-            y_hat = thieved_classifier.predict(x=np.array([sampled_x]), batch_size=self.batch_size_query)
+            y_hat = thieved_classifier.predict(
+                x=np.array([sampled_x]), batch_size=self.batch_size_query
+            )
 
             # Compute rewards
             reward = self._reward(y_output, y_hat, it)
@@ -258,9 +260,14 @@ class KnockoffNets(ExtractionAttack):
             # Update H function
             for a in range(nb_actions):
                 if a != action:
-                    h_func[a] = h_func[a] - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[a]
+                    h_func[a] = (
+                        h_func[a]
+                        - 1.0 / learning_rate[action] * (reward - avg_reward) * probs[a]
+                    )
                 else:
-                    h_func[a] = h_func[a] + 1.0 / learning_rate[action] * (reward - avg_reward) * (1 - probs[a])
+                    h_func[a] = h_func[a] + 1.0 / learning_rate[action] * (
+                        reward - avg_reward
+                    ) * (1 - probs[a])
 
             # Update probs
             aux_exp = np.exp(h_func)
@@ -268,25 +275,24 @@ class KnockoffNets(ExtractionAttack):
 
         # Train the thieved classifier the final time
         thieved_classifier.fit(
-            x=np.array(selected_x), y=np.array(queried_labels), batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs
+            x=np.array(selected_x),
+            y=np.array(queried_labels),
+            batch_size=self.batch_size_fit,
+            nb_epochs=self.nb_epochs,
         )
 
         return thieved_classifier
 
     @staticmethod
-    def _sample_data(x, y, action):
+    def _sample_data(x: np.ndarray, y: np.ndarray, action: int) -> np.ndarray:
         """
         Sample data with a specific action.
 
         :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
         :param action: The action index returned from the action sampling.
-        :type action: `int`
         :return: An array with one input to the victim classifier.
-        :rtype: `np.ndarray`
         """
         if len(y.shape) == 2:
             y_ = np.argmax(y, axis=1)
@@ -298,18 +304,14 @@ class KnockoffNets(ExtractionAttack):
 
         return x_[rnd_idx]
 
-    def _reward(self, y_output, y_hat, n):
+    def _reward(self, y_output: np.ndarray, y_hat: np.ndarray, n: int) -> float:
         """
         Compute reward value.
 
         :param y_output: Output of the victim classifier.
-        :type y_output: `np.ndarray`
         :param y_hat: Output of the thieved classifier.
-        :type y_hat: `np.ndarray`
         :param n: Current iteration.
-        :type n: `int`
         :return: Reward value.
-        :rtype: `float`
         """
         if self.reward == "cert":
             return self._reward_cert(y_output)
@@ -321,30 +323,25 @@ class KnockoffNets(ExtractionAttack):
             return self._reward_all(y_output, y_hat, n)
 
     @staticmethod
-    def _reward_cert(y_output):
+    def _reward_cert(y_output: np.ndarray) -> float:
         """
         Compute `cert` reward value.
 
         :param y_output: Output of the victim classifier.
-        :type y_output: `np.ndarray`
         :return: Reward value.
-        :rtype: `float`
         """
         largests = np.partition(y_output.flatten(), -2)[-2:]
         reward = largests[1] - largests[0]
 
         return reward
 
-    def _reward_div(self, y_output, n):
+    def _reward_div(self, y_output: np.ndarray, n: int) -> float:
         """
         Compute `div` reward value.
 
         :param y_output: Output of the victim classifier.
-        :type y_output: `np.ndarray`
         :param n: Current iteration.
-        :type n: `int`
         :return: Reward value.
-        :rtype: `float`
         """
         # First update y_avg
         self.y_avg = self.y_avg + (1.0 / n) * (y_output[0] - self.y_avg)
@@ -356,16 +353,13 @@ class KnockoffNets(ExtractionAttack):
 
         return reward
 
-    def _reward_loss(self, y_output, y_hat):
+    def _reward_loss(self, y_output: np.ndarray, y_hat: np.ndarray) -> float:
         """
         Compute `loss` reward value.
 
         :param y_output: Output of the victim classifier.
-        :type y_output: `np.ndarray`
         :param y_hat: Output of the thieved classifier.
-        :type y_hat: `np.ndarray`
         :return: Reward value.
-        :rtype: `float`
         """
         # Compute victim probs
         aux_exp = np.exp(y_output[0])
@@ -382,25 +376,25 @@ class KnockoffNets(ExtractionAttack):
 
         return reward
 
-    def _reward_all(self, y_output, y_hat, n):
+    def _reward_all(
+        self, y_output: np.ndarray, y_hat: np.ndarray, n: int
+    ) -> np.ndarray:
         """
         Compute `all` reward value.
 
         :param y_output: Output of the victim classifier.
-        :type y_output: `np.ndarray`
         :param y_hat: Output of the thieved classifier.
-        :type y_hat: `np.ndarray`
         :param n: Current iteration.
-        :type n: `int`
         :return: Reward value.
-        :rtype: `float`
         """
         reward_cert = self._reward_cert(y_output)
         reward_div = self._reward_div(y_output, n)
         reward_loss = self._reward_loss(y_output, y_hat)
         reward = [reward_cert, reward_div, reward_loss]
         self.reward_avg = self.reward_avg + (1.0 / n) * (reward - self.reward_avg)
-        self.reward_var = self.reward_var + (1.0 / n) * ((reward - self.reward_avg) ** 2 - self.reward_var)
+        self.reward_var = self.reward_var + (1.0 / n) * (
+            (reward - self.reward_avg) ** 2 - self.reward_var
+        )
 
         # Normalize rewards
         if n > 1:
@@ -410,7 +404,7 @@ class KnockoffNets(ExtractionAttack):
 
         return np.mean(reward)
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> bool:
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
@@ -430,17 +424,29 @@ class KnockoffNets(ExtractionAttack):
         # Save attack-specific parameters
         super(KnockoffNets, self).set_params(**kwargs)
 
-        if not isinstance(self.batch_size_fit, (int, np.int)) or self.batch_size_fit <= 0:
-            raise ValueError("The size of batches for fitting the thieved classifier must be a positive integer.")
+        if (
+            not isinstance(self.batch_size_fit, (int, np.int))
+            or self.batch_size_fit <= 0
+        ):
+            raise ValueError(
+                "The size of batches for fitting the thieved classifier must be a positive integer."
+            )
 
-        if not isinstance(self.batch_size_query, (int, np.int)) or self.batch_size_query <= 0:
-            raise ValueError("The size of batches for querying the victim classifier must be a positive integer.")
+        if (
+            not isinstance(self.batch_size_query, (int, np.int))
+            or self.batch_size_query <= 0
+        ):
+            raise ValueError(
+                "The size of batches for querying the victim classifier must be a positive integer."
+            )
 
         if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")
 
         if not isinstance(self.nb_stolen, (int, np.int)) or self.nb_stolen <= 0:
-            raise ValueError("The number of queries submitted to the victim classifier must be a positive integer.")
+            raise ValueError(
+                "The number of queries submitted to the victim classifier must be a positive integer."
+            )
 
         if self.sampling_strategy not in ["random", "adaptive"]:
             raise ValueError("Sampling strategy must be either `random` or `adaptive`.")

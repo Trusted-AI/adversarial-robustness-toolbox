@@ -23,6 +23,7 @@ This module implements the copycat cnn attack `CopycatCNN`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
 
@@ -42,22 +43,29 @@ class CopycatCNN(ExtractionAttack):
     | Paper link: https://arxiv.org/abs/1806.05476
     """
 
-    attack_params = ExtractionAttack.attack_params + ["batch_size_fit", "batch_size_query", "nb_epochs", "nb_stolen"]
+    attack_params = ExtractionAttack.attack_params + [
+        "batch_size_fit",
+        "batch_size_query",
+        "nb_epochs",
+        "nb_stolen",
+    ]
 
-    def __init__(self, classifier, batch_size_fit=1, batch_size_query=1, nb_epochs=10, nb_stolen=1):
+    def __init__(
+        self,
+        classifier: Classifier,
+        batch_size_fit: int = 1,
+        batch_size_query: int = 1,
+        nb_epochs: int = 10,
+        nb_stolen: int = 1,
+    ) -> None:
         """
         Create a Copycat CNN attack instance.
 
         :param classifier: A victim classifier.
-        :type classifier: :class:`.Classifier`
         :param batch_size_fit: Size of batches for fitting the thieved classifier.
-        :type batch_size_fit: `int`
         :param batch_size_query: Size of batches for querying the victim classifier.
-        :type batch_size_query: `int`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
-        :type nb_stolen: `int`
         """
         super(CopycatCNN, self).__init__(classifier=classifier)
 
@@ -69,19 +77,16 @@ class CopycatCNN(ExtractionAttack):
         }
         self.set_params(**params)
 
-    def extract(self, x, y=None, **kwargs):
+    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Classifier:
         """
         Extract a thieved classifier.
 
         :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,). Not used in this attack.
-        :type y: `np.ndarray` or `None`
         :param thieved_classifier: A classifier to be stolen, currently always trained on one-hot labels.
         :type thieved_classifier: :class:`.Classifier`
         :return: The stolen classifier.
-        :rtype: :class:`.Classifier`
         """
         # Warning to users if y is not None
         if y is not None:
@@ -106,32 +111,33 @@ class CopycatCNN(ExtractionAttack):
         fake_labels = self._query_label(selected_x)
 
         # Train the thieved classifier
-        thieved_classifier.fit(x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs)
+        thieved_classifier.fit(
+            x=selected_x,
+            y=fake_labels,
+            batch_size=self.batch_size_fit,
+            nb_epochs=self.nb_epochs,
+        )
 
         return thieved_classifier
 
-    def _select_data(self, x):
+    def _select_data(self, x: np.ndarray) -> np.ndarray:
         """
         Select data to attack.
 
         :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
         :return: An array with the selected input to the victim classifier.
-        :rtype: `np.ndarray`
         """
         nb_stolen = np.minimum(self.nb_stolen, x.shape[0])
         rnd_index = np.random.choice(x.shape[0], nb_stolen, replace=False)
 
         return x[rnd_index].astype(ART_NUMPY_DTYPE)
 
-    def _query_label(self, x):
+    def _query_label(self, x: np.ndarray) -> np.ndarray:
         """
         Query the victim classifier.
 
         :param x: An array with the source input to the victim classifier.
-        :type x: `np.ndarray`
         :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
-        :rtype: `np.ndarray`
         """
         labels = self.classifier.predict(x=x, batch_size=self.batch_size_query)
         labels = np.argmax(labels, axis=1)
@@ -139,7 +145,7 @@ class CopycatCNN(ExtractionAttack):
 
         return labels
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> bool:
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
@@ -155,16 +161,28 @@ class CopycatCNN(ExtractionAttack):
         # Save attack-specific parameters
         super(CopycatCNN, self).set_params(**kwargs)
 
-        if not isinstance(self.batch_size_fit, (int, np.int)) or self.batch_size_fit <= 0:
-            raise ValueError("The size of batches for fitting the thieved classifier must be a positive integer.")
+        if (
+            not isinstance(self.batch_size_fit, (int, np.int))
+            or self.batch_size_fit <= 0
+        ):
+            raise ValueError(
+                "The size of batches for fitting the thieved classifier must be a positive integer."
+            )
 
-        if not isinstance(self.batch_size_query, (int, np.int)) or self.batch_size_query <= 0:
-            raise ValueError("The size of batches for querying the victim classifier must be a positive integer.")
+        if (
+            not isinstance(self.batch_size_query, (int, np.int))
+            or self.batch_size_query <= 0
+        ):
+            raise ValueError(
+                "The size of batches for querying the victim classifier must be a positive integer."
+            )
 
         if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")
 
         if not isinstance(self.nb_stolen, (int, np.int)) or self.nb_stolen <= 0:
-            raise ValueError("The number of queries submitted to the victim classifier must be a positive integer.")
+            raise ValueError(
+                "The number of queries submitted to the victim classifier must be a positive integer."
+            )
 
         return True
