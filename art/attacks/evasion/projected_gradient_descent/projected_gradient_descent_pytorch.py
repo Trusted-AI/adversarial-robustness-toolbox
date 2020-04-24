@@ -356,9 +356,6 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
 
         return x_adv
 
-
-
-
     @staticmethod
     def _projection(values, eps, norm_p):
         """
@@ -399,25 +396,50 @@ class ProjectedGradientDescentPytorch(EvasionAttack):
 
         return values
 
-
     def set_params(self, **kwargs):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
         :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
-        :type norm: `int`
+        :type norm: `int` or `float`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
+        :param targeted: Should the attack target one specific class
+        :type targeted: `bool`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
+                                the original input.
         :type num_random_init: `int`
-        :param batch_size: Batch size
+        :param batch_size: Batch size.
         :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(ProjectedGradientDescentPytorch, self).set_params(**kwargs)
+
+        # Check if order of the norm is acceptable given current implementation
+        if self.norm not in [np.inf, int(1), int(2)]:
+            raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
+
+        if self.eps <= 0:
+            raise ValueError("The perturbation size `eps` has to be positive.")
+
+        if self.eps_step <= 0:
+            raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+
+        if not isinstance(self.targeted, bool):
+            raise ValueError("The flag `targeted` has to be of type bool.")
+
+        if not isinstance(self.num_random_init, (int, np.int)):
+            raise TypeError("The number of random initialisations has to be of type integer")
+
+        if self.num_random_init < 0:
+            raise ValueError("The number of random initialisations `random_init` has to be greater than or equal to 0.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
         if self.eps_step > self.eps:
             raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
