@@ -35,16 +35,15 @@ class GaussianNoise(Postprocessor):
 
     params = ["scale"]
 
-    def __init__(self, scale=0.2, apply_fit=False, apply_predict=True):
+    def __init__(
+        self, scale: float = 0.2, apply_fit: bool = False, apply_predict: bool = True
+    ) -> None:
         """
         Create a GaussianNoise postprocessor.
 
         :param scale: Standard deviation of the distribution.
-        :type scale: `float`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         super(GaussianNoise, self).__init__()
         self._is_fitted = True
@@ -53,21 +52,19 @@ class GaussianNoise(Postprocessor):
         self.set_params(scale=scale)
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, preds):
+    def __call__(self, preds: np.ndarray) -> np.ndarray:
         """
         Perform model postprocessing and return postprocessed output.
 
         :param preds: model output to be postprocessed.
-        :type preds: `np.ndarray`
         :return: Postprocessed model output.
-        :rtype: `np.ndarray`
         """
         # Generate random noise
         noise = np.random.normal(loc=0.0, scale=self.scale, size=preds.shape)
@@ -91,19 +88,19 @@ class GaussianNoise(Postprocessor):
 
         return post_preds
 
-    def fit(self, preds, **kwargs):
+    def fit(self, preds: np.ndarray, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> bool:
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
         :param scale: Standard deviation of the distribution.
         :type scale: `float`
-        :return: `True` when parsing was successful
+        :return: `True` when parsing was successful.
         """
         # Save defence-specific parameters
         super(GaussianNoise, self).set_params(**kwargs)

@@ -19,7 +19,9 @@ from art.defences.preprocessor.thermometer_encoding import ThermometerEncoding
 from art.defences.preprocessor.variance_minimization import TotalVarMin
 
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
-from art.defences.trainer.adversarial_trainer_madry_pgd import AdversarialTrainerMadryPGD
+from art.defences.trainer.adversarial_trainer_madry_pgd import (
+    AdversarialTrainerMadryPGD,
+)
 from art.defences.trainer.trainer import Trainer
 
 from art.defences.transformer.defensive_distillation import DefensiveDistillation
