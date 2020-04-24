@@ -28,7 +28,7 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.attacks import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.utils import get_labels_np_array, check_and_transform_label_format, projection, random_sphere
+from art.utils import check_and_transform_label_format, projection, random_sphere, is_probability
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         loss_type=None,
     ):
         """
-        Create a :class:`.ProjectedGradientDescent` instance.
+        Create a :class:`.AutoProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
         :type estimator: :class:`.BaseEstimator`
@@ -87,13 +87,14 @@ class AutoProjectedGradientDescent(EvasionAttack):
         if isinstance(estimator, TensorFlowV2Classifier):
 
             import tensorflow as tf
-            from art.utils import is_probability
 
             if loss_type == "cross_entropy":
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                     self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
+                    self._loss_fn = self._loss_object
                 else:
                     self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+                    self._loss_fn = self._loss_object
             elif loss_type == "difference_logits_ratio":
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
                     raise ValueError(
@@ -132,6 +133,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                         return tf.reduce_mean(dlr)
 
+                    self._loss_fn = difference_logits_ratio
                     self._loss_object = difference_logits_ratio
             elif loss_type is None:
                 self._loss_object = estimator._loss_object
@@ -142,7 +144,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 )
 
             estimator_apgd = TensorFlowV2Classifier(
-                model=estimator._model,
+                model=estimator.model,
                 nb_classes=estimator.nb_classes,
                 input_shape=estimator.input_shape,
                 loss_object=self._loss_object,
@@ -154,7 +156,85 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 preprocessing=estimator.preprocessing,
             )
         elif isinstance(estimator, PyTorchClassifier):
-            raise NotImplementedError
+
+            import torch
+
+            if loss_type == "cross_entropy":
+                if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
+                    raise ValueError(
+                        "The provided estimator seems to predict probabilities. If loss_type='cross_entropy' "
+                        "the estimator has to to predict logits."
+                    )
+                else:
+                    def loss_fn(y_true, y_pred):
+                        return torch.nn.CrossEntropyLoss()(torch.from_numpy(y_pred), torch.from_numpy(np.argmax(y_true, axis=1)))
+
+                    self._loss_fn = loss_fn
+                    self._loss_object = torch.nn.CrossEntropyLoss()
+            elif loss_type == "difference_logits_ratio":
+                if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
+                    raise ValueError(
+                        "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
+                        "the estimator has to to predict logits."
+                    )
+                else:
+
+                    # def difference_logits_ratio(y_true, y_pred):
+                    def difference_logits_ratio(y_pred, y_true):
+
+                        if isinstance(y_true, np.ndarray):
+                            y_true = torch.from_numpy(y_true)
+                        if isinstance(y_pred, np.ndarray):
+                            y_pred = torch.from_numpy(y_pred)
+
+                        # dlr = torch.mean((y_pred - y_true) ** 2)
+                        # return loss
+
+                        i_y_true = torch.argmax(y_true, axis=1)
+
+                        i_y_pred_arg = torch.argsort(y_pred, axis=1)
+
+                        i_z_i_list = list()
+
+                        for i in range(y_true.shape[0]):
+                            if i_y_pred_arg[i, -1] != i_y_true[i]:
+                                i_z_i_list.append(i_y_pred_arg[i, -1])
+                            else:
+                                i_z_i_list.append(i_y_pred_arg[i, -2])
+
+                        i_z_i = torch.stack(i_z_i_list)
+
+                        z_1 = y_pred[:, i_y_pred_arg[:, -1]]
+                        z_3 = y_pred[:, i_y_pred_arg[:, -3]]
+                        z_i = y_pred[:, i_z_i]
+                        z_y = y_pred[:, i_y_true]
+
+                        z_1 = torch.diagonal(z_1)
+                        z_3 = torch.diagonal(z_3)
+                        z_i = torch.diagonal(z_i)
+                        z_y = torch.diagonal(z_y)
+
+                        dlr = -(z_y - z_i) / (z_1 - z_3)
+
+                        return torch.mean(dlr.float())
+
+                    self._loss_fn = difference_logits_ratio
+                    self._loss_object = difference_logits_ratio
+
+            estimator_apgd = PyTorchClassifier(
+                model=estimator.model,
+                loss=self._loss_object,
+                input_shape=estimator.input_shape,
+                nb_classes=estimator.nb_classes,
+                optimizer=None,
+                channel_index=estimator.channel_index,
+                clip_values=estimator.clip_values,
+                preprocessing_defences=estimator.preprocessing_defences,
+                postprocessing_defences=estimator.postprocessing_defences,
+                preprocessing=estimator.preprocessing,
+                device_type=estimator._device,
+            )
+
         else:
             raise NotImplementedError
 
@@ -194,7 +274,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         if y is None:
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+            y = self.estimator.predict(x, batch_size=self.batch_size)
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
@@ -293,8 +373,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         perturbation = projection(x_1 - x_init_batch, self.eps, self.norm)
                         x_1 = x_init_batch + perturbation
 
-                        f_0 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k)))
-                        f_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_1)))
+                        f_0 = float(self._loss_fn(y_true=y_batch, y_pred=self.estimator.predict(x_k)))
+                        f_1 = float(self._loss_fn(y_true=y_batch, y_pred=self.estimator.predict(x_1)))
 
                         self.eta_w_j_m_1 = eta
                         self.f_max_w_j_m_1 = f_0
@@ -323,7 +403,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         perturbation = projection(x_k_p_1 - x_init_batch, self.eps, self.norm)
                         x_k_p_1 = x_init_batch + perturbation
 
-                        f_k_p_1 = float(self._loss_object(y_true=y_batch, y_pred=self.estimator.predict(x_k_p_1)))
+                        f_k_p_1 = float(self._loss_fn(y_true=y_batch, y_pred=self.estimator.predict(x_k_p_1)))
 
                         if f_k_p_1 > self.f_max:
                             self.count_condition_1 += 1
