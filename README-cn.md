@@ -167,7 +167,7 @@ python examples/<example_name>.py
 ## 引用ART
 如果您使用ART进行研究，请考虑引用以下参考文件：
 ```
-@article{art2018,~~~~
+@article{art2018,
     title = {Adversarial Robustness Toolbox v1.2.0},
     author = {Nicolae, Maria-Irina and Sinn, Mathieu and Tran, Minh~Ngoc and Buesser, Beat and Rawat, Ambrish and Wistuba, Martin and Zantedeschi, Valentina and Baracaldo, Nathalie and Chen, Bryant and Ludwig, Heiko and Molloy, Ian and Edwards, Ben},
     journal = {CoRR},
