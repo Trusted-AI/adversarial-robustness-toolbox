@@ -133,6 +133,15 @@ class BaseEstimator(ABC):
         raise NotImplementedError
 
     @property
+    def model(self):
+        """
+        Return the model.
+
+        :return: The model.
+        """
+        return self._model
+
+    @property
     def input_shape(self):
         """
         Return the shape of one input sample.
