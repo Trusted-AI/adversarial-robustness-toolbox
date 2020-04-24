@@ -82,9 +82,101 @@ class AutoProjectedGradientDescent(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
+        from art.estimators.classification import TensorFlowClassifier, TensorFlowV2Classifier, PyTorchClassifier
 
-        if isinstance(estimator, TensorFlowV2Classifier):
+        if isinstance(estimator, TensorFlowClassifier):
+
+            import tensorflow as tf
+
+            if loss_type == "cross_entropy":
+                if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
+                    # self._loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=False)
+                    # self._loss_fn = self._loss_object
+                    raise NotImplementedError
+                else:
+                    self._loss_object = tf.reduce_mean(tf.keras.losses.categorical_crossentropy(y_pred=estimator._output, y_true=estimator._labels_ph, from_logits=True))
+
+                    def loss_fn(y_true, y_pred):
+
+                        y_true_ph = tf.placeholder(tf.int32, shape=[None, 10])
+                        y_pred_ph = tf.placeholder(tf.float32, shape=[None, 10])
+
+                        loss = tf.reduce_mean(
+                            tf.keras.losses.categorical_crossentropy(y_pred=y_pred_ph, y_true=y_true_ph, from_logits=True))
+
+                        loss_value = estimator._sess.run(loss, feed_dict={y_pred_ph: y_pred, y_true_ph: y_true})
+
+                        return loss_value
+
+                    self._loss_fn = loss_fn
+            elif loss_type == "difference_logits_ratio":
+                if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
+                    raise ValueError(
+                        "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
+                        "the estimator has to to predict logits."
+                    )
+                else:
+
+                    def difference_logits_ratio(y_true, y_pred):
+
+                        i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
+
+                        i_y_pred_arg = tf.argsort(y_pred, axis=1)
+
+                        i_z_i = tf.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -2], i_y_pred_arg[:, -1])
+
+                        z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
+                        z_3 = tf.gather(y_pred, i_y_pred_arg[:, -3], axis=1, batch_dims=0)
+                        z_i = tf.gather(y_pred, i_z_i, axis=1, batch_dims=0)
+                        z_y = tf.gather(y_pred, i_y_true, axis=1, batch_dims=0)
+
+                        z_1 = tf.linalg.diag_part(z_1)
+                        z_3 = tf.linalg.diag_part(z_3)
+                        z_i = tf.linalg.diag_part(z_i)
+                        z_y = tf.linalg.diag_part(z_y)
+
+                        dlr = -(z_y - z_i) / (z_1 - z_3)
+
+                        return tf.reduce_mean(dlr)
+
+                    def loss_fn(y_true, y_pred):
+
+                        y_true_ph = tf.placeholder(tf.int32, shape=[None, 10])
+                        y_pred_ph = tf.placeholder(tf.float32, shape=[None, 10])
+
+                        loss = difference_logits_ratio(y_pred=y_pred_ph, y_true=y_true_ph)
+
+                        values_value = estimator._sess.run(loss, feed_dict={y_pred_ph: y_pred, y_true_ph: y_true})
+
+                        return values_value
+
+                    self._loss_fn = loss_fn
+                    self._loss_object = difference_logits_ratio(y_true=estimator._labels_ph, y_pred=estimator._output)
+            elif loss_type is None:
+                self._loss_object = estimator._loss_object
+            else:
+                raise ValueError(
+                    "The argument loss_type has an invalid value. The following options for loss_type are "
+                    "supported: {}".format([None, "cross_entropy", "difference_logits_ratio"])
+                )
+
+            estimator_apgd = TensorFlowClassifier(
+                input_ph=estimator._input_ph,
+                output=estimator._output,
+                labels_ph=estimator._labels_ph,
+                train=estimator._train,
+                loss=self._loss_object,
+                learning=estimator._learning,
+                sess=estimator._sess,
+                channel_index=estimator.channel_index,
+                clip_values=estimator.clip_values,
+                preprocessing_defences=estimator.preprocessing_defences,
+                postprocessing_defences=estimator.postprocessing_defences,
+                preprocessing=estimator.preprocessing,
+                feed_dict=estimator._feed_dict,
+            )
+
+        elif isinstance(estimator, TensorFlowV2Classifier):
 
             import tensorflow as tf
 
