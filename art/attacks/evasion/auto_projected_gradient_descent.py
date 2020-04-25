@@ -28,7 +28,7 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.attacks import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.utils import check_and_transform_label_format, projection, random_sphere, is_probability
+from art.utils import check_and_transform_label_format, projection, random_sphere, is_probability, get_labels_np_array
 
 logger = logging.getLogger(__name__)
 
@@ -97,17 +97,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                                                                  from_logits=True))
 
                     def loss_fn(y_true, y_pred):
-
-                        y_true_ph = tf.placeholder(tf.int32, shape=[None, 10])
-                        y_pred_ph = tf.placeholder(tf.float32, shape=[None, 10])
-
-                        loss = tf.reduce_mean(
-                            tf.keras.losses.categorical_crossentropy(y_pred=y_pred_ph, y_true=y_true_ph,
-                                                                     from_logits=True))
-
-                        loss_value = estimator._sess.run(loss, feed_dict={y_pred_ph: y_pred, y_true_ph: y_true})
-
-                        return loss_value
+                        y_pred_norm = y_pred - np.amax(y_pred, axis=1, keepdims=True)
+                        loss_value = - (y_true * y_pred_norm - np.log(np.sum(np.exp(y_pred_norm), axis=1, keepdims=True)))
+                        return np.mean(loss_value)
 
                     self._loss_fn = loss_fn
             elif loss_type == "difference_logits_ratio":
@@ -142,14 +134,25 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                     def loss_fn(y_true, y_pred):
 
-                        y_true_ph = tf.placeholder(tf.int32, shape=[None, 10])
-                        y_pred_ph = tf.placeholder(tf.float32, shape=[None, 10])
+                        i_y_true = np.argmax(y_true, axis=1)
 
-                        loss = difference_logits_ratio(y_pred=y_pred_ph, y_true=y_true_ph)
+                        i_y_pred_arg = np.argsort(y_pred, axis=1)
 
-                        values_value = estimator._sess.run(loss, feed_dict={y_pred_ph: y_pred, y_true_ph: y_true})
+                        i_z_i = np.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -1], i_y_pred_arg[:, -2])
 
-                        return values_value
+                        z_1 = y_pred[:, i_y_pred_arg[:, -1]]
+                        z_3 = y_pred[:, i_y_pred_arg[:, -3]]
+                        z_i = y_pred[:, i_z_i]
+                        z_y = y_pred[:, i_y_true]
+
+                        z_1 = np.diag(z_1)
+                        z_3 = np.diag(z_3)
+                        z_i = np.diag(z_i)
+                        z_y = np.diag(z_y)
+
+                        dlr = -(z_y - z_i) / (z_1 - z_3)
+
+                        return np.mean(dlr)
 
                     self._loss_fn = loss_fn
                     self._loss_object = difference_logits_ratio(y_true=estimator._labels_ph, y_pred=estimator._output)
@@ -368,7 +371,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         if y is None:
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-            y = self.estimator.predict(x, batch_size=self.batch_size)
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size)).astype(np.int32)
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
