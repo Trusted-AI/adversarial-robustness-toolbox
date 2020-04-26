@@ -143,8 +143,6 @@ class AutoAttack(EvasionAttack):
 
         for attack in self.attacks:
 
-            print("AutoAttack - np.sum(sample_is_robust)", np.sum(sample_is_robust))
-
             if np.sum(sample_is_robust) == 0:
                 break
 

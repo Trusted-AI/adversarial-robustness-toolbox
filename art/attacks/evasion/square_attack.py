@@ -144,15 +144,11 @@ class SquareAttack(EvasionAttack):
 
                 for i_iter in range(self.max_iter):
 
-                    print("i_iter:", i_iter)
-
                     p = self._get_p(i_iter)
 
                     # Determine correctly predicted samples
                     y_pred = self.estimator.predict(x_adv)
                     sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
-
-                    print("np.sum(sample_is_robust):", np.sum(sample_is_robust))
 
                     if np.sum(sample_is_robust) == 0:
                         break
@@ -268,15 +264,11 @@ class SquareAttack(EvasionAttack):
 
                 for i_iter in range(self.max_iter):
 
-                    print("i_iter:", i_iter)
-
                     p = self._get_p(i_iter)
 
                     # Determine correctly predicted samples
                     y_pred = self.estimator.predict(x_adv)
                     sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
-
-                    print("np.sum(sample_is_robust):", np.sum(sample_is_robust))
 
                     if np.sum(sample_is_robust) == 0:
                         break
