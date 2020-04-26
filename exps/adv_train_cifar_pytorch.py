@@ -72,13 +72,9 @@ def main():
     x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
 
     model = PreActResNet18().cuda()
-    # model.apply(initialize_weights)
-    # model.train()
+    model.apply(initialize_weights)
+    model.train()
 
-    checkpoint = torch.load(args.fname)
-    model.load_state_dict(checkpoint)
-    model.eval()
-    model.float()
 
     opt = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9, weight_decay=5e-4)
 
@@ -100,10 +96,10 @@ def main():
 
     epsilon = (args.epsilon / 255.)
 
-    # trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
-    # classifier.fit(x_train, y_train, nb_epochs=3)
+    trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
+    trainer.fit(x_train, y_train, nb_epochs=args.epochs)
 
-    # best_state_dict = copy.deepcopy(model.state_dict())
+    best_state_dict = copy.deepcopy(model.state_dict())
 
     #accuracy
     output = np.argmax(classifier.predict(x_test), axis=1)
@@ -111,8 +107,8 @@ def main():
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]))
 
-    # train_time = time.time()
-    # torch.save(best_state_dict, args.fname + '.pth')
+    train_time = time.time()
+    torch.save(best_state_dict, args.fname + '.pth')
 
 
 
