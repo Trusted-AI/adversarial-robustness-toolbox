@@ -106,7 +106,7 @@ def main():
     # best_state_dict = copy.deepcopy(model.state_dict())
 
     #accuracy
-    output = classifier.predict(x_test)
+    output = np.argmax(classifier.predict(x_test), axis=1)
     print(output)
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]))
