@@ -23,6 +23,7 @@ This module implements the white-box attack `NewtonFool`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
 
@@ -43,24 +44,28 @@ class NewtonFool(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params + ["max_iter", "eta", "batch_size"]
 
-    def __init__(self, classifier, max_iter=100, eta=0.01, batch_size=1):
+    def __init__(
+        self,
+        classifier: ClassifierGradients,
+        max_iter: int = 100,
+        eta: float = 0.01,
+        batch_size: int = 1,
+    ) -> None:
         """
         Create a NewtonFool attack instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param eta: The eta coefficient.
-        :type eta: `float`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
         super(NewtonFool, self).__init__(classifier)
         if not isinstance(classifier, ClassifierGradients):
             raise (
                 TypeError(
-                    "For `" + self.__class__.__name__ + "` classifier must be an instance of "
+                    "For `"
+                    + self.__class__.__name__
+                    + "` classifier must be an instance of "
                     "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
                     + str(classifier.__class__.__bases__)
                     + ". "
@@ -71,16 +76,15 @@ class NewtonFool(EvasionAttack):
         params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
         self.set_params(**params)
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> np.ndarray:
         """
         Generate adversarial samples and return them in a Numpy array.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y: An array with the original labels to be predicted.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
@@ -90,7 +94,10 @@ class NewtonFool(EvasionAttack):
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
-            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            batch_index_1, batch_index_2 = (
+                batch_id * self.batch_size,
+                (batch_id + 1) * self.batch_size,
+            )
             batch = x_adv[batch_index_1:batch_index_2]
 
             # Main algorithm for each batch
@@ -107,7 +114,9 @@ class NewtonFool(EvasionAttack):
                 grads = self.classifier.class_gradient(batch, label=l_batch)
                 if grads.shape[1] == 1:
                     grads = np.squeeze(grads, axis=1)
-                norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
+                norm_grad = np.linalg.norm(
+                    np.reshape(grads, (batch.shape[0], -1)), axis=1
+                )
 
                 # Theta
                 theta = self._compute_theta(norm_batch, score, norm_grad)
@@ -119,7 +128,10 @@ class NewtonFool(EvasionAttack):
                 batch += di_batch
 
             # Apply clip
-            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+            if (
+                hasattr(self.classifier, "clip_values")
+                and self.classifier.clip_values is not None
+            ):
                 clip_min, clip_max = self.classifier.clip_values
                 x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
             else:
@@ -127,11 +139,12 @@ class NewtonFool(EvasionAttack):
 
         logger.info(
             "Success rate of NewtonFool attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+            100
+            * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
         )
         return x_adv
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> bool:
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
@@ -156,18 +169,16 @@ class NewtonFool(EvasionAttack):
 
         return True
 
-    def _compute_theta(self, norm_batch, score, norm_grad):
+    def _compute_theta(
+        self, norm_batch: np.ndarray, score: np.ndarray, norm_grad: np.ndarray
+    ) -> np.ndarray:
         """
         Function to compute the theta at each step.
 
         :param norm_batch: Norm of a batch.
-        :type norm_batch: `np.ndarray`
         :param score: Softmax value at the attacked class.
-        :type score: `np.ndarray`
         :param norm_grad: Norm of gradient values at the attacked class.
-        :type norm_grad: `np.ndarray`
         :return: Theta value.
-        :rtype: `np.ndarray`
         """
         equ1 = self.eta * norm_batch * norm_grad
         equ2 = score - 1.0 / self.classifier.nb_classes()
@@ -176,18 +187,16 @@ class NewtonFool(EvasionAttack):
         return result
 
     @staticmethod
-    def _compute_pert(theta, grads, norm_grad):
+    def _compute_pert(
+        theta: np.ndarray, grads: np.ndarray, norm_grad: np.ndarray
+    ) -> np.ndarray:
         """
         Function to compute the perturbation at each step.
 
         :param theta: Theta value at the current step.
-        :type theta: `np.ndarray`
         :param grads: Gradient values at the attacked class.
-        :type grads: `np.ndarray`
         :param norm_grad: Norm of gradient values at the attacked class.
-        :type norm_grad: `np.ndarray`
         :return: Computed perturbation.
-        :rtype: `np.ndarray`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8

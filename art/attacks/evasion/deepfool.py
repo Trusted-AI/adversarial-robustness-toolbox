@@ -23,6 +23,7 @@ This module implements the white-box attack `DeepFool`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
 
@@ -42,41 +43,52 @@ class DeepFool(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1511.04599
     """
 
-    attack_params = EvasionAttack.attack_params + ["max_iter", "epsilon", "nb_grads", "batch_size"]
+    attack_params = EvasionAttack.attack_params + [
+        "max_iter",
+        "epsilon",
+        "nb_grads",
+        "batch_size",
+    ]
 
-    def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=1):
+    def __init__(
+        self,
+        classifier: ClassifierGradients,
+        max_iter: int = 100,
+        epsilon: float = 1e-6,
+        nb_grads: int = 10,
+        batch_size: int = 1,
+    ) -> None:
         """
         Create a DeepFool attack instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param epsilon: Overshoot parameter.
-        :type epsilon: `float`
         :param nb_grads: The number of class gradients (top nb_grads w.r.t. prediction) to compute. This way only the
                          most likely classes are considered, speeding up the computation.
-        :type nb_grads: `int`
         :param batch_size: Batch size
-        :type batch_size: `int`
         """
         super(DeepFool, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierGradients):
             raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
-        params = {"max_iter": max_iter, "epsilon": epsilon, "nb_grads": nb_grads, "batch_size": batch_size}
+        params = {
+            "max_iter": max_iter,
+            "epsilon": epsilon,
+            "nb_grads": nb_grads,
+            "batch_size": batch_size,
+        }
         self.set_params(**params)
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y: An array with the original labels to be predicted.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.classifier.predict(x, batch_size=self.batch_size)
@@ -96,7 +108,10 @@ class DeepFool(EvasionAttack):
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
-            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            batch_index_1, batch_index_2 = (
+                batch_id * self.batch_size,
+                (batch_id + 1) * self.batch_size,
+            )
             batch = x_adv[batch_index_1:batch_index_2]
 
             # Get predictions and gradients for batch
@@ -104,7 +119,9 @@ class DeepFool(EvasionAttack):
             fk_hat = np.argmax(f_batch, axis=1)
             if use_grads_subset:
                 # Compute gradients only for top predicted classes
-                grd = np.array([self.classifier.class_gradient(batch, label=_) for _ in labels_set])
+                grd = np.array(
+                    [self.classifier.class_gradient(batch, label=_) for _ in labels_set]
+                )
                 grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
             else:
                 # Compute gradients for all classes
@@ -115,24 +132,39 @@ class DeepFool(EvasionAttack):
             current_step = 0
             while active_indices.size > 0 and current_step < self.max_iter:
                 # Compute difference in predictions and gradients only for selected top predictions
-                labels_indices = sorter[np.searchsorted(labels_set, fk_hat, sorter=sorter)]
+                labels_indices = sorter[
+                    np.searchsorted(labels_set, fk_hat, sorter=sorter)
+                ]
                 grad_diff = grd - grd[np.arange(len(grd)), labels_indices][:, None]
-                f_diff = f_batch[:, labels_set] - f_batch[np.arange(len(f_batch)), labels_indices][:, None]
+                f_diff = (
+                    f_batch[:, labels_set]
+                    - f_batch[np.arange(len(f_batch)), labels_indices][:, None]
+                )
 
                 # Choose coordinate and compute perturbation
-                norm = np.linalg.norm(grad_diff.reshape(len(grad_diff), len(labels_set), -1), axis=2) + tol
+                norm = (
+                    np.linalg.norm(
+                        grad_diff.reshape(len(grad_diff), len(labels_set), -1), axis=2
+                    )
+                    + tol
+                )
                 value = np.abs(f_diff) / norm
                 value[np.arange(len(value)), labels_indices] = np.inf
                 l_var = np.argmin(value, axis=1)
                 absolute1 = abs(f_diff[np.arange(len(f_diff)), l_var])
-                draddiff = grad_diff[np.arange(len(grad_diff)), l_var].reshape(len(grad_diff), -1)
+                draddiff = grad_diff[np.arange(len(grad_diff)), l_var].reshape(
+                    len(grad_diff), -1
+                )
                 pow1 = pow(np.linalg.norm(draddiff, axis=1), 2,) + tol
                 r_var = absolute1 / pow1
                 r_var = r_var.reshape((-1,) + (1,) * (len(x.shape) - 1))
                 r_var = r_var * grad_diff[np.arange(len(grad_diff)), l_var]
 
                 # Add perturbation and clip result
-                if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+                if (
+                    hasattr(self.classifier, "clip_values")
+                    and self.classifier.clip_values is not None
+                ):
                     batch[active_indices] = np.clip(
                         batch[active_indices] + r_var[active_indices],
                         self.classifier.clip_values[0],
@@ -148,7 +180,12 @@ class DeepFool(EvasionAttack):
                 # Recompute gradients for new x
                 if use_grads_subset:
                     # Compute gradients only for (originally) top predicted classes
-                    grd = np.array([self.classifier.class_gradient(batch, label=_) for _ in labels_set])
+                    grd = np.array(
+                        [
+                            self.classifier.class_gradient(batch, label=_)
+                            for _ in labels_set
+                        ]
+                    )
                     grd = np.squeeze(np.swapaxes(grd, 0, 2), axis=0)
                 else:
                     # Compute gradients for all classes
@@ -163,7 +200,10 @@ class DeepFool(EvasionAttack):
             x_adv1 = x_adv[batch_index_1:batch_index_2]
             x_adv2 = (1 + self.epsilon) * (batch - x_adv[batch_index_1:batch_index_2])
             x_adv[batch_index_1:batch_index_2] = x_adv1 + x_adv2
-            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+            if (
+                hasattr(self.classifier, "clip_values")
+                and self.classifier.clip_values is not None
+            ):
                 np.clip(
                     x_adv[batch_index_1:batch_index_2],
                     self.classifier.clip_values[0],
@@ -173,11 +213,12 @@ class DeepFool(EvasionAttack):
 
         logger.info(
             "Success rate of DeepFool attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+            100
+            * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
         )
         return x_adv
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> bool:
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
@@ -198,7 +239,9 @@ class DeepFool(EvasionAttack):
             raise ValueError("The number of iterations must be a positive integer.")
 
         if not isinstance(self.nb_grads, (int, np.int)) or self.nb_grads <= 0:
-            raise ValueError("The number of class gradients to compute must be a positive integer.")
+            raise ValueError(
+                "The number of class gradients to compute must be a positive integer."
+            )
 
         if self.epsilon < 0:
             raise ValueError("The overshoot parameter must not be negative.")

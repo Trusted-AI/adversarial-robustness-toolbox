@@ -22,8 +22,9 @@ Implementation of the High-Confidence-Low-Uncertainty (HCLU) adversarial example
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 import copy
+import logging
+from typing import Optional
 
 import numpy as np
 from scipy.optimize import minimize
@@ -44,37 +45,43 @@ class HighConfidenceLowUncertainty(EvasionAttack):
 
     attack_params = ["conf", "unc_increase", "min_val", "max_val"]
 
-    def __init__(self, classifier, conf=0.95, unc_increase=100.0, min_val=0.0, max_val=1.0):
+    def __init__(
+        self,
+        classifier: GPyGaussianProcessClassifier,
+        conf: float = 0.95,
+        unc_increase: float = 100.0,
+        min_val: float = 0.0,
+        max_val: float = 1.0,
+    ) -> None:
         """
         :param classifier: A trained model of type GPYGaussianProcessClassifier.
-        :type classifier: :class:`.Classifier.GPyGaussianProcessClassifier`
-        :param conf: Confidence that examples should have, if there were to be classified as 1.0 maximally
-        :type conf: `float`
-        :param unc_increase: Value uncertainty is allowed to deviate, where 1.0 is original value
-        :type unc_increase: `float`
-        :param min_val: minimal value any feature can take, defaults to 0.0
-        :type min_val: `float`
-        :param max_val: maximal value any feature can take, defaults to 1.0
-        :type max_val: `float`
+        :param conf: Confidence that examples should have, if there were to be classified as 1.0 maximally.
+        :param unc_increase: Value uncertainty is allowed to deviate, where 1.0 is original value.
+        :param min_val: minimal value any feature can take.
+        :param max_val: maximal value any feature can take.
         """
         super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
         if not isinstance(classifier, GPyGaussianProcessClassifier):
-            raise TypeError("Model must be a GPy Gaussian Process classifier!")
-        params = {"conf": conf, "unc_increase": unc_increase, "min_val": min_val, "max_val": max_val}
+            raise TypeError("Model must be a GPy Gaussian Process classifier.")
+        params = {
+            "conf": conf,
+            "unc_increase": unc_increase,
+            "min_val": min_val,
+            "max_val": max_val,
+        }
         self.set_params(**params)
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         attack implementations.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         x_adv = copy.copy(x)
 
@@ -88,7 +95,9 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             return (pred - args["conf"]).reshape(-1)
 
         def constraint_unc(x, args):  # constraint for uncertainty
-            cur_unc = (args["classifier"].predict_uncertainty(x.reshape(1, -1))).reshape(-1)
+            cur_unc = (
+                args["classifier"].predict_uncertainty(x.reshape(1, -1))
+            ).reshape(-1)
             return (args["max_uncertainty"] - cur_unc)[0]
 
         bounds = []
@@ -97,8 +106,12 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             bounds.append((self.min_val, self.max_val))
         for i in range(np.shape(x)[0]):  # go though data amd craft
             # get properties for attack
-            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
-            class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
+            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(
+                x_adv[i].reshape(1, -1)
+            )
+            class_zero = (
+                not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
+            )
             init_args = {
                 "classifier": self.classifier,
                 "class_zero": class_zero,
@@ -109,17 +122,27 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             constr_unc = {"type": "ineq", "fun": constraint_unc, "args": (init_args,)}
             args = {"args": init_args, "orig": x[i].reshape(-1)}
             # finally, run optimization
-            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])["x"]
-        logger.info("Success rate of HCLU attack: %.2f%%", 100 * compute_success(self.classifier, x, y, x_adv))
+            x_adv[i] = minimize(
+                minfun,
+                x_adv[i],
+                args=args,
+                bounds=bounds,
+                constraints=[constr_conf, constr_unc],
+            )["x"]
+        logger.info(
+            "Success rate of HCLU attack: %.2f%%",
+            100 * compute_success(self.classifier, x, y, x_adv),
+        )
         return x_adv
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> bool:
         """
         Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
 
-        :param kwargs: a dictionary of attack-specific parameters
-        :type kwargs: `dict`
-        :return: `True` when parsing was successful
+        :param conf: Confidence that examples should have, if there were to be classified as 1.0 maximally.
+        :param unc_increase: Value uncertainty is allowed to deviate, where 1.0 is original value.
+        :param min_val: minimal value any feature can take.
+        :param max_val: maximal value any feature can take.
         """
         super(HighConfidenceLowUncertainty, self).set_params(**kwargs)
         if self.conf <= 0.5 or self.conf > 1.0:
@@ -128,3 +151,5 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             raise ValueError("Value to increase uncertainty must be positive.")
         if self.min_val > self.max_val:
             raise ValueError("Maximum has to be larger than minimum.")
+
+        return True

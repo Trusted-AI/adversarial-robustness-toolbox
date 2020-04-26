@@ -25,13 +25,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import random
+import types
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
-from art.utils import projection
+from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.exceptions import ClassifierError
+from art.utils import projection
 
 logger = logging.getLogger(__name__)
 
@@ -56,32 +58,45 @@ class UniversalPerturbation(EvasionAttack):
         "jsma": "art.attacks.evasion.saliency_map.SaliencyMapMethod",
         "vat": "art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod",
     }
-    attack_params = EvasionAttack.attack_params + ["attacker", "attacker_params", "delta", "max_iter", "eps", "norm"]
+    attack_params = EvasionAttack.attack_params + [
+        "attacker",
+        "attacker_params",
+        "delta",
+        "max_iter",
+        "eps",
+        "norm",
+    ]
 
     def __init__(
-        self, classifier, attacker="deepfool", attacker_params=None, delta=0.2, max_iter=20, eps=10.0, norm=np.inf
-    ):
+        self,
+        classifier: Union[ClassifierGradients, ClassifierNeuralNetwork],
+        attacker: str = "deepfool",
+        attacker_params: Optional[Dict[str, Any]] = None,
+        delta: float = 0.2,
+        max_iter: int = 20,
+        eps: float = 10.0,
+        norm: int = np.inf,
+    ) -> None:
         """
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
                          'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
-        :type attacker: `str`
         :param attacker_params: Parameters specific to the adversarial attack. If this parameter is not specified,
                                 the default parameters of the chosen attack will be used.
-        :type attacker_params: `dict`
         :param delta: desired accuracy
-        :type delta: `float`
         :param max_iter: The maximum number of iterations for computing universal perturbation.
-        :type max_iter: `int`
-        :param eps: Attack step size (input variation)
-        :type eps: `float`
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
-        :type norm: `int`
+        :param eps: Attack step size (input variation).
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2.
         """
         super(UniversalPerturbation, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(
+            classifier, ClassifierGradients
+        ):
+            raise ClassifierError(
+                self.__class__,
+                [ClassifierNeuralNetwork, ClassifierGradients],
+                classifier,
+            )
 
         kwargs = {
             "attacker": attacker,
@@ -93,18 +108,19 @@ class UniversalPerturbation(EvasionAttack):
         }
         self.set_params(**kwargs)
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: An array with the original labels to be predicted.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
-        logger.info("Computing universal perturbation based on %s attack.", self.attacker)
+        logger.info(
+            "Computing universal perturbation based on %s attack.", self.attacker
+        )
 
         # Init universal perturbation
         noise = 0
@@ -144,7 +160,10 @@ class UniversalPerturbation(EvasionAttack):
 
             # Apply attack and clip
             x_adv = x + noise
-            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+            if (
+                hasattr(self.classifier, "clip_values")
+                and self.classifier.clip_values is not None
+            ):
                 clip_min, clip_max = self.classifier.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
@@ -155,11 +174,13 @@ class UniversalPerturbation(EvasionAttack):
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
-        logger.info("Success rate of universal perturbation attack: %.2f%%", 100 * fooling_rate)
+        logger.info(
+            "Success rate of universal perturbation attack: %.2f%%", 100 * fooling_rate
+        )
 
         return x_adv
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> bool:
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
@@ -190,16 +211,16 @@ class UniversalPerturbation(EvasionAttack):
 
         return True
 
-    def _get_attack(self, a_name, params=None):
+    def _get_attack(
+        self, a_name: str, params: Optional[Dict[str, Any]] = None
+    ) -> EvasionAttack:
         """
         Get an attack object from its name.
 
-        :param a_name: attack name.
-        :type a_name: `str`
-        :param params: attack params.
-        :type params: `dict`
-        :return: attack object
-        :rtype: `object`
+        :param a_name: Attack name.
+        :param params: Attack params.
+        :return: Attack object.
+        :raises NotImplementedError: If the attack is not supported.
         """
         try:
             attack_class = self._get_class(self.attacks_dict[a_name])
@@ -209,22 +230,18 @@ class UniversalPerturbation(EvasionAttack):
                 a_instance.set_params(**params)
 
             return a_instance
-
         except KeyError:
             raise NotImplementedError("{} attack not supported".format(a_name))
 
     @staticmethod
-    def _get_class(class_name):
+    def _get_class(class_name: str) -> types.ModuleType:
         """
         Get a class module from its name.
 
         :param class_name: Full name of a class.
-        :type class_name: `str`
         :return: The class `module`.
-        :rtype: `module`
         """
         sub_mods = class_name.split(".")
-        print(class_name)
         module_ = __import__(".".join(sub_mods[:-1]), fromlist=sub_mods[-1])
         class_module = getattr(module_, sub_mods[-1])
 
