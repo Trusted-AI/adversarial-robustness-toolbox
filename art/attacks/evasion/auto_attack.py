@@ -101,7 +101,7 @@ class AutoAttack(EvasionAttack):
                 DeepFool(classifier=estimator, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size)
             )
             attacks.append(
-                SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=1)
+                SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5)
             )
 
         kwargs = {
@@ -143,7 +143,7 @@ class AutoAttack(EvasionAttack):
 
         for attack in self.attacks:
 
-            print('AutoAttack - np.sum(sample_is_robust)', np.sum(sample_is_robust))
+            print("AutoAttack - np.sum(sample_is_robust)", np.sum(sample_is_robust))
 
             if np.sum(sample_is_robust) == 0:
                 break
@@ -155,7 +155,13 @@ class AutoAttack(EvasionAttack):
             x_robust_adv = attack.generate(x=x_robust, y=y_robust)
             y_pred_robust_adv = self.estimator.predict(x_robust_adv)
 
-            sample_is_not_robust = np.invert(np.argmax(y_pred_robust_adv, axis=1) == np.argmax(y_robust, axis=1))
+            norm_is_smaller_eps = np.linalg.norm(
+                (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm
+            ) <= (self.eps + 0.001)
+
+            sample_is_not_robust = np.logical_and(
+                np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1), norm_is_smaller_eps
+            )
 
             x_robust[sample_is_not_robust] = x_robust_adv[sample_is_not_robust]
             x_adv[sample_is_robust] = x_robust
