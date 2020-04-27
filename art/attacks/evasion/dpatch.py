@@ -230,7 +230,7 @@ class DPatch(EvasionAttack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        :param patch_shape: The shape of the adversarial path as a tuple of shape (width, height, nb_channels).
+        :param patch_shape: The shape of the adversarial path as a tuple of shape (height, width, nb_channels).
         :type patch_shape: (`int`, `int`, `int`)
         :param learning_rate: The learning rate of the optimization.
         :type learning_rate: `float`
