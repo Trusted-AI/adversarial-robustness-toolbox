@@ -103,7 +103,6 @@ class DPatch(EvasionAttack):
         assert x.ndim == 4, "The adversarial patch can only be applied to images."
 
         for i_step in range(self.max_iter):
-            print("i_step", i_step)
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
 
