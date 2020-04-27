@@ -43,11 +43,12 @@ class AutoAttack(EvasionAttack):
         "attacks",
         "targeted",
         "batch_size",
+        "estimator_orig"
     ]
 
     _estimator_requirements = (BaseEstimator,)
 
-    def __init__(self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, targeted=False, batch_size=32):
+    def __init__(self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, targeted=False, batch_size=32, estimator_orig=None):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
@@ -66,8 +67,13 @@ class AutoAttack(EvasionAttack):
         :type targeted: `bool`
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
+        :param estimator_orig: Original estimator to be attacked by adversarial examples.
+        :type estimator_orig: :class:`.BaseEstimator`
         """
         super().__init__(estimator=estimator)
+
+        if estimator_orig is None:
+            estimator_orig = estimator
 
         if attacks is None:
             attacks = list()
@@ -111,6 +117,7 @@ class AutoAttack(EvasionAttack):
             "attacks": attacks,
             "targeted": targeted,
             "batch_size": batch_size,
+            "estimator_orig": estimator_orig
         }
         self.set_params(**kwargs)
 
@@ -138,7 +145,7 @@ class AutoAttack(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Determine correctly predicted samples
-        y_pred = self.estimator.predict(x_adv)
+        y_pred = self.estimator_orig.predict(x_adv)
         sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
         for attack in self.attacks:
@@ -151,7 +158,7 @@ class AutoAttack(EvasionAttack):
 
             # Generate adversarial examples
             x_robust_adv = attack.generate(x=x_robust, y=y_robust)
-            y_pred_robust_adv = self.estimator.predict(x_robust_adv)
+            y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
 
             norm_is_smaller_eps = np.linalg.norm(
                 (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm
