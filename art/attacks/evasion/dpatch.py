@@ -160,12 +160,14 @@ class DPatch(EvasionAttack):
     @staticmethod
     def _augment_images_with_patch(x, patch, random_location, channel_index):
         """
-        Augment images with randomly shifted patch.
+        Augment images with patch.
+
         :param x: Sample images.
         :type x: `np.ndarray`
         :param patch: The patch to be applied.
         :param patch: `np.ndarray`
-        :param random_location: If True apply patch at randomly shifted locations.
+        :param random_location: If True apply patch at randomly shifted locations, otherwise place patch at origin
+                                (top-left corner).
         :type random_location: `bool`
         :param channel_index: Index of the color channel.
         :type channel_index: `Int`
