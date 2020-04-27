@@ -86,7 +86,9 @@ class KnockoffNets(ExtractionAttack):
         }
         self.set_params(**params)
 
-    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Classifier:
+    def extract(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> Classifier:
         """
         Extract a thieved classifier.
 
