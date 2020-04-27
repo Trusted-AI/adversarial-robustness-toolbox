@@ -107,6 +107,18 @@ class ProjectedGradientDescent(EvasionAttack):
         """
         super(ProjectedGradientDescent, self).__init__(estimator=estimator)
 
+        kwargs = {
+            "norm": norm,
+            "eps": eps,
+            "eps_step": eps_step,
+            "max_iter": max_iter,
+            "targeted": targeted,
+            "num_random_init": num_random_init,
+            "batch_size": batch_size,
+            "random_eps": random_eps
+        }
+        ProjectedGradientDescent.set_params(self, **kwargs)
+
         if isinstance(self.estimator, PyTorchClassifier):
             self._attack = ProjectedGradientDescentPytorch(
                 estimator=estimator,
