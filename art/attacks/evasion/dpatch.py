@@ -100,7 +100,7 @@ class DPatch(EvasionAttack):
 
         assert y is None, "The DPatch attack does not use target labels."
 
-        assert len(x.shape) == 4, "The adversarial patch can only be applied to images."
+        assert x.ndim == 4, "The adversarial patch can only be applied to images."
 
         for i_step in range(self.max_iter):
             print("i_step", i_step)
