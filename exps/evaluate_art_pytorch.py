@@ -61,20 +61,15 @@ def main():
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
 
-    start_start_time = time.time()
+    (_, _), (x_test, y_test), min_pixel_value, max_pixel_value = load_cifar10()
+    # cifar_mu, cifar_std = 0.4733630004850874, 0.25156892506322026
+    cifar_mu = (0.4914, 0.4822, 0.4465)
+    cifar_std = (0.2471, 0.2435, 0.2616)
+    #TODO: channel wise
 
-    (x_train, y_train), (x_test, y_test), min_pixel_value, max_pixel_value = load_cifar10()
-    cifar_mu, cifar_std  = 0.4733630004850874, 0.25156892506322026
-
-    # upper_limit = ((1.0 - mu) / std)
-    # lower_limit = ((0.0 - mu) / std)
-
-    x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
     x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
 
     model = PreActResNet18().cuda()
-    # model.apply(initialize_weights)
-    # model.train()
 
     checkpoint = torch.load(args.fname)
     model.load_state_dict(checkpoint)
@@ -82,13 +77,9 @@ def main():
     model.float()
 
     opt = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9, weight_decay=5e-4)
-
-    # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
-
     criterion = nn.CrossEntropyLoss()
 
     # Step 3: Create the ART classifier
-
     classifier = PyTorchClassifier(
         model=model,
         clip_values=(0.0,1.0),
@@ -99,12 +90,6 @@ def main():
         nb_classes=10,
     )
 
-    epsilon = (args.epsilon / 255.)
-
-    # trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
-    # classifier.fit(x_train, y_train, nb_epochs=3)
-
-    # best_state_dict = copy.deepcopy(model.state_dict())
 
     #accuracy
     output = np.argmax(classifier.predict(x_test), axis=1)
@@ -112,21 +97,20 @@ def main():
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]))
 
-    # train_time = time.time()
-    # torch.save(best_state_dict, args.fname + '.pth')
-    acc = [nb_correct_pred / x_test.shape[0]]
-    for eps in [2, 4, 8, 16]:
-        eps_step = (1.5 * eps) / 40
-        attack_test = ProjectedGradientDescent(classifier=classifier, norm=np.inf, eps=eps,
-                                               eps_step=eps_step, max_iter=40, targeted=False,
-                                               num_random_init=5, batch_size=32)
-        x_test_attack = attack_test.generate(x_test)
-        x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
-        nb_correct_attack_pred = np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
-        acc.append(nb_correct_attack_pred / x_test.shape[0])
-        print(acc)
-
-    np.save('./exps/{}.npy'.format(args.accfname), acc)
+    # acc = [nb_correct_pred / x_test.shape[0]]
+    # eps_range = [2/255., 4/255., 8/255., 16/255.]
+    # for eps in eps_range:
+    #     eps_step = (1.5 * eps) / 40
+    #     attack_test = ProjectedGradientDescent(classifier=classifier, norm=np.inf, eps=eps,
+    #                                            eps_step=eps_step, max_iter=40, targeted=False,
+    #                                            num_random_init=10, batch_size=32)
+    #     x_test_attack = attack_test.generate(x_test)
+    #     x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
+    #     nb_correct_attack_pred = np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
+    #     acc.append(nb_correct_attack_pred / x_test.shape[0])
+    #     print(acc)
+    #
+    # np.save('./exps/{}.npy'.format(args.accfname), acc)
 
 
 
