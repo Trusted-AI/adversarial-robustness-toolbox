@@ -1,5 +1,6 @@
 dist: xenial
 language: python
+cache: pip
 env:
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.2 KERAS_V=2.2.5
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.1.0 KERAS_V=2.3.1
