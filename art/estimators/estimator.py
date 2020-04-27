@@ -23,6 +23,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.defences.postprocessor.postprocessor import Postprocessor
 
@@ -94,6 +95,11 @@ class BaseEstimator(ABC):
             if np.array(self._clip_values[0] >= self._clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
 
+        if isinstance(self._clip_values, np.ndarray):
+            self._clip_values = self._clip_values.astype(ART_NUMPY_DTYPE)
+        else:
+            self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)
+            
         if isinstance(self.preprocessing_defences, Preprocessor):
             self.preprocessing_defences = [self.preprocessing_defences]
 
