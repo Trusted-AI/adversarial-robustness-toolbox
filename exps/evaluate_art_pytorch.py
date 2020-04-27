@@ -8,7 +8,7 @@ import time
 sys.path.append('/home/ambrish/github/adversarial-robustness-toolbox')
 
 from art.classifiers import PyTorchClassifier
-from art.defences.trainer import AdversarialTrainerFBF
+from art.attacks.evasion import ProjectedGradientDescent
 from art.utils import load_cifar10
 import numpy as np
 import torch
@@ -48,6 +48,7 @@ def get_args():
     parser.add_argument('--fgsm-alpha', default=1.25, type=float)
     parser.add_argument('--fgsm-init', default='random', choices=['zero', 'random', 'previous'])
     parser.add_argument('--fname', default='cifar_robust_model', type=str)
+    parser.add_argument('--accfname', default='acc', type=str)
     parser.add_argument('--seed', default=0, type=int)
     parser.add_argument('--overfit-check', action='store_true')
     return parser.parse_args()
@@ -113,6 +114,19 @@ def main():
 
     # train_time = time.time()
     # torch.save(best_state_dict, args.fname + '.pth')
+    acc = [nb_correct_pred / x_test.shape[0]]
+    for eps in [2, 4, 8, 16]:
+        eps_step = (1.5 * eps) / 40
+        attack_test = ProjectedGradientDescent(classifier=classifier, norm=np.inf, eps=eps,
+                                               eps_step=eps_step, max_iter=40, targeted=False,
+                                               num_random_init=5, batch_size=32)
+        x_test_attack = attack_test.generate(x_test)
+        x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
+        nb_correct_attack_pred = np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
+        acc.append(nb_correct_attack_pred / x_test.shape[0])
+        print(acc)
+
+    np.save('./exps/{}.npy'.format(args.accfname), acc)
 
 
 
