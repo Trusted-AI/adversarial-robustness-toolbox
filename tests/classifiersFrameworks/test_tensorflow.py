@@ -424,7 +424,7 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
                 "input_shape=(28, 28, 1)",
                 "loss_object=<tensorflow.python.keras.losses." "SparseCategoricalCrossentropy",
                 "train_step=<function get_image_classifier_tf_v2." "<locals>.train_step",
-                "channel_index=3, clip_values=array([0.0, 1.0]), preprocessing_defences="
+                "channel_index=3, clip_values=array([0., 1.], dtype=float32), preprocessing_defences="
                 "None, postprocessing_defences=None, preprocessing=(0, 1))",
             ],
         )
@@ -443,7 +443,7 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
                 "learning=None",
                 "sess=<tensorflow.python.client.session.Session object",
                 "TensorFlowClassifier",
-                "channel_index=3, clip_values=array([0.0, 1.0]), "
+                "channel_index=3, clip_values=array([0., 1.], dtype=float32), "
                 "preprocessing_defences=None, postprocessing_defences=None, "
                 "preprocessing=(0, 1))",
             ],
