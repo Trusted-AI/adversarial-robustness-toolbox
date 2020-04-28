@@ -257,6 +257,15 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         """
         return self._model.tree_.feature[node_id]
 
+    def get_samples_at_node(self, node_id):
+        """
+        Returns the number of training samples mapped to a node.
+
+        :return: number of samples mapped this node.
+        :rtype: `int`
+        """
+        return self._model.tree_.n_node_samples[node_id]
+
     def get_left_child(self, node_id):
         """
         Returns the id of the left child node of node_id.
