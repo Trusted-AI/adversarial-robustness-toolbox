@@ -69,7 +69,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param attack_losses: Tuple of any combinaiton of strings of loss components: 'loss_classifier', 'loss_box_reg',
+        :param attack_losses: Tuple of any combination of strings of loss components: 'loss_classifier', 'loss_box_reg',
                               'loss_objectness', and 'loss_rpn_box_reg'.
         :type attack_losses: `Tuple[str]`
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
@@ -85,6 +85,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
+        assert clip_values[0] == 0, "This classifier requires un-normalized input images with clip_vales=(0, max_value)"
+        assert clip_values[1] > 0, "This classifier requires un-normalized input images with clip_vales=(0, max_value)"
         assert preprocessing is None, "This estimator does not support `preprocessing`."
         assert postprocessing_defences is None, "This estimator does not support `postprocessing_defences`."
 
