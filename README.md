@@ -56,6 +56,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * High Confidence Low Uncertainty adversarial samples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * Iterative frame saliency attack ([Inkawhich et al., 2018](https://arxiv.org/abs/1811.11875))
+* DPatch ([Liu et al., 2018](https://arxiv.org/abs/1806.02299v4))
 * Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 * Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
