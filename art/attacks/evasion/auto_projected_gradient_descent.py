@@ -494,6 +494,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         alpha = 0.75
 
                         x_k_p_1 = x_k + alpha * (z_k_p_1 - x_k) + (1 - alpha) * (x_k - x_k_m_1)
+
+                        if self.estimator.clip_values is not None:
+                            clip_min, clip_max = self.estimator.clip_values
+                            x_k_p_1 = np.clip(x_k_p_1, clip_min, clip_max)
+
                         perturbation = projection(x_k_p_1 - x_init_batch, self.eps, self.norm)
                         x_k_p_1 = x_init_batch + perturbation
 
