@@ -42,6 +42,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         postprocessing_defences=None,
         preprocessing=None,
         attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+        device_type="gpu",
     ):
         """
         Initialization.
@@ -71,6 +72,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :param attack_losses: Tuple of any combinaiton of strings of loss components: 'loss_classifier', 'loss_box_reg',
                               'loss_objectness', and 'loss_rpn_box_reg'.
         :type attack_losses: `Tuple[str]`
+        :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
+                            if available otherwise run on CPU.
+        :type device_type: `string`
         """
 
         super().__init__(
@@ -96,11 +100,11 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         # Set device
         import torch
 
-        if torch.cuda.is_available():
+        if device_type == "cpu" or not torch.cuda.is_available():
+            self._device = torch.device("cpu")
+        else:
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
-        else:
-            self._device = torch.device("cpu")
 
         self._model.to(self._device)
 
