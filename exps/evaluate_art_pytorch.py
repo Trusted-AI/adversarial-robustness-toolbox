@@ -62,9 +62,20 @@ def main():
     torch.cuda.manual_seed(args.seed)
 
     (_, _), (x_test, y_test), min_pixel_value, max_pixel_value = load_cifar10()
-    cifar_mu, cifar_std = 0.4733630004850874, 0.25156892506322026
+    # cifar_mu, cifar_std = 0.4733630004850874, 0.25156892506322026
     # cifar_mu = (0.4914, 0.4822, 0.4465)
     # cifar_std = (0.2471, 0.2435, 0.2616)
+
+    cifar_mu = np.ones((3,32,32))
+    cifar_mu[0, :, :] = 0.4914
+    cifar_mu[1, :, :] = 0.4822
+    cifar_mu[2, :, :] = 0.4465
+
+    cifar_std = np.ones((3, 32, 32))
+    cifar_std[0, :, :] = 0.2471
+    cifar_std[1, :, :] = 0.2435
+    cifar_std[2, :, :] = 0.2616
+
     #TODO: channel wise
 
     x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
