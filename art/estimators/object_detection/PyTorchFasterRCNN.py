@@ -157,8 +157,6 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             else:
                 loss = loss + output[loss_name]
 
-        print("loss", loss)
-
         # Clean gradients
         self._model.zero_grad()
 
