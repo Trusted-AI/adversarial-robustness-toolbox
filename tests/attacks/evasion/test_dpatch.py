@@ -23,6 +23,7 @@ from art.attacks.evasion import DPatch
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
+from tests.utils import master_seed
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
@@ -37,12 +38,23 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.parametrize("random_location", [True, False])
-def test_augment_images_with_patch(random_location, fix_get_mnist_subset):
+@pytest.mark.parametrize("image_format", ["NHWC", "NCHW"])
+def test_augment_images_with_patch(random_location, image_format, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    patch = np.ones(shape=(4, 4, 1)) * 0.5
+    master_seed()
+
+    if image_format == "NHWC":
+        patch = np.ones(shape=(4, 4, 1)) * 0.5
+        x = x_train_mnist[0:3]
+        channel_index = 3
+    elif image_format == "NCHW":
+        patch = np.ones(shape=(1, 4, 4)) * 0.5
+        x = np.transpose(x_train_mnist[0:3], (0, 3, 1, 2))
+        channel_index = 1
+
     patched_images, transformations = DPatch._augment_images_with_patch(
-        x=x_train_mnist[0:3], patch=patch, random_location=random_location, channel_index=3
+        x=x, patch=patch, random_location=random_location, channel_index=channel_index
     )
 
     if random_location:
@@ -111,6 +123,10 @@ def test_augment_images_with_patch(random_location, fix_get_mnist_subset):
         ]
 
     assert transformations[1] == transformation_expected
+
+    if image_format == "NCHW":
+        patched_images = np.transpose(patched_images, (0, 2, 3, 1))
+
     np.testing.assert_array_equal(patched_images[1, 2, :, 0], patched_images_column)
 
 
