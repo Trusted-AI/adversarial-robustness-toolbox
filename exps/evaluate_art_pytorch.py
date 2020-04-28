@@ -108,20 +108,20 @@ def main():
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]))
 
-    # acc = [nb_correct_pred / x_test.shape[0]]
-    # eps_range = [2/255., 4/255., 8/255., 16/255.]
-    # for eps in eps_range:
-    #     eps_step = (1.5 * eps) / 40
-    #     attack_test = ProjectedGradientDescent(classifier=classifier, norm=np.inf, eps=eps,
-    #                                            eps_step=eps_step, max_iter=40, targeted=False,
-    #                                            num_random_init=10, batch_size=32)
-    #     x_test_attack = attack_test.generate(x_test)
-    #     x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
-    #     nb_correct_attack_pred = np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
-    #     acc.append(nb_correct_attack_pred / x_test.shape[0])
-    #     print(acc)
-    #
-    # np.save('./exps/{}.npy'.format(args.accfname), acc)
+    acc = [nb_correct_pred / x_test.shape[0]]
+    eps_range = [2/255., 4/255., 8/255., 16/255.]
+    for eps in eps_range:
+        eps_step = (1.5 * eps) / 40
+        attack_test = ProjectedGradientDescent(classifier=classifier, norm=np.inf, eps=eps,
+                                               eps_step=eps_step, max_iter=40, targeted=False,
+                                               num_random_init=10, batch_size=32)
+        x_test_attack = attack_test.generate(x_test)
+        x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
+        nb_correct_attack_pred = np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
+        acc.append(nb_correct_attack_pred / x_test.shape[0])
+        print(acc)
+
+    np.save('./exps/{}.npy'.format(args.accfname), acc)
 
 
 
