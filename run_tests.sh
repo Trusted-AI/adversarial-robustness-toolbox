@@ -76,7 +76,8 @@ declare -a defences=("tests/defences/test_adversarial_trainer.py" \
 declare -a detection=("tests/detection/subsetscanning/test_detector.py" \
                       "tests/detection/test_detector.py" )
 
-declare -a metrics=("tests/metrics/test_metrics.py" \
+declare -a metrics=("tests/metrics/test_gradient_check.py" \
+                    "tests/metrics/test_metrics.py" \
                     "tests/metrics/test_verification_decision_trees.py" )
 
 declare -a poison_detection=("tests/poison_detection/test_activation_defence.py" \

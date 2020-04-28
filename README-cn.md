@@ -43,6 +43,7 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * HopSkipJump攻击 ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * 高可信度低不确定性对抗性例子 ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * Iterative frame saliency attack ([Inkawhich et al., 2018](https://arxiv.org/abs/1811.11875))
+* DPatch ([Liu et al., 2018](https://arxiv.org/abs/1806.02299v4))
 * 预计梯度下降 ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 * 弹性网攻击 ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
@@ -125,15 +126,33 @@ pip install adversarial-robustness-toolbox
 git clone https://github.com/IBM/adversarial-robustness-toolbox
 ```
 
-使用项目文件夹`art`中的以下命令安装ART：
+從項目文件夾中使用以下命令安裝ART `adversarial-robustness-toolbox`:
+
+使用點子：
 ```bash
 pip install .
 ```
 
-ART提供可以使用以下命令运行的单元测试：
+使用Docker：
+*構建ART docker映像： `make build`
+*要進入ART docker環境，請運行： `make run-bash`
+*從容器運行運行Jupyter筆記本`make run-jupyter` 然後復制並粘貼生成的網址以連接到該容器。  
+
+####運行ART單元測試
+ART提供可以在ART環境中運行的單元測試。 第一次運行測試，
+  ART將下載必要的數據集，因此可能需要一段時間。
+*注意：如果您希望使用Tensorflow 1環境運行單元測試，只需註釋掉其中一個中的tensorflow 2軟件包即可 `test_requirements.txt` 要么 `Dockerfile` 如所須
+
+使用以下命令運行測試：
+
+使用點子：
 ```bash
+pip install -r test_requirements.txt
 bash run_tests.sh
 ```
+
+使用Docker：
+`make run-test`
 
 ## ART入门
 使用ART的示例可以在 `examples` 和 [examples/README.md](examples/README.md)提供概述和附加信息中找到， 其中包括了每个机器学习框架的最小示例。所有示例都可以使用以下命令运行：
@@ -143,15 +162,9 @@ python examples/<example_name>.py
 
 更详细的示例和教程请在 `notebooks` 和 [notebooks/README.md](notebooks/README.md)中寻找。 
 
-## 您的贡献
-添加新功能，改进文档，修复错误或编写教程都是有用的贡献的例子。此外，如果您要发布新的攻击或防御，我们建议您将其添加到Adversarial Robustness Toolbox中，以便其他人可以评估。
-您可以通过GitHub拉取启动错误修复。在为Adversarial Robustness Toolbox提供代码贡献时，我们希望您遵循`PEP 8`编码标准，并为新功能提供单元测试。
-该项目使用[DCO](https://developercertificate.org/)。请务必使用`-s`标志注销提交，或在提交消息中添加`Signed-off-By：Name <Email>`。
+##為ART貢獻
 
-#### 示例
-```bash
-git commit -s -m 'Add new feature'
-```
+看到 [CONTRIBUTING-cn.md](CONTRIBUTING-cn.md)
 
 ## 引用ART
 如果您使用ART进行研究，请考虑引用以下参考文件：

@@ -42,6 +42,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         postprocessing_defences=None,
         preprocessing=None,
         attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
+        device_type="gpu",
     ):
         """
         Initialization.
@@ -68,9 +69,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param attack_losses: Tuple of any combinaiton of strings of loss components: 'loss_classifier', 'loss_box_reg',
+        :param attack_losses: Tuple of any combination of strings of loss components: 'loss_classifier', 'loss_box_reg',
                               'loss_objectness', and 'loss_rpn_box_reg'.
         :type attack_losses: `Tuple[str]`
+        :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
+                            if available otherwise run on CPU.
+        :type device_type: `string`
         """
 
         super().__init__(
@@ -81,6 +85,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
+        assert clip_values[0] == 0, "This classifier requires un-normalized input images with clip_vales=(0, max_value)"
+        assert clip_values[1] > 0, "This classifier requires un-normalized input images with clip_vales=(0, max_value)"
         assert preprocessing is None, "This estimator does not support `preprocessing`."
         assert postprocessing_defences is None, "This estimator does not support `postprocessing_defences`."
 
@@ -92,6 +98,18 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             )
         else:
             self._model = model
+
+        # Set device
+        import torch
+
+        if device_type == "cpu" or not torch.cuda.is_available():
+            self._device = torch.device("cpu")
+        else:
+            cuda_idx = torch.cuda.current_device()
+            self._device = torch.device("cuda:{}".format(cuda_idx))
+
+        self._model.to(self._device)
+
         self._model.eval()
 
         self.attack_losses = attack_losses
@@ -112,20 +130,26 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
+        import torch
         import torchvision
 
         self._model.train()
 
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
-        x = x.astype(np.uint8)
+
+        if y is not None:
+            for i, y_i in enumerate(y):
+                y[i]["boxes"] = torch.FloatTensor(y_i["boxes"]).to(self._device)
+                y[i]["labels"] = torch.LongTensor(y_i["labels"]).to(self._device)
+                y[i]["scores"] = torch.Tensor(y_i["scores"]).to(self._device)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
         image_tensor_list = list()
 
         for i in range(x.shape[0]):
-            img = transform(x[i])
+            img = transform(x[i] / self.clip_values[1]).to(self._device)
             img.requires_grad = True
             image_tensor_list.append(img)
 
@@ -160,6 +184,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         assert grads.shape == x.shape
 
+        grads = grads / self.clip_values[1]
+
         return grads
 
     def predict(self, x, **kwargs):
@@ -184,14 +210,13 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
-        x = x.astype(np.uint8)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
 
         image_tensor_list = list()
 
         for i in range(x.shape[0]):
-            image_tensor_list.append(transform(x[i]))
+            image_tensor_list.append(transform(x[i] / self.clip_values[1]).to(self._device))
         predictions = self._model(image_tensor_list)
         return predictions
 

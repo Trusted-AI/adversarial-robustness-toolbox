@@ -12,54 +12,62 @@ Mixin Base Class Class Gradients
 .. autoclass:: ClassGradientsMixin
    :members:
 
-BlackBox Wrapper
-----------------
+BlackBox Classifier
+-------------------
 .. autoclass:: BlackBoxClassifier
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
 
-Keras Wrapper
--------------
+Keras Classifier
+----------------
 .. autoclass:: KerasClassifier
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
 
-MXNet Wrapper
--------------
+MXNet Classifier
+----------------
 .. autoclass:: MXClassifier
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
 
-PyTorch Wrapper
----------------
+PyTorch Classifier
+------------------
 .. autoclass:: PyTorchClassifier
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
 
-TensorFlow Wrapper
-------------------
+TensorFlow Classifier
+---------------------
 .. autoclass:: TensorFlowClassifier
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
 
-TensorFlow v2 Wrapper
----------------------
+TensorFlow v2 Classifier
+------------------------
 .. autoclass:: TensorFlowV2Classifier
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
 
-Ensemble Wrapper
-----------------
+Ensemble Classifier
+-------------------
 .. autoclass:: EnsembleClassifier
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
 
-Scikit-learn Classifier Wrapper
--------------------------------
+Scikit-learn Classifier Classifier
+----------------------------------
 .. autofunction:: SklearnClassifier
 
-GPy Gaussian Process Wrapper
-----------------------------
+GPy Gaussian Process Classifier
+-------------------------------
 .. autoclass:: GPyGaussianProcessClassifier
    :members:
-   :special-members:
+   :special-members: __init__
+   :inherited-members:
