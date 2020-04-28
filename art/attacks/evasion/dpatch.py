@@ -177,30 +177,27 @@ class DPatch(EvasionAttack):
         patch_copy = patch.copy()
 
         if channel_index == 1:
-            x_copy = np.swapaxes(x_copy, 1, 3)
-            x_copy = np.swapaxes(x_copy, 2, 3)
-            patch_copy = np.swapaxes(patch_copy, 0, 2)
-            patch_copy = np.swapaxes(patch_copy, 1, 2)
+            x_copy = np.transpose(x_copy, (0, 2, 3, 1))
+            patch_copy = np.transpose(patch_copy, (1, 2, 0))
 
         for i_image in range(x.shape[0]):
 
             if random_location:
-                i_x_1 = random.randint(0, x.shape[1] - 1 - patch.shape[0])
-                i_y_1 = random.randint(0, x.shape[2] - 1 - patch.shape[1])
+                i_x_1 = random.randint(0, x_copy.shape[1] - 1 - patch_copy.shape[0])
+                i_y_1 = random.randint(0, x_copy.shape[2] - 1 - patch_copy.shape[1])
             else:
                 i_x_1 = 0
                 i_y_1 = 0
 
-            i_x_2 = i_x_1 + patch.shape[0]
-            i_y_2 = i_y_1 + patch.shape[1]
+            i_x_2 = i_x_1 + patch_copy.shape[0]
+            i_y_2 = i_y_1 + patch_copy.shape[1]
 
             transformations.append({"i_x_1": i_x_1, "i_y_1": i_y_1, "i_x_2": i_x_2, "i_y_2": i_y_2})
 
             x_copy[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :] = patch_copy
 
         if channel_index == 1:
-            x_copy = np.swapaxes(x_copy, 1, 3)
-            x_copy = np.swapaxes(x_copy, 2, 3)
+            x_copy = np.transpose(x_copy, (0, 3, 1, 2))
 
         return x_copy, transformations
 
