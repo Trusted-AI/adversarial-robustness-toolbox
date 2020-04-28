@@ -443,7 +443,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 title = "Class_" + str(i) + "_cluster_" + str(j) + "_clusterSize_" + str(len(images_cluster))
                 f_name = title + ".png"
                 f_name = os.path.join(folder, f_name)
-                sprite = create_sprite(images_cluster)
+                sprite = create_sprite(np.array(images_cluster))
                 if save:
                     save_image(sprite, f_name)
                 sprites_by_class[i][j] = sprite
