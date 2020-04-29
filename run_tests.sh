@@ -84,7 +84,8 @@ declare -a poison_detection=("tests/poison_detection/test_activation_defence.py"
                              "tests/poison_detection/test_clustering_analyzer.py" \
                              "tests/poison_detection/test_ground_truth_evaluator.py" \
                              "tests/poison_detection/test_provenance_defence.py" \
-                             "tests/poison_detection/test_roni.py" )
+                             "tests/poison_detection/test_roni.py" \
+                             "tests/poison_detection/test_spectral_signature_defense.py" )
 
 declare -a wrappers=("tests/wrappers/test_expectation.py" \
                      "tests/wrappers/test_query_efficient_bb.py" \
