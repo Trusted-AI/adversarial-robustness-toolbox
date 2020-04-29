@@ -104,14 +104,13 @@ def main():
 
     #accuracy
     output = np.argmax(classifier.predict(x_test), axis=1)
-    print(output)
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
-    print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]))
+    print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]), flush=True)
 
     acc = [nb_correct_pred / x_test.shape[0]]
-    eps_range = [2/255., 4/255., 8/255., 16/255.]
-    x_test = x_test[0:100]
-    y_test = y_test[0:100]
+    eps_range = [8/255., 16/255.]
+    # x_test = x_test[0:100]
+    # y_test = y_test[0:100]
 
     for eps in eps_range:
         eps_step = (1.5 * eps) / 40
@@ -122,7 +121,7 @@ def main():
         x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
         nb_correct_attack_pred = np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
         acc.append(nb_correct_attack_pred / x_test.shape[0])
-        print(acc)
+        print(acc, flush=True)
 
     np.save('./exps/{}.npy'.format(args.accfname), acc)
 
