@@ -63,10 +63,17 @@ def main():
     start_start_time = time.time()
 
     (x_train, y_train), (x_test, y_test), min_pixel_value, max_pixel_value = load_cifar10()
-    cifar_mu, cifar_std  = 0.4733630004850874, 0.25156892506322026
+    # cifar_mu, cifar_std  = 0.4733630004850874, 0.25156892506322026
 
-    # upper_limit = ((1.0 - mu) / std)
-    # lower_limit = ((0.0 - mu) / std)
+    cifar_mu = np.ones((3, 32, 32))
+    cifar_mu[0, :, :] = 0.4914
+    cifar_mu[1, :, :] = 0.4822
+    cifar_mu[2, :, :] = 0.4465
+
+    cifar_std = np.ones((3, 32, 32))
+    cifar_std[0, :, :] = 0.2471
+    cifar_std[1, :, :] = 0.2435
+    cifar_std[2, :, :] = 0.2616
 
     x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
     x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
@@ -76,12 +83,12 @@ def main():
     model.train()
 
 
-    opt = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9, weight_decay=5e-4)
+    # opt = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9, weight_decay=5e-4)
+    opt = torch.optim.Adam(model.parameters(), lr=1e-2  )
 
     # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
 
     criterion = nn.CrossEntropyLoss()
-
     # Step 3: Create the ART classifier
 
     classifier = PyTorchClassifier(
@@ -90,7 +97,7 @@ def main():
         preprocessing=(cifar_mu,cifar_std),
         loss=criterion,
         optimizer=opt,
-        input_shape=(32,32,3),
+        input_shape=(3,32,32),
         nb_classes=10,
     )
 
@@ -99,15 +106,17 @@ def main():
     trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
     trainer.fit(x_train, y_train, nb_epochs=args.epochs)
 
-    best_state_dict = copy.deepcopy(model.state_dict())
+    train_time = start_start_time - time.time()
+    print("Train time: ", train_time, flush=True)
 
+    best_state_dict = copy.deepcopy(model.state_dict())
     #accuracy
     output = np.argmax(classifier.predict(x_test), axis=1)
     print(output)
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]))
 
-    train_time = time.time()
+
     torch.save(best_state_dict, args.fname + '.pth')
 
 

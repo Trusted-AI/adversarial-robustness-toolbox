@@ -76,8 +76,6 @@ def main():
     cifar_std[1, :, :] = 0.2435
     cifar_std[2, :, :] = 0.2616
 
-    #TODO: channel wise
-
     x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
 
     model = PreActResNet18().cuda()
@@ -102,15 +100,13 @@ def main():
     )
 
 
-    #accuracy
+    #compute accuracy
     output = np.argmax(classifier.predict(x_test), axis=1)
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]), flush=True)
 
     acc = [nb_correct_pred / x_test.shape[0]]
     eps_range = [8/255., 16/255.]
-    # x_test = x_test[0:100]
-    # y_test = y_test[0:100]
 
     for eps in eps_range:
         eps_step = (1.5 * eps) / 40
