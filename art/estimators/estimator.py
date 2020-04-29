@@ -94,11 +94,11 @@ class BaseEstimator(ABC):
                 )
             if np.array(self._clip_values[0] >= self._clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
-
-        if isinstance(self._clip_values, np.ndarray):
-            self._clip_values = self._clip_values.astype(ART_NUMPY_DTYPE)
-        else:
-            self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)
+            
+            if isinstance(self._clip_values, np.ndarray):
+                self._clip_values = self._clip_values.astype(ART_NUMPY_DTYPE)
+            else:
+                self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)
             
         if isinstance(self.preprocessing_defences, Preprocessor):
             self.preprocessing_defences = [self.preprocessing_defences]
@@ -269,8 +269,11 @@ class BaseEstimator(ABC):
 
     def __repr__(self):
         class_name = self.__class__.__name__
-        attributes = {(k[1:], v) if k[0] == "_" else (k, v) for (k, v) in self.__dict__.items()}
-        attributes = ["{}={}".format(k, v) for (k, v) in attributes]
+        attributes = {}
+        for k, v in self.__dict__.items():
+            k = k[1:] if k[0] == "_" else k
+            attributes[k] = v
+        attributes = ["{}={}".format(k, v) for k, v in attributes.items()]
         repr_string = class_name + "(" + ", ".join(attributes) + ")"
         return repr_string
 
