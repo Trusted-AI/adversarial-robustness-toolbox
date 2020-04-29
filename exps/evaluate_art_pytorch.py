@@ -110,6 +110,9 @@ def main():
 
     acc = [nb_correct_pred / x_test.shape[0]]
     eps_range = [2/255., 4/255., 8/255., 16/255.]
+    x_test = x_test[0:100]
+    y_test = y_test[0:100]
+
     for eps in eps_range:
         eps_step = (1.5 * eps) / 40
         attack_test = ProjectedGradientDescent(classifier=classifier, norm=np.inf, eps=eps,
