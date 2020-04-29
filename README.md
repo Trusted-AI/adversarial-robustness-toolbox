@@ -17,24 +17,24 @@
 
 [中文README请按此处](README-cn.md)
 
-Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine 
-Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests, 
-Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats 
-(including evasion, extraction and poisoning) and helps making AI systems more secure and trustworthy. Machine Learning 
-models are vulnerable to adversarial examples, which are inputs (images, texts, tabular data, etc.) deliberately crafted 
-to produce a desired response by the Machine Learning model. ART provides the tools to build and deploy defences and 
-test them with adversarial attacks. 
+Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine
+Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests,
+Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats
+(including evasion, extraction and poisoning) and helps making AI systems more secure and trustworthy. Machine Learning
+models are vulnerable to adversarial examples, which are inputs (images, texts, tabular data, etc.) deliberately crafted
+to produce a desired response by the Machine Learning model. ART provides the tools to build and deploy defences and
+test them with adversarial attacks.
 
-Defending Machine Learning models involves certifying and verifying model robustness and model hardening with 
-approaches such as pre-processing inputs, augmenting training data with adversarial examples, and leveraging runtime 
-detection methods to flag any inputs that might have been modified by an adversary. ART includes attacks for testing 
+Defending Machine Learning models involves certifying and verifying model robustness and model hardening with
+approaches such as pre-processing inputs, augmenting training data with adversarial examples, and leveraging runtime
+detection methods to flag any inputs that might have been modified by an adversary. ART includes attacks for testing
 defenses with state-of-the-art threat models.
 
 Documentation of ART: https://adversarial-robustness-toolbox.readthedocs.io
 
 Get started with [examples](examples/README.md) and [tutorials](notebooks/README.md)
 
-The library is under continuous development. Feedback, bug reports and contributions are very welcome. 
+The library is under continuous development. Feedback, bug reports and contributions are very welcome.
 Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTA4NGQ1OTMxMzFmY2Q1MzE1NWI2MmEzN2FjNGNjOGVlODVkZDE0MjA1NTA4OGVkMjVkNmQ4MTY1NmMyOGM5YTg))!
 
 ## Supported Machine Learning Libraries and Applications
@@ -122,12 +122,13 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 **Detection of Poisoning Attacks:**
 * Detection based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
 * Detection based on data provenance ([Baracaldo et al., 2018](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440))
+* Detection based on spectral signatures ([Tran et al., 2018](https://papers.nips.cc/paper/8024-spectral-signatures-in-backdoor-attacks.pdf))
 
 ## Setup
 
 ### Installation with `pip`
 
-The toolbox is designed and tested to run with Python 3. 
+The toolbox is designed and tested to run with Python 3.
 ART can be installed from the PyPi repository using `pip`:
 
 ```bash
@@ -174,15 +175,15 @@ Using Docker:
 
 ## Getting Started with ART
 
-Examples of using ART can be found in `examples` and [examples/README.md](examples/README.md) provides an overview and 
+Examples of using ART can be found in `examples` and [examples/README.md](examples/README.md) provides an overview and
 additional information. It contains a minimal example for each machine learning framework. All examples can be run with
 the following command:
 ```bash
 python examples/<example_name>.py
 ```
 
-More detailed examples and tutorials are located in `notebooks` and [notebooks/README.md](notebooks/README.md) provides 
-and overview and more information. 
+More detailed examples and tutorials are located in `notebooks` and [notebooks/README.md](notebooks/README.md) provides
+and overview and more information.
 
 
 ## Contributing to ART
