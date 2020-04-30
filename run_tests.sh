@@ -72,13 +72,13 @@ declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_spatial_smoothing.py" \
                      "tests/defences/test_thermometer_encoding.py" \
                      "tests/defences/test_variance_minimization.py" \
-                     "tests/defences/detection/evasion/subsetscanning/test_detector.py" \
-                     "tests/defences/detection/evasion/test_detector.py" \
-                     "tests/defences/detection/poison/test_activation_defence.py" \
-                     "tests/defences/detection/poison/test_clustering_analyzer.py" \
-                     "tests/defences/detection/poison/test_ground_truth_evaluator.py" \
-                     "tests/defences/detection/poison/test_provenance_defence.py" \
-                     "tests/defences/detection/poison/test_roni.py" )
+                     "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
+                     "tests/defences/detector/evasion/test_detector.py" \
+                     "tests/defences/detector/poison/test_activation_defence.py" \
+                     "tests/defences/detector/poison/test_clustering_analyzer.py" \
+                     "tests/defences/detector/poison/test_ground_truth_evaluator.py" \
+                     "tests/defences/detector/poison/test_provenance_defence.py" \
+                     "tests/defences/detector/poison/test_roni.py" )
 
 declare -a metrics=("tests/metrics/test_gradient_check.py" \
                     "tests/metrics/test_metrics.py" \
@@ -96,9 +96,7 @@ declare -a art=("tests/test_data_generators.py" \
 tests_modules=("attacks" \
                "classifiers" \
                "defences" \
-               "detection" \
                "metrics" \
-               "poison_detection" \
                "wrappers" \
                "art" )
 
