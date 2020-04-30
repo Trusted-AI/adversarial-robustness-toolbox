@@ -31,9 +31,9 @@ import os
 
 import numpy as np
 
-from art.defences.detection.poison.clustering_analyzer import ClusteringAnalyzer
-from art.defences.detection.poison.ground_truth_evaluator import GroundTruthEvaluator
-from art.defences.detection.poison.poison_filtering_defence import PoisonFilteringDefence
+from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
+from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
