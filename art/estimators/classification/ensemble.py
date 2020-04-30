@@ -92,7 +92,7 @@ class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
             if not isinstance(classifier, NeuralNetworkMixin):
                 raise TypeError("Expected type `Classifier`, found %s instead." % type(classifier))
 
-            if clip_values != classifier.clip_values:
+            if np.array_equal(clip_values, classifier.clip_values):
                 raise ValueError(
                     "Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s."
                     % (str(clip_values), str(classifier.clip_values))
