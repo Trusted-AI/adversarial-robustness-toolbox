@@ -480,7 +480,7 @@ class NeuralNetworkMixin(ABC):
                 self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
 
     @abstractmethod
-    def get_activations(self, x, layer, batch_size):
+    def get_activations(self, x, layer, batch_size, intermediate=False):
         """
         Return the output of a specific layer for samples `x` where `layer` is the index of the layer between 0 and
         `nb_layers - 1 or the name of the layer. The number of layers can be determined by counting the results
@@ -492,8 +492,36 @@ class NeuralNetworkMixin(ABC):
         :type layer: `int` or `str`
         :param batch_size: Batch size.
         :type batch_size: `int`
+        :param intermediate: if true, return the intermediate tensor representation of the activation
+        :type intermediate: `bool`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def custom_gradient(self, nn_function, tensors, input_values):
+        """
+        Returns the gradient of the nn_function with respect to vars
+
+        :param nn_function: an intermediate tensor representation of the gradient function
+        :param vars: the variables to differentiate
+        :type vars: `list`
+        :return: the gradient of the function w.r.t vars
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    @abstractmethod
+    def get_input_layer(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def normalize_tensor(self, tensor):
+        """
+        Normalize an intermediate tensor
+        :param tensor: a tensor
+        :return: a normalized tensor
         """
         raise NotImplementedError
 
