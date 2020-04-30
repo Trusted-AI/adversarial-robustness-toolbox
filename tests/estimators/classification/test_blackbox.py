@@ -88,7 +88,7 @@ class TestBlackBoxClassifier(TestBase):
         repr_ = repr(classifier)
 
         self.assertIn("BlackBoxClassifier", repr_)
-        self.assertIn("clip_values=array([  0., 255.], dtype=float32)", repr_)
+        self.assertIn("clip_values=[  0. 255.]", repr_)
         self.assertIn("defences=None", repr_)
         self.assertIn("preprocessing=(0, 1)", repr_)
 
