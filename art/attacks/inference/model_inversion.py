@@ -45,8 +45,13 @@ class MIFace(InferenceAttack):
     | Paper link: https://dl.acm.org/doi/10.1145/2810103.2813677
     """
 
-    attack_params = InferenceAttack.attack_params + ["max_iter", "window_length", "threshold", "learning_rate",
-                                                     "batch_size"]
+    attack_params = InferenceAttack.attack_params + [
+        "max_iter",
+        "window_length",
+        "threshold",
+        "learning_rate",
+        "batch_size",
+    ]
 
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
@@ -72,7 +77,7 @@ class MIFace(InferenceAttack):
             "window_length": window_length,
             "threshold": threshold,
             "learning_rate": learning_rate,
-            "batch_size": batch_size
+            "batch_size": batch_size,
         }
         self.set_params(**params)
 
