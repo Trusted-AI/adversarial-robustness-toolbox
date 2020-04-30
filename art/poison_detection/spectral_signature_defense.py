@@ -144,15 +144,15 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
     @staticmethod
     def spectral_signature_scores(matrix_r):
         """
-        :param R: Matrix of feature representations
-        :type R: `np.ndarray`
+        :param matrix_r: Matrix of feature representations
+        :type matrix_r: `np.ndarray`
         :return: Outlier scores for each observation based on spectral signature
         :rtype: `np.ndarray`
         """
         matrix_m = matrix_r - np.mean(matrix_r, axis=0)
         # Following Algorithm #1 in paper, use SVD of centered features, not of covariance
-        _, _, vec_v = np.linalg.svd(matrix_m, full_matrices=False)
-        eigs = vec_v[:1]
+        _, _, matrix_v = np.linalg.svd(matrix_m, full_matrices=False)
+        eigs = matrix_v[:1]
         score = np.matmul(matrix_m, np.transpose(eigs)) ** 2
         return score
 
