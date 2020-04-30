@@ -24,6 +24,7 @@ import logging
 
 import numpy as np
 import six
+from keras import Input
 
 from art.estimators.keras import KerasEstimator
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
@@ -492,7 +493,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             raise TypeError("Layer must be of type `str` or `int`.")
 
-        layer_output = self._model.get_layer(layer_name).output
+        keras_layer = self._model.get_layer(layer_name)
+        num_inbound_nodes = len(getattr(keras_layer, '_inbound_nodes', []))
+        if num_inbound_nodes > 1:
+            layer_output = keras_layer.get_output_at(0)
+        else:
+            layer_output = self._model.get_layer(layer_name).output
 
         if intermediate:
             return layer_output
@@ -518,9 +524,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return activations
 
-    def custom_gradient(self, nn_function, tensors, input_values):
+    def custom_gradient(self, nn_function, tensors, input_values, target):
         """
-        Returns the gradient of the nn_function with respect to vars
+        Returns the gradient of the nn_function with respect to model input
 
         :param nn_function: an intermediate tensor representation of the gradient function
         :type nn_function: a Keras tensor
@@ -538,13 +544,18 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         # loss_output = k.function([tensors], [nn_function])
         # print(loss_output([input_values]))
-        grads = k.gradients(nn_function, tensors)[0]
+        target_img = k.placeholder(shape=target.shape)
+        poison_img = k.placeholder(shape=input_values.shape)
+        poison_features = self._model.get_layer('average_pooling2d_1')(poison_img)
+        target_features = self._model.get_layer('average_pooling2d_1')(target_img)
+        loss = k.l2_normalize(poison_features - target_features)
+        grads = k.gradients(loss, poison_img)[0]
         # print("grad func: " + str(grads))
         # TODO: this only real works with tensors = model.input
-        outputs = k.function([tensors], [grads])
+        outputs = k.function([target_img, poison_img], [grads])
         # print("tensors shape: " + str(tensors))
         # print("input values shape: " + str(input_values.shape))
-        return outputs([input_values])
+        return outputs([target, input_values])
 
     def normalize_tensor(self, tensor):
         """
@@ -553,6 +564,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :return:
         """
         import keras.backend as k
+        # norm_tensor = k.l2_normalize(tensor)
+        # return k.function([self._model.input], [norm_tensor])
         return k.l2_normalize(tensor)
 
     def get_input_layer(self):
