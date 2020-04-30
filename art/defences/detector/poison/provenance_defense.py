@@ -28,8 +28,8 @@ from copy import deepcopy
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from art.defences.detection.poison.ground_truth_evaluator import GroundTruthEvaluator
-from art.defences.detection.poison.poison_filtering_defence import PoisonFilteringDefence
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
+from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import segment_by_class, performance_diff
 
 logger = logging.getLogger(__name__)
