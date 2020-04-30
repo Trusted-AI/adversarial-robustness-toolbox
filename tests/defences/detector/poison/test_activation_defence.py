@@ -26,14 +26,14 @@ from art.defences.detector.poison import ActivationDefence
 from art.utils import load_mnist
 from art.visualization import convert_to_rgb
 
-from tests.utils import master_seed
+from tests.utils import master_seed, TestBase
 
 logger = logging.getLogger(__name__)
 
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
 
-class TestActivationDefence(unittest.TestCase):
+class TestActivationDefence(TestBase):
     @classmethod
     def setUpClass(cls):
 
