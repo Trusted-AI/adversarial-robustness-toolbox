@@ -23,8 +23,6 @@ import pytest
 
 from art.attacks.inference import MIFace
 
-from tests.utils import ExpectedValue
-
 logger = logging.getLogger(__name__)
 
 
