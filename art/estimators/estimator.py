@@ -506,9 +506,12 @@ class NeuralNetworkMixin(ABC):
 
     def __repr__(self):
         name = self.__class__.__name__
-
-        attributes = {(k[1:], v) if k[0] == "_" else (k, v) for (k, v) in self.__dict__.items()}
-        attrs = ["{}={}".format(k, v) for (k, v) in attributes]
+        
+        attributes = {}
+        for k, v in self.__dict__.items():
+            k = k[1:] if k[0] == "_" else k
+            attributes[k] = v
+        attrs = ["{}={}".format(k, v) for k, v in attributes.items()]
         repr_ = name + "(" + ", ".join(attrs) + ")"
 
         return repr_
