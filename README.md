@@ -34,7 +34,7 @@ Documentation of ART: https://adversarial-robustness-toolbox.readthedocs.io
 
 Get started with [examples](examples/README.md) and [tutorials](notebooks/README.md)
 
-The library is under continuous development. Feedback, bug reports and contributions are very welcome.
+The library is under continuous development. Feedback, bug reports and contributions are very welcome. 
 Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTA4NGQ1OTMxMzFmY2Q1MzE1NWI2MmEzN2FjNGNjOGVlODVkZDE0MjA1NTA4OGVkMjVkNmQ4MTY1NmMyOGM5YTg))!
 
 ## Supported Machine Learning Libraries and Applications
