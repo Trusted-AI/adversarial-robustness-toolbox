@@ -17,17 +17,17 @@
 
 [中文README请按此处](README-cn.md)
 
-Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine
-Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests,
-Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats
-(including evasion, extraction and poisoning) and helps making AI systems more secure and trustworthy. Machine Learning
-models are vulnerable to adversarial examples, which are inputs (images, texts, tabular data, etc.) deliberately crafted
-to produce a desired response by the Machine Learning model. ART provides the tools to build and deploy defences and
-test them with adversarial attacks.
+Adversarial Robustness Toolbox (ART) is a Python library supporting developers and researchers in defending Machine 
+Learning models (Deep Neural Networks, Gradient Boosted Decision Trees, Support Vector Machines, Random Forests, 
+Logistic Regression, Gaussian Processes, Decision Trees, Scikit-learn Pipelines, etc.) against adversarial threats 
+(including evasion, extraction and poisoning) and helps making AI systems more secure and trustworthy. Machine Learning 
+models are vulnerable to adversarial examples, which are inputs (images, texts, tabular data, etc.) deliberately crafted 
+to produce a desired response by the Machine Learning model. ART provides the tools to build and deploy defences and 
+test them with adversarial attacks. 
 
-Defending Machine Learning models involves certifying and verifying model robustness and model hardening with
-approaches such as pre-processing inputs, augmenting training data with adversarial examples, and leveraging runtime
-detection methods to flag any inputs that might have been modified by an adversary. ART includes attacks for testing
+Defending Machine Learning models involves certifying and verifying model robustness and model hardening with 
+approaches such as pre-processing inputs, augmenting training data with adversarial examples, and leveraging runtime 
+detection methods to flag any inputs that might have been modified by an adversary. ART includes attacks for testing 
 defenses with state-of-the-art threat models.
 
 Documentation of ART: https://adversarial-robustness-toolbox.readthedocs.io
