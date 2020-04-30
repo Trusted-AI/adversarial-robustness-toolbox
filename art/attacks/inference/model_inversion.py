@@ -65,7 +65,7 @@ class MIFace(InferenceAttack):
         :param batch_size: Size of internal batches.
         :type batch_size: `int`
         """
-        super(MIFace, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         params = {
             "max_iter": max_iter,
@@ -93,13 +93,13 @@ class MIFace(InferenceAttack):
         if x is None and y is None:
             return None
 
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if x is None:
-            x = np.zeros((len(y),) + self.classifier.input_shape)
+            x = np.zeros((len(y),) + self.estimator.input_shape)
 
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         x_infer = x.astype(ART_NUMPY_DTYPE)
 
@@ -115,15 +115,15 @@ class MIFace(InferenceAttack):
             i = 0
 
             while i < self.max_iter and sum(active) > 0:
-                grads = self.classifier.class_gradient(batch[active], np.argmax(batch_labels[active], axis=1))
+                grads = self.estimator.class_gradient(batch[active], np.argmax(batch_labels[active], axis=1))
                 grads = np.reshape(grads, (grads.shape[0],) + grads.shape[2:])
                 batch[active] = batch[active] + self.learning_rate * grads
 
-                if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+                if self.estimator.clip_values is not None:
                     clip_min, clip_max = self.classifier.clip_values
                     batch[active] = np.clip(batch[active], clip_min, clip_max)
 
-                cost = 1 - self.classifier.predict(batch)[np.arange(len(batch)), np.argmax(batch_labels, axis=1)]
+                cost = 1 - self.estimator.predict(batch)[np.arange(len(batch)), np.argmax(batch_labels, axis=1)]
                 active = (cost <= self.threshold) + (cost >= np.max(window, axis=1))
 
                 i_window = i % self.window_length
