@@ -128,7 +128,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 
 ### Installation with `pip`
 
-The toolbox is designed and tested to run with Python 3.
+The toolbox is designed and tested to run with Python 3. 
 ART can be installed from the PyPi repository using `pip`:
 
 ```bash
@@ -175,15 +175,15 @@ Using Docker:
 
 ## Getting Started with ART
 
-Examples of using ART can be found in `examples` and [examples/README.md](examples/README.md) provides an overview and
+Examples of using ART can be found in `examples` and [examples/README.md](examples/README.md) provides an overview and 
 additional information. It contains a minimal example for each machine learning framework. All examples can be run with
 the following command:
 ```bash
 python examples/<example_name>.py
 ```
 
-More detailed examples and tutorials are located in `notebooks` and [notebooks/README.md](notebooks/README.md) provides
-and overview and more information.
+More detailed examples and tutorials are located in `notebooks` and [notebooks/README.md](notebooks/README.md) provides 
+and overview and more information. 
 
 
 ## Contributing to ART
