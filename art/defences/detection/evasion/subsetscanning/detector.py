@@ -30,7 +30,7 @@ import six
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
-from art.detection.subsetscanning.scanner import Scanner
+from art.defences.detection.evasion import Scanner
 
 logger = logging.getLogger(__name__)
 
