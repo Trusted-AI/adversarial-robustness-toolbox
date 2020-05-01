@@ -354,8 +354,8 @@ class TestPGD(TestBase):
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(np.mean(x_train_adv_np), np.mean(x_train_adv_fw), places=6)
-        self.assertAlmostEqual(np.mean(x_test_adv_np), np.mean(x_test_adv_fw), places=6)
+        self.assertAlmostEqual(np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6)
+        self.assertAlmostEqual(np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6)
 
         # Test PGD with L1 norm
         attack_np = ProjectedGradientDescentNumpy(
