@@ -414,7 +414,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                   (nb_samples,).
         :type y: `Tensor`
         :return: Gradients of the same shape as `x`.
-        :rtype: `Tensor`
+        :rtype: `torch.Tensor`
         """
         import torch
         from torch.autograd import Variable
