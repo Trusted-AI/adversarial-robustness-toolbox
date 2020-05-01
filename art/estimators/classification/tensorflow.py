@@ -915,7 +915,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Input with shape as expected by the model.
-        :type x: `Tensor`
+        :type x: `tensorflow.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
         :type y: `np.ndarray`
