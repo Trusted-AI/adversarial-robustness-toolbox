@@ -920,7 +920,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                   (nb_samples,).
         :type y: `np.ndarray`
         :return: Gradients of the same shape as `x`.
-        :rtype: `Tensor`
+        :rtype: `tensorflow.Tensor`
         """
         import tensorflow as tf
 
