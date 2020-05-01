@@ -120,7 +120,7 @@ class ProjectedGradientDescent(EvasionAttack):
         ProjectedGradientDescent.set_params(self, **kwargs)
 
         if isinstance(self.estimator, PyTorchClassifier):
-            self._attack = ProjectedGradientDescentPytorch(
+            self._attack = ProjectedGradientDescentPyTorch(
                 estimator=estimator,
                 norm=norm,
                 eps=eps,
