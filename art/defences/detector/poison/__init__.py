@@ -5,3 +5,5 @@ preexisting model.
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.activation_defence import ActivationDefence
 from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
+from art.defences.detector.poison.provenance_defense import ProvenanceDefense
+from art.defences.detector.poison.roni import RONIDefense
