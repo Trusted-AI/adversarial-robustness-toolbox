@@ -125,7 +125,7 @@ class MIFace(InferenceAttack):
                 batch[active] = batch[active] + self.learning_rate * grads
 
                 if self.estimator.clip_values is not None:
-                    clip_min, clip_max = self.classifier.clip_values
+                    clip_min, clip_max = self.estimator.clip_values
                     batch[active] = np.clip(batch[active], clip_min, clip_max)
 
                 cost = 1 - self.estimator.predict(batch)[np.arange(len(batch)), np.argmax(batch_labels, axis=1)]
