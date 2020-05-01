@@ -130,12 +130,13 @@ class ProjectedGradientDescentNumpy(FastGradientMethod):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
+        mask = kwargs.get("mask")
+
         if self.random_eps:
             ratio = self.eps_step / self.eps
             self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
             self.eps_step = ratio * self.eps
 
-        mask = kwargs.get("mask")
         if isinstance(self.estimator, ClassifierMixin):
             y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
