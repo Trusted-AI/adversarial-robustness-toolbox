@@ -26,7 +26,7 @@ import numpy as np
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.estimators.classification.keras import KerasClassifier
 from art.utils import load_dataset, random_targets, compute_accuracy
-from art.wrappers.randomized_smoothing import RandomizedSmoothing
+from art.estimators.certification.randomized_smoothing import RandomizedSmoothing
 
 from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
 
