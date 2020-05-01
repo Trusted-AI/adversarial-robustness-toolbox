@@ -982,6 +982,25 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         raise NotImplementedError
 
+    @property
+    def layer_names(self):
+        """
+        Return the hidden layers in the model, if applicable.
+
+        :return: The hidden layers in the model, input and output layers excluded.
+        :rtype: `list`
+
+        .. warning:: `layer_names` tries to infer the internal structure of the model.
+                     This feature comes with no guarantees on the correctness of the result.
+                     The intended order of the layers tries to match their order in the model, but this is not
+                     guaranteed either.
+        """
+        import tensorflow as tf
+        if isinstance(self._model, tf.keras.Model) or isinstance(self._model, tf.keras.model.Sequential):
+            return self._model.layers
+        else:
+            return None
+
     def get_activations(self, x, layer, batch_size=128):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -992,12 +1011,49 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :type x: `np.ndarray`
         :param layer: Layer for computing the activations.
         :type layer: `int` or `str`
-        :param batch_size: Size of batches.
+        :param batch_size: Batch size.
         :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
+        import tensorflow as tf
+        from art.config import ART_NUMPY_DTYPE
+
+        if isinstance(self._model, tf.keras.models.Sequential):
+            i_layer = None
+            if isinstance(layer, six.string_types):
+                if layer not in self.layer_names:
+                    raise ValueError("Layer name %s is not part of the graph." % layer)
+                for i_name, name in enumerate(self.layer_names):
+                    if name == layer:
+                        i_layer = i_name
+                        break
+            elif isinstance(layer, int):
+                if layer < 0 or layer >= len(self.layer_names):
+                    raise ValueError(
+                        "Layer index %d is outside of range (0 to %d included)." % (layer, len(self.layer_names) - 1)
+                    )
+                i_layer = layer
+            else:
+                raise TypeError("Layer must be of type `str` or `int`.")
+
+            activation_model = tf.keras.Model(self._model.layers[0].input, self._model.layers[i_layer].output)
+
+            # Apply preprocessing
+            x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
+
+            # Determine shape of expected output and prepare array
+            output_shape = self._model.layers[i_layer].output_shape
+            activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
+
+            # Get activations with batching
+            for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
+                begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
+                activations[begin:end] = activation_model([x_preprocessed[begin:end]]).numpy()
+
+            return activations
+        else:
+            return None
 
     def set_learning_phase(self, train):
         """
