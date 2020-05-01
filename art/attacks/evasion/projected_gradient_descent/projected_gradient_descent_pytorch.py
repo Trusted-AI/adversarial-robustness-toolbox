@@ -39,7 +39,7 @@ from art.utils import compute_success, get_labels_np_array, check_and_transform_
 logger = logging.getLogger(__name__)
 
 
-class ProjectedGradientDescentPytorch(EvasionAttack):
+class ProjectedGradientDescentPyTorch(EvasionAttack):
     """
     The Projected Gradient Descent attack is an iterative method in which,
     after each iteration, the perturbation is projected on an lp-ball of specified radius (in
