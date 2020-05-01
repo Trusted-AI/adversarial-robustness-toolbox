@@ -17,6 +17,8 @@ torchvision>=0.5.0
 # Comment out because of compatibility issues with numpy versions
 catboost>=0.22
 GPy>=1.9.9
+pytest-mock>=3.1.0,<4.0.0
+resampy>=0.2.2
 
 #NOTE to contributors: When changing/adding packages, please make sure that the packages are consitent with those
 # present within the Dockerfile
