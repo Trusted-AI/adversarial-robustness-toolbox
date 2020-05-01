@@ -105,11 +105,6 @@ class TestBase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._x_test_iris_original, self.x_test_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_test_iris_original, self.y_test_iris, decimal=3)
-
-    def assertEqual(self, first, second, msg=None):
-        first = first.tolist() if isinstance(first, np.ndarray) else first
-        second = second.tolist() if isinstance(second, np.ndarray) else second
-        super(TestBase, self).assertEqual(first, second, msg)
         
 
 class ExpectedValue:
