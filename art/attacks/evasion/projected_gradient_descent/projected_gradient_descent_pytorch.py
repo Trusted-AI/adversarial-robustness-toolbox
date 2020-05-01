@@ -225,8 +225,8 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
-        inputs = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self.estimator.get_device)
-        targets = torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)).to(self.estimator.get_device)
+        inputs = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
+        targets = torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
         adv_x = x.astype(ART_NUMPY_DTYPE)
 
         for i_max_iter in range(self.max_iter):
@@ -343,11 +343,11 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
             if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
-            x_adv = torch.from_numpy(x_adv).to(self.estimator.get_device)
+            x_adv = torch.from_numpy(x_adv).to(self.estimator.device)
 
         else:
             if isinstance(x, np.ndarray):
-                x_adv = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self.estimator.get_device)
+                x_adv = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
             else:
                 x_adv = x
 
