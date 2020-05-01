@@ -36,9 +36,9 @@ from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import \
     ProjectedGradientDescentNumpy
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_pytorch import \
-    ProjectedGradientDescentPytorch
+    ProjectedGradientDescentPyTorch
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import \
-    ProjectedGradientDescentTensorflowV2
+    ProjectedGradientDescentTensorFlowV2
 
 logger = logging.getLogger(__name__)
 

@@ -906,7 +906,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
         else:
-            raise ValueError("Expecting eager execution.")
+            raise NotImplementedError("Expecting eager execution.")
 
         return gradients
 
@@ -935,6 +935,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                     loss = self._loss_object(y, predictions)
 
                 loss_grads = tape.gradient(loss, x)
+
+        else:
+            raise NotImplementedError("Expecting eager execution.")
 
         return loss_grads
 
@@ -965,8 +968,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                     loss = self._loss_object(y, predictions)
 
             gradients = tape.gradient(loss, x_preprocessed_tf).numpy()
+
         else:
-            raise ValueError("Expecting eager execution.")
+            raise NotImplementedError("Expecting eager execution.")
 
         # Apply preprocessing gradients
         gradients = self._apply_preprocessing_gradient(x, gradients)
