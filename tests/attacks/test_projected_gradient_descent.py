@@ -576,7 +576,7 @@ class TestPGD(TestBase):
             max_iter=5,
             norm=np.inf,
             targeted=False,
-            num_random_init=0,
+            num_random_init=1,
             batch_size=2,
             random_eps=True,
         )
@@ -597,7 +597,7 @@ class TestPGD(TestBase):
             max_iter=5,
             norm=np.inf,
             targeted=False,
-            num_random_init=0,
+            num_random_init=1,
             batch_size=2,
             random_eps=True,
         )
