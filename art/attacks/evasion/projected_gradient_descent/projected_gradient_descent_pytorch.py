@@ -101,7 +101,16 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(ProjectedGradientDescentPytorch, self).__init__(estimator)
+        if (
+                (hasattr(estimator, 'preprocessing') and estimator.preprocessing is not None) or
+                (hasattr(estimator, 'preprocessing_defences') and estimator.preprocessing_defences is not None)
+        ):
+            logging.warning(
+                'The framework-specific implementation currently does not apply preprocessing and '
+                'preprocessing defences.'
+            )
+
+        super(ProjectedGradientDescentPyTorch, self).__init__(estimator)
 
         kwargs = {
             "norm": norm,
@@ -113,7 +122,7 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
             "batch_size": batch_size,
             "random_eps": random_eps
         }
-        ProjectedGradientDescentPytorch.set_params(self, **kwargs)
+        ProjectedGradientDescentPyTorch.set_params(self, **kwargs)
 
         if self.random_eps:
             lower, upper = 0, eps
@@ -417,7 +426,7 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
         :type batch_size: `int`
         """
         # Save attack-specific parameters
-        super(ProjectedGradientDescentPytorch, self).set_params(**kwargs)
+        super(ProjectedGradientDescentPyTorch, self).set_params(**kwargs)
 
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [np.inf, int(1), int(2)]:
