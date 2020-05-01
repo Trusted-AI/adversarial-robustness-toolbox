@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
 
 
-class TestActivationDefence(TestBase):
+class TestActivationDefence(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
 
@@ -198,7 +198,7 @@ class TestActivationDefence(TestBase):
         ActivationDefence._pickle_classifier(self.classifier, filename)
         loaded = ActivationDefence._unpickle_classifier(filename)
 
-        self.assertEqual(self.classifier._clip_values, loaded._clip_values)
+        self.assertEqual(self.classifier._clip_values.tolist(), loaded._clip_values.tolist())
         self.assertEqual(self.classifier._channel_index, loaded._channel_index)
         self.assertEqual(self.classifier._use_logits, loaded._use_logits)
         self.assertEqual(self.classifier._input_layer, loaded._input_layer)
