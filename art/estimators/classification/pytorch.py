@@ -412,7 +412,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :type x: `Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `Tensor`
+        :type y: `torch.Tensor`
         :return: Gradients of the same shape as `x`.
         :rtype: `torch.Tensor`
         """
