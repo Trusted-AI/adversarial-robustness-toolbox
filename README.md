@@ -87,6 +87,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 **Defences - Preprocessor:**
 * Resampling ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
+* MP3 compression ([Carlini, N. & Wagner, D., 2018](https://arxiv.org/abs/1801.01944))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
 * Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
