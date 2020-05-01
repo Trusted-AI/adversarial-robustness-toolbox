@@ -918,7 +918,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :type x: `tensorflow.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
+        :type y: `tensorflow.Tensor`
         :return: Gradients of the same shape as `x`.
         :rtype: `tensorflow.Tensor`
         """
