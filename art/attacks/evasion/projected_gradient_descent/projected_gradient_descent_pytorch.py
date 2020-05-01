@@ -283,7 +283,7 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
         if mask is None:
             return grad
         else:
-            return grad * (mask.astype(ART_NUMPY_DTYPE))
+            return grad * torch.from_numpy(mask.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
 
     def _apply_perturbation(self, x, perturbation, eps_step):
         """

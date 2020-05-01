@@ -22,7 +22,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import load_dataset, get_labels_np_array
