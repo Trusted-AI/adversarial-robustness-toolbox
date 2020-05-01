@@ -123,7 +123,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             self._reduce_labels = False
 
     @property
-    def get_device(self):
+    def device(self):
         """
         Get current used device.
 
