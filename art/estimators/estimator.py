@@ -96,9 +96,37 @@ class BaseEstimator(ABC):
 
         if isinstance(self.preprocessing_defences, Preprocessor):
             self.preprocessing_defences = [self.preprocessing_defences]
+        elif isinstance(self.preprocessing_defences, list):
+            for defence in self.preprocessing_defences:
+                if not isinstance(defence, Preprocessor):
+                    raise ValueError(
+                        "All preprocessing defences have to be instance of "
+                        "art.defences.preprocessor.preprocessor.Preprocessor."
+                    )
+        elif self.preprocessing_defences is None:
+            pass
+        else:
+            raise ValueError(
+                "All preprocessing defences have to be instance of "
+                "art.defences.preprocessor.preprocessor.Preprocessor."
+            )
 
         if isinstance(self.postprocessing_defences, Postprocessor):
             self.postprocessing_defences = [self.postprocessing_defences]
+        elif isinstance(self.postprocessing_defences, list):
+            for defence in self.postprocessing_defences:
+                if not isinstance(defence, Postprocessor):
+                    raise ValueError(
+                        "All postprocessing defences have to be instance of "
+                        "art.defences.postprocessor.postprocessor.Postprocessor."
+                    )
+        elif self.postprocessing_defences is None:
+            pass
+        else:
+            raise ValueError(
+                "All postprocessing defences have to be instance of "
+                "art.defences.postprocessor.postprocessor.Postprocessor."
+            )
 
         if self.preprocessing is not None and len(self.preprocessing) != 2:
             raise ValueError(
@@ -106,6 +134,17 @@ class BaseEstimator(ABC):
             )
 
         return self
+
+    def get_params(self):
+        """
+        Get all parameters and their values of this estimator.
+
+        :return: A dictionary of string parameter names to their value.
+        """
+        params = dict()
+        for key in self.estimator_params:
+            params[key] = getattr(self, key)
+        return params
 
     @abstractmethod
     def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
