@@ -133,7 +133,7 @@ class ProjectedGradientDescent(EvasionAttack):
             )
 
         elif isinstance(self.estimator, TensorFlowV2Classifier):
-            self._attack = ProjectedGradientDescentTensorflowV2(
+            self._attack = ProjectedGradientDescentTensorFlowV2(
                 estimator=estimator,
                 norm=norm,
                 eps=eps,
