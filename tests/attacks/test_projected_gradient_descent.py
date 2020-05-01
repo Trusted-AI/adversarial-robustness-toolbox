@@ -22,8 +22,9 @@ import unittest
 import numpy as np
 import tensorflow as tf
 
-from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
-from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescentNumpy
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import \
+    ProjectedGradientDescentNumpy
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification import KerasClassifier
 from art.utils import get_labels_np_array, random_targets
@@ -136,6 +137,15 @@ class TestPGD(TestBase):
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+        # Test the masking
+        attack = ProjectedGradientDescent(classifier, num_random_init=1)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test.shape))
+        mask = mask.reshape(x_test.shape)
+
+        x_test_adv = attack.generate(x_test, mask=mask)
+        mask_diff = (1 - mask) * (x_test_adv - x_test)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
@@ -294,30 +304,13 @@ class TestPGD(TestBase):
     @unittest.skipIf(tf.__version__[0] != '2', '')
     def test_framework_tensorflow_v2_mnist(self):
         classifier, _ = get_image_classifier_tf()
-
-        scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
-        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
-        logger.info("[TFV2, MNIST] Accuracy on training set: %.2f%%", acc * 100)
-
-        scores = get_labels_np_array(classifier.predict(self.x_test_mnist))
-        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[0]
-        logger.info("[TFV2, MNIST] Accuracy on test set: %.2f%%", acc * 100)
-
         self._test_framework_vs_numpy(classifier)
 
     def test_framework_pytorch_mnist(self):
         self.x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
         self.x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
+
         classifier = get_image_classifier_pt()
-
-        scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
-        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_train_mnist, axis=1)) / self.y_train_mnist.shape[0]
-        logger.info("[PyTorch, MNIST] Accuracy on training set: %.2f%%", acc * 100)
-
-        scores = get_labels_np_array(classifier.predict(self.x_test_mnist))
-        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[0]
-        logger.info("[PyTorch, MNIST] Accuracy on test set: %.2f%%", acc * 100)
-
         self._test_framework_vs_numpy(classifier)
 
         self.x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
@@ -354,8 +347,16 @@ class TestPGD(TestBase):
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6)
-        self.assertAlmostEqual(np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6)
+        self.assertAlmostEqual(
+            np.mean(x_train_adv_np - self.x_train_mnist),
+            np.mean(x_train_adv_fw - self.x_train_mnist),
+            places=6
+        )
+        self.assertAlmostEqual(
+            np.mean(x_test_adv_np - self.x_test_mnist),
+            np.mean(x_test_adv_fw - self.x_test_mnist),
+            places=6
+        )
 
         # Test PGD with L1 norm
         attack_np = ProjectedGradientDescentNumpy(
@@ -387,8 +388,16 @@ class TestPGD(TestBase):
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(np.mean(x_train_adv_np - self.x_train_mnist), np.mean(x_train_adv_fw - self.x_train_mnist), places=6)
-        self.assertAlmostEqual(np.mean(x_test_adv_np - self.x_test_mnist), np.mean(x_test_adv_fw - self.x_test_mnist), places=6)
+        self.assertAlmostEqual(
+            np.mean(x_train_adv_np - self.x_train_mnist),
+            np.mean(x_train_adv_fw - self.x_train_mnist),
+            places=6
+        )
+        self.assertAlmostEqual(
+            np.mean(x_test_adv_np - self.x_test_mnist),
+            np.mean(x_test_adv_fw - self.x_test_mnist),
+            places=6
+        )
 
         # Test PGD with L2 norm
         attack_np = ProjectedGradientDescentNumpy(
@@ -420,8 +429,16 @@ class TestPGD(TestBase):
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(np.mean(x_train_adv_np), np.mean(x_train_adv_fw), places=6)
-        self.assertAlmostEqual(np.mean(x_test_adv_np), np.mean(x_test_adv_fw), places=6)
+        self.assertAlmostEqual(
+            np.mean(x_train_adv_np - self.x_train_mnist),
+            np.mean(x_train_adv_fw - self.x_train_mnist),
+            places=6
+        )
+        self.assertAlmostEqual(
+            np.mean(x_test_adv_np - self.x_test_mnist),
+            np.mean(x_test_adv_fw - self.x_test_mnist),
+            places=6
+        )
 
         # Test PGD with True targeted
         attack_np = ProjectedGradientDescentNumpy(
@@ -453,8 +470,16 @@ class TestPGD(TestBase):
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist, self.y_test_mnist)
 
         # Test
-        self.assertAlmostEqual(np.mean(x_train_adv_np), np.mean(x_train_adv_fw), places=6)
-        self.assertAlmostEqual(np.mean(x_test_adv_np), np.mean(x_test_adv_fw), places=6)
+        self.assertAlmostEqual(
+            np.mean(x_train_adv_np - self.x_train_mnist),
+            np.mean(x_train_adv_fw - self.x_train_mnist),
+            places=6
+        )
+        self.assertAlmostEqual(
+            np.mean(x_test_adv_np - self.x_test_mnist),
+            np.mean(x_test_adv_fw - self.x_test_mnist),
+            places=6
+        )
 
         # Test PGD with num_random_init=2
         master_seed(1234)
@@ -488,8 +513,16 @@ class TestPGD(TestBase):
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(np.mean(x_train_adv_np), np.mean(x_train_adv_fw), places=6)
-        self.assertAlmostEqual(np.mean(x_test_adv_np), np.mean(x_test_adv_fw), places=6)
+        self.assertAlmostEqual(
+            np.mean(x_train_adv_np - self.x_train_mnist),
+            np.mean(x_train_adv_fw - self.x_train_mnist),
+            places=6
+        )
+        self.assertAlmostEqual(
+            np.mean(x_test_adv_np - self.x_test_mnist),
+            np.mean(x_test_adv_fw - self.x_test_mnist),
+            places=6
+        )
 
         # Test PGD with random_eps=True
         master_seed(1234)
@@ -523,8 +556,71 @@ class TestPGD(TestBase):
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist)
 
         # Test
-        self.assertAlmostEqual(np.mean(x_train_adv_np), np.mean(x_train_adv_fw), places=6)
-        self.assertAlmostEqual(np.mean(x_test_adv_np), np.mean(x_test_adv_fw), places=6)
+        self.assertAlmostEqual(
+            np.mean(x_train_adv_np - self.x_train_mnist),
+            np.mean(x_train_adv_fw - self.x_train_mnist),
+            places=6
+        )
+        self.assertAlmostEqual(
+            np.mean(x_test_adv_np - self.x_test_mnist),
+            np.mean(x_test_adv_fw - self.x_test_mnist),
+            places=6
+        )
+
+        # Test the masking
+        master_seed(1234)
+        attack_np = ProjectedGradientDescentNumpy(
+            classifier,
+            eps=1,
+            eps_step=0.1,
+            max_iter=5,
+            norm=np.inf,
+            targeted=False,
+            num_random_init=0,
+            batch_size=2,
+            random_eps=True,
+        )
+
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape))
+        mask = mask.reshape(self.x_train_mnist.shape)
+        x_train_adv_np = attack_np.generate(self.x_train_mnist, mask=mask)
+
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+        x_test_adv_np = attack_np.generate(self.x_test_mnist, mask=mask)
+
+        master_seed(1234)
+        attack_fw = ProjectedGradientDescent(
+            classifier,
+            eps=1,
+            eps_step=0.1,
+            max_iter=5,
+            norm=np.inf,
+            targeted=False,
+            num_random_init=0,
+            batch_size=2,
+            random_eps=True,
+        )
+
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape))
+        mask = mask.reshape(self.x_train_mnist.shape)
+        x_train_adv_fw = attack_fw.generate(self.x_train_mnist, mask=mask)
+
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+        x_test_adv_fw = attack_fw.generate(self.x_test_mnist, mask=mask)
+
+        # Test
+        self.assertAlmostEqual(
+            np.mean(x_train_adv_np - self.x_train_mnist),
+            np.mean(x_train_adv_fw - self.x_train_mnist),
+            places=6
+        )
+        self.assertAlmostEqual(
+            np.mean(x_test_adv_np - self.x_test_mnist),
+            np.mean(x_test_adv_fw - self.x_test_mnist),
+            places=6
+        )
 
 
 if __name__ == "__main__":
