@@ -591,7 +591,7 @@ class TestPyTorchClassifier(TestBase):
         # Unpickle:
         with open(full_path, "rb") as f:
             loaded = pickle.load(f)
-            self.assertEqual(self.module_classifier._clip_values, loaded._clip_values)
+            np.testing.assert_equal(self.module_classifier._clip_values, loaded._clip_values)
             self.assertEqual(self.module_classifier._channel_index, loaded._channel_index)
             self.assertEqual(set(self.module_classifier.__dict__.keys()), set(loaded.__dict__.keys()))
 

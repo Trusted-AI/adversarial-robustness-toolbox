@@ -561,7 +561,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         with open(full_path, "rb") as load_file:
             loaded = pickle.load(load_file)
 
-        self.assertEqual(keras_model._clip_values, loaded._clip_values)
+        np.testing.assert_equal(keras_model._clip_values, loaded._clip_values)
         self.assertEqual(keras_model._channel_index, loaded._channel_index)
         self.assertEqual(keras_model._use_logits, loaded._use_logits)
         self.assertEqual(keras_model._input_layer, loaded._input_layer)
