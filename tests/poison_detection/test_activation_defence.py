@@ -26,7 +26,7 @@ from art.poison_detection import ActivationDefence
 from art.utils import load_mnist
 from art.visualization import convert_to_rgb
 
-from tests.utils import master_seed, TestBase
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +198,7 @@ class TestActivationDefence(unittest.TestCase):
         ActivationDefence._pickle_classifier(self.classifier, filename)
         loaded = ActivationDefence._unpickle_classifier(filename)
 
-        self.assertEqual(self.classifier._clip_values.tolist(), loaded._clip_values.tolist())
+        np.testing.assert_equal(self.classifier._clip_values, loaded._clip_values)
         self.assertEqual(self.classifier._channel_index, loaded._channel_index)
         self.assertEqual(self.classifier._use_logits, loaded._use_logits)
         self.assertEqual(self.classifier._input_layer, loaded._input_layer)
