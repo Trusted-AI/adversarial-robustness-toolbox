@@ -85,7 +85,7 @@ if __name__ == "__main__":
     input_shape = eval(args.input_shape)
     adversarial_accuracy_threshold = args.adversarial_accuracy_threshold
 
-    object_storage_url = get_secret('/app/secrets/s3_url', 'minio-service:9000')
+    object_storage_url = get_secret('/app/secrets/s3_url', 'minio-service.kubeflow:9000')
     object_storage_username = get_secret('/app/secrets/s3_access_key_id', 'minio')
     object_storage_password = get_secret('/app/secrets/s3_secret_access_key', 'minio123')
 
