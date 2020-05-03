@@ -294,7 +294,7 @@ class PixelAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: "Classifier",
         th: Optional[int] = None,
         es: int = 0,
         targeted: bool = False,
@@ -377,7 +377,7 @@ class ThresholdAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: "Classifier",
         th: Optional[int] = None,
         es: int = 0,
         targeted: bool = False,

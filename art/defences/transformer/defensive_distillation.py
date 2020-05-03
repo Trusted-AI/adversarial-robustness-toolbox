@@ -64,7 +64,9 @@ class DefensiveDistillation(Transformer):
         }
         self.set_params(**kwargs)
 
-    def __call__(self, x: np.ndarray, transformed_classifier: Classifier) -> Classifier:
+    def __call__(
+        self, x: np.ndarray, transformed_classifier: "Classifier"
+    ) -> "Classifier":
         """
         Perform the defensive distillation defence mechanism and return a robuster classifier.
 

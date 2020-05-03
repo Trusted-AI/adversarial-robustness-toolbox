@@ -41,7 +41,9 @@ def create_sprite(images: np.ndarray) -> np.ndarray:
     shape = np.shape(images)
 
     if len(shape) < 3 or len(shape) > 4:
-        raise ValueError("Images provided for sprite have wrong dimensions " + str(len(shape)))
+        raise ValueError(
+            "Images provided for sprite have wrong dimensions " + str(len(shape))
+        )
 
     if len(shape) == 3:
         # Check to see if it's MNIST type of images and add axis to show image is gray-scale
@@ -53,12 +55,18 @@ def create_sprite(images: np.ndarray) -> np.ndarray:
         images = convert_to_rgb(images)
 
     n = int(np.ceil(np.sqrt(images.shape[0])))
-    padding = ((0, n ** 2 - images.shape[0]), (0, 0), (0, 0)) + ((0, 0),) * (images.ndim - 3)
+    padding = ((0, n ** 2 - images.shape[0]), (0, 0), (0, 0)) + ((0, 0),) * (
+        images.ndim - 3
+    )
     images = np.pad(images, padding, mode="constant", constant_values=0)
 
     # Tile the individual thumbnails into an image
-    images = images.reshape((n, n) + images.shape[1:]).transpose((0, 2, 1, 3) + tuple(range(4, images.ndim + 1)))
-    images = images.reshape((n * images.shape[1], n * images.shape[3]) + images.shape[4:])
+    images = images.reshape((n, n) + images.shape[1:]).transpose(
+        (0, 2, 1, 3) + tuple(range(4, images.ndim + 1))
+    )
+    images = images.reshape(
+        (n * images.shape[1], n * images.shape[3]) + images.shape[4:]
+    )
     sprite = (images * 255).astype(np.uint8)
 
     return sprite
@@ -140,7 +148,9 @@ def plot_3d(points, labels, colors=None, save=True, f_name=""):
                 colors.append("C" + str(i))
         else:
             if len(colors) != len(np.unique(labels)):
-                raise ValueError("The amount of provided colors should match the number of labels in the 3pd plot.")
+                raise ValueError(
+                    "The amount of provided colors should match the number of labels in the 3pd plot."
+                )
 
         fig = plt.figure()
         axis = plt.axes(projection="3d")
@@ -150,7 +160,9 @@ def plot_3d(points, labels, colors=None, save=True, f_name=""):
                 color_point = labels[i]
                 axis.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
             except IndexError:
-                raise ValueError("Labels outside the range. Should start from zero and be sequential there after")
+                raise ValueError(
+                    "Labels outside the range. Should start from zero and be sequential there after"
+                )
         if save:
             file_name = os.path.realpath(os.path.join(ART_DATA_PATH, f_name))
             folder = os.path.split(file_name)[0]
@@ -162,4 +174,6 @@ def plot_3d(points, labels, colors=None, save=True, f_name=""):
 
         return fig
     except ImportError:
-        logger.warning("matplotlib not installed. For this reason, cluster visualization was not displayed.")
+        logger.warning(
+            "matplotlib not installed. For this reason, cluster visualization was not displayed."
+        )

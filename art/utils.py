@@ -244,7 +244,7 @@ def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
     )
 
 
-def second_most_likely_class(x: np.ndarray, classifier: Classifier) -> np.ndarray:
+def second_most_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
     """
     Compute the second most likely class predictions for sample `x`. This strategy can be used for choosing target
     labels for an attack to improve its chances to succeed.
@@ -286,7 +286,7 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
 
 
 def compute_success(
-    classifier: Classifier,
+    classifier: "Classifier",
     x_clean: np.ndarray,
     labels: np.ndarray,
     x_adv: np.ndarray,
@@ -403,9 +403,9 @@ def load_cifar10(
     x_train = x_train.transpose(0, 2, 3, 1)
     x_test = x_test.transpose(0, 2, 3, 1)
 
-    min_, max_ = 0., 255.
+    min_, max_ = 0.0, 255.0
     if not raw:
-        min_, max_ = 0., 1.
+        min_, max_ = 0.0, 1.0
         x_train, y_train = preprocess(x_train, y_train, clip_values=(0, 255))
         x_test, y_test = preprocess(x_test, y_test, clip_values=(0, 255))
 
@@ -435,9 +435,9 @@ def load_mnist(
     dict_mnist.close()
 
     # Add channel axis
-    min_, max_ = 0., 255.
+    min_, max_ = 0.0, 255.0
     if not raw:
-        min_, max_ = 0., 1.
+        min_, max_ = 0.0, 1.0
         x_train = np.expand_dims(x_train, axis=3)
         x_test = np.expand_dims(x_test, axis=3)
         x_train, y_train = preprocess(x_train, y_train)
@@ -757,8 +757,8 @@ def segment_by_class(
 
 
 def performance_diff(
-    model1: Classifier,
-    model2: Classifier,
+    model1: "Classifier",
+    model2: "Classifier",
     test_data: np.ndarray,
     test_labels: np.ndarray,
     perf_function: Union[str, Callable] = "accuracy",

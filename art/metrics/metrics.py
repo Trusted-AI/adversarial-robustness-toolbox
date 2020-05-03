@@ -59,7 +59,7 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
 
 def get_crafter(
     classifier: "Classifier", attack: str, params: Optional[Dict[str, Any]] = None
-) -> EvasionAttack:
+) -> "EvasionAttack":
     """
     Create an attack instance to craft adversarial samples.
 
@@ -80,7 +80,7 @@ def get_crafter(
 
 
 def empirical_robustness(
-    classifier: Classifier,
+    classifier: "Classifier",
     x: np.ndarray,
     attack_name: str,
     attack_params: Optional[Dict[str, Any]] = None,
@@ -182,7 +182,7 @@ def loss_sensitivity(
 
 
 def clever(
-    classifier: Classifier,
+    classifier: "Classifier",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -240,7 +240,7 @@ def clever(
 
 
 def clever_u(
-    classifier: Classifier,
+    classifier: "Classifier",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -281,7 +281,7 @@ def clever_u(
 
 
 def clever_t(
-    classifier: Classifier,
+    classifier: "Classifier",
     x: np.ndarray,
     target_class: int,
     nb_batches: int,

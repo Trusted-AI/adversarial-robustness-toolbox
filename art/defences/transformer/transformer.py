@@ -54,7 +54,7 @@ class Transformer(abc.ABC):
         """
         return self._is_fitted
 
-    def get_classifier(self) -> Classifier:
+    def get_classifier(self) -> "Classifier":
         """
         Get the internal classifier.
 
@@ -63,7 +63,9 @@ class Transformer(abc.ABC):
         return self.classifier
 
     @abc.abstractmethod
-    def __call__(self, x: np.ndarray, transformed_classifier: Classifier) -> Classifier:
+    def __call__(
+        self, x: np.ndarray, transformed_classifier: "Classifier"
+    ) -> "Classifier":
         """
         Perform the transformation defence and return a robuster classifier.
 

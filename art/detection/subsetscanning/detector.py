@@ -248,7 +248,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         return self.detector.clip_values
 
     @property
-    def channel_index(self) -> int:
+    def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 
     @property

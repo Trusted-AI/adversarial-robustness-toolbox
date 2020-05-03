@@ -72,9 +72,13 @@ class ExpectationOverTransformations(
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         logger.info("Applying expectation over transformations.")
-        prediction = self._predict(next(self.transformation())(x), **{"batch_size": batch_size})
+        prediction = self._predict(
+            next(self.transformation())(x), **{"batch_size": batch_size}
+        )
         for _ in range(self.sample_size - 1):
-            prediction += self._predict(next(self.transformation())(x), **{"batch_size": batch_size})
+            prediction += self._predict(
+                next(self.transformation())(x), **{"batch_size": batch_size}
+            )
         return prediction / self.sample_size
 
     def fit(
@@ -144,7 +148,7 @@ class ExpectationOverTransformations(
         return class_gradient / self.sample_size
 
     @property
-    def layer_names(self) -> list:
+    def layer_names(self) -> List[str]:
         """
         Return the hidden layers in the model, if applicable.
 

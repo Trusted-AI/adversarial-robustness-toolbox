@@ -116,7 +116,7 @@ class EvasionAttack(Attack):
     Abstract base class for evasion attack classes.
     """
 
-    def __init__(self, classifier: Classifier) -> None:
+    def __init__(self, classifier: "Classifier") -> None:
         """
         :param classifier: A trained classifier.
         """
@@ -169,7 +169,7 @@ class PoisoningAttackWhiteBox(Attack):
     Abstract base class for poisoning attack classes that have white-box access to the model (classifier object).
     """
 
-    def __init__(self, classifier: Classifier) -> None:
+    def __init__(self, classifier: "Classifier") -> None:
         """
         :param classifier: A trained classifier.
         """
@@ -196,7 +196,7 @@ class ExtractionAttack(Attack):
     Abstract base class for extraction attack classes.
     """
 
-    def __init__(self, classifier: Classifier) -> None:
+    def __init__(self, classifier: "Classifier") -> None:
         """
         :param classifier: A trained classifier targeted for extraction.
         """
@@ -205,7 +205,7 @@ class ExtractionAttack(Attack):
     @abc.abstractmethod
     def extract(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Classifier:
+    ) -> "Classifier":
         """
         Extract models and return them as an ART classifier. This method should be overridden by all concrete extraction
         attack implementations.

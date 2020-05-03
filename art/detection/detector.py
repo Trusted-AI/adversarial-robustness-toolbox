@@ -113,7 +113,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         return self.detector.clip_values
 
     @property
-    def channel_index(self) -> int:
+    def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 
     @property
@@ -247,7 +247,7 @@ class BinaryActivationDetector(
         return self.detector.clip_values
 
     @property
-    def channel_index(self) -> int:
+    def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 
     @property
@@ -255,7 +255,7 @@ class BinaryActivationDetector(
         return self.detector._learning_phase
 
     @property
-    def layer_names(self) -> list:
+    def layer_names(self) -> List[str]:
         raise NotImplementedError
 
     def class_gradient(

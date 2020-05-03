@@ -69,7 +69,7 @@ class ZooAttack(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: "Classifier",
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 1e-2,
@@ -194,7 +194,7 @@ class ZooAttack(EvasionAttack):
         :return: A tuple holding the current logits, `L_2` distortion and overall loss.
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x_adv.shape[0], -1), axis=1)
-        ratios = [1.] + [
+        ratios = [1.0] + [
             int(new_size) / int(old_size)
             for new_size, old_size in zip(self.classifier.input_shape, x.shape[1:])
         ]

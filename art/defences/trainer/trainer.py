@@ -54,7 +54,7 @@ class Trainer(abc.ABC):
         """
         raise NotImplementedError
 
-    def get_classifier(self) -> Classifier:
+    def get_classifier(self) -> "Classifier":
         """
         Train the model.
 
