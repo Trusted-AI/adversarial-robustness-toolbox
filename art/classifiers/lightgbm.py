@@ -20,11 +20,20 @@ This module implements the classifier `LightGBMClassifier` for LightGBM models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from copy import deepcopy
 import logging
+from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.classifiers.classifier import Classifier, ClassifierDecisionTree
+
+if TYPE_CHECKING:
+    import lightgbm
+
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
+    from art.metrics.verification_decisions_trees import LeafNode
 
 logger = logging.getLogger(__name__)
 
@@ -36,28 +45,27 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
 
     def __init__(
         self,
-        model=None,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=None,
-    ):
+        model: Optional["lightgbm.Booster"] = None,
+        clip_values: Optional[tuple] = None,
+        preprocessing_defences: Union[
+            "Preprocessor", List["Preprocessor"], None
+        ] = None,
+        postprocessing_defences: Union[
+            "Postprocessor", List["Postprocessor"], None
+        ] = None,
+        preprocessing: tuple = (0, 1),
+    ) -> None:
         """
         Create a `Classifier` instance from a LightGBM model.
 
         :param model: LightGBM model.
-        :type model: `lightgbm.Booster`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         """
         from lightgbm import Booster
 
@@ -74,31 +82,26 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         self._model = model
         self._input_shape = (self._model.num_feature(),)
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `lightgbm.Booster` and will be passed to this function as such.
         :type kwargs: `dict`
-        :raises: `NotImplementedException`
-        :return: `None`
+        :raises `NotImplementedException`: This method is not supported for LightGBM classifiers.
         """
         raise NotImplementedError
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -111,28 +114,26 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
 
         return predictions
 
-    def nb_classes(self):
+    def nb_classes(self) -> int:
         """
         Return the number of output classes.
 
         :return: Number of classes in the data.
-        :rtype: `int`
         """
         # pylint: disable=W0212
         return self._model._Booster__num_class
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         import pickle
 
         with open(filename + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
-    def get_trees(self):
+    def get_trees(self) -> list:
         """
         Get the decision trees.
 
         :return: A list of decision trees.
-        :rtype: `[Tree]`
         """
         from art.metrics.verification_decisions_trees import Box, Tree
 
@@ -151,17 +152,18 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
             trees.append(
                 Tree(
                     class_id=class_label,
-                    leaf_nodes=self._get_leaf_nodes(tree_dump["tree_structure"], i_tree, class_label, box),
+                    leaf_nodes=self._get_leaf_nodes(
+                        tree_dump["tree_structure"], i_tree, class_label, box
+                    ),
                 )
             )
 
         return trees
 
-    def _get_leaf_nodes(self, node, i_tree, class_label, box):
-        from copy import deepcopy
-        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
+    def _get_leaf_nodes(self, node, i_tree, class_label, box) -> List["LeafNode"]:
+        from art.metrics.verification_decisions_trees import Box, Interval, LeafNode
 
-        leaf_nodes = list()
+        leaf_nodes: List[LeafNode] = list()
 
         if "split_index" in node:
             node_left = node["left_child"]
@@ -171,8 +173,12 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
             box_right = deepcopy(box)
 
             feature = node["split_feature"]
-            box_split_left = Box(intervals={feature: Interval(-np.inf, node["threshold"])})
-            box_split_right = Box(intervals={feature: Interval(node["threshold"], np.inf)})
+            box_split_left = Box(
+                intervals={feature: Interval(-np.inf, node["threshold"])}
+            )
+            box_split_right = Box(
+                intervals={feature: Interval(node["threshold"], np.inf)}
+            )
 
             if box.intervals:
                 box_left.intersect_with_box(box_split_left)
@@ -182,7 +188,9 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
                 box_right = box_split_right
 
             leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
-            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
+            leaf_nodes += self._get_leaf_nodes(
+                node_right, i_tree, class_label, box_right
+            )
 
         if "leaf_index" in node:
             leaf_nodes.append(

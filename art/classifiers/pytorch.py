@@ -20,69 +20,82 @@ This module implements the classifier `PyTorchClassifier` for PyTorch models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import copy
 import logging
+import os
 import random
+import time
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import six
 
-from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.config import ART_DATA_PATH
+from art.classifiers.classifier import (
+    Classifier,
+    ClassifierNeuralNetwork,
+    ClassifierGradients,
+)
+
+if TYPE_CHECKING:
+    import torch
+
+    from art.data_generators import DataGenerator
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):  # lgtm [py/missing-call-to-init]
+class PyTorchClassifier(
+    ClassifierNeuralNetwork, ClassifierGradients, Classifier
+):  # lgtm [py/missing-call-to-init]
     """
     This class implements a classifier with the PyTorch framework.
     """
 
     def __init__(
         self,
-        model,
-        loss,
-        optimizer,
-        input_shape,
-        nb_classes,
-        channel_index=1,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
-        device_type="gpu",
-    ):
+        model: "torch.nn.Module",
+        loss: "torch.nn.modules.loss._Loss",
+        optimizer: "torch.optim.Optimizer",
+        input_shape: Tuple[int, ...],
+        nb_classes: int,
+        channel_index: int = 1,
+        clip_values: Optional[tuple] = None,
+        preprocessing_defences: Union[
+            "Preprocessor", List["Preprocessor"], None
+        ] = None,
+        postprocessing_defences: Union[
+            "Postprocessor", List["Postprocessor"], None
+        ] = None,
+        preprocessing: tuple = (0, 1),
+        device_type: str = "gpu",
+    ) -> None:
         """
         Initialization specifically for the PyTorch-based implementation.
 
         :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
                output should be preferred where possible to ensure attack efficiency.
-        :type model: `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                categorical, i.e. not converted to one-hot encoding.
-        :type loss: `torch.nn.modules.loss._Loss`
         :param optimizer: The optimizer used to train the classifier.
-        :type optimizer: `torch.optim.Optimizer`
         :param input_shape: The shape of one input instance.
-        :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
-        :type nb_classes: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
-        :type device_type: `string`
         """
+        import torch
+
         super(PyTorchClassifier, self).__init__(
             clip_values=clip_values,
             channel_index=channel_index,
@@ -96,14 +109,12 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         self._model = self._make_model_wrapper(model)
         self._loss = loss
         self._optimizer = optimizer
-        self._learning_phase = None
+        self._learning_phase: Optional[bool] = None
 
         # Get the internal layers
         self._layer_names = self._model.get_layers
 
         # Set device
-        import torch
-
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
         else:
@@ -116,21 +127,21 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         self._layer_idx_gradients = -1
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if isinstance(loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss)):
+        if isinstance(
+            loss,
+            (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),
+        ):
             self._reduce_labels = True
         else:
             self._reduce_labels = False
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         import torch
 
@@ -138,13 +149,20 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run prediction with batch processing
-        results = np.zeros((x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32)
+        results = np.zeros(
+            (x_preprocessed.shape[0], self.nb_classes()), dtype=np.float32
+        )
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
 
-            model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
+            model_outputs = self._model(
+                torch.from_numpy(x_preprocessed[begin:end]).to(self._device)
+            )
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
@@ -153,23 +171,25 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         return predictions
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        batch_size: int = 128,
+        nb_epochs: int = 10,
+        **kwargs
+    ) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
-        :return: `None`
         """
         import torch
 
@@ -190,8 +210,12 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(
+                    x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                ).to(self._device)
+                o_batch = torch.from_numpy(
+                    y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]
+                ).to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -206,26 +230,29 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                 loss.backward()
                 self._optimizer.step()
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(
+        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
+    ) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
-        :return: `None`
         """
         import torch
         from art.data_generators import PyTorchDataGenerator
 
         # Train directly in PyTorch
-        if isinstance(generator, PyTorchDataGenerator) and \
-                (self.preprocessing_defences is None or self.preprocessing_defences == []) and \
-                self.preprocessing == (0, 1):
+        if (
+            isinstance(generator, PyTorchDataGenerator)
+            and (
+                self.preprocessing_defences is None or self.preprocessing_defences == []
+            )
+            and self.preprocessing == (0, 1)
+        ):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
                     if isinstance(i_batch, np.ndarray):
@@ -234,7 +261,9 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                         i_batch = i_batch.to(self._device)
 
                     if isinstance(o_batch, np.ndarray):
-                        o_batch = torch.argmax(torch.from_numpy(o_batch).to(self._device), dim=1)
+                        o_batch = torch.argmax(
+                            torch.from_numpy(o_batch).to(self._device), dim=1
+                        )
                     else:
                         o_batch = torch.argmax(o_batch.to(self._device), dim=1)
 
@@ -254,27 +283,29 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
             # Fit a generic data generator through the API
             super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
+    ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
         """
         import torch
 
         if not (
             (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
+            or (
+                isinstance(label, (int, np.integer))
+                and label in range(self._nb_classes)
+            )
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -320,18 +351,24 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         if label is None:
             for i in range(self.nb_classes()):
                 torch.autograd.backward(
-                    preds[:, i], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
+                    preds[:, i],
+                    torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
+                    retain_graph=True,
                 )
 
         elif isinstance(label, (int, np.integer)):
             torch.autograd.backward(
-                preds[:, label], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
+                preds[:, label],
+                torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
+                retain_graph=True,
             )
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
                 torch.autograd.backward(
-                    preds[:, i], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
+                    preds[:, i],
+                    torch.tensor([1.0] * len(preds[:, 0])).to(self._device),
+                    retain_graph=True,
                 )
 
             grads = np.swapaxes(np.array(grads), 0, 1)
@@ -345,17 +382,14 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         return grads
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         import torch
 
@@ -389,12 +423,11 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         return grads
 
     @property
-    def layer_names(self):
+    def layer_names(self) -> List[str]:
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
 
         .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
@@ -404,20 +437,18 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         """
         return self._layer_names
 
-    def get_activations(self, x, layer, batch_size=128):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`.
 
         :param x: Input for computing the activations.
-        :type x: `np.ndarray`
         :param layer: Layer for computing the activations
-        :type layer: `int` or `str`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
         """
         import torch
 
@@ -441,53 +472,49 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
+            layer_output = self._model(
+                torch.from_numpy(x_preprocessed[begin:end]).to(self._device)
+            )[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
-
         return results
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         """
         Set the learning phase for the backend framework.
 
         :param train: True to set the learning phase to training, False to set it to prediction.
-        :type train: `bool`
         """
         if isinstance(train, bool):
             self._learning_phase = train
             self._model.train(train)
 
-    def nb_classes(self):
+    def nb_classes(self) -> int:
         """
         Return the number of output classes.
 
         :return: Number of classes in the data.
-        :rtype: `int`
         """
         return self._nb_classes
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         """
         Save a model to file in the format specific to the backend framework.
 
         :param filename: Name of the file where to store the model.
-        :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
-        :type path: `str`
-        :return: None
         """
-        import os
         import torch
 
         if path is None:
-            from art.config import ART_DATA_PATH
-
             full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
@@ -502,16 +529,12 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
         logger.info("Model state dict saved in path: %s.", full_path + ".model")
         logger.info("Optimizer state dict saved in path: %s.", full_path + ".optimizer")
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         """
         Use to ensure `PytorchClassifier` can be pickled.
 
         :return: State dictionary with instance parameters.
-        :rtype: `dict`
         """
-        import time
-        import copy
-
         # pylint: disable=W0212
         # disable pylint because access to _model required
         state = self.__dict__.copy()
@@ -528,21 +551,16 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         return state
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         """
         Use to ensure `PytorchClassifier` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
-        :type state: `dict`
         """
-        self.__dict__.update(state)
-
-        # Load and update all functionality related to Pytorch
-        import os
         import torch
-        from art.config import ART_DATA_PATH
 
         # Recover model
+        self.__dict__.update(state)
         full_path = os.path.join(ART_DATA_PATH, state["model_name"])
         model = state["inner_model"]
         model.load_state_dict(torch.load(str(full_path) + ".model"))
@@ -580,7 +598,7 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
 
         return repr_
 
-    def _make_model_wrapper(self, model):
+    def _make_model_wrapper(self, model: "torch.nn.Module"):
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
             import torch.nn as nn
@@ -629,7 +647,9 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                             result.append(x)
 
                         else:
-                            raise TypeError("The input model must inherit from `nn.Module`.")
+                            raise TypeError(
+                                "The input model must inherit from `nn.Module`."
+                            )
 
                         return result
 
@@ -661,8 +681,13 @@ class PyTorchClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier
                             result.append("final_layer")
 
                         else:
-                            raise TypeError("The input model must inherit from `nn.Module`.")
-                        logger.info("Inferred %i hidden layers on PyTorch classifier.", len(result))
+                            raise TypeError(
+                                "The input model must inherit from `nn.Module`."
+                            )
+                        logger.info(
+                            "Inferred %i hidden layers on PyTorch classifier.",
+                            len(result),
+                        )
 
                         return result
 

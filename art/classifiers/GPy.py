@@ -21,10 +21,17 @@ This module implements a wrapper class for GPy Gaussian Process classification m
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.classifiers.classifier import Classifier, ClassifierGradients
+
+if TYPE_CHECKING:
+    from GPy.models import GPClassification
+
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -37,32 +44,31 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
 
     def __init__(
         self,
-        model=None,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
-    ):
+        model: Optional["GPClassification"] = None,
+        clip_values: Optional[tuple] = None,
+        preprocessing_defences: Union[
+            "Preprocessor", List["Preprocessor"], None
+        ] = None,
+        postprocessing_defences: Union[
+            "Postprocessor", List["Postprocessor"], None
+        ] = None,
+        preprocessing: tuple = (0, 1),
+    ) -> None:
         """
         Create a `Classifier` instance GPY Gaussian Process classification models.
 
+        :param model: GPY Gaussian Process Classification model.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
-        :param model: GPY Gaussian Process Classification model.
-        :type model: `Gpy.models.GPClassification`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         """
-        from GPy.models import GPClassification as GPC
+        from GPy.models import GPClassification
 
-        if not isinstance(model, GPC):
+        if not isinstance(model, GPClassification):
             raise TypeError("Model must be of type GPy.models.GPClassification")
 
         super(GPyGaussianProcessClassifier, self).__init__(
@@ -75,23 +81,24 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         self.model = model
 
     # pylint: disable=W0221
-    def class_gradient(self, x, label=None, eps=0.0001):
+    def class_gradient(
+        self,
+        x: np.ndarray,
+        label: Union[int, List[int], None] = None,
+        eps: float = 0.0001,
+    ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
         :param eps: Fraction added to the diagonal elements of the input `x`.
-        :type eps: `float`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -102,7 +109,9 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
             for i_c in range(2):
                 ind = self.predict(x[i].reshape(1, -1))[0, i_c]
                 sur = self.predict(
-                    np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
+                    np.repeat(
+                        x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0
+                    )
                     + eps * np.eye(np.shape(x_preprocessed)[1])
                 )[:, i_c]
                 grads[i, i_c] = ((sur - ind) * eps).reshape(1, -1)
@@ -110,21 +119,20 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         grads = self._apply_preprocessing_gradient(x, grads)
 
         if label is not None:
-            return grads[:, label, :].reshape(np.shape(x_preprocessed)[0], 1, np.shape(x_preprocessed)[1])
+            return grads[:, label, :].reshape(
+                np.shape(x_preprocessed)[0], 1, np.shape(x_preprocessed)[1]
+            )
 
         return grads
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
@@ -133,11 +141,15 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         grads = np.zeros(np.shape(x))
         for i in range(np.shape(x)[0]):
             # 1.0 - to mimic loss, [0,np.argmax] to get right class
-            ind = 1.0 - self.predict(x_preprocessed[i].reshape(1, -1))[0, np.argmax(y[i])]
+            ind = (
+                1.0 - self.predict(x_preprocessed[i].reshape(1, -1))[0, np.argmax(y[i])]
+            )
             sur = (
                 1.0
                 - self.predict(
-                    np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
+                    np.repeat(
+                        x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0
+                    )
                     + eps * np.eye(np.shape(x_preprocessed)[1])
                 )[:, np.argmax(y[i])]
             )
@@ -148,16 +160,13 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         return grads
 
     # pylint: disable=W0221
-    def predict(self, x, logits=False, **kwargs):
+    def predict(self, x: np.ndarray, logits: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param logits: `True` if the prediction should be done without squashing function.
-        :type logits: `bool`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -178,14 +187,12 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
 
         return predictions
 
-    def predict_uncertainty(self, x):
+    def predict_uncertainty(self, x: np.ndarray) -> np.ndarray:
         """
         Perform uncertainty prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :return: Array of uncertainty predictions of shape `(nb_inputs)`.
-        :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -198,28 +205,24 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
 
         return predictions
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data. Not used, as given to model in initialized earlier.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :type kwargs: `dict`
-        :return: `None`
         """
         raise NotImplementedError
 
-    def nb_classes(self):
+    def nb_classes(self) -> int:
         """
         Return the number of output classes.
 
         :return: Number of classes in the data.
-        :rtype: `int`
         """
         return self._nb_classes
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         self.model.save_model(filename, save_data=False)
