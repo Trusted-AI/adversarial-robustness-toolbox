@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
-#from art.attacks.evasion.adversarial_patch_video.adversarial_patch_numpy import AdversarialPatchNumpy
+# from art.attacks.evasion.adversarial_patch_video.adversarial_patch_numpy import AdversarialPatchNumpy
 from adversarial_patch_numpy import AdversarialPatchNumpy
 from art.classifiers import TensorFlowV2Classifier
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
@@ -37,7 +37,14 @@ logger = logging.getLogger(__name__)
 
 class AdversarialPatchVideo(EvasionAttack):
     """
-    Implementation of the adversarial patch attack.
+    Adapted the adversarial patch attack for videos.
+
+    The inputs to the model is assume to be of shape
+    (nb, c, t, h, w).
+
+    In addition, each video patch is also of shape
+    (nb, c, t, h, w), so it technically is time-varying
+    over a fixed number of frames.
 
     | Paper link: https://arxiv.org/abs/1712.09665
     """
@@ -88,45 +95,29 @@ class AdversarialPatchVideo(EvasionAttack):
         :type patch_shape: (`int`, `int`, `int`)
         """
         super(AdversarialPatchVideo, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(
+            classifier, ClassifierGradients
+        ):
+            raise ClassifierError(
+                self.__class__,
+                [ClassifierNeuralNetwork, ClassifierGradients],
+                classifier,
+            )
 
         assert (
             self.classifier.clip_values is not None
         ), "Adversarial Patch attack requires a classifier with clip_values."
-        """
-        if isinstance(self.classifier, TensorFlowV2Classifier):
-            self._attack = AdversarialPatchTensorFlowV2(
-                classifier=classifier,
-                rotation_max=rotation_max,
-                scale_min=scale_min,
-                scale_max=scale_max,
-                learning_rate=learning_rate,
-                max_iter=max_iter,
-                batch_size=batch_size,
-                patch_shape=patch_shape,
-            )
-        else:
-            self._attack = AdversarialPatchNumpy(
-                classifier=classifier,
-                rotation_max=rotation_max,
-                scale_min=scale_min,
-                scale_max=scale_max,
-                learning_rate=learning_rate,
-                max_iter=max_iter,
-                batch_size=batch_size,
-            )
-        """
 
         self._attack = AdversarialPatchNumpy(
-                classifier=classifier,
-                rotation_max=rotation_max,
-                scale_min=scale_min,
-                scale_max=scale_max,
-                learning_rate=learning_rate,
-                max_iter=max_iter,
-                batch_size=batch_size,
-            )
+            classifier=classifier,
+            rotation_max=rotation_max,
+            scale_min=scale_min,
+            scale_max=scale_max,
+            learning_rate=learning_rate,
+            max_iter=max_iter,
+            batch_size=batch_size,
+        )
+
     def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
@@ -150,7 +141,7 @@ class AdversarialPatchVideo(EvasionAttack):
 
         return self._attack.generate(x=x, y=y, **kwargs)
 
-    def apply_patch(self, x, scale, patch_external=None):
+    def apply_patch(self, x, scale, patch_external=None, **kwargs):
         """
         A function to apply the learned adversarial patch to images.
 
@@ -163,7 +154,9 @@ class AdversarialPatchVideo(EvasionAttack):
         :return: The patched instances.
         :rtype: `np.ndarray`
         """
-        return self._attack.apply_patch(x, scale, patch_external=patch_external)
+        return self._attack.apply_patch(
+            x, scale, patch_external=patch_external, **kwargs
+        )
 
     def set_params(self, **kwargs):
         """
@@ -188,21 +181,34 @@ class AdversarialPatchVideo(EvasionAttack):
         super(AdversarialPatchVideo, self).set_params(**kwargs)
 
         if not isinstance(self._attack.rotation_max, (float, int)):
-            raise ValueError("The maximum rotation of the random patches must be of type float.")
+            raise ValueError(
+                "The maximum rotation of the random patches must be of type float."
+            )
         if self._attack.rotation_max < 0 or self._attack.rotation_max > 180.0:
-            raise ValueError("The maximum rotation of the random patches must be between 0 and 180 degrees.")
+            raise ValueError(
+                "The maximum rotation of the random patches must be between 0 and 180 degrees."
+            )
 
         if not isinstance(self._attack.scale_min, float):
-            raise ValueError("The minimum scale of the random patched must be of type float.")
-        if self._attack.scale_min < 0 or self._attack.scale_min >= self._attack.scale_max:
+            raise ValueError(
+                "The minimum scale of the random patched must be of type float."
+            )
+        if (
+            self._attack.scale_min < 0
+            or self._attack.scale_min >= self._attack.scale_max
+        ):
             raise ValueError(
                 "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling."
             )
 
         if not isinstance(self._attack.scale_max, float):
-            raise ValueError("The maximum scale of the random patched must be of type float.")
+            raise ValueError(
+                "The maximum scale of the random patched must be of type float."
+            )
         if self._attack.scale_max > 1:
-            raise ValueError("The maximum scale of the random patched must not be greater than 1.")
+            raise ValueError(
+                "The maximum scale of the random patched must not be greater than 1."
+            )
 
         if not isinstance(self._attack.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
