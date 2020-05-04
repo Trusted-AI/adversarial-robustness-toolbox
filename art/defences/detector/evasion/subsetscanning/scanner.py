@@ -21,8 +21,8 @@ Subset scanning based on FGSS
 
 import numpy as np
 
-from art.detection.subsetscanning.scoring_functions import ScoringFunctions
-from art.detection.subsetscanning.scanningops import ScanningOps
+from art.defences.detector.evasion.subsetscanning.scoring_functions import ScoringFunctions
+from art.defences.detector.evasion import ScanningOps
 
 
 class Scanner:
