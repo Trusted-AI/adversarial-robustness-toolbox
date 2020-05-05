@@ -726,7 +726,8 @@ def test_repr(get_image_classifier_list):
         [
             "art.estimators.classification.keras.KerasClassifier",
             "use_logits=False, channel_index=3",
-            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, " "postprocessing_defences=None, preprocessing=(0, 1)",
+            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, " "postprocessing_defences=None, "
+            "preprocessing=(0, 1)",
             "input_layer=0, output_layer=0",
         ],
     )
