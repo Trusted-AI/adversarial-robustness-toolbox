@@ -179,7 +179,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         If a parameter is not provided, it takes its default value.
         """
         # Save defence-specific parameters
-        super(SpectralSignatureDefense, self).set_params(**kwargs)
+        super().set_params(**kwargs)
 
         if self.batch_size < 0:
             raise ValueError(
