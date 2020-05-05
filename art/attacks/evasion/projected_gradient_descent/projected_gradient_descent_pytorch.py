@@ -29,17 +29,16 @@ import logging
 
 import numpy as np
 import torch
-from scipy.stats import truncnorm
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, random_sphere
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import \
+    ProjectedGradientDescentCommon
+from art.utils import compute_success, random_sphere
 
 logger = logging.getLogger(__name__)
 
 
-class ProjectedGradientDescentPyTorch(EvasionAttack):
+class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
     """
     The Projected Gradient Descent attack is an iterative method in which,
     after each iteration, the perturbation is projected on an lp-ball of specified radius (in
@@ -48,20 +47,6 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1706.06083
     """
-
-    attack_params = EvasionAttack.attack_params + [
-        "norm",
-        "eps",
-        "eps_step",
-        "targeted",
-        "num_random_init",
-        "batch_size",
-        "minimal",
-        "max_iter",
-        "random_eps"
-    ]
-
-    _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
         self,
@@ -110,24 +95,17 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
                 'preprocessing defences.'
             )
 
-        super(ProjectedGradientDescentPyTorch, self).__init__(estimator)
-
-        kwargs = {
-            "norm": norm,
-            "eps": eps,
-            "eps_step": eps_step,
-            "max_iter": max_iter,
-            "targeted": targeted,
-            "num_random_init": num_random_init,
-            "batch_size": batch_size,
-            "random_eps": random_eps
-        }
-        ProjectedGradientDescentPyTorch.set_params(self, **kwargs)
-
-        if self.random_eps:
-            lower, upper = 0, eps
-            mu, sigma = 0, (eps / 2)
-            self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+        super(ProjectedGradientDescentPyTorch, self).__init__(
+            estimator=estimator,
+            norm=norm,
+            eps=eps,
+            eps_step=eps_step,
+            max_iter=max_iter,
+            targeted=targeted,
+            num_random_init=num_random_init,
+            batch_size=batch_size,
+            random_eps=random_eps,
+        )
 
     def generate(self, x, y=None, **kwargs):
         """
@@ -147,29 +125,16 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        if self.random_eps:
-            ratio = self.eps_step / self.eps
-            self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
-            self.eps_step = ratio * self.eps
+        # Check whether random eps is enabled
+        self._random_eps()
 
-        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        # Set up targets
+        targets = self._set_targets(x, y)
 
-        if y is None:
-            # Throw error if attack is targeted, but no targets are provided
-            if self.targeted:
-                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+        # Get the mask
+        mask = self._get_mask(x, **kwargs)
 
-            # Use model predictions as correct outputs
-            targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
-        else:
-            targets = y
-
-        mask = kwargs.get("mask")
-        if mask is not None:
-            # Ensure the mask is broadcastable
-            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
-                raise ValueError("Mask shape must be broadcastable to input shape.")
-
+        # Start to compute adversarial examples
         adv_x_best = None
         rate_best = None
 
@@ -406,56 +371,3 @@ class ProjectedGradientDescentPyTorch(EvasionAttack):
         values = values_tmp.reshape(values.shape)
 
         return values
-
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
-        :type norm: `int` or `float`
-        :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
-        :param targeted: Should the attack target one specific class
-        :type targeted: `bool`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
-                                the original input.
-        :type num_random_init: `int`
-        :param batch_size: Batch size.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(ProjectedGradientDescentPyTorch, self).set_params(**kwargs)
-
-        # Check if order of the norm is acceptable given current implementation
-        if self.norm not in [np.inf, int(1), int(2)]:
-            raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
-
-        if self.eps <= 0:
-            raise ValueError("The perturbation size `eps` has to be positive.")
-
-        if self.eps_step <= 0:
-            raise ValueError("The perturbation step-size `eps_step` has to be positive.")
-
-        if not isinstance(self.targeted, bool):
-            raise ValueError("The flag `targeted` has to be of type bool.")
-
-        if not isinstance(self.num_random_init, (int, np.int)):
-            raise TypeError("The number of random initialisations has to be of type integer")
-
-        if self.num_random_init < 0:
-            raise ValueError("The number of random initialisations `random_init` has to be greater than or equal to 0.")
-
-        if self.batch_size <= 0:
-            raise ValueError("The batch size `batch_size` has to be positive.")
-
-        if self.eps_step > self.eps:
-            raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
-
-        if self.max_iter <= 0:
-            raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
-
-        return True
