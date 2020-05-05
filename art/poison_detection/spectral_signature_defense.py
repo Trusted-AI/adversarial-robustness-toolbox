@@ -56,7 +56,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         :param y_train: labels used to train the classifier.
         :type y_train: `np.ndarray`
         """
-        super(SpectralSignatureDefense, self).__init__(classifier, x_train, y_train)
+        super().__init__(classifier, x_train, y_train)
         self.set_params(**kwargs)
         self.y_train_sparse = np.argmax(y_train, axis=1)
 
