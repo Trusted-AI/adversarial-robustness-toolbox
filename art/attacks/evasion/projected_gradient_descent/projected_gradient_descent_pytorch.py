@@ -192,7 +192,10 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         inputs = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
         targets = torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
-        adv_x = x.astype(ART_NUMPY_DTYPE)
+        adv_x = inputs
+
+        if mask is not None:
+            mask = torch.from_numpy(mask.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
 
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute(
@@ -212,18 +215,18 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         Compute perturbations.
 
         :param x: Current adversarial examples.
-        :type x: `Tensor`
+        :type x: `torch.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `Tensor`
+        :type y: `torch.Tensor`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :type mask: `np.ndarray`
+        :type mask: `torch.Tensor`
         :return: Perturbations.
-        :rtype: `Tensor`
+        :rtype: `torch.Tensor`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -248,20 +251,20 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         if mask is None:
             return grad
         else:
-            return grad * torch.from_numpy(mask.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
+            return grad * mask
 
     def _apply_perturbation(self, x, perturbation, eps_step):
         """
         Apply perturbation on examples.
 
         :param x: Current adversarial examples.
-        :type x: `Tensor`
+        :type x: `torch.Tensor`
         :param perturbation: Current perturbations.
-        :type perturbation: `Tensor`
+        :type perturbation: `torch.Tensor`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
         :return: Adversarial examples.
-        :rtype: `Tensor`
+        :rtype: `torch.Tensor`
         """
         x = x + eps_step * perturbation
 
@@ -276,18 +279,18 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         Compute adversarial examples for one iteration.
 
         :param x: Current adversarial examples.
-        :type x: `np.ndarray` or `Tensor`
+        :type x: `torch.Tensor`
         :param x_init: An array with the original inputs.
-        :type x_init: `Tensor`
+        :type x_init: `torch.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `Tensor`
+        :type y: `torch.Tensor`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :type mask: `np.ndarray`
+        :type mask: `torch.Tensor`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
@@ -296,27 +299,26 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             starting at the original input.
         :type random_init: `bool`
         :return: Adversarial examples.
-        :rtype: `Tensor`
+        :rtype: `torch.Tensor`
         """
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
 
             random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            random_perturbation = torch.from_numpy(random_perturbation).to(self.estimator.device)
+
             if mask is not None:
-                random_perturbation = random_perturbation * (mask.astype(ART_NUMPY_DTYPE))
-            x_adv = x.astype(ART_NUMPY_DTYPE) + random_perturbation
+                random_perturbation = random_perturbation * mask
+
+            x_adv = x + random_perturbation
 
             if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
-                x_adv = np.clip(x_adv, clip_min, clip_max)
-            x_adv = torch.from_numpy(x_adv).to(self.estimator.device)
+                x_adv = torch.clamp(x_adv, clip_min, clip_max)
 
         else:
-            if isinstance(x, np.ndarray):
-                x_adv = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
-            else:
-                x_adv = x
+            x_adv = x
 
         # Get perturbation
         perturbation = self._compute_perturbation(x_adv, y, mask)
@@ -338,13 +340,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         Project `values` on the L_p norm ball of size `eps`.
 
         :param values: Values to clip.
-        :type values: `Tensor`
+        :type values: `torch.Tensor`
         :param eps: Maximum norm allowed.
         :type eps: `float`
         :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
         :type norm_p: `int`
         :return: Values of `values` after projection.
-        :rtype: `Tensor`
+        :rtype: `torch.Tensor`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
