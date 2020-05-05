@@ -104,7 +104,7 @@ def main():
     epsilon = (args.epsilon / 255.)
 
     trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
-    # classifier.fit(x_train, y_train, nb_epochs=args.epochs)
+    trainer.fit(x_train, y_train, nb_epochs=args.epochs)
 
     train_time = start_start_time - time.time()
     print("Train time: ", train_time, flush=True)
