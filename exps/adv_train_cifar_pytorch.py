@@ -83,8 +83,8 @@ def main():
     model.train()
 
 
-    # opt = torch.optim.SGD(model.parameters(), lr=1e-3, momentum=0.9, weight_decay=5e-4)
-    opt = torch.optim.Adam(model.parameters(), lr=1e-2  )
+    opt = torch.optim.SGD(model.parameters(), lr=0.21, momentum=0.9, weight_decay=5e-4)
+    # opt = torch.optim.Adam(model.parameters(), lr=1e-2 )
 
     # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
 
@@ -103,8 +103,8 @@ def main():
 
     epsilon = (args.epsilon / 255.)
 
-    trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
-    trainer.fit(x_train, y_train, nb_epochs=args.epochs)
+    # trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
+    classifier.fit(x_train, y_train, nb_epochs=args.epochs)
 
     train_time = start_start_time - time.time()
     print("Train time: ", train_time, flush=True)
