@@ -67,7 +67,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         If ground truth is known, this function returns a confusion matrix in the form of a JSON object.
         :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous.
-        :type is_clean: :class `np.ndarray`
+        :type is_clean: `np.ndarray`
         :param kwargs: A dictionary of defence-specific parameters.
         :type kwargs: `dict`
         :return: JSON object with confusion matrix.
