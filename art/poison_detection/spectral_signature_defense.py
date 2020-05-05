@@ -48,7 +48,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
 
     def __init__(self, classifier, x_train, y_train, **kwargs):
         """
-        Create an :class:`.ActivationDefence` object with the provided classifier.
+        Create an :class:`.SpectralSignatureDefense` object with the provided classifier.
         :param classifier: Model evaluated for poison.
         :type classifier: :class:`art.classifiers.Classifier`
         :param x_train: dataset used to train the classifier.
