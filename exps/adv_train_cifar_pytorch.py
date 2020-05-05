@@ -83,7 +83,7 @@ def main():
     model.train()
 
 
-    opt = torch.optim.SGD(model.parameters(), lr=0.21, momentum=0.9, weight_decay=5e-4)
+    opt = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
     # opt = torch.optim.Adam(model.parameters(), lr=1e-2 )
 
     # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
@@ -110,11 +110,11 @@ def main():
     print("Train time: ", train_time, flush=True)
 
     best_state_dict = copy.deepcopy(model.state_dict())
-    #accuracy
+
+    #compute accuracy
     output = np.argmax(classifier.predict(x_test), axis=1)
-    print(output)
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
-    print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]))
+    print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]), flush=True)
 
 
     torch.save(best_state_dict, args.fname + '.pth')
