@@ -95,10 +95,9 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         """
         Returns poison detected and a report.
         :return: (report, is_clean_lst):
-                where a report is a dictionary containing the index as keys the outlier score
-                of suspected poisons as values
-                where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
-                there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison.
+                where a report is a dictionary containing the index as keys the outlier score of suspected poisons as
+                values where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i] there is clean and
+                is_clean_lst[i]=0, means that x_train[i] was classified as poison.
         :rtype: `tuple`
         """
 
