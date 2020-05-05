@@ -209,7 +209,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         Compute perturbations.
 
         :param x: Current adversarial examples.
-        :type x: `Tensor`
+        :type x: `tensorflow.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
@@ -220,7 +220,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                      perturbed.
         :type mask: `np.ndarray`
         :return: Perturbations.
-        :rtype: `Tensor`
+        :rtype: `tensorflow.Tensor`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -252,13 +252,13 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         Apply perturbation on examples.
 
         :param x: Current adversarial examples.
-        :type x: `Tensor`
+        :type x: `tensorflow.Tensor`
         :param perturbation: Current perturbations.
-        :type perturbation: `Tensor`
+        :type perturbation: `tensorflow.Tensor`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
         :return: Adversarial examples.
-        :rtype: `Tensor`
+        :rtype: `tensorflow.Tensor`
         """
         x = x + eps_step * perturbation
 
@@ -273,7 +273,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         Compute adversarial examples for one iteration.
 
         :param x: Current adversarial examples.
-        :type x: `np.ndarray` or `Tensor`
+        :type x: `np.ndarray` or `tensorflow.Tensor`
         :param x_init: An array with the original inputs.
         :type x_init: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
@@ -293,7 +293,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             starting at the original input.
         :type random_init: `bool`
         :return: Adversarial examples.
-        :rtype: `Tensor`
+        :rtype: `tensorflow.Tensor`
         """
         if random_init:
             n = x.shape[0]
@@ -335,13 +335,13 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         Project `values` on the L_p norm ball of size `eps`.
 
         :param values: Values to clip.
-        :type values: `Tensor`
+        :type values: `tensorflow.Tensor`
         :param eps: Maximum norm allowed.
         :type eps: `float`
         :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
         :type norm_p: `int`
         :return: Values of `values` after projection.
-        :rtype: `Tensor`
+        :rtype: `tensorflow.Tensor`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
