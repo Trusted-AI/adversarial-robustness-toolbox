@@ -37,7 +37,6 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
     """
 
     defence_params = PoisonFilteringDefence.defence_params + [
-        "classifier",
         "x_train",
         "y_train",
         "batch_size",
