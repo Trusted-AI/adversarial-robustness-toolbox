@@ -24,16 +24,14 @@ predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional
 
 import numpy as np
 
+from art.classifiers.classifier import Classifier
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
-
-if TYPE_CHECKING:
-    from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +58,7 @@ class BoundaryAttack(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: Classifier,
         targeted: bool = True,
         delta: float = 0.01,
         epsilon: float = 0.01,
@@ -98,14 +96,15 @@ class BoundaryAttack(EvasionAttack):
         }
         self.set_params(**params)
 
-    # @classmethod
-    # def is_valid_classifier_type(cls, classifier):
-    #     """
-    #     Checks whether the classifier provided is a classifer which this class can perform an attack on
-    #     :param classifier:
-    #     :return:
-    #     """
-    #     return isinstance(classifier, Classifier)
+    @classmethod
+    def is_valid_classifier_type(cls, classifier: Classifier) -> bool:
+        """
+        Checks whether the classifier provided is a classifer which this class can perform an attack on.
+
+        :param classifier:
+        :return: True if the candidate classifier can be used with this attack.
+        """
+        return isinstance(classifier, Classifier)
 
     def generate(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs

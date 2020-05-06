@@ -106,14 +106,15 @@ class FastGradientMethod(EvasionAttack):
 
         self._project = True
 
-    # @classmethod
-    # def is_valid_classifier_type(cls, classifier):
-    #     """
-    #     Checks whether the classifier provided is a classifer which this class can perform an attack on
-    #     :param classifier:
-    #     :return:
-    #     """
-    #     return isinstance(classifier, ClassifierGradients)
+    @classmethod
+    def is_valid_classifier_type(cls, classifier: ClassifierGradients) -> bool:
+        """
+        Checks whether the classifier provided is a classifier which this class can perform an attack on.
+
+        :param classifier:
+        :return: True if the candidate classifier can be used with this attack.
+        """
+        return isinstance(classifier, ClassifierGradients)
 
     def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
