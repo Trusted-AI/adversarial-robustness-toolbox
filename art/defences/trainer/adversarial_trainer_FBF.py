@@ -90,7 +90,6 @@ class AdversarialTrainerFBF(Trainer):
 
                 # adv_ids = list(range(x_batch.shape[0]))
                 # np.random.shuffle(adv_ids)
-
                 # generate delta as per
 
                 n = x_batch.shape[0]
