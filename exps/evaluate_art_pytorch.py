@@ -113,7 +113,7 @@ def main():
         eps_step = (1.5 * eps) / 40
         attack_test = ProjectedGradientDescent(classifier=classifier, norm=np.inf, eps=eps,
                                                eps_step=eps_step, max_iter=40, targeted=False,
-                                               num_random_init=10, batch_size=32)
+                                               num_random_init=5, batch_size=32)
         x_test_attack = attack_test.generate(x_test)
         x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
         nb_correct_attack_pred = np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))

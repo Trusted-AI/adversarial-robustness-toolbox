@@ -97,7 +97,7 @@ class AdversarialTrainerFBF(Trainer):
                 m = np.prod(x_batch.shape[1:])
                 delta = random_sphere(n, m, self.eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
                 delta_grad = self.classifier.loss_gradient(x_batch + delta,y_batch)
-                delta = np.clip(delta + 1.25*self.eps*np.sign(delta_grad), self.eps, -self.eps)
+                delta = np.clip(delta + 1.25*self.eps*np.sign(delta_grad), -self.eps, +self.eps)
                 x_batch_pert = np.clip(x_batch+delta,self.classifier.clip_values[0], self.classifier.clip_values[1])
 
                 # Fit batch
