@@ -134,26 +134,52 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         # Get the mask
         mask = self._get_mask(x, **kwargs)
 
+        # Create dataset
+        if mask is not None:
+            # Here we need to make a distinction: if the masks are different for each input, we need to index
+            # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+            if len(mask.shape) == len(x.shape):
+                dataset = tf.data.Dataset.from_tensor_slices(
+                    (
+                        x.astype(ART_NUMPY_DTYPE),
+                        targets.astype(ART_NUMPY_DTYPE),
+                        mask.astype(ART_NUMPY_DTYPE),
+                    )
+                ).batch(self.batch_size, drop_remainder=False)
+
+            else:
+                dataset = tf.data.Dataset.from_tensor_slices(
+                    (
+                        x.astype(ART_NUMPY_DTYPE),
+                        targets.astype(ART_NUMPY_DTYPE),
+                        np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0]),
+                    )
+                ).batch(self.batch_size, drop_remainder=False)
+
+        else:
+            dataset = tf.data.Dataset.from_tensor_slices(
+                (
+                    x.astype(ART_NUMPY_DTYPE),
+                    targets.astype(ART_NUMPY_DTYPE),
+                )
+            ).batch(self.batch_size, drop_remainder=False)
+
         # Start to compute adversarial examples
         adv_x_best = None
         rate_best = None
 
         for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(ART_NUMPY_DTYPE)
+            data_loader = iter(dataset)
 
-            # Compute perturbation with implicit batching
-            for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
-                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                batch = x[batch_index_1:batch_index_2]
-                batch_labels = targets[batch_index_1:batch_index_2]
-
-                mask_batch = mask
+            # Compute perturbation with batching
+            for (batch_id, batch_all) in enumerate(data_loader):
                 if mask is not None:
-                    # Here we need to make a distinction: if the masks are different for each input, we need to index
-                    # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
-                    if len(mask.shape) == len(x.shape):
-                        mask_batch = mask[batch_index_1:batch_index_2]
+                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
+                else:
+                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
 
+                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                 adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
 
             if self.num_random_init > 1:
@@ -180,21 +206,21 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         Generate a batch of adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
+        :type x: `tensorflow.Tensor`
         :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-        :type targets: `np.ndarray`
+        :type targets: `tensorflow.Tensor`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :type mask: `np.ndarray`
+        :type mask: `tensorflow.Tensor`
         :return: Adversarial examples.
-        :rtype: `np.ndarray`
+        :rtype: `tensorflow.Tensor`
         """
-        adv_x = x.astype(ART_NUMPY_DTYPE)
+        adv_x = x
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute(
                 adv_x,
-                x.astype(ART_NUMPY_DTYPE),
+                x,
                 targets,
                 mask,
                 self.eps,
@@ -214,11 +240,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `np.ndarray`
+        :type y: `tensorflow.Tensor`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :type mask: `np.ndarray`
+        :type mask: `tensorflow.Tensor`
         :return: Perturbations.
         :rtype: `tensorflow.Tensor`
         """
@@ -245,7 +271,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         if mask is None:
             return grad
         else:
-            return grad * (mask.astype(ART_NUMPY_DTYPE))
+            return grad * mask
 
     def _apply_perturbation(self, x, perturbation, eps_step):
         """
@@ -273,18 +299,18 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         Compute adversarial examples for one iteration.
 
         :param x: Current adversarial examples.
-        :type x: `np.ndarray` or `tensorflow.Tensor`
+        :type x: `tensorflow.Tensor`
         :param x_init: An array with the original inputs.
-        :type x_init: `np.ndarray`
+        :type x_init: `tensorflow.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `np.ndarray`
+        :type y: `tensorflow.Tensor`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :type mask: `np.ndarray`
+        :type mask: `tensorflow.Tensor`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
@@ -300,20 +326,18 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             m = np.prod(x.shape[1:])
 
             random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            random_perturbation = tf.convert_to_tensor(random_perturbation)
             if mask is not None:
-                random_perturbation = random_perturbation * (mask.astype(ART_NUMPY_DTYPE))
-            x_adv = x.astype(ART_NUMPY_DTYPE) + random_perturbation
+                random_perturbation = random_perturbation * mask
+
+            x_adv = x + random_perturbation
 
             if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
-                x_adv = np.clip(x_adv, clip_min, clip_max)
-            x_adv = tf.convert_to_tensor(x_adv)
+                x_adv = tf.clip_by_value(x_adv, clip_min, clip_max)
 
         else:
-            if isinstance(x, np.ndarray):
-                x_adv = tf.convert_to_tensor(x.astype(ART_NUMPY_DTYPE))
-            else:
-                x_adv = x
+            x_adv = x
 
         # Get perturbation
         perturbation = self._compute_perturbation(x_adv, y, mask)
