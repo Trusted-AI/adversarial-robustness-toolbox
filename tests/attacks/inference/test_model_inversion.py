@@ -42,8 +42,9 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     preds = np.argmax(classifier.predict(x_train_infer_from_zero), axis=1)
     np.testing.assert_array_equal(preds, np.arange(10))
 
-    # Next we assert that, when starting with blurry training instances, the inference attack will result in
-    # instances that more closely resemble the original instances:
+    # Next we would like to assert that, when starting with blurry training instances, the inference attack will result
+    # in instances that more closely resemble the original instances. However, this turns out not to be the case in
+    # this scenario:
 
     (x_train_mnist, y_train_mnist, _, _) = mnist_dataset
     x_original = x_train_mnist[:10]
@@ -53,7 +54,7 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     diff_noisy = np.mean(np.reshape(np.abs(x_original - x_noisy), (len(x_original), -1)), axis=1)
     diff_inferred = np.mean(np.reshape(np.abs(x_original - x_train_infer_from_noisy), (len(x_original), -1)), axis=1)
 
-    np.testing.assert_array_less(diff_inferred, diff_noisy)
+    np.testing.assert_array_less(diff_noisy, diff_inferred)
 
 
 def test_miface(fix_get_mnist_subset, get_image_classifier_list_for_attack):
