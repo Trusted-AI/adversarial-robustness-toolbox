@@ -28,7 +28,7 @@ import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.estimators.classification.keras import KerasClassifier
-from art.detection import BinaryInputDetector, BinaryActivationDetector
+from art.defences.detector.evasion import BinaryInputDetector, BinaryActivationDetector
 from art.utils import load_mnist
 
 from tests.utils import master_seed, get_image_classifier_kr

@@ -23,6 +23,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.defences.postprocessor.postprocessor import Postprocessor
 
@@ -93,12 +94,45 @@ class BaseEstimator(ABC):
                 )
             if np.array(self._clip_values[0] >= self._clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
-
+            
+            if isinstance(self._clip_values, np.ndarray):
+                self._clip_values = self._clip_values.astype(ART_NUMPY_DTYPE)
+            else:
+                self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)
+            
         if isinstance(self.preprocessing_defences, Preprocessor):
             self.preprocessing_defences = [self.preprocessing_defences]
+        elif isinstance(self.preprocessing_defences, list):
+            for defence in self.preprocessing_defences:
+                if not isinstance(defence, Preprocessor):
+                    raise ValueError(
+                        "All preprocessing defences have to be instance of "
+                        "art.defences.preprocessor.preprocessor.Preprocessor."
+                    )
+        elif self.preprocessing_defences is None:
+            pass
+        else:
+            raise ValueError(
+                "All preprocessing defences have to be instance of "
+                "art.defences.preprocessor.preprocessor.Preprocessor."
+            )
 
         if isinstance(self.postprocessing_defences, Postprocessor):
             self.postprocessing_defences = [self.postprocessing_defences]
+        elif isinstance(self.postprocessing_defences, list):
+            for defence in self.postprocessing_defences:
+                if not isinstance(defence, Postprocessor):
+                    raise ValueError(
+                        "All postprocessing defences have to be instance of "
+                        "art.defences.postprocessor.postprocessor.Postprocessor."
+                    )
+        elif self.postprocessing_defences is None:
+            pass
+        else:
+            raise ValueError(
+                "All postprocessing defences have to be instance of "
+                "art.defences.postprocessor.postprocessor.Postprocessor."
+            )
 
         if self.preprocessing is not None and len(self.preprocessing) != 2:
             raise ValueError(
@@ -107,9 +141,20 @@ class BaseEstimator(ABC):
 
         return self
 
+    def get_params(self):
+        """
+        Get all parameters and their values of this estimator.
+
+        :return: A dictionary of string parameter names to their value.
+        """
+        params = dict()
+        for key in self.estimator_params:
+            params[key] = getattr(self, key)
+        return params
+
     @abstractmethod
     def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
-        r"""
+        """
         Perform prediction of the estimator for input `x`.
 
         :param x: Samples.
@@ -131,6 +176,15 @@ class BaseEstimator(ABC):
         :return: `None`
         """
         raise NotImplementedError
+
+    @property
+    def model(self):
+        """
+        Return the model.
+
+        :return: The model.
+        """
+        return self._model
 
     @property
     def input_shape(self):
@@ -254,8 +308,11 @@ class BaseEstimator(ABC):
 
     def __repr__(self):
         class_name = self.__class__.__name__
-        attributes = {(k[1:], v) if k[0] == "_" else (k, v) for (k, v) in self.__dict__.items()}
-        attributes = ["{}={}".format(k, v) for (k, v) in attributes]
+        attributes = {}
+        for k, v in self.__dict__.items():
+            k = k[1:] if k[0] == "_" else k
+            attributes[k] = v
+        attributes = ["{}={}".format(k, v) for k, v in attributes.items()]
         repr_string = class_name + "(" + ", ".join(attributes) + ")"
         return repr_string
 
@@ -488,9 +545,12 @@ class NeuralNetworkMixin(ABC):
 
     def __repr__(self):
         name = self.__class__.__name__
-
-        attributes = {(k[1:], v) if k[0] == "_" else (k, v) for (k, v) in self.__dict__.items()}
-        attrs = ["{}={}".format(k, v) for (k, v) in attributes]
+        
+        attributes = {}
+        for k, v in self.__dict__.items():
+            k = k[1:] if k[0] == "_" else k
+            attributes[k] = v
+        attrs = ["{}={}".format(k, v) for k, v in attributes.items()]
         repr_ = name + "(" + ", ".join(attrs) + ")"
 
         return repr_

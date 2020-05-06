@@ -31,9 +31,9 @@ import os
 
 import numpy as np
 
-from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
-from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
-from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
+from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
+from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
@@ -443,7 +443,7 @@ class ActivationDefence(PoisonFilteringDefence):
                 title = "Class_" + str(i) + "_cluster_" + str(j) + "_clusterSize_" + str(len(images_cluster))
                 f_name = title + ".png"
                 f_name = os.path.join(folder, f_name)
-                sprite = create_sprite(images_cluster)
+                sprite = create_sprite(np.array(images_cluster))
                 if save:
                     save_image(sprite, f_name)
                 sprites_by_class[i][j] = sprite

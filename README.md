@@ -56,6 +56,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * High Confidence Low Uncertainty adversarial samples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * Iterative frame saliency attack ([Inkawhich et al., 2018](https://arxiv.org/abs/1811.11875))
+* DPatch ([Liu et al., 2018](https://arxiv.org/abs/1806.02299v4))
 * Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 * Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
@@ -69,6 +70,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Basic iterative method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
 * Jacobian saliency map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
+* Feature Adversaries ([Sabour et al., 2016](https://arxiv.org/abs/1511.05122))
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
@@ -83,6 +85,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 
 **Defences - Preprocessor:**
+* Resampling ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
@@ -135,7 +138,6 @@ pip install adversarial-robustness-toolbox
 ```
 
 ### Manual installation
-
 The most recent version of ART can be downloaded or cloned from this repository:
 
 ```bash
@@ -143,17 +145,37 @@ git clone https://github.com/IBM/adversarial-robustness-toolbox
 ```
 
 Install ART with the following command from the project folder `adversarial-robustness-toolbox`:
+
+Using pip:
 ```bash
 pip install .
 ```
 
-ART provides unit tests that can be run with the following command:
+Using Docker:
+* Build the ART docker image: `make build`
+* To enter the ART docker environment run: `make run-bash`
+* To run the Jupyter notebooks from the container run `make run-jupyter` and copy and paste the url generated \
+to connect to that container.  
 
+#### Running ART Unit tests
+ART provides unit tests that can be ran within the ART environment. The first time the tests are ran,
+ ART will download the necessary datasets so it might take a while to do so.
+* Note: If you wish to run the unit tests using the Tensorflow 1 environment simply comment out the tensorflow 2 \
+packages within either the `test_requirements.txt` or `Dockerfile` as needed
+
+Use the following commands to run the tests:
+
+Using pip:
 ```bash
+pip install -r test_requirements.txt
 bash run_tests.sh
 ```
 
-## Get Started with ART
+Using Docker:
+`make run-test`
+
+
+## Getting Started with ART
 
 Examples of using ART can be found in `examples` and [examples/README.md](examples/README.md) provides an overview and 
 additional information. It contains a minimal example for each machine learning framework. All examples can be run with
@@ -165,23 +187,10 @@ python examples/<example_name>.py
 More detailed examples and tutorials are located in `notebooks` and [notebooks/README.md](notebooks/README.md) provides 
 and overview and more information. 
 
-### Contributing
 
-Adding new features, improving documentation, fixing bugs, or writing tutorials are all examples of helpful 
-contributions. Furthermore, if you are publishing a new attack or defense, we strongly encourage you to add it to the 
-Adversarial Robustness Toolbox so that others may evaluate it fairly in their own work.
+## Contributing to ART
 
-Bug fixes can be initiated through GitHub pull requests. When making code contributions to the Adversarial Robustness 
-Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide unit tests for the new features.
-
-This project uses [DCO](https://developercertificate.org/). Be sure to sign off your commits using the `-s` flag or 
-adding `Signed-off-By: Name<Email>` in the commit message.
-
-#### Example
-
-```bash
-git commit -s -m 'Add new feature'
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## Citing ART
 

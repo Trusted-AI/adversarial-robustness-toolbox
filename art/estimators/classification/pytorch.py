@@ -122,6 +122,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             self._reduce_labels = False
 
+    @property
+    def model(self):
+        return self._model._model
+
     def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
