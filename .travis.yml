@@ -1,5 +1,6 @@
 dist: xenial
 language: python
+cache: pip
 env:
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.2 KERAS_V=2.2.5
   - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.1.0 KERAS_V=2.3.1
@@ -16,6 +17,7 @@ matrix:
         - py.test --pep8 -m pep8
 
 before_install:
+  - sudo apt-get -y -q install ffmpeg libavcodec-extra
   - sed -i "s/^tensorflow$/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
   - sed -i "s/^keras$/keras==${KERAS_V}/" test_requirements.txt
 
