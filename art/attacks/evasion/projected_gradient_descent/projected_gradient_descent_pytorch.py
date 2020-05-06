@@ -134,6 +134,37 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         # Get the mask
         mask = self._get_mask(x, **kwargs)
 
+        # Create dataset
+        if mask is not None:
+            # Here we need to make a distinction: if the masks are different for each input, we need to index
+            # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
+            if len(mask.shape) == len(x.shape):
+                dataset = torch.utils.data.TensorDataset(
+                    torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
+                    torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
+                    torch.from_numpy(mask.astype(ART_NUMPY_DTYPE)),
+                )
+
+            else:
+                dataset = torch.utils.data.TensorDataset(
+                    torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
+                    torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
+                    torch.from_numpy(np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])),
+                )
+
+        else:
+            dataset = torch.utils.data.TensorDataset(
+                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
+            )
+
+        data_loader = torch.utils.data.DataLoader(
+            dataset=dataset,
+            batch_size=self.batch_size,
+            shuffle=False,
+            drop_last=False
+        )
+
         # Start to compute adversarial examples
         adv_x_best = None
         rate_best = None
@@ -141,19 +172,14 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         for _ in range(max(1, self.num_random_init)):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
-            # Compute perturbation with implicit batching
-            for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
-                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                batch = x[batch_index_1:batch_index_2]
-                batch_labels = targets[batch_index_1:batch_index_2]
-
-                mask_batch = mask
+            # Compute perturbation with batching
+            for (batch_id, batch_all) in enumerate(data_loader):
                 if mask is not None:
-                    # Here we need to make a distinction: if the masks are different for each input, we need to index
-                    # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
-                    if len(mask.shape) == len(x.shape):
-                        mask_batch = mask[batch_index_1:batch_index_2]
+                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
+                else:
+                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
 
+                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                 adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
 
             if self.num_random_init > 1:
@@ -180,22 +206,22 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         Generate a batch of adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
+        :type x: `torch.Tensor`
         :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-        :type targets: `np.ndarray`
+        :type targets: `torch.Tensor`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :type mask: `np.ndarray`
+        :type mask: `torch.Tensor`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
-        inputs = torch.from_numpy(x.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
-        targets = torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
+        inputs = x.to(self.estimator.device)
+        targets = targets.to(self.estimator.device)
         adv_x = inputs
 
         if mask is not None:
-            mask = torch.from_numpy(mask.astype(ART_NUMPY_DTYPE)).to(self.estimator.device)
+            mask = mask.to(self.estimator.device)
 
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute(
