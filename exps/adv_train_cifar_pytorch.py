@@ -5,6 +5,7 @@ import math
 import random
 import sys
 import time
+
 sys.path.append('/home/ambrish/github/adversarial-robustness-toolbox')
 
 from art.classifiers import PyTorchClassifier
@@ -15,6 +16,7 @@ import torch
 import torch.nn as nn
 
 from exps.preact_resnet import PreActResNet18
+
 
 def clamp(X, lower_limit, upper_limit):
     return torch.max(torch.min(X, upper_limit), lower_limit)
@@ -82,7 +84,6 @@ def main():
     model.apply(initialize_weights)
     model.train()
 
-
     opt = torch.optim.SGD(model.parameters(), lr=0.21, momentum=0.9, weight_decay=5e-4)
     # opt = torch.optim.Adam(model.parameters(), lr=1e-2 )
 
@@ -93,11 +94,11 @@ def main():
 
     classifier = PyTorchClassifier(
         model=model,
-        clip_values=(0.0,1.0),
-        preprocessing=(cifar_mu,cifar_std),
+        clip_values=(0.0, 1.0),
+        preprocessing=(cifar_mu, cifar_std),
         loss=criterion,
         optimizer=opt,
-        input_shape=(3,32,32),
+        input_shape=(3, 32, 32),
         nb_classes=10,
     )
 
@@ -111,14 +112,12 @@ def main():
 
     best_state_dict = copy.deepcopy(model.state_dict())
 
-    #compute accuracy
+    # compute accuracy
     output = np.argmax(trainer.predict(x_test), axis=1)
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]), flush=True)
 
-
     torch.save(best_state_dict, args.fname + '.pth')
-
 
 
 if __name__ == "__main__":
