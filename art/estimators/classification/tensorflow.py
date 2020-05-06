@@ -918,7 +918,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :type x: `tensorflow.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
+        :type y: `tensorflow.Tensor`
         :return: Gradients of the same shape as `x`.
         :rtype: `tensorflow.Tensor`
         """
@@ -930,7 +930,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 predictions = self._model(x)
 
                 if self._reduce_labels:
-                    loss = self._loss_object(np.argmax(y, axis=1), predictions)
+                    loss = self._loss_object(tf.argmax(y, axis=1), predictions)
                 else:
                     loss = self._loss_object(y, predictions)
 
