@@ -326,7 +326,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=False,
             num_random_init=0,
-            batch_size=2,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_np = attack_np.generate(self.x_train_mnist)
@@ -340,7 +340,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=False,
             num_random_init=0,
-            batch_size=2,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
@@ -367,7 +367,7 @@ class TestPGD(TestBase):
             norm=1,
             targeted=False,
             num_random_init=0,
-            batch_size=2,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_np = attack_np.generate(self.x_train_mnist)
@@ -381,7 +381,7 @@ class TestPGD(TestBase):
             norm=1,
             targeted=False,
             num_random_init=0,
-            batch_size=2,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
@@ -408,7 +408,7 @@ class TestPGD(TestBase):
             norm=2,
             targeted=False,
             num_random_init=0,
-            batch_size=2,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_np = attack_np.generate(self.x_train_mnist)
@@ -422,7 +422,7 @@ class TestPGD(TestBase):
             norm=2,
             targeted=False,
             num_random_init=0,
-            batch_size=2,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
@@ -449,7 +449,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=True,
             num_random_init=0,
-            batch_size=1,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_np = attack_np.generate(self.x_train_mnist, self.y_train_mnist)
@@ -463,7 +463,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=True,
             num_random_init=0,
-            batch_size=1,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_fw = attack_fw.generate(self.x_train_mnist, self.y_train_mnist )
@@ -491,7 +491,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=False,
             num_random_init=2,
-            batch_size=2,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_np = attack_np.generate(self.x_train_mnist)
@@ -506,7 +506,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=False,
             num_random_init=2,
-            batch_size=2,
+            batch_size=3,
             random_eps=False,
         )
         x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
@@ -534,7 +534,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=False,
             num_random_init=0,
-            batch_size=2,
+            batch_size=3,
             random_eps=True,
         )
         x_train_adv_np = attack_np.generate(self.x_train_mnist)
@@ -549,7 +549,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=False,
             num_random_init=0,
-            batch_size=2,
+            batch_size=3,
             random_eps=True,
         )
         x_train_adv_fw = attack_fw.generate(self.x_train_mnist)
@@ -567,7 +567,7 @@ class TestPGD(TestBase):
             places=6
         )
 
-        # Test the masking
+        # Test the masking 1
         master_seed(1234)
         attack_np = ProjectedGradientDescentNumpy(
             classifier,
@@ -577,7 +577,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=False,
             num_random_init=1,
-            batch_size=2,
+            batch_size=3,
             random_eps=True,
         )
 
@@ -598,7 +598,7 @@ class TestPGD(TestBase):
             norm=np.inf,
             targeted=False,
             num_random_init=1,
-            batch_size=2,
+            batch_size=3,
             random_eps=True,
         )
 
@@ -608,6 +608,61 @@ class TestPGD(TestBase):
 
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
         mask = mask.reshape(self.x_test_mnist.shape)
+        x_test_adv_fw = attack_fw.generate(self.x_test_mnist, mask=mask)
+
+        # Test
+        self.assertAlmostEqual(
+            np.mean(x_train_adv_np - self.x_train_mnist),
+            np.mean(x_train_adv_fw - self.x_train_mnist),
+            places=6
+        )
+        self.assertAlmostEqual(
+            np.mean(x_test_adv_np - self.x_test_mnist),
+            np.mean(x_test_adv_fw - self.x_test_mnist),
+            places=6
+        )
+
+        # Test the masking 2
+        master_seed(1234)
+        attack_np = ProjectedGradientDescentNumpy(
+            classifier,
+            eps=1,
+            eps_step=0.1,
+            max_iter=5,
+            norm=np.inf,
+            targeted=False,
+            num_random_init=1,
+            batch_size=3,
+            random_eps=True,
+        )
+
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape[1:]))
+        mask = mask.reshape(self.x_train_mnist.shape[1:])
+        x_train_adv_np = attack_np.generate(self.x_train_mnist, mask=mask)
+
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
+        mask = mask.reshape(self.x_test_mnist.shape[1:])
+        x_test_adv_np = attack_np.generate(self.x_test_mnist, mask=mask)
+
+        master_seed(1234)
+        attack_fw = ProjectedGradientDescent(
+            classifier,
+            eps=1,
+            eps_step=0.1,
+            max_iter=5,
+            norm=np.inf,
+            targeted=False,
+            num_random_init=1,
+            batch_size=3,
+            random_eps=True,
+        )
+
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape[1:]))
+        mask = mask.reshape(self.x_train_mnist.shape[1:])
+        x_train_adv_fw = attack_fw.generate(self.x_train_mnist, mask=mask)
+
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
+        mask = mask.reshape(self.x_test_mnist.shape[1:])
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist, mask=mask)
 
         # Test
