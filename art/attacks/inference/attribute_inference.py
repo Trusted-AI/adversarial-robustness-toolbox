@@ -161,8 +161,8 @@ class AttributeInferenceWhiteBoxLifestyle(InferenceAttack):
         for i, value in enumerate(values):
             # prepare data with the given value in the attacked feature
             v = np.full((n_samples, 1), value)
-            x_value = np.concatenate(x[:self.attack_feature], v, axis=1)
-            x_value = np.concatenate(x_value, x[self.attack_feature:], axis=1)
+            x_value = np.concatenate(x[:,:self.attack_feature], v, axis=1)
+            x_value = np.concatenate(x_value, x[:,self.attack_feature:], axis=1)
             # find the relative probability of this value for all samples being attacked
             prob_value = [((self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[0]) / n_samples) * priors[i] / phi[i])
                           for row in x_value]
@@ -175,8 +175,8 @@ class AttributeInferenceWhiteBoxLifestyle(InferenceAttack):
         phi = []
         for value in values:
             v = np.full((n_samples, 1), value)
-            x_value = np.concatenate(x[:self.attack_feature], v, axis=1)
-            x_value = np.concatenate(x_value, x[self.attack_feature:], axis=1)
+            x_value = np.concatenate(x[:,:self.attack_feature], v, axis=1)
+            x_value = np.concatenate(x_value, x[:,self.attack_feature:], axis=1)
             nodes_value = {}
 
             for row in x_value:
@@ -254,8 +254,8 @@ class AttributeInferenceWhiteBox(InferenceAttack):
         for i, value in enumerate(values):
             # prepare data with the given value in the attacked feature
             v = np.full((n_samples, 1), value)
-            x_value = np.concatenate(x[:self.attack_feature], v, axis=1)
-            x_value = np.concatenate(x_value, x[self.attack_feature:], axis=1)
+            x_value = np.concatenate(x[:,:self.attack_feature], v, axis=1)
+            x_value = np.concatenate(x_value, x[:,self.attack_feature:], axis=1)
 
             # Obtain the model's prediction for each possible value of the attacked feature
             pred_value = self.estimator.predict(x_value)
