@@ -107,7 +107,7 @@ def main():
     trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
     trainer.fit(x_train, y_train, nb_epochs=args.epochs)
 
-    train_time = start_start_time - time.time()
+    train_time =  time.time() - start_start_time
     print("Train time: ", train_time, flush=True)
 
     best_state_dict = copy.deepcopy(model.state_dict())
