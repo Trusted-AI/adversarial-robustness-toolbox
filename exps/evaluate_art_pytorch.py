@@ -5,6 +5,7 @@ import math
 import random
 import sys
 import time
+
 sys.path.append('/home/ambrish/github/adversarial-robustness-toolbox')
 
 from art.classifiers import PyTorchClassifier
@@ -15,6 +16,7 @@ import torch
 import torch.nn as nn
 
 from exps.preact_resnet import PreActResNet18
+
 
 def clamp(X, lower_limit, upper_limit):
     return torch.max(torch.min(X, upper_limit), lower_limit)
@@ -66,7 +68,7 @@ def main():
     # cifar_mu = (0.4914, 0.4822, 0.4465)
     # cifar_std = (0.2471, 0.2435, 0.2616)
 
-    cifar_mu = np.ones((3,32,32))
+    cifar_mu = np.ones((3, 32, 32))
     cifar_mu[0, :, :] = 0.4914
     cifar_mu[1, :, :] = 0.4822
     cifar_mu[2, :, :] = 0.4465
@@ -91,22 +93,21 @@ def main():
     # Step 3: Create the ART classifier
     classifier = PyTorchClassifier(
         model=model,
-        clip_values=(0.0,1.0),
-        preprocessing=(cifar_mu,cifar_std),
+        clip_values=(0.0, 1.0),
+        preprocessing=(cifar_mu, cifar_std),
         loss=criterion,
         optimizer=opt,
-        input_shape=(3,32,32),
+        input_shape=(3, 32, 32),
         nb_classes=10,
     )
 
-
-    #compute accuracy
+    # compute accuracy
     output = np.argmax(classifier.predict(x_test), axis=1)
     nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]), flush=True)
 
     acc = [nb_correct_pred / x_test.shape[0]]
-    eps_range = [8/255., 16/255.]
+    eps_range = [2 / 255., 8 / 255., 16 / 255.]
 
     for eps in eps_range:
         eps_step = (1.5 * eps) / 40
@@ -118,9 +119,6 @@ def main():
         nb_correct_attack_pred = np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
         acc.append(nb_correct_attack_pred / x_test.shape[0])
         print(acc, flush=True)
-
-    np.save('./exps/{}.npy'.format(args.accfname), acc)
-
 
 
 if __name__ == "__main__":
