@@ -106,7 +106,6 @@ class LabelSmoothing(Preprocessor):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
-        Defense-specific parameters:
         :param max_value: Value to affect to correct label
         :type max_value: `float`
         """
