@@ -107,7 +107,7 @@ def main():
     print("accuracy: {}".format(nb_correct_pred / x_test.shape[0]), flush=True)
 
     acc = [nb_correct_pred / x_test.shape[0]]
-    eps_range = [2 / 255., 8 / 255., 16 / 255.]
+    eps_range = [8/ 255.]
 
     for eps in eps_range:
         eps_step = (1.5 * eps) / 40
