@@ -56,6 +56,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * High Confidence Low Uncertainty adversarial samples ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * Iterative frame saliency attack ([Inkawhich et al., 2018](https://arxiv.org/abs/1811.11875))
+* DPatch ([Liu et al., 2018](https://arxiv.org/abs/1806.02299v4))
 * Projected gradient descent ([Madry et al., 2017](https://arxiv.org/abs/1706.06083))
 * NewtonFool ([Jang et al., 2017](http://doi.acm.org/10.1145/3134600.3134635))
 * Elastic net attack ([Chen et al., 2017](https://arxiv.org/abs/1709.04114))
@@ -69,6 +70,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Basic iterative method ([Kurakin et al., 2016](https://arxiv.org/abs/1607.02533))
 * Jacobian saliency map ([Papernot et al., 2016](https://arxiv.org/abs/1511.07528))
 * Universal perturbation ([Moosavi-Dezfooli et al., 2016](https://arxiv.org/abs/1610.08401))
+* Feature Adversaries ([Sabour et al., 2016](https://arxiv.org/abs/1511.05122))
 * DeepFool ([Moosavi-Dezfooli et al., 2015](https://arxiv.org/abs/1511.04599))
 * Virtual adversarial method ([Miyato et al., 2015](https://arxiv.org/abs/1507.00677))
 * Fast gradient method ([Goodfellow et al., 2014](https://arxiv.org/abs/1412.6572))
@@ -83,7 +85,9 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 
 **Defences - Preprocessor:**
+* Resampling ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
+* MP3 compression ([Carlini, N. & Wagner, D., 2018](https://arxiv.org/abs/1801.01944))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
 * Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))

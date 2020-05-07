@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -726,7 +726,7 @@ def test_repr(get_image_classifier_list):
         [
             "art.estimators.classification.keras.KerasClassifier",
             "use_logits=False, channel_index=3",
-            "clip_values=(0, 1), preprocessing_defences=None, " "postprocessing_defences=None, preprocessing=(0, 1)",
+            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, " "postprocessing_defences=None, preprocessing=(0, 1)",
             "input_layer=0, output_layer=0",
         ],
     )
