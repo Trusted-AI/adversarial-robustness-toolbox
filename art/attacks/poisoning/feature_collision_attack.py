@@ -23,10 +23,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import tqdm
 
 from art.attacks.attack import PoisoningAttackWhiteBox
-from art.classifiers import ClassifierNeuralNetwork, Classifier
-# from art.utils import tensor_norm
+from art.estimators import BaseEstimator, NeuralNetworkMixin
+from art.utils import tensor_norm
 
 from functools import reduce
 
@@ -46,43 +47,59 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         "target",
         "feature_layer",
         "learning_rate",
+        "decay_coeff",
+        "stopping_tol",
+        "num_old_obj",
         "max_iter",
-        "similarity_coeff"
+        "similarity_coeff",
+        "watermarking",
     ]
 
-    def __init__(self, classifier, target, eps, feature_layer, learning_rate=0.01, max_iter=50, similatiry_coeff=0.25,
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
+
+    def __init__(self, classifier, target, feature_layer, learning_rate=500 * 255.0, decay_coeff=0.5,
+                 stopping_tol=1e-10, num_old_obj=40, max_iter=120, similarity_coeff=0.25, watermark=0.35,
                  **kwargs):
         """
         Initialize an SVM poisoning attack
 
         :param classifier: A trained neural network classifier
-        :type classifier: (`art.classifiers.ClassifierNeuralNetwork`, `art.classifiers.Classifier`)
+        :type classifier: (`art.estimators.NeuralNetworkMixin`, `art.estimators.BaseEstimator`)
         :param target: The target input to misclassify at test time
         :type target: `np.ndarray`
-        :param eps: The strength of the attack
-        :type eps: `float`
         :param feature_layer: The name of the feature representation layer
         :type feature_layer: `str`
         :param learning_rate: The learning rate of clean-label attack optimization
         :type learning_rate: `float`
+        :param decay_coeff: The decay coefficient of the learning rate
+        :type decay_coeff: `float`
+        :param stopping_tol: The tolerance for relative change in objective function
+        :type stopping_tol: `float`
+        :param num_old_obj: The number of old objective values to store
+        :type num_old_obj: `int`
         :param max_iter: The maximum number of iterations for the attack
         :type max_iter: `int`
         :param similarity_coeff: The maximum number of iterations for the attack
         :type similarity_coeff: `float`
+        :param watermark: Whether The opacity of the watermarked target image
+        :type watermark: `float`
         :param kwargs: Extra optional keyword arguments
         """
         super().__init__(classifier)
 
-        if not isinstance(classifier, (ClassifierNeuralNetwork, Classifier)):
+        if not isinstance(classifier, (NeuralNetworkMixin, BaseEstimator)):
             raise TypeError("Classifier must be a neural network")
 
         self.classifier = classifier
         self.target = target
         self.feature_layer = feature_layer
         self.learning_rate = learning_rate
-        self.eps = eps
+        self.decay_coeff = decay_coeff
+        self.stopping_tol = stopping_tol
+        self.num_old_obj = num_old_obj
         self.max_iter = max_iter
-        self.similarity_coeff = similatiry_coeff
+        self.similarity_coeff = similarity_coeff
+        self.watermark = watermark
 
         self.set_params(**kwargs)
 
@@ -98,22 +115,55 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         """
 
         num_poison = len(x)
-
+        final_attacks = []
         if num_poison == 0:
             raise ValueError("Must input at least one poison point")
 
         # TODO: ensure class of x does not match class of target
+        target_features = self.classifier.get_activations(self.target, self.feature_layer, 1)
+        for init_attack in x:
+            old_attack = np.expand_dims(np.copy(init_attack), axis=0)
+            poison_features = self.classifier.get_activations(old_attack, self.feature_layer, 1)
+            old_objective = self.objective(poison_features, target_features, init_attack, old_attack)
+            last_m_objectives = [old_objective]
+            # TODO: change to while with convergence (add convergence params)
+            for i in tqdm(range(self.max_iter)):
+                # forward step
+                new_attack = self.forward_step(old_attack)
 
-        old_attack = x
+                # backward step
+                new_attack = self.backward_step(np.expand_dims(init_attack, axis=0), new_attack)
 
-        # TODO: change to while with convergence (add convergence params)
-        for _ in range(self.max_iter):
-            new_attack = self.forward_step(old_attack)  # TODO: pass feature reps in here
-            new_attack = self.backward_step(x, new_attack)
+                rel_change_val = np.linalg.norm(new_attack - old_attack) / np.linalg.norm(new_attack)
+                if rel_change_val < self.stopping_tol:
+                    print("stopped after " + str(i) + " iterations due to small changes")
+                    break
 
-            old_attack = new_attack
+                np.expand_dims(new_attack, axis=0)
+                new_feature_rep = self.classifier.get_activations(new_attack, self.feature_layer, 1)
+                new_objective = self.objective(new_feature_rep, target_features, init_attack, new_attack)
+                # np.linalg.norm(new_feature_rep - target_features) + beta * np.linalg.norm(new_attack - x)
 
-        return old_attack
+                avg_of_last_m = sum(last_m_objectives) / float(min(self.num_old_obj, i + 1))
+
+                # If the objective went up, then learning rate is too big.  Chop it, and throw out the latest iteration
+                if new_objective >= avg_of_last_m and (i % self.num_old_obj / 2 == 0):
+                    self.learning_rate *= self.decay_coeff
+                else:
+                    old_attack = new_attack
+
+                if i < self.num_old_obj - 1:
+                    last_m_objectives.append(new_objective)
+                else:
+                    # first remove the oldest obj then append the new obj
+                    del last_m_objectives[0]
+                    last_m_objectives.append(new_objective)
+
+            # Watermarking
+            final_poison = np.clip(old_attack[0] + 0.35 * self.target, *self.classifier.clip_values)
+            final_attacks.append(final_poison)
+
+        return np.array(final_attacks)
 
     def set_params(self, **kwargs):
         """
@@ -126,14 +176,12 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         super(FeatureCollisionAttack, self).set_params(**kwargs)
         if self.learning_rate <= 0:
             raise ValueError("Learning rate must be strictly positive")
-        if self.eps <= 0:
-            raise ValueError("Value of eps must be strictly positive")
         if self.max_iter <= 1:
             raise ValueError("Value of max_iter at least 1")
-        if not isinstance(self.classifier, ClassifierNeuralNetwork):
+        if not isinstance(self.classifier, NeuralNetworkMixin):
             raise TypeError("Classifier must be a neural network")
-        if not isinstance(self.classifier, Classifier):
-            raise TypeError("Classifier must be a valid ART classifier")
+        if not isinstance(self.classifier, BaseEstimator):
+            raise TypeError("Classifier must be a valid ART estimator")
 
     def forward_step(self, poison):
         """
@@ -143,14 +191,20 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :return: poison example closer in feature representation to target space
         :rtype: `np.ndarray`
         """
-        target_feature_rep = self.classifier.get_activations(self.target, self.feature_layer, 1, intermediate=True)
-        poison_feature_rep = self.classifier.get_activations(poison, self.feature_layer, 1, intermediate=True)
-
+        # target_feature_rep = self.classifier.get_activations(self.target, self.feature_layer, 1, intermediate=True)
+        # poison_feature_rep = self.classifier.get_activations(poison, self.feature_layer, 1, intermediate=True)
+        #
+        # attack_loss = self.classifier.normalize_tensor(poison_feature_rep - target_feature_rep)
+        target_placeholder, target_feature_rep = self.classifier.get_activations(self.target, self.feature_layer, 1,
+                                                                                 intermediate=True)
+        poison_placeholder, poison_feature_rep = self.classifier.get_activations(poison, self.feature_layer, 1,
+                                                                                 intermediate=True)
         attack_loss = self.classifier.normalize_tensor(poison_feature_rep - target_feature_rep)
+        # attack_loss = tensor_norm([poison_feature_rep - target_feature_rep])
+        attack_grad, = self.classifier.custom_gradient(attack_loss, [poison_placeholder, target_placeholder],
+                                                       [poison, self.target])
 
-        attack_grad, = self.classifier.custom_gradient(attack_loss, self.classifier.get_input_layer(), poison)
-
-        poison -= self.learning_rate * attack_grad
+        poison -= self.learning_rate * attack_grad[0]
 
         return poison
 
@@ -164,8 +218,25 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :return: poison example closer in feature representation to target space
         :rtype: `np.ndarray`
         """
-        num_features = reduce(lambda x, y: x * y, poison.shape)
+        num_features = reduce(lambda x, y: x * y, base.shape)
         # TODO: replace 2048 with dynamic shape of feature representation
         beta = self.similarity_coeff * (2048.0 / num_features) ** 2
         poison = (poison + self.learning_rate * beta * base) / (1 + beta * self.learning_rate)
-        return np.clip(poison, self.classifier.clip_values[0], self.classifier.clip_values[1])
+        low, high = self.classifier.clip_values
+        return np.clip(poison, low, high)
+
+    def objective(self, poison_feature_rep, target_feature_rep, base_image, poison):
+        """
+        Objective function of the attack
+
+        :param poison_feature_rep: The output of
+        :param target_feature_rep:
+        :param base_image:
+        :param poison:
+        :return: `float`
+        """
+        prod_sum = lambda shape_tuple: reduce(lambda dim1, dim2: dim1 * dim2, shape_tuple)
+        num_features = prod_sum(base_image.shape)
+        num_activations = prod_sum(poison_feature_rep.shape)
+        beta = self.similarity_coeff * (num_activations / num_features) ** 2
+        return np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)

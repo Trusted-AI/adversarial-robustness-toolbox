@@ -501,7 +501,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             layer_output = self._model.get_layer(layer_name).output
 
         if intermediate:
-            return layer_output
+            placeholder = k.placeholder(shape=x.shape)
+            return placeholder, self._model.get_layer(layer_name)(placeholder)
 
         output_func = k.function([self._input], [layer_output])
 
@@ -524,7 +525,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return activations
 
-    def custom_gradient(self, nn_function, tensors, input_values, target):
+    def custom_gradient(self, nn_function, tensors, input_values):
         """
         Returns the gradient of the nn_function with respect to model input
 
@@ -544,18 +545,21 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         # loss_output = k.function([tensors], [nn_function])
         # print(loss_output([input_values]))
-        target_img = k.placeholder(shape=target.shape)
-        poison_img = k.placeholder(shape=input_values.shape)
-        poison_features = self._model.get_layer('average_pooling2d_1')(poison_img)
-        target_features = self._model.get_layer('average_pooling2d_1')(target_img)
-        loss = k.l2_normalize(poison_features - target_features)
-        grads = k.gradients(loss, poison_img)[0]
+        # target_img = k.placeholder(shape=target.shape)
+        # poison_img = k.placeholder(shape=input_values.shape)
+        # placeholders = [k.placeholder(shape=input_val.shape) for input_val in input_values]
+        # TODO: replace these with get_activations
+        # poison_features = self._model.get_layer('average_pooling2d_1')(poison_img)
+        # target_features = self._model.get_layer('average_pooling2d_1')(target_img)
+        # TODO: replace these
+        # loss = k.l2_normalize(poison_features - target_features)
+        # grads = k.gradients(loss, poison_img)[0]
+        grads = k.gradients(nn_function, tensors[0])[0]
         # print("grad func: " + str(grads))
-        # TODO: this only real works with tensors = model.input
-        outputs = k.function([target_img, poison_img], [grads])
+        outputs = k.function(tensors, [grads])
         # print("tensors shape: " + str(tensors))
         # print("input values shape: " + str(input_values.shape))
-        return outputs([target, input_values])
+        return outputs(input_values)
 
     def normalize_tensor(self, tensor):
         """
