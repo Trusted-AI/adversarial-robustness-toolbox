@@ -94,35 +94,35 @@ class Wasserstein(EvasionAttack):
         }
         Wasserstein.set_params(self, **kwargs)
 
-
     def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
-        :param x: An array with the original inputs to be attacked.
+        :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,). If `self.targeted` is true, then `y` represents the target labels. If `self.targeted`
-                  is true, then `y_val` represents the target labels. Otherwise, the targets are the original class
-                  labels.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :type y: `np.ndarray`
+        :param cost: A non-negative cost matrix.
+        :type cost: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
-        x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if self.estimator.clip_values is not None:
-            clip_min, clip_max = self.estimator.clip_values
-        else:
-            clip_min, clip_max = np.amin(x), np.amax(x)
-
-        # Assert that, if attack is targeted, y_val is provided:
-        if self.targeted and y is None:
-            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-
-        # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
+            # Use model predictions as correct outputs
+            targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+        else:
+            targets = y
+
+
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
