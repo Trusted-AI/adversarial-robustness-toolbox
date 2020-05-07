@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -208,7 +208,7 @@ class TestMXClassifier(TestBase):
         repr_ = repr(self.classifier)
         self.assertIn("art.estimators.classification.mxnet.MXClassifier", repr_)
         self.assertIn("input_shape=(1, 28, 28), nb_classes=10", repr_)
-        self.assertIn("channel_index=1, clip_values=(0, 1)", repr_)
+        self.assertIn("channel_index=1, clip_values=array([0., 1.], dtype=float32)", repr_)
         self.assertIn("defences=None, preprocessing=(0, 1)", repr_)
 
 

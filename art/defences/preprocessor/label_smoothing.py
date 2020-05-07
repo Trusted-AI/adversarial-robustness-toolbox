@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -106,7 +106,6 @@ class LabelSmoothing(Preprocessor):
         """
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
-        Defense-specific parameters:
         :param max_value: Value to affect to correct label
         :type max_value: `float`
         """

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -577,7 +577,7 @@ class TestPyTorchClassifier(TestBase):
         repr_ = repr(self.module_classifier)
         self.assertIn("art.estimators.classification.pytorch.PyTorchClassifier", repr_)
         self.assertIn("input_shape=(1, 28, 28), nb_classes=10, channel_index=1", repr_)
-        self.assertIn("clip_values=(0, 1)", repr_)
+        self.assertIn("clip_values=array([0., 1.], dtype=float32)", repr_)
         self.assertIn("defences=None, preprocessing=(0, 1)", repr_)
 
     def test_pickle(self):
@@ -591,7 +591,7 @@ class TestPyTorchClassifier(TestBase):
         # Unpickle:
         with open(full_path, "rb") as f:
             loaded = pickle.load(f)
-            self.assertEqual(self.module_classifier._clip_values, loaded._clip_values)
+            np.testing.assert_equal(self.module_classifier._clip_values, loaded._clip_values)
             self.assertEqual(self.module_classifier._channel_index, loaded._channel_index)
             self.assertEqual(set(self.module_classifier.__dict__.keys()), set(loaded.__dict__.keys()))
 

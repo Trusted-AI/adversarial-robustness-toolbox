@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -105,7 +105,7 @@ class TestBase(unittest.TestCase):
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._x_test_iris_original, self.x_test_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_test_iris_original, self.y_test_iris, decimal=3)
-
+        
 
 class ExpectedValue:
     def __init__(self, value, decimals):
@@ -323,56 +323,12 @@ def get_image_classifier_tf_v2(from_logits=False):
     # pylint: disable=E0401
     import tensorflow as tf
     from tensorflow.keras import Model
+    from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
     from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
     if tf.__version__[0] != "2":
         raise ImportError("This function requires TensorFlow v2.")
-
-    class TensorFlowModel(Model):
-        """
-        Standard TensorFlow model for unit testing.
-        """
-
-        def __init__(self):
-            super(TensorFlowModel, self).__init__()
-            self.conv1 = Conv2D(
-                filters=1,
-                kernel_size=7,
-                activation="relu",
-                kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
-                bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
-            )
-            self.maxpool = MaxPool2D(pool_size=(4, 4), strides=(4, 4), padding="valid", data_format=None)
-            self.flatten = Flatten()
-            self.dense1 = Dense(
-                10,
-                activation="softmax",
-                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-            )
-            self.logits = Dense(
-                10,
-                activation="linear",
-                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-            )
-
-        def call(self, x):
-            """
-            Call function to evaluate the model.
-
-            :param x: Input to the model
-            :return: Prediction of the model
-            """
-            x = self.conv1(x)
-            x = self.maxpool(x)
-            x = self.flatten(x)
-            if from_logits:
-                x = self.logits(x)
-            else:
-                x = self.dense1(x)
-            return x
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
@@ -383,8 +339,35 @@ def get_image_classifier_tf_v2(from_logits=False):
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-    model = TensorFlowModel()
+    model = Sequential()
+    model.add(Conv2D(
+        filters=1,
+        kernel_size=7,
+        activation="relu",
+        kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
+        bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
+        input_shape=(28, 28, 1),
+    ))
+    model.add(MaxPool2D(pool_size=(4, 4), strides=(4, 4), padding="valid", data_format=None))
+    model.add(Flatten())
+    if from_logits:
+        model.add(Dense(
+            10,
+            activation="linear",
+            kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+            bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+        ))
+    else:
+        model.add(Dense(
+            10,
+            activation="softmax",
+            kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+            bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+        ))
+
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
+
+    model.compile(optimizer=optimizer, loss=loss_object)
 
     # Create the classifier
     tfc = TensorFlowV2Classifier(
