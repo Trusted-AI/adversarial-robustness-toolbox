@@ -39,49 +39,8 @@ class TestSpectralSignatureDefense(unittest.TestCase):
         (x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         cls.mnist = (x_train, y_train), (x_test, y_test), (min_, max_)
-        # Create basic keras model
-        import keras.backend as k
-        from keras.models import Sequential
-        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
-
-        k.set_learning_phase(1)
-        model = Sequential()
-        model.add(
-            Conv2D(
-                filters=4,
-                kernel_size=(5, 5),
-                strides=1,
-                activation="relu",
-                input_shape=(28, 28, 1),
-            )
-        )
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(
-            Conv2D(
-                filters=10,
-                kernel_size=(5, 5),
-                strides=1,
-                activation="relu",
-                input_shape=(23, 23, 4),
-            )
-        )
-        model.add(MaxPooling2D(pool_size=(2, 2)))
-        model.add(Flatten())
-        model.add(Dense(100, activation="relu"))
-        model.add(Dense(10, activation="softmax"))
-
-        model.compile(
-            loss="sparse_categorical_crossentropy",
-            optimizer="adam",
-            metrics=["accuracy"],
-        )
-
-        from art.estimators.classification.keras import KerasClassifier
-
-        cls.classifier = KerasClassifier(model=model, clip_values=(min_, max_))
-
-        cls.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=128)
-
+        from tests.utils import get_image_classifier_kr
+        cls.classifier = get_image_classifier_kr()
         cls.defence = SpectralSignatureDefense(
             cls.classifier,
             x_train,
