@@ -47,6 +47,7 @@ class Wasserstein(EvasionAttack):
         "targeted",
         "regularization",
         "p",
+        "kernel_size",
         "alpha",
         "norm",
         "ball",
@@ -64,6 +65,7 @@ class Wasserstein(EvasionAttack):
         targeted=False,
         regularization=3000,
         p=2,
+        kernel_size=5,
         alpha=0.1,
         norm=np.Inf,
         ball='wasserstein',
@@ -84,6 +86,7 @@ class Wasserstein(EvasionAttack):
             "targeted": targeted,
             "regularization": regularization,
             "p": p,
+            "kernel_size": kernel_size,
             "alpha": alpha,
             "norm": norm,
             "ball": ball,
@@ -111,6 +114,7 @@ class Wasserstein(EvasionAttack):
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
@@ -122,19 +126,45 @@ class Wasserstein(EvasionAttack):
         else:
             targets = y
 
+        # Compute the cost matrix if needed
 
 
         # Compute perturbation with implicit batching
-        nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
+        nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
         for batch_id in range(nb_batches):
             logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
-
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            x_batch = x_adv[batch_index_1:batch_index_2]
-            y_batch = y[batch_index_1:batch_index_2]
+            batch = x[batch_index_1: batch_index_2]
+            batch_labels = targets[batch_index_1: batch_index_2]
+
+            x_adv[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels)
+
+
+
 
 
         return x_adv
+
+
+    def _compute_cost_matrix(self, x):
+        """
+        Compute the default cost matrix.
+
+        :param x: An array with the original inputs.
+        :type x: `np.ndarray`
+        :return: The cost matrix.
+        :rtype: `np.ndarray`
+        """
+        center = self.kernel_size // 2
+        cost_matrix = x.new_zeros(self.kernel_size, self.kernel_size)
+
+        for i in range(self.kernel_size):
+            for j in range(self.kernel_size):
+                cost_matrix[i, j] = (abs(i - center) ** 2 + abs(j - center) ** 2) ** (self.p / 2)
+
+        return cost_matrix
+
+
 
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
@@ -164,6 +194,10 @@ class Wasserstein(EvasionAttack):
         """
         # Save attack-specific parameters
         super(Wasserstein, self).set_params(**kwargs)
+
+
+        if kernel_size % 2 != 1:
+            raise ValueError("Need odd kernel size")
 
 
         return True
