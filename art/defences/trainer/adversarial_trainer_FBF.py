@@ -73,7 +73,7 @@ class AdversarialTrainerFBF(Trainer):
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
 
-        # lr_schedule = lambda t: np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
+        lr_schedule = lambda t: np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
 
         for i_epoch in range(nb_epochs):
             logger.info("Adversarial training FBF epoch %i/%i", i_epoch, nb_epochs)
@@ -82,8 +82,8 @@ class AdversarialTrainerFBF(Trainer):
             np.random.shuffle(ind)
 
             for batch_id in range(nb_batches):
-                # lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
-                # self.classifier._optimizer.param_groups[0].update(lr=lr)
+                lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
+                self.classifier._optimizer.param_groups[0].update(lr=lr)
                 # Create batch data
                 x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
                 y_batch = y[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]]
