@@ -27,8 +27,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 
-from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
-from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
+from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 
 
 class SpectralSignatureDefense(PoisonFilteringDefence):
