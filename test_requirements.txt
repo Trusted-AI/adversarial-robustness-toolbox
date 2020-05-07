@@ -4,6 +4,7 @@ h5py>=2.10.0
 requests>=2.23.0
 statsmodels>=0.11.0
 cma>=2.7.0
+pydub>=0.23,<0.24
 
 #ART supported Frameworks (tensorflow==2.1.0 with keras==2.3.1) or (tensorflow==1.15.2 with keras==2.2.5)
 tensorflow
@@ -17,6 +18,8 @@ torchvision>=0.5.0
 # Comment out because of compatibility issues with numpy versions
 catboost>=0.22
 GPy>=1.9.9
+pytest-mock>=3.1.0,<4.0.0
+resampy>=0.2.2
 
 #NOTE to contributors: When changing/adding packages, please make sure that the packages are consitent with those
 # present within the Dockerfile

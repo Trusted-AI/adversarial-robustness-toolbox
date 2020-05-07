@@ -8,7 +8,6 @@ from art import attacks
 from art import defences
 from art import estimators
 from art import metrics
-from art import poison_detection
 from art import wrappers
 
 # Semantic Version

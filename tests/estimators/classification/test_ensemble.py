@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -255,7 +255,7 @@ class TestEnsembleClassifier(TestBase):
         self.assertIn("art.estimators.classification.ensemble.EnsembleClassifier", repr_)
         self.assertIn("classifier_weights=array([0.5, 0.5])", repr_)
         self.assertIn(
-            "channel_index=3, clip_values=(0, 1), preprocessing_defences=None, "
+            "channel_index=3, clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, "
             "postprocessing_defences=None, preprocessing=(0, 1)",
             repr_,
         )

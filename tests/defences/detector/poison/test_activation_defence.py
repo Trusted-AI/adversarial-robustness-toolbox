@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.poison_detection import ActivationDefence
+from art.defences.detector.poison import ActivationDefence
 from art.utils import load_mnist
 from art.visualization import convert_to_rgb
 
@@ -198,7 +198,7 @@ class TestActivationDefence(unittest.TestCase):
         ActivationDefence._pickle_classifier(self.classifier, filename)
         loaded = ActivationDefence._unpickle_classifier(filename)
 
-        self.assertEqual(self.classifier._clip_values, loaded._clip_values)
+        np.testing.assert_equal(self.classifier._clip_values, loaded._clip_values)
         self.assertEqual(self.classifier._channel_index, loaded._channel_index)
         self.assertEqual(self.classifier._use_logits, loaded._use_logits)
         self.assertEqual(self.classifier._input_layer, loaded._input_layer)
