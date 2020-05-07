@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -92,10 +92,10 @@ class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
             if not isinstance(classifier, NeuralNetworkMixin):
                 raise TypeError("Expected type `Classifier`, found %s instead." % type(classifier))
 
-            if clip_values != classifier.clip_values:
+            if not np.array_equal(self.clip_values, classifier.clip_values):
                 raise ValueError(
                     "Incompatible `clip_values` between classifiers in the ensemble. Found %s and %s."
-                    % (str(clip_values), str(classifier.clip_values))
+                    % (str(self.clip_values), str(classifier.clip_values))
                 )
 
             if classifier.nb_classes != classifiers[0].nb_classes:

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,8 +21,8 @@ Subset scanning based on FGSS
 
 import numpy as np
 
-from art.detection.subsetscanning.scoring_functions import ScoringFunctions
-from art.detection.subsetscanning.scanningops import ScanningOps
+from art.defences.detector.evasion.subsetscanning.scoring_functions import ScoringFunctions
+from art.defences.detector.evasion import ScanningOps
 
 
 class Scanner:
