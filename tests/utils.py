@@ -365,7 +365,7 @@ def get_image_classifier_tf_v2(from_logits=False):
             bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
         ))
 
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits)
 
     model.compile(optimizer=optimizer, loss=loss_object)
 
