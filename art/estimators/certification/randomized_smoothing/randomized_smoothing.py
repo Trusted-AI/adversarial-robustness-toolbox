@@ -55,6 +55,19 @@ class RandomizedSmoothingMixin(ABC):
         self.scale = scale
         self.alpha = alpha
 
+    def _predict_model(self, x, batch_size=128):
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Test set.
+        :type x: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
     # pylint: disable=W0221
     def predict(self, x, batch_size=128, is_abstain=True, **kwargs):
         """
@@ -165,7 +178,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
-        predictions = self.classifier.predict(x_new, batch_size)
+        predictions = self._predict_model(x=x_new, batch_size=batch_size)
 
         # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)

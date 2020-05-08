@@ -108,6 +108,9 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             alpha=alpha,
         )
 
+    def _predict_model(self, x, batch_size=128):
+        return TensorFlowV2Classifier.predict(self, x=x, batch_size=128)
+
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
