@@ -90,7 +90,7 @@ class Postprocessor(abc.ABC):
         """
         raise NotImplementedError
 
-    def set_params(self, **kwargs) -> bool:
+    def set_params(self, **kwargs) -> None:
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
 
@@ -99,5 +99,5 @@ class Postprocessor(abc.ABC):
         for key, value in kwargs.items():
             if key in self.params:
                 setattr(self, key, value)
-
-        return True
+        if hasattr(self, "_check_params"):
+            self._check_params()

@@ -55,9 +55,9 @@ class ReverseSigmoid(Postprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-
-        kwargs = {"beta": beta, "gamma": gamma}
-        self.set_params(**kwargs)
+        self.beta = beta
+        self.gamma = gamma
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -124,23 +124,9 @@ class ReverseSigmoid(Postprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :param beta: A positive magnitude parameter.
-        :type beta: `float`
-        :param gamma: A positive dataset and model specific convergence parameter.
-        :type gamma: `float`
-        :return: `True` when parsing was successful.
-        """
-        # Save defence-specific parameters
-        super(ReverseSigmoid, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.beta <= 0:
             raise ValueError("Magnitude parameter must be positive.")
 
         if self.gamma <= 0:
             raise ValueError("Convergence parameter must be positive.")
-
-        return True

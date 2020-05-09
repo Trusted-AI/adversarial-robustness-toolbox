@@ -49,7 +49,8 @@ class GaussianNoise(Postprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(scale=scale)
+        self.scale = scale
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -94,18 +95,6 @@ class GaussianNoise(Postprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :param scale: Standard deviation of the distribution.
-        :type scale: `float`
-        :return: `True` when parsing was successful.
-        """
-        # Save defence-specific parameters
-        super(GaussianNoise, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.scale <= 0:
             raise ValueError("Standard deviation must be positive.")
-
-        return True

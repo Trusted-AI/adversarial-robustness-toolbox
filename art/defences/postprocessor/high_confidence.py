@@ -48,7 +48,8 @@ class HighConfidence(Postprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(cutoff=cutoff)
+        self.cutoff = cutoff
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -76,18 +77,6 @@ class HighConfidence(Postprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :param cutoff: Minimal value for returned prediction output.
-        :type cutoff: `float`
-        :return: `True` when parsing was successful.
-        """
-        # Save defence-specific parameters
-        super(HighConfidence, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.cutoff <= 0:
             raise ValueError("Minimal value must be positive.")
-
-        return True

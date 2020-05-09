@@ -48,7 +48,8 @@ class Rounded(Postprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(decimals=decimals)
+        self.decimals = decimals
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -73,18 +74,6 @@ class Rounded(Postprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :param decimals: Number of decimal places after the decimal point.
-        :type decimals: `int`
-        :return: `True` when parsing was successful.
-        """
-        # Save defence-specific parameters
-        super(Rounded, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.decimals, (int, np.int)) or self.decimals <= 0:
             raise ValueError("Number of decimal places must be a positive integer.")
-
-        return True
