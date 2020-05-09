@@ -20,18 +20,96 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-from keras.datasets import cifar10
 import numpy as np
+import pytest
+from keras.datasets import cifar10
+from numpy.testing import assert_array_equal
+from tests.utils import master_seed
 
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor import JpegCompression
 from art.utils import load_mnist
 
-from tests.utils import master_seed
-
 logger = logging.getLogger(__name__)
 
+# TODO:
+# * add video test case
+# * add normalization option, e.g. image must be in range [0, 1] or [0, 255]
 
-class TestJpegCompression(unittest.TestCase):
+
+class ImageInput:
+    """
+    Create image batch.
+    """
+
+    def __init__(self, channels_first, channels, batch_size=2):
+        self.channels_first = channels_first
+        self.channels = channels
+        self.batch_size = batch_size
+
+    def get_data(self):
+        if self.channels_first:
+            data_shape = (self.batch_size, self.channels, 12, 12)
+        else:
+            data_shape = (self.batch_size, 12, 12, self.channels)
+        return (255 * np.ones(data_shape)).astype(ART_NUMPY_DTYPE)
+
+
+@pytest.fixture(params=[1, 3], ids=["grayscale", "RGB"])
+def image_batch(request, channels_first):
+    """
+    Image fixtures of shape NHWC and NCHW.
+    """
+    channels = request.param
+    image_input = ImageInput(channels_first, channels)
+    test_input = image_input.get_data()
+    test_output = test_input.copy()
+    return test_input, test_output
+
+
+@pytest.fixture
+def tabular_batch():
+    """Create tabular data fixture of shape (batch_size, features)."""
+    return np.zeros((2, 4))
+
+
+class TestJpegCompression:
+    """Test JpegCompression."""
+
+    @pytest.mark.parametrize("channels_first", [True, False])
+    def test_jpeg_compression(self, image_batch, channels_first):
+        # TODO: following line is not robust to video
+        channel_index = 1 if channels_first else 3
+        test_input, test_output = image_batch
+        jpeg_compression = JpegCompression(clip_values=(0, 255), channel_index=channel_index)
+
+        assert_array_equal(jpeg_compression(test_input)[0], test_output)
+
+    def test_channel_index_error(self):
+        exc_msg = "Data channel must be an integer equal to 1 or 2. The batch dimension is not a valid channel."
+        with pytest.raises(ValueError, match=exc_msg):
+            JpegCompression(clip_values=(0, 255), channel_index=0)
+
+    def test_non_spatial_data_error(self, tabular_batch):
+        test_input = tabular_batch
+        jpeg_compression = JpegCompression(clip_values=(0, 255), channel_index=1)
+
+        exc_msg = "Feature vectors detected. JPEG compression can only be applied to data with spatial dimensions."
+        with pytest.raises(ValueError, match=exc_msg):
+            jpeg_compression(test_input)
+
+    def test_negative_clip_values_error(self):
+        exc_msg = "'clip_values' min value must be 0."
+        with pytest.raises(ValueError, match=exc_msg):
+            JpegCompression(clip_values=(-1, 255), channel_index=1)
+
+    def test_maximum_clip_values_error(self):
+        exc_msg = "'clip_values' max value must be either 1 or 255."
+        with pytest.raises(ValueError, match=exc_msg):
+            JpegCompression(clip_values=(0, 2), channel_index=1)
+
+
+class TestJpegCompressionLegacy(unittest.TestCase):
     def setUp(self):
         master_seed(seed=1234)
 
@@ -115,5 +193,5 @@ class TestJpegCompression(unittest.TestCase):
         self.assertIn("max value must be either 1 or 255.", str(context.exception))
 
 
-if __name__ == "__main__":
-    unittest.main()
+# if __name__ == "__main__":
+#    unittest.main()
