@@ -50,7 +50,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         """
         super().__init__()
         self.perturbation = perturbation
-        self.set_params(**kwargs)
+        self._check_params()
 
     def poison(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -82,18 +82,9 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
 
         return poisoned, y_attack
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
-
-        :param perturbation: A single perturbation function or list of perturbation functions that modify input.
-        :type perturbation: `callable` or `list(callable)`
-        """
-        super().set_params(**kwargs)
+    def _check_params(self) -> None:
         if not (
             callable(self.perturbation)
             or all((callable(perturb) for perturb in self.perturbation))
         ):
             raise ValueError("Perturbation must be a function or a list of functions.")
-
-        return True

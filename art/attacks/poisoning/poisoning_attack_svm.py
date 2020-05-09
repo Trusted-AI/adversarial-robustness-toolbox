@@ -60,7 +60,6 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         x_val: np.ndarray,
         y_val: np.ndarray,
         max_iter: int = 100,
-        **kwargs,
     ) -> None:
         """
         Initialize an SVM poisoning attack.
@@ -99,7 +98,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         self.x_val = x_val
         self.y_val = y_val
         self.max_iter = max_iter
-        self.set_params(**kwargs)
+        self._check_params()
 
     def poison(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -143,23 +142,13 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
         return x_adv, y_attack
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
-
-        :param kwargs: a dictionary of attack-specific parameters
-        :type kwargs: `dict`
-        :return: `True` when parsing was successful
-        """
-        super(PoisoningAttackSVM, self).set_params(**kwargs)
+    def _check_params(self) -> None:
         if self.step <= 0:
             raise ValueError("Step size must be strictly positive.")
         if self.eps <= 0:
             raise ValueError("Value of eps must be strictly positive.")
         if self.max_iter <= 1:
             raise ValueError("Value of max_iter must be strictly positive.")
-
-        return True
 
     def generate_attack_point(
         self, x_attack: np.ndarray, y_attack: np.ndarray
