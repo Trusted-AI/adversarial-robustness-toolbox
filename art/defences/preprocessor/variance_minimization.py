@@ -79,14 +79,13 @@ class TotalVarMin(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(
-            prob=prob,
-            norm=norm,
-            lamb=lamb,
-            solver=solver,
-            max_iter=max_iter,
-            clip_values=clip_values,
-        )
+        self.prob = prob
+        self.norm = norm
+        self.lamb = lamb
+        self.solver = solver
+        self.max_iter = max_iter
+        self.clip_values = clip_values
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -225,27 +224,7 @@ class TotalVarMin(Preprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param prob: Probability of the Bernoulli distribution.
-        :type prob: `float`
-        :param norm: The norm (positive integer).
-        :type norm: `int`
-        :param lamb: The lambda parameter in the objective function.
-        :type lamb: `float`
-        :param solver: Current support: `L-BFGS-B`, `CG`, `Newton-CG`.
-        :type solver: `str`
-        :param max_iter: Maximum number of iterations when performing optimization.
-        :type max_iter: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        """
-        # Save defence-specific parameters
-        super(TotalVarMin, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if (
             not isinstance(self.prob, (float, int))
             or self.prob < 0.0
@@ -279,5 +258,3 @@ class TotalVarMin(Preprocessor):
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
-
-        return True

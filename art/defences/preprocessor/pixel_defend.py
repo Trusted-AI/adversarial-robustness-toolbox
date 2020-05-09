@@ -74,10 +74,10 @@ class PixelDefend(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        if pixel_cnn is not None:
-            self.set_params(clip_values=clip_values, eps=eps, pixel_cnn=pixel_cnn)
-        else:
-            self.set_params(clip_values=clip_values, eps=eps)
+        self.clip_values = clip_values
+        self.eps = eps
+        self.pixel_cnn = pixel_cnn
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -100,9 +100,13 @@ class PixelDefend(Preprocessor):
         """
         # Convert into `uint8`
         original_shape = x.shape
-        probs = self.pixel_cnn.get_activations(x, layer=-1).reshape(
-            (x.shape[0], -1, 256)
-        )
+        if self.pixel_cnn is not None:
+            probs = self.pixel_cnn.get_activations(x, layer=-1).reshape(
+                (x.shape[0], -1, 256)
+            )
+        else:
+            raise ValueError("No model received for `pixel_cnn`.")
+
         x = x * 255
         x = x.astype("uint8")
         x = x.reshape((x.shape[0], -1))
@@ -149,27 +153,13 @@ class PixelDefend(Preprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param eps: Defense parameter 0-255.
-        :type eps: `int`
-        :param pixel_cnn: Pre-trained PixelCNN model.
-        :type pixel_cnn: :class:`.Classifier`
-        """
+    def _check_params(self) -> None:
         from art.classifiers import Classifier
-
-        # Save defence-specific parameters
-        super(PixelDefend, self).set_params(**kwargs)
 
         if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
-        if hasattr(self, "pixel_cnn") and not isinstance(self.pixel_cnn, Classifier):
+        if self.pixel_cnn is not None and not isinstance(self.pixel_cnn, Classifier):
             raise TypeError("PixelCNN model must be of type Classifier.")
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():
@@ -180,5 +170,3 @@ class PixelDefend(Preprocessor):
 
         if self.clip_values[1] != 1:
             raise ValueError("`clip_values` max value must be 1.")
-
-        return True

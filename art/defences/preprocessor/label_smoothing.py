@@ -68,7 +68,8 @@ class LabelSmoothing(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(max_value=max_value)
+        self.max_value = max_value
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -109,20 +110,8 @@ class LabelSmoothing(Preprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        Defense-specific parameters:
-        :param max_value: Value to affect to correct label
-        :type max_value: `float`
-        """
-        # Save defence-specific parameters
-        super(LabelSmoothing, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.max_value <= 0 or self.max_value > 1:
             raise ValueError(
                 "The maximum value for correct labels must be between 0 and 1."
             )
-
-        return True

@@ -75,9 +75,10 @@ class JpegCompression(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(
-            quality=quality, channel_index=channel_index, clip_values=clip_values
-        )
+        self.quality = quality
+        self.channel_index = channel_index
+        self.clip_values = clip_values
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -171,21 +172,7 @@ class JpegCompression(Preprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
-        :type quality: `int`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
-        """
-        # Save defense-specific parameters
-        super(JpegCompression, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if (
             not isinstance(self.quality, (int, np.int))
             or self.quality <= 0
@@ -215,5 +202,3 @@ class JpegCompression(Preprocessor):
 
         if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
             raise ValueError("`clip_values` max value must be either 1 or 255.")
-
-        return True

@@ -51,7 +51,7 @@ class GaussianAugmentation(Preprocessor):
         self,
         sigma: float = 1.0,
         augmentation: bool = True,
-        ratio=1.0,
+        ratio: float = 1.0,
         clip_values: Optional[tuple] = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
@@ -77,9 +77,11 @@ class GaussianAugmentation(Preprocessor):
             )
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(
-            sigma=sigma, augmentation=augmentation, ratio=ratio, clip_values=clip_values
-        )
+        self.sigma = sigma
+        self.augmentation = augmentation
+        self.ratio = ratio
+        self.clip_values = clip_values
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -138,24 +140,7 @@ class GaussianAugmentation(Preprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param sigma: Standard deviation of Gaussian noise to be added.
-        :type sigma: `float`
-        :param augmentation: If true, perform dataset augmentation using `ratio`, otherwise replace samples with noisy
-                            counterparts.
-        :type augmentation: `bool`
-        :param ratio: Percentage of data augmentation. E.g. for a ratio of 1, the size of the dataset will double.
-        :type ratio: `float`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        """
-        # Save defence-specific parameters
-        super(GaussianAugmentation, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.augmentation and self.ratio <= 0:
             raise ValueError("The augmentation ratio must be positive.")
 
@@ -167,5 +152,3 @@ class GaussianAugmentation(Preprocessor):
                 )
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
-
-        return True

@@ -93,8 +93,6 @@ class Postprocessor(abc.ABC):
     def set_params(self, **kwargs) -> None:
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :return: `True` when parsing was successful.
         """
         for key, value in kwargs.items():
             if key in self.params:

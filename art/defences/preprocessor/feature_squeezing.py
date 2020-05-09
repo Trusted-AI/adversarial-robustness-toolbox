@@ -69,7 +69,9 @@ class FeatureSqueezing(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(clip_values=clip_values, bit_depth=bit_depth)
+        self.clip_values = clip_values
+        self.bit_depth = bit_depth
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -109,19 +111,7 @@ class FeatureSqueezing(Preprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param bit_depth: The number of bits per channel for encoding the data.
-        :type bit_depth: `int`
-        """
-        # Save defence-specific parameters
-        super(FeatureSqueezing, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if (
             not isinstance(self.bit_depth, (int, np.int))
             or self.bit_depth <= 0
@@ -136,5 +126,3 @@ class FeatureSqueezing(Preprocessor):
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():
             raise ValueError("Invalid `clip_values`: min >= max.")
-
-        return True

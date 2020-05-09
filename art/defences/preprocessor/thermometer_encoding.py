@@ -73,9 +73,10 @@ class ThermometerEncoding(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(
-            clip_values=clip_values, num_space=num_space, channel_index=channel_index
-        )
+        self.clip_values = clip_values
+        self.num_space = num_space
+        self.channel_index = channel_index
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -142,21 +143,7 @@ class ThermometerEncoding(Preprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param num_space: Number of evenly spaced levels within [0, 1].
-        :type num_space: `int`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
-        """
-        # Save defence-specific parameters
-        super(ThermometerEncoding, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.num_space, (int, np.int)) or self.num_space <= 0:
             logger.error("Number of evenly spaced levels must be a positive integer.")
             raise ValueError(
@@ -173,5 +160,3 @@ class ThermometerEncoding(Preprocessor):
 
         if self.clip_values[1] != 1:
             raise ValueError("`clip_values` max value must be 1.")
-
-        return True

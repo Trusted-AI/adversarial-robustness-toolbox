@@ -74,11 +74,10 @@ class SpatialSmoothing(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(
-            channel_index=channel_index,
-            window_size=window_size,
-            clip_values=clip_values,
-        )
+        self.channel_index = channel_index
+        self.window_size = window_size
+        self.clip_values = clip_values
+        self._check_params()
 
     @property
     def apply_fit(self) -> bool:
@@ -125,21 +124,7 @@ class SpatialSmoothing(Preprocessor):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param window_size: The size of the sliding window.
-        :type window_size: `int`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        """
-        # Save defence-specific parameters
-        super(SpatialSmoothing, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.window_size, (int, np.int)) or self.window_size <= 0:
             logger.error("Sliding window size must be a positive integer.")
             raise ValueError("Sliding window size must be a positive integer.")
@@ -155,7 +140,6 @@ class SpatialSmoothing(Preprocessor):
             )
 
         if self.clip_values is not None:
-
             if len(self.clip_values) != 2:
                 raise ValueError(
                     "`clip_values` should be a tuple of 2 floats containing the allowed data range."
@@ -163,5 +147,3 @@ class SpatialSmoothing(Preprocessor):
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
-
-        return True
