@@ -4,6 +4,7 @@ h5py>=2.10.0
 requests>=2.23.0
 statsmodels>=0.11.0
 cma>=2.7.0
+pydub>=0.23,<0.24
 
 #ART supported Frameworks (tensorflow==2.1.0 with keras==2.3.1) or (tensorflow==1.15.2 with keras==2.2.5)
 tensorflow

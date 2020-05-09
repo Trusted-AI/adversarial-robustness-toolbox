@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -243,7 +243,7 @@ class FastGradientMethod(EvasionAttack):
                 logger.info("Using model predictions as correct labels for FGM.")
                 y = self.estimator.predict(x, batch_size=self.batch_size)
 
-            adv_x_best = self._compute(x, x, y, self.eps, self.eps, self._project, self.num_random_init > 0)
+            adv_x_best = self._compute(x, x, y, None, self.eps, self.eps, self._project, self.num_random_init > 0)
 
         return adv_x_best
 

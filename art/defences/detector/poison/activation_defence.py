@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -31,9 +31,9 @@ import os
 
 import numpy as np
 
-from art.poison_detection.clustering_analyzer import ClusteringAnalyzer
-from art.poison_detection.ground_truth_evaluator import GroundTruthEvaluator
-from art.poison_detection.poison_filtering_defence import PoisonFilteringDefence
+from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
+from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
