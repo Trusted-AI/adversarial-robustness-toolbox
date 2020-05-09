@@ -76,15 +76,13 @@ class KnockoffNets(ExtractionAttack):
         """
         super(KnockoffNets, self).__init__(classifier=classifier)
 
-        params = {
-            "batch_size_fit": batch_size_fit,
-            "batch_size_query": batch_size_query,
-            "nb_epochs": nb_epochs,
-            "nb_stolen": nb_stolen,
-            "sampling_strategy": sampling_strategy,
-            "reward": reward,
-        }
-        self.set_params(**params)
+        self.batch_size_fit = batch_size_fit
+        self.batch_size_query = batch_size_query
+        self.nb_epochs = nb_epochs
+        self.nb_stolen = nb_stolen
+        self.sampling_strategy = sampling_strategy
+        self.reward = reward
+        self._check_params()
 
     def extract(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -219,7 +217,7 @@ class KnockoffNets(ExtractionAttack):
         selected_x = []
         queried_labels = []
 
-        avg_reward = 0
+        avg_reward = 0.0
         for it in range(1, self.nb_stolen + 1):
             # Sample an action
             action = np.random.choice(np.arange(0, nb_actions), p=probs)
@@ -406,26 +404,7 @@ class KnockoffNets(ExtractionAttack):
 
         return np.mean(reward)
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param batch_size_fit: Size of batches for fitting the thieved classifier.
-        :type batch_size_fit: `int`
-        :param batch_size_query: Size of batches for querying the victim classifier.
-        :type batch_size_query: `int`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
-        :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
-        :type nb_stolen: `int`
-        :param sampling_strategy: Sampling strategy, either `random` or `adaptive`.
-        :type sampling_strategy: `string`
-        :param reward: Reward type, in ['cert', 'div', 'loss', 'all'].
-        :type reward: `string`
-        """
-        # Save attack-specific parameters
-        super(KnockoffNets, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if (
             not isinstance(self.batch_size_fit, (int, np.int))
             or self.batch_size_fit <= 0
@@ -455,5 +434,3 @@ class KnockoffNets(ExtractionAttack):
 
         if self.reward not in ["cert", "div", "loss", "all"]:
             raise ValueError("Reward type must be in ['cert', 'div', 'loss', 'all'].")
-
-        return True
