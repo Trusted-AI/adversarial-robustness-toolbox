@@ -80,18 +80,17 @@ class PoisonFilteringDefence(ABC):
         """
         raise NotImplementedError
 
-    def set_params(self, **kwargs) -> bool:
+    def set_params(self, **kwargs) -> None:
         """
         Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
 
         :param kwargs: A dictionary of defence-specific parameters.
-        :type kwargs: `dict`
-        :return: `True` when parsing was successful.
         """
         for key, value in kwargs.items():
             if key in self.defence_params:
                 setattr(self, key, value)
-        return True
+        if hasattr(self, "_check_params"):
+            self._check_params()
 
     def get_params(self) -> Dict[str, Any]:
         """
@@ -99,7 +98,5 @@ class PoisonFilteringDefence(ABC):
 
         :return: Dictionary of parameters of the method.
         """
-        dictionary = {}
-        for param in self.defence_params:
-            dictionary.update({param: getattr(self, param)})
+        dictionary = {param: getattr(self, param) for param in self.defence_params}
         return dictionary

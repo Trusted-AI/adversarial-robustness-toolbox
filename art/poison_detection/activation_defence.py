@@ -84,14 +84,11 @@ class ActivationDefence(PoisonFilteringDefence):
         :param y_train: labels used to train the classifier.
         """
         super(ActivationDefence, self).__init__(classifier, x_train, y_train)
-        kwargs = {
-            "nb_clusters": 2,
-            "clustering_method": "KMeans",
-            "nb_dims": 10,
-            "reduce": "PCA",
-            "cluster_analysis": "smaller",
-        }
-        self.set_params(**kwargs)
+        self.nb_clusters = 2
+        self.clustering_method = "KMeans"
+        self.nb_dims = 10
+        self.reduce = "PCA"
+        self.cluster_analysis = "smaller"
         self.activations_by_class: List[np.ndarray] = []
         self.clusters_by_class: List[np.ndarray] = []
         self.assigned_clean_by_class: List[np.ndarray] = []
@@ -104,6 +101,7 @@ class ActivationDefence(PoisonFilteringDefence):
         self.is_clean_lst: List[int] = []
         self.confidence_level: List[float] = []
         self.poisonous_clusters: List[List[np.ndarray]] = []
+        self._check_params()
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         """
@@ -518,32 +516,14 @@ class ActivationDefence(PoisonFilteringDefence):
                 f_name = os.path.join(folder, "plot_class_" + str(class_id) + ".png")
             plot_3d(coordinates, labels, save=save, f_name=f_name)
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-        If a parameter is not provided, it takes its default value.
-
-        :param nb_clusters: Number of clusters to be produced. Should be greater than 2.
-        :type nb_clusters: `int`
-        :param clustering_method: Clustering method to use
-        :type clustering_method: `str`
-        :param nb_dims: Number of dimensions to project on
-        :type nb_dims: `int`
-        :param reduce: Reduction technique
-        :type reduce: `str`
-        :param cluster_analysis: Method to analyze the clusters
-        :type cluster_analysis: `str`
-        """
-        # Save defence-specific parameters
-        super(ActivationDefence, self).set_params(**kwargs)
-
+    def _check_params(self):
         if self.nb_clusters <= 1:
             raise ValueError(
                 "Wrong number of clusters, should be greater or equal to 2. Provided: "
                 + str(self.nb_clusters)
             )
         if self.nb_dims <= 0:
-            raise ValueError("Wrong number of dimensions ")
+            raise ValueError("Wrong number of dimensions.")
         if self.clustering_method not in self.valid_clustering:
             raise ValueError("Unsupported clustering method: " + self.clustering_method)
         if self.reduce not in self.valid_reduce:
@@ -553,8 +533,6 @@ class ActivationDefence(PoisonFilteringDefence):
                 "Unsupported method for cluster analysis method: "
                 + self.cluster_analysis
             )
-
-        return True
 
     def _get_activations(self) -> np.ndarray:
         """

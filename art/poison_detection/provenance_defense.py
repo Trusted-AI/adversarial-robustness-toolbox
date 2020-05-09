@@ -97,7 +97,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         self.errors_by_device: Optional[np.ndarray] = None
         self.evaluator = GroundTruthEvaluator()
         self.is_clean_lst: Optional[np.ndarray] = None
-        self.set_params(**kwargs)
+        self._check_params()
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         """
@@ -279,24 +279,15 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         return filtered_data, filtered_labels
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-        If a parameter is not provided, it takes its default value.
-        """
-        # Save defence-specific parameters
-        super(ProvenanceDefense, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.eps < 0:
-            raise ValueError("Value of epsilon must be at least 0")
+            raise ValueError("Value of epsilon must be at least 0.")
 
         if self.pp_valid < 0:
-            raise ValueError("Value of pp_valid must be at least 0")
+            raise ValueError("Value of pp_valid must be at least 0.")
 
         if len(self.x_train) != len(self.y_train):
-            raise ValueError("x_train and y_train do not match in shape")
+            raise ValueError("x_train and y_train do not match in shape.")
 
         if len(self.x_train) != len(self.p_train):
-            raise ValueError("Provenance features do not match data")
-
-        return True
+            raise ValueError("Provenance features do not match data.")

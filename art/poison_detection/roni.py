@@ -71,7 +71,6 @@ class RONIDefense(PoisonFilteringDefence):
         pp_quiz: float = 0.2,
         calibrated: bool = True,
         eps: float = 0.1,
-        **kwargs
     ):
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
@@ -103,7 +102,7 @@ class RONIDefense(PoisonFilteringDefence):
         self.y_val = y_val
         self.perf_func = perf_func
         self.is_clean_lst: List[int] = list()
-        self.set_params(**kwargs)
+        self._check_params()
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         """
@@ -220,17 +219,9 @@ class RONIDefense(PoisonFilteringDefence):
 
         return np.median(accs), np.std(accs)
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-        If a parameter is not provided, it takes its default value.
-        """
-        super(RONIDefense, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if len(self.x_train) != len(self.y_train):
-            raise ValueError("x_train and y_train do not match shape")
+            raise ValueError("`x_train` and `y_train` do not match shape.")
 
         if self.eps < 0:
-            raise ValueError("Value of epsilon must be at least 0")
-
-        return True
+            raise ValueError("Value of `eps` must be at least 0.")
