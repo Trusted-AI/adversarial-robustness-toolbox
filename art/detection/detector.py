@@ -225,7 +225,7 @@ class BinaryActivationDetector(
         )
 
     def fit_generator(
-        self, generator: DataGenerator, nb_epochs: int = 20, **kwargs
+        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
     ) -> None:
         """
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported

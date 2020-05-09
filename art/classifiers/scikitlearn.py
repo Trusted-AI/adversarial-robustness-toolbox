@@ -1090,7 +1090,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         import sklearn
 
         if not isinstance(model, sklearn.svm.SVC) and not isinstance(
-            model, sklearn.svmLinearSVC
+            model, sklearn.svm.LinearSVC
         ):
             raise TypeError(
                 "Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {}".format(
