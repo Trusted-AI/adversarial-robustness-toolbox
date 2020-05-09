@@ -26,8 +26,8 @@ This module implements the JPEG compression defence `JpegCompression`.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from io import BytesIO
 import logging
+from io import BytesIO
 
 import numpy as np
 
@@ -97,15 +97,12 @@ class JpegCompression(Preprocessor):
 
         if len(x.shape) == 2:
             raise ValueError(
-                "Feature vectors detected. JPEG compression can only be applied to data with spatial" "dimensions."
+                "Feature vectors detected. JPEG compression can only be applied to data with spatial dimensions."
             )
-
-        if self.channel_index >= len(x.shape):
-            raise ValueError("Channel index does not match input shape.")
 
         if np.min(x) < 0.0:
             raise ValueError(
-                "Negative values in input `x` detected. The JPEG compression defence requires unnormalized" "input."
+                "Negative values in input `x` detected. The JPEG compression defence requires unnormalized input."
             )
 
         # Swap channel index
@@ -130,6 +127,9 @@ class JpegCompression(Preprocessor):
             elif x_i.shape[-1] == 3:
                 x_i = Image.fromarray(x_i, mode="RGB")
             else:
+                import pdb
+
+                pdb.set_trace()
                 logger.log(level=40, msg="Currently only support `RGB` and `L` images.")
                 raise NotImplementedError("Currently only support `RGB` and `L` images.")
 
@@ -180,23 +180,23 @@ class JpegCompression(Preprocessor):
         super(JpegCompression, self).set_params(**kwargs)
 
         if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
-            logger.error("Image quality must be a positive integer <= 100.")
             raise ValueError("Image quality must be a positive integer <= 100.")
 
-        if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
-            logger.error("Data channel must be a positive integer. The batch dimension is not a valid channel.")
-            raise ValueError("Data channel must be a positive integer. The batch dimension is not a valid channel.")
+        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3]):
+            raise ValueError(
+                "Data channel must be an integer equal to 1 or 2. The batch dimension is not a valid channel."
+            )
 
         if len(self.clip_values) != 2:
-            raise ValueError("`clip_values` should be a tuple of 2 floats or arrays containing the allowed data range.")
+            raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-            raise ValueError("Invalid `clip_values`: min >= max.")
+            raise ValueError("Invalid 'clip_values': min >= max.")
 
         if self.clip_values[0] != 0:
-            raise ValueError("`clip_values` min value must be 0.")
+            raise ValueError("'clip_values' min value must be 0.")
 
         if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
-            raise ValueError("`clip_values` max value must be either 1 or 255.")
+            raise ValueError("'clip_values' max value must be either 1 or 255.")
 
         return True
