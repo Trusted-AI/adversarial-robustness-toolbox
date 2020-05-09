@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from copy import deepcopy
-from typing import List, Tuple, TYPE_CHECKING
+from typing import Callable, List, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -61,41 +61,31 @@ class RONIDefense(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier,
-        x_train,
-        y_train,
-        x_val,
-        y_val,
-        perf_func="accuracy",
-        pp_cal=0.2,
-        pp_quiz=0.2,
-        calibrated=True,
-        eps=0.1,
+        classifier: "Classifier",
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_val: np.ndarray,
+        y_val: np.ndarray,
+        perf_func: Union[str, Callable] = "accuracy",
+        pp_cal: float = 0.2,
+        pp_quiz: float = 0.2,
+        calibrated: bool = True,
+        eps: float = 0.1,
         **kwargs
     ):
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
         :param classifier: Model evaluated for poison.
-        :type classifier: :class:`art.classifiers.Classifier`
-        :param x_train: dataset used to train the classifier.
-        :type x_train: `np.ndarray`
-        :param y_train: labels used to train the classifier.
-        :type y_train: `np.ndarray`
-        :param x_val: trusted data points
-        :type x_val: `np.ndarray`
-        :param y_train: trusted data labels
-        :type y_train: `np.ndarray`
-        :param perf_func: performance function to use
-        :type perf_func: `str` or `callable`
-        :param pp_cal: percent of training data used for calibration
-        :type pp_cal: `float`
-        :param pp_quiz: percent of training data used for quiz set
-        :type pp_quiz: `float`
-        :param calibrated: True if using the calibrated form of RONI
-        :type calibrated: `bool`
-        :param eps: performance threshold if using uncalibrated RONI
-        :type eps: `float`
+        :param x_train: Dataset used to train the classifier.
+        :param y_train: Labels used to train the classifier.
+        :param x_val: Trusted data points.
+        :param y_train: Trusted data labels.
+        :param perf_func: Performance function to use.
+        :param pp_cal: Percent of training data used for calibration.
+        :param pp_quiz: Percent of training data used for quiz set.
+        :param calibrated: True if using the calibrated form of RONI.
+        :param eps: performance threshold if using uncalibrated RONI.
         """
         super(RONIDefense, self).__init__(classifier, x_train, y_train)
         n_points = len(x_train)
@@ -112,7 +102,7 @@ class RONIDefense(PoisonFilteringDefence):
         self.x_val = x_val
         self.y_val = y_val
         self.perf_func = perf_func
-        self.is_clean_lst = list()
+        self.is_clean_lst: List[int] = list()
         self.set_params(**kwargs)
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
