@@ -57,12 +57,9 @@ class DefensiveDistillation(Transformer):
         """
         super().__init__(classifier=classifier)
         self._is_fitted = True
-
-        kwargs = {
-            "batch_size": batch_size,
-            "nb_epochs": nb_epochs,
-        }
-        self.set_params(**kwargs)
+        self.batch_size = batch_size
+        self.nb_epochs = nb_epochs
+        self._check_params()
 
     def __call__(
         self, x: np.ndarray, transformed_classifier: "Classifier"
@@ -111,22 +108,9 @@ class DefensiveDistillation(Transformer):
         """
         pass
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
-        """
-        # Save defence-specific parameters
-        super().set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
             raise ValueError("The size of batches must be a positive integer.")
 
         if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")
-
-        return True
