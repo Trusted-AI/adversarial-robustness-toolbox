@@ -83,7 +83,6 @@ class Transformer(abc.ABC):
         :param x: Training set to fit the transformer.
         :param y: Labels for the training set.
         :param kwargs: Other parameters.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 

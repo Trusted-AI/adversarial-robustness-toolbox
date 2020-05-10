@@ -50,7 +50,6 @@ class Trainer(abc.ABC):
         :param x: Training data.
         :param y: Labels for the training data.
         :param kwargs: Other parameters.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 

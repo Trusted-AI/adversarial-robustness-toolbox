@@ -104,7 +104,13 @@ class KerasDataGenerator(DataGenerator):
 
     def __init__(
         self,
-        iterator: Union["keras.utils.Sequence", "tf.keras.utils.Sequence", Generator],
+        iterator: Union[
+            "keras.utils.Sequence",
+            "tf.keras.utils.Sequence",
+            "keras.preprocessing.image.ImageDataGenerator",
+            "tf.keras.preprocessing.image.ImageDataGenerator",
+            Generator,
+        ],
         size: Optional[int],
         batch_size: int,
     ) -> None:
@@ -114,10 +120,8 @@ class KerasDataGenerator(DataGenerator):
         :param iterator: A generator as specified by Keras documentation. Its output must be a tuple of either
                          `(inputs, targets)` or `(inputs, targets, sample_weights)`. All arrays in this tuple must have
                          the same length. The generator is expected to loop over its data indefinitely.
-        :type iterator: generator function or `keras.utils.Sequence` or `keras.preprocessing.image.ImageDataGenerator`
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
-        :type batch_size: `int`
         """
         super(KerasDataGenerator, self).__init__(size=size, batch_size=batch_size)
         self._iterator = iterator
@@ -191,7 +195,6 @@ class MXDataGenerator(DataGenerator):
         Create a data generator wrapper on top of an MXNet :class:`DataLoader`.
 
         :param iterator: A MXNet DataLoader instance.
-        :type iterator: `mxnet.gluon.data.DataLoader`
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
         """
@@ -244,7 +247,6 @@ class TensorFlowDataGenerator(DataGenerator):
         :param iterator_type: Type of the iterator. Supported types: `initializable`, `reinitializable`, `feedable`.
         :param iterator_arg: Argument to initialize the iterator. It is either a feed_dict used for the initializable
         and feedable mode, or an init_op used for the reinitializable mode.
-        :type iterator_arg: Arguments of the iterator.
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
         :raises `TypeError`, `ValueError`:

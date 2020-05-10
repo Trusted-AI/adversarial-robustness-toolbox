@@ -104,7 +104,6 @@ class AdversarialTrainerMadryPGD(Trainer):
         :param y: Labels for the training data.
         :param validation_data: Validation data.
         :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
         """
         self.trainer.fit(
             x,

@@ -89,7 +89,6 @@ class Preprocessor(abc.ABC):
         :param x: Training set to fit the preprocessor.
         :param y: Labels for the training set.
         :param kwargs: Other parameters.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 

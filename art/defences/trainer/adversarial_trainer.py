@@ -114,7 +114,6 @@ class AdversarialTrainer(Trainer):
         :param nb_epochs: Number of epochs to use for trainings.
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                the target classifier.
-        :type kwargs: `dict`
         """
         logger.info(
             "Performing adversarial training using %i attacks.", len(self.attacks)
@@ -219,7 +218,6 @@ class AdversarialTrainer(Trainer):
         :param nb_epochs: Number of epochs to use for trainings.
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                the target classifier.
-        :type kwargs: `dict`
         """
         logger.info(
             "Performing adversarial training using %i attacks.", len(self.attacks)
@@ -307,7 +305,6 @@ class AdversarialTrainer(Trainer):
 
         :param x: Test set.
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
-        :type kwargs: `dict`
         :return: Predictions for test set.
         """
         return self._classifier.predict(x, **kwargs)

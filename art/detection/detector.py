@@ -49,7 +49,6 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
 
         :param detector: The detector architecture to be trained and applied for the binary classification.
-        :type detector: :class:`.Classifier`
         """
         super(BinaryInputDetector, self).__init__(
             clip_values=detector.clip_values,
@@ -75,7 +74,6 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Other parameters.
-        :type kwargs: `dict`
         """
         self.detector.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
@@ -204,7 +202,6 @@ class BinaryActivationDetector(
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Other parameters.
-        :type kwargs: `dict`
         """
         x_activations = self.classifier.get_activations(x, self._layer_name, batch_size)
         self.detector.fit(

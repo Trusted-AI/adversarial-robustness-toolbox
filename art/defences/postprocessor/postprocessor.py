@@ -86,7 +86,6 @@ class Postprocessor(abc.ABC):
 
         :param preds: Training set to fit the postprocessor.
         :param kwargs: Other parameters.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 
