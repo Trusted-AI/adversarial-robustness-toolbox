@@ -72,13 +72,11 @@ class SpatialTransformation(EvasionAttack):
         :param num_rotations: The number of rotations to search on grid spacing.
         """
         super(SpatialTransformation, self).__init__(classifier=classifier)
-        kwargs = {
-            "max_translation": max_translation,
-            "num_translations": num_translations,
-            "max_rotation": max_rotation,
-            "num_rotations": num_rotations,
-        }
-        self.set_params(**kwargs)
+        self.max_translation = max_translation
+        self.num_translations = num_translations
+        self.max_rotation = max_rotation
+        self.num_rotations = num_rotations
+        self._check_params()
 
         self.fooling_rate: Optional[float] = None
         self.attack_trans_x: Optional[np.ndarray] = None
@@ -229,23 +227,7 @@ class SpatialTransformation(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param max_translation: The maximum translation in any direction as percentage of image size. The value is
-               expected to be in the range `[0, 100]`.
-        :type max_translation: `float`
-        :param num_translations: The number of translations to search on grid spacing per direction.
-        :type num_translations: `int`
-        :param max_rotation: The maximum rotation in either direction in degrees. The value is expected to be in the
-               range `[0, 180]`.
-        :type max_rotation: `float`
-        :param num_rotations: The number of rotations to search on grid spacing.
-        :type num_rotations: `int`
-        """
-        super(SpatialTransformation, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if (
             not isinstance(self.max_translation, (float, int))
             or self.max_translation < 0
@@ -265,5 +247,3 @@ class SpatialTransformation(EvasionAttack):
 
         if not isinstance(self.num_rotations, int) or self.num_rotations <= 0:
             raise ValueError("The number of rotations must be a positive integer.")
-
-        return True

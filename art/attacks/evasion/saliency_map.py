@@ -61,11 +61,10 @@ class SaliencyMapMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         super(SaliencyMapMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
-
-        kwargs = {"theta": theta, "gamma": gamma, "batch_size": batch_size}
-        self.set_params(**kwargs)
+        self.theta = theta
+        self.gamma = gamma
+        self.batch_size = batch_size
+        self._check_params()
 
     def generate(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -206,19 +205,11 @@ class SaliencyMapMethod(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param theta: Perturbation introduced to each modified feature per step (can be positive or negative)
-        :type theta: `float`
-        :param gamma: Maximum percentage of perturbed features (between 0 and 1)
-        :type gamma: `float`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(SaliencyMapMethod, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, ClassifierGradients):
+            raise ClassifierError(
+                self.__class__, [ClassifierGradients], self.classifier
+            )
 
         if self.gamma <= 0 or self.gamma > 1:
             raise ValueError(
@@ -227,8 +218,6 @@ class SaliencyMapMethod(EvasionAttack):
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
-
-        return True
 
     def _saliency_map(
         self, x: np.ndarray, target: np.ndarray, search_space: np.ndarray

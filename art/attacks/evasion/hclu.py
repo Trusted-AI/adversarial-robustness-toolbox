@@ -61,15 +61,11 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         :param max_val: maximal value any feature can take.
         """
         super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
-        if not isinstance(classifier, GPyGaussianProcessClassifier):
-            raise TypeError("Model must be a GPy Gaussian Process classifier.")
-        params = {
-            "conf": conf,
-            "unc_increase": unc_increase,
-            "min_val": min_val,
-            "max_val": max_val,
-        }
-        self.set_params(**params)
+        self.conf = conf
+        self.unc_increase = unc_increase
+        self.min_val = min_val
+        self.max_val = max_val
+        self._check_params()
 
     def generate(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -135,21 +131,12 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         )
         return x_adv
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
-
-        :param conf: Confidence that examples should have, if there were to be classified as 1.0 maximally.
-        :param unc_increase: Value uncertainty is allowed to deviate, where 1.0 is original value.
-        :param min_val: minimal value any feature can take.
-        :param max_val: maximal value any feature can take.
-        """
-        super(HighConfidenceLowUncertainty, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, GPyGaussianProcessClassifier):
+            raise TypeError("Model must be a GPy Gaussian Process classifier.")
         if self.conf <= 0.5 or self.conf > 1.0:
             raise ValueError("Confidence value has to be a value between 0.5 and 1.0.")
         if self.unc_increase <= 0.0:
             raise ValueError("Value to increase uncertainty must be positive.")
         if self.min_val > self.max_val:
             raise ValueError("Maximum has to be larger than minimum.")
-
-        return True

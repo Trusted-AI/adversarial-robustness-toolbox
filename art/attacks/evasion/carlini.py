@@ -103,21 +103,17 @@ class CarliniL2Method(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         super(CarliniL2Method, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
-        kwargs = {
-            "confidence": confidence,
-            "targeted": targeted,
-            "learning_rate": learning_rate,
-            "binary_search_steps": binary_search_steps,
-            "max_iter": max_iter,
-            "initial_const": initial_const,
-            "max_halving": max_halving,
-            "max_doubling": max_doubling,
-            "batch_size": batch_size,
-        }
-        assert self.set_params(**kwargs)
+        self.confidence = confidence
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.binary_search_steps = binary_search_steps
+        self.max_iter = max_iter
+        self.initial_const = initial_const
+        self.max_halving = max_halving
+        self.max_doubling = max_doubling
+        self.batch_size = batch_size
+        self._check_params()
 
         # There are internal hyperparameters:
         # Abort binary search for c if it exceeds this threshold (suggested in Carlini and Wagner (2016)):
@@ -544,34 +540,11 @@ class CarliniL2Method(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs) -> bool:
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
-               from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
-        :param targeted: Should the attack target one specific class
-        :type targeted: `bool`
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
-               slower to converge.
-        :type learning_rate: `float`
-        :param binary_search_steps: number of times to adjust constant with binary search (positive value)
-        :type binary_search_steps: `int`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param initial_const: (optional float, positive) The initial trade-off constant c to use to tune the relative
-               importance of distance and confidence. If binary_search_steps is large,
-               the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
-        :type initial_const: `float`
-        :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
-        :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(CarliniL2Method, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, ClassifierGradients):
+            raise ClassifierError(
+                self.__class__, [ClassifierGradients], self.classifier
+            )
 
         if (
             not isinstance(self.binary_search_steps, (int, np.int))
@@ -596,8 +569,6 @@ class CarliniL2Method(EvasionAttack):
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
-
-        return True
 
 
 class CarliniLInfMethod(EvasionAttack):
@@ -645,20 +616,16 @@ class CarliniLInfMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         super(CarliniLInfMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
-        kwargs = {
-            "confidence": confidence,
-            "targeted": targeted,
-            "learning_rate": learning_rate,
-            "max_iter": max_iter,
-            "max_halving": max_halving,
-            "max_doubling": max_doubling,
-            "eps": eps,
-            "batch_size": batch_size,
-        }
-        assert self.set_params(**kwargs)
+        self.confidence = confidence
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.max_iter = max_iter
+        self.max_halving = max_halving
+        self.max_doubling = max_doubling
+        self.eps = eps
+        self.batch_size = batch_size
+        self._check_params()
 
         # There is one internal hyperparameter:
         # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
@@ -977,30 +944,11 @@ class CarliniLInfMethod(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs) -> bool:
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
-               from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
-        :param targeted: Should the attack target one specific class
-        :type targeted: `bool`
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
-               slower to converge.
-        :type learning_rate: `float`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
-        :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
-        :param eps: An upper bound for the L_0 norm of the adversarial perturbation.
-        :type eps: `float`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(CarliniLInfMethod, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, ClassifierGradients):
+            raise ClassifierError(
+                self.__class__, [ClassifierGradients], self.classifier
+            )
 
         if self.eps <= 0:
             raise ValueError("The eps parameter must be strictly positive.")
@@ -1020,5 +968,3 @@ class CarliniLInfMethod(EvasionAttack):
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
-
-        return True

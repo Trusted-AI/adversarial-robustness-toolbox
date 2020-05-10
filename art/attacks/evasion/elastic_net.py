@@ -92,21 +92,16 @@ class ElasticNet(EvasionAttack):
         :param decision_rule: Decision rule. 'EN' means Elastic Net rule, 'L1' means L1 rule, 'L2' means L2 rule.
         """
         super(ElasticNet, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
-
-        kwargs = {
-            "confidence": confidence,
-            "targeted": targeted,
-            "learning_rate": learning_rate,
-            "binary_search_steps": binary_search_steps,
-            "max_iter": max_iter,
-            "beta": beta,
-            "initial_const": initial_const,
-            "batch_size": batch_size,
-            "decision_rule": decision_rule,
-        }
-        assert self.set_params(**kwargs)
+        self.confidence = confidence
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.binary_search_steps = binary_search_steps
+        self.max_iter = max_iter
+        self.beta = beta
+        self.initial_const = initial_const
+        self.batch_size = batch_size
+        self.decision_rule = decision_rule
+        self._check_params()
 
     def _loss(self, x: np.ndarray, x_adv: np.ndarray) -> tuple:
         """
@@ -426,35 +421,11 @@ class ElasticNet(EvasionAttack):
 
         return result
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
-               away, from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
-        :param targeted: Should the attack target one specific class.
-        :type targeted: `bool`
-        :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better
-               results but are slower to converge.
-        :type learning_rate: `float`
-        :param binary_search_steps: Number of times to adjust constant with binary search (positive value).
-        :type binary_search_steps: `int`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param beta: Hyperparameter trading off L2 minimization for L1 minimization.
-        :type beta: `float`
-        :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance
-               and confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
-               Carlini and Wagner (2016).
-        :type initial_const: `float`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        :param decision_rule: Decision rule. 'EN' means Elastic Net rule, 'L1' means L1 rule, 'L2' means L2 rule.
-        :type decision_rule: `string`
-        """
-        # Save attack-specific parameters
-        super(ElasticNet, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, ClassifierGradients):
+            raise ClassifierError(
+                self.__class__, [ClassifierGradients], self.classifier
+            )
 
         if (
             not isinstance(self.binary_search_steps, int)
@@ -474,5 +445,3 @@ class ElasticNet(EvasionAttack):
             self.decision_rule, six.string_types
         ) or self.decision_rule not in ["EN", "L1", "L2"]:
             raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
-
-        return True

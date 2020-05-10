@@ -60,21 +60,10 @@ class NewtonFool(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         super(NewtonFool, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise (
-                TypeError(
-                    "For `"
-                    + self.__class__.__name__
-                    + "` classifier must be an instance of "
-                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
-                    + str(classifier.__class__.__bases__)
-                    + ". "
-                    " The classifier needs to provide gradients."
-                )
-            )
-
-        params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
-        self.set_params(**params)
+        self.max_iter = max_iter
+        self.eta = eta
+        self.batch_size = batch_size
+        self._check_params()
 
     def generate(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -144,20 +133,19 @@ class NewtonFool(EvasionAttack):
         )
         return x_adv
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param eta: The eta coefficient.
-        :type eta: `float`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(NewtonFool, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, ClassifierGradients):
+            raise (
+                TypeError(
+                    "For `"
+                    + self.__class__.__name__
+                    + "` classifier must be an instance of "
+                    "`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of "
+                    + str(self.classifier.__class__.__bases__)
+                    + ". "
+                    " The classifier needs to provide gradients."
+                )
+            )
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
@@ -166,8 +154,6 @@ class NewtonFool(EvasionAttack):
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
-
-        return True
 
     def _compute_theta(
         self, norm_batch: np.ndarray, score: np.ndarray, norm_grad: np.ndarray

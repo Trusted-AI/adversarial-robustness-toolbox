@@ -95,11 +95,9 @@ class ProjectedGradientDescent(FastGradientMethod):
             batch_size=batch_size,
             minimal=False,
         )
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
-
-        kwargs = {"max_iter": max_iter, "random_eps": random_eps}
-        ProjectedGradientDescent.set_params(self, **kwargs)
+        self.max_iter = max_iter
+        self.random_eps = random_eps
+        ProjectedGradientDescent._check_params(self)
 
         if self.random_eps:
             lower, upper = 0, eps
@@ -195,24 +193,13 @@ class ProjectedGradientDescent(FastGradientMethod):
 
         return adv_x_best
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+    def _check_params(self) -> None:
+        super(ProjectedGradientDescent, self)._check_params()
 
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
-        :type norm: `int`
-        :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
-        :type num_random_init: `int`
-        :param batch_size: Batch size
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(ProjectedGradientDescent, self).set_params(**kwargs)
+        if not isinstance(self.classifier, ClassifierGradients):
+            raise ClassifierError(
+                self.__class__, [ClassifierGradients], self.classifier
+            )
 
         if self.eps_step > self.eps:
             raise ValueError(
@@ -223,5 +210,3 @@ class ProjectedGradientDescent(FastGradientMethod):
             raise ValueError(
                 "The number of iterations `max_iter` has to be a positive integer."
             )
-
-        return True

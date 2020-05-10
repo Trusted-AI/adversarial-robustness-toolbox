@@ -89,24 +89,13 @@ class UniversalPerturbation(EvasionAttack):
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2.
         """
         super(UniversalPerturbation, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(
-            classifier, ClassifierGradients
-        ):
-            raise ClassifierError(
-                self.__class__,
-                [ClassifierNeuralNetwork, ClassifierGradients],
-                classifier,
-            )
-
-        kwargs = {
-            "attacker": attacker,
-            "attacker_params": attacker_params,
-            "delta": delta,
-            "max_iter": max_iter,
-            "eps": eps,
-            "norm": norm,
-        }
-        self.set_params(**kwargs)
+        self.attacker = attacker
+        self.attacker_params = attacker_params
+        self.delta = delta
+        self.max_iter = max_iter
+        self.eps = eps
+        self.norm = norm
+        self._check_params()
 
     def generate(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -180,26 +169,15 @@ class UniversalPerturbation(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'deepfool', 'fgsm',
-                'newtonfool', 'jsma', 'vat'.
-        :type attacker: `str`
-        :param attacker_params: Parameters specific to the adversarial attack.
-        :type attacker_params: `dict`
-        :param delta: desired accuracy
-        :type delta: `float`
-        :param max_iter: The maximum number of iterations for computing universal perturbation.
-        :type max_iter: `int`
-        :param eps: Attack step size (input variation)
-        :type eps: `float`
-        :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
-        :type norm: `int`
-        """
-        super(UniversalPerturbation, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, ClassifierNeuralNetwork) or not isinstance(
+            self.classifier, ClassifierGradients
+        ):
+            raise ClassifierError(
+                self.__class__,
+                [ClassifierNeuralNetwork, ClassifierGradients],
+                self.classifier,
+            )
         if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
             raise ValueError("The desired accuracy must be in the range [0, 1].")
 
@@ -208,8 +186,6 @@ class UniversalPerturbation(EvasionAttack):
 
         if not isinstance(self.eps, (float, int)) or self.eps <= 0:
             raise ValueError("The eps coefficient must be a positive float.")
-
-        return True
 
     def _get_attack(
         self, a_name: str, params: Optional[Dict[str, Any]] = None

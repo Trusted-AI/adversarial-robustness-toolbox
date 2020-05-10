@@ -68,22 +68,11 @@ class VirtualAdversarialMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         super(VirtualAdversarialMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(
-            classifier, ClassifierGradients
-        ):
-            raise ClassifierError(
-                self.__class__,
-                [ClassifierGradients, ClassifierNeuralNetwork],
-                classifier,
-            )
-
-        kwargs = {
-            "finite_diff": finite_diff,
-            "eps": eps,
-            "max_iter": max_iter,
-            "batch_size": batch_size,
-        }
-        self.set_params(**kwargs)
+        self.finite_diff = finite_diff
+        self.eps = eps
+        self.max_iter = max_iter
+        self.batch_size = batch_size
+        self._check_params()
 
     def generate(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -215,21 +204,15 @@ class VirtualAdversarialMethod(EvasionAttack):
         res = (x - np.amin(x, axis=1, keepdims=True) + tol) / current_range
         return res
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param eps: Attack step (max input variation).
-        :type eps: `float`
-        :param finite_diff: The finite difference parameter.
-        :type finite_diff: `float`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(VirtualAdversarialMethod, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, ClassifierNeuralNetwork) or not isinstance(
+            self.classifier, ClassifierGradients
+        ):
+            raise ClassifierError(
+                self.__class__,
+                [ClassifierGradients, ClassifierNeuralNetwork],
+                self.classifier,
+            )
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
@@ -244,5 +227,3 @@ class VirtualAdversarialMethod(EvasionAttack):
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
-
-        return True

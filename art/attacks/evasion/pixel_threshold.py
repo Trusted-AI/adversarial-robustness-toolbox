@@ -85,9 +85,12 @@ class PixelThreshold(EvasionAttack):
         """
         super(PixelThreshold, self).__init__(classifier)
         self._project = True
-        kwargs = {"th": th, "es": es, "targeted": targeted, "verbose": verbose}
-        PixelThreshold.set_params(self, **kwargs)
         self.type_attack = -1
+        self.th = th
+        self.es = es
+        self.targeted = targeted
+        self.verbose = verbose
+        PixelThreshold._check_params(self)
 
         if self.classifier.channel_index == 1:
             self.img_rows = self.classifier.input_shape[-2]
@@ -98,12 +101,7 @@ class PixelThreshold(EvasionAttack):
             self.img_cols = self.classifier.input_shape[-2]
             self.img_channels = self.classifier.input_shape[-1]
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-        """
-        super(PixelThreshold, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.th is not None:
             if self.th <= 0:
                 raise ValueError("The perturbation size `eps` has to be positive.")
@@ -113,8 +111,6 @@ class PixelThreshold(EvasionAttack):
             raise ValueError("The flag `targeted` has to be of type bool.")
         if not isinstance(self.verbose, bool):
             raise ValueError("The flag `verbose` has to be of type bool.")
-
-        return True
 
     def generate(
         self,

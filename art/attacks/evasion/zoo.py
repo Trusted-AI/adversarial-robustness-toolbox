@@ -120,21 +120,19 @@ class ZooAttack(EvasionAttack):
         else:
             self.input_is_feature_vector = False
 
-        kwargs = {
-            "confidence": confidence,
-            "targeted": targeted,
-            "learning_rate": learning_rate,
-            "max_iter": max_iter,
-            "binary_search_steps": binary_search_steps,
-            "initial_const": initial_const,
-            "abort_early": abort_early,
-            "use_resize": use_resize,
-            "use_importance": use_importance,
-            "nb_parallel": nb_parallel,
-            "batch_size": batch_size,
-            "variable_h": variable_h,
-        }
-        self.set_params(**kwargs)
+        self.confidence = confidence
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.max_iter = max_iter
+        self.binary_search_steps = binary_search_steps
+        self.initial_const = initial_const
+        self.abort_early = abort_early
+        self.use_resize = use_resize
+        self.use_importance = use_importance
+        self.nb_parallel = nb_parallel
+        self.batch_size = batch_size
+        self.variable_h = variable_h
+        self._check_params()
 
         # Initialize some internal variables
         self._init_size = 32
@@ -697,44 +695,7 @@ class ZooAttack(EvasionAttack):
 
         return img_pool
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther
-               away, from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
-        :param targeted: Should the attack target one specific class.
-        :type targeted: `bool`
-        :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better
-               results but are slower to converge.
-        :type learning_rate: `float`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param binary_search_steps: Number of times to adjust constant with binary search (positive value).
-        :type binary_search_steps: `int`
-        :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance
-               and confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
-               Carlini and Wagner (2016).
-        :type initial_const: `float`
-        :param abort_early: `True` if gradient descent should be abandoned when it gets stuck.
-        :type abort_early: `bool`
-        :param use_resize: `True` if to use the resizing strategy from the paper: first, compute attack on inputs
-               resized to 32x32, then increase size if needed to 64x64, followed by 128x128.
-        :type use_resize: `bool`
-        :param use_importance: `True` if to use importance sampling when choosing coordinates to update.
-        :type use_importance: `bool`
-        :param nb_parallel: Number of coordinate updates to run in parallel. A higher value for `nb_parallel` should
-               be preferred over a large batch size.
-        :type nb_parallel: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated. Small batch sizes are
-               encouraged for ZOO, as the algorithm already runs `nb_parallel` coordinate updates in parallel for each
-               sample. The batch size is a multiplier of `nb_parallel` in terms of memory consumption.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(ZooAttack, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if (
             not isinstance(self.binary_search_steps, (int, np.int))
             or self.binary_search_steps < 0
@@ -753,5 +714,3 @@ class ZooAttack(EvasionAttack):
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
-
-        return True

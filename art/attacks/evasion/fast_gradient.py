@@ -88,23 +88,15 @@ class FastGradientMethod(EvasionAttack):
                         the step size and eps for the maximum perturbation.
         """
         super(FastGradientMethod, self).__init__(classifier)
-
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
-
-        kwargs = {
-            "norm": norm,
-            "eps": eps,
-            "eps_step": eps_step,
-            "targeted": targeted,
-            "num_random_init": num_random_init,
-            "batch_size": batch_size,
-            "minimal": minimal,
-        }
-
-        FastGradientMethod.set_params(self, **kwargs)
-
+        self.norm = norm
+        self.eps = eps
+        self.eps_step = eps_step
+        self.targeted = targeted
+        self.num_random_init = num_random_init
+        self.batch_size = batch_size
+        self.minimal = minimal
         self._project = True
+        FastGradientMethod._check_params(self)
 
     @classmethod
     def is_valid_classifier_type(cls, classifier: ClassifierGradients) -> bool:
@@ -245,28 +237,11 @@ class FastGradientMethod(EvasionAttack):
 
         return adv_x_best
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
-        :type norm: `int` or `float`
-        :param eps: Attack step size (input variation)
-        :type eps: `float`
-        :param eps_step: Step size of input variation for minimal perturbation computation
-        :type eps_step: `float`
-        :param targeted: Should the attack target one specific class
-        :type targeted: `bool`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
-                                the original input.
-        :type num_random_init: `int`
-        :param batch_size: Batch size
-        :type batch_size: `int`
-        :param minimal: Flag to compute the minimal perturbation.
-        :type minimal: `bool`
-        """
-        # Save attack-specific parameters
-        super(FastGradientMethod, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, ClassifierGradients):
+            raise ClassifierError(
+                self.__class__, [ClassifierGradients], self.classifier
+            )
 
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [np.inf, int(1), int(2)]:
@@ -298,8 +273,6 @@ class FastGradientMethod(EvasionAttack):
 
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
-
-        return True
 
     def _compute_perturbation(
         self, batch: np.ndarray, batch_labels: np.ndarray

@@ -83,18 +83,16 @@ class BoundaryAttack(EvasionAttack):
         """
         super(BoundaryAttack, self).__init__(classifier=classifier)
 
-        params = {
-            "targeted": targeted,
-            "delta": delta,
-            "epsilon": epsilon,
-            "step_adapt": step_adapt,
-            "max_iter": max_iter,
-            "num_trial": num_trial,
-            "sample_size": sample_size,
-            "init_size": init_size,
-            "batch_size": 1,
-        }
-        self.set_params(**params)
+        self.targeted = targeted
+        self.delta = delta
+        self.epsilon = epsilon
+        self.step_adapt = step_adapt
+        self.max_iter = max_iter
+        self.num_trial = num_trial
+        self.sample_size = sample_size
+        self.init_size = init_size
+        self.batch_size = 1
+        self._check_params()
 
     @classmethod
     def is_valid_classifier_type(cls, classifier: Classifier) -> bool:
@@ -450,30 +448,7 @@ class BoundaryAttack(EvasionAttack):
 
         return initial_sample
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param targeted: Should the attack target one specific class.
-        :type targeted: `bool`
-        :param delta: Initial step size for the orthogonal step.
-        :type delta: `float`
-        :param epsilon: Initial step size for the step towards the target.
-        :type epsilon: `float`
-        :param step_adapt: Factor by which the step sizes are multiplied or divided, must be in the range (0, 1).
-        :type step_adapt: `float`
-        :param max_iter: Maximum number of iterations.
-        :type max_iter: `int`
-        :param num_trial: Maximum number of trials per iteration.
-        :type num_trial: `int`
-        :param sample_size: Number of samples per trial.
-        :type sample_size: `int`
-        :param init_size: Maximum number of trials for initial generation of adversarial examples.
-        :type init_size: `int`
-        """
-        # Save attack-specific parameters
-        super(BoundaryAttack, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
@@ -498,5 +473,3 @@ class BoundaryAttack(EvasionAttack):
 
         if self.step_adapt <= 0 or self.step_adapt >= 1:
             raise ValueError("The adaptation factor must be in the range (0, 1).")
-
-        return True

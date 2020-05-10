@@ -50,11 +50,8 @@ class DecisionTreeAttack(EvasionAttack):
         :param offset: How much the value is pushed away from tree's threshold.
         """
         super(DecisionTreeAttack, self).__init__(classifier)
-        if not isinstance(classifier, ScikitlearnDecisionTreeClassifier):
-            raise TypeError("Model must be a decision tree model.")
-
-        params = {"offset": offset}
-        self.set_params(**params)
+        self.offset = offset
+        self._check_params()
 
     def _df_subtree(
         self,
@@ -183,15 +180,9 @@ class DecisionTreeAttack(EvasionAttack):
         )
         return x_adv
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
-
-        :param offset: How much the value is pushed away from tree's threshold.
-        """
-        super(DecisionTreeAttack, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        if not isinstance(self.classifier, ScikitlearnDecisionTreeClassifier):
+            raise TypeError("Model must be a decision tree model.")
 
         if self.offset <= 0:
             raise ValueError("The offset parameter must be strictly positive.")
-
-        return True

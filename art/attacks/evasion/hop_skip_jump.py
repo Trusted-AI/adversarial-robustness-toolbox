@@ -79,17 +79,15 @@ class HopSkipJump(EvasionAttack):
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         """
         super(HopSkipJump, self).__init__(classifier=classifier)
-        params = {
-            "targeted": targeted,
-            "norm": norm,
-            "max_iter": max_iter,
-            "max_eval": max_eval,
-            "init_eval": init_eval,
-            "init_size": init_size,
-            "curr_iter": 0,
-            "batch_size": 1,
-        }
-        self.set_params(**params)
+        self.targeted = targeted
+        self.norm = norm
+        self.max_iter = max_iter
+        self.max_eval = max_eval
+        self.init_eval = init_eval
+        self.init_size = init_size
+        self.curr_iter = 0
+        self.batch_size = 1
+        self._check_params()
         self.curr_iter = 0
 
         # Set binary search threshold
@@ -634,26 +632,7 @@ class HopSkipJump(EvasionAttack):
 
         return result
 
-    def set_params(self, **kwargs) -> bool:
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param targeted: Should the attack target one specific class.
-        :type targeted: `bool`
-        :param norm: Order of the norm. Possible values: np.inf or 2.
-        :type norm: `int`
-        :param max_iter: Maximum number of iterations.
-        :type max_iter: `int`
-        :param max_eval: Maximum number of evaluations for estimating gradient.
-        :type max_eval: `int`
-        :param init_eval: Initial number of evaluations for estimating gradient.
-        :type init_eval: `int`
-        :param init_size: Maximum number of trials for initial generation of adversarial examples.
-        :type init_size: `int`
-        """
-        # Save attack-specific parameters
-        super(HopSkipJump, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [np.inf, int(2)]:
             raise ValueError("Norm order must be either `np.inf` or 2.")
@@ -678,5 +657,3 @@ class HopSkipJump(EvasionAttack):
 
         if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
             raise ValueError("The number of initial trials must be a positive integer.")
-
-        return True
