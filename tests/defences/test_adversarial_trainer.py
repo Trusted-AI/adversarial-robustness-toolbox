@@ -45,7 +45,12 @@ class TestAdversarialTrainer(unittest.TestCase):
     def setUpClass(cls):
         # MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        x_train, y_train, x_test, y_test = (
+            x_train[:NB_TRAIN],
+            y_train[:NB_TRAIN],
+            x_test[:NB_TEST],
+            y_test[:NB_TEST],
+        )
         cls.mnist = ((x_train, y_train), (x_test, y_test))
 
         cls.classifier, _ = get_image_classifier_tf()
@@ -58,7 +63,9 @@ class TestAdversarialTrainer(unittest.TestCase):
         adv_trainer = AdversarialTrainer(self.classifier, attack)
 
         self.assertEqual(len(adv_trainer.attacks), 1)
-        self.assertEqual(adv_trainer.attacks[0].classifier, adv_trainer.classifier)
+        self.assertEqual(
+            adv_trainer.attacks[0].classifier, adv_trainer.get_classifier()
+        )
 
     def test_fit_predict(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -79,7 +86,9 @@ class TestAdversarialTrainer(unittest.TestCase):
         self.assertEqual(accuracy, 0.13)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(
+            float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001
+        )
 
     def test_two_attacks(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -101,7 +110,9 @@ class TestAdversarialTrainer(unittest.TestCase):
         self.assertEqual(accuracy, 0.13)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(
+            float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001
+        )
 
     def test_two_attacks_with_generator(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -117,10 +128,14 @@ class TestAdversarialTrainer(unittest.TestCase):
                 self._batch_size = batch_size
 
             def get_batch(self):
-                ids = np.random.choice(self.size, size=min(self.size, self.batch_size), replace=False)
+                ids = np.random.choice(
+                    self.size, size=min(self.size, self.batch_size), replace=False
+                )
                 return self.x[ids], self.y[ids]
 
-        generator = MyDataGenerator(x_train, y_train, size=x_train.shape[0], batch_size=16)
+        generator = MyDataGenerator(
+            x_train, y_train, size=x_train.shape[0], batch_size=16
+        )
 
         attack1 = FastGradientMethod(classifier=self.classifier, batch_size=16)
         attack2 = DeepFool(classifier=self.classifier, max_iter=5, batch_size=16)
@@ -138,8 +153,12 @@ class TestAdversarialTrainer(unittest.TestCase):
         self.assertAlmostEqual(accuracy, 0.11, delta=0.0)
 
         # Check that x_train and x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(float(np.max(np.abs(x_train_original - x_train))), 0.0, delta=0.00001)
-        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+        self.assertAlmostEqual(
+            float(np.max(np.abs(x_train_original - x_train))), 0.0, delta=0.00001
+        )
+        self.assertAlmostEqual(
+            float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001
+        )
 
     def test_targeted_attack_error(self):
         """
@@ -152,7 +171,9 @@ class TestAdversarialTrainer(unittest.TestCase):
 
         adv = FastGradientMethod(self.classifier, targeted=True)
         adv_trainer = AdversarialTrainer(self.classifier, attacks=adv)
-        self.assertRaises(NotImplementedError, adv_trainer.fit, x_train, y_train, **params)
+        self.assertRaises(
+            NotImplementedError, adv_trainer.fit, x_train, y_train, **params
+        )
 
 
 if __name__ == "__main__":

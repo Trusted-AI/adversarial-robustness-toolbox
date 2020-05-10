@@ -56,14 +56,8 @@ class Trainer(abc.ABC):
 
     def get_classifier(self) -> "Classifier":
         """
-        Train the model.
+        Return the classifier trained via adversarial training.
 
-        :param x: Training data.
-        :type x: `np.ndarray`
-        :param y: Labels for the training data.
-        :type y: `np.ndarray`
-        :param kwargs: Other parameters.
-        :type kwargs: `dict`
-        :return: None
+        :return: The classifier.
         """
         return self._classifier
