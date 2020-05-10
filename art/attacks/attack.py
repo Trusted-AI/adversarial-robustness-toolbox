@@ -102,7 +102,6 @@ class Attack(abc.ABC, metaclass=input_filter):
         Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
 
         :param kwargs: A dictionary of attack-specific parameters.
-        :type kwargs: `dict`
         """
         for key, value in kwargs.items():
             if key in self.attack_params:
