@@ -111,7 +111,6 @@ class RONIDefense(PoisonFilteringDefence):
         :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous.
         :param kwargs: A dictionary of defence-specific parameters.
-        :type kwargs: `dict`
         :return: JSON object with confusion matrix.
         """
         self.set_params(**kwargs)
@@ -131,7 +130,6 @@ class RONIDefense(PoisonFilteringDefence):
         Returns poison detected and a report.
 
         :param kwargs: A dictionary of detection-specific parameters.
-        :type kwargs: `dict`
         :return: (report, is_clean_lst):
                 where a report is a dict object that contains information specified by the provenance detection method
                 where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]

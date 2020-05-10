@@ -99,7 +99,6 @@ class ExpectationOverTransformations(
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 

@@ -86,7 +86,6 @@ class QueryEfficientBBGradientEstimation(
         :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
                   one-hot encoding format.
         :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 

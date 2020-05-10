@@ -110,7 +110,6 @@ class ActivationDefence(PoisonFilteringDefence):
         :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous.
         :param kwargs: A dictionary of defence-specific parameters.
-        :type kwargs: `dict`
         :return: JSON object with confusion matrix.
         """
         if is_clean is None or is_clean.size == 0:
@@ -199,7 +198,6 @@ class ActivationDefence(PoisonFilteringDefence):
         class red_activations_by_class[i][j].
 
         :param kwargs: A dictionary of cluster-specific parameters.
-        :type kwargs: `dict`
         :return: Clusters per class and activations by class.
         """
         self.set_params(**kwargs)
@@ -224,7 +222,6 @@ class ActivationDefence(PoisonFilteringDefence):
         This function analyzes the clusters according to the provided method.
 
         :param kwargs: A dictionary of cluster-analysis-specific parameters.
-        :type kwargs: `dict`
         :return: (report, assigned_clean_by_class), where the report is a dict object and assigned_clean_by_class
                  is an array of arrays that contains what data points where classified as clean.
         """
@@ -439,8 +436,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param x_raw: Images used to train the classifier (before pre-processing).
         :param save: Boolean specifying if image should be saved.
         :param folder: Directory where the sprites will be saved inside ART_DATA_PATH folder.
-        :param kwargs: a dictionary of cluster-analysis-specific parameters
-        :type kwargs: `dict`
+        :param kwargs: a dictionary of cluster-analysis-specific parameters.
         :return: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the
                                   sprite of class i cluster j.
         """
@@ -493,8 +489,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param save: Boolean specifying if image should be saved.
         :param folder: Directory where the sprites will be saved inside ART_DATA_PATH folder.
-        :param kwargs: a dictionary of cluster-analysis-specific parameters
-        :type kwargs: `dict`
+        :param kwargs: a dictionary of cluster-analysis-specific parameters.
         """
         self.set_params(**kwargs)
 

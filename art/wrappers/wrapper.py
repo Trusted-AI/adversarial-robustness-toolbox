@@ -60,7 +60,6 @@ class ClassifierWrapper:
         Take in a dictionary of parameters and pass them down to the underlying wrapped classifier instance.
 
         :param kwargs: A dictionary of attack-specific parameters.
-        :type kwargs: `dict`
         """
         for key, value in kwargs.items():
             if key in self.attack_params:

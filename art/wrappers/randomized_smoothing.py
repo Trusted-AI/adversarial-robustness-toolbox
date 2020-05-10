@@ -225,7 +225,6 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
                   One Hot Encoding format.
         :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 
@@ -243,10 +242,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
         Save a model to file specific to the backend framework.
 
         :param filename: Name of the file where to save the model.
-        :type filename: `str`
         :param path: Path of the directory where to save the model. If no path is specified, the model will be stored in
                      the default data location of ART at `ART_DATA_PATH`.
-        :type path: `str`
-        :return: None
         """
         raise NotImplementedError

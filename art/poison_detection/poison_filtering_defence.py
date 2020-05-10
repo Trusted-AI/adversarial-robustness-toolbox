@@ -63,7 +63,6 @@ class PoisonFilteringDefence(ABC):
         Detect poison.
 
         :param kwargs: Defence-specific parameters used by child classes.
-        :type kwargs: `dict`
         :return: Dictionary with report and list with items identified as poison.
         """
         raise NotImplementedError
@@ -75,7 +74,6 @@ class PoisonFilteringDefence(ABC):
 
         :param is_clean: 1-D array where is_clean[i]=1 means x_train[i] is clean and is_clean[i]=0 that it's poison.
         :param kwargs: Defence-specific parameters used by child classes.
-        :type kwargs: `dict`
         :return: JSON object with confusion matrix.
         """
         raise NotImplementedError
