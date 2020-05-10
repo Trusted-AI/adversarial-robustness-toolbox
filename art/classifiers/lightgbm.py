@@ -91,7 +91,6 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
                   `(nb_samples,)`.
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `lightgbm.Booster` and will be passed to this function as such.
-        :type kwargs: `dict`
         :raises `NotImplementedException`: This method is not supported for LightGBM classifiers.
         """
         raise NotImplementedError

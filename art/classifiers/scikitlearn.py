@@ -93,7 +93,6 @@ class ScikitlearnClassifier(Classifier):
                   `(nb_samples,)`.
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn` classifier and will be passed to this function as such.
-        :type kwargs: `dict`
         """
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -517,7 +516,6 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         :param model: scikit-learn AdaBoost Classifier model.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be

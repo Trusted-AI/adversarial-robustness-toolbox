@@ -189,7 +189,6 @@ class PyTorchClassifier(
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
-        :type kwargs: `dict`
         """
         import torch
 
@@ -240,7 +239,6 @@ class PyTorchClassifier(
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
-        :type kwargs: `dict`
         """
         import torch
         from art.data_generators import PyTorchDataGenerator
@@ -611,12 +609,11 @@ class PyTorchClassifier(
                     This is a wrapper for the input model.
                     """
 
-                    def __init__(self, model):
+                    def __init__(self, model: torch.nn.Module):
                         """
                         Initialization by storing the input model.
 
                         :param model: PyTorch model. The forward function of the model must return the logit output.
-                        :type model: is instance of `torch.nn.Module`
                         """
                         super(ModelWrapper, self).__init__()
                         self._model = model
@@ -654,12 +651,11 @@ class PyTorchClassifier(
                         return result
 
                     @property
-                    def get_layers(self):
+                    def get_layers(self) -> List[str]:
                         """
                         Return the hidden layers in the model, if applicable.
 
                         :return: The hidden layers in the model, input and output layers excluded.
-                        :rtype: `list`
 
                         .. warning:: `get_layers` tries to infer the internal structure of the model.
                                      This feature comes with no guarantees on the correctness of the result.

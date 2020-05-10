@@ -192,7 +192,6 @@ class TensorFlowClassifier(
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
-        :type kwargs: `dict`
         """
         # Check if train and output_ph available
         if self._train is None or self._labels_ph is None:
@@ -238,7 +237,6 @@ class TensorFlowClassifier(
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
-        :type kwargs: `dict`
         """
         from art.data_generators import TensorFlowDataGenerator
 
@@ -855,7 +853,6 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
-        :type kwargs: `dict`
         """
         import tensorflow as tf
         from art.data_generators import TensorFlowV2DataGenerator

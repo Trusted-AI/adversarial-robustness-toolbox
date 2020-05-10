@@ -120,8 +120,7 @@ class BlackBoxClassifier(Classifier):
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
-        :type kwargs: `dict`
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for blackbox classifiers.
         """
         raise NotImplementedError
 
@@ -140,6 +139,6 @@ class BlackBoxClassifier(Classifier):
         :param filename: Name of the file where to store the model.
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for blackbox classifiers.
         """
         raise NotImplementedError

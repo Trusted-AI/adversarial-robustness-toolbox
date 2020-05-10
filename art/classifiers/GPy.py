@@ -212,7 +212,6 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         :param x: Training data. Not used, as given to model in initialized earlier.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   `(nb_samples,)`.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 

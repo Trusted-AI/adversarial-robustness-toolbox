@@ -134,7 +134,6 @@ class MXClassifier(
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
-        :type kwargs: `dict`
         """
         import mxnet as mx
 
@@ -188,7 +187,6 @@ class MXClassifier(
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
-        :type kwargs: `dict`
         """
         import mxnet as mx
         from art.data_generators import MXDataGenerator

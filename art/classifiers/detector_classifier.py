@@ -133,8 +133,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
-        :type kwargs: `dict`
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for detector-classifiers.
         """
         raise NotImplementedError
 
@@ -148,8 +147,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
-        :type kwargs: `dict`
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for detector-classifiers.
         """
         raise NotImplementedError
 
@@ -291,7 +289,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
         :return: Array of gradients of the same shape as `x`.
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for detector-classifiers.
         """
         raise NotImplementedError
 
@@ -302,7 +300,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         Classifier and Detector wrapper.
 
         :return: The hidden layers in the model, input and output layers excluded.
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for detector-classifiers.
         """
         raise NotImplementedError
 
@@ -318,7 +316,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param layer: Layer for computing the activations.
         :param batch_size: Size of batches.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for detector-classifiers.
         """
         raise NotImplementedError
 

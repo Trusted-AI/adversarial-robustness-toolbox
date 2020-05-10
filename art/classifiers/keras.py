@@ -442,7 +442,6 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
-        :type kwargs: `dict`
         """
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -469,7 +468,6 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs as part of this argument will result in as error.
-        :type kwargs: `dict`
         """
         from art.data_generators import KerasDataGenerator
 

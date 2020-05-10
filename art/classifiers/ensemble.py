@@ -183,8 +183,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for ensembles.
         """
         raise NotImplementedError
 
@@ -199,8 +198,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
                           training in Keras, it will.
         :param nb_epochs: Number of epochs to use for trainings.
         :param kwargs: Dictionary of framework-specific argument.
-        :type kwargs: `dict`
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for ensembles.
         """
         raise NotImplementedError
 
@@ -210,12 +208,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         Return the hidden layers in the model, if applicable. This function is not supported for ensembles.
 
         :return: The hidden layers in the model, input and output layers excluded.
-        :raises: `NotImplementedException`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
+        :raises `NotImplementedException`: This method is not supported for ensembles.
         """
         raise NotImplementedError
 
@@ -231,7 +224,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param layer: Layer for computing the activations.
         :param batch_size: Size of batches.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for ensembles.
         """
         raise NotImplementedError
 
@@ -334,6 +327,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         :param filename: Name of the file where to store the model.
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for ensembles.
         """
         raise NotImplementedError

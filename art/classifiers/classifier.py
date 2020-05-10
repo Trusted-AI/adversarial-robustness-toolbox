@@ -179,7 +179,6 @@ class Classifier(abc.ABC, metaclass=input_filter):
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   `(nb_samples,)`.
         :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 
@@ -332,7 +331,6 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         Initialize a `ClassifierNeuralNetwork` object.
 
         :param channel_index: Index of the axis in input (feature) array `x` representing the color channels.
-        :type channel_index: `int`
         """
         self._channel_index = channel_index
         super().__init__(**kwargs)
@@ -368,7 +366,6 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         :param batch_size: The batch size used for evaluating the classifier's `model`.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
         """
         raise NotImplementedError
 
@@ -382,7 +379,6 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         :param generator: Batch generator providing `(x, y)` for each epoch.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
         """
         for _ in range(nb_epochs):
             for _ in range(int(generator.size / generator.batch_size)):
