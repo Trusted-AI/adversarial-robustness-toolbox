@@ -95,7 +95,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
@@ -134,7 +134,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`. This function is not supported for this detector.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
@@ -228,7 +228,7 @@ class BinaryActivationDetector(
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
 
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
@@ -271,7 +271,7 @@ class BinaryActivationDetector(
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`. This function is not supported for this detector.
 
-        :raises `NotImplementedException`:
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 

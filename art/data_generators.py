@@ -249,7 +249,7 @@ class TensorFlowDataGenerator(DataGenerator):
         and feedable mode, or an init_op used for the reinitializable mode.
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
-        :raises `TypeError`, `ValueError`:
+        :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
         # pylint: disable=E0401
         import tensorflow as tf
@@ -325,7 +325,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
         :param iterator: TensorFlow Dataset.
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
-        :raises `TypeError`, `ValueError`:
+        :raises `TypeError`, `ValueError`: If input paramaters are not valid.
         """
         # pylint: disable=E0401
         import tensorflow as tf

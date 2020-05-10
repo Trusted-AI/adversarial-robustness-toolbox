@@ -213,7 +213,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         Fit the detector using training data. Assumes that the classifier is already trained.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
@@ -221,7 +221,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         """
         Perform detection of adversarial data and return prediction as tuple.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
@@ -232,7 +232,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
@@ -271,7 +271,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`. This function is not supported for this detector.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
