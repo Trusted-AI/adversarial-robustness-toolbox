@@ -91,7 +91,7 @@ class Attack(abc.ABC, metaclass=input_filter):
 
     attack_params: List[str] = list()
 
-    def __init__(self, classifier: Optional["Classifier"]) -> None:
+    def __init__(self, classifier: "Classifier") -> None:
         """
         :param classifier: A trained classifier.
         """
@@ -115,12 +115,6 @@ class EvasionAttack(Attack):
     """
     Abstract base class for evasion attack classes.
     """
-
-    def __init__(self, classifier: "Classifier") -> None:
-        """
-        :param classifier: A trained classifier.
-        """
-        super().__init__(classifier)
 
     @abc.abstractmethod
     def generate(
@@ -147,7 +141,7 @@ class PoisoningAttackBlackBox(Attack):
         """
         Initializes black-box data poisoning attack.
         """
-        super().__init__(None)
+        super().__init__(None)  # type: ignore
 
     @abc.abstractmethod
     def poison(
@@ -169,12 +163,6 @@ class PoisoningAttackWhiteBox(Attack):
     Abstract base class for poisoning attack classes that have white-box access to the model (classifier object).
     """
 
-    def __init__(self, classifier: "Classifier") -> None:
-        """
-        :param classifier: A trained classifier.
-        """
-        super(PoisoningAttackWhiteBox, self).__init__(classifier)
-
     @abc.abstractmethod
     def poison(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -195,12 +183,6 @@ class ExtractionAttack(Attack):
     """
     Abstract base class for extraction attack classes.
     """
-
-    def __init__(self, classifier: "Classifier") -> None:
-        """
-        :param classifier: A trained classifier targeted for extraction.
-        """
-        super().__init__(classifier)
 
     @abc.abstractmethod
     def extract(

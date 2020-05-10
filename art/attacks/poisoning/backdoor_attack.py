@@ -42,7 +42,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
 
     attack_params = PoisoningAttackBlackBox.attack_params + ["perturbation"]
 
-    def __init__(self, perturbation: Union[Callable, List[Callable]], **kwargs) -> None:
+    def __init__(self, perturbation: Union[Callable, List[Callable]]) -> None:
         """
         Initialize a backdoor poisoning attack.
 
