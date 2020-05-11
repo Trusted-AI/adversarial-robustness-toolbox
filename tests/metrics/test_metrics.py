@@ -372,7 +372,6 @@ class TestClever(unittest.TestCase):
 
 
 class TestWassersteinDistance(unittest.TestCase):
-
     def test_wasserstein_distance(self):
         batch_size = 3
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
