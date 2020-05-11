@@ -113,6 +113,7 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 **检测中毒攻击：**
 * 基于激活分析的探测器 ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
 * 根据数据来源进行检测 ([Baracaldo et al., 2018](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440))
+* 基于光谱特征的检测 ([Tran et al., 2018](https://papers.nips.cc/paper/8024-spectral-signatures-in-backdoor-attacks.pdf))
 
 
 ## 建立
