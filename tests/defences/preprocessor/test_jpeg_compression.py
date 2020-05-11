@@ -32,26 +32,24 @@ from art.utils import load_mnist
 
 logger = logging.getLogger(__name__)
 
-# TODO:
-# * add video test case
-# * add normalization option, e.g. image must be in range [0, 1] or [0, 255]
 
-
-class ImageInput:
+class DataGenerator:
     """
-    Create image batch.
+    Create image or video batch.
     """
 
-    def __init__(self, channels_first, channels, batch_size=2):
+    def __init__(self, channels_first, channels, image_data=True, batch_size=2):
         self.channels_first = channels_first
-        self.channels = channels
+        self.channels = (channels,)
         self.batch_size = batch_size
+        self.image_data = image_data
 
     def get_data(self):
+        temporal_index = () if self.image_data else (3,)
         if self.channels_first:
-            data_shape = (self.batch_size, self.channels, 12, 12)
+            data_shape = (self.batch_size,) + self.channels + temporal_index + (8, 12)
         else:
-            data_shape = (self.batch_size, 12, 12, self.channels)
+            data_shape = (self.batch_size,) + temporal_index + (8, 12) + self.channels
         return (255 * np.ones(data_shape)).astype(ART_NUMPY_DTYPE)
 
 
@@ -61,8 +59,20 @@ def image_batch(request, channels_first):
     Image fixtures of shape NHWC and NCHW.
     """
     channels = request.param
-    image_input = ImageInput(channels_first, channels)
+    image_input = DataGenerator(channels_first, channels)
     test_input = image_input.get_data()
+    test_output = test_input.copy()
+    return test_input, test_output
+
+
+@pytest.fixture(params=[1, 4], ids=["grayscale", "RGB"])
+def video_batch(request, channels_first):
+    """
+    Video fixtures of shape NFHWC and NCFHW.
+    """
+    channels = request.param
+    video_input = DataGenerator(channels_first, channels, image_data=False)
+    test_input = video_input.get_data()
     test_output = test_input.copy()
     return test_input, test_output
 
@@ -77,16 +87,24 @@ class TestJpegCompression:
     """Test JpegCompression."""
 
     @pytest.mark.parametrize("channels_first", [True, False])
-    def test_jpeg_compression(self, image_batch, channels_first):
-        # TODO: following line is not robust to video
+    def test_jpeg_compression_image_data(self, image_batch, channels_first):
         channel_index = 1 if channels_first else 3
         test_input, test_output = image_batch
         jpeg_compression = JpegCompression(clip_values=(0, 255), channel_index=channel_index)
 
         assert_array_equal(jpeg_compression(test_input)[0], test_output)
 
+    @pytest.mark.parametrize("channels_first", [True, False])
+    @pytest.mark.xfail(raises=NotImplementedError)
+    def test_jpeg_compression_video_data(self, video_batch, channels_first):
+        channel_index = 1 if channels_first else 4
+        test_input, test_output = video_batch
+        jpeg_compression = JpegCompression(clip_values=(0, 255), channel_index=channel_index)
+
+        assert_array_equal(jpeg_compression(test_input)[0], test_output)
+
     def test_channel_index_error(self):
-        exc_msg = "Data channel must be an integer equal to 1 or 2. The batch dimension is not a valid channel."
+        exc_msg = "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
         with pytest.raises(ValueError, match=exc_msg):
             JpegCompression(clip_values=(0, 255), channel_index=0)
 
