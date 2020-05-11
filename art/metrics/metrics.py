@@ -373,7 +373,7 @@ def wasserstein_distance(u_values, v_values, u_weights=None, v_weights=None):
 
     assert u_values.shape == v_values.shape
     if u_weights is not None:
-        assert  v_weights is not None
+        assert v_weights is not None
     if u_weights is None:
         assert v_weights is None
     if u_weights is not None and v_weights is not None:
