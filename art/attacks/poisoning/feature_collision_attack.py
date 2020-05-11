@@ -58,7 +58,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
 
     def __init__(self, classifier, target, feature_layer, learning_rate=500 * 255.0, decay_coeff=0.5,
-                 stopping_tol=1e-10, num_old_obj=40, max_iter=120, similarity_coeff=0.25, watermark=0.35,
+                 stopping_tol=1e-10, num_old_obj=40, max_iter=120, similarity_coeff=0.25, watermark=0.3,
                  **kwargs):
         """
         Initialize an SVM poisoning attack
@@ -160,10 +160,10 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                     last_m_objectives.append(new_objective)
 
             # Watermarking
-            final_poison = np.clip(old_attack[0] + 0.35 * self.target, *self.classifier.clip_values)
+            final_poison = np.clip(old_attack[0] + self.watermark * self.target, *self.classifier.clip_values)
             final_attacks.append(final_poison)
 
-        return np.array(final_attacks)
+        return np.vstack(final_attacks)
 
     def set_params(self, **kwargs):
         """
@@ -173,10 +173,11 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :type kwargs: `dict`
         :return: `True` when parsing was successful
         """
+        # TODO: finish this
         super(FeatureCollisionAttack, self).set_params(**kwargs)
         if self.learning_rate <= 0:
             raise ValueError("Learning rate must be strictly positive")
-        if self.max_iter <= 1:
+        if self.max_iter < 1:
             raise ValueError("Value of max_iter at least 1")
         if not isinstance(self.classifier, NeuralNetworkMixin):
             raise TypeError("Classifier must be a neural network")
@@ -191,10 +192,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :return: poison example closer in feature representation to target space
         :rtype: `np.ndarray`
         """
-        # target_feature_rep = self.classifier.get_activations(self.target, self.feature_layer, 1, intermediate=True)
-        # poison_feature_rep = self.classifier.get_activations(poison, self.feature_layer, 1, intermediate=True)
-        #
-        # attack_loss = self.classifier.normalize_tensor(poison_feature_rep - target_feature_rep)
         target_placeholder, target_feature_rep = self.classifier.get_activations(self.target, self.feature_layer, 1,
                                                                                  intermediate=True)
         poison_placeholder, poison_feature_rep = self.classifier.get_activations(poison, self.feature_layer, 1,

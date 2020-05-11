@@ -24,7 +24,6 @@ import logging
 
 import numpy as np
 import six
-from keras import Input
 
 from art.estimators.keras import KerasEstimator
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
@@ -98,7 +97,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         elif "<class 'keras" in str(type(model)):
             self.is_tensorflow = False
         else:
-            raise TypeError("Type of model not recognized:" + type(model))
+            raise TypeError("Type of model not recognized:" + str(type(model)))
 
         self._initialize_params(model, use_logits, input_layer, output_layer)
 
@@ -529,36 +528,19 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         Returns the gradient of the nn_function with respect to model input
 
-        :param nn_function: an intermediate tensor representation of the gradient function
+        :param nn_function: an intermediate tensor representation of the function to differentiate
         :type nn_function: a Keras tensor
-        :param tensors: the variables to differentiate
+        :param tensors: the tensors or variables to differentiate with respect to
         :type tensors: `list`
+        :param input_values: the inputs to evaluate the gradient
+        :type input_values: `list`
         :return: the gradient of the function w.r.t vars
         :rtype: `np.ndarray`
         """
         import keras.backend as k
-        # TODO: ensure the right type
-        # if not k.is_keras_tensor(nn_function):
-        #     raise TypeError("function must be a Keras tensor")
-        # if not all(k.is_keras_tensor(v) for v in tensors):
-        #     raise TypeError("variables must be Keras tensors")
-
-        # loss_output = k.function([tensors], [nn_function])
-        # print(loss_output([input_values]))
-        # target_img = k.placeholder(shape=target.shape)
-        # poison_img = k.placeholder(shape=input_values.shape)
-        # placeholders = [k.placeholder(shape=input_val.shape) for input_val in input_values]
-        # TODO: replace these with get_activations
-        # poison_features = self._model.get_layer('average_pooling2d_1')(poison_img)
-        # target_features = self._model.get_layer('average_pooling2d_1')(target_img)
-        # TODO: replace these
-        # loss = k.l2_normalize(poison_features - target_features)
-        # grads = k.gradients(loss, poison_img)[0]
+        # TODO: ensure the right type of input
         grads = k.gradients(nn_function, tensors[0])[0]
-        # print("grad func: " + str(grads))
         outputs = k.function(tensors, [grads])
-        # print("tensors shape: " + str(tensors))
-        # print("input values shape: " + str(input_values.shape))
         return outputs(input_values)
 
     def normalize_tensor(self, tensor):
