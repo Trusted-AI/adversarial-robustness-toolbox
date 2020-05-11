@@ -117,6 +117,7 @@ class JpegCompression(Preprocessor):
         x_local = x_local.astype("uint8")
 
         # Convert to 'L' mode
+        # TODO: remove
         if x_local.shape[-1] == 1:
             x_local = np.reshape(x_local, x_local.shape[:-1])
 
@@ -127,9 +128,6 @@ class JpegCompression(Preprocessor):
             elif x_i.shape[-1] == 3:
                 x_i = Image.fromarray(x_i, mode="RGB")
             else:
-                import pdb
-
-                pdb.set_trace()
                 logger.log(level=40, msg="Currently only support `RGB` and `L` images.")
                 raise NotImplementedError("Currently only support `RGB` and `L` images.")
 
@@ -138,9 +136,11 @@ class JpegCompression(Preprocessor):
             x_i = Image.open(out)
             x_i = np.array(x_i)
             x_local[i] = x_i
+            # TODO replace with out.close()
             del out
 
         # Expand dim if black/white images
+        # TODO remove
         if len(x_local.shape) < 4:
             x_local = np.expand_dims(x_local, 3)
 
@@ -182,9 +182,9 @@ class JpegCompression(Preprocessor):
         if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
             raise ValueError("Image quality must be a positive integer <= 100.")
 
-        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3]):
+        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3, 4]):
             raise ValueError(
-                "Data channel must be an integer equal to 1 or 2. The batch dimension is not a valid channel."
+                "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
             )
 
         if len(self.clip_values) != 2:
