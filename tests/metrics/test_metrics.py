@@ -373,8 +373,13 @@ class TestClever(unittest.TestCase):
 
 class TestWassersteinDistance(unittest.TestCase):
     def test_wasserstein_distance(self):
+        nb_train = 1000
+        nb_test = 100
         batch_size = 3
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+
+        x_train = x_train[0:nb_train]
+        x_test = x_test[0:nb_test]
 
         wd_0 = wasserstein_distance(x_train[:batch_size], x_train[:batch_size])
         wd_1 = wasserstein_distance(x_train[:batch_size], x_test[:batch_size])
@@ -382,8 +387,8 @@ class TestWassersteinDistance(unittest.TestCase):
         np.testing.assert_array_equal(wd_0, np.asarray([0.0, 0.0, 0.0]))
         np.testing.assert_array_almost_equal(wd_1, np.asarray([0.04564, 0.01235, 0.04787]), decimal=4)
 
-        np.testing.assert_array_equal(x_train.shape, np.asarray([1000, 28, 28, 1]))
-        np.testing.assert_array_equal(x_test.shape, np.asarray([100, 28, 28, 1]))
+        np.testing.assert_array_equal(x_train.shape, np.asarray([nb_train, 28, 28, 1]))
+        np.testing.assert_array_equal(x_test.shape, np.asarray([nb_test, 28, 28, 1]))
 
 
 if __name__ == "__main__":
