@@ -108,8 +108,11 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             alpha=alpha,
         )
 
-    def _predict_model(self, x, batch_size=128):
-        return TensorFlowV2Classifier.predict(self, x=x, batch_size=128)
+    def _predict_classifier(self, x, batch_size):
+        return TensorFlowV2Classifier.predict(self, x=x, batch_size=batch_size)
+
+    def _fit_classifier(self, x, y, batch_size, nb_epochs, **kwargs):
+        return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def loss_gradient(self, x, y, **kwargs):
         """
@@ -132,20 +135,17 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                 inputs_t = tf.convert_to_tensor(x_preprocessed)
                 tape.watch(inputs_t)
 
-                num_noise_vectors = 32
-
-                inputs_repeat_t = tf.repeat(inputs_t, repeats=num_noise_vectors, axis=0)
+                inputs_repeat_t = tf.repeat(inputs_t, repeats=self.sample_size, axis=0)
 
                 noise = (
                     tf.random.normal(
                         shape=inputs_repeat_t.shape,
                         mean=0.0,
-                        stddev=1.0,
+                        stddev=self.scale,
                         dtype=inputs_repeat_t.dtype,
                         seed=None,
                         name=None,
                     )
-                    * self.scale
                 )
 
                 inputs_noise_t = inputs_repeat_t + noise
@@ -159,7 +159,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                 softmax = tf.nn.softmax(model_outputs, axis=1, name=None)
 
                 average_softmax = tf.reduce_mean(
-                    tf.reshape(softmax, shape=(-1, num_noise_vectors, model_outputs.shape[-1])), axis=1
+                    tf.reshape(softmax, shape=(-1, self.sample_size, model_outputs.shape[-1])), axis=1
                 )
 
                 loss = tf.reduce_mean(

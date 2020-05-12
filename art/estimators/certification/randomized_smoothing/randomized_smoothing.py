@@ -28,6 +28,9 @@ import logging
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
+from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
+
 logger = logging.getLogger(__name__)
 
 
@@ -55,7 +58,7 @@ class RandomizedSmoothingMixin(ABC):
         self.scale = scale
         self.alpha = alpha
 
-    def _predict_model(self, x, batch_size=128):
+    def _predict_classifier(self, x, batch_size):
         """
         Perform prediction for a batch of inputs.
 
@@ -106,6 +109,48 @@ class RandomizedSmoothingMixin(ABC):
         if n_abstained > 0:
             print("%s prediction(s) abstained." % n_abstained)
         return np.array(prediction)
+
+    def _fit_classifier(self, x, y, batch_size, nb_epochs, **kwargs):
+        """
+         Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        raise NotImplementedError
+
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+        """
+        Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        ga = GaussianAugmentation(sigma=self.scale, augmentation=False)
+        x_rs, _ = ga(x)
+        self._fit_classifier(x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def certify(self, x, n):
         """
@@ -161,7 +206,7 @@ class RandomizedSmoothingMixin(ABC):
         # augment x
         x = np.expand_dims(x, axis=0)
         x = np.repeat(x, n, axis=0)
-        x = x + np.random.normal(scale=self.scale, size=x.shape)
+        x = x + np.random.normal(scale=self.scale, size=x.shape).astype(ART_NUMPY_DTYPE)
 
         return x
 
@@ -178,7 +223,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
-        predictions = self._predict_model(x=x_new, batch_size=batch_size)
+        predictions = self._predict_classifier(x=x_new, batch_size=batch_size)
 
         # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)

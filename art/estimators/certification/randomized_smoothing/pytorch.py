@@ -113,9 +113,13 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             alpha=alpha,
         )
 
-    def _predict_model(self, x, batch_size=128):
+    def _predict_classifier(self, x, batch_size):
         x = x.astype(np.float32)
-        return PyTorchClassifier.predict(self, x=x, batch_size=128)
+        return PyTorchClassifier.predict(self, x=x, batch_size=batch_size)
+
+    def _fit_classifier(self, x, y, batch_size, nb_epochs, **kwargs):
+        x = x.astype(np.float32)
+        return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def loss_gradient(self, x, y, **kwargs):
         """
@@ -145,9 +149,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         # Convert the labels to Tensors
         labels_t = torch.from_numpy(y_preprocessed).to(self._device)
 
-        num_noise_vectors = 32
-
-        inputs_repeat_t = inputs_t.repeat_interleave(num_noise_vectors, 0)
+        inputs_repeat_t = inputs_t.repeat_interleave(self.sample_size, 0)
 
         noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
 
@@ -160,7 +162,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         softmax = torch.nn.functional.softmax(model_outputs, dim=1)
 
         average_softmax = (
-            softmax.reshape(-1, num_noise_vectors, model_outputs.shape[-1]).mean(1, keepdim=True).squeeze(1)
+            softmax.reshape(-1, self.sample_size, model_outputs.shape[-1]).mean(1, keepdim=True).squeeze(1)
         )
 
         log_softmax = torch.log(average_softmax.clamp(min=1e-20))
