@@ -185,6 +185,42 @@ class Wasserstein(EvasionAttack):
 
         return adv_x
 
+    def _compute(self, x, x_init, y, eps, eps_step, cost_matrix):
+        """
+        Compute adversarial examples for one iteration.
+        :param x: Current adversarial examples.
+        :type x: `torch.Tensor`
+        :param x_init: An array with the original inputs.
+        :type x_init: `torch.Tensor`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :type y: `torch.Tensor`
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :type eps: `float`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
+        :param cost_matrix: A non-negative cost matrix.
+        :type cost_matrix: `np.ndarray`
+        :return: Adversarial examples.
+        :rtype: `torch.Tensor`
+        """
+        # Get perturbation
+        perturbation = self._compute_perturbation(x, y, cost_matrix)
+
+        # Apply perturbation
+        x_adv = self._apply_perturbation(x, perturbation, eps_step)
+
+        # Do projection
+        perturbation = self._projection(x_adv - x_init, eps, self.norm, cost_matrix)
+
+        # Recompute x_adv
+        x_adv = perturbation + x_init
+
+        return x_adv
+
+
 
 
     def set_params(self, **kwargs):
