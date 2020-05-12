@@ -86,7 +86,14 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
     attack_feature = 2 # petal length
     # values = [0.14, 0.42, 0.57, 0.71, 0.85] # rounded down
     values = [0.14, 0.42, 0.71]  # rounded down
-    priors = [50/150, 11/150, 43/150, 35/150, 11/150]
+    # priors = [50/150, 11/150, 43/150, 35/150, 11/150]
+    priors = [50 / 150, 54 / 150, 46 / 150]
+
+    # need to transform attacked feature into categorical
+    def transform_feature(x):
+        x[x > 0.5] = 2.0
+        x[(x > 0.2) & (x <= 0.5)] = 1.0
+        x[x <= 0.2] = 0.0
 
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
     x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
@@ -103,8 +110,8 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
         train_diff = np.abs(inferred_train - x_train_feature)
         test_diff = np.abs(inferred_test - x_test_feature)
-        # print(sum(train_diff) / len(inferred_train))
-        # print(sum(test_diff) / len(inferred_test))
+        print(sum(train_diff) / len(inferred_train))
+        print(sum(test_diff) / len(inferred_test))
         # assert sum(train_diff) / len(inferred_train) < sum(test_diff) / len(inferred_test)
 
 def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
@@ -116,7 +123,8 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
     attack_feature = 2 # petal length
     # values = [0.14, 0.42, 0.57, 0.71, 0.85] # rounded down
     values = [0.14, 0.42, 0.71]  # rounded down
-    priors = [50/150, 11/150, 43/150, 35/150, 11/150]
+    # priors = [50/150, 11/150, 43/150, 35/150, 11/150]
+    priors = [50 / 150, 54 / 150, 46 / 150]
 
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
     x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
@@ -133,8 +141,8 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
         train_diff = np.abs(inferred_train - x_train_feature)
         test_diff = np.abs(inferred_test - x_test_feature)
-        # print(sum(train_diff) / len(inferred_train))
-        # print(sum(test_diff) / len(inferred_test))
+        print(sum(train_diff) / len(inferred_train))
+        print(sum(test_diff) / len(inferred_test))
         # assert sum(train_diff) / len(inferred_train) < sum(test_diff) / len(inferred_test)
 
 if __name__ == "__main__":
