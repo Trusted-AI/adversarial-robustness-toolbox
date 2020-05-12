@@ -75,6 +75,12 @@ class AttributeInferenceBlackBox(InferenceAttack):
         :return: None
         """
 
+        # Checks:
+        if self.estimator.input_shape[0] != x.shape[1]:
+            raise ValueError(
+                 'Shape of x does not match input_shape of classifier'
+            )
+
         # get model's predictions for x
         predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1,1)
 
@@ -99,6 +105,16 @@ class AttributeInferenceBlackBox(InferenceAttack):
         :return: The inferred feature values.
         :rtype: `np.ndarray`
         """
+
+        # Checks:
+        if y.shape[0] != x.shape[0]:
+            raise ValueError(
+                'Number of rows in x and y do not match'
+            )
+        if self.estimator.input_shape[0] != x.shape[1] + 1:
+            raise ValueError(
+                'Number of features in x + 1 does not match input_shape of classifier'
+            )
 
         x_test = np.concatenate((x, y), axis=1)
         return self.attack_model.predict(x_test)
@@ -149,6 +165,17 @@ class AttributeInferenceWhiteBoxLifestyle(InferenceAttack):
         """
         priors = kwargs.get("priors")
         values = kwargs.get("values")
+
+        # Checks:
+        if self.estimator.input_shape[0] != x.shape[1] + 1:
+            raise ValueError(
+                'Number of features in x + 1 does not match input_shape of classifier'
+            )
+        if len(priors) != len(values):
+            raise ValueError(
+                'Number of priors does not match number of values'
+            )
+
         n_samples = x.shape[0]
 
         # Calculate phi for each possible value of the attacked feature
@@ -243,6 +270,21 @@ class AttributeInferenceWhiteBox(InferenceAttack):
         """
         priors = kwargs.get("priors")
         values = kwargs.get("values")
+
+        # Checks:
+        if self.estimator.input_shape[0] != x.shape[1] + 1:
+            raise ValueError(
+                'Number of features in x + 1 does not match input_shape of classifier'
+            )
+        if len(priors) != len(values):
+            raise ValueError(
+                'Number of priors does not match number of values'
+            )
+        if y.shape[0] != x.shape[0]:
+            raise ValueError(
+                'Number of rows in x and y do not match'
+            )
+
         n_values = len(values)
         n_samples = x.shape[0]
 
