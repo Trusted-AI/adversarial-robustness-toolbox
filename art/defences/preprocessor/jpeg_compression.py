@@ -93,67 +93,71 @@ class JpegCompression(Preprocessor):
         :return: compressed sample.
         :rtype: `np.ndarray`
         """
-        from PIL import Image
 
-        if len(x.shape) == 2:
+        def jpeg_compress(x, quality, mode):
+            """
+            Apply JPEG compression to image input.
+            """
+            from PIL import Image
+
+            tmp_jpeg = BytesIO()
+            x_image = Image.fromarray(x, mode=mode)
+            x_image.save(tmp_jpeg, format="jpeg", quality=quality)
+            x_jpeg = np.array(Image.open(tmp_jpeg))
+            tmp_jpeg.close()
+            return x_jpeg
+
+        if x.ndim == 2:
             raise ValueError(
                 "Feature vectors detected. JPEG compression can only be applied to data with spatial dimensions."
             )
 
-        if np.min(x) < 0.0:
+        if x.min() < 0.0:
             raise ValueError(
                 "Negative values in input `x` detected. The JPEG compression defence requires unnormalized input."
             )
 
         # Swap channel index
-        if self.channel_index < 3 and len(x.shape) == 4:
-            x_local = np.swapaxes(x, self.channel_index, 3)
+        if self.channel_index == 1 and x.ndim == 4:
+            # NCHW to NHWC
+            x = np.transpose(x, (0, 2, 3, 1))
+
+        # Set image mode
+        if x.shape[-1] == 1 and x.ndim == 4:
+            image_mode = "L"
+        elif x.shape[-1] == 3 and x.ndim == 4:
+            image_mode = "RGB"
         else:
-            x_local = x.copy()
+            raise NotImplementedError("Currently only support `RGB` and `L` images.")
 
         # Convert into `uint8`
         if self.clip_values[1] == 1.0:
-            x_local = x_local * 255
-        x_local = x_local.astype("uint8")
+            x = x * 255
+        x = x.astype("uint8")
 
-        # Convert to 'L' mode
-        # TODO: remove
-        if x_local.shape[-1] == 1:
-            x_local = np.reshape(x_local, x_local.shape[:-1])
+        # Prepare grayscale images for "L" mode
+        if image_mode == "L":
+            x = np.squeeze(x, axis=-1)
 
         # Compress one image at a time
-        for i, x_i in enumerate(x_local):
-            if len(x_i.shape) == 2:
-                x_i = Image.fromarray(x_i, mode="L")
-            elif x_i.shape[-1] == 3:
-                x_i = Image.fromarray(x_i, mode="RGB")
-            else:
-                logger.log(level=40, msg="Currently only support `RGB` and `L` images.")
-                raise NotImplementedError("Currently only support `RGB` and `L` images.")
+        x_jpeg = x.copy()
+        for i, x_i in enumerate(x):
+            x_jpeg[i] = jpeg_compress(x_i, self.quality, image_mode)
 
-            out = BytesIO()
-            x_i.save(out, format="jpeg", quality=self.quality)
-            x_i = Image.open(out)
-            x_i = np.array(x_i)
-            x_local[i] = x_i
-            # TODO replace with out.close()
-            del out
+        # Undo preparation grayscale images for "L" mode
+        if image_mode == "L":
+            x_jpeg = np.expand_dims(x_jpeg, axis=-1)
 
-        # Expand dim if black/white images
-        # TODO remove
-        if len(x_local.shape) < 4:
-            x_local = np.expand_dims(x_local, 3)
-
-        # Convert to old dtype
+        # Convert to ART dtype
         if self.clip_values[1] == 1.0:
-            x_local = x_local / 255.0
-        x_local = x_local.astype(ART_NUMPY_DTYPE)
+            x_jpeg = x_jpeg / 255.0
+        x_jpeg = x_jpeg.astype(ART_NUMPY_DTYPE)
 
         # Swap channel index
-        if self.channel_index < 3:
-            x_local = np.swapaxes(x_local, self.channel_index, 3)
-
-        return x_local, y
+        if self.channel_index == 1 and x_jpeg.ndim == 4:
+            # NHWC to NCHW
+            x_jpeg = np.transpose(x_jpeg, (0, 3, 1, 2))
+        return x_jpeg, y
 
     def estimate_gradient(self, x, grad):
         return grad
