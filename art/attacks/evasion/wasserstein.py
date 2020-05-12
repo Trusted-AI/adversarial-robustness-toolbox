@@ -108,8 +108,8 @@ class Wasserstein(EvasionAttack):
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :type y: `np.ndarray`
-        :param cost: A non-negative cost matrix.
-        :type cost: `np.ndarray`
+        :param cost_matrix: A non-negative cost matrix.
+        :type cost_matrix: `np.ndarray`
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -127,7 +127,9 @@ class Wasserstein(EvasionAttack):
             targets = y
 
         # Compute the cost matrix if needed
-
+        cost_matrix = kwargs.get("cost_matrix")
+        if cost_matrix is None:
+            cost_matrix = self._compute_cost_matrix()
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
@@ -137,32 +139,51 @@ class Wasserstein(EvasionAttack):
             batch = x[batch_index_1: batch_index_2]
             batch_labels = targets[batch_index_1: batch_index_2]
 
-            x_adv[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels)
-
-
-
-
+            x_adv[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, cost_matrix)
 
         return x_adv
 
-
-    def _compute_cost_matrix(self, x):
+    def _compute_cost_matrix(self):
         """
         Compute the default cost matrix.
 
-        :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :return: The cost matrix.
         :rtype: `np.ndarray`
         """
         center = self.kernel_size // 2
-        cost_matrix = x.new_zeros(self.kernel_size, self.kernel_size)
+        cost_matrix = np.zeros((self.kernel_size, self.kernel_size))
 
         for i in range(self.kernel_size):
             for j in range(self.kernel_size):
                 cost_matrix[i, j] = (abs(i - center) ** 2 + abs(j - center) ** 2) ** (self.p / 2)
 
         return cost_matrix
+
+    def _generate_batch(self, x, targets, cost_matrix):
+        """
+        Generate a batch of adversarial samples and return them in an array.
+
+        :param x: An array with the original inputs.
+        :type x: `np.ndarray`
+        :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+        :type targets: `np.ndarray`
+        :param cost_matrix: A non-negative cost matrix.
+        :type cost_matrix: `np.ndarray`
+        :return: Adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        adv_x = x.copy()
+        for _ in range(self.max_iter):
+            adv_x = self._compute(
+                adv_x,
+                x,
+                targets,
+                self.eps,
+                self.eps_step,
+                cost_matrix
+            )
+
+        return adv_x
 
 
 
