@@ -145,7 +145,7 @@ class TestSVMAttack(unittest.TestCase):
 
     def test_SVC_kernels(self):
         """
-        First test with the TFClassifier.
+        First test with the TensorFlowClassifier.
         :return:
         """
         # Get MNIST

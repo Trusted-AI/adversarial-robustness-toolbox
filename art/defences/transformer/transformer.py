@@ -35,7 +35,7 @@ class Transformer(abc.ABC):
         Create a transformation object.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         """
         self.classifier = classifier
         self._is_fitted = False
@@ -55,7 +55,7 @@ class Transformer(abc.ABC):
         Get the internal classifier.
 
         :return: The internal classifier.
-        :rtype: :class:`art.classifiers.Classifier`
+        :rtype: :class:`art.estimators.classification.Classifier`
         """
         return self.classifier
 
@@ -67,9 +67,9 @@ class Transformer(abc.ABC):
         :param x: Dataset for training the transformed classifier.
         :type x: `np.ndarray`
         :param transformed_classifier: A classifier to be transformed for increased robustness.
-        :type transformed_classifier: :class:`art.classifiers.Classifier`
+        :type transformed_classifier: :class:`art.estimators.classification.Classifier`
         :return: The transformed classifier.
-        :rtype: :class:`art.classifiers.Classifier`
+        :rtype: :class:`art.estimators.classification.Classifier`
         """
         raise NotImplementedError
 
