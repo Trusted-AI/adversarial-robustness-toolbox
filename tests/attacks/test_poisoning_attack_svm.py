@@ -64,7 +64,7 @@ class TestSVMAttack(unittest.TestCase):
         return dup
 
     @classmethod
-    def setUpIRIS(self):
+    def setUpIRIS(cls):
         (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()
         # Naturally IRIS has labels 0, 1, and 2. For binary classification use only classes 1 and 2.
         no_zero = np.where(np.argmax(y_train, axis=1) != 0)
@@ -89,13 +89,13 @@ class TestSVMAttack(unittest.TestCase):
 
         x_train = x_train[: int(0.9 * n_sample)]
         y_train = y_train[: int(0.9 * n_sample)]
-        train_dups = self.find_duplicates(x_train)
+        train_dups = cls.find_duplicates(x_train)
         x_train = x_train[np.logical_not(train_dups)]
         y_train = y_train[np.logical_not(train_dups)]
-        test_dups = self.find_duplicates(x_test)
+        test_dups = cls.find_duplicates(x_test)
         x_test = x_test[np.logical_not(test_dups)]
         y_test = y_test[np.logical_not(test_dups)]
-        self.iris = (x_train, y_train), (x_test, y_test), min_, max_
+        cls.iris = (x_train, y_train), (x_test, y_test), min_, max_
 
     def setUp(self):
         super().setUp()
