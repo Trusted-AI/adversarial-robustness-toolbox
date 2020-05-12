@@ -102,7 +102,7 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
     x_test_feature = x_test_iris[:, attack_feature]
 
     for classifier in classifier_list:
-        # print(classifier)
+        print(classifier)
         attack = AttributeInferenceWhiteBox(classifier, attack_feature=attack_feature)
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1,1)
@@ -112,7 +112,8 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
         test_diff = np.abs(inferred_test - x_test_feature)
         print(sum(train_diff) / len(inferred_train))
         print(sum(test_diff) / len(inferred_test))
-        # assert sum(train_diff) / len(inferred_train) < sum(test_diff) / len(inferred_test)
+        if type(classifier).__name__ is not 'ScikitlearnDecisionTreeClassifier':
+            assert sum(train_diff) / len(inferred_train) < sum(test_diff) / len(inferred_test)
 
 def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
     classifier_list = get_tabular_classifier_list(AttributeInferenceWhiteBoxLifestyle)
@@ -141,9 +142,9 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
         train_diff = np.abs(inferred_train - x_train_feature)
         test_diff = np.abs(inferred_test - x_test_feature)
-        print(sum(train_diff) / len(inferred_train))
-        print(sum(test_diff) / len(inferred_test))
-        # assert sum(train_diff) / len(inferred_train) < sum(test_diff) / len(inferred_test)
+        # print(sum(train_diff) / len(inferred_train))
+        # print(sum(test_diff) / len(inferred_test))
+        assert sum(train_diff) / len(inferred_train) < sum(test_diff) / len(inferred_test)
 
 if __name__ == "__main__":
     pytest.cmdline.main("-q {} --mlFramework=scikitlearn --durations=0".format(__file__).split(" "))
