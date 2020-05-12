@@ -67,7 +67,7 @@ class Wasserstein(EvasionAttack):
         p=2,
         kernel_size=5,
         alpha=0.1,
-        norm=np.Inf,
+        norm='wasserstein',
         ball='wasserstein',
         epsilon=0.001,
         epsilon_factor=1.17,
@@ -188,15 +188,16 @@ class Wasserstein(EvasionAttack):
     def _compute(self, x, x_init, y, eps, eps_step, cost_matrix):
         """
         Compute adversarial examples for one iteration.
+
         :param x: Current adversarial examples.
-        :type x: `torch.Tensor`
+        :type x: `np.ndarray`
         :param x_init: An array with the original inputs.
-        :type x_init: `torch.Tensor`
+        :type x_init: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `torch.Tensor`
+        :type y: `np.ndarray`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
@@ -204,13 +205,10 @@ class Wasserstein(EvasionAttack):
         :param cost_matrix: A non-negative cost matrix.
         :type cost_matrix: `np.ndarray`
         :return: Adversarial examples.
-        :rtype: `torch.Tensor`
+        :rtype: `np.ndarray`
         """
-        # Get perturbation
-        perturbation = self._compute_perturbation(x, y, cost_matrix)
-
-        # Apply perturbation
-        x_adv = self._apply_perturbation(x, perturbation, eps_step)
+        # Compute and apply perturbation
+        x_adv = self._compute_apply_perturbation(x, y, eps_step, cost_matrix)
 
         # Do projection
         perturbation = self._projection(x_adv - x_init, eps, self.norm, cost_matrix)
@@ -220,7 +218,58 @@ class Wasserstein(EvasionAttack):
 
         return x_adv
 
+    def _compute_apply_perturbation(self, x, y, eps_step, cost_matrix):
+        """
+        Compute perturbations.
 
+        :param x: Current adversarial examples.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :type y: `np.ndarray`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
+        :param cost_matrix: A non-negative cost matrix.
+        :type cost_matrix: `np.ndarray`
+        :return: Perturbations.
+        :rtype: `np.ndarray`
+        """
+        # Pick a small scalar to avoid division by 0
+        tol = 10e-8
+
+        # Get gradient wrt loss; invert it if attack is targeted
+        grad = self.estimator.loss_gradient(x, y) * (1 - 2 * int(self.targeted))
+
+        # Apply norm bound
+        if self.norm == np.inf:
+            grad = np.sign(grad)
+            x_adv = x + eps_step * grad
+
+        elif self.norm == 1:
+            ind = tuple(range(1, len(x.shape)))
+            grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
+            x_adv = x + eps_step * grad
+
+        elif self.norm == 2:
+            ind = tuple(range(1, len(x.shape)))
+            grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
+            x_adv = x + eps_step * grad
+
+        elif self.norm == 'wasserstein':
+            x_adv = self._conjugate_sinkhorn_optimizer()
+
+        else:
+            raise ValueError("This norm is not supported.")
+
+        return x_adv
+
+    def _conjugate_sinkhorn_optimizer(self):
+        """
+
+        :return:
+        """
 
 
     def set_params(self, **kwargs):
