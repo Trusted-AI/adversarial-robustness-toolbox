@@ -30,7 +30,6 @@ import numpy as np
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.attacks.attack import EvasionAttack
-from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -69,9 +68,6 @@ class DPatch(EvasionAttack):
         :type batch_size: `int`
         """
         super(DPatch, self).__init__(estimator=estimator)
-
-        if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
-            raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         kwargs = {
             "patch_shape": patch_shape,
