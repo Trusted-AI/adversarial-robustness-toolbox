@@ -48,7 +48,7 @@ class AttributeInferenceBlackBox(InferenceAttack):
 
     attack_params = InferenceAttack.attack_params + ["attack_feature"]
 
-    _estimator_requirements = (BaseEstimator)
+    _estimator_requirements = [BaseEstimator]
 
     def __init__(self, classifier, attack_feature=0):
         """
@@ -76,13 +76,13 @@ class AttributeInferenceBlackBox(InferenceAttack):
         """
 
         # get model's predictions for x
-        predictions = self.estimator.predict(x)
+        predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1,1)
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
 
         # create training set for attack model
-        x_train = np.concatenate(np.delete(x, self.attack_feature, 1), predictions, axis=1)
+        x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1)
 
         # train attack model
         self.attack_model = MLPClassifier()
@@ -100,7 +100,7 @@ class AttributeInferenceBlackBox(InferenceAttack):
         :rtype: `np.ndarray`
         """
 
-        x_test = np.concatenate(x, y, axis=1)
+        x_test = np.concatenate((x, y), axis=1)
         return self.attack_model.predict(x_test)
 
 class AttributeInferenceWhiteBoxLifestyle(InferenceAttack):
@@ -161,22 +161,22 @@ class AttributeInferenceWhiteBoxLifestyle(InferenceAttack):
         for i, value in enumerate(values):
             # prepare data with the given value in the attacked feature
             v = np.full((n_samples, 1), value)
-            x_value = np.concatenate(x[:,:self.attack_feature], v, axis=1)
-            x_value = np.concatenate(x_value, x[:,self.attack_feature:], axis=1)
+            x_value = np.concatenate((x[:,:self.attack_feature], v), axis=1)
+            x_value = np.concatenate((x_value, x[:,self.attack_feature:]), axis=1)
             # find the relative probability of this value for all samples being attacked
             prob_value = [((self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[0]) / n_samples) * priors[i] / phi[i])
                           for row in x_value]
             prob_values.append(prob_value)
 
         # Choose the value with highest probability for each sample
-        return [np.argmax(list(prob)) for prob in zip(prob_values)]
+        return [np.argmax(list(prob)) for prob in zip(*prob_values)]
 
     def _calculate_phi(self, x, values, n_samples):
         phi = []
         for value in values:
             v = np.full((n_samples, 1), value)
-            x_value = np.concatenate(x[:,:self.attack_feature], v, axis=1)
-            x_value = np.concatenate(x_value, x[:,self.attack_feature:], axis=1)
+            x_value = np.concatenate((x[:,:self.attack_feature], v), axis=1)
+            x_value = np.concatenate((x_value, x[:,self.attack_feature:]), axis=1)
             nodes_value = {}
 
             for row in x_value:
@@ -254,23 +254,23 @@ class AttributeInferenceWhiteBox(InferenceAttack):
         for i, value in enumerate(values):
             # prepare data with the given value in the attacked feature
             v = np.full((n_samples, 1), value)
-            x_value = np.concatenate(x[:,:self.attack_feature], v, axis=1)
-            x_value = np.concatenate(x_value, x[:,self.attack_feature:], axis=1)
+            x_value = np.concatenate((x[:,:self.attack_feature], v), axis=1)
+            x_value = np.concatenate((x_value, x[:,self.attack_feature:]), axis=1)
 
             # Obtain the model's prediction for each possible value of the attacked feature
-            pred_value = self.estimator.predict(x_value)
+            pred_value = [np.argmax(arr) for arr in self.estimator.predict(x_value)]
             pred_values.append(pred_value)
 
             # find the relative probability of this value for all samples being attacked
-            prob_value = [((self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[0]) / n_samples) * priors[i])
+            prob_value = [((self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[-1]) / n_samples) * priors[i])
                           for row in x_value]
             prob_values.append(prob_value)
 
         # Find the single value that coincides with the real prediction for the sample (if it exists)
-        pred_rows = zip(pred_values)
+        pred_rows = zip(*pred_values)
         predicted_pred = []
         for row_index, row in enumerate(pred_rows):
-            if y:
+            if y is not None:
                 matches = [1 if row[value_index] == y[row_index] else 0 for value_index in range(n_values)]
                 match_values = [row[value_index] if row[value_index] == y[row_index] else 0 for value_index in range(n_values)]
             else:
@@ -280,7 +280,7 @@ class AttributeInferenceWhiteBox(InferenceAttack):
 
 
         # Choose the value with highest probability for each sample
-        predicted_prob = [np.argmax(list(prob)) for prob in zip(prob_values)]
+        predicted_prob = [np.argmax(list(prob)) for prob in zip(*prob_values)]
 
         return [value if value is not None else predicted_prob[index] for index, value in enumerate(predicted_pred)]
 
