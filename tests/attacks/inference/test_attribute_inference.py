@@ -21,7 +21,8 @@ import logging
 import numpy as np
 import pytest
 
-from art.attacks.inference import AttributeInferenceWhiteBox, AttributeInferenceBlackBox, AttributeInferenceWhiteBoxLifestyle
+from art.attacks.inference import AttributeInferenceWhiteBoxDecisionTree, AttributeInferenceBlackBox, \
+    AttributeInferenceWhiteBoxLifestyleDecisionTree
 
 from tests.utils import ExpectedValue
 
@@ -78,7 +79,7 @@ def test_black_box(get_tabular_classifier_list, get_iris_dataset):
         assert train_acc > test_acc
 
 def test_white_box(get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(AttributeInferenceWhiteBox)
+    classifier_list = get_tabular_classifier_list(AttributeInferenceWhiteBoxDecisionTree)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
@@ -103,7 +104,7 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
 
     for classifier in classifier_list:
         print(classifier)
-        attack = AttributeInferenceWhiteBox(classifier, attack_feature=attack_feature)
+        attack = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=attack_feature)
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1,1)
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
@@ -116,7 +117,7 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
             assert sum(train_diff) / len(inferred_train) < sum(test_diff) / len(inferred_test)
 
 def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(AttributeInferenceWhiteBoxLifestyle)
+    classifier_list = get_tabular_classifier_list(AttributeInferenceWhiteBoxLifestyleDecisionTree)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
@@ -135,7 +136,7 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
 
     for classifier in classifier_list:
         # print(classifier)
-        attack = AttributeInferenceWhiteBoxLifestyle(classifier, attack_feature=attack_feature)
+        attack = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=attack_feature)
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1,1)
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
