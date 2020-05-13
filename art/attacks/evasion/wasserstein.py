@@ -337,7 +337,7 @@ class Wasserstein(EvasionAttack):
             conjugate_sinkhorn_max_iter,
     ):
         """
-        Compute perturbations.
+        Compute and apply perturbations.
 
         :param x: Current adversarial examples.
         :type x: `np.ndarray`
@@ -393,7 +393,9 @@ class Wasserstein(EvasionAttack):
             )
 
         else:
-            raise ValueError("This norm is not supported.")
+            raise NotImplementedError(
+                "Values of `norm` different from `1`, `2`, `inf` and `wasserstein` are currently not supported."
+            )
 
         return x_adv
 
@@ -412,39 +414,86 @@ class Wasserstein(EvasionAttack):
         """
         return 1
 
-    def _projection(values, eps, norm_p):
+    def _apply_projection(
+            self,
+            x,
+            x_init,
+            cost_matrix,
+            ball,
+            eps,
+            regularization,
+            projected_sinkhorn_max_iter
+    ):
         """
-        Project `values` on the L_p norm ball of size `eps`.
+        Apply projection on the ball of size `eps`.
 
-        :param values: Array of perturbations to clip.
-        :type values: `np.ndarray`
-        :param eps: Maximum norm allowed.
+        :param x: Current adversarial examples.
+        :type x: `np.ndarray`
+        :param x_init: An array with the original inputs.
+        :type x_init: `np.ndarray`
+        :param cost_matrix: A non-negative cost matrix.
+        :type cost_matrix: `np.ndarray`
+        :param ball: The ball of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
+        :type ball: `string`
+        :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
-        :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
-        :type norm_p: `int`
-        :return: Values of `values` after projection.
+        :param regularization: Entropy regularization.
+        :type regularization: `float`
+        :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
+        :type projected_sinkhorn_max_iter: `int`
+        :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
-        values_tmp = values.reshape((values.shape[0], -1))
 
-        if norm_p == 2:
+        if ball == '2':
+            values = x - x_init
+            values_tmp = values.reshape((values.shape[0], -1))
+
             values_tmp = values_tmp * np.expand_dims(
                 np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
             )
-        elif norm_p == 1:
+
+            values = values_tmp.reshape(values.shape)
+            x_adv = values + x_init
+
+        elif ball == '1':
+            values = x - x_init
+            values_tmp = values.reshape((values.shape[0], -1))
+
             values_tmp = values_tmp * np.expand_dims(
                 np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1
             )
-        elif norm_p == np.inf:
+
+            values = values_tmp.reshape(values.shape)
+            x_adv = values + x_init
+
+        elif ball == 'inf':
+            values = x - x_init
+            values_tmp = values.reshape((values.shape[0], -1))
+
             values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+
+            values = values_tmp.reshape(values.shape)
+            x_adv = values + x_init
+
+        elif ball == 'wasserstein':
+            x_adv = self._projected_sinkhorn_optimizer(
+                x,
+                x_init,
+                cost_matrix,
+                eps,
+                regularization,
+                projected_sinkhorn_max_iter
+            )
+
         else:
             raise NotImplementedError(
-                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
+                "Values of `ball` different from `1`, `2`, `inf` and `wasserstein` are currently not supported."
+            )
 
-        values = values_tmp.reshape(values.shape)
-        return values
+        return x_adv
 
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
