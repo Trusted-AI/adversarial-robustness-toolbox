@@ -45,7 +45,7 @@ class DataGenerator:
         self.image_data = image_data
 
     def get_data(self):
-        temporal_index = () if self.image_data else (3,)
+        temporal_index = () if self.image_data else (2,)
         if self.channels_first:
             data_shape = (self.batch_size,) + self.channels + temporal_index + (8, 12)
         else:
@@ -65,7 +65,7 @@ def image_batch(request, channels_first):
     return test_input, test_output
 
 
-@pytest.fixture(params=[1, 4], ids=["grayscale", "RGB"])
+@pytest.fixture(params=[1, 3], ids=["grayscale", "RGB"])
 def video_batch(request, channels_first):
     """
     Video fixtures of shape NFHWC and NCFHW.
@@ -95,7 +95,6 @@ class TestJpegCompression:
         assert_array_equal(jpeg_compression(test_input)[0], test_output)
 
     @pytest.mark.parametrize("channels_first", [True, False])
-    @pytest.mark.xfail(raises=NotImplementedError)
     def test_jpeg_compression_video_data(self, video_batch, channels_first):
         channel_index = 1 if channels_first else 4
         test_input, test_output = video_batch
