@@ -85,8 +85,8 @@ class JpegCompression(Preprocessor):
         """
         Apply JPEG compression to sample `x`.
 
-        :param x: Sample to compress with shape `(batch_size, width, height, depth)`. `x` values are expected to be in
-               the data range [0, 1].
+        :param x: Sample to compress with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`. `x` values are
+        expected to be in the data range [0, 1] or [0, 255].
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`
@@ -107,9 +107,15 @@ class JpegCompression(Preprocessor):
             tmp_jpeg.close()
             return x_jpeg
 
-        if x.ndim == 2:
+        x_ndim = x.ndim
+        if x_ndim == 2:
             raise ValueError(
                 "Feature vectors detected. JPEG compression can only be applied to data with spatial dimensions."
+            )
+
+        if x_ndim > 5:
+            raise ValueError(
+                "Unrecognized input dimension. JPEG compression can only be applied to image and video data."
             )
 
         if x.min() < 0.0:
@@ -118,22 +124,29 @@ class JpegCompression(Preprocessor):
             )
 
         # Swap channel index
-        if self.channel_index == 1 and x.ndim == 4:
-            # NCHW to NHWC
+        if self.channel_index == 1 and x_ndim == 4:
+            # image shape NCHW to NHWC
             x = np.transpose(x, (0, 2, 3, 1))
+        elif self.channel_index == 1 and x_ndim == 5:
+            # video shape NCFHW to NFHWC
+            x = np.transpose(x, (0, 2, 3, 4, 1))
 
-        # Set image mode
-        if x.shape[-1] == 1 and x.ndim == 4:
-            image_mode = "L"
-        elif x.shape[-1] == 3 and x.ndim == 4:
-            image_mode = "RGB"
-        else:
-            raise NotImplementedError("Currently only support `RGB` and `L` images.")
+        # insert temporal dimension to image data
+        if x_ndim == 4:
+            x = np.expand_dims(x, axis=1)
 
-        # Convert into `uint8`
+        # Convert into uint8
         if self.clip_values[1] == 1.0:
             x = x * 255
         x = x.astype("uint8")
+
+        # Set image mode
+        if x.shape[-1] == 1:
+            image_mode = "L"
+        elif x.shape[-1] == 3:
+            image_mode = "RGB"
+        else:
+            raise NotImplementedError("Currently only support `RGB` and `L` images.")
 
         # Prepare grayscale images for "L" mode
         if image_mode == "L":
@@ -141,8 +154,8 @@ class JpegCompression(Preprocessor):
 
         # Compress one image at a time
         x_jpeg = x.copy()
-        for i, x_i in enumerate(x):
-            x_jpeg[i] = jpeg_compress(x_i, self.quality, image_mode)
+        for idx in np.ndindex(x.shape[:2]):
+            x_jpeg[idx] = jpeg_compress(x[idx], self.quality, image_mode)
 
         # Undo preparation grayscale images for "L" mode
         if image_mode == "L":
@@ -153,10 +166,17 @@ class JpegCompression(Preprocessor):
             x_jpeg = x_jpeg / 255.0
         x_jpeg = x_jpeg.astype(ART_NUMPY_DTYPE)
 
+        # remove temporal dimension for image data
+        if x_ndim == 4:
+            x_jpeg = np.squeeze(x_jpeg, axis=1)
+
         # Swap channel index
         if self.channel_index == 1 and x_jpeg.ndim == 4:
-            # NHWC to NCHW
+            # image shape NHWC to NCHW
             x_jpeg = np.transpose(x_jpeg, (0, 3, 1, 2))
+        elif self.channel_index == 1 and x_ndim == 5:
+            # video shape NFHWC to NCFHW
+            x_jpeg = np.transpose(x_jpeg, (0, 4, 1, 2, 3))
         return x_jpeg, y
 
     def estimate_gradient(self, x, grad):
