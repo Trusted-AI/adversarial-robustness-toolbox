@@ -151,6 +151,7 @@ class Wasserstein(EvasionAttack):
                 cost_matrix,
                 self.max_iter,
                 self.norm,
+                self.ball,
                 self.targeted,
                 self.eps,
                 self.alpha,
@@ -189,6 +190,7 @@ class Wasserstein(EvasionAttack):
             cost_matrix,
             max_iter,
             norm,
+            ball,
             targeted,
             eps,
             alpha,
@@ -209,6 +211,8 @@ class Wasserstein(EvasionAttack):
         :type max_iter: `int`
         :param norm: The norm of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
         :type norm: `string`
+        :param ball: The ball of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
+        :type ball: `string`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
         :param eps: Maximum perturbation that the attacker can introduce.
@@ -232,6 +236,7 @@ class Wasserstein(EvasionAttack):
                 targets,
                 cost_matrix,
                 norm,
+                ball,
                 targeted,
                 eps,
                 alpha,
@@ -249,6 +254,7 @@ class Wasserstein(EvasionAttack):
             y,
             cost_matrix,
             norm,
+            ball,
             targeted,
             eps,
             alpha,
@@ -272,6 +278,8 @@ class Wasserstein(EvasionAttack):
         :type cost_matrix: `np.ndarray`
         :param norm: The norm of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
         :type norm: `string`
+        :param ball: The ball of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
+        :type ball: `string`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
         :param eps: Maximum perturbation that the attacker can introduce.
@@ -300,10 +308,20 @@ class Wasserstein(EvasionAttack):
         )
 
         # Do projection
-        perturbation = self._projection(x_adv - x_init, eps, norm, cost_matrix)
+        x_adv = self._apply_projection(
+            x_adv,
+            x_init,
+            cost_matrix,
+            ball,
+            eps,
+            regularization,
+            projected_sinkhorn_max_iter
+        )
 
-        # Recompute x_adv
-        x_adv = perturbation + x_init
+        # Clip x_adv
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
+            x_adv = np.clip(x_adv, clip_min, clip_max)
 
         return x_adv
 
@@ -394,6 +412,39 @@ class Wasserstein(EvasionAttack):
         """
         return 1
 
+    def _projection(values, eps, norm_p):
+        """
+        Project `values` on the L_p norm ball of size `eps`.
+
+        :param values: Array of perturbations to clip.
+        :type values: `np.ndarray`
+        :param eps: Maximum norm allowed.
+        :type eps: `float`
+        :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+        :type norm_p: `int`
+        :return: Values of `values` after projection.
+        :rtype: `np.ndarray`
+        """
+        # Pick a small scalar to avoid division by 0
+        tol = 10e-8
+        values_tmp = values.reshape((values.shape[0], -1))
+
+        if norm_p == 2:
+            values_tmp = values_tmp * np.expand_dims(
+                np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
+            )
+        elif norm_p == 1:
+            values_tmp = values_tmp * np.expand_dims(
+                np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1
+            )
+        elif norm_p == np.inf:
+            values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+        else:
+            raise NotImplementedError(
+                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
+
+        values = values_tmp.reshape(values.shape)
+        return values
 
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
