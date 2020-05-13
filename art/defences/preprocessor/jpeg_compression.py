@@ -81,6 +81,19 @@ class JpegCompression(Preprocessor):
     def apply_predict(self):
         return self._apply_predict
 
+    def _compress(self, x, mode):
+        """
+        Apply JPEG compression to image input.
+        """
+        from PIL import Image
+
+        tmp_jpeg = BytesIO()
+        x_image = Image.fromarray(x, mode=mode)
+        x_image.save(tmp_jpeg, format="jpeg", quality=self.quality)
+        x_jpeg = np.array(Image.open(tmp_jpeg))
+        tmp_jpeg.close()
+        return x_jpeg
+
     def __call__(self, x, y=None):
         """
         Apply JPEG compression to sample `x`.
@@ -93,19 +106,6 @@ class JpegCompression(Preprocessor):
         :return: compressed sample.
         :rtype: `np.ndarray`
         """
-
-        def jpeg_compress(x, quality, mode):
-            """
-            Apply JPEG compression to image input.
-            """
-            from PIL import Image
-
-            tmp_jpeg = BytesIO()
-            x_image = Image.fromarray(x, mode=mode)
-            x_image.save(tmp_jpeg, format="jpeg", quality=quality)
-            x_jpeg = np.array(Image.open(tmp_jpeg))
-            tmp_jpeg.close()
-            return x_jpeg
 
         x_ndim = x.ndim
         if x_ndim == 2:
@@ -155,7 +155,7 @@ class JpegCompression(Preprocessor):
         # Compress one image at a time
         x_jpeg = x.copy()
         for idx in np.ndindex(x.shape[:2]):
-            x_jpeg[idx] = jpeg_compress(x[idx], self.quality, image_mode)
+            x_jpeg[idx] = self._compress(x[idx], image_mode)
 
         # Undo preparation grayscale images for "L" mode
         if image_mode == "L":
