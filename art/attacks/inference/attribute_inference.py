@@ -29,13 +29,13 @@ from sklearn.neural_network import MLPClassifier
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
-from art.attacks import InferenceAttack
+from art.attacks import AttributeInferenceAttack
 
 
 logger = logging.getLogger(__name__)
 
 
-class AttributeInferenceBlackBox(InferenceAttack):
+class AttributeInferenceBlackBox(AttributeInferenceAttack):
     """
     Implementation of a simple black-box attribute inference attack.
 
@@ -45,8 +45,6 @@ class AttributeInferenceBlackBox(InferenceAttack):
     in addition to the rest of the feature values.
     If this is not available, the true class label of the samples may be used as a proxy.
     """
-
-    attack_params = InferenceAttack.attack_params + ["attack_feature"]
 
     _estimator_requirements = [BaseEstimator]
 
@@ -59,12 +57,7 @@ class AttributeInferenceBlackBox(InferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         :type attack_feature: `int`
         """
-        super(AttributeInferenceBlackBox, self).__init__(estimator=classifier)
-
-        params = {
-            "attack_feature": attack_feature
-        }
-        self.set_params(**params)
+        super(AttributeInferenceBlackBox, self).__init__(estimator=classifier, attack_feature=attack_feature)
 
     def fit(self, x, **kwargs):
         """
@@ -79,6 +72,10 @@ class AttributeInferenceBlackBox(InferenceAttack):
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError(
                  'Shape of x does not match input_shape of classifier'
+            )
+        if self.attack_feature >= x.shape[1]:
+            raise ValueError(
+                    'attack_feature must be a valid index to a feature in x'
             )
 
         # get model's predictions for x
@@ -119,7 +116,7 @@ class AttributeInferenceBlackBox(InferenceAttack):
         x_test = np.concatenate((x, y), axis=1)
         return self.attack_model.predict(x_test)
 
-class AttributeInferenceWhiteBoxLifestyleDecisionTree(InferenceAttack):
+class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
     """
     Implementation of Fredrikson et al. white box inference attack for decision trees.
 
@@ -127,8 +124,6 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(InferenceAttack):
     Assumes that the attacked feature is discrete or categorical, with limited number
     of possible values. For example: a boolean feature.
     """
-
-    attack_params = InferenceAttack.attack_params + ["attack_feature"]
 
     _estimator_requirements = (BaseEstimator, ScikitlearnDecisionTreeClassifier)
 
@@ -141,12 +136,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(InferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         :type attack_feature: `int`
         """
-        super(AttributeInferenceWhiteBoxLifestyleDecisionTree, self).__init__(estimator=classifier)
-
-        params = {
-            "attack_feature": attack_feature
-        }
-        self.set_params(**params)
+        super(AttributeInferenceWhiteBoxLifestyleDecisionTree, self).__init__(estimator=classifier, attack_feature=attack_feature)
 
 
     def infer(self, x, y=None, **kwargs):
@@ -174,6 +164,10 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(InferenceAttack):
         if len(priors) != len(values):
             raise ValueError(
                 'Number of priors does not match number of values'
+            )
+        if self.attack_feature >= x.shape[1]:
+            raise ValueError(
+                    'attack_feature must be a valid index to a feature in x'
             )
 
         n_samples = x.shape[0]
@@ -216,7 +210,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(InferenceAttack):
 
         return phi
 
-class AttributeInferenceWhiteBoxDecisionTree(InferenceAttack):
+class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
     """
     A variation of the method proposed by of Fredrikson et al. in:
     https://dl.acm.org/doi/10.1145/2810103.2813677
@@ -227,8 +221,6 @@ class AttributeInferenceWhiteBoxDecisionTree(InferenceAttack):
     Also assumes that the attacked feature is discrete or categorical, with limited number
     of possible values. For example: a boolean feature.
     """
-
-    attack_params = InferenceAttack.attack_params + ["attack_feature"]
 
     _estimator_requirements = (BaseEstimator, ScikitlearnDecisionTreeClassifier)
 
@@ -241,12 +233,7 @@ class AttributeInferenceWhiteBoxDecisionTree(InferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         :type attack_feature: `int`
         """
-        super(AttributeInferenceWhiteBoxDecisionTree, self).__init__(estimator=classifier)
-
-        params = {
-            "attack_feature": attack_feature
-        }
-        self.set_params(**params)
+        super(AttributeInferenceWhiteBoxDecisionTree, self).__init__(estimator=classifier, attack_feature=attack_feature)
 
 
     def infer(self, x, y=None, **kwargs):
@@ -284,6 +271,10 @@ class AttributeInferenceWhiteBoxDecisionTree(InferenceAttack):
         if y.shape[0] != x.shape[0]:
             raise ValueError(
                 'Number of rows in x and y do not match'
+            )
+        if self.attack_feature >= x.shape[1]:
+            raise ValueError(
+                    'attack_feature must be a valid index to a feature in x'
             )
 
         n_values = len(values)
