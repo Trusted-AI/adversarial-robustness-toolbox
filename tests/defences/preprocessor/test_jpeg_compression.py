@@ -26,6 +26,7 @@ from keras.datasets import cifar10
 from numpy.testing import assert_array_equal
 from tests.utils import master_seed
 
+# import art
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor import JpegCompression
 from art.utils import load_mnist
@@ -101,6 +102,17 @@ class TestJpegCompression:
         jpeg_compression = JpegCompression(clip_values=(0, 255), channel_index=channel_index)
 
         assert_array_equal(jpeg_compression(test_input)[0], test_output)
+
+    @pytest.mark.parametrize("channels_first", [False])
+    def test_jpeg_compress(self, image_batch, channels_first):
+        test_input, test_output = image_batch
+        jpeg_compression = JpegCompression(clip_values=(0, 255))
+
+        image_mode = "RGB" if test_input.shape[-1] == 3 else "L"
+        test_single_input = np.squeeze(test_input[0]).astype(np.uint8)
+        test_single_output = np.squeeze(test_output[0]).astype(np.uint8)
+
+        assert_array_equal(jpeg_compression._compress(test_single_input, image_mode), test_single_output)
 
     def test_channel_index_error(self):
         exc_msg = "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
