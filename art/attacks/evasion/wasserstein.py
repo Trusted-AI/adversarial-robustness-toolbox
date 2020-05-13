@@ -158,6 +158,7 @@ class Wasserstein(EvasionAttack):
                 self.regularization,
                 self.conjugate_sinkhorn_max_iter,
                 self.projected_sinkhorn_max_iter,
+                self.batch_size,
             )
 
         return x_adv
@@ -197,6 +198,7 @@ class Wasserstein(EvasionAttack):
             regularization,
             conjugate_sinkhorn_max_iter,
             projected_sinkhorn_max_iter,
+            batch_size,
     ):
         """
         Generate a batch of adversarial samples and return them in an array.
@@ -225,6 +227,8 @@ class Wasserstein(EvasionAttack):
         :type conjugate_sinkhorn_max_iter: `int`
         :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
         :type projected_sinkhorn_max_iter: `int`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -243,6 +247,7 @@ class Wasserstein(EvasionAttack):
                 regularization,
                 conjugate_sinkhorn_max_iter,
                 projected_sinkhorn_max_iter,
+                batch_size,
             )
 
         return adv_x
@@ -261,6 +266,7 @@ class Wasserstein(EvasionAttack):
             regularization,
             conjugate_sinkhorn_max_iter,
             projected_sinkhorn_max_iter,
+            batch_size,
     ):
         """
         Compute adversarial examples for one iteration.
@@ -292,6 +298,8 @@ class Wasserstein(EvasionAttack):
         :type conjugate_sinkhorn_max_iter: `int`
         :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
         :type projected_sinkhorn_max_iter: `int`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -305,6 +313,7 @@ class Wasserstein(EvasionAttack):
             alpha,
             regularization,
             conjugate_sinkhorn_max_iter,
+            batch_size,
         )
 
         # Do projection
@@ -315,7 +324,8 @@ class Wasserstein(EvasionAttack):
             ball,
             eps,
             regularization,
-            projected_sinkhorn_max_iter
+            projected_sinkhorn_max_iter,
+            batch_size,
         )
 
         # Clip x_adv
@@ -335,6 +345,7 @@ class Wasserstein(EvasionAttack):
             alpha,
             regularization,
             conjugate_sinkhorn_max_iter,
+            batch_size,
     ):
         """
         Compute and apply perturbations.
@@ -358,6 +369,8 @@ class Wasserstein(EvasionAttack):
         :type regularization: `float`
         :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
         :type conjugate_sinkhorn_max_iter: `int`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -383,13 +396,14 @@ class Wasserstein(EvasionAttack):
             x_adv = x + alpha * grad
 
         elif norm == 'wasserstein':
-            x_adv = self._conjugate_sinkhorn_optimizer(
+            x_adv = self._conjugate_sinkhorn(
                 x,
                 grad,
                 cost_matrix,
                 alpha,
                 regularization,
                 conjugate_sinkhorn_max_iter,
+                batch_size,
             )
 
         else:
@@ -399,21 +413,6 @@ class Wasserstein(EvasionAttack):
 
         return x_adv
 
-    def _conjugate_sinkhorn_optimizer(
-            self,
-            x,
-            grad,
-            cost_matrix,
-            alpha,
-            regularization,
-            conjugate_sinkhorn_max_iter,
-    ):
-        """
-
-        :return:
-        """
-        return 1
-
     def _apply_projection(
             self,
             x,
@@ -422,7 +421,8 @@ class Wasserstein(EvasionAttack):
             ball,
             eps,
             regularization,
-            projected_sinkhorn_max_iter
+            projected_sinkhorn_max_iter,
+            batch_size,
     ):
         """
         Apply projection on the ball of size `eps`.
@@ -441,6 +441,8 @@ class Wasserstein(EvasionAttack):
         :type regularization: `float`
         :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
         :type projected_sinkhorn_max_iter: `int`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -479,13 +481,14 @@ class Wasserstein(EvasionAttack):
             x_adv = values + x_init
 
         elif ball == 'wasserstein':
-            x_adv = self._projected_sinkhorn_optimizer(
+            x_adv = self._projected_sinkhorn(
                 x,
                 x_init,
                 cost_matrix,
                 eps,
                 regularization,
-                projected_sinkhorn_max_iter
+                projected_sinkhorn_max_iter,
+                batch_size,
             )
 
         else:
@@ -494,6 +497,159 @@ class Wasserstein(EvasionAttack):
             )
 
         return x_adv
+
+    def _conjugate_sinkhorn(
+            self,
+            x,
+            grad,
+            cost_matrix,
+            alpha,
+            regularization,
+            conjugate_sinkhorn_max_iter,
+            batch_size,
+    ):
+        """
+        The conjugate sinkhorn_optimizer.
+
+        :param x: Current adversarial examples.
+        :type x: `np.ndarray`
+        :param grad: The loss gradients.
+        :type grad: `np.ndarray`
+        :param cost_matrix: A non-negative cost matrix.
+        :type cost_matrix: `np.ndarray`
+        :param alpha: Attack step size (input variation) at each iteration.
+        :type alpha: `float`
+        :param regularization: Entropy regularization.
+        :type regularization: `float`
+        :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
+        :type conjugate_sinkhorn_max_iter: `int`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        return 1
+
+    def _projected_sinkhorn(
+            self,
+            x,
+            x_init,
+            cost_matrix,
+            eps,
+            regularization,
+            projected_sinkhorn_max_iter,
+            batch_size,
+        ):
+        """
+        The projected sinkhorn_optimizer.
+
+        :param x: Current adversarial examples.
+        :type x: `np.ndarray`
+        :param x_init: An array with the original inputs.
+        :type x_init: `np.ndarray`
+        :param cost_matrix: A non-negative cost matrix.
+        :type cost_matrix: `np.ndarray`
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :type eps: `float`
+        :param regularization: Entropy regularization.
+        :type regularization: `float`
+        :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
+        :type projected_sinkhorn_max_iter: `int`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: Adversarial examples.
+        :rtype: `np.ndarray`
+        """
+        # Normalize inputs
+        normalization = x_init.reshape(batch_size, -1).sum(-1).reshape(batch_size, 1, 1, 1)
+        x /= normalization
+        x_init /= normalization
+
+
+        # Dimension size for each example
+        m = np.prod(x_init.shape[1:])
+
+        # Initialize
+        alpha = np.log(np.ones(x.shape) / m)
+        exp_alpha = np.exp(-alpha)
+
+        beta = np.log(np.ones(x.shape) / m)
+        exp_beta = np.exp(-beta)
+
+        psi = np.ones(batch_size)
+        K = np.exp(-psi.reshape(batch_size, 1, 1, 1) * cost_matrix - 1)
+
+
+        def eval_obj(alpha, exp_alpha, beta, exp_beta, psi, K):
+            return (-0.5 / lam * bdot(beta, beta) - psi * epsilon
+                    - bdot(torch.clamp(alpha, max=1e10), X)
+                    - bdot(torch.clamp(beta, max=1e10), Y)
+                    - bdot(exp_alpha, mm(K, exp_beta)))
+
+        old_obj = -float('inf')
+        i = 0
+
+
+        with torch.no_grad():
+            while True:
+                alphat = norm(alpha)
+                betat = norm(beta)
+
+                alpha = (torch.log(mm(K, exp_beta)) - torch.log(X))
+                exp_alpha = torch.exp(-alpha)
+
+                beta = lamw(lam * torch.exp(lam * Y) * mm(K, exp_alpha)) - lam * Y
+                exp_beta = torch.exp(-beta)
+
+                dpsi = -epsilon + bdot(exp_alpha, mm(C * K, exp_beta))
+                ddpsi = -bdot(exp_alpha, mm(C * C * K, exp_beta))
+                delta = dpsi / ddpsi
+
+                psi0 = psi
+                t = X.new_ones(*delta.size())
+                neg = (psi - t * delta < 0)
+                while neg.any() and t.min().item() > 1e-2:
+                    t[neg] /= 2
+                    neg = psi - t * delta < 0
+                psi = torch.clamp(psi - t * delta, min=0)
+
+                # update K
+                K = torch.exp(-unsqueeze3(psi) * C - 1)
+
+                # check for convergence
+                obj = eval_obj(alpha, exp_alpha, beta, exp_beta, psi, K)
+                i += 1
+                if i > maxiters or allclose(old_obj, obj).all():
+                    if verbose:
+                        print('terminate at iteration {}'.format(i), maxiters)
+                        if i > maxiters:
+                            print('warning: took more than {} iters'.format(maxiters))
+                    break
+                old_obj = obj
+        return beta / lam + Y
+
+        return x
+
+    @staticmethod
+    def batch_dot(x, y):
+        """
+        Compute batch dot product.
+
+        :param x: Sample batch.
+        :type x: `np.ndarray`
+        :param y: Sample batch.
+        :type y: `np.ndarray`
+        :return: Batch dot product.
+        :rtype: `np.ndarray`
+        """
+        batch_size = x.shape[0]
+        assert batch_size == y.shape[0]
+
+        x_ = x.reshape(batch_size, 1, -1)
+        y_ = y.reshape(batch_size, -1, 1)
+        result = np.matmul(x_, y_).reshape(batch_size)
+
+        return result
 
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
