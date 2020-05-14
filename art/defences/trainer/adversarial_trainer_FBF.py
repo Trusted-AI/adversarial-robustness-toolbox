@@ -105,7 +105,7 @@ class AdversarialTrainerFBF(Trainer):
                 # self.classifier.fit(x_batch_pert, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], **kwargs)
 
                 # Apply preprocessing
-                x_preprocessed, y_preprocessed = self.classifier_apply_preprocessing(x_batch_pert, y_batch, fit=True)
+                x_preprocessed, y_preprocessed = self.classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
 
                 # Check label shape
                 if self.classifier._reduce_labels:
