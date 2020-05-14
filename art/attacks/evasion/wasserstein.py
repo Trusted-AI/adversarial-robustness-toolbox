@@ -498,6 +498,7 @@ class Wasserstein(EvasionAttack):
             x,
             grad,
             cost_matrix,
+            
             alpha,
             regularization,
             conjugate_sinkhorn_max_iter,
@@ -535,7 +536,7 @@ class Wasserstein(EvasionAttack):
             regularization,
             projected_sinkhorn_max_iter,
             batch_size,
-        ):
+    ):
         """
         The projected sinkhorn_optimizer.
 
@@ -563,7 +564,6 @@ class Wasserstein(EvasionAttack):
         x /= normalization
         x_init /= normalization
 
-
         # Dimension size for each example
         m = np.prod(x_init.shape[1:])
 
@@ -581,47 +581,69 @@ class Wasserstein(EvasionAttack):
         else:
             K = np.expand_dims(np.exp(-psi.reshape(batch_size, 1, 1) * cost_matrix - 1), -1)
 
-        old_obj = -np.inf
-        i = 0
-
-
-        while True:
-            alphat = np.linalg.norm(alpha.reshape(batch_size, -1), axis=-1)
-            betat = np.linalg.norm(beta.reshape(batch_size, -1), axis=-1)
-
+        convergence = -np.inf
+        for _ in range(projected_sinkhorn_max_iter):
+            # Block coordinate descent iterates
             alpha = (np.log(self._local_transport(K, exp_beta, kernel_size)) - np.log(x_init))
             exp_alpha = np.exp(-alpha)
 
-            beta = lamw(lam * torch.exp(lam * Y) * mm(K, exp_alpha)) - lam * Y
-            exp_beta = torch.exp(-beta)
+            beta = regularization * np.exp(regularization * x) * self._local_transport(K, exp_alpha, kernel_size)
+            beta[beta > 1e-10] = np.real(lambertw(beta[beta > 1e-10]))
+            beta -= regularization * x
+            exp_beta = np.exp(-beta)
 
-            dpsi = -epsilon + bdot(exp_alpha, mm(C * K, exp_beta))
-            ddpsi = -bdot(exp_alpha, mm(C * C * K, exp_beta))
-            delta = dpsi / ddpsi
+            # Newton step
+            g = -eps + self._batch_dot(
+                exp_alpha,
+                self._local_transport(
+                    cost_matrix * K,
+                    exp_beta,
+                    kernel_size
+                )
+            )
+            h = -self._batch_dot(
+                exp_alpha,
+                self._local_transport(
+                    cost_matrix * cost_matrix * K,
+                    exp_beta,
+                    kernel_size
+                )
+            )
+            delta = g / h
 
-            psi0 = psi
-            t = X.new_ones(*delta.size())
-            neg = (psi - t * delta < 0)
-            while neg.any() and t.min().item() > 1e-2:
-                t[neg] /= 2
-                neg = psi - t * delta < 0
-            psi = torch.clamp(psi - t * delta, min=0)
+            # Ensure psi >= 0
+            tmp = np.ones(delta.shape)
+            neg = psi - tmp * delta < 0
+            while neg.any() and np.min(tmp) > 1e-2:
+                tmp[neg] /= 2
+                neg = psi - tmp * delta < 0
+            psi = np.maximum(psi - tmp * delta, 0)
 
-            # update K
-            K = torch.exp(-unsqueeze3(psi) * C - 1)
+            # Update K
+            K = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
+            K = np.exp(-K * cost_matrix - 1)
 
-            # check for convergence
-            obj = eval_obj(alpha, exp_alpha, beta, exp_beta, psi, K)
-            i += 1
-            if i > maxiters or allclose(old_obj, obj).all():
-                if verbose:
-                    print('terminate at iteration {}'.format(i), maxiters)
-                    if i > maxiters:
-                        print('warning: took more than {} iters'.format(maxiters))
+            # Check for convergence
+            next_convergence = self._projected_sinkhorn_evaluation(
+                x,
+                x_init,
+                alpha,
+                exp_alpha,
+                beta,
+                exp_beta,
+                psi,
+                K,
+                eps,
+                regularization,
+                kernel_size,
+            )
+
+            if (np.abs(convergence - next_convergence) <= 1e-4).all():
                 break
-            old_obj = obj
-        return beta / lam + Y
+            else:
+                convergence = next_convergence
 
+        return beta / regularization + x
 
     @staticmethod
     def _compute_cost_matrix(p, kernel_size):
