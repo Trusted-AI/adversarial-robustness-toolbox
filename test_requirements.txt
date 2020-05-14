@@ -16,7 +16,7 @@ pydub==0.23
 #ART supported Frameworks (tensorflow==2.1.0 with keras==2.3.1) or (tensorflow==1.15.2 with keras==2.2.5)
 tensorflow
 keras
-tensorflow_addons
+tensorflow_addons==0.8.2
 mxnet==1.6.0
 xgboost==1.0.0
 lightgbm==2.3.1
