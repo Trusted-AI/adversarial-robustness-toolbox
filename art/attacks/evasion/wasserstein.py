@@ -298,6 +298,7 @@ class Wasserstein(EvasionAttack):
             x,
             y,
             cost_matrix,
+            kernel_size,
             norm,
             targeted,
             alpha,
@@ -331,6 +332,7 @@ class Wasserstein(EvasionAttack):
             x,
             y,
             cost_matrix,
+            kernel_size,
             norm,
             targeted,
             alpha,
@@ -350,6 +352,8 @@ class Wasserstein(EvasionAttack):
         :type y: `np.ndarray`
         :param cost_matrix: A non-negative cost matrix.
         :type cost_matrix: `np.ndarray`
+        :param kernel_size: Kernel size for computing the cost matrix.
+        :type kernel_size: `int`
         :param norm: The norm of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
         :type norm: `string`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
@@ -391,6 +395,7 @@ class Wasserstein(EvasionAttack):
                 x,
                 grad,
                 cost_matrix,
+                kernel_size,
                 alpha,
                 regularization,
                 conjugate_sinkhorn_max_iter,
@@ -498,7 +503,7 @@ class Wasserstein(EvasionAttack):
             x,
             grad,
             cost_matrix,
-            
+            kernel_size,
             alpha,
             regularization,
             conjugate_sinkhorn_max_iter,
@@ -513,6 +518,8 @@ class Wasserstein(EvasionAttack):
         :type grad: `np.ndarray`
         :param cost_matrix: A non-negative cost matrix.
         :type cost_matrix: `np.ndarray`
+        :param kernel_size: Kernel size for computing the cost matrix.
+        :type kernel_size: `int`
         :param alpha: Attack step size (input variation) at each iteration.
         :type alpha: `float`
         :param regularization: Entropy regularization.
@@ -524,7 +531,96 @@ class Wasserstein(EvasionAttack):
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
-        return 1
+        # Normalize inputs
+        normalization = x.reshape(batch_size, -1).sum(-1).reshape(batch_size, 1, 1, 1)
+        x /= normalization
+
+        # Dimension size for each example
+        m = np.prod(x.shape[1:])
+
+        # Initialize
+        alpha = np.log(np.ones(x.shape) / m) + 0.5
+        exp_alpha = np.exp(-alpha)
+
+        beta = -regularization * grad
+        exp_beta = np.exp(-beta)
+
+        # Check for overflow
+        if (exp_beta == np.inf).any():
+            raise ValueError('Overflow error in `_conjugate_sinkhorn` for exponential beta.')
+
+        # EARLY TERMINATION CRITERIA: if the nu_1 and the center of the ball have no pixels with overlapping filters,
+        # then the wasserstein ball has no effect on the objective. Consequently, we should just return the objective
+        # on the center of the ball. Notably, if the filters do not overlap, then the pixels themselves don't either,
+        # so we can conclude that the objective is 0.
+        #
+        # We can detect overlapping filters by applying the cost filter and seeing if the sum is 0 (e.g. X*C*Y).
+        # Referenced to https://github.com/locuslab/projected_sinkhorn.
+
+        cost_matrix_new = cost_matrix.copy() + 1
+        cost_matrix_new = np.expand_dims(np.expand_dims(cost_matrix_new, 0), 0)
+
+        I_nonzero = self._batch_dot(x, self._local_transport(cost_matrix_new, grad, kernel_size)) != 0
+        I_nonzero_ = np.zeros(alpha.shape).astype(bool)
+        I_nonzero_[:, :, :, :] = np.expand_dims(np.expand_dims(np.expand_dims(I_nonzero, -1), -1), -1)
+
+
+
+
+
+
+        def eval_obj(alpha, exp_alpha, psi, K):
+            return -psi*epsilon - bdot(torch.clamp(alpha,max=MAX_FLOAT),X) - bdot(exp_alpha, mm(K, exp_beta))
+
+        def eval_z(alpha, exp_alpha, psi, K):
+            return exp_beta*mm(K, exp_alpha)
+
+        psi = X.new_ones(*size[:-3])
+        K = torch.exp(-unsqueeze3(psi)*C - 1)
+
+        old_obj = -float('inf')
+        i = 0
+
+        with torch.no_grad():
+            while True:
+                alpha[I_nonzero_] = (torch.log(mm(K,exp_beta)) - torch.log(X))[I_nonzero_]
+                exp_alpha = torch.exp(-alpha)
+
+                dpsi = -epsilon + bdot(exp_alpha,mm(C*K,exp_beta))
+                ddpsi = -bdot(exp_alpha,mm(C*C*K,exp_beta))
+                delta = dpsi/ddpsi
+
+                psi0 = psi
+                t = X.new_ones(*delta.size())
+                neg = (psi - t*delta < 0)
+                while neg.any() and t.min().item() > 1e-2:
+                    t[neg] /= 2
+                    neg = psi - t*delta < 0
+                psi[I_nonzero] = torch.clamp(psi - t*delta, min=0)[I_nonzero]
+
+                K = torch.exp(-unsqueeze3(psi)*C - 1)
+
+                # check for convergence
+                obj = eval_obj(alpha, exp_alpha, psi, K)
+                if verbose:
+                    print('obj', obj)
+                i += 1
+                if i > maxiters or allclose(old_obj,obj).all():
+                    if verbose:
+                        print('terminate at iteration {}'.format(i))
+                    break
+
+                old_obj = obj
+
+        if return_objective:
+            obj = -bdot(X,Y)
+            obj[I_nonzero] = eval_obj(alpha, exp_alpha, psi, K)[I_nonzero]
+            return obj
+        else:
+            z = eval_z(alpha, exp_alpha, psi,K)
+            z[~I_nonzero] = 0
+            return z
+
 
     def _projected_sinkhorn(
             self,
@@ -643,7 +739,9 @@ class Wasserstein(EvasionAttack):
             else:
                 convergence = next_convergence
 
-        return beta / regularization + x
+        result = (beta / regularization + x) * normalization
+
+        return result
 
     @staticmethod
     def _compute_cost_matrix(p, kernel_size):
@@ -751,7 +849,7 @@ class Wasserstein(EvasionAttack):
         unfold_x = unfold_x.reshape(*unfold_x.shape[:-1], num_channels, kernel_size ** 2)
         unfold_x = unfold_x.swapaxes(-2, -3)
 
-        tmp_K = K.reshape(x.shape[0], num_channels, -1)
+        tmp_K = K.reshape(K.shape[0], num_channels, -1)
         tmp_K = np.expand_dims(tmp_K, -1)
         result = np.matmul(unfold_x, tmp_K)
         result = np.squeeze(result, -1)
