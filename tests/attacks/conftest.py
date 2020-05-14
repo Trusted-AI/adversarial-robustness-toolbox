@@ -33,7 +33,7 @@ def get_image_classifier_list_defended(framework):
             classifier = utils.get_image_classifier_kr()
             # Get the ready-trained Keras model
             fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-            classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
+            classifier_list = [KerasClassifier(model=classifier.model, clip_values=(0, 1), preprocessing_defences=fs)]
 
         if framework == "tensorflow":
             logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))

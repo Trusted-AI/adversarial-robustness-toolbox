@@ -8,7 +8,7 @@ import tensorflow as tf
 import numpy as np
 
 from art.attacks.evasion import FastGradientMethod
-from art.classifiers import TFClassifier
+from art.estimators.classification import TensorFlowClassifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset
@@ -36,7 +36,7 @@ sess.run(tf.global_variables_initializer())
 
 # Step 3: Create the ART classifier
 
-classifier = TFClassifier(
+classifier = TensorFlowClassifier(
     clip_values=(min_pixel_value, max_pixel_value),
     input_ph=input_ph,
     output=logits,

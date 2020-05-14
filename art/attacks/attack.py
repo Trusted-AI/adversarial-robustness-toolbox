@@ -156,7 +156,7 @@ class PoisoningAttack(Attack):
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
-        :type classifier: `art.classifiers.Classifier` or `None`
+        :type classifier: `art.estimators.classification.Classifier` or `None`
         """
         super().__init__(classifier)
 
@@ -211,7 +211,7 @@ class PoisoningAttackWhiteBox(PoisoningAttack):
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier.
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         """
         super().__init__(classifier)
 
@@ -240,7 +240,7 @@ class ExtractionAttack(Attack):
     def __init__(self, classifier):
         """
         :param classifier: A trained classifier targeted for extraction.
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         """
         super().__init__(classifier)
 
@@ -256,6 +256,6 @@ class ExtractionAttack(Attack):
                or not. This parameter is only used by some of the attacks.
         :type y: `np.ndarray`
         :return: ART classifier of the extracted model.
-        :rtype: :class:`art.classifiers.Classifier`
+        :rtype: :class:`art.estimators.classification.Classifier`
         """
         raise NotImplementedError

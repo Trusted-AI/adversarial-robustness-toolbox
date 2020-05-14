@@ -798,9 +798,9 @@ def performance_diff(model1, model2, test_data, test_labels, perf_function="accu
     Note: For multi-label classification, f1 scores will use 'micro' averaging unless otherwise specified.
 
     :param model1: A trained ART classifier
-    :type model1: `art.classifiers.classifier.Classifier`
+    :type model1: `art.estimators.classification.classifier.Classifier`
     :param model2: A trained ART classifier
-    :type model2: `art.classifiers.classifier.Classifier`
+    :type model2: `art.estimators.classification.classifier.Classifier`
     :param test_data: The data to test both model's performance
     :type test_data: `np.ndarray`
     :param test_labels: The labels to the testing data
