@@ -687,29 +687,53 @@ class Wasserstein(EvasionAttack):
             for j in range(shape[1] - kernel_size + 1):
                 patch = x_pad[:, :, i:(i + kernel_size), j:(j + kernel_size)]
                 patch = patch.reshape(x.shape[0], -1)
+                result[:, :, i * (shape[1] - kernel_size + 1) + j] = patch
 
+        return result
 
+    def _local_transport(self, K, x, kernel_size):
+        """
+        Compute local transport.
 
-    def _conv(self, K, x, kernel_size):
-
+        :param K: K parameter in Algorithm 2 of the paper ``Wasserstein Adversarial Examples via Projected
+        Sinkhorn Iterations``.
+        :type K: `np.ndarray`
+        :param x: An array to apply local transport.
+        :type x: `np.ndarray`
+        :param kernel_size: Kernel size for computing the cost matrix.
+        :type kernel_size: `int`
+        :return: Local transport result.
+        """
         # Compute number of channels
         num_channels = x.shape[self.estimator.channel_index]
 
         # Expand channels
         K = np.repeat(K, num_channels, axis=self.estimator.channel_index)
 
+        # Swap channels to prepare for local transport computation
+        if self.estimator.channel_index > 1:
+            x = np.swapaxes(x, 1, self.estimator.channel_index)
+            K = np.swapaxes(K, 1, self.estimator.channel_index)
 
+        # Compute local transport
+        unfold_x = self._unfold(x=x, kernel_size=kernel_size, padding=kernel_size // 2)
+        unfold_x = unfold_x.swapaxes(-1, -2)
+        unfold_x = unfold_x.reshape(*unfold_x.shape[:-1], num_channels, kernel_size ** 2)
+        unfold_x = unfold_x.swapaxes(-2, -3)
 
+        tmp_K = K.reshape(x.shape[0], num_channels, -1)
+        tmp_K = np.expand_dims(tmp_K, -1)
+        result = np.matmul(unfold_x, tmp_K)
+        result = np.squeeze(result, -1)
 
+        size = int(np.sqrt(result.shape[-1]))
+        result = result.reshape(*result.shape[:-1], size, size)
 
+        # Swap channels for final result
+        if self.estimator.channel_index > 1:
+            result = np.swapaxes(result, 1, self.estimator.channel_index)
 
-
-
-        unfolded = _unfold(x, kernel_size, padding=kernel_size // 2).transpose(-1, -2)
-        unfolded = _expand(unfolded, (A.size(-3), A.size(-2) * A.size(-1))).transpose(-2, -3)
-        out = torch.matmul(unfolded, collapse2(A.contiguous()).unsqueeze(-1)).squeeze(-1)
-
-        return unflatten2(out)
+        return result
 
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
