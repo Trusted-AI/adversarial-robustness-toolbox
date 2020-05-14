@@ -28,7 +28,9 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.estimator import LossGradientsMixin
+from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array
 from art.utils import check_and_transform_label_format
@@ -59,7 +61,7 @@ class Wasserstein(EvasionAttack):
         "batch_size",
     ]
 
-    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
         self,
@@ -162,27 +164,6 @@ class Wasserstein(EvasionAttack):
             )
 
         return x_adv
-
-    @staticmethod
-    def _compute_cost_matrix(p, kernel_size):
-        """
-        Compute the default cost matrix.
-
-        :param p: The p-wasserstein distance.
-        :type p: `int`
-        :param kernel_size: Kernel size for computing the cost matrix.
-        :type kernel_size: `int`
-        :return: The cost matrix.
-        :rtype: `np.ndarray`
-        """
-        center = kernel_size // 2
-        cost_matrix = np.zeros((kernel_size, kernel_size))
-
-        for i in range(kernel_size):
-            for j in range(kernel_size):
-                cost_matrix[i, j] = (abs(i - center) ** 2 + abs(j - center) ** 2) ** (p / 2)
-
-        return cost_matrix
 
     def _generate_batch(
             self,
@@ -577,7 +558,11 @@ class Wasserstein(EvasionAttack):
         exp_beta = np.exp(-beta)
 
         psi = np.ones(batch_size)
-        K = np.exp(-psi.reshape(batch_size, 1, 1, 1) * cost_matrix - 1)
+
+        if self.estimator.channel_index == 1:
+            K = np.exp(-psi.reshape(batch_size, 1, 1, 1) * cost_matrix - 1)
+        else:
+            K = np.expand_dims(np.exp(-psi.reshape(batch_size, 1, 1) * cost_matrix - 1), -1)
 
 
         def eval_obj(alpha, exp_alpha, beta, exp_beta, psi, K):
@@ -631,7 +616,28 @@ class Wasserstein(EvasionAttack):
         return x
 
     @staticmethod
-    def batch_dot(x, y):
+    def _compute_cost_matrix(p, kernel_size):
+        """
+        Compute the default cost matrix.
+
+        :param p: The p-wasserstein distance.
+        :type p: `int`
+        :param kernel_size: Kernel size for computing the cost matrix.
+        :type kernel_size: `int`
+        :return: The cost matrix.
+        :rtype: `np.ndarray`
+        """
+        center = kernel_size // 2
+        cost_matrix = np.zeros((kernel_size, kernel_size))
+
+        for i in range(kernel_size):
+            for j in range(kernel_size):
+                cost_matrix[i, j] = (abs(i - center) ** 2 + abs(j - center) ** 2) ** (p / 2)
+
+        return cost_matrix
+
+    @staticmethod
+    def _batch_dot(x, y):
         """
         Compute batch dot product.
 
@@ -650,6 +656,60 @@ class Wasserstein(EvasionAttack):
         result = np.matmul(x_, y_).reshape(batch_size)
 
         return result
+
+    @staticmethod
+    def _unfold(x, kernel_size=5, padding=0):
+        """
+        Extract sliding local blocks from a batched input.
+
+        :param x: A batched input of shape `batch x channel x width x height`.
+        :type x: `np.ndarray`
+        :param kernel_size: Kernel size for computing the cost matrix.
+        :type kernel_size: `int`
+        :param padding: Controls the amount of implicit zero-paddings on both sides for padding number of points
+        for each dimension before reshaping.
+        :type padding: `int`
+        :return: Sliding local blocks.
+        :rtype: `np.ndarray`
+        """
+        # Do padding
+        shape = tuple(np.array(x.shape[2:]) + padding * 2)
+        x_pad = np.zeros(x.shape[:2] + shape)
+        x_pad[:, :, padding:(shape[0] - padding), padding:(shape[0] - padding)] = x
+
+        # Do unfolding
+        res_dim_0 = x.shape[0]
+        res_dim_1 = x.shape[1] * kernel_size ** 2
+        res_dim_2 = (shape[0] - kernel_size + 1) * (shape[1] - kernel_size + 1)
+        result = np.zeros((res_dim_0, res_dim_1, res_dim_2))
+
+        for i in range(shape[0] - kernel_size + 1):
+            for j in range(shape[1] - kernel_size + 1):
+                patch = x_pad[:, :, i:(i + kernel_size), j:(j + kernel_size)]
+                patch = patch.reshape(x.shape[0], -1)
+
+
+
+    def _conv(self, K, x, kernel_size):
+
+        # Compute number of channels
+        num_channels = x.shape[self.estimator.channel_index]
+
+        # Expand channels
+        K = np.repeat(K, num_channels, axis=self.estimator.channel_index)
+
+
+
+
+
+
+
+
+        unfolded = _unfold(x, kernel_size, padding=kernel_size // 2).transpose(-1, -2)
+        unfolded = _expand(unfolded, (A.size(-3), A.size(-2) * A.size(-1))).transpose(-2, -3)
+        out = torch.matmul(unfolded, collapse2(A.contiguous()).unsqueeze(-1)).squeeze(-1)
+
+        return unflatten2(out)
 
     def set_params(self, **kwargs):
         """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
