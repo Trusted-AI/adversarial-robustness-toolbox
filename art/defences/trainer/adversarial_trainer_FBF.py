@@ -26,7 +26,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.trainer.trainer import Trainer
-from art.attacks.evasion.fast_gradient import FastGradientMethod
+import random
 from art.utils import random_sphere
 
 logger = logging.getLogger(__name__)
@@ -69,6 +69,8 @@ class AdversarialTrainerFBF(Trainer):
         :type kwargs: `dict`
         :return: `None`
         """
+        import torch
+        import torch.nn as nn
 
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
@@ -100,7 +102,33 @@ class AdversarialTrainerFBF(Trainer):
                 x_batch_pert = np.clip(x_batch+delta,self.classifier.clip_values[0], self.classifier.clip_values[1])
 
                 # Fit batch
-                self.classifier.fit(x_batch_pert, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], **kwargs)
+                # self.classifier.fit(x_batch_pert, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], **kwargs)
+
+                # Apply preprocessing
+                x_preprocessed, y_preprocessed = self.classifier_apply_preprocessing(x_batch_pert, y_batch, fit=True)
+
+                # Check label shape
+                if self.classifier._reduce_labels:
+                    y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
+                i_batch = torch.from_numpy(x_preprocessed).to(
+                    self.classifier._device)
+                o_batch = torch.from_numpy(y_preprocessed).to(
+                    self.classifier._device)
+
+                # Zero the parameter gradients
+                self.classifier._optimizer.zero_grad()
+
+                # Perform prediction
+                model_outputs = self.classifier._model(i_batch)
+
+                # Form the loss function
+                loss = self.classifier._loss(model_outputs[-1], o_batch)
+
+                # Actual training
+                loss.backward()
+                nn.utils.clip_grad_norm_(self.classifier._model.parameters(), 0.5)
+                self.classifier._optimizer.step()
 
     def predict(self, x, **kwargs):
         """
