@@ -9,6 +9,9 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evation tests"; fi
 
+pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
+
 #Only classifier tests need to be run for each frameworks
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
@@ -71,20 +74,19 @@ declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_rounded.py" \
                      "tests/defences/test_spatial_smoothing.py" \
                      "tests/defences/test_thermometer_encoding.py" \
-                     "tests/defences/test_variance_minimization.py" )
-
-declare -a detection=("tests/detection/subsetscanning/test_detector.py" \
-                      "tests/detection/test_detector.py" )
+                     "tests/defences/test_variance_minimization.py" \
+                     "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
+                     "tests/defences/detector/evasion/test_detector.py" \
+                     "tests/defences/detector/poison/test_activation_defence.py" \
+                     "tests/defences/detector/poison/test_clustering_analyzer.py" \
+                     "tests/defences/detector/poison/test_ground_truth_evaluator.py" \
+                     "tests/defences/detector/poison/test_provenance_defence.py" \
+                     "tests/defences/detector/poison/test_roni.py" \
+                     "tests/defences/detector/poison/test_spectral_signature_defense.py" )
 
 declare -a metrics=("tests/metrics/test_gradient_check.py" \
                     "tests/metrics/test_metrics.py" \
                     "tests/metrics/test_verification_decision_trees.py" )
-
-declare -a poison_detection=("tests/poison_detection/test_activation_defence.py" \
-                             "tests/poison_detection/test_clustering_analyzer.py" \
-                             "tests/poison_detection/test_ground_truth_evaluator.py" \
-                             "tests/poison_detection/test_provenance_defence.py" \
-                             "tests/poison_detection/test_roni.py" )
 
 declare -a wrappers=("tests/wrappers/test_expectation.py" \
                      "tests/wrappers/test_query_efficient_bb.py" \
@@ -98,9 +100,7 @@ declare -a art=("tests/test_data_generators.py" \
 tests_modules=("attacks" \
                "classifiers" \
                "defences" \
-               "detection" \
                "metrics" \
-               "poison_detection" \
                "wrappers" \
                "art" )
 

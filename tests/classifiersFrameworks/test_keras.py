@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -214,7 +214,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
     smooth = SpatialSmoothing()
     classifier_, _ = get_image_classifier_list(one_classifier=True)
     classifier = KerasClassifier(
-        clip_values=clip_values, model=classifier_._model, preprocessing_defences=[fs, jpeg, smooth]
+        clip_values=clip_values, model=classifier_.model, preprocessing_defences=[fs, jpeg, smooth]
     )
     assert len(classifier.preprocessing_defences) == 3
 
@@ -227,7 +227,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
     x_test_defense, _ = smooth(x_test_defense, y_test_mnist)
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
-    predictions_check = classifier._model.predict(x_test_defense)
+    predictions_check = classifier.model.predict(x_test_defense)
 
     # Check that the prediction results match
     np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
@@ -726,7 +726,8 @@ def test_repr(get_image_classifier_list):
         [
             "art.estimators.classification.keras.KerasClassifier",
             "use_logits=False, channel_index=3",
-            "clip_values=(0, 1), preprocessing_defences=None, " "postprocessing_defences=None, preprocessing=(0, 1)",
+            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, " "postprocessing_defences=None, "
+            "preprocessing=(0, 1)",
             "input_layer=0, output_layer=0",
         ],
     )

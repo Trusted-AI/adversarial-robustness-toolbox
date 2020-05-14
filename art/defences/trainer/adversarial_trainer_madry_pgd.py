@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -53,7 +53,7 @@ class AdversarialTrainerMadryPGD(Trainer):
         Default values are for CIFAR-10 in pixel range 0-255.
 
         :param classifier: Classifier to train adversarially.
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         :param nb_epochs: Number of training epochs.
         :type nb_epochs: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.

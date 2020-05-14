@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -46,7 +46,7 @@ class DetectorClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
         Initialization for the DetectorClassifier.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         :param detector: A trained detector applied for the binary classification.
         :type detector: :class:`.Detector`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier. Not applicable
