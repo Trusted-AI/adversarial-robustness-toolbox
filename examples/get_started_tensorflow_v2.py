@@ -7,7 +7,7 @@ The parameters are chosen for reduced computational requirements of the script a
 import numpy as np
 
 from art.attacks.evasion import FastGradientMethod
-from art.classifiers import TensorFlowV2Classifier
+from art.estimators.classification import TensorFlowV2Classifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset

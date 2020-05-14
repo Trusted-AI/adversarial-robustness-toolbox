@@ -21,7 +21,7 @@ import pickle
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from sklearn.linear_model import LogisticRegression
-from art.classifiers import SklearnClassifier
+from art.estimators.classification import SklearnClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier
