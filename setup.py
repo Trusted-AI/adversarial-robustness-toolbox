@@ -13,7 +13,7 @@ install_requires = [
     "six",
     "setuptools",
     "scikit-learn==0.22.1",
-    "Pillow==7.0.0",
+    "Pillow==6.2.2",
 ]
 
 tests_require = [
