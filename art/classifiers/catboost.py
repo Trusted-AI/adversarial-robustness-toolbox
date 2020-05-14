@@ -30,6 +30,7 @@ from art.classifiers.classifier import Classifier
 if TYPE_CHECKING:
     from catboost.core import CatBoostClassifier
 
+    from art.config import CLIP_VALUES_TYPE
     from art.defences import Preprocessor, Postprocessor
 
 logger = logging.getLogger(__name__)
@@ -50,7 +51,7 @@ class CatBoostARTClassifier(Classifier):
             "Postprocessor", List["Postprocessor"], None
         ] = None,
         preprocessing: Optional[tuple] = None,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         nb_features: Optional[int] = None,
     ) -> None:
         """

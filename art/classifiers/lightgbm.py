@@ -31,6 +31,7 @@ from art.classifiers.classifier import Classifier, ClassifierDecisionTree
 if TYPE_CHECKING:
     import lightgbm
 
+    from art.config import CLIP_VALUES_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
     from art.metrics.verification_decisions_trees import LeafNode
@@ -46,7 +47,7 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
     def __init__(
         self,
         model: Optional["lightgbm.Booster"] = None,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,

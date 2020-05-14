@@ -32,6 +32,7 @@ from art.classifiers.classifier import (
 )
 
 if TYPE_CHECKING:
+    from art.config import CLIP_VALUES_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -50,7 +51,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         classifiers: List[ClassifierNeuralNetwork],
         classifier_weights: Union[list, np.ndarray, None] = None,
         channel_index: int = 3,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,

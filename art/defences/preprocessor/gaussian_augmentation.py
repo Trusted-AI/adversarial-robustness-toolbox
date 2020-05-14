@@ -25,6 +25,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
+from art.config import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -52,7 +53,7 @@ class GaussianAugmentation(Preprocessor):
         sigma: float = 1.0,
         augmentation: bool = True,
         ratio: float = 1.0,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
     ):

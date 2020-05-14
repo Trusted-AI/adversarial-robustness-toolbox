@@ -32,7 +32,7 @@ from typing import Optional, Tuple
 import numpy as np
 from scipy.optimize import minimize
 
-from art.config import ART_NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -58,7 +58,7 @@ class TotalVarMin(Preprocessor):
         lamb: float = 0.5,
         solver: str = "L-BFGS-B",
         max_iter: int = 10,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
     ):

@@ -34,9 +34,10 @@ from scipy.special import gammainc
 import six
 from sklearn.metrics import accuracy_score, f1_score
 
-from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
+from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE, DATASET_TYPE
 
 if TYPE_CHECKING:
+    from art.config import CLIP_VALUES_TYPE
     from art.classifiers.classifier import Classifier
 
 logger = logging.getLogger(__name__)
@@ -346,7 +347,7 @@ def compute_accuracy(
 
 def load_cifar10(
     raw: bool = False,
-) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]:
+) -> DATASET_TYPE:
     """
     Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
@@ -414,7 +415,7 @@ def load_cifar10(
 
 def load_mnist(
     raw: bool = False,
-) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]:
+) -> DATASET_TYPE:
     """
     Loads MNIST dataset from `ART_DATA_PATH` or downloads it if necessary.
 
@@ -446,9 +447,7 @@ def load_mnist(
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_stl() -> Tuple[
-    Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float
-]:
+def load_stl() -> DATASET_TYPE:
     """
     Loads the STL-10 dataset from `ART_DATA_PATH` or downloads it if necessary.
 
@@ -492,7 +491,7 @@ def load_stl() -> Tuple[
 
 def load_iris(
     raw: bool = False, test_set: float = 0.3
-) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]:
+) -> DATASET_TYPE:
     """
     Loads the UCI Iris dataset from `ART_DATA_PATH` or downloads it if necessary.
 
@@ -566,7 +565,7 @@ def load_iris(
 
 def load_dataset(
     name: str,
-) -> Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]:
+) -> DATASET_TYPE:
     """
     Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
 
@@ -684,7 +683,7 @@ def make_directory(dir_path: str) -> None:
 
 
 def clip_and_round(
-    x: np.ndarray, clip_values: tuple, round_samples: float
+    x: np.ndarray, clip_values: "CLIP_VALUES_TYPE", round_samples: float
 ) -> np.ndarray:
     """
     Rounds the input to the correct level of granularity.
@@ -710,7 +709,7 @@ def preprocess(
     x: np.ndarray,
     y: np.ndarray,
     nb_classes: int = 10,
-    clip_values: Optional[tuple] = None,
+    clip_values: Optional[CLIP_VALUES_TYPE] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Scales `x` to [0, 1] and converts `y` to class categorical confidences.

@@ -38,6 +38,7 @@ from art.utils import to_categorical
 if TYPE_CHECKING:
     import sklearn
 
+    from art.config import CLIP_VALUES_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
     from art.metrics.verification_decisions_trees import LeafNode, Tree
@@ -53,7 +54,7 @@ class ScikitlearnClassifier(Classifier):
     def __init__(
         self,
         model: "sklearn.base.BaseEstimator",
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -193,7 +194,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
     def __init__(
         self,
         model: Optional["sklearn.tree.DecisionTreeClassifier"],
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -353,7 +354,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
     def __init__(
         self,
         model: "sklearn.tree.DecisionTreeRegressor",
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -457,7 +458,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
     def __init__(
         self,
         model: "sklearn.tree.ExtraTreeClassifier",
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -501,7 +502,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
     def __init__(
         self,
         model: "sklearn.ensemble.AdaBoostClassifier",
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -547,7 +548,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
     def __init__(
         self,
         model: "sklearn.ensemble.BaggingClassifier",
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -592,7 +593,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
     def __init__(
         self,
         model: "sklearn.ensemble.ExtraTreesClassifier",
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -678,7 +679,7 @@ class ScikitlearnGradientBoostingClassifier(
     def __init__(
         self,
         model: "sklearn.ensemble.GradientBoostingClassifier",
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -761,7 +762,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
     def __init__(
         self,
         model: "sklearn.ensemble.RandomForestClassifier",
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -845,7 +846,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
     def __init__(
         self,
         model: "sklearn.linear_model.LogisticRegression",
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -1063,7 +1064,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
     def __init__(
         self,
         model: Union["sklearn.svm.SVC", "sklearn.svm.LinearSVC"],
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -1594,7 +1595,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 # pylint: disable=C0103
 def SklearnClassifier(
     model: "sklearn.base.BaseEstimator",
-    clip_values: Optional[tuple] = None,
+    clip_values: Optional["CLIP_VALUES_TYPE"] = None,
     preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
     postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
     preprocessing: tuple = (0, 1),

@@ -32,7 +32,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
@@ -56,7 +56,7 @@ class PixelDefend(Preprocessor):
 
     def __init__(
         self,
-        clip_values: tuple = (0, 1),
+        clip_values: CLIP_VALUES_TYPE = (0.0, 1.0),
         eps: int = 16,
         pixel_cnn: Optional["Classifier"] = None,
         apply_fit: bool = False,

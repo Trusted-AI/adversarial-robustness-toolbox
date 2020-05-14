@@ -30,6 +30,7 @@ from art.classifiers.classifier import Classifier, ClassifierGradients
 if TYPE_CHECKING:
     from GPy.models import GPClassification
 
+    from art.config import CLIP_VALUES_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
@@ -45,7 +46,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
     def __init__(
         self,
         model: Optional["GPClassification"] = None,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,

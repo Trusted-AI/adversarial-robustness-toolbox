@@ -31,7 +31,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import to_categorical
 
@@ -53,7 +53,7 @@ class ThermometerEncoding(Preprocessor):
 
     def __init__(
         self,
-        clip_values: tuple,
+        clip_values: CLIP_VALUES_TYPE,
         num_space: int = 10,
         channel_index: int = 3,
         apply_fit: bool = True,

@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH
+from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE
 from art.classifiers.classifier import (
     Classifier,
     ClassifierNeuralNetwork,
@@ -62,7 +62,7 @@ class PyTorchClassifier(
         input_shape: Tuple[int, ...],
         nb_classes: int,
         channel_index: int = 1,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,

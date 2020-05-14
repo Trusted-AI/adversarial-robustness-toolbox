@@ -33,7 +33,7 @@ from typing import Optional, Tuple
 import numpy as np
 from scipy import ndimage
 
-from art.config import ART_NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -56,7 +56,7 @@ class SpatialSmoothing(Preprocessor):
         self,
         window_size: int = 3,
         channel_index: int = 3,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
     ) -> None:

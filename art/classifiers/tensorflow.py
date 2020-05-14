@@ -30,7 +30,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, TYPE_CHECK
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH
+from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE
 from art.classifiers.classifier import (
     Classifier,
     ClassifierNeuralNetwork,
@@ -64,7 +64,7 @@ class TensorFlowClassifier(
         learning: Optional["tf.Placeholder"] = None,
         sess: Optional["tf.Session"] = None,
         channel_index: int = 3,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
@@ -718,7 +718,7 @@ class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Class
         loss_object: Optional["tf.keras.losses.Loss"] = None,
         train_step: Optional[Callable] = None,
         channel_index: int = 3,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,

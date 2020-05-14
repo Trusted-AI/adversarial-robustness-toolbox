@@ -31,6 +31,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
+from art.config import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class FeatureSqueezing(Preprocessor):
 
     def __init__(
         self,
-        clip_values: tuple,
+        clip_values: CLIP_VALUES_TYPE,
         bit_depth: int = 8,
         apply_fit: bool = False,
         apply_predict: bool = True,

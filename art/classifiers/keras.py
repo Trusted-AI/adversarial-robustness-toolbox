@@ -28,7 +28,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union, TYPE_CHECK
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH
+from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE
 from art.classifiers.classifier import (
     Classifier,
     ClassifierNeuralNetwork,
@@ -58,7 +58,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         model: KERAS_MODEL_TYPE,
         use_logits: bool = False,
         channel_index: int = 3,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,

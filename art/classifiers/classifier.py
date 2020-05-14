@@ -28,6 +28,7 @@ import numpy as np
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
+    from art.config import CLIP_VALUES_TYPE
     from art.data_generators import DataGenerator
     from art.defences import Preprocessor, Postprocessor
 
@@ -98,7 +99,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
 
     def __init__(
         self,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,

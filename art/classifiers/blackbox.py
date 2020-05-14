@@ -28,6 +28,7 @@ import numpy as np
 from art.classifiers.classifier import Classifier
 
 if TYPE_CHECKING:
+    from art.config import CLIP_VALUES_TYPE
     from art.defences import Preprocessor, Postprocessor
 
 logger = logging.getLogger(__name__)
@@ -43,7 +44,7 @@ class BlackBoxClassifier(Classifier):
         predict: Callable,
         input_shape: tuple,
         nb_classes: int,
-        clip_values: Optional[tuple] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
