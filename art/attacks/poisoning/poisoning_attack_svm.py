@@ -88,13 +88,13 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
         super(PoisoningAttackSVM, self).__init__(classifier)
 
-        if isinstance(self.estimator._model, LinearSVC):
+        if isinstance(self.estimator.model, LinearSVC):
             self._estimator = ScikitlearnSVC(
-                model=SVC(C=self.estimator._model.C, kernel="linear"), clip_values=self.estimator.clip_values
+                model=SVC(C=self.estimator.model.C, kernel="linear"), clip_values=self.estimator.clip_values
             )
             self.estimator.fit(x_train, y_train)
-        elif not isinstance(self.estimator._model, SVC):
-            raise NotImplementedError("Model type '{}' not yet supported".format(type(self.estimator._model)))
+        elif not isinstance(self.estimator.model, SVC):
+            raise NotImplementedError("Model type '{}' not yet supported".format(type(self.estimator.model)))
 
         self.step = step
         self.eps = eps
@@ -178,7 +178,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         # pylint: disable=W0212
         from sklearn.preprocessing import normalize
 
-        poisoned_model = self.estimator._model
+        poisoned_model = self.estimator.model
         y_t = np.argmax(self.y_train, axis=1)
         poisoned_model.fit(self.x_train, y_t)
         y_a = np.argmax(y_attack)
@@ -220,7 +220,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :rtype: `np.ndarray`
         """
         # pylint: disable=W0212
-        preds = self.estimator._model.predict(vec)
+        preds = self.estimator.model.predict(vec)
         return 2 * preds - 1
 
     def attack_gradient(self, attack_point, tol=0.0001):
@@ -237,7 +237,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         """
         # pylint: disable=W0212
         art_model = self.estimator
-        model = self.estimator._model
+        model = self.estimator.model
         grad = np.zeros((1, self.x_val.shape[1]))
         support_vectors = model.support_vectors_
         num_support = len(support_vectors)
