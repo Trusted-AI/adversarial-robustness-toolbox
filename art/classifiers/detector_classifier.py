@@ -35,6 +35,7 @@ from art.classifiers.classifier import (
 )
 
 if TYPE_CHECKING:
+    from art.config import PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -58,7 +59,7 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Initialization for the DetectorClassifier.

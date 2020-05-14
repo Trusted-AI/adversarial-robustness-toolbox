@@ -28,7 +28,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple, Union, TYPE_CHECK
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE
+from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 from art.classifiers.classifier import (
     Classifier,
     ClassifierNeuralNetwork,
@@ -65,7 +65,7 @@ class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: PREPROCESSING_TYPE = (0, 1),
         input_layer: int = 0,
         output_layer: int = 0,
     ) -> None:

@@ -32,7 +32,7 @@ from art.classifiers.classifier import (
 )
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -58,7 +58,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Initialize a :class:`.EnsembleClassifier` object. The data range values and colour channel index have to

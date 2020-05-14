@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 
 ART_NUMPY_DTYPE = np.float32
 DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
-CLIP_MIN_MAX_TYPE = Union[int, float, np.ndarray]
-CLIP_VALUES_TYPE = Tuple[CLIP_MIN_MAX_TYPE, CLIP_MIN_MAX_TYPE]
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
+PREPROCESSING_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
 
 # --------------------------------------------------------------------------------------------- DEFAULT PACKAGE CONFIGS
 

@@ -31,7 +31,7 @@ from art.classifiers.classifier import Classifier, ClassifierDecisionTree
 if TYPE_CHECKING:
     import lightgbm
 
-    from art.config import CLIP_VALUES_TYPE
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
     from art.metrics.verification_decisions_trees import LeafNode
@@ -54,7 +54,7 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a LightGBM model.

@@ -21,14 +21,14 @@ This module implements the classifier `BlackBoxClassifier` for black-box classif
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Callable, List, Optional, Union, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.classifiers.classifier import Classifier
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences import Preprocessor, Postprocessor
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class BlackBoxClassifier(Classifier):
     def __init__(
         self,
         predict: Callable,
-        input_shape: tuple,
+        input_shape: Tuple[int, ...],
         nb_classes: int,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
@@ -51,7 +51,7 @@ class BlackBoxClassifier(Classifier):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ):
         """
         Create a `Classifier` instance for a black-box model.

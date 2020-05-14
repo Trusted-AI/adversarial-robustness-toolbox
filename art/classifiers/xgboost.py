@@ -34,7 +34,7 @@ from art.utils import to_categorical
 if TYPE_CHECKING:
     import xgboost
 
-    from art.config import CLIP_VALUES_TYPE
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
     from art.metrics.verification_decisions_trees import LeafNode, Tree
@@ -50,14 +50,14 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
     def __init__(
         self,
         model: Union["xgboost.Booster", "xgboost.XGBClassifier", None] = None,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
         nb_features: Optional[int] = None,
         nb_classes: Optional[int] = None,
     ) -> None:

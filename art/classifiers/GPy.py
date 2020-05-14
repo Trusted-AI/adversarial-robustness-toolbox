@@ -30,7 +30,7 @@ from art.classifiers.classifier import Classifier, ClassifierGradients
 if TYPE_CHECKING:
     from GPy.models import GPClassification
 
-    from art.config import CLIP_VALUES_TYPE
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
@@ -53,7 +53,7 @@ class GPyGaussianProcessClassifier(Classifier, ClassifierGradients):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance GPY Gaussian Process classification models.

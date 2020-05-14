@@ -27,7 +27,12 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import six
 
-from art.config import ART_NUMPY_DTYPE, ART_DATA_PATH, CLIP_VALUES_TYPE
+from art.config import (
+    ART_NUMPY_DTYPE,
+    ART_DATA_PATH,
+    CLIP_VALUES_TYPE,
+    PREPROCESSING_TYPE,
+)
 from art.classifiers.classifier import (
     Classifier,
     ClassifierNeuralNetwork,
@@ -67,7 +72,7 @@ class MXClassifier(
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: PREPROCESSING_TYPE = (0, 1),
     ) -> None:
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model.

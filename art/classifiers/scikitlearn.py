@@ -38,7 +38,7 @@ from art.utils import to_categorical
 if TYPE_CHECKING:
     import sklearn
 
-    from art.config import CLIP_VALUES_TYPE
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
     from art.metrics.verification_decisions_trees import LeafNode, Tree
@@ -61,7 +61,7 @@ class ScikitlearnClassifier(Classifier):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn classifier model.
@@ -201,7 +201,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Decision Tree Classifier model.
@@ -361,7 +361,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Regressor` instance from a scikit-learn Decision Tree Regressor model.
@@ -465,7 +465,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Extra TreeClassifier Classifier model.
@@ -509,7 +509,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn AdaBoost Classifier model.
@@ -555,7 +555,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Bagging Classifier model.
@@ -600,7 +600,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, ClassifierDecisionT
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ):
         """
         Create a `Classifier` instance from a scikit-learn Extra Trees Classifier model.
@@ -686,7 +686,7 @@ class ScikitlearnGradientBoostingClassifier(
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Gradient Boosting Classifier model.
@@ -769,7 +769,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Random Forest Classifier model.
@@ -853,7 +853,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Logistic Regression model.
@@ -1071,7 +1071,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: tuple = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn C-Support Vector Classification model.
@@ -1598,7 +1598,7 @@ def SklearnClassifier(
     clip_values: Optional["CLIP_VALUES_TYPE"] = None,
     preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
     postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-    preprocessing: tuple = (0, 1),
+    preprocessing: "PREPROCESSING_TYPE" = (0, 1),
 ) -> ScikitlearnClassifier:
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that

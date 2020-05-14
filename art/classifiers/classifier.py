@@ -28,7 +28,7 @@ import numpy as np
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences import Preprocessor, Postprocessor
 
@@ -106,7 +106,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
         postprocessing_defences: Union[
             "Postprocessor", List["Postprocessor"], None
         ] = None,
-        preprocessing: Optional[tuple] = None,
+        preprocessing: Optional["PREPROCESSING_TYPE"] = None,
         **kwargs
     ) -> None:
         """
