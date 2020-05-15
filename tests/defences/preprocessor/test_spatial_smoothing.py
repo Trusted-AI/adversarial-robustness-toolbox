@@ -81,7 +81,6 @@ class TestLocalSpatialSmoothing:
 
         assert_array_equal(spatial_smoothing(test_input)[0], test_output)
 
-    @pytest.mark.xfail(raises=ValueError)
     @pytest.mark.parametrize("channels_first", [True, False])
     def test_spatial_smoothing_video_data(self, video_batch, channels_first):
         channel_index = 1 if channels_first else 4
@@ -99,7 +98,7 @@ class TestLocalSpatialSmoothing:
             spatial_smoothing(test_input)
 
     def test_channel_index_error(self):
-        exc_msg = "Data channel must be an integer equal to 1 or 3. The batch dimension is not a valid channel."
+        exc_msg = "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
         with pytest.raises(ValueError, match=exc_msg):
             SpatialSmoothing(channel_index=0)
 
