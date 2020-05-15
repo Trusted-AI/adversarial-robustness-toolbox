@@ -538,21 +538,10 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :rtype: `np.ndarray`
         """
         import keras.backend as k
-        # TODO: ensure the right type of input
+
         grads = k.gradients(nn_function, tensors[0])[0]
         outputs = k.function(tensors, [grads])
         return outputs(input_values)
-
-    def normalize_tensor(self, tensor):
-        """
-        Normalize an intermediate tensor
-        :param tensor:
-        :return:
-        """
-        import keras.backend as k
-        # norm_tensor = k.l2_normalize(tensor)
-        # return k.function([self._model.input], [norm_tensor])
-        return k.l2_normalize(tensor)
 
     def get_input_layer(self):
         return self._input
