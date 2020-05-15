@@ -517,15 +517,6 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def normalize_tensor(self, tensor):
-        """
-        Normalize an intermediate tensor
-        :param tensor: a tensor
-        :return: a normalized tensor
-        """
-        raise NotImplementedError
-
-    @abstractmethod
     def set_learning_phase(self, train):
         """
         Set the learning phase for the backend framework.
