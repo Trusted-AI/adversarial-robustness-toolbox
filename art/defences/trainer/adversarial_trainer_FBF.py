@@ -26,12 +26,12 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.trainer.trainer import Trainer
-import random
+import apex.amp as amp
 from art.utils import random_sphere
 
 logger = logging.getLogger(__name__)
 
-
+#TODO: rename to reflect PyTorch
 class AdversarialTrainerFBF(Trainer):
     """
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
@@ -85,6 +85,8 @@ class AdversarialTrainerFBF(Trainer):
 
             for batch_id in range(nb_batches):
                 lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
+                #TODO: inspect lr and match with the code
+
                 self.classifier._optimizer.param_groups[0].update(lr=lr)
                 # Create batch data
                 x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
@@ -126,7 +128,9 @@ class AdversarialTrainerFBF(Trainer):
                 loss = self.classifier._loss(model_outputs[-1], o_batch)
 
                 # Actual training
-                loss.backward()
+                # loss.backward()
+                with amp.scale_loss(loss, self.classifier._optimizer) as scaled_loss:
+                    scaled_loss.backward()
                 nn.utils.clip_grad_norm_(self.classifier._model.parameters(), 0.5)
                 self.classifier._optimizer.step()
 
