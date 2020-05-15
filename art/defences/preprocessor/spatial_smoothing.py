@@ -96,13 +96,20 @@ class SpatialSmoothing(Preprocessor):
         if x_ndim == 2:
             raise ValueError("Feature vectors detected. Smoothing can only be applied to data with spatial dimensions.")
 
-        if x_ndim > 4:
-            raise ValueError("Unrecognized input dimension. Spatial smoothing can only be applied to image.")
+        if x_ndim > 5:
+            raise ValueError(
+                "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data."
+            )
 
         filter_size = [self.window_size] * x_ndim
-        # set filter_size at batch and channels indices to 1
+        # set filter_size at batch and channel indices to 1
         filter_size[0] = 1
         filter_size[self.channel_index] = 1
+        # set filter_size at temporal index to 1
+        if x_ndim == 5:
+            # check if NCFHW or NFHWC
+            temporal_index = 2 if self.channel_index == 1 else 1
+            filter_size[temporal_index] = 1
         # Note median_filter:
         # * center pixel located lower right
         # * if window size even, use larger value (e.g. median(4,5)=5)
@@ -140,9 +147,9 @@ class SpatialSmoothing(Preprocessor):
         if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
             raise ValueError("Sliding window size must be a positive integer.")
 
-        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3]):
+        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3, 4]):
             raise ValueError(
-                "Data channel must be an integer equal to 1 or 3. The batch dimension is not a valid channel."
+                "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
             )
 
         if self.clip_values is not None and len(self.clip_values) != 2:
