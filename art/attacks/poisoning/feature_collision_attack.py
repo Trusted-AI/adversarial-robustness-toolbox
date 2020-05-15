@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -27,7 +27,6 @@ from tqdm import tqdm
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.utils import tensor_norm
 
 from functools import reduce
 
@@ -132,7 +131,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 new_attack = self.forward_step(old_attack)
 
                 # backward step
-                new_attack = self.backward_step(np.expand_dims(init_attack, axis=0), new_attack)
+                new_attack = self.backward_step(np.expand_dims(init_attack, axis=0), poison_features, new_attack)
 
                 rel_change_val = np.linalg.norm(new_attack - old_attack) / np.linalg.norm(new_attack)
                 if rel_change_val < self.stopping_tol:
@@ -146,7 +145,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
                 avg_of_last_m = sum(last_m_objectives) / float(min(self.num_old_obj, i + 1))
 
-                # If the objective went up, then learning rate is too big.  Chop it, and throw out the latest iteration
+                # Increasing objective means then learning rate is too big.  Chop it, and throw out the latest iteration
                 if new_objective >= avg_of_last_m and (i % self.num_old_obj / 2 == 0):
                     self.learning_rate *= self.decay_coeff
                 else:
@@ -163,7 +162,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             final_poison = np.clip(old_attack[0] + self.watermark * self.target, *self.classifier.clip_values)
             final_attacks.append(final_poison)
 
-        return np.vstack(final_attacks)
+        return np.vstack(final_attacks), self.classifier.predict(x)
 
     def set_params(self, **kwargs):
         """
@@ -196,8 +195,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                                                                                  intermediate=True)
         poison_placeholder, poison_feature_rep = self.classifier.get_activations(poison, self.feature_layer, 1,
                                                                                  intermediate=True)
-        attack_loss = self.classifier.normalize_tensor(poison_feature_rep - target_feature_rep)
-        # attack_loss = tensor_norm([poison_feature_rep - target_feature_rep])
+        attack_loss = tensor_norm(poison_feature_rep - target_feature_rep)
         attack_grad, = self.classifier.custom_gradient(attack_loss, [poison_placeholder, target_placeholder],
                                                        [poison, self.target])
 
@@ -205,7 +203,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
         return poison
 
-    def backward_step(self, base, poison):
+    def backward_step(self, base, feature_rep, poison):
         """
         Backward part of forward-backward splitting algorithm
         :param base: the base image that the poison was initialized with
@@ -216,8 +214,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :rtype: `np.ndarray`
         """
         num_features = reduce(lambda x, y: x * y, base.shape)
-        # TODO: replace 2048 with dynamic shape of feature representation
-        beta = self.similarity_coeff * (2048.0 / num_features) ** 2
+        dim_features = feature_rep.shape[-1]
+        beta = self.similarity_coeff * (dim_features / num_features) ** 2
         poison = (poison + self.learning_rate * beta * base) / (1 + beta * self.learning_rate)
         low, high = self.classifier.clip_values
         return np.clip(poison, low, high)
@@ -237,3 +235,45 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         num_activations = prod_sum(poison_feature_rep.shape)
         beta = self.similarity_coeff * (num_activations / num_features) ** 2
         return np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)
+
+
+def get_class_name(obj):
+    """
+    Get the full class name of an object
+    :param obj: a python object
+    :type obj: `object`
+    :return: a qualified class name
+    :rtype: `str`
+    """
+    module = obj.__class__.__module__
+    if module is None or module == str.__class__.__module__:
+        return obj.__class__.__name__
+    else:
+        return module + '.' + obj.__class__.__name__
+
+
+def tensor_norm(tensor, norm_type=2):
+    """
+    Compute the norm of a tensor
+
+    :param tensor: a tensor from a supported ART neural network
+    :param norm_type: order fo the norm
+    :type norm_type: `int` or `string`
+    :return: a tensor with the norm applied
+    """
+    tf_tensor_types = ('tensorflow.python.framework.ops.Tensor', 'tensorflow.python.framework.ops.EagerTensor')
+    torch_tensor_types = ()
+    mxnet_tensor_types = ()
+    supported_types = tf_tensor_types + torch_tensor_types + mxnet_tensor_types
+    tensor_type = get_class_name(tensor)
+    if tensor_type not in supported_types:
+        raise TypeError("Tensor type `" + tensor_type + "` is not supported")
+    elif tensor_type in tf_tensor_types:
+        import tensorflow as tf
+        return tf.norm(tensor, ord=norm_type)
+    elif tensor_type in torch_tensor_types:
+        import torch
+        return torch.norm(tensor, p=norm_type)
+    elif tensor_type in mxnet_tensor_types:
+        import mxnet
+        return mxnet.ndarray.norm(tensor, ord=norm_type)
