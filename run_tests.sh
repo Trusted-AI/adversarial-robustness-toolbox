@@ -74,7 +74,6 @@ declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_pixel_defend.py" \
                      "tests/defences/test_reverse_sigmoid.py" \
                      "tests/defences/test_rounded.py" \
-                     "tests/defences/test_spatial_smoothing.py" \
                      "tests/defences/test_thermometer_encoding.py" \
                      "tests/defences/test_variance_minimization.py" \
                      "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
