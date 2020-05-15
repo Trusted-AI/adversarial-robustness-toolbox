@@ -41,6 +41,18 @@ def image_batch(channels_first):
 
 
 @pytest.fixture
+def video_batch(channels_first):
+    """
+    Video fixture of shape NFHWC and NCFHW.
+    """
+    test_input = np.repeat(np.array(range(6)).reshape(6, 1), 24, axis=1).reshape(1, 3, 2, 4, 6)
+    if not channels_first:
+        test_input = np.transpose(test_input, (0, 2, 3, 4, 1))
+    test_output = test_input.copy()
+    return test_input, test_output
+
+
+@pytest.fixture
 def tabular_batch():
     """
     Create tabular data fixture of shape (batch_size, features).
@@ -66,6 +78,15 @@ class TestLocalSpatialSmoothing:
         channel_index = 1 if channels_first else 3
         test_input, test_output = image_batch
         spatial_smoothing = SpatialSmoothing(channel_index=channel_index, window_size=window_size)
+
+        assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+
+    @pytest.mark.xfail(raises=ValueError)
+    @pytest.mark.parametrize("channels_first", [True, False])
+    def test_spatial_smoothing_video_data(self, video_batch, channels_first):
+        channel_index = 1 if channels_first else 4
+        test_input, test_output = video_batch
+        spatial_smoothing = SpatialSmoothing(channel_index=channel_index, window_size=2)
 
         assert_array_equal(spatial_smoothing(test_input)[0], test_output)
 
