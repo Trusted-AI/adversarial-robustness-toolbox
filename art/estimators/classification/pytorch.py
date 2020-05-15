@@ -395,9 +395,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def custom_gradient(self, nn_function):
-        return
-
     @property
     def layer_names(self):
         """
@@ -465,8 +462,20 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return results
 
-    def custom_gradient(self, nn_function):
-        return
+    def custom_gradient(self, nn_function, tensors, input_values):
+        """
+        Returns the gradient of the nn_function with respect to model input
+
+        :param nn_function: an intermediate tensor representation of the function to differentiate
+        :type nn_function: a Pytorch tensor
+        :param tensors: the tensors or variables to differentiate with respect to
+        :type tensors: `list`
+        :param input_values: the inputs to evaluate the gradient
+        :type input_values: `list`
+        :return: the gradient of the function w.r.t vars
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
 
     def get_input_layer(self):
         return self._input
