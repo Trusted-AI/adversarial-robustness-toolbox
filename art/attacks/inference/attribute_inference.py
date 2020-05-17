@@ -28,8 +28,10 @@ import numpy as np
 from sklearn.neural_network import MLPClassifier
 
 from art.estimators.estimator import BaseEstimator
+from art.estimators.classification import ClassifierMixin
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.attacks import AttributeInferenceAttack
+from art.utils import check_and_transform_label_format
 
 
 logger = logging.getLogger(__name__)
@@ -48,16 +50,32 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
     _estimator_requirements = [BaseEstimator]
 
-    def __init__(self, classifier, attack_feature=0):
+    def __init__(self, classifier, attack_model=None, attack_feature=0):
         """
         Create an AttributeInferenceBlackBox attack instance.
 
         :param classifier: Target classifier.
         :type classifier: :class:`.Classifier`
+        :param attack_model: The attack model to train, optional. If none is provided, a default model will be created
+        :type attack_model: :class:`.Classifier`
         :param attack_feature: The index of the feature to be attacked.
         :type attack_feature: `int`
         """
         super(AttributeInferenceBlackBox, self).__init__(estimator=classifier, attack_feature=attack_feature)
+
+        if attack_model:
+            if ClassifierMixin not in type(attack_model).__mro__:
+                raise ValueError(
+                    'Attack model must be of type classifier'
+                )
+            self.attack_model = attack_model
+        else:
+            self.attack_model = MLPClassifier(hidden_layer_sizes=(100, ), activation='relu', solver='adam', alpha=0.0001,
+                                              batch_size='auto', learning_rate='constant', learning_rate_init=0.001,
+                                              power_t=0.5, max_iter=200, shuffle=True, random_state=None, tol=0.0001,
+                                              verbose=False, warm_start=False, momentum=0.9, nesterovs_momentum=True,
+                                              early_stopping=False, validation_fraction=0.1, beta_1=0.9, beta_2=0.999,
+                                              epsilon=1e-08, n_iter_no_change=10, max_fun=15000)
 
     def fit(self, x, **kwargs):
         """
@@ -78,17 +96,18 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                     'attack_feature must be a valid index to a feature in x'
             )
 
+
         # get model's predictions for x
         predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1,1)
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
+        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
 
         # create training set for attack model
-        x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1)
+        x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
 
         # train attack model
-        self.attack_model = MLPClassifier()
         self.attack_model.fit(x_train, y)
 
     def infer(self, x, y, **kwargs):
@@ -113,8 +132,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 'Number of features in x + 1 does not match input_shape of classifier'
             )
 
-        x_test = np.concatenate((x, y), axis=1)
-        return self.attack_model.predict(x_test)
+        x_test = np.concatenate((x, y), axis=1).astype(np.float32)
+        return np.array([np.argmax(arr) for arr in self.attack_model.predict(x_test)])
+
 
 class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
     """
