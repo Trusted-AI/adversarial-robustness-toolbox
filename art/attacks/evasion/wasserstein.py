@@ -55,7 +55,6 @@ class Wasserstein(EvasionAttack):
         "norm",
         "ball",
         "eps",
-        "eps_factor",
         "max_iter",
         "conjugate_sinkhorn_max_iter",
         "projected_sinkhorn_max_iter",
@@ -75,7 +74,6 @@ class Wasserstein(EvasionAttack):
         norm='wasserstein',
         ball='wasserstein',
         eps=0.01,
-        eps_factor=1.1,
         max_iter=400,
         conjugate_sinkhorn_max_iter=400,
         projected_sinkhorn_max_iter=400,
@@ -86,6 +84,30 @@ class Wasserstein(EvasionAttack):
 
         :param estimator: A trained estimator.
         :type estimator: :class:`.BaseEstimator`
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
+        :type targeted: `bool`
+        :param regularization: Entropy regularization.
+        :type regularization: `float`
+        :param p: The p-wasserstein distance.
+        :type p: `int`
+        :param kernel_size: Kernel size for computing the cost matrix.
+        :type kernel_size: `int`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
+        :param norm: The norm of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
+        :type norm: `string`
+        :param ball: The ball of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
+        :type ball: `string`
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :type eps: `float`
+        :param max_iter: The maximum number of iterations.
+        :type max_iter: `int`
+        :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
+        :type conjugate_sinkhorn_max_iter: `int`
+        :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
+        :type projected_sinkhorn_max_iter: `int`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
         """
         super(Wasserstein, self).__init__(estimator=estimator)
 
@@ -97,8 +119,7 @@ class Wasserstein(EvasionAttack):
             "eps_step": eps_step,
             "norm": norm,
             "ball": ball,
-            "epsilon": epsilon,
-            "epsilon_factor": epsilon_factor,
+            "eps": eps,
             "max_iter": max_iter,
             "conjugate_sinkhorn_max_iter": conjugate_sinkhorn_max_iter,
             "projected_sinkhorn_max_iter": projected_sinkhorn_max_iter,
@@ -201,7 +222,7 @@ class Wasserstein(EvasionAttack):
         :type norm: `string`
         :param ball: The ball of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
         :type ball: `string`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :type targeted: `bool`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
