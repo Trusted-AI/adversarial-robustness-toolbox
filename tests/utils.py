@@ -332,7 +332,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-    def train_step(images, labels):
+    def train_step(model, images, labels):
         with tf.GradientTape() as tape:
             predictions = model(images, training=True)
             loss = loss_object(labels, predictions)
