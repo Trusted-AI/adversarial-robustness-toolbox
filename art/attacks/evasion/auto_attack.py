@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -43,12 +43,22 @@ class AutoAttack(EvasionAttack):
         "attacks",
         "targeted",
         "batch_size",
-        "estimator_orig"
+        "estimator_orig",
     ]
 
     _estimator_requirements = (BaseEstimator,)
 
-    def __init__(self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, targeted=False, batch_size=32, estimator_orig=None):
+    def __init__(
+        self,
+        estimator,
+        norm=np.inf,
+        eps=0.3,
+        eps_step=0.1,
+        attacks=None,
+        targeted=False,
+        batch_size=32,
+        estimator_orig=None,
+    ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
@@ -60,8 +70,8 @@ class AutoAttack(EvasionAttack):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
-        :param attacks: The list of `art.attacks.EvasionAttack` attacks to be used for AutoAttack. If it is `None` the original
-                        AutoAttack (PGD, APGD-ce, APGD-dlr, FAB, Square) will be used.
+        :param attacks: The list of `art.attacks.EvasionAttack` attacks to be used for AutoAttack. If it is `None` the
+                        original AutoAttack (PGD, APGD-ce, APGD-dlr, FAB, Square) will be used.
         :type attacks: `[.art.attacks.EvasionAttack]`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
@@ -117,7 +127,7 @@ class AutoAttack(EvasionAttack):
             "attacks": attacks,
             "targeted": targeted,
             "batch_size": batch_size,
-            "estimator_orig": estimator_orig
+            "estimator_orig": estimator_orig,
         }
         self.set_params(**kwargs)
 

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -50,16 +50,16 @@ class AutoProjectedGradientDescent(EvasionAttack):
     _predefined_losses = [None, "cross_entropy", "difference_logits_ratio"]
 
     def __init__(
-            self,
-            estimator,
-            norm=np.inf,
-            eps=0.3,
-            eps_step=0.1,
-            max_iter=100,
-            targeted=False,
-            nb_random_init=5,
-            batch_size=32,
-            loss_type=None,
+        self,
+        estimator,
+        norm=np.inf,
+        eps=0.3,
+        eps_step=0.1,
+        max_iter=100,
+        targeted=False,
+        nb_random_init=5,
+        batch_size=32,
+        loss_type=None,
     ):
         """
         Create a :class:`.AutoProjectedGradientDescent` instance.
@@ -93,12 +93,16 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     raise NotImplementedError
                 else:
                     self._loss_object = tf.reduce_mean(
-                        tf.keras.losses.categorical_crossentropy(y_pred=estimator._output, y_true=estimator._labels_ph,
-                                                                 from_logits=True))
+                        tf.keras.losses.categorical_crossentropy(
+                            y_pred=estimator._output, y_true=estimator._labels_ph, from_logits=True
+                        )
+                    )
 
                     def loss_fn(y_true, y_pred):
                         y_pred_norm = y_pred - np.amax(y_pred, axis=1, keepdims=True)
-                        loss_value = - (y_true * y_pred_norm - np.log(np.sum(np.exp(y_pred_norm), axis=1, keepdims=True)))
+                        loss_value = -(
+                            y_true * y_pred_norm - np.log(np.sum(np.exp(y_pred_norm), axis=1, keepdims=True))
+                        )
                         return np.mean(loss_value)
 
                     self._loss_fn = loss_fn
@@ -262,9 +266,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         "the estimator has to to predict logits."
                     )
                 else:
+
                     def loss_fn(y_true, y_pred):
-                        return torch.nn.CrossEntropyLoss()(torch.from_numpy(y_pred),
-                                                           torch.from_numpy(np.argmax(y_true, axis=1)))
+                        return torch.nn.CrossEntropyLoss()(
+                            torch.from_numpy(y_pred), torch.from_numpy(np.argmax(y_true, axis=1))
+                        )
 
                     self._loss_fn = loss_fn
                     self._loss_object = torch.nn.CrossEntropyLoss()
@@ -391,8 +397,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             n = x_robust.shape[0]
             m = np.prod(x_robust.shape[1:])
-            random_perturbation = random_sphere(n, m, self.eps, self.norm).reshape(x_robust.shape).astype(
-                ART_NUMPY_DTYPE)
+            random_perturbation = (
+                random_sphere(n, m, self.eps, self.norm).reshape(x_robust.shape).astype(ART_NUMPY_DTYPE)
+            )
 
             x_robust = x_robust + random_perturbation
 
