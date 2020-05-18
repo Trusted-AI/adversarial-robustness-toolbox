@@ -109,7 +109,7 @@ def main():
     epsilon = (args.epsilon / 255.)
 
     trainer = AdversarialTrainerFBFPyTorch(classifier, eps=epsilon)
-    trainer.fit(x_train, y_train, nb_epochs=args.epochs)
+    trainer.fit(x_train, y_train, validation_data=(x_test, y_test), nb_epochs=args.epochs)
 
     train_time =  time.time() - start_start_time
     print("Train time: ", train_time, flush=True)
