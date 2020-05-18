@@ -55,6 +55,8 @@ class Wasserstein(EvasionAttack):
         "norm",
         "ball",
         "eps",
+        "eps_iter",
+        "eps_factor",
         "max_iter",
         "conjugate_sinkhorn_max_iter",
         "projected_sinkhorn_max_iter",
@@ -74,6 +76,8 @@ class Wasserstein(EvasionAttack):
         norm='wasserstein',
         ball='wasserstein',
         eps=0.3,
+        eps_iter=10,
+        eps_factor=1.1,
         max_iter=400,
         conjugate_sinkhorn_max_iter=400,
         projected_sinkhorn_max_iter=400,
@@ -100,6 +104,10 @@ class Wasserstein(EvasionAttack):
         :type ball: `string`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
+        :param eps_iter: Number of iterations to increase the epsilon.
+        :type eps_iter: `int`
+        :param eps_factor: Factor to increase the epsilon.
+        :type eps_factor: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
@@ -120,11 +128,14 @@ class Wasserstein(EvasionAttack):
             "norm": norm,
             "ball": ball,
             "eps": eps,
+            "eps_iter": eps_iter,
+            "eps_factor": eps_factor,
             "max_iter": max_iter,
             "conjugate_sinkhorn_max_iter": conjugate_sinkhorn_max_iter,
             "projected_sinkhorn_max_iter": projected_sinkhorn_max_iter,
             "batch_size": batch_size,
         }
+
         Wasserstein.set_params(self, **kwargs)
 
     def generate(self, x, y=None, **kwargs):
@@ -165,6 +176,7 @@ class Wasserstein(EvasionAttack):
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
         for batch_id in range(nb_batches):
             logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
+
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x[batch_index_1: batch_index_2]
             batch_labels = targets[batch_index_1: batch_index_2]
@@ -179,12 +191,19 @@ class Wasserstein(EvasionAttack):
                 self.ball,
                 self.targeted,
                 self.eps,
+                self.eps_iter,
+                self.eps_factor,
                 self.eps_step,
                 self.regularization,
                 self.conjugate_sinkhorn_max_iter,
                 self.projected_sinkhorn_max_iter,
                 self.batch_size,
             )
+
+        logger.info(
+            "Success rate of attack: %.2f%%",
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+        )
 
         return x_adv
 
@@ -199,6 +218,8 @@ class Wasserstein(EvasionAttack):
             ball,
             targeted,
             eps,
+            eps_iter,
+            eps_factor,
             eps_step,
             regularization,
             conjugate_sinkhorn_max_iter,
@@ -226,6 +247,10 @@ class Wasserstein(EvasionAttack):
         :type targeted: `bool`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
+        :param eps_iter: Number of iterations to increase the epsilon.
+        :type eps_iter: `int`
+        :param eps_factor: Factor to increase the epsilon.
+        :type eps_factor: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
         :param regularization: Entropy regularization.
@@ -240,7 +265,17 @@ class Wasserstein(EvasionAttack):
         :rtype: `np.ndarray`
         """
         adv_x = x.copy()
-        for _ in range(max_iter):
+        adv_x_best = x.copy()
+
+        if targeted:
+            err = get_labels_np_array(self.estimator.predict(x, batch_size=batch_size)) == targets
+        else:
+            err = get_labels_np_array(self.estimator.predict(x, batch_size=batch_size)) != targets
+
+        err_best = err
+        eps = np.ones(batch_size) * eps
+
+        for i in range(max_iter):
             adv_x = self._compute(
                 adv_x,
                 x,
@@ -256,13 +291,29 @@ class Wasserstein(EvasionAttack):
                 conjugate_sinkhorn_max_iter,
                 projected_sinkhorn_max_iter,
                 batch_size,
+                err,
             )
 
-        return adv_x
+            if targeted:
+                err = get_labels_np_array(self.estimator.predict(adv_x, batch_size=batch_size)) == targets
+            else:
+                err = get_labels_np_array(self.estimator.predict(adv_x, batch_size=batch_size)) != targets
+
+            if np.mean(err) > np.mean(err_best):
+                err_best = err
+                adv_x_best = adv_x.copy()
+
+            if np.mean(err) == 1:
+                break
+
+            if (i + 1) % eps_iter == 0:
+                eps[~err] *= eps_factor
+
+        return adv_x_best
 
     def _compute(
             self,
-            x,
+            x_adv,
             x_init,
             y,
             cost_matrix,
@@ -276,12 +327,13 @@ class Wasserstein(EvasionAttack):
             conjugate_sinkhorn_max_iter,
             projected_sinkhorn_max_iter,
             batch_size,
+            err,
     ):
         """
         Compute adversarial examples for one iteration.
 
-        :param x: Current adversarial examples.
-        :type x: `np.ndarray`
+        :param x_adv: Current adversarial examples.
+        :type x_adv: `np.ndarray`
         :param x_init: An array with the original inputs.
         :type x_init: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
@@ -311,12 +363,14 @@ class Wasserstein(EvasionAttack):
         :type projected_sinkhorn_max_iter: `int`
         :param batch_size: Size of batches.
         :type batch_size: `int`
+        :param err: Current successful adversarial examples.
+        :type err: `np.ndarray`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
         # Compute and apply perturbation
-        x_adv = self._compute_apply_perturbation(
-            x,
+        x_adv[~err] = self._compute_apply_perturbation(
+            x_adv,
             y,
             cost_matrix,
             kernel_size,
@@ -326,10 +380,10 @@ class Wasserstein(EvasionAttack):
             regularization,
             conjugate_sinkhorn_max_iter,
             batch_size,
-        )
+        )[~err]
 
         # Do projection
-        x_adv = self._apply_projection(
+        x_adv[~err] = self._apply_projection(
             x_adv,
             x_init,
             cost_matrix,
@@ -339,7 +393,7 @@ class Wasserstein(EvasionAttack):
             regularization,
             projected_sinkhorn_max_iter,
             batch_size,
-        )
+        )[~err]
 
         # Clip x_adv
         if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
@@ -1003,6 +1057,10 @@ class Wasserstein(EvasionAttack):
         :type ball: `string`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
+        :param eps_iter: Number of iterations to increase the epsilon.
+        :type eps_iter: `int`
+        :param eps_factor: Factor to increase the epsilon.
+        :type eps_factor: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
@@ -1049,6 +1107,12 @@ class Wasserstein(EvasionAttack):
 
         if self.eps_step > self.eps:
             raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
+
+        if self.eps_iter <= 0:
+            raise ValueError("The number of epsilon iterations `eps_iter` has to be a positive integer.")
+
+        if self.eps_factor <= 1:
+            raise ValueError("The epsilon factor must be larger than 1.")
 
         if self.max_iter <= 0:
             raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
