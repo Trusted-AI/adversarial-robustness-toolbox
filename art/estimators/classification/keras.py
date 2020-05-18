@@ -660,6 +660,15 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         del state["_loss_gradients"]
         del state["_layer_names"]
 
+        if "_class_gradients" in state:
+            del state["_class_gradients"]
+
+        if "_class_gradients_idx" in state:
+            del state["_class_gradients_idx"]
+
+        if "_activations_func" in state:
+            del state["_activations_func"]
+
         model_name = str(time.time()) + ".h5"
         state["model_name"] = model_name
         self.save(model_name)
