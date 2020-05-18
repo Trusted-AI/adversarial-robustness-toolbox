@@ -153,7 +153,7 @@ class AdversarialTrainerFBFPyTorch(Trainer):
             output = np.argmax(self.predict(x_test), axis=1)
             nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
 
-            print('{} \t {:.1f} \t {:.4f} \t {:.4f} \t {:.4f} \t {:..4f}'.format(i_epoch, train_time - start_time, lr,
+            print('{} \t {:.1f} \t {:.4f} \t {:.4f} \t {:.4f} \t {:.4f}'.format(i_epoch, train_time - start_time, lr,
                                                                         train_loss / train_n, train_acc / train_n,
                                                                                  nb_correct_pred / x_test.shape[0]),
                   flush=True)
