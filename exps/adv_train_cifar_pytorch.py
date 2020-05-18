@@ -9,7 +9,7 @@ import time
 sys.path.append('/home/ambrish/github/adversarial-robustness-toolbox')
 
 from art.classifiers import PyTorchClassifier
-from art.defences.trainer import AdversarialTrainerFBF
+from art.defences.trainer import AdversarialTrainerFBFPyTorch
 from art.utils import load_cifar10
 import numpy as np
 import torch
@@ -105,7 +105,7 @@ def main():
 
     epsilon = (args.epsilon / 255.)
 
-    trainer = AdversarialTrainerFBF(classifier, eps=epsilon)
+    trainer = AdversarialTrainerFBFPyTorch(classifier, eps=epsilon)
     trainer.fit(x_train, y_train, nb_epochs=args.epochs)
 
     train_time =  time.time() - start_start_time
