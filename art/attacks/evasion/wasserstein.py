@@ -73,7 +73,7 @@ class Wasserstein(EvasionAttack):
         eps_step=0.1,
         norm='wasserstein',
         ball='wasserstein',
-        eps=0.01,
+        eps=0.3,
         max_iter=400,
         conjugate_sinkhorn_max_iter=400,
         projected_sinkhorn_max_iter=400,
@@ -984,39 +984,82 @@ class Wasserstein(EvasionAttack):
                 - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, kernel_size)))
 
     def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+        """
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
-               from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
-        :param targeted: Should the attack target one specific class
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :type targeted: `bool`
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
-               slower to converge.
-        :type learning_rate: `float`
-        :param binary_search_steps: number of times to adjust constant with binary search (positive value)
-        :type binary_search_steps: `int`
+        :param regularization: Entropy regularization.
+        :type regularization: `float`
+        :param p: The p-wasserstein distance.
+        :type p: `int`
+        :param kernel_size: Kernel size for computing the cost matrix.
+        :type kernel_size: `int`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
+        :param norm: The norm of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
+        :type norm: `string`
+        :param ball: The ball of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
+        :type ball: `string`
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :type eps: `float`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
-        :param initial_const: (optional float, positive) The initial trade-off constant c to use to tune the relative
-               importance of distance and confidence. If binary_search_steps is large,
-               the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
-        :type initial_const: `float`
-        :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
-        :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
+        :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
+        :type conjugate_sinkhorn_max_iter: `int`
+        :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
+        :type projected_sinkhorn_max_iter: `int`
+        :param batch_size: Size of batches.
         :type batch_size: `int`
         """
         # Save attack-specific parameters
         super(Wasserstein, self).set_params(**kwargs)
 
+        if not isinstance(self.targeted, bool):
+            raise ValueError("The flag `targeted` has to be of type bool.")
 
-        if kernel_size % 2 != 1:
-            raise ValueError("Need odd kernel size")
+        if self.regularization <= 0:
+            raise ValueError("The entropy regularization has to be greater than 0.")
 
+        if not isinstance(self.p, (int, np.int)):
+            raise TypeError("The p-wasserstein has to be of type integer.")
+
+        if self.p < 1:
+            raise ValueError("The p-wasserstein must be larger or equal to 1.")
+
+        if not isinstance(self.kernel_size, (int, np.int)):
+            raise TypeError("The kernel size has to be of type integer.")
+
+        if self.kernel_size % 2 != 1:
+            raise ValueError("Need odd kernel size.")
+
+        # Check if order of the norm is acceptable given current implementation
+        if self.norm not in ['inf', '1', '2', 'wasserstein']:
+            raise ValueError("Norm order must be either `inf`, `1`, `2` or `wasserstein`.")
+
+        # Check if order of the ball is acceptable given current implementation
+        if self.ball not in ['inf', '1', '2', 'wasserstein']:
+            raise ValueError("Ball order must be either `inf`, `1`, `2` or `wasserstein`.")
+
+        if self.eps <= 0:
+            raise ValueError("The perturbation size `eps` has to be positive.")
+
+        if self.eps_step <= 0:
+            raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+
+        if self.eps_step > self.eps:
+            raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
+
+        if self.max_iter <= 0:
+            raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
+
+        if self.conjugate_sinkhorn_max_iter <= 0:
+            raise ValueError("The number of iterations `conjugate_sinkhorn_max_iter` has to be a positive integer.")
+
+        if self.projected_sinkhorn_max_iter <= 0:
+            raise ValueError("The number of iterations `projected_sinkhorn_max_iter` has to be a positive integer.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
         return True
-
-
