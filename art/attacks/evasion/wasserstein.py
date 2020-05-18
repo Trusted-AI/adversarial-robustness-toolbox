@@ -563,61 +563,72 @@ class Wasserstein(EvasionAttack):
         I_nonzero_ = np.zeros(alpha.shape).astype(bool)
         I_nonzero_[:, :, :, :] = np.expand_dims(np.expand_dims(np.expand_dims(I_nonzero, -1), -1), -1)
 
+        psi = np.ones(batch_size)
 
-
-
-
-
-
-        def eval_z(alpha, exp_alpha, psi, K):
-            return exp_beta*mm(K, exp_alpha)
-
-        psi = X.new_ones(*size[:-3])
-        K = torch.exp(-unsqueeze3(psi)*C - 1)
-
-        old_obj = -float('inf')
-        i = 0
-
-        with torch.no_grad():
-            while True:
-                alpha[I_nonzero_] = (torch.log(mm(K,exp_beta)) - torch.log(X))[I_nonzero_]
-                exp_alpha = torch.exp(-alpha)
-
-                dpsi = -epsilon + bdot(exp_alpha,mm(C*K,exp_beta))
-                ddpsi = -bdot(exp_alpha,mm(C*C*K,exp_beta))
-                delta = dpsi/ddpsi
-
-                psi0 = psi
-                t = X.new_ones(*delta.size())
-                neg = (psi - t*delta < 0)
-                while neg.any() and t.min().item() > 1e-2:
-                    t[neg] /= 2
-                    neg = psi - t*delta < 0
-                psi[I_nonzero] = torch.clamp(psi - t*delta, min=0)[I_nonzero]
-
-                K = torch.exp(-unsqueeze3(psi)*C - 1)
-
-                # check for convergence
-                obj = eval_obj(alpha, exp_alpha, psi, K)
-                if verbose:
-                    print('obj', obj)
-                i += 1
-                if i > maxiters or allclose(old_obj,obj).all():
-                    if verbose:
-                        print('terminate at iteration {}'.format(i))
-                    break
-
-                old_obj = obj
-
-        if return_objective:
-            obj = -bdot(X,Y)
-            obj[I_nonzero] = eval_obj(alpha, exp_alpha, psi, K)[I_nonzero]
-            return obj
+        if self.estimator.channel_index == 1:
+            K = np.exp(-psi.reshape(batch_size, 1, 1, 1) * cost_matrix - 1)
         else:
-            z = eval_z(alpha, exp_alpha, psi,K)
-            z[~I_nonzero] = 0
-            return z
+            K = np.expand_dims(np.exp(-psi.reshape(batch_size, 1, 1) * cost_matrix - 1), -1)
 
+        convergence = -np.inf
+        for _ in range(conjugate_sinkhorn_max_iter):
+            # Block coordinate descent iterates
+            alpha[I_nonzero_] = (np.log(self._local_transport(K, exp_beta, kernel_size)) - np.log(x))[I_nonzero_]
+            exp_alpha = np.exp(-alpha)
+
+            # Newton step
+            g = -eps_step + self._batch_dot(
+                exp_alpha,
+                self._local_transport(
+                    cost_matrix * K,
+                    exp_beta,
+                    kernel_size,
+                )
+            )
+            h = -self._batch_dot(
+                exp_alpha,
+                self._local_transport(
+                    cost_matrix * cost_matrix * K,
+                    exp_beta,
+                    kernel_size,
+                )
+            )
+            delta = g / h
+
+            # Ensure psi >= 0
+            tmp = np.ones(delta.shape)
+            neg = psi - tmp * delta < 0
+            while neg.any() and np.min(tmp) > 1e-2:
+                tmp[neg] /= 2
+                neg = psi - tmp * delta < 0
+            psi[I_nonzero] = np.maximum(psi - tmp * delta, 0)[I_nonzero]
+
+            # Update K
+            K = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
+            K = np.exp(-K * cost_matrix - 1)
+
+            # Check for convergence
+            next_convergence = self._conjugated_sinkhorn_evaluation(
+                x,
+                eps_step,
+                alpha,
+                exp_alpha,
+                exp_beta,
+                psi,
+                K,
+                kernel_size,
+            )
+
+            if (np.abs(convergence - next_convergence) <= 1e-4).all():
+                break
+            else:
+                convergence = next_convergence
+
+        result = exp_beta * self._local_transport(K, exp_alpha, kernel_size)
+        result[~I_nonzero] = 0
+        result *= normalization
+
+        return result
 
     def _projected_sinkhorn(
             self,
@@ -691,7 +702,7 @@ class Wasserstein(EvasionAttack):
                 self._local_transport(
                     cost_matrix * K,
                     exp_beta,
-                    kernel_size
+                    kernel_size,
                 )
             )
             h = -self._batch_dot(
@@ -699,7 +710,7 @@ class Wasserstein(EvasionAttack):
                 self._local_transport(
                     cost_matrix * cost_matrix * K,
                     exp_beta,
-                    kernel_size
+                    kernel_size,
                 )
             )
             delta = g / h
