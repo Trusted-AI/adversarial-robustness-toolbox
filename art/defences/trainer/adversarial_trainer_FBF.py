@@ -136,13 +136,13 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 loss = self.classifier._loss(model_outputs[-1], o_batch)
 
                 train_loss += loss.item() * o_batch.size(0)
-                train_acc += (model_outputs.max(1)[1] == y_preprocessed).sum().item()
-                train_n += y_preprocessed.size(0)
+                train_acc += (model_outputs[0].max(1)[1]==o_batch).sum().item()
+                train_n += o_batch.size(0)
 
                 # Actual training
-                # loss.backward()
-                with amp.scale_loss(loss, self.classifier._optimizer) as scaled_loss:
-                    scaled_loss.backward()
+                loss.backward()
+                # with amp.scale_loss(loss, self.classifier._optimizer) as scaled_loss:
+                #     scaled_loss.backward()
                 nn.utils.clip_grad_norm_(self.classifier._model.parameters(), 0.5)
                 self.classifier._optimizer.step()
 
