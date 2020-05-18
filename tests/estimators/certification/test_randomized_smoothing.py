@@ -105,7 +105,6 @@ class TestRandomizedSmoothing(unittest.TestCase):
         self.assertTrue((pred < y_test.shape[1]).all())
 
 
-
 class TestRandomizedSmoothingVectors(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
