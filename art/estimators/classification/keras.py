@@ -477,9 +477,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             raise TypeError("Layer must be of type `str` or `int`.")
 
-        layer_output = self._model.get_layer(layer_name).output
-        output_func = k.function([self._input], [layer_output])
-
         if x.shape == self.input_shape:
             x_expanded = np.expand_dims(x, 0)
         else:
@@ -488,14 +485,21 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
 
+        if not hasattr(self, "_activations_func"):
+            self._activations_func = {}
+
+        if layer_name not in self._activations_func:
+            layer_output = self._model.get_layer(layer_name).output
+            self._activations_func[layer_name] = k.function([self._input], [layer_output])
+
         # Determine shape of expected output and prepare array
-        output_shape = output_func([x_preprocessed[0][None, ...]])[0].shape
+        output_shape = self._activations_func[layer_name]([x_preprocessed[0][None, ...]])[0].shape
         activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
         # Get activations with batching
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
-            activations[begin:end] = output_func([x_preprocessed[begin:end]])[0]
+            activations[begin:end] = self._activations_func[layer_name]([x_preprocessed[begin:end]])[0]
 
         return activations
 
@@ -612,6 +616,15 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         del state["_loss"]
         del state["_loss_gradients"]
         del state["_layer_names"]
+
+        if "_class_gradients" in state:
+            del state["_class_gradients"]
+
+        if "_class_gradients_idx" in state:
+            del state["_class_gradients_idx"]
+
+        if "_activations_func" in state:
+            del state["_activations_func"]
 
         model_name = str(time.time()) + ".h5"
         state["model_name"] = model_name
