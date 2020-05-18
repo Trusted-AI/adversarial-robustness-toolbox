@@ -16,6 +16,8 @@ import torch.nn.functional as F
 from exps.preact_resnet import PreActResNet18
 
 
+DEVICE = 'gpu'
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     format='[%(asctime)s] - %(message)s',
@@ -25,8 +27,12 @@ logging.basicConfig(
 
 cifar10_mean = (0.4914, 0.4822, 0.4465)
 cifar10_std = (0.2471, 0.2435, 0.2616)
-mu = torch.tensor(cifar10_mean).view(3,1,1).cuda()
-std = torch.tensor(cifar10_std).view(3,1,1).cuda()
+if DEVICE !='cpu':
+    mu = torch.tensor(cifar10_mean).view(3,1,1).cuda()
+    std = torch.tensor(cifar10_std).view(3,1,1).cuda()
+else:
+    mu = torch.tensor(cifar10_mean).view(3,1,1)
+    std = torch.tensor(cifar10_std).view(3,1,1)
 upper_limit = ((1 - mu)/ std)
 lower_limit = ((0 - mu)/ std)
 
@@ -56,7 +62,8 @@ def initialize_weights(module):
 
 
 def attack_pgd(model, X, y, epsilon, alpha, attack_iters, restarts, opt):
-    delta = torch.zeros_like(X).cuda()
+    # delta = torch.zeros_like(X).cuda()
+    delta = torch.zeros_like(X)
     delta[:, 0, :, :].uniform_(-epsilon[0][0][0].item(), epsilon[0][0][0].item())
     delta[:, 1, :, :].uniform_(-epsilon[1][0][0].item(), epsilon[1][0][0].item())
     delta[:, 2, :, :].uniform_(-epsilon[2][0][0].item(), epsilon[2][0][0].item())
@@ -84,7 +91,10 @@ class Batches():
     def __iter__(self):
         if self.set_random_choices:
             self.dataset.set_random_choices()
-        return ({'input': x.to('cuda').float(), 'target': y.to('cuda').long()} for (x,y) in self.dataloader)
+        if DEVICE != 'cpu':
+            return ({'input': x.to('cuda').float(), 'target': y.to('cuda').long()} for (x,y) in self.dataloader)
+        else:
+            return ({'input': x.float(), 'target': y.long()} for (x,y) in self.dataloader)
 
     def __len__(self):
         return len(self.dataloader)
@@ -93,7 +103,7 @@ class Batches():
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--batch-size', default=128, type=int)
-    parser.add_argument('--data-dir', default='../cifar-data', type=str)
+    parser.add_argument('--data-dir', default='/Users/ambrish/github/cifar-data', type=str)
     parser.add_argument('--epochs', default=15, type=int)
     parser.add_argument('--lr-schedule', default='cyclic', choices=['cyclic', 'piecewise'])
     parser.add_argument('--lr-max', default=0.21, type=float)
@@ -116,7 +126,7 @@ def main():
 
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
-    torch.cuda.manual_seed(args.seed)
+    # torch.cuda.manual_seed(args.seed)
 
     start_start_time = time.time()
     # transforms = [Crop(32, 32), FlipLR()]
@@ -137,9 +147,12 @@ def main():
         [transforms.RandomCrop(32, padding=4),
          transforms.RandomHorizontalFlip(),
          transforms.ToTensor(),
-         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
+         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2471, 0.2435, 0.2616))])
 
-    trainset = torchvision.datasets.CIFAR10(root='./../cifar-data/', train=True,
+    # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
+    # cifar10_std = (0.2471, 0.2435, 0.2616)
+
+    trainset = torchvision.datasets.CIFAR10(root='/Users/ambrish/github/cifar-data', train=True,
                                             download=True, transform=transform)
     train_batches = Batches(trainset, args.batch_size, shuffle=True, set_random_choices=False, num_workers=2)
     # train_batches = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
@@ -149,13 +162,16 @@ def main():
     epsilon = (args.epsilon / 255.) / std
     pgd_alpha = (args.pgd_alpha / 255.) / std
 
-    model = PreActResNet18().cuda()
+    if DEVICE != 'cpu':
+        model = PreActResNet18().cuda()
+    else:
+        model = PreActResNet18()
     model.apply(initialize_weights)
     model.train()
 
     opt = torch.optim.SGD(model.parameters(), lr=args.lr_max, momentum=0.9, weight_decay=5e-4)
 
-    model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
+    # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
 
     criterion = nn.CrossEntropyLoss()
 
@@ -196,6 +212,7 @@ def main():
             if i == 0:
                 first_batch = batch
             lr = lr_schedule(epoch + (i + 1) / len(train_batches))
+            print(lr)
             opt.param_groups[0].update(lr=lr)
 
             if args.attack == 'pgd':
@@ -205,7 +222,10 @@ def main():
                 if args.fgsm_init == 'zero':
                     delta = torch.zeros_like(X, requires_grad=True)
                 elif args.fgsm_init == 'random':
-                    delta = torch.zeros_like(X).cuda()
+                    if DEVICE != 'cpu':
+                        delta = torch.zeros_like(X).cuda()
+                    else:
+                        delta = torch.zeros_like(X)
                     delta[:, 0, :, :].uniform_(-epsilon[0][0][0].item(), epsilon[0][0][0].item())
                     delta[:, 1, :, :].uniform_(-epsilon[1][0][0].item(), epsilon[1][0][0].item())
                     delta[:, 2, :, :].uniform_(-epsilon[2][0][0].item(), epsilon[2][0][0].item())
@@ -214,8 +234,11 @@ def main():
                     delta.requires_grad = True
                 output = model(X + delta[:X.size(0)])
                 loss = F.cross_entropy(output, y)
-                with amp.scale_loss(loss, opt) as scaled_loss:
-                    scaled_loss.backward()
+                if DEVICE != 'cpu':
+                    with amp.scale_loss(loss, opt) as scaled_loss:
+                        scaled_loss.backward()
+                else:
+                    loss.backward()
                 grad = delta.grad.detach()
                 delta.data = clamp(delta + args.fgsm_alpha * epsilon * torch.sign(grad), -epsilon, epsilon)
                 delta = delta.detach()
@@ -243,8 +266,12 @@ def main():
             loss = criterion(output, y)
             if args.attack != 'free':
                 opt.zero_grad()
-                with amp.scale_loss(loss, opt) as scaled_loss:
-                    scaled_loss.backward()
+                if DEVICE != 'cpu':
+                    with amp.scale_loss(loss, opt) as scaled_loss:
+                        scaled_loss.backward()
+                else:
+                    loss.backward()
+                    print(loss)
                 nn.utils.clip_grad_norm_(model.parameters(), 0.5)
                 opt.step()
 
