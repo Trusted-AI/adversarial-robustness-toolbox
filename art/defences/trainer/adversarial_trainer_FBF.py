@@ -29,6 +29,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.defences.trainer.trainer import Trainer
 import apex.amp as amp
 from art.utils import random_sphere
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -84,9 +85,14 @@ class AdversarialTrainerFBFPyTorch(Trainer):
 
             # Shuffle the examples
             np.random.shuffle(ind)
+            start_time = time.time()
+            train_loss = 0
+            train_acc = 0
+            train_n = 0
 
             for batch_id in range(nb_batches):
                 lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
+                # print(lr)
                 #TODO: inspect lr and match with the code
 
                 self.classifier._optimizer.param_groups[0].update(lr=lr)
@@ -129,12 +135,20 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 # Form the loss function
                 loss = self.classifier._loss(model_outputs[-1], o_batch)
 
+                train_loss += loss.item() * o_batch.size(0)
+                train_acc += (model_outputs.max(1)[1] == y_preprocessed).sum().item()
+                train_n += y_preprocessed.size(0)
+
                 # Actual training
                 # loss.backward()
                 with amp.scale_loss(loss, self.classifier._optimizer) as scaled_loss:
                     scaled_loss.backward()
                 nn.utils.clip_grad_norm_(self.classifier._model.parameters(), 0.5)
                 self.classifier._optimizer.step()
+
+            train_time = time.time()
+            logger.info('%d \t %.1f \t %.4f \t %.4f \t %.4f',
+                        i_epoch, train_time - start_time, lr, train_loss / train_n, train_acc / train_n)
 
     def predict(self, x, **kwargs):
         """
