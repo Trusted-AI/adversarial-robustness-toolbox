@@ -147,8 +147,9 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 self.classifier._optimizer.step()
 
             train_time = time.time()
-            logger.info('%d \t %.1f \t %.4f \t %.4f \t %.4f',
-                        i_epoch, train_time - start_time, lr, train_loss / train_n, train_acc / train_n)
+            print('{%d} \t {%.1f} \t {%.4f} \t {%.4f} \t {%.4f}'.format(i_epoch, train_time - start_time, lr,
+                                                                        train_loss / train_n, train_acc / train_n),
+                  flush=True)
 
     def predict(self, x, **kwargs):
         """
