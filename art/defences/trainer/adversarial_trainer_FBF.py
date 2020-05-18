@@ -21,6 +21,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from art.classifiers import PyTorchClassifier
 
 import numpy as np
 
@@ -31,8 +32,7 @@ from art.utils import random_sphere
 
 logger = logging.getLogger(__name__)
 
-#TODO: rename to reflect PyTorch
-class AdversarialTrainerFBF(Trainer):
+class AdversarialTrainerFBFPyTorch(Trainer):
     """
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
     """
@@ -49,6 +49,8 @@ class AdversarialTrainerFBF(Trainer):
         """
         self.eps = eps
         self.classifier = classifier
+        if not isinstance(self.classifier,PyTorchClassifier):
+            raise NotImplementedError
         # Setting up adversary and perform adversarial training:
 
 
