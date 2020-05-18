@@ -51,11 +51,11 @@ class Wasserstein(EvasionAttack):
         "regularization",
         "p",
         "kernel_size",
-        "alpha",
+        "eps_step",
         "norm",
         "ball",
-        "epsilon",
-        "epsilon_factor",
+        "eps",
+        "eps_factor",
         "max_iter",
         "conjugate_sinkhorn_max_iter",
         "projected_sinkhorn_max_iter",
@@ -71,11 +71,11 @@ class Wasserstein(EvasionAttack):
         regularization=3000,
         p=2,
         kernel_size=5,
-        alpha=0.1,
+        eps_step=0.1,
         norm='wasserstein',
         ball='wasserstein',
-        epsilon=0.001,
-        epsilon_factor=1.17,
+        eps=0.01,
+        eps_factor=1.1,
         max_iter=400,
         conjugate_sinkhorn_max_iter=400,
         projected_sinkhorn_max_iter=400,
@@ -94,7 +94,7 @@ class Wasserstein(EvasionAttack):
             "regularization": regularization,
             "p": p,
             "kernel_size": kernel_size,
-            "alpha": alpha,
+            "eps_step": eps_step,
             "norm": norm,
             "ball": ball,
             "epsilon": epsilon,
@@ -158,7 +158,7 @@ class Wasserstein(EvasionAttack):
                 self.ball,
                 self.targeted,
                 self.eps,
-                self.alpha,
+                self.eps_step,
                 self.regularization,
                 self.conjugate_sinkhorn_max_iter,
                 self.projected_sinkhorn_max_iter,
@@ -178,7 +178,7 @@ class Wasserstein(EvasionAttack):
             ball,
             targeted,
             eps,
-            alpha,
+            eps_step,
             regularization,
             conjugate_sinkhorn_max_iter,
             projected_sinkhorn_max_iter,
@@ -205,8 +205,8 @@ class Wasserstein(EvasionAttack):
         :type targeted: `bool`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
-        :param alpha: Attack step size (input variation) at each iteration.
-        :type alpha: `float`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
         :param regularization: Entropy regularization.
         :type regularization: `float`
         :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
@@ -230,7 +230,7 @@ class Wasserstein(EvasionAttack):
                 ball,
                 targeted,
                 eps,
-                alpha,
+                eps_step,
                 regularization,
                 conjugate_sinkhorn_max_iter,
                 projected_sinkhorn_max_iter,
@@ -250,7 +250,7 @@ class Wasserstein(EvasionAttack):
             ball,
             targeted,
             eps,
-            alpha,
+            eps_step,
             regularization,
             conjugate_sinkhorn_max_iter,
             projected_sinkhorn_max_iter,
@@ -280,8 +280,8 @@ class Wasserstein(EvasionAttack):
         :type targeted: `bool`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
-        :param alpha: Attack step size (input variation) at each iteration.
-        :type alpha: `float`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
         :param regularization: Entropy regularization.
         :type regularization: `float`
         :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
@@ -301,7 +301,7 @@ class Wasserstein(EvasionAttack):
             kernel_size,
             norm,
             targeted,
-            alpha,
+            eps_step,
             regularization,
             conjugate_sinkhorn_max_iter,
             batch_size,
@@ -335,7 +335,7 @@ class Wasserstein(EvasionAttack):
             kernel_size,
             norm,
             targeted,
-            alpha,
+            eps_step,
             regularization,
             conjugate_sinkhorn_max_iter,
             batch_size,
@@ -358,8 +358,8 @@ class Wasserstein(EvasionAttack):
         :type norm: `string`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
-        :param alpha: Attack step size (input variation) at each iteration.
-        :type alpha: `float`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
         :param regularization: Entropy regularization.
         :type regularization: `float`
         :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
@@ -378,17 +378,17 @@ class Wasserstein(EvasionAttack):
         # Apply norm bound
         if norm == 'inf':
             grad = np.sign(grad)
-            x_adv = x + alpha * grad
+            x_adv = x + eps_step * grad
 
         elif norm == '1':
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
-            x_adv = x + alpha * grad
+            x_adv = x + eps_step * grad
 
         elif norm == '2':
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
-            x_adv = x + alpha * grad
+            x_adv = x + eps_step * grad
 
         elif norm == 'wasserstein':
             x_adv = self._conjugate_sinkhorn(
@@ -396,7 +396,7 @@ class Wasserstein(EvasionAttack):
                 grad,
                 cost_matrix,
                 kernel_size,
-                alpha,
+                eps_step,
                 regularization,
                 conjugate_sinkhorn_max_iter,
                 batch_size,
@@ -504,7 +504,7 @@ class Wasserstein(EvasionAttack):
             grad,
             cost_matrix,
             kernel_size,
-            alpha,
+            eps_step,
             regularization,
             conjugate_sinkhorn_max_iter,
             batch_size,
@@ -520,8 +520,8 @@ class Wasserstein(EvasionAttack):
         :type cost_matrix: `np.ndarray`
         :param kernel_size: Kernel size for computing the cost matrix.
         :type kernel_size: `int`
-        :param alpha: Attack step size (input variation) at each iteration.
-        :type alpha: `float`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
         :param regularization: Entropy regularization.
         :type regularization: `float`
         :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
@@ -556,7 +556,6 @@ class Wasserstein(EvasionAttack):
         #
         # We can detect overlapping filters by applying the cost filter and seeing if the sum is 0 (e.g. X*C*Y).
         # Referenced to https://github.com/locuslab/projected_sinkhorn.
-
         cost_matrix_new = cost_matrix.copy() + 1
         cost_matrix_new = np.expand_dims(np.expand_dims(cost_matrix_new, 0), 0)
 
@@ -569,8 +568,6 @@ class Wasserstein(EvasionAttack):
 
 
 
-        def eval_obj(alpha, exp_alpha, psi, K):
-            return -psi*epsilon - bdot(torch.clamp(alpha,max=MAX_FLOAT),X) - bdot(exp_alpha, mm(K, exp_beta))
 
         def eval_z(alpha, exp_alpha, psi, K):
             return exp_beta*mm(K, exp_alpha)
@@ -912,6 +909,46 @@ class Wasserstein(EvasionAttack):
         return (-0.5 / regularization * self._batch_dot(beta, beta) - psi * eps
                 - self._batch_dot(np.minimum(alpha, 1e10), x_init)
                 - self._batch_dot(np.minimum(beta, 1e10), x)
+                - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, kernel_size)))
+
+    def _conjugated_sinkhorn_evaluation(
+            self,
+            x,
+            eps_step,
+            alpha,
+            exp_alpha,
+            exp_beta,
+            psi,
+            K,
+            kernel_size,
+    ):
+        """
+        Function to evaluate the objective of the conjugated sinkhorn optimizer.
+
+        :param x: Current adversarial examples.
+        :type x: `np.ndarray`
+        :param eps_step: Attack step size (input variation) at each iteration.
+        :type eps_step: `float`
+        :param alpha: Alpha parameter in the conjugated sinkhorn optimizer of the paper ``Wasserstein Adversarial
+        Examples via Projected Sinkhorn Iterations``.
+        :type alpha: `np.ndarray`
+        :param exp_alpha: Exponential of alpha.
+        :type exp_alpha: `np.ndarray`
+        :param exp_beta: Exponential of beta parameter in the conjugated sinkhorn optimizer of the paper ``Wasserstein
+        Adversarial Examples via Projected Sinkhorn Iterations``.
+        :type exp_beta: `np.ndarray`
+        :param psi: Psi parameter in the conjugated sinkhorn optimizer of the paper ``Wasserstein Adversarial
+        Examples via Projected Sinkhorn Iterations``.
+        :type psi: `np.ndarray`
+        :param K: K parameter in the conjugated sinkhorn optimizer of the paper ``Wasserstein Adversarial Examples
+        via Projected Sinkhorn Iterations``.
+        :type K: `np.ndarray`
+        :param kernel_size: Kernel size for computing the cost matrix.
+        :type kernel_size: `int`
+        :return: Evaluation result.
+        :rtype: `np.ndarray`
+        """
+        return (-psi * eps_step - self._batch_dot(np.minimum(alpha, 1e38), x)
                 - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, kernel_size)))
 
     def set_params(self, **kwargs):
