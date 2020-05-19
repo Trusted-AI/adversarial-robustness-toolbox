@@ -58,7 +58,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                  stopping_tol=1e-10, num_old_obj=40, max_iter=120, similarity_coeff=0.25, watermark=0.3,
                  **kwargs):
         """
-        Initialize an SVM poisoning attack
+        Initialize an Feature Collision Clean-Label poisoning attack
 
         :param classifier: A trained neural network classifier
         :type classifier: (`art.estimators.NeuralNetworkMixin`, `art.estimators.BaseEstimator`)
