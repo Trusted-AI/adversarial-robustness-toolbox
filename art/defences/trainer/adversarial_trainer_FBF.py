@@ -127,6 +127,7 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 n = x_batch.shape[0]
                 m = np.prod(x_batch.shape[1:])
                 delta_rnd = random_sphere(n, m, self.eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
+                delta_rnd = np.clip(delta_rnd, 0.0, 1.0)
                 delta_rnd_preprocessed,_ = self.classifier. _apply_preprocessing(delta_rnd, y=None, fit=False)
                 delta = torch.from_numpy(delta_rnd_preprocessed).to(
                     self.classifier._device)
@@ -145,7 +146,7 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 with amp.scale_loss(loss, self.classifier._optimizer) as scaled_loss:
                     scaled_loss.backward()
                 # loss.backward()
-                print(loss)
+                # print(loss)
                 grad = delta.grad.detach()
                 delta.data = clamp(delta + 1.5 * epsilon * torch.sign(grad), -epsilon, epsilon)
                 delta = delta.detach()
