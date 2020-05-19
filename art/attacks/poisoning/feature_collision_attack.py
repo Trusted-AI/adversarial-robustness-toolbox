@@ -21,14 +21,13 @@ This module implements clean-label attacks on Neural Networks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from functools import reduce
 
 import numpy as np
 from tqdm import tqdm
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
-
-from functools import reduce
 
 logger = logging.getLogger(__name__)
 
