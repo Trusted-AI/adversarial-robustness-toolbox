@@ -151,13 +151,14 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
         inputs_repeat_t = inputs_t.repeat_interleave(self.sample_size, 0)
 
-        noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
+        # noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
+        noise = torch.empty(inputs_repeat_t.shape).normal_(mean=0, std=self.scale)
 
         inputs_noise_t = inputs_repeat_t + noise
 
         inputs_noise_t.clamp(self.clip_values[0], self.clip_values[1])
 
-        model_outputs = self._model(inputs_noise_t)[0]
+        model_outputs = self._model(inputs_noise_t)[-1]
 
         softmax = torch.nn.functional.softmax(model_outputs, dim=1)
 
