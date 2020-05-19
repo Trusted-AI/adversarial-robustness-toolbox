@@ -177,6 +177,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     def forward_step(self, poison):
         """
         Forward part of forward-backward splitting algorithm
+        
         :param poison: the current poison samples
         :type poison: `np.ndarray`
         :return: poison example closer in feature representation to target space
