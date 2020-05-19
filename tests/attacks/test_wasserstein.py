@@ -289,16 +289,15 @@ class TestWasserstein(TestBase):
         )
         self.assertTrue(test_success_rate >= 0.3)
 
-
-        # Test Wasserstein with wasserstein ball and inf norm
+        # Test Wasserstein with l2 ball and wasserstein norm
         attack = Wasserstein(
             classifier,
             regularization=100,
             max_iter=5,
             conjugate_sinkhorn_max_iter=5,
             projected_sinkhorn_max_iter=5,
-            norm='inf',
-            ball='wasserstein',
+            norm='wasserstein',
+            ball='2',
             targeted=False,
             p=2,
             eps_iter=2,
@@ -339,6 +338,54 @@ class TestWasserstein(TestBase):
         )
         self.assertTrue(test_success_rate >= 0.3)
 
+        # Test Wasserstein with l1 ball and wasserstein norm
+        attack = Wasserstein(
+            classifier,
+            regularization=100,
+            max_iter=5,
+            conjugate_sinkhorn_max_iter=5,
+            projected_sinkhorn_max_iter=5,
+            norm='wasserstein',
+            ball='1',
+            targeted=False,
+            p=2,
+            eps_iter=2,
+            eps_factor=1.05,
+            eps=0.3,
+            eps_step=0.1,
+            kernel_size=5,
+            batch_size=3,
+        )
+
+        x_train_adv = attack.generate(x_train)
+        x_test_adv = attack.generate(x_test)
+
+        self.assertFalse((x_train == x_train_adv).all())
+        self.assertFalse((x_test == x_test_adv).all())
+
+        train_y_pred = get_labels_np_array(classifier.predict(x_train_adv)).astype(float)
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
+
+        self.assertFalse((y_train == train_y_pred).all())
+        self.assertFalse((y_test == test_y_pred).all())
+
+        acc1 = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
+        logger.info("Accuracy on adversarial train examples: %.2f%%", acc1 * 100)
+
+        acc2 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info("Accuracy on adversarial test examples: %.2f%%", acc2 * 100)
+
+        train_success_rate = (
+                np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) /
+                y_train.shape[0]
+        )
+        self.assertTrue(train_success_rate >= 0.3)
+
+        test_success_rate = (
+                np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) /
+                y_test.shape[0]
+        )
+        self.assertTrue(test_success_rate >= 0.3)
 
     #
     # def test_classifier_type_check_fail(self):
