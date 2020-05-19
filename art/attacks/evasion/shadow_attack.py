@@ -45,7 +45,6 @@ class ShadowAttack(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
-        "batch_size",
         "sigma",
         "batch_size",
         "nb_steps",
@@ -174,7 +173,7 @@ class ShadowAttack(EvasionAttack):
                             + (perturbation_t[:, 1, :, :] - perturbation_t[:, 2, :, :]) ** 2
                             + (perturbation_t[:, 0, :, :] - perturbation_t[:, 2, :, :]) ** 2,
                             ord=2,
-                            axis=(2, 3),
+                            axis=(1, 2),
                         )
 
                     loss_c = tf.norm(tf.reduce_mean(tf.abs(perturbation_t), axis=[2, 3]), ord=2, axis=1) ** 2
@@ -210,7 +209,7 @@ class ShadowAttack(EvasionAttack):
                     (perturbation_t[:, 0, :, :] - perturbation_t[:, 1, :, :]) ** 2
                     + (perturbation_t[:, 1, :, :] - perturbation_t[:, 2, :, :]) ** 2
                     + (perturbation_t[:, 0, :, :] - perturbation_t[:, 2, :, :]) ** 2
-                ).norm(p=2, dim=(2, 3))
+                ).norm(p=2, dim=(1, 2))
 
             loss_c = perturbation_t.abs().mean([2, 3]).norm(dim=1) ** 2
 
