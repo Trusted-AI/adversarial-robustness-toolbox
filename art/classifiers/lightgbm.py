@@ -26,7 +26,7 @@ from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier, ClassifierDecisionTree
+from art.classifiers.classifier import ClassifierDecisionTreeType
 
 if TYPE_CHECKING:
     import lightgbm
@@ -39,14 +39,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LightGBMClassifier(Classifier, ClassifierDecisionTree):
+class LightGBMClassifier(ClassifierDecisionTreeType):
     """
     Wrapper class for importing LightGBM models.
     """
 
     def __init__(
         self,
-        model: Optional["lightgbm.Booster"] = None,
+        model: Optional["lightgbm.Booster"] = None,  # type: ignore
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
@@ -68,7 +68,7 @@ class LightGBMClassifier(Classifier, ClassifierDecisionTree):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        from lightgbm import Booster
+        from lightgbm import Booster  # type: ignore
 
         if not isinstance(model, Booster):
             raise TypeError("Model must be of type lightgbm.Booster")

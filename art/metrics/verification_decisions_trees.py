@@ -26,7 +26,7 @@ from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.classifiers.classifier import ClassifierDecisionTree
+    from art.classifiers.classifier import ClassifierDecisionTreeType
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +166,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
     | Paper link: https://arxiv.org/abs/1906.03849
     """
 
-    def __init__(self, classifier: "ClassifierDecisionTree") -> None:
+    def __init__(self, classifier: "ClassifierDecisionTreeType") -> None:
         """
         Create robustness verification for a decision-tree-based classifier.
 

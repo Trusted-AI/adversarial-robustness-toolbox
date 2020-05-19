@@ -28,7 +28,7 @@ from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.classifiers.classifier import Classifier, ClassifierDecisionTree
+from art.classifiers.classifier import ClassifierDecisionTreeType
 from art.utils import to_categorical
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class XGBoostClassifier(Classifier, ClassifierDecisionTree):
+class XGBoostClassifier(ClassifierDecisionTreeType):
     """
     Wrapper class for importing XGBoost models.
     """
@@ -135,7 +135,7 @@ class XGBoostClassifier(Classifier, ClassifierDecisionTree):
 
         return y_prediction
 
-    def nb_classes(self) -> Optional[int]:
+    def nb_classes(self) -> Optional[int]:  # type: ignore
         """
         Return the number of output classes.
 

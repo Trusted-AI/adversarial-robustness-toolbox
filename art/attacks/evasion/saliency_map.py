@@ -29,7 +29,7 @@ import numpy as np
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers.classifier import ClassifierGradientsType
 from art.exceptions import ClassifierError
 from art.utils import check_and_transform_label_format, compute_success
 
@@ -47,7 +47,7 @@ class SaliencyMapMethod(EvasionAttack):
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: ClassifierGradientsType,
         theta: float = 0.1,
         gamma: float = 1.0,
         batch_size: int = 1,
@@ -206,9 +206,9 @@ class SaliencyMapMethod(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierGradients):
+        if not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
-                self.__class__, [ClassifierGradients], self.classifier
+                self.__class__, [ClassifierGradientsType], self.classifier
             )
 
         if self.gamma <= 0 or self.gamma > 1:

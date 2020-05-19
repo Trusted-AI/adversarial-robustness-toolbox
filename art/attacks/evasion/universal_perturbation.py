@@ -31,7 +31,10 @@ from typing import Any, Dict, Optional, Union
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
+from art.classifiers.classifier import (
+    ClassifierNeuralNetworkType,
+    ClassifierGradientsType,
+)
 from art.exceptions import ClassifierError
 from art.utils import projection
 
@@ -69,7 +72,7 @@ class UniversalPerturbation(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Union[ClassifierGradients, ClassifierNeuralNetwork],
+        classifier: Union[ClassifierGradientsType, ClassifierNeuralNetworkType],
         attacker: str = "deepfool",
         attacker_params: Optional[Dict[str, Any]] = None,
         delta: float = 0.2,
@@ -170,12 +173,12 @@ class UniversalPerturbation(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierNeuralNetwork) or not isinstance(
-            self.classifier, ClassifierGradients
-        ):
+        if not isinstance(
+            self.classifier, ClassifierNeuralNetworkType
+        ) and not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
                 self.__class__,
-                [ClassifierNeuralNetwork, ClassifierGradients],
+                [ClassifierNeuralNetworkType, ClassifierGradientsType],
                 self.classifier,
             )
         if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
@@ -200,7 +203,7 @@ class UniversalPerturbation(EvasionAttack):
         """
         try:
             attack_class = self._get_class(self.attacks_dict[a_name])
-            a_instance = attack_class(self.classifier)
+            a_instance = attack_class(self.classifier)  # type: ignore
 
             if params:
                 a_instance.set_params(**params)

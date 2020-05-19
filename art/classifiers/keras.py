@@ -29,11 +29,7 @@ import numpy as np
 import six
 
 from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-from art.classifiers.classifier import (
-    Classifier,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.classifiers.classifier import ClassifierNeuralNetworkType
 
 if TYPE_CHECKING:
     import keras
@@ -48,7 +44,7 @@ logger = logging.getLogger(__name__)
 KERAS_MODEL_TYPE = Union["keras.models.Model", "tf.keras.models.Model"]
 
 
-class KerasClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class KerasClassifier(ClassifierNeuralNetworkType):
     """
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """

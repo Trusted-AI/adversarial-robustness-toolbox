@@ -93,5 +93,7 @@ class Transformer(abc.ABC):
         for key, value in kwargs.items():
             if key in self.params:
                 setattr(self, key, value)
-        if hasattr(self, "_check_params"):
-            self._check_params()
+        self._check_params()
+
+    def _check_params(self) -> None:
+        pass

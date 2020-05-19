@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences import Preprocessor, Postprocessor
+    from art.metrics.verification_decisions_trees import Tree
 
 
 class input_filter(abc.ABCMeta):
@@ -134,13 +135,13 @@ class Classifier(abc.ABC, metaclass=input_filter):
             if np.array(clip_values[0] >= clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
 
-        self.preprocessing_defences: Union[Preprocessor, List[Preprocessor], None]
+        self.preprocessing_defences: Union[List[Preprocessor], None]
         if isinstance(preprocessing_defences, Preprocessor):
             self.preprocessing_defences = [preprocessing_defences]
         else:
             self.preprocessing_defences = preprocessing_defences
 
-        self.postprocessing_defences: Union[Postprocessor, List[Postprocessor], None]
+        self.postprocessing_defences: Union[List[Postprocessor], None]
         if isinstance(postprocessing_defences, Postprocessor):
             self.postprocessing_defences = [postprocessing_defences]
         else:
@@ -184,7 +185,7 @@ class Classifier(abc.ABC, metaclass=input_filter):
         raise NotImplementedError
 
     @property
-    def clip_values(self) -> tuple:
+    def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         """
         :return: Tuple of form `(min, max)` containing the minimum and maximum values allowed for the input features.
         """
@@ -196,9 +197,8 @@ class Classifier(abc.ABC, metaclass=input_filter):
         Return the shape of one input.
 
         :return: Shape of one input for the classifier.
-        :rtype: `tuple`
         """
-        return self._input_shape
+        return self._input_shape  # type: ignore
 
     @abc.abstractmethod
     def nb_classes(self) -> int:
@@ -334,7 +334,7 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         :param channel_index: Index of the axis in input (feature) array `x` representing the color channels.
         """
         self._channel_index = channel_index
-        super().__init__(**kwargs)
+        super().__init__()
 
     @abc.abstractmethod
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
@@ -575,11 +575,24 @@ class ClassifierDecisionTree(abc.ABC):
     """
 
     @abc.abstractmethod
-    def get_trees(self):
+    def get_trees(self) -> List["Tree"]:
         """
         Get the decision trees.
 
         :return: A list of decision trees.
-        :rtype: `[Tree]`
         """
         raise NotImplementedError
+
+
+class ClassifierNeuralNetworkType(
+    ClassifierNeuralNetwork, ClassifierGradients, Classifier
+):
+    pass
+
+
+class ClassifierGradientsType(ClassifierGradients, Classifier):
+    pass
+
+
+class ClassifierDecisionTreeType(Classifier, ClassifierDecisionTree):
+    pass

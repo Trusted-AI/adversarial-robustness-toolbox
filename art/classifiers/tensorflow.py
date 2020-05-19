@@ -31,11 +31,7 @@ import numpy as np
 import six
 
 from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-from art.classifiers.classifier import (
-    Classifier,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.classifiers.classifier import ClassifierNeuralNetworkType
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -48,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 
 class TensorFlowClassifier(
-    ClassifierNeuralNetwork, ClassifierGradients, Classifier
+    ClassifierNeuralNetworkType
 ):  # lgtm [py/missing-call-to-init]
     """
     This class implements a classifier with the TensorFlow framework.
@@ -705,7 +701,7 @@ class TensorFlowClassifier(
 TFClassifier = TensorFlowClassifier
 
 
-class TensorFlowV2Classifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class TensorFlowV2Classifier(ClassifierNeuralNetworkType):
     """
     This class implements a classifier with the TensorFlow v2 framework.
     """

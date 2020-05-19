@@ -29,7 +29,7 @@ from typing import Optional
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers.classifier import ClassifierGradientsType
 from art.attacks.attack import EvasionAttack
 from art.utils import (
     compute_success,
@@ -64,7 +64,7 @@ class FastGradientMethod(EvasionAttack):
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: ClassifierGradientsType,
         norm: int = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
@@ -99,14 +99,14 @@ class FastGradientMethod(EvasionAttack):
         FastGradientMethod._check_params(self)
 
     @classmethod
-    def is_valid_classifier_type(cls, classifier: ClassifierGradients) -> bool:
+    def is_valid_classifier_type(cls, classifier: ClassifierGradientsType) -> bool:
         """
         Checks whether the classifier provided is a classifier which this class can perform an attack on.
 
         :param classifier:
         :return: True if the candidate classifier can be used with this attack.
         """
-        return isinstance(classifier, ClassifierGradients)
+        return isinstance(classifier, ClassifierGradientsType)
 
     def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
@@ -238,9 +238,9 @@ class FastGradientMethod(EvasionAttack):
         return adv_x_best
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierGradients):
+        if not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
-                self.__class__, [ClassifierGradients], self.classifier
+                self.__class__, [ClassifierGradientsType], self.classifier
             )
 
         # Check if order of the norm is acceptable given current implementation

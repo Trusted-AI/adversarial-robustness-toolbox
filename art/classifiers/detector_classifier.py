@@ -28,11 +28,7 @@ from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.classifiers.classifier import (
-    Classifier,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.classifiers.classifier import ClassifierNeuralNetworkType
 
 if TYPE_CHECKING:
     from art.config import PREPROCESSING_TYPE
@@ -43,7 +39,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class DetectorClassifier(ClassifierNeuralNetworkType):
     """
     This class implements a Classifier extension that wraps a classifier and a detector.
     More details in https://arxiv.org/abs/1705.07263
@@ -51,8 +47,8 @@ class DetectorClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
     def __init__(
         self,
-        classifier: Classifier,
-        detector: Classifier,
+        classifier: ClassifierNeuralNetworkType,
+        detector: ClassifierNeuralNetworkType,
         preprocessing_defences: Union[
             "Preprocessor", List["Preprocessor"], None
         ] = None,

@@ -33,7 +33,7 @@ from scipy.stats import truncnorm
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers.classifier import ClassifierGradientsType
 from art.exceptions import ClassifierError
 from art.utils import (
     compute_success,
@@ -58,7 +58,7 @@ class ProjectedGradientDescent(FastGradientMethod):
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: ClassifierGradientsType,
         norm: int = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
@@ -196,9 +196,9 @@ class ProjectedGradientDescent(FastGradientMethod):
     def _check_params(self) -> None:
         super(ProjectedGradientDescent, self)._check_params()
 
-        if not isinstance(self.classifier, ClassifierGradients):
+        if not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
-                self.__class__, [ClassifierGradients], self.classifier
+                self.__class__, [ClassifierGradientsType], self.classifier
             )
 
         if self.eps_step > self.eps:

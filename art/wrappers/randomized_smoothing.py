@@ -29,13 +29,13 @@ import numpy as np
 from scipy.stats import binom_test, norm
 from statsmodels.stats.proportion import proportion_confint
 
-from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.classifiers.classifier import ClassifierGradientsType
 from art.wrappers.wrapper import ClassifierWrapper
 
 logger = logging.getLogger(__name__)
 
 
-class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
+class RandomizedSmoothing(ClassifierWrapper, ClassifierGradientsType):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
     in Cohen et al. (2019).
@@ -45,7 +45,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients, Classifier):
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: ClassifierGradientsType,
         sample_size: int,
         scale: float = 0.1,
         alpha: float = 0.001,

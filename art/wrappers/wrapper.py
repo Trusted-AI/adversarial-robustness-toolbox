@@ -32,7 +32,7 @@ class ClassifierWrapper:
 
     attack_params = ["classifier"]
 
-    def __init__(self, classifier: "Classifier") -> None:
+    def __init__(self, classifier) -> None:
         """
         Initialize a :class:`.ClassifierWrapper` object.
 

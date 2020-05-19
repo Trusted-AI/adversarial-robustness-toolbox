@@ -28,7 +28,7 @@ from typing import Optional
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers.classifier import ClassifierGradientsType
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
 from art.exceptions import ClassifierError
@@ -52,7 +52,7 @@ class DeepFool(EvasionAttack):
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: ClassifierGradientsType,
         max_iter: int = 100,
         epsilon: float = 1e-6,
         nb_grads: int = 10,
@@ -214,9 +214,9 @@ class DeepFool(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierGradients):
+        if not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
-                self.__class__, [ClassifierGradients], self.classifier
+                self.__class__, [ClassifierGradientsType], self.classifier
             )
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:

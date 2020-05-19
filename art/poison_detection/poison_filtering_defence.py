@@ -43,9 +43,7 @@ class PoisonFilteringDefence(ABC):
 
     defence_params = ["classifier"]
 
-    def __init__(
-        self, classifier: "Classifier", x_train: np.ndarray, y_train: np.ndarray
-    ) -> None:
+    def __init__(self, classifier, x_train: np.ndarray, y_train: np.ndarray) -> None:
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
@@ -87,8 +85,7 @@ class PoisonFilteringDefence(ABC):
         for key, value in kwargs.items():
             if key in self.defence_params:
                 setattr(self, key, value)
-        if hasattr(self, "_check_params"):
-            self._check_params()
+        self._check_params()
 
     def get_params(self) -> Dict[str, Any]:
         """
@@ -98,3 +95,6 @@ class PoisonFilteringDefence(ABC):
         """
         dictionary = {param: getattr(self, param) for param in self.defence_params}
         return dictionary
+
+    def _check_params(self) -> None:
+        pass

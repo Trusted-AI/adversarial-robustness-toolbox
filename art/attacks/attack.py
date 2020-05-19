@@ -91,7 +91,7 @@ class Attack(abc.ABC, metaclass=input_filter):
 
     attack_params: List[str] = list()
 
-    def __init__(self, classifier: "Classifier") -> None:
+    def __init__(self, classifier) -> None:
         """
         :param classifier: A trained classifier.
         """
@@ -106,8 +106,10 @@ class Attack(abc.ABC, metaclass=input_filter):
         for key, value in kwargs.items():
             if key in self.attack_params:
                 setattr(self, key, value)
-        if hasattr(self, "_check_params"):
-            self._check_params
+        self._check_params()
+
+    def _check_params(self) -> None:
+        pass
 
 
 class EvasionAttack(Attack):

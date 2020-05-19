@@ -28,7 +28,10 @@ from typing import Optional, Union
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
+from art.classifiers.classifier import (
+    ClassifierNeuralNetworkType,
+    ClassifierGradientsType,
+)
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
 from art.exceptions import ClassifierError
@@ -52,7 +55,7 @@ class VirtualAdversarialMethod(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Union[ClassifierGradients, ClassifierNeuralNetwork],
+        classifier: Union[ClassifierGradientsType, ClassifierNeuralNetworkType],
         max_iter: int = 10,
         finite_diff: float = 1e-6,
         eps: float = 0.1,
@@ -205,12 +208,12 @@ class VirtualAdversarialMethod(EvasionAttack):
         return res
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierNeuralNetwork) or not isinstance(
-            self.classifier, ClassifierGradients
-        ):
+        if not isinstance(
+            self.classifier, ClassifierNeuralNetworkType
+        ) and not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
                 self.__class__,
-                [ClassifierGradients, ClassifierNeuralNetwork],
+                [ClassifierGradientsType, ClassifierNeuralNetworkType],
                 self.classifier,
             )
 

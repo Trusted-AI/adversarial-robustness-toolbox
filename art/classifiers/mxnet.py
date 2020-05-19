@@ -33,11 +33,7 @@ from art.config import (
     CLIP_VALUES_TYPE,
     PREPROCESSING_TYPE,
 )
-from art.classifiers.classifier import (
-    Classifier,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.classifiers.classifier import ClassifierNeuralNetworkType
 
 if TYPE_CHECKING:
     import mxnet as mx
@@ -49,9 +45,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class MXClassifier(
-    ClassifierNeuralNetwork, ClassifierGradients, Classifier
-):  # lgtm [py/missing-call-to-init]
+class MXClassifier(ClassifierNeuralNetworkType):  # lgtm [py/missing-call-to-init]
     """
     Wrapper class for importing MXNet Gluon models.
     """

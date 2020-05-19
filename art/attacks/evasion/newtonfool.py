@@ -28,7 +28,7 @@ from typing import Optional
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers.classifier import ClassifierGradientsType
 from art.attacks.attack import EvasionAttack
 from art.utils import to_categorical, compute_success
 
@@ -46,7 +46,7 @@ class NewtonFool(EvasionAttack):
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: ClassifierGradientsType,
         max_iter: int = 100,
         eta: float = 0.01,
         batch_size: int = 1,
@@ -134,7 +134,7 @@ class NewtonFool(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierGradients):
+        if not isinstance(self.classifier, ClassifierGradientsType):
             raise (
                 TypeError(
                     "For `"

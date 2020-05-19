@@ -345,9 +345,7 @@ def compute_accuracy(
 # -------------------------------------------------------------------------------------------------- DATASET OPERATIONS
 
 
-def load_cifar10(
-    raw: bool = False,
-) -> DATASET_TYPE:
+def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
     """
     Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
@@ -413,9 +411,7 @@ def load_cifar10(
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_mnist(
-    raw: bool = False,
-) -> DATASET_TYPE:
+def load_mnist(raw: bool = False,) -> DATASET_TYPE:
     """
     Loads MNIST dataset from `ART_DATA_PATH` or downloads it if necessary.
 
@@ -489,9 +485,7 @@ def load_stl() -> DATASET_TYPE:
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_iris(
-    raw: bool = False, test_set: float = 0.3
-) -> DATASET_TYPE:
+def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     """
     Loads the UCI Iris dataset from `ART_DATA_PATH` or downloads it if necessary.
 
@@ -563,9 +557,7 @@ def load_iris(
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_dataset(
-    name: str,
-) -> DATASET_TYPE:
+def load_dataset(name: str,) -> DATASET_TYPE:
     """
     Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
 
@@ -654,7 +646,7 @@ def get_file(
             try:
                 six.moves.urllib.request.urlretrieve(url, full_path)
             except six.moves.urllib.error.HTTPError as exception:
-                raise Exception(error_msg.format(url, exception.code, exception.msg))
+                raise Exception(error_msg.format(url, exception.code, exception.msg))  # type: ignore
             except six.moves.urllib.error.URLError as exception:
                 raise Exception(
                     error_msg.format(url, exception.errno, exception.reason)
@@ -683,7 +675,7 @@ def make_directory(dir_path: str) -> None:
 
 
 def clip_and_round(
-    x: np.ndarray, clip_values: "CLIP_VALUES_TYPE", round_samples: float
+    x: np.ndarray, clip_values: Optional["CLIP_VALUES_TYPE"], round_samples: float
 ) -> np.ndarray:
     """
     Rounds the input to the correct level of granularity.
@@ -697,7 +689,7 @@ def clip_and_round(
     :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to
            disable.
     """
-    if round_samples == 0:
+    if round_samples == 0.0:
         return x
     if clip_values is not None:
         np.clip(x, clip_values[0], clip_values[1], out=x)
@@ -709,7 +701,7 @@ def preprocess(
     x: np.ndarray,
     y: np.ndarray,
     nb_classes: int = 10,
-    clip_values: Optional[CLIP_VALUES_TYPE] = None,
+    clip_values: Optional["CLIP_VALUES_TYPE"] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Scales `x` to [0, 1] and converts `y` to class categorical confidences.

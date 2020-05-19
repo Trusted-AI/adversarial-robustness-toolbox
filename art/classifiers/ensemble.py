@@ -25,11 +25,7 @@ from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.classifiers.classifier import (
-    Classifier,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.classifiers.classifier import ClassifierNeuralNetworkType
 
 if TYPE_CHECKING:
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -40,7 +36,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class EnsembleClassifier(ClassifierNeuralNetworkType):
     """
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
@@ -48,7 +44,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
     def __init__(
         self,
-        classifiers: List[ClassifierNeuralNetwork],
+        classifiers: List[ClassifierNeuralNetworkType],
         classifier_weights: Union[list, np.ndarray, None] = None,
         channel_index: int = 3,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -289,7 +285,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork, ClassifierGradients, Classifie
 
         :param train: True to set the learning phase to training, False to set it to prediction.
         """
-        if self._learning is not None and isinstance(train, bool):
+        if self._learning_phase is not None and isinstance(train, bool):
             for classifier in self._classifiers:
                 classifier.set_learning_phase(train)
             self._learning_phase = train

@@ -32,7 +32,10 @@ from scipy.ndimage import rotate, shift, zoom
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
+from art.classifiers.classifier import (
+    ClassifierNeuralNetworkType,
+    ClassifierGradientsType,
+)
 from art.exceptions import ClassifierError
 from art.utils import check_and_transform_label_format
 
@@ -59,7 +62,7 @@ class AdversarialPatch(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Union[ClassifierNeuralNetwork, ClassifierGradients],
+        classifier: Union[ClassifierNeuralNetworkType, ClassifierGradientsType],
         target: int = 0,
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
@@ -179,12 +182,12 @@ class AdversarialPatch(EvasionAttack):
         return patched_x
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierNeuralNetwork) or not isinstance(
-            self.classifier, ClassifierGradients
-        ):
+        if not isinstance(
+            self.classifier, ClassifierNeuralNetworkType
+        ) and not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
                 self.__class__,
-                [ClassifierNeuralNetwork, ClassifierGradients],
+                [ClassifierNeuralNetworkType, ClassifierGradientsType],
                 self.classifier,
             )
 

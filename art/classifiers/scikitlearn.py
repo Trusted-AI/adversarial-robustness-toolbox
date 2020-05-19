@@ -135,7 +135,7 @@ class ScikitlearnClassifier(Classifier):
 
         return predictions
 
-    def nb_classes(self) -> Optional[int]:
+    def nb_classes(self) -> Optional[int]:  # type: ignore
         """
         Return the number of output classes.
 
@@ -295,7 +295,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
             self._model.tree_.value[node_id]
         )
 
-    def _get_leaf_nodes(self, node_id, i_tree, class_label, box):
+    def _get_leaf_nodes(self, node_id, i_tree, class_label, box) -> List["LeafNode"]:
         from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
         leaf_nodes = list()
@@ -1578,7 +1578,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
 
         return y_pred
 
-    def nb_classes(self) -> Optional[int]:
+    def nb_classes(self) -> Optional[int]:  # type: ignore
         """
         Return the number of output classes.
 

@@ -28,20 +28,17 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 from sklearn import metrics
 
-from art.classifiers.classifier import (
-    Classifier,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.classifiers.classifier import ClassifierNeuralNetworkType
 from art.detection.subsetscanning.scanner import Scanner
 
 if TYPE_CHECKING:
+    from art.config import CLIP_VALUES_TYPE
     from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
 
 
-class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class SubsetScanningDetector(ClassifierNeuralNetworkType):
     """
     Fast generalized subset scan based detector by McFowland, E., Speakman, S., and Neill, D. B. (2013).
 
@@ -49,7 +46,10 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
     """
 
     def __init__(
-        self, classifier: Classifier, bgd_data: np.ndarray, layer: Union[int, str]
+        self,
+        classifier: ClassifierNeuralNetworkType,
+        bgd_data: np.ndarray,
+        layer: Union[int, str],
     ) -> None:
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
@@ -64,7 +64,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
             preprocessing_defences=classifier.preprocessing_defences,
             preprocessing=classifier.preprocessing,
         )
-        self.classifier = classifier
+        self.detector = classifier
         self.bgd_data = bgd_data
 
         # Ensure that layer is well-defined
@@ -103,7 +103,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         :return: P-value ranges.
         """
         bgd_activations = self.sorted_bgd_activations
-        eval_activations = self.classifier.get_activations(
+        eval_activations = self.detector.get_activations(
             eval_x, self._layer_name, batch_size=128
         )
 
@@ -244,7 +244,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         return self.detector.input_shape
 
     @property
-    def clip_values(self) -> tuple:
+    def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
     @property
@@ -252,8 +252,8 @@ class SubsetScanningDetector(ClassifierNeuralNetwork, ClassifierGradients, Class
         return self.detector.channel_index
 
     @property
-    def learning_phase(self) -> bool:
-        return self.detector._learning_phase
+    def learning_phase(self) -> Optional[bool]:
+        return self.detector.learning_phase
 
     def class_gradient(
         self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs

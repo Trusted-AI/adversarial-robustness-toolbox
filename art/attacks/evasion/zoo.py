@@ -396,7 +396,7 @@ class ZooAttack(EvasionAttack):
         # Initialize best distortions, best changed labels and best attacks
         best_dist = np.inf * np.ones(x_adv.shape[0])
         best_label = -np.inf * np.ones(x_adv.shape[0])
-        best_attack = [x_adv[i] for i in range(x_adv.shape[0])]
+        best_attack = np.array([x_adv[i] for i in range(x_adv.shape[0])])
 
         for iter_ in range(self.max_iter):
             logger.debug("Iteration step %i out of %i", iter_, self.max_iter)

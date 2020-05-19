@@ -28,18 +28,12 @@ from typing import List, Optional, Union
 import numpy as np
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.classifiers.classifier import (
-    Classifier,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.classifiers.classifier import ClassifierGradientsType
 
 logger = logging.getLogger(__name__)
 
 
-class ExpectationOverTransformations(
-    ClassifierWrapper, ClassifierGradients, ClassifierNeuralNetwork, Classifier
-):
+class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradientsType):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
@@ -48,7 +42,7 @@ class ExpectationOverTransformations(
     """
 
     def __init__(
-        self, classifier: Classifier, sample_size: int, transformation
+        self, classifier: ClassifierGradientsType, sample_size: int, transformation
     ) -> None:
         """
         Create an expectation over transformations wrapper.

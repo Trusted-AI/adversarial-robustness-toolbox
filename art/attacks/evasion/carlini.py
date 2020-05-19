@@ -32,7 +32,7 @@ from typing import Optional, Tuple
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers.classifier import ClassifierGradientsType
 from art.attacks.attack import EvasionAttack
 from art.utils import (
     compute_success,
@@ -70,7 +70,7 @@ class CarliniL2Method(EvasionAttack):
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: ClassifierGradientsType,
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 0.01,
@@ -541,9 +541,9 @@ class CarliniL2Method(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierGradients):
+        if not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
-                self.__class__, [ClassifierGradients], self.classifier
+                self.__class__, [ClassifierGradientsType], self.classifier
             )
 
         if (
@@ -590,7 +590,7 @@ class CarliniLInfMethod(EvasionAttack):
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: ClassifierGradientsType,
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 0.01,
@@ -945,9 +945,9 @@ class CarliniLInfMethod(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierGradients):
+        if not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
-                self.__class__, [ClassifierGradients], self.classifier
+                self.__class__, [ClassifierGradientsType], self.classifier
             )
 
         if self.eps <= 0:

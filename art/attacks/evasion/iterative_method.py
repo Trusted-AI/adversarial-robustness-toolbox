@@ -31,7 +31,7 @@ import numpy as np
 from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
-    from art.classifiers import ClassifierGradients
+    from art.classifiers.classifier import ClassifierGradientsType
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
 
     def __init__(
         self,
-        classifier: "ClassifierGradients",
+        classifier: "ClassifierGradientsType",
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,

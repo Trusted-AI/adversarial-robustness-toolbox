@@ -31,11 +31,7 @@ import numpy as np
 import six
 
 from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-from art.classifiers.classifier import (
-    Classifier,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.classifiers.classifier import ClassifierNeuralNetworkType
 
 if TYPE_CHECKING:
     import torch
@@ -47,9 +43,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(
-    ClassifierNeuralNetwork, ClassifierGradients, Classifier
-):  # lgtm [py/missing-call-to-init]
+class PyTorchClassifier(ClassifierNeuralNetworkType):  # lgtm [py/missing-call-to-init]
     """
     This class implements a classifier with the PyTorch framework.
     """
@@ -609,7 +603,7 @@ class PyTorchClassifier(
                     This is a wrapper for the input model.
                     """
 
-                    def __init__(self, model: torch.nn.Module):
+                    def __init__(self, model: "torch.nn.Module"):
                         """
                         Initialization by storing the input model.
 

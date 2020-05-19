@@ -26,25 +26,22 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.classifiers.classifier import (
-    Classifier,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.classifiers.classifier import ClassifierNeuralNetworkType
 
 if TYPE_CHECKING:
+    from art.config import CLIP_VALUES_TYPE
     from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifier):
+class BinaryInputDetector(ClassifierNeuralNetworkType):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
 
-    def __init__(self, detector: Classifier) -> None:
+    def __init__(self, detector: ClassifierNeuralNetworkType) -> None:
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
 
@@ -107,7 +104,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         return self.detector.input_shape
 
     @property
-    def clip_values(self) -> tuple:
+    def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
     @property
@@ -115,8 +112,8 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         return self.detector.channel_index
 
     @property
-    def learning_phase(self) -> bool:
-        return self.detector._learning_phase
+    def learning_phase(self) -> Optional[bool]:
+        return self.detector.learning_phase
 
     def class_gradient(
         self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
@@ -145,16 +142,17 @@ class BinaryInputDetector(ClassifierNeuralNetwork, ClassifierGradients, Classifi
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(
-    ClassifierNeuralNetwork, ClassifierGradients, Classifier
-):
+class BinaryActivationDetector(ClassifierNeuralNetworkType):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
 
     def __init__(
-        self, classifier: Classifier, detector: Classifier, layer: Union[int, str]
+        self,
+        classifier: ClassifierNeuralNetworkType,
+        detector: ClassifierNeuralNetworkType,
+        layer: Union[int, str],
     ) -> None:  # lgtm [py/similar-function]
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
@@ -240,7 +238,7 @@ class BinaryActivationDetector(
         return self.detector.input_shape
 
     @property
-    def clip_values(self) -> tuple:
+    def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
     @property
@@ -248,8 +246,8 @@ class BinaryActivationDetector(
         return self.detector.channel_index
 
     @property
-    def learning_phase(self) -> bool:
-        return self.detector._learning_phase
+    def learning_phase(self) -> Optional[bool]:
+        return self.detector.learning_phase
 
     @property
     def layer_names(self) -> List[str]:

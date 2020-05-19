@@ -29,7 +29,7 @@ import numpy as np
 import six
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.classifiers.classifier import ClassifierGradientsType
 from art.attacks.attack import EvasionAttack
 from art.exceptions import ClassifierError
 from art.utils import (
@@ -62,7 +62,7 @@ class ElasticNet(EvasionAttack):
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: ClassifierGradientsType,
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 1e-2,
@@ -422,9 +422,9 @@ class ElasticNet(EvasionAttack):
         return result
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierGradients):
+        if not isinstance(self.classifier, ClassifierGradientsType):
             raise ClassifierError(
-                self.__class__, [ClassifierGradients], self.classifier
+                self.__class__, [ClassifierGradientsType], self.classifier
             )
 
         if (
