@@ -115,10 +115,10 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         if num_poison == 0:
             raise ValueError("Must input at least one poison point")
 
-        target_features = self.classifier.get_activations(self.target, self.feature_layer, 1)
+        target_features = self.estimator.get_activations(self.target, self.feature_layer, 1)
         for init_attack in x:
             old_attack = np.expand_dims(np.copy(init_attack), axis=0)
-            poison_features = self.classifier.get_activations(old_attack, self.feature_layer, 1)
+            poison_features = self.estimator.get_activations(old_attack, self.feature_layer, 1)
             old_objective = self.objective(poison_features, target_features, init_attack, old_attack)
             last_m_objectives = [old_objective]
             # TODO: change to while with convergence (add convergence params)
@@ -135,7 +135,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                     break
 
                 np.expand_dims(new_attack, axis=0)
-                new_feature_rep = self.classifier.get_activations(new_attack, self.feature_layer, 1)
+                new_feature_rep = self.estimator.get_activations(new_attack, self.feature_layer, 1)
                 new_objective = self.objective(new_feature_rep, target_features, init_attack, new_attack)
 
                 avg_of_last_m = sum(last_m_objectives) / float(min(self.num_old_obj, i + 1))
@@ -154,10 +154,10 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                     last_m_objectives.append(new_objective)
 
             # Watermarking
-            final_poison = np.clip(old_attack[0] + self.watermark * self.target, *self.classifier.clip_values)
+            final_poison = np.clip(old_attack[0] + self.watermark * self.target, *self.estimator.clip_values)
             final_attacks.append(final_poison)
 
-        return np.vstack(final_attacks), self.classifier.predict(x)
+        return np.vstack(final_attacks), self.estimator.predict(x)
 
     def set_params(self, **kwargs):
         """
@@ -183,12 +183,12 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :return: poison example closer in feature representation to target space
         :rtype: `np.ndarray`
         """
-        target_placeholder, target_feature_rep = self.classifier.get_activations(self.target, self.feature_layer, 1,
+        target_placeholder, target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1,
                                                                                  intermediate=True)
-        poison_placeholder, poison_feature_rep = self.classifier.get_activations(poison, self.feature_layer, 1,
+        poison_placeholder, poison_feature_rep = self.estimator.get_activations(poison, self.feature_layer, 1,
                                                                                  intermediate=True)
         attack_loss = tensor_norm(poison_feature_rep - target_feature_rep)
-        attack_grad, = self.classifier.custom_gradient(attack_loss, [poison_placeholder, target_placeholder],
+        attack_grad, = self.estimator.custom_gradient(attack_loss, [poison_placeholder, target_placeholder],
                                                        [poison, self.target])
 
         poison -= self.learning_rate * attack_grad[0]
@@ -210,7 +210,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         dim_features = feature_rep.shape[-1]
         beta = self.similarity_coeff * (dim_features / num_features) ** 2
         poison = (poison + self.learning_rate * beta * base) / (1 + beta * self.learning_rate)
-        low, high = self.classifier.clip_values
+        low, high = self.estimator.clip_values
         return np.clip(poison, low, high)
 
     def objective(self, poison_feature_rep, target_feature_rep, base_image, poison):
