@@ -122,7 +122,11 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 upper_limit = ((1 - mu) / std)
                 lower_limit = ((0 - mu) / std)
 
-                epsilon = (self.eps/255.)/std
+                epsilon = self.eps/std
+
+                # n = x_batch.shape[0]
+                # m = np.prod(x_batch.shape[1:])
+                # delta_rnd = random_sphere(n, m, self.eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
 
                 delta = torch.zeros_like(i_batch).to(
                     self.classifier._device)
