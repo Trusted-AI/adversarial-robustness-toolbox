@@ -168,7 +168,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :return: `True` when parsing was successful
         """
         # TODO: finish this
-        super(FeatureCollisionAttack, self).set_params(**kwargs)
+        super().set_params(**kwargs)
         if self.learning_rate <= 0:
             raise ValueError("Learning rate must be strictly positive")
         if self.max_iter < 1:
