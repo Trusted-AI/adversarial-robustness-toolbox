@@ -120,28 +120,37 @@ class ShadowAttack(EvasionAttack):
                 "Feature vectors detected. The adversarial patch can only be applied to image data dimensions."
             )
 
-        perturbation = (
-            np.random.uniform(low=self.estimator.clip_values[0], high=self.estimator.clip_values[1], size=x.shape)
-            - (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2
-        )
+        x_adv = np.zeros_like(x)
 
-        for _ in range(self.nb_steps):
+        # Compute perturbation with implicit batching
+        for i_batch in range(int(np.ceil(x.shape[0] / self.batch_size))):
 
-            print(_, np.mean(perturbation))
+            batch_index_1, batch_index_2 = i_batch * self.batch_size, (i_batch + 1) * self.batch_size
+            x_batch = x[batch_index_1:batch_index_2]
+            y_batch = y[batch_index_1:batch_index_2]
 
-            gradients_ce = self.estimator.loss_gradient(x=x, y=y)
+            perturbation = (
+                np.random.uniform(
+                    low=self.estimator.clip_values[0], high=self.estimator.clip_values[1], size=x_batch.shape
+                )
+                - (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2
+            )
 
-            gradients = gradients_ce - self._get_regularisation_loss_gradients(perturbation)
+            for _ in range(self.nb_steps):
 
-            perturbation += self.learning_rate * gradients
+                gradients_ce = self.estimator.loss_gradient(x=x_batch, y=y_batch)
 
-            x_p = x + perturbation
+                gradients = gradients_ce - self._get_regularisation_loss_gradients(perturbation)
 
-            x_p = np.clip(x_p, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
+                perturbation += self.learning_rate * gradients
 
-            perturbation = x_p - x
+                x_p = x_batch + perturbation
 
-        x_adv = x + perturbation
+                x_p = np.clip(x_p, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
+
+                perturbation = x_p - x
+
+            x_adv[batch_index_1:batch_index_2] = x + perturbation
 
         return x_adv
 
