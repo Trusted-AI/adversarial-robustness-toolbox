@@ -155,7 +155,7 @@ class Wasserstein(EvasionAttack):
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
-        x_adv = x.astype(ART_NUMPY_DTYPE)
+        x_adv = x.copy().astype(ART_NUMPY_DTYPE)
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
@@ -178,7 +178,7 @@ class Wasserstein(EvasionAttack):
             logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            batch = x[batch_index_1: batch_index_2]
+            batch = x_adv[batch_index_1: batch_index_2]
             batch_labels = targets[batch_index_1: batch_index_2]
 
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(
@@ -197,7 +197,7 @@ class Wasserstein(EvasionAttack):
                 self.regularization,
                 self.conjugate_sinkhorn_max_iter,
                 self.projected_sinkhorn_max_iter,
-                self.batch_size,
+                batch.shape[0],
             )
 
         logger.info(
@@ -264,13 +264,19 @@ class Wasserstein(EvasionAttack):
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
-        adv_x = x.copy()
-        adv_x_best = x.copy()
+        adv_x = x.copy().astype(ART_NUMPY_DTYPE)
+        adv_x_best = x.copy().astype(ART_NUMPY_DTYPE)
 
         if targeted:
-            err = get_labels_np_array(self.estimator.predict(x, batch_size=batch_size)) == targets
+            err = (
+                    np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
+                    == np.argmax(targets, axis=1)
+            )
         else:
-            err = get_labels_np_array(self.estimator.predict(x, batch_size=batch_size)) != targets
+            err = (
+                    np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
+                    != np.argmax(targets, axis=1)
+            )
 
         err_best = err
         eps = np.ones(batch_size) * eps
@@ -295,9 +301,15 @@ class Wasserstein(EvasionAttack):
             )
 
             if targeted:
-                err = get_labels_np_array(self.estimator.predict(adv_x, batch_size=batch_size)) == targets
+                err = (
+                    np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
+                    == np.argmax(targets, axis=1)
+                )
             else:
-                err = get_labels_np_array(self.estimator.predict(adv_x, batch_size=batch_size)) != targets
+                err = (
+                    np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
+                    != np.argmax(targets, axis=1)
+                )
 
             if np.mean(err) > np.mean(err_best):
                 err_best = err
@@ -640,12 +652,11 @@ class Wasserstein(EvasionAttack):
 
         psi = np.ones(batch_size)
 
-        if self.estimator.channel_index == 1:
-            K = np.exp(-psi.reshape(batch_size, 1, 1, 1) * cost_matrix - 1)
-        else:
-            K = np.expand_dims(np.exp(-psi.reshape(batch_size, 1, 1) * cost_matrix - 1), -1)
+        K = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
+        K = np.exp(-K * cost_matrix - 1)
 
         convergence = -np.inf
+
         for _ in range(conjugate_sinkhorn_max_iter):
             # Block coordinate descent iterates
             alpha[I_nonzero_] = (np.log(self._local_transport(K, exp_beta, kernel_size)) - np.log(x))[I_nonzero_]
@@ -660,6 +671,7 @@ class Wasserstein(EvasionAttack):
                     kernel_size,
                 )
             )
+
             h = -self._batch_dot(
                 exp_alpha,
                 self._local_transport(
@@ -668,14 +680,17 @@ class Wasserstein(EvasionAttack):
                     kernel_size,
                 )
             )
+
             delta = g / h
 
             # Ensure psi >= 0
             tmp = np.ones(delta.shape)
             neg = psi - tmp * delta < 0
+
             while neg.any() and np.min(tmp) > 1e-2:
                 tmp[neg] /= 2
                 neg = psi - tmp * delta < 0
+
             psi[I_nonzero] = np.maximum(psi - tmp * delta, 0)[I_nonzero]
 
             # Update K
@@ -755,12 +770,11 @@ class Wasserstein(EvasionAttack):
 
         psi = np.ones(batch_size)
 
-        if self.estimator.channel_index == 1:
-            K = np.exp(-psi.reshape(batch_size, 1, 1, 1) * cost_matrix - 1)
-        else:
-            K = np.expand_dims(np.exp(-psi.reshape(batch_size, 1, 1) * cost_matrix - 1), -1)
+        K = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
+        K = np.exp(-K * cost_matrix - 1)
 
         convergence = -np.inf
+
         for _ in range(projected_sinkhorn_max_iter):
             # Block coordinate descent iterates
             alpha = (np.log(self._local_transport(K, exp_beta, kernel_size)) - np.log(x_init))
@@ -780,6 +794,7 @@ class Wasserstein(EvasionAttack):
                     kernel_size,
                 )
             )
+
             h = -self._batch_dot(
                 exp_alpha,
                 self._local_transport(
@@ -788,14 +803,17 @@ class Wasserstein(EvasionAttack):
                     kernel_size,
                 )
             )
+
             delta = g / h
 
             # Ensure psi >= 0
             tmp = np.ones(delta.shape)
             neg = psi - tmp * delta < 0
+
             while neg.any() and np.min(tmp) > 1e-2:
                 tmp[neg] /= 2
                 neg = psi - tmp * delta < 0
+
             psi = np.maximum(psi - tmp * delta, 0)
 
             # Update K
@@ -864,6 +882,7 @@ class Wasserstein(EvasionAttack):
 
         x_ = x.reshape(batch_size, 1, -1)
         y_ = y.reshape(batch_size, -1, 1)
+
         result = np.matmul(x_, y_).reshape(batch_size)
 
         return result
@@ -924,7 +943,6 @@ class Wasserstein(EvasionAttack):
         # Swap channels to prepare for local transport computation
         if self.estimator.channel_index > 1:
             x = np.swapaxes(x, 1, self.estimator.channel_index)
-            K = np.swapaxes(K, 1, self.estimator.channel_index)
 
         # Compute local transport
         unfold_x = self._unfold(x=x, kernel_size=kernel_size, padding=kernel_size // 2)
@@ -934,6 +952,7 @@ class Wasserstein(EvasionAttack):
 
         tmp_K = K.reshape(K.shape[0], num_channels, -1)
         tmp_K = np.expand_dims(tmp_K, -1)
+
         result = np.matmul(unfold_x, tmp_K)
         result = np.squeeze(result, -1)
 
