@@ -199,6 +199,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     def backward_step(self, base, feature_rep, poison):
         """
         Backward part of forward-backward splitting algorithm
+        
         :param base: the base image that the poison was initialized with
         :type base: `np.ndarray`
         :param poison: the current poison samples
