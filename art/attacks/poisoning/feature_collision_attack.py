@@ -87,7 +87,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         if not isinstance(classifier, (NeuralNetworkMixin, BaseEstimator)):
             raise TypeError("Classifier must be a neural network")
 
-        self.classifier = classifier
         self.target = target
         self.feature_layer = feature_layer
         self.learning_rate = learning_rate
