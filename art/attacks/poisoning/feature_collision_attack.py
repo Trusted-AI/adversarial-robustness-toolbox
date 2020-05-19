@@ -139,7 +139,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 np.expand_dims(new_attack, axis=0)
                 new_feature_rep = self.classifier.get_activations(new_attack, self.feature_layer, 1)
                 new_objective = self.objective(new_feature_rep, target_features, init_attack, new_attack)
-                # np.linalg.norm(new_feature_rep - target_features) + beta * np.linalg.norm(new_attack - x)
 
                 avg_of_last_m = sum(last_m_objectives) / float(min(self.num_old_obj, i + 1))
 
