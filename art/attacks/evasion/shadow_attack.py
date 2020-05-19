@@ -146,11 +146,11 @@ class ShadowAttack(EvasionAttack):
 
                 perturbation += self.learning_rate * gradients
 
-                x_p = x_batch + perturbation
+                # x_p = x_batch + perturbation
 
-                x_p = np.clip(x_p, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
+                # x_p = np.clip(x_p, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
 
-                perturbation = x_p - x_batch
+                # perturbation = x_p - x_batch
 
             x_adv[batch_index_1:batch_index_2] = x_batch + perturbation
 
@@ -191,7 +191,7 @@ class ShadowAttack(EvasionAttack):
 
                     loss = self.lambda_tv * loss_tv + self.lambda_s * loss_s + self.lambda_c * loss_c
 
-                    print("loss reg:", loss)
+#                    print("loss reg:", loss)
 
                     gradients = tape.gradient(loss, perturbation_t).numpy()
 
@@ -226,7 +226,7 @@ class ShadowAttack(EvasionAttack):
 
             loss = torch.mean(self.lambda_tv * loss_tv + self.lambda_s * loss_s + self.lambda_c * loss_c)
 
-            print("loss reg:", loss)
+#            print("loss reg:", loss)
 
             loss.backward()
 

@@ -208,6 +208,7 @@ class RandomizedSmoothingMixin(ABC):
         x = np.repeat(x, n, axis=0)
         x = x + np.random.normal(scale=self.scale, size=x.shape).astype(ART_NUMPY_DTYPE)
 
+        # x = np.clip(x, a_min=0, a_max=1)
         return x
 
     def _prediction_counts(self, x, n=None, batch_size=128):
