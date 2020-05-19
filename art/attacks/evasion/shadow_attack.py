@@ -138,7 +138,7 @@ class ShadowAttack(EvasionAttack):
 
             for _ in range(self.nb_steps):
 
-                gradients_ce = self.estimator.loss_gradient(x=x_batch, y=y_batch)
+                gradients_ce = self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch)
 
                 gradients = gradients_ce - self._get_regularisation_loss_gradients(perturbation)
 
@@ -148,9 +148,9 @@ class ShadowAttack(EvasionAttack):
 
                 x_p = np.clip(x_p, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
 
-                perturbation = x_p - x
+                perturbation = x_p - x_batch
 
-            x_adv[batch_index_1:batch_index_2] = x + perturbation
+            x_adv[batch_index_1:batch_index_2] = x_batch + perturbation
 
         return x_adv
 
