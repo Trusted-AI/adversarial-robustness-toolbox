@@ -59,7 +59,7 @@ def get_args():
 def main():
     args = get_args()
 
-    np.random.seed(args.seed)
+    # np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     # torch.cuda.manual_seed(args.seed)
 
@@ -76,9 +76,9 @@ def main():
     # (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
 
     cifar_std = np.ones((3, 32, 32))
-    cifar_std[0, :, :] = 0.2023
-    cifar_std[1, :, :] = 0.1994
-    cifar_std[2, :, :] = 0.2010
+    cifar_std[0, :, :] = 0.2471
+    cifar_std[1, :, :] = 0.2435
+    cifar_std[2, :, :] = 0.2616
 
     x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
     x_test = x_test.transpose(0, 3, 1, 2).astype('float32')

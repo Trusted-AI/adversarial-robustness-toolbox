@@ -126,21 +126,21 @@ class AdversarialTrainerFBFPyTorch(Trainer):
 
                 # n = x_batch.shape[0]
                 # m = np.prod(x_batch.shape[1:])
-                # delta_rnd = np.random.uniform(low=0.0,high=1.0,size=(x_batch.shape)).astype(ART_NUMPY_DTYPE)
-                # # delta_rnd = random_sphere(n, m, self.eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
-                # # delta_rnd = np.clip(delta_rnd, 0.0, 1.0)
-                # delta_rnd_preprocessed,_ = self.classifier. _apply_preprocessing(delta_rnd, y=None, fit=False)
-                # delta = torch.from_numpy(delta_rnd_preprocessed).to(
-                #     self.classifier._device)
-                # delta.requires_grad = True
-
-
-                delta = torch.zeros_like(i_batch).to(
+                delta_rnd = np.random.uniform(low=-self.eps,high=self.eps,size=(x_batch.shape)).astype(ART_NUMPY_DTYPE)
+                # delta_rnd = random_sphere(n, m, self.eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
+                # delta_rnd = np.clip(delta_rnd, 0.0, 1.0)
+                delta_rnd_preprocessed,_ = self.classifier. _apply_preprocessing(delta_rnd, y=None, fit=False)
+                delta = torch.from_numpy(delta_rnd_preprocessed).to(
                     self.classifier._device)
-                delta[:, 0, :, :].uniform_(-epsilon[0][0][0].item(), epsilon[0][0][0].item())
-                delta[:, 1, :, :].uniform_(-epsilon[1][0][0].item(), epsilon[1][0][0].item())
-                delta[:, 2, :, :].uniform_(-epsilon[2][0][0].item(), epsilon[2][0][0].item())
                 delta.requires_grad = True
+
+
+                # delta = torch.zeros_like(i_batch).to(
+                #     self.classifier._device)
+                # delta[:, 0, :, :].uniform_(-epsilon[0][0][0].item(), epsilon[0][0][0].item())
+                # delta[:, 1, :, :].uniform_(-epsilon[1][0][0].item(), epsilon[1][0][0].item())
+                # delta[:, 2, :, :].uniform_(-epsilon[2][0][0].item(), epsilon[2][0][0].item())
+                # delta.requires_grad = True
                 output = self.classifier._model(i_batch + delta)
                 # loss = self.classifier._loss(output[-1], o_batch)
                 loss = F.cross_entropy(output[-1], o_batch)
