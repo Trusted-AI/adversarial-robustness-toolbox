@@ -30,8 +30,15 @@ from art.defences.trainer.trainer import Trainer
 import apex.amp as amp
 from art.utils import random_sphere
 import time
+import torch.nn.functional as F
+import torch
+import torch.nn as nn
 
 logger = logging.getLogger(__name__)
+
+
+def clamp(X, lower_limit, upper_limit):
+    return torch.max(torch.min(X, upper_limit), lower_limit)
 
 class AdversarialTrainerFBFPyTorch(Trainer):
     """
@@ -72,8 +79,6 @@ class AdversarialTrainerFBFPyTorch(Trainer):
         :type kwargs: `dict`
         :return: `None`
         """
-        import torch
-        import torch.nn as nn
 
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
@@ -92,59 +97,102 @@ class AdversarialTrainerFBFPyTorch(Trainer):
 
             for batch_id in range(nb_batches):
                 lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
-                # print(lr)
-                #TODO: inspect lr and match with the code
 
                 self.classifier._optimizer.param_groups[0].update(lr=lr)
                 # Create batch data
                 x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
                 y_batch = y[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]]
 
-                # adv_ids = list(range(x_batch.shape[0]))
-                # np.random.shuffle(adv_ids)
-                # generate delta as per
-
-                n = x_batch.shape[0]
-                m = np.prod(x_batch.shape[1:])
-                delta = random_sphere(n, m, self.eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
-                delta_grad = self.classifier.loss_gradient(x_batch + delta,y_batch)
-                delta = np.clip(delta + 1.25*self.eps*np.sign(delta_grad), -self.eps, +self.eps)
-                x_batch_pert = np.clip(x_batch+delta,self.classifier.clip_values[0], self.classifier.clip_values[1])
-
-                # Fit batch
-                # self.classifier.fit(x_batch_pert, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], **kwargs)
-
-                # Apply preprocessing
-                x_preprocessed, y_preprocessed = self.classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
-
-                # Check label shape
+                x_batch_preprocessed, y_preprocessed = self.classifier._apply_preprocessing(x_batch, y_batch, fit=True)
+                #Raw pytorch FBF version
                 if self.classifier._reduce_labels:
                     y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-                i_batch = torch.from_numpy(x_preprocessed).to(
+                i_batch = torch.from_numpy(x_batch_preprocessed).to(
                     self.classifier._device)
                 o_batch = torch.from_numpy(y_preprocessed).to(
                     self.classifier._device)
 
-                # Zero the parameter gradients
+                cifar10_mean = (0.4914, 0.4822, 0.4465)
+                cifar10_std = (0.2471, 0.2435, 0.2616)
+                mu = torch.tensor(cifar10_mean).view(3, 1, 1).to(
+                    self.classifier._device)
+                std = torch.tensor(cifar10_std).view(3, 1, 1).to(
+                    self.classifier._device)
+                upper_limit = ((1 - mu) / std)
+                lower_limit = ((0 - mu) / std)
+
+                epsilon = (self.eps/255.)/std
+
+                delta = torch.zeros_like(i_batch).to(
+                    self.classifier._device)
+                delta[:, 0, :, :].uniform_(-0.4914, 0.4914)
+                delta[:, 1, :, :].uniform_(-0.4822, 0.4822)
+                delta[:, 2, :, :].uniform_(-0.2471, 0.2471)
+                delta.requires_grad = True
+                output = self.classifier._model(i_batch + delta)
+                # loss = self.classifier._loss(output[-1], o_batch)
+                loss = F.cross_entropy(output[-1], o_batch)
+                with amp.scale_loss(loss, self.classifier._optimizer) as scaled_loss:
+                    scaled_loss.backward()
+                # loss.backward()
+                # print(loss)
+                grad = delta.grad.detach()
+                delta.data = clamp(delta + 1.5 * epsilon * torch.sign(grad), -epsilon, epsilon)
+                delta = delta.detach()
+
+                output = self.classifier._model(clamp(i_batch + delta[:i_batch.size(0)], lower_limit, upper_limit))
+                loss = self.classifier._loss(output[-1], o_batch)
+
                 self.classifier._optimizer.zero_grad()
-
-                # Perform prediction
-                model_outputs = self.classifier._model(i_batch)
-
-                # Form the loss function
-                loss = self.classifier._loss(model_outputs[-1], o_batch)
-
-                train_loss += loss.item() * o_batch.size(0)
-                train_acc += (model_outputs[0].max(1)[1]==o_batch).sum().item()
-                train_n += o_batch.size(0)
-
-                # Actual training
                 # loss.backward()
                 with amp.scale_loss(loss, self.classifier._optimizer) as scaled_loss:
                     scaled_loss.backward()
                 nn.utils.clip_grad_norm_(self.classifier._model.parameters(), 0.5)
                 self.classifier._optimizer.step()
+
+                # n = x_batch.shape[0]
+                # m = np.prod(x_batch.shape[1:])
+                # delta = random_sphere(n, m, self.eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
+                # delta_grad = self.classifier.loss_gradient(x_batch + delta,y_batch)
+                # delta = np.clip(delta + 1.25*self.eps*np.sign(delta_grad), -self.eps, +self.eps)
+                # x_batch_pert = np.clip(x_batch+delta,self.classifier.clip_values[0], self.classifier.clip_values[1])
+                #
+                # # Fit batch
+                # # self.classifier.fit(x_batch_pert, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], **kwargs)
+                #
+                # # Apply preprocessing
+                # x_preprocessed, y_preprocessed = self.classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
+                #
+                # # Check label shape
+                # if self.classifier._reduce_labels:
+                #     y_preprocessed = np.argmax(y_preprocessed, axis=1)
+                #
+                # i_batch = torch.from_numpy(x_preprocessed).to(
+                #     self.classifier._device)
+                # o_batch = torch.from_numpy(y_preprocessed).to(
+                #     self.classifier._device)
+
+
+                # # Zero the parameter gradients
+                # self.classifier._optimizer.zero_grad()
+                #
+                # # Perform prediction
+                # model_outputs = self.classifier._model(i_batch)
+                #
+                # # Form the loss function
+                # loss = self.classifier._loss(model_outputs[-1], o_batch)
+                #
+                train_loss += loss.item() * o_batch.size(0)
+                train_acc += (output[0].max(1)[1]==o_batch).sum().item()
+                train_n += o_batch.size(0)
+                #
+                # # Actual training
+                # loss.backward()
+                # # with amp.scale_loss(loss, self.classifier._optimizer) as scaled_loss:
+                # #     scaled_loss.backward()
+                # nn.utils.clip_grad_norm_(self.classifier._model.parameters(), 0.5)
+                # self.classifier._optimizer.step()
 
             train_time = time.time()
 
