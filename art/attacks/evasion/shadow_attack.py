@@ -24,6 +24,7 @@ import logging
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
@@ -120,7 +121,8 @@ class ShadowAttack(EvasionAttack):
                 "Feature vectors detected. The adversarial patch can only be applied to image data dimensions."
             )
 
-        x_adv = np.zeros_like(x)
+        x = x.astype(ART_NUMPY_DTYPE)
+        x_adv = np.zeros_like(x, dtype=ART_NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
         for i_batch in range(int(np.ceil(x.shape[0] / self.batch_size))):
@@ -132,7 +134,7 @@ class ShadowAttack(EvasionAttack):
             perturbation = (
                 np.random.uniform(
                     low=self.estimator.clip_values[0], high=self.estimator.clip_values[1], size=x_batch.shape
-                )
+                ).astype(ART_NUMPY_DTYPE)
                 - (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2
             )
 
