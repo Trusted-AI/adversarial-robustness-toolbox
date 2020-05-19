@@ -135,10 +135,6 @@ class TestDetectorClassifier(TestBase):
         self.assertEqual(gradients.shape, (n_test_local, 1, 1, 28, 28))
 
     def test_set_learning(self):
-        self.assertTrue(self.detector_classifier.classifier._model.training)
-        self.assertTrue(self.detector_classifier.detector._model.training)
-        self.assertIs(self.detector_classifier.learning_phase, None)
-
         self.detector_classifier.set_learning_phase(False)
         self.assertFalse(self.detector_classifier.classifier._model.training)
         self.assertFalse(self.detector_classifier.detector._model.training)
