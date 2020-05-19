@@ -175,10 +175,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             raise ValueError("Learning rate must be strictly positive")
         if self.max_iter < 1:
             raise ValueError("Value of max_iter at least 1")
-        if not isinstance(self.classifier, NeuralNetworkMixin):
-            raise TypeError("Classifier must be a neural network")
-        if not isinstance(self.classifier, BaseEstimator):
-            raise TypeError("Classifier must be a valid ART estimator")
 
     def forward_step(self, poison):
         """
