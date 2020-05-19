@@ -118,7 +118,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         if num_poison == 0:
             raise ValueError("Must input at least one poison point")
 
-        # TODO: ensure class of x does not match class of target
         target_features = self.classifier.get_activations(self.target, self.feature_layer, 1)
         for init_attack in x:
             old_attack = np.expand_dims(np.copy(init_attack), axis=0)
@@ -135,7 +134,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
                 rel_change_val = np.linalg.norm(new_attack - old_attack) / np.linalg.norm(new_attack)
                 if rel_change_val < self.stopping_tol:
-                    print("stopped after " + str(i) + " iterations due to small changes")
+                    logger.info("stopped after " + str(i) + " iterations due to small changes")
                     break
 
                 np.expand_dims(new_attack, axis=0)
