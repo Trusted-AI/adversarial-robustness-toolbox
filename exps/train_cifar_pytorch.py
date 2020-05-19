@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from exps.preact_resnet import PreActResNet18
 
 
-DEVICE = 'gpu'
+DEVICE = 'cpu'
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -160,7 +160,7 @@ def main():
 
 
     epsilon = (args.epsilon / 255.) / std
-    pgd_alpha = (args.pgd_alpha / 255.) / std
+    # pgd_alpha = (args.pgd_alpha / 255.) / std
 
     if DEVICE != 'cpu':
         model = PreActResNet18().cuda()
@@ -212,13 +212,12 @@ def main():
             if i == 0:
                 first_batch = batch
             lr = lr_schedule(epoch + (i + 1) / len(train_batches))
-            print(lr)
             opt.param_groups[0].update(lr=lr)
 
-            if args.attack == 'pgd':
-                delta = attack_pgd(model, X, y, epsilon, pgd_alpha, args.attack_iters, args.restarts, opt)
+            # if args.attack == 'pgd':
+            #     delta = attack_pgd(model, X, y, epsilon, pgd_alpha, args.attack_iters, args.restarts, opt)
 
-            elif args.attack == 'fgsm':
+            if args.attack == 'fgsm':
                 if args.fgsm_init == 'zero':
                     delta = torch.zeros_like(X, requires_grad=True)
                 elif args.fgsm_init == 'random':
@@ -243,24 +242,24 @@ def main():
                 delta.data = clamp(delta + args.fgsm_alpha * epsilon * torch.sign(grad), -epsilon, epsilon)
                 delta = delta.detach()
 
-            elif args.attack == 'free':
-                delta.requires_grad = True
-                for j in range(args.attack_iters):
-                    epoch_iters = epoch * args.attack_iters + (i * args.attack_iters + j + 1) / len(train_batches)
-                    lr = lr_schedule(epoch_iters)
-                    opt.param_groups[0].update(lr=lr)
-                    output = model(clamp(X + delta[:X.size(0)], lower_limit, upper_limit))
-                    loss = F.cross_entropy(output, y)
-                    opt.zero_grad()
-                    with amp.scale_loss(loss, opt) as scaled_loss:
-                        scaled_loss.backward()
-                    grad = delta.grad.detach()
-                    delta.data = clamp(delta + epsilon * torch.sign(grad), -epsilon, epsilon)
-                    nn.utils.clip_grad_norm_(model.parameters(), 0.5)
-                    opt.step()
-                    delta.grad.zero_()
-            elif args.attack == 'none':
-                delta = torch.zeros_like(X)
+            # elif args.attack == 'free':
+            #     delta.requires_grad = True
+            #     for j in range(args.attack_iters):
+            #         epoch_iters = epoch * args.attack_iters + (i * args.attack_iters + j + 1) / len(train_batches)
+            #         lr = lr_schedule(epoch_iters)
+            #         opt.param_groups[0].update(lr=lr)
+            #         output = model(clamp(X + delta[:X.size(0)], lower_limit, upper_limit))
+            #         loss = F.cross_entropy(output, y)
+            #         opt.zero_grad()
+            #         with amp.scale_loss(loss, opt) as scaled_loss:
+            #             scaled_loss.backward()
+            #         grad = delta.grad.detach()
+            #         delta.data = clamp(delta + epsilon * torch.sign(grad), -epsilon, epsilon)
+            #         nn.utils.clip_grad_norm_(model.parameters(), 0.5)
+            #         opt.step()
+            #         delta.grad.zero_()
+            # elif args.attack == 'none':
+            #     delta = torch.zeros_like(X)
 
             output = model(clamp(X + delta[:X.size(0)], lower_limit, upper_limit))
             loss = criterion(output, y)
