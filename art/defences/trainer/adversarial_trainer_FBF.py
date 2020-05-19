@@ -126,7 +126,7 @@ class AdversarialTrainerFBFPyTorch(Trainer):
 
                 # n = x_batch.shape[0]
                 # m = np.prod(x_batch.shape[1:])
-                delta_rnd = np.random.uniform(low=0.0,high=1.0,size=(x_batch.shape))
+                delta_rnd = np.random.uniform(low=0.0,high=1.0,size=(x_batch.shape)).astype(ART_NUMPY_DTYPE)
                 # delta_rnd = random_sphere(n, m, self.eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
                 # delta_rnd = np.clip(delta_rnd, 0.0, 1.0)
                 delta_rnd_preprocessed,_ = self.classifier. _apply_preprocessing(delta_rnd, y=None, fit=False)
