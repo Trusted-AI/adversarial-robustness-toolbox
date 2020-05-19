@@ -37,7 +37,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     Close implementation of Feature Collision Poisoning Attack by Shafahi, Huang, et al 2018.
     "Poison Frogs! Targeted Clean-Label Poisoning Attacks on Neural Networks"
 
-    | Paper link: https://arxiv.org/pdf/1804.00792.pdf
+    | Paper link: https://arxiv.org/abs/1804.00792
     """
 
     attack_params = PoisoningAttackWhiteBox.attack_params + [
