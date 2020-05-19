@@ -41,7 +41,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     """
 
     attack_params = PoisoningAttackWhiteBox.attack_params + [
-        "classifier",
         "target",
         "feature_layer",
         "learning_rate",
