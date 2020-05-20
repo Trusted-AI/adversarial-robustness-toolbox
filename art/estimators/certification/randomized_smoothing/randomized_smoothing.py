@@ -222,7 +222,8 @@ class RandomizedSmoothingMixin(ABC):
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
-        predictions = self._predict_classifier(x=x_new, batch_size=self.batch_size)
+        batch_size = 128
+        predictions = self._predict_classifier(x=x_new, batch_size=batch_size)
 
         # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)
