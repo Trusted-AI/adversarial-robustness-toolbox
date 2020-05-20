@@ -272,6 +272,7 @@ class Wasserstein(EvasionAttack):
                     np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
                     == np.argmax(targets, axis=1)
             )
+
         else:
             err = (
                     np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
@@ -305,6 +306,7 @@ class Wasserstein(EvasionAttack):
                     np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
                     == np.argmax(targets, axis=1)
                 )
+
             else:
                 err = (
                     np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
@@ -544,6 +546,7 @@ class Wasserstein(EvasionAttack):
             )
 
             values = values_tmp.reshape(values.shape)
+
             x_adv = values + x_init
 
         elif ball == '1':
@@ -561,7 +564,7 @@ class Wasserstein(EvasionAttack):
             values = x - x_init
             values_tmp = values.reshape((values.shape[0], -1))
 
-            values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+            values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), np.expand_dims(eps, -1))
 
             values = values_tmp.reshape(values.shape)
             x_adv = values + x_init
@@ -620,7 +623,7 @@ class Wasserstein(EvasionAttack):
         """
         # Normalize inputs
         normalization = x.reshape(batch_size, -1).sum(-1).reshape(batch_size, 1, 1, 1)
-        x /= normalization
+        x = x.copy() / normalization
 
         # Dimension size for each example
         m = np.prod(x.shape[1:])
@@ -709,8 +712,9 @@ class Wasserstein(EvasionAttack):
                 kernel_size,
             )
 
-            if (np.abs(convergence - next_convergence) <= 1e-4).all():
+            if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * next_convergence.abs()).all():
                 break
+
             else:
                 convergence = next_convergence
 
@@ -755,8 +759,8 @@ class Wasserstein(EvasionAttack):
         """
         # Normalize inputs
         normalization = x_init.reshape(batch_size, -1).sum(-1).reshape(batch_size, 1, 1, 1)
-        x /= normalization
-        x_init /= normalization
+        x = x.copy() / normalization
+        x_init = x_init.copy() / normalization
 
         # Dimension size for each example
         m = np.prod(x_init.shape[1:])
@@ -835,8 +839,9 @@ class Wasserstein(EvasionAttack):
                 kernel_size,
             )
 
-            if (np.abs(convergence - next_convergence) <= 1e-4).all():
+            if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * next_convergence.abs()).all():
                 break
+
             else:
                 convergence = next_convergence
 
@@ -938,7 +943,7 @@ class Wasserstein(EvasionAttack):
         num_channels = x.shape[self.estimator.channel_index]
 
         # Expand channels
-        K = np.repeat(K, num_channels, axis=self.estimator.channel_index)
+        K = np.repeat(K, num_channels, axis=1)
 
         # Swap channels to prepare for local transport computation
         if self.estimator.channel_index > 1:
