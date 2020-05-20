@@ -67,7 +67,6 @@ declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_gaussian_augmentation.py" \
                      "tests/defences/test_gaussian_noise.py" \
                      "tests/defences/test_high_confidence.py" \
-                     "tests/defences/test_jpeg_compression.py" \
                      "tests/defences/test_label_smoothing.py" \
                      "tests/defences/test_pixel_defend.py" \
                      "tests/defences/test_reverse_sigmoid.py" \
@@ -81,7 +80,8 @@ declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/detector/poison/test_clustering_analyzer.py" \
                      "tests/defences/detector/poison/test_ground_truth_evaluator.py" \
                      "tests/defences/detector/poison/test_provenance_defence.py" \
-                     "tests/defences/detector/poison/test_roni.py" )
+                     "tests/defences/detector/poison/test_roni.py" \
+                     "tests/defences/detector/poison/test_spectral_signature_defense.py" )
 
 declare -a metrics=("tests/metrics/test_gradient_check.py" \
                     "tests/metrics/test_metrics.py" \
