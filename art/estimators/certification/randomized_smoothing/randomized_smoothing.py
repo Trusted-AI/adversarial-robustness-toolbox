@@ -211,7 +211,7 @@ class RandomizedSmoothingMixin(ABC):
         # x = np.clip(x, a_min=0, a_max=1)
         return x
 
-    def _prediction_counts(self, x, n=None):
+    def _prediction_counts(self, x, n=None, batch_size=128):
         """
         Makes predictions and then converts probability distribution to counts
 
@@ -222,7 +222,6 @@ class RandomizedSmoothingMixin(ABC):
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
-        batch_size = 128
         predictions = self._predict_classifier(x=x_new, batch_size=batch_size)
 
         # convert to binary predictions
