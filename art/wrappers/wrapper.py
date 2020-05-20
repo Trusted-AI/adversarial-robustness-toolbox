@@ -33,7 +33,7 @@ class ClassifierWrapper:
         Initialize a :class:`.ClassifierWrapper` object.
 
         :param classifier: The Classifier we want to wrap the functionality for the purpose of an attack.
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         """
         self.classifier = classifier
 
