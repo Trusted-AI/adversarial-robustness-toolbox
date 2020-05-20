@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -442,21 +442,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        return self._layer_names
-
     def get_activations(self, x, layer, batch_size, intermediate=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -492,19 +477,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             raise TypeError("Layer must be of type `str` or `int`.")
 
-        keras_layer = self._model.get_layer(layer_name)
-        num_inbound_nodes = len(getattr(keras_layer, '_inbound_nodes', []))
-        if num_inbound_nodes > 1:
-            layer_output = keras_layer.get_output_at(0)
-        else:
-            layer_output = self._model.get_layer(layer_name).output
-
-        if intermediate:
-            placeholder = k.placeholder(shape=x.shape)
-            return placeholder, self._model.get_layer(layer_name)(placeholder)
-
-        output_func = k.function([self._input], [layer_output])
-
         if x.shape == self.input_shape:
             x_expanded = np.expand_dims(x, 0)
         else:
@@ -513,14 +485,32 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
 
+        if not hasattr(self, "_activations_func"):
+            self._activations_func = {}
+
+        keras_layer = self._model.get_layer(layer_name)
+        num_inbound_nodes = len(getattr(keras_layer, '_inbound_nodes', []))
+
+        if layer_name not in self._activations_func:
+            if num_inbound_nodes > 1:
+                layer_output = keras_layer.get_output_at(0)
+            else:
+                layer_output = self._model.get_layer(layer_name).output
+
+        self._activations_func[layer_name] = k.function([self._input], [layer_output])
+
+        if intermediate:
+            placeholder = k.placeholder(shape=x.shape)
+            return placeholder, keras_layer(placeholder)
+
         # Determine shape of expected output and prepare array
-        output_shape = output_func([x_preprocessed[0][None, ...]])[0].shape
+        output_shape = self._activations_func[layer_name]([x_preprocessed[0][None, ...]])[0].shape
         activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
         # Get activations with batching
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
-            activations[begin:end] = output_func([x_preprocessed[begin:end]])[0]
+            activations[begin:end] = self._activations_func[layer_name]([x_preprocessed[begin:end]])[0]
 
         return activations
 
