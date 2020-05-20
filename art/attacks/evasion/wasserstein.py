@@ -712,7 +712,7 @@ class Wasserstein(EvasionAttack):
                 kernel_size,
             )
 
-            if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * next_convergence.abs()).all():
+            if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * np.abs(next_convergence)).all():
                 break
 
             else:
@@ -839,7 +839,7 @@ class Wasserstein(EvasionAttack):
                 kernel_size,
             )
 
-            if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * next_convergence.abs()).all():
+            if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * np.abs(next_convergence)).all():
                 break
 
             else:
