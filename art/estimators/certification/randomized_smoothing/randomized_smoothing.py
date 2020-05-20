@@ -78,7 +78,7 @@ class RandomizedSmoothingMixin(ABC):
 
         :param x: Test set.
         :type x: `np.ndarray`
-        :param batch_size: Size of batches.
+        :param batch_size: Batch size.
         :type batch_size: `int`
         :param is_abstain: True if function will abstain from prediction and return 0s
         :type is_abstain: `boolean`
@@ -119,7 +119,7 @@ class RandomizedSmoothingMixin(ABC):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
         :type y: `np.ndarray`
-        :param batch_size: Size of batches.
+        :param batch_size: Batche size.
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
@@ -139,7 +139,7 @@ class RandomizedSmoothingMixin(ABC):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
         :type y: `np.ndarray`
-        :param batch_size: Size of batches.
+        :param batch_size: Batch size.
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
         :type nb_epochs: `int`
@@ -152,7 +152,7 @@ class RandomizedSmoothingMixin(ABC):
         x_rs, _ = ga(x)
         self._fit_classifier(x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def certify(self, x, n):
+    def certify(self, x, n, batch_size=32):
         """
         Computes certifiable radius around input `x` and returns radius `r` and prediction.
 
@@ -160,6 +160,8 @@ class RandomizedSmoothingMixin(ABC):
         :type x: `np.ndarray`
         :param n: Number of samples for estimate certifiable radius
         :type n: `int`
+        :param batch_size: Batch size.
+        :type batch_size: `int`
         :return: Tuple of length 2 of the selected class and certified radius
         :rtype: `tuple`
         """
@@ -170,11 +172,11 @@ class RandomizedSmoothingMixin(ABC):
         for x_i in x:
 
             # get sample prediction for classification
-            counts_pred = self._prediction_counts(x_i)
+            counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             class_select = np.argmax(counts_pred)
 
             # get sample prediction for certification
-            counts_est = self._prediction_counts(x_i, n=n)
+            counts_est = self._prediction_counts(x_i, n=n, batch_size=batch_size)
             count_class = counts_est[class_select]
 
             prob_class = self._lower_confidence_bound(count_class, n)
