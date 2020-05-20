@@ -55,7 +55,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
 
     def __init__(self, classifier, target, feature_layer, learning_rate=500 * 255.0, decay_coeff=0.5,
-                 stopping_tol=1e-10, num_old_obj=40, max_iter=120, similarity_coeff=0.25, watermark=0.3,
+                 stopping_tol=1e-10, num_old_obj=40, max_iter=120, similarity_coeff=0.25, watermark=None,
                  **kwargs):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
@@ -65,7 +65,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param target: The target input to misclassify at test time
         :type target: `np.ndarray`
         :param feature_layer: The name of the feature representation layer
-        :type feature_layer: `str`
+        :type feature_layer: `str` or `int`
         :param learning_rate: The learning rate of clean-label attack optimization
         :type learning_rate: `float`
         :param decay_coeff: The decay coefficient of the learning rate
@@ -154,7 +154,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                     last_m_objectives.append(new_objective)
 
             # Watermarking
-            final_poison = np.clip(old_attack[0] + self.watermark * self.target, *self.estimator.clip_values)
+            watermark = self.watermark * self.target if self.watermark else 0
+            final_poison = np.clip(old_attack[0] + watermark, *self.estimator.clip_values)
             final_attacks.append(final_poison)
 
         return np.vstack(final_attacks), self.estimator.predict(x)
@@ -167,12 +168,23 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :type kwargs: `dict`
         :return: `True` when parsing was successful
         """
-        # TODO: finish this
         super().set_params(**kwargs)
         if self.learning_rate <= 0:
             raise ValueError("Learning rate must be strictly positive")
         if self.max_iter < 1:
             raise ValueError("Value of max_iter at least 1")
+        if not(isinstance(self.feature_layer, str) or isinstance(self.feature_layer, int)):
+            raise TypeError("Feature layer should be a string or int")
+        if self.decay_coeff <= 0:
+            raise ValueError("Decay coefficient must be positive")
+        if self.stopping_tol <= 0:
+            raise ValueError("Stopping tolerance must be positive")
+        if self.num_old_obj <= 0:
+            raise ValueError("Number of old stored objectives must be positive")
+        if self.max_iter <= 0:
+            raise ValueError("Number of old stored objectives must be positive")
+        if self.watermark and not (isinstance(self.watermark, float) and 0 <= self.watermark < 1):
+            raise ValueError("Watermark must be between 0 and 1")
 
     def forward_step(self, poison):
         """
