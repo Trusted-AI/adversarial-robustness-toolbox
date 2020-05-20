@@ -360,8 +360,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x_adv
 
-    @staticmethod
-    def _projection(values, eps, norm_p):
+    def _projection(self, values, eps, norm_p):
         """
         Project `values` on the L_p norm ball of size `eps`.
 
@@ -380,16 +379,18 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         if norm_p == 2:
             values_tmp = values_tmp * torch.min(
-                torch.FloatTensor([1.0]), eps / (torch.norm(values_tmp, p=2, dim=1) + tol)
+                torch.FloatTensor([1.0]).to(self.estimator.device), eps / (torch.norm(values_tmp, p=2, dim=1) + tol)
             ).unsqueeze_(-1)
 
         elif norm_p == 1:
             values_tmp = values_tmp * torch.min(
-                torch.FloatTensor([1.0]), eps / (torch.norm(values_tmp, p=1, dim=1) + tol)
+                torch.FloatTensor([1.0]).to(self.estimator.device), eps / (torch.norm(values_tmp, p=1, dim=1) + tol)
             ).unsqueeze_(-1)
 
         elif norm_p == np.inf:
-            values_tmp = values_tmp.sign() * torch.min(values_tmp.abs(), torch.FloatTensor([eps]))
+            values_tmp = (
+                    values_tmp.sign() * torch.min(values_tmp.abs(), torch.FloatTensor([eps]).to(self.estimator.device))
+            )
 
         else:
             raise NotImplementedError(
