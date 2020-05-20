@@ -184,9 +184,9 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :rtype: `np.ndarray`
         """
         target_placeholder, target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1,
-                                                                                 intermediate=True)
+                                                                                intermediate=True)
         poison_placeholder, poison_feature_rep = self.estimator.get_activations(poison, self.feature_layer, 1,
-                                                                                 intermediate=True)
+                                                                                intermediate=True)
         attack_loss = tensor_norm(poison_feature_rep - target_feature_rep)
         attack_grad, = self.estimator.custom_gradient(attack_loss, [poison_placeholder, target_placeholder],
                                                        [poison, self.target])
@@ -203,6 +203,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :type base: `np.ndarray`
         :param poison: the current poison samples
         :type poison: `np.ndarray`
+        :param feature_rep: numpy activations at the target layer
+        :type feature_rep: `np.ndarray`
         :return: poison example closer in feature representation to target space
         :rtype: `np.ndarray`
         """
@@ -217,17 +219,32 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         """
         Objective function of the attack
 
-        :param poison_feature_rep: The output of
-        :param target_feature_rep:
-        :param base_image:
-        :param poison:
+        :param poison_feature_rep: The numpy activations of the poison image
+        :type poison_feature_rep: `np.ndarray`
+        :param target_feature_rep: The numpy activations of the target image
+        :type target_feature_rep: `np.ndarray`
+        :param base_image: The initial image used to poison
+        :type base_image: `np.ndarray`
+        :param poison: The current poison image
+        :type poison: `np.ndarray`
+        :return: The objective of the optimization
         :return: `float`
         """
-        prod_sum = lambda shape_tuple: reduce(lambda dim1, dim2: dim1 * dim2, shape_tuple)
         num_features = prod_sum(base_image.shape)
         num_activations = prod_sum(poison_feature_rep.shape)
         beta = self.similarity_coeff * (num_activations / num_features) ** 2
         return np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)
+
+
+def prod_sum(shape):
+    """
+    Multiples the values of a shape tuple
+
+    :param shape: a shape tuple
+    :type: integer tuple
+    :return: product of each dimension
+    """
+    return reduce(lambda dim1, dim2: dim1 * dim2, shape)
 
 
 def get_class_name(obj):
