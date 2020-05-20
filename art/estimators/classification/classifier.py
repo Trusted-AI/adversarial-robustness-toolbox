@@ -23,8 +23,6 @@ from abc import ABC, ABCMeta, abstractmethod
 
 import numpy as np
 
-from art.utils import check_and_transform_label_format
-
 
 class InputFilter(ABCMeta):
     """
