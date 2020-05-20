@@ -151,8 +151,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
         inputs_repeat_t = inputs_t.repeat_interleave(self.sample_size, 0)
 
-        # noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
-        noise = torch.empty(inputs_repeat_t.shape).normal_(mean=0, std=self.scale).to(self._device)
+        noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
+        # noise = torch.empty(inputs_repeat_t.shape).normal_(mean=0, std=self.scale).to(self._device)
 
         inputs_noise_t = inputs_repeat_t + noise
 

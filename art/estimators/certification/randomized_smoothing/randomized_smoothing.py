@@ -211,20 +211,18 @@ class RandomizedSmoothingMixin(ABC):
         # x = np.clip(x, a_min=0, a_max=1)
         return x
 
-    def _prediction_counts(self, x, n=None, batch_size=128):
+    def _prediction_counts(self, x, n=None):
         """
         Makes predictions and then converts probability distribution to counts
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Array of counts with length equal to number of columns of `x`.
         :rtype: `np.ndarray`
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
-        predictions = self._predict_classifier(x=x_new, batch_size=batch_size)
+        predictions = self._predict_classifier(x=x_new, batch_size=self.batch_size)
 
         # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)
