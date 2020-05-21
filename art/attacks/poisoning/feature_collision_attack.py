@@ -50,6 +50,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         "learning_rate",
         "decay_coeff",
         "stopping_tol",
+        "obj_threshold",
         "num_old_obj",
         "max_iter",
         "similarity_coeff",
@@ -59,7 +60,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, KerasClassifier)
 
     def __init__(self, classifier, target, feature_layer, learning_rate=500 * 255.0, decay_coeff=0.5,
-                 stopping_tol=1e-10, num_old_obj=40, max_iter=120, similarity_coeff=256, watermark=None):
+                 stopping_tol=1e-10, obj_threshold=None, num_old_obj=40, max_iter=120, similarity_coeff=256,
+                 watermark=None):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
 
@@ -73,8 +75,10 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :type learning_rate: `float`
         :param decay_coeff: The decay coefficient of the learning rate
         :type decay_coeff: `float`
-        :param stopping_tol: The tolerance for relative change in objective function
+        :param stopping_tol: Stop iterations after changes in attacks in less than this threshold
         :type stopping_tol: `float`
+        :param obj_threshold: Stop iterations after changes in objectives values are less than this threshold
+        :type obj_threshold: `float`
         :param num_old_obj: The number of old objective values to store
         :type num_old_obj: `int`
         :param max_iter: The maximum number of iterations for the attack
@@ -96,6 +100,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             "learning_rate": learning_rate,
             "decay_coeff": decay_coeff,
             "stopping_tol": stopping_tol,
+            "obj_threshold": obj_threshold,
             "num_old_obj": num_old_obj,
             "max_iter": max_iter,
             "similarity_coeff": similarity_coeff,
@@ -135,7 +140,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                 new_attack = self.backward_step(np.expand_dims(init_attack, axis=0), poison_features, new_attack)
 
                 rel_change_val = np.linalg.norm(new_attack - old_attack) / np.linalg.norm(new_attack)
-                if rel_change_val < self.stopping_tol:
+                if rel_change_val < self.stopping_tol or self.obj_threshold and old_objective <= self.obj_threshold:
                     logger.info("stopped after " + str(i) + " iterations due to small changes")
                     break
 
@@ -150,6 +155,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                     self.learning_rate *= self.decay_coeff
                 else:
                     old_attack = new_attack
+                    old_objective = new_objective
 
                 if i < self.num_old_obj - 1:
                     last_m_objectives.append(new_objective)
@@ -184,6 +190,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             raise ValueError("Decay coefficient must be positive")
         if self.stopping_tol <= 0:
             raise ValueError("Stopping tolerance must be positive")
+        if self.obj_threshold and self.obj_threshold<= 0:
+            raise ValueError("Objective threshold must be positive")
         if self.num_old_obj <= 0:
             raise ValueError("Number of old stored objectives must be positive")
         if self.max_iter <= 0:
