@@ -489,15 +489,13 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             self._activations_func = {}
 
         keras_layer = self._model.get_layer(layer_name)
-        num_inbound_nodes = len(getattr(keras_layer, '_inbound_nodes', []))
-
         if layer_name not in self._activations_func:
+            num_inbound_nodes = len(getattr(keras_layer, '_inbound_nodes', []))
             if num_inbound_nodes > 1:
                 layer_output = keras_layer.get_output_at(0)
             else:
-                layer_output = self._model.get_layer(layer_name).output
-
-        self._activations_func[layer_name] = k.function([self._input], [layer_output])
+                layer_output = keras_layer.output
+            self._activations_func[layer_name] = k.function([self._input], [layer_output])
 
         if intermediate:
             placeholder = k.placeholder(shape=x.shape)
