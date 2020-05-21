@@ -368,7 +368,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         return grads
 
-    def custom_gradient(self, nn_function):
+    def custom_loss_gradient(self, nn_function):
         return
 
     def get_input_layer(self):

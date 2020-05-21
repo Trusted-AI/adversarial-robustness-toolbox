@@ -500,7 +500,7 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def custom_gradient(self, nn_function, tensors, input_values):
+    def custom_loss_gradient(self, nn_function, tensors, input_values):
         """
         Returns the gradient of the nn_function with respect to vars
 

@@ -486,7 +486,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return results
 
-    def custom_gradient(self, nn_function):
+    def custom_loss_gradient(self, nn_function):
         """
         Returns the gradient of the nn_function with respect to vars
 
