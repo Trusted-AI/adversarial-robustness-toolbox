@@ -486,20 +486,6 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return results
 
-    def custom_loss_gradient(self, nn_function):
-        """
-        Returns the gradient of the nn_function with respect to vars
-
-        :param nn_function: an intermediate tensor representation of the gradient function
-        :type nn_function: a Keras tensor
-        :param vars: the variables to differentiate
-        :type vars: `list`
-        :return: the gradient of the function w.r.t vars
-        :rtype: `np.ndarray`
-        """
-    def get_input_layer(self):
-        return self._input
-
     def set_learning_phase(self, train):
         """
         Set the learning phase for the backend framework.

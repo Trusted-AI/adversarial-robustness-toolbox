@@ -531,9 +531,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         outputs = k.function(tensors, [grads])
         return outputs(input_values)
 
-    def get_input_layer(self):
-        return self._input
-
     def _init_class_gradients(self, label=None):
         # pylint: disable=E0401
         if self.is_tensorflow:
