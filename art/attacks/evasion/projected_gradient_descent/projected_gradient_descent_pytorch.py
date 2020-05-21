@@ -31,8 +31,9 @@ import numpy as np
 import torch
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import \
-    ProjectedGradientDescentCommon
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
+    ProjectedGradientDescentCommon,
+)
 from art.utils import compute_success, random_sphere
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         targeted=False,
         num_random_init=0,
         batch_size=1,
-        random_eps=False
+        random_eps=False,
     ):
         """
         Create a :class:`.ProjectedGradientDescentPytorch` instance.
@@ -86,13 +87,12 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        if (
-                (hasattr(estimator, 'preprocessing') and estimator.preprocessing is not None) or
-                (hasattr(estimator, 'preprocessing_defences') and estimator.preprocessing_defences is not None)
+        if (hasattr(estimator, "preprocessing") and estimator.preprocessing is not None) or (
+            hasattr(estimator, "preprocessing_defences") and estimator.preprocessing_defences is not None
         ):
             logging.warning(
-                'The framework-specific implementation currently does not apply preprocessing and '
-                'preprocessing defences.'
+                "The framework-specific implementation currently does not apply preprocessing and "
+                "preprocessing defences."
             )
 
         super(ProjectedGradientDescentPyTorch, self).__init__(
@@ -154,15 +154,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         else:
             dataset = torch.utils.data.TensorDataset(
-                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
-                torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)), torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
             )
 
         data_loader = torch.utils.data.DataLoader(
-            dataset=dataset,
-            batch_size=self.batch_size,
-            shuffle=False,
-            drop_last=False
+            dataset=dataset, batch_size=self.batch_size, shuffle=False, drop_last=False
         )
 
         # Start to compute adversarial examples
@@ -225,13 +221,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute(
-                adv_x,
-                inputs,
-                targets,
-                mask,
-                self.eps,
-                self.eps_step,
-                self.num_random_init > 0 and i_max_iter == 0,
+                adv_x, inputs, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x.cpu().detach().numpy()
@@ -388,8 +378,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             ).unsqueeze_(-1)
 
         elif norm_p == np.inf:
-            values_tmp = (
-                    values_tmp.sign() * torch.min(values_tmp.abs(), torch.FloatTensor([eps]).to(self.estimator.device))
+            values_tmp = values_tmp.sign() * torch.min(
+                values_tmp.abs(), torch.FloatTensor([eps]).to(self.estimator.device)
             )
 
         else:

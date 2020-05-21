@@ -31,8 +31,9 @@ import numpy as np
 import tensorflow as tf
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import \
-    ProjectedGradientDescentCommon
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
+    ProjectedGradientDescentCommon,
+)
 from art.utils import compute_success, random_sphere
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         targeted=False,
         num_random_init=0,
         batch_size=1,
-        random_eps=False
+        random_eps=False,
     ):
         """
         Create a :class:`.ProjectedGradientDescentTensorFlowV2` instance.
@@ -86,13 +87,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        if (
-                (hasattr(estimator, 'preprocessing') and estimator.preprocessing is not None) or
-                (hasattr(estimator, 'preprocessing_defences') and estimator.preprocessing_defences is not None)
+        if (hasattr(estimator, "preprocessing") and estimator.preprocessing is not None) or (
+            hasattr(estimator, "preprocessing_defences") and estimator.preprocessing_defences is not None
         ):
             logging.warning(
-                'The framework-specific implementation currently does not apply preprocessing and '
-                'preprocessing defences.'
+                "The framework-specific implementation currently does not apply preprocessing and "
+                "preprocessing defences."
             )
 
         super(ProjectedGradientDescentTensorFlowV2, self).__init__(
@@ -140,11 +140,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
             if len(mask.shape) == len(x.shape):
                 dataset = tf.data.Dataset.from_tensor_slices(
-                    (
-                        x.astype(ART_NUMPY_DTYPE),
-                        targets.astype(ART_NUMPY_DTYPE),
-                        mask.astype(ART_NUMPY_DTYPE),
-                    )
+                    (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE), mask.astype(ART_NUMPY_DTYPE),)
                 ).batch(self.batch_size, drop_remainder=False)
 
             else:
@@ -158,10 +154,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         else:
             dataset = tf.data.Dataset.from_tensor_slices(
-                (
-                    x.astype(ART_NUMPY_DTYPE),
-                    targets.astype(ART_NUMPY_DTYPE),
-                )
+                (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE),)
             ).batch(self.batch_size, drop_remainder=False)
 
         # Start to compute adversarial examples
@@ -219,13 +212,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         adv_x = x
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute(
-                adv_x,
-                x,
-                targets,
-                mask,
-                self.eps,
-                self.eps_step,
-                self.num_random_init > 0 and i_max_iter == 0,
+                adv_x, x, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x

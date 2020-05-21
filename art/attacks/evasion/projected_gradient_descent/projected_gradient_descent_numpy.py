@@ -176,7 +176,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         if mask is not None:
             if classifier_mixin:
                 # Ensure the mask is broadcastable
-                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]:
+                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
                     raise ValueError("Mask shape must be broadcastable to input shape.")
 
             else:
