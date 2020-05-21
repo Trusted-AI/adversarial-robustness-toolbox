@@ -22,6 +22,7 @@ import logging
 import pytest
 
 from art.utils import deprecated
+from art.utils import deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -66,3 +67,49 @@ class TestDeprecated:
         simple_addition(1, 2)
         warn_obj = recwarn.pop(DeprecationWarning)
         assert str(warn_obj.message) == warn_msg_expected
+
+
+class TestDeprecatedKeyword:
+    """
+    Test the deprecation decorator for keyword arguments.
+    """
+
+    def test_deprecated_simple(self):
+        @deprecated_keyword_arg("a", "1.3.0")
+        def simple_addition(a=1, b=1):
+            return a + b
+
+        with pytest.deprecated_call():
+            simple_addition()
+
+    def test_deprecated_reason_keyword(self, recwarn):
+        @deprecated_keyword_arg("a", "1.3.0", reason="With some reason message.")
+        def simple_addition(a=1, b=1):
+            return a + b
+
+        warn_msg_expected = (
+            "Keyword argument 'a' in 'simple_addition' is deprecated and will be removed in future release 1.3.0."
+            "\nWith some reason message."
+        )
+
+        simple_addition()
+        warn_obj = recwarn.pop(DeprecationWarning)
+        assert str(warn_obj.message) == warn_msg_expected
+
+    def test_deprecated_replaced_by_keyword(self, recwarn):
+        @deprecated_keyword_arg("b", "1.3.0", replaced_by="c")
+        def simple_addition(a=1, b=1):
+            return a + b
+
+        warn_msg_expected = (
+            "Keyword argument 'b' in 'simple_addition' is deprecated and will be removed in future release 1.3.0."
+            " It will be replaced by 'c'."
+        )
+
+        simple_addition(a=1, b=1)
+        warn_obj = recwarn.pop(DeprecationWarning)
+        assert str(warn_obj.message) == warn_msg_expected
+
+
+if __name__ == "__main__":
+    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

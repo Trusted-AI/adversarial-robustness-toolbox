@@ -75,6 +75,50 @@ def deprecated(end_version, *, reason="", replaced_by=""):
     return decorator
 
 
+def deprecated_keyword_arg(identifier, end_version, *, reason="", replaced_by=""):
+    """
+    Deprecate a keyword argument and raise a `DeprecationWarning`.
+
+    The `@deprecated_keyword_arg` decorator is used to deprecate keyword arguments. Several cases are supported. For
+    example one can use it to depcreate the default value of a keyword or rename a keyword identifier. The following
+    code examples provide different use cases of how to use the decorator.
+
+    .. code-block:: python
+
+    @deprecated_keyword_arg("verbose", "1.1.0", replaced_by="verbose=False")
+    def simple_addition(a, b, verbose=True):
+        return a + b
+
+    :param identifier: Keyword identifier.
+    :type identifier: `str`
+    :param end_version: Release version of removal.
+    :type end_version: `str`
+    :param reason: Additional deprecation reason.
+    :type reason: `str`
+    :param replaced_by: Function that replaces deprecated function.
+    :type replaced_by: `str`
+    """
+
+    def decorator(function):
+        reason_msg = "\n" + reason if reason else reason
+        replaced_msg = f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
+        deprecated_msg = (
+            f"Keyword argument '{identifier}' in '{function.__name__}' is deprecated and will be removed in"
+            f" future release {end_version}."
+        )
+
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            warnings.simplefilter("always", category=DeprecationWarning)
+            warnings.warn(deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2)
+            warnings.simplefilter("default", category=DeprecationWarning)
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
