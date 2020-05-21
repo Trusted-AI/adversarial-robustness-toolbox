@@ -90,7 +90,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         """
         super().__init__(classifier)
 
-
         kwargs = {
             "classifier": classifier,
             "target": target,
@@ -188,7 +187,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             raise ValueError("Decay coefficient must be positive")
         if self.stopping_tol <= 0:
             raise ValueError("Stopping tolerance must be positive")
-        if self.obj_threshold and self.obj_threshold<= 0:
+        if self.obj_threshold and self.obj_threshold <= 0:
             raise ValueError("Objective threshold must be positive")
         if self.num_old_obj <= 0:
             raise ValueError("Number of old stored objectives must be positive")
