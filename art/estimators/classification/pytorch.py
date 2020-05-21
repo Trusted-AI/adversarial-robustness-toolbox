@@ -411,7 +411,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         return self._layer_names
 
-    def get_activations(self, x, layer, batch_size=128, intermediate=False):
+    def get_activations(self, x, layer, batch_size=128, framework=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -443,7 +443,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             raise TypeError("Layer must be of type str or int")
 
-        if intermediate:
+        if framework:
             return self._model(torch.from_numpy(x).to(self._device))[layer_index]
 
         # Run prediction with batch processing
