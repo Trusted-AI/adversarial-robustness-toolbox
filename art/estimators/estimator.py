@@ -500,23 +500,6 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def custom_loss_gradient(self, nn_function, tensors, input_values):
-        """
-        Returns the gradient of the nn_function with respect to vars
-
-        :param nn_function: an intermediate tensor representation of the gradient function
-        :param vars: the variables to differentiate
-        :type vars: `list`
-        :return: the gradient of the function w.r.t vars
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_input_layer(self):
-        raise NotImplementedError
-
-    @abstractmethod
     def set_learning_phase(self, train):
         """
         Set the learning phase for the backend framework.
