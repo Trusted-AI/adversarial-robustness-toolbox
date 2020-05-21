@@ -173,7 +173,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             raise ValueError("Learning rate must be strictly positive")
         if self.max_iter < 1:
             raise ValueError("Value of max_iter at least 1")
-        if not(isinstance(self.feature_layer, str) or isinstance(self.feature_layer, int)):
+        if not (isinstance(self.feature_layer, str) or isinstance(self.feature_layer, int)):
             raise TypeError("Feature layer should be a string or int")
         if self.decay_coeff <= 0:
             raise ValueError("Decay coefficient must be positive")
@@ -189,7 +189,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     def forward_step(self, poison):
         """
         Forward part of forward-backward splitting algorithm
-        
+
         :param poison: the current poison samples
         :type poison: `np.ndarray`
         :return: poison example closer in feature representation to target space
@@ -201,7 +201,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
                                                                                 intermediate=True)
         attack_loss = tensor_norm(poison_feature_rep - target_feature_rep)
         attack_grad, = self.estimator.custom_gradient(attack_loss, [poison_placeholder, target_placeholder],
-                                                       [poison, self.target])
+                                                      [poison, self.target])
 
         poison -= self.learning_rate * attack_grad[0]
 
@@ -210,7 +210,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     def backward_step(self, base, feature_rep, poison):
         """
         Backward part of forward-backward splitting algorithm
-        
+
         :param base: the base image that the poison was initialized with
         :type base: `np.ndarray`
         :param poison: the current poison samples
