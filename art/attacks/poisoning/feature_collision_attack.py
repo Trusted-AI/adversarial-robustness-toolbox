@@ -90,8 +90,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         """
         super().__init__(classifier)
 
-        if not isinstance(classifier, (NeuralNetworkMixin, BaseEstimator)):
-            raise TypeError("Classifier must be a neural network")
 
         kwargs = {
             "classifier": classifier,
