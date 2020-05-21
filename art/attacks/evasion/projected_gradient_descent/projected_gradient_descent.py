@@ -33,12 +33,15 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import \
-    ProjectedGradientDescentNumpy
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_pytorch import \
-    ProjectedGradientDescentPyTorch
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import \
-    ProjectedGradientDescentTensorFlowV2
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
+    ProjectedGradientDescentNumpy,
+)
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_pytorch import (
+    ProjectedGradientDescentPyTorch,
+)
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import (
+    ProjectedGradientDescentTensorFlowV2,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +65,7 @@ class ProjectedGradientDescent(EvasionAttack):
         "batch_size",
         "minimal",
         "max_iter",
-        "random_eps"
+        "random_eps",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
@@ -77,7 +80,7 @@ class ProjectedGradientDescent(EvasionAttack):
         targeted=False,
         num_random_init=0,
         batch_size=1,
-        random_eps=False
+        random_eps=False,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -115,7 +118,7 @@ class ProjectedGradientDescent(EvasionAttack):
             "targeted": targeted,
             "num_random_init": num_random_init,
             "batch_size": batch_size,
-            "random_eps": random_eps
+            "random_eps": random_eps,
         }
         ProjectedGradientDescent.set_params(self, **kwargs)
 
@@ -129,7 +132,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 targeted=targeted,
                 num_random_init=num_random_init,
                 batch_size=batch_size,
-                random_eps=random_eps
+                random_eps=random_eps,
             )
 
         elif isinstance(self.estimator, TensorFlowV2Classifier):
@@ -142,7 +145,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 targeted=targeted,
                 num_random_init=num_random_init,
                 batch_size=batch_size,
-                random_eps=random_eps
+                random_eps=random_eps,
             )
 
         else:
@@ -155,7 +158,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 targeted=targeted,
                 num_random_init=num_random_init,
                 batch_size=batch_size,
-                random_eps=random_eps
+                random_eps=random_eps,
             )
 
     def generate(self, x, y=None, **kwargs):
