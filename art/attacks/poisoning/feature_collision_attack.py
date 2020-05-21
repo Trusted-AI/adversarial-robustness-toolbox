@@ -213,8 +213,8 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         poison_placeholder, poison_feature_rep = self.estimator.get_activations(poison, self.feature_layer, 1,
                                                                                 intermediate=True)
         attack_loss = tensor_norm(poison_feature_rep - target_feature_rep)
-        attack_grad, = self.estimator.custom_gradient(attack_loss, [poison_placeholder, target_placeholder],
-                                                      [poison, self.target])
+        attack_grad, = self.estimator.custom_loss_gradient(attack_loss, [poison_placeholder, target_placeholder],
+                                                           [poison, self.target])
 
         poison -= self.learning_rate * attack_grad[0]
 
