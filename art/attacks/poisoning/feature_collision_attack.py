@@ -129,7 +129,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             poison_features = self.estimator.get_activations(old_attack, self.feature_layer, 1)
             old_objective = self.objective(poison_features, target_features, init_attack, old_attack)
             last_m_objectives = [old_objective]
-            # TODO: change to while with convergence (add convergence params)
+
             for i in tqdm(range(self.max_iter)):
                 # forward step
                 new_attack = self.forward_step(old_attack)
