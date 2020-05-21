@@ -972,26 +972,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         raise NotImplementedError
 
-    @property
-    def layer_names(self):
-        """
-        Return the hidden layers in the model, if applicable.
-
-        :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
-
-        .. warning:: `layer_names` tries to infer the internal structure of the model.
-                     This feature comes with no guarantees on the correctness of the result.
-                     The intended order of the layers tries to match their order in the model, but this is not
-                     guaranteed either.
-        """
-        import tensorflow as tf
-        if isinstance(self._model, tf.keras.Model) or isinstance(self._model, tf.keras.model.Sequential):
-            return self._model.layers
-        else:
-            return None
-
-    def get_activations(self, x, layer, batch_size=128):
+    def get_activations(self, x, layer, batch_size=128, framework=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
