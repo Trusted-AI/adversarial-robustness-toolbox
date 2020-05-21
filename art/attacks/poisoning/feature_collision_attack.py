@@ -28,6 +28,7 @@ from tqdm import tqdm
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification import ClassifierMixin, KerasClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +37,9 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
     """
     Close implementation of Feature Collision Poisoning Attack by Shafahi, Huang, et al 2018.
     "Poison Frogs! Targeted Clean-Label Poisoning Attacks on Neural Networks"
+
+    This implementation dynamically calculates the dimension of the feature layer, and doesn't hardcode this
+    value to 2048 as done in the paper. Thus we recommend using larger values for the similarity_coefficient.
 
     | Paper link: https://arxiv.org/abs/1804.00792
     """
@@ -49,14 +53,13 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         "num_old_obj",
         "max_iter",
         "similarity_coeff",
-        "watermarking",
+        "watermark",
     ]
 
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, KerasClassifier)
 
     def __init__(self, classifier, target, feature_layer, learning_rate=500 * 255.0, decay_coeff=0.5,
-                 stopping_tol=1e-10, num_old_obj=40, max_iter=120, similarity_coeff=0.25, watermark=None,
-                 **kwargs):
+                 stopping_tol=1e-10, num_old_obj=40, max_iter=120, similarity_coeff=256, watermark=None):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
 
@@ -80,24 +83,26 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :type similarity_coeff: `float`
         :param watermark: Whether The opacity of the watermarked target image
         :type watermark: `float`
-        :param kwargs: Extra optional keyword arguments
         """
         super().__init__(classifier)
 
         if not isinstance(classifier, (NeuralNetworkMixin, BaseEstimator)):
             raise TypeError("Classifier must be a neural network")
 
-        self.target = target
-        self.feature_layer = feature_layer
-        self.learning_rate = learning_rate
-        self.decay_coeff = decay_coeff
-        self.stopping_tol = stopping_tol
-        self.num_old_obj = num_old_obj
-        self.max_iter = max_iter
-        self.similarity_coeff = similarity_coeff
-        self.watermark = watermark
+        kwargs = {
+            "classifier": classifier,
+            "target": target,
+            "feature_layer": feature_layer,
+            "learning_rate": learning_rate,
+            "decay_coeff": decay_coeff,
+            "stopping_tol": stopping_tol,
+            "num_old_obj": num_old_obj,
+            "max_iter": max_iter,
+            "similarity_coeff": similarity_coeff,
+            "watermark": watermark
+        }
 
-        self.set_params(**kwargs)
+        FeatureCollisionAttack.set_params(self, **kwargs)
 
     def poison(self, x, y=None, **kwargs):
         """
@@ -155,7 +160,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
             # Watermarking
             watermark = self.watermark * self.target if self.watermark else 0
-            final_poison = np.clip(old_attack[0] + watermark, *self.estimator.clip_values)
+            final_poison = np.clip(old_attack + watermark, *self.estimator.clip_values)
             final_attacks.append(final_poison)
 
         return np.vstack(final_attacks), self.estimator.predict(x)
