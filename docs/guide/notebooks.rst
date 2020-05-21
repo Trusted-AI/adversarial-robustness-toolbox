@@ -109,8 +109,7 @@ poisoning the training dataset.
 
 `poisoning_attack_svm.ipynb`_ demonstrates the generation of malicious poisoning examples on Support Vector Machines.
 
-`poisoning_attack_feature_collision.ipynb`_ demonstrates the generation of a feature collision clean-label attack on a
-Keras classifier.
+`poisoning_attack_feature_collision.ipynb`_ demonstrates the generation of a feature collision clean-label attack.
 
 Certification and Verification
 ------------------------------
