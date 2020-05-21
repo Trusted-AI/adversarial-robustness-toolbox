@@ -442,7 +442,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    def get_activations(self, x, layer, batch_size, intermediate=False):
+    def get_activations(self, x, layer, batch_size, framework=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -497,7 +497,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 layer_output = keras_layer.output
             self._activations_func[layer_name] = k.function([self._input], [layer_output])
 
-        if intermediate:
+        if framework:
             placeholder = k.placeholder(shape=x.shape)
             return placeholder, keras_layer(placeholder)
 

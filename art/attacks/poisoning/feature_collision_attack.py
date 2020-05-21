@@ -209,9 +209,9 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :rtype: `np.ndarray`
         """
         target_placeholder, target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1,
-                                                                                intermediate=True)
+                                                                                framework=True)
         poison_placeholder, poison_feature_rep = self.estimator.get_activations(poison, self.feature_layer, 1,
-                                                                                intermediate=True)
+                                                                                framework=True)
         attack_loss = tensor_norm(poison_feature_rep - target_feature_rep)
         attack_grad, = self.estimator.custom_loss_gradient(attack_loss, [poison_placeholder, target_placeholder],
                                                            [poison, self.target])
