@@ -961,8 +961,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     def layer_names(self):
         """
         Return the hidden layers in the model, if applicable.
+
         :return: The hidden layers in the model, input and output layers excluded.
         :rtype: `list`
+
         .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
                      The intended order of the layers tries to match their order in the model, but this is not
