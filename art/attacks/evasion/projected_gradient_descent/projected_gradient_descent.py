@@ -48,10 +48,9 @@ logger = logging.getLogger(__name__)
 
 class ProjectedGradientDescent(EvasionAttack):
     """
-    The Projected Gradient Descent attack is an iterative method in which,
-    after each iteration, the perturbation is projected on an lp-ball of specified radius (in
-    addition to clipping the values of the adversarial sample so that it lies in the permitted
-    data range). This is the attack proposed by Madry et al. for adversarial training.
+    The Projected Gradient Descent attack is an iterative method in which, after each iteration, the perturbation is
+    projected on an lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
+    lies in the permitted data range). This is the attack proposed by Madry et al. for adversarial training.
 
     | Paper link: https://arxiv.org/abs/1706.06083
     """
@@ -87,7 +86,7 @@ class ProjectedGradientDescent(EvasionAttack):
 
         :param estimator: An trained estimator.
         :type estimator: :class:`.BaseEstimator`
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
@@ -102,8 +101,8 @@ class ProjectedGradientDescent(EvasionAttack):
         :type max_iter: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
+        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
+                                at the original input.
         :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
@@ -185,7 +184,7 @@ class ProjectedGradientDescent(EvasionAttack):
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
+        :param norm: Order of the norm supporting np.inf, 1 or 2.
         :type norm: `int` or `float`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
