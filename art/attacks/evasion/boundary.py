@@ -327,8 +327,9 @@ class BoundaryAttack(EvasionAttack):
         else:
             raise ValueError("Input shape not recognised.")
         
-        perturb = ((1 - np.sqrt(1 + delta ** 2)) * (current_sample - original_sample) + perturb) / np.sqrt(1 + delta ** 2)
-
+        hypotenuse = np.sqrt(1 + delta ** 2)
+        perturb = ((1 - hypotenuse) * (current_sample - original_sample) + perturb) / hypotenuse
+        
         return perturb
 
     def _init_sample(self, x, y, y_p, init_pred, adv_init, clip_min, clip_max):
