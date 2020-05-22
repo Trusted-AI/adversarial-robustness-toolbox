@@ -81,7 +81,7 @@ class TestFeatureCollision(TestBase):
 
     def test_keras(self):
         """
-        First test with the TensorFlowClassifier.
+        Test working keras implementation.
         :return:
         """
 
