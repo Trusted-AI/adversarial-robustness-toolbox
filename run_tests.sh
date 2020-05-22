@@ -12,6 +12,9 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evation tests"; fi
 pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
+pytest -q tests/utils --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
+
 #Only classifier tests need to be run for each frameworks
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
