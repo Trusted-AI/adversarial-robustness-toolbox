@@ -126,6 +126,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 **Detection of Poisoning Attacks:**
 * Detection based on activations analysis ([Chen et al., 2018](https://arxiv.org/abs/1811.03728))
 * Detection based on data provenance ([Baracaldo et al., 2018](https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440))
+* Detection based on spectral signatures ([Tran et al., 2018](https://papers.nips.cc/paper/8024-spectral-signatures-in-backdoor-attacks.pdf))
 
 ## Setup
 
