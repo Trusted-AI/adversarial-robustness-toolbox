@@ -122,7 +122,9 @@ class ProjectedGradientDescent(EvasionAttack):
         }
         ProjectedGradientDescent.set_params(self, **kwargs)
 
-        if isinstance(self.estimator, PyTorchClassifier):
+        no_defences = not self.estimator.preprocessing_defences and not self.estimator.postprocessing_defences
+
+        if isinstance(self.estimator, PyTorchClassifier) and no_defences:
             self._attack = ProjectedGradientDescentPyTorch(
                 estimator=estimator,
                 norm=norm,
@@ -135,7 +137,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 random_eps=random_eps,
             )
 
-        elif isinstance(self.estimator, TensorFlowV2Classifier):
+        elif isinstance(self.estimator, TensorFlowV2Classifier) and no_defences:
             self._attack = ProjectedGradientDescentTensorFlowV2(
                 estimator=estimator,
                 norm=norm,
