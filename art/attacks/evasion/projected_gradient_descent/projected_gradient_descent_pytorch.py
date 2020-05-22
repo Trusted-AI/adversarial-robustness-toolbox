@@ -58,7 +58,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         max_iter=100,
         targeted=False,
         num_random_init=0,
-        batch_size=1,
+        batch_size=32,
         random_eps=False,
     ):
         """
