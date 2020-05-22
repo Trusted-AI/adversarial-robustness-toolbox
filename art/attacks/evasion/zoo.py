@@ -436,7 +436,7 @@ class ZooAttack(EvasionAttack):
             )
             fine_tuning[mask_fine_tune] = True
             self._reset_adam(
-                self.adam_mean.size, np.repeat(mask_fine_tune, x_adv[0].size)
+                self.adam_mean.size, np.repeat(mask_fine_tune, x_adv[0].size)  # type: ignore
             )
             prev_l2dist = l2dist
 

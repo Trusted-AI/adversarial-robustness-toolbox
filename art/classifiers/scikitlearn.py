@@ -876,7 +876,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         )
         self._model = model
 
-    def nb_classes(self) -> Optional[int]:
+    def nb_classes(self) -> Optional[int]:  # type: ignore
         """
         Return the number of output classes.
 
@@ -924,7 +924,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
         y_pred = self._model.predict_proba(X=x_preprocessed)
         weights = self._model.coef_
 
-        if self.nb_classes() > 2:
+        if self.nb_classes() > 2:  # type: ignore
             w_weighted = np.matmul(y_pred, weights)
 
         def _f_class_gradient(i_class, i_sample):
@@ -942,7 +942,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             # Compute the gradients w.r.t. all classes
             class_gradients = list()
 
-            for i_class in range(self.nb_classes()):
+            for i_class in range(self.nb_classes()):  # type: ignore
                 class_gradient = np.zeros(x.shape)
                 for i_sample in range(nb_samples):
                     class_gradient[i_sample, :] += _f_class_gradient(i_class, i_sample)
@@ -1045,7 +1045,7 @@ class ScikitlearnLogisticRegression(ScikitlearnClassifier, ClassifierGradients):
             w_weighted = np.matmul(y_pred, weights)
 
             for i_sample in range(num_samples):
-                for i_class in range(self.nb_classes()):
+                for i_class in range(self.nb_classes()):  # type: ignore
                     gradients[i_sample, :] += (
                         class_weight[i_class]
                         * (1.0 - y_preprocessed[i_sample, i_class])
@@ -1150,9 +1150,9 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                     )
                 )
 
-                for i_label in range(self.nb_classes()):
+                for i_label in range(self.nb_classes()):  # type: ignore
                     for i_sample in range(num_samples):
-                        for not_label in range(self.nb_classes()):
+                        for not_label in range(self.nb_classes()):  # type: ignore
                             if i_label != not_label:
                                 if not_label < i_label:
                                     label_multiplier = -1
@@ -1197,7 +1197,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                 )
 
                 for i_sample in range(num_samples):
-                    for not_label in range(self.nb_classes()):
+                    for not_label in range(self.nb_classes()):  # type: ignore
                         if label != not_label:
                             if not_label < label:
                                 label_multiplier = -1
@@ -1243,7 +1243,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                 )
 
                 for i_sample in range(num_samples):
-                    for not_label in range(self.nb_classes()):
+                    for not_label in range(self.nb_classes()):  # type: ignore
                         if label[i_sample] != not_label:
                             if not_label < label[i_sample]:
                                 label_multiplier = -1
@@ -1304,7 +1304,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
                     )
                 )
 
-                for i in range(self.nb_classes()):
+                for i in range(self.nb_classes()):  # type: ignore
                     for i_sample in range(num_samples):
                         if self.nb_classes() == 2:
                             gradients[i_sample, i] = self._model.coef_[0] * (2 * i - 1)
@@ -1435,7 +1435,7 @@ class ScikitlearnSVC(ScikitlearnClassifier, ClassifierGradients):
             for i_sample in range(num_samples):
                 i_label = y_index[i_sample]
 
-                for i_not_label in range(self.nb_classes()):
+                for i_not_label in range(self.nb_classes()):  # type: ignore
                     if i_label != i_not_label:
                         if i_not_label < i_label:
                             i_not_label_i = i_not_label

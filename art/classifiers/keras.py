@@ -368,7 +368,7 @@ class KerasClassifier(ClassifierNeuralNetworkType):
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             gradients = np.swapaxes(
-                np.array(self._class_gradients_idx[label]([x_preprocessed])), 0, 1
+                np.array(self._class_gradients_idx[label]([x_preprocessed])), 0, 1  # type: ignore
             )
             assert gradients.shape == (x_preprocessed.shape[0], 1) + self.input_shape
 

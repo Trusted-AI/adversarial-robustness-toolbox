@@ -34,7 +34,7 @@ from art.defences.trainer.trainer import Trainer
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 
 if TYPE_CHECKING:
-    from art.classifiers.classifier import Classifier, ClassifierGradients
+    from art.classifiers.classifier import Classifier, ClassifierGradientsType
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class AdversarialTrainerMadryPGD(Trainer):
 
     def __init__(
         self,
-        classifier: "ClassifierGradients",
+        classifier: "ClassifierGradientsType",
         nb_epochs: int = 391,
         batch_size: int = 128,
         eps: float = 8.0,

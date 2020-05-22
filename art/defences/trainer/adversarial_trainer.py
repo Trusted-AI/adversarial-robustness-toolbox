@@ -120,7 +120,7 @@ class AdversarialTrainer(Trainer):
         )
         size = generator.size
         batch_size = generator.batch_size
-        nb_batches = int(np.ceil(size / batch_size))
+        nb_batches = int(np.ceil(size / batch_size))  # type: ignore
         ind = np.arange(generator.size)
         attack_id = 0
 

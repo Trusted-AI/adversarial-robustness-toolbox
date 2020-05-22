@@ -52,7 +52,7 @@ class Box:
     Representation of a box of intervals bounds.
     """
 
-    def __init__(self, intervals: Optional[Dict[str, Interval]] = None) -> None:
+    def __init__(self, intervals: Optional[Dict[int, Interval]] = None) -> None:
         """
         A box of intervals.
 
@@ -147,7 +147,7 @@ class Tree:
     Representation of a decision tree.
     """
 
-    def __init__(self, class_id: int, leaf_nodes: List[LeafNode]) -> None:
+    def __init__(self, class_id: Optional[int], leaf_nodes: List[LeafNode]) -> None:
         """
         Create a decision tree representation.
 
@@ -332,7 +332,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 for clique in cliques_old:
                     # Loop over leaf nodes in tree
                     for accessible_leaf in accessible_leaves[i_tree]:
-                        leaf_box = accessible_leaf.box.get_intersection(clique["box"])
+                        leaf_box = accessible_leaf.box.get_intersection(clique["box"])  # type: ignore
                         if leaf_box.intervals:
                             if (
                                 self._classifier.nb_classes() > 2
@@ -345,7 +345,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                             cliques_new.append(
                                 {
                                     "box": leaf_box,
-                                    "value": new_leaf_value + clique["value"],
+                                    "value": new_leaf_value + clique["value"],  # type: ignore
                                 }
                             )
 
@@ -360,18 +360,18 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                         tree_id=None,
                         class_label=label,
                         node_id=None,
-                        box=clique["box"],
-                        value=clique["value"],
+                        box=clique["box"],  # type: ignore
+                        value=clique["value"],  # type: ignore
                     )
                 )
 
                 if i == 0:
-                    best_score = clique["value"]
+                    best_score = clique["value"]  # type: ignore
                 else:
                     if label < 0.5 and self._classifier.nb_classes() <= 2:
-                        best_score = max(best_score, clique["value"])
+                        best_score = max(best_score, clique["value"])  # type: ignore
                     else:
-                        best_score = min(best_score, clique["value"])
+                        best_score = min(best_score, clique["value"])  # type: ignore
 
             new_nodes_list.append(new_nodes)
             best_scores_sum += best_score

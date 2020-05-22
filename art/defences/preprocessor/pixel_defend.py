@@ -36,7 +36,7 @@ from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
-    from art.classifiers import Classifier
+    from art.classifiers.classifier import ClassifierNeuralNetworkType
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,8 @@ class PixelDefend(Preprocessor):
         self,
         clip_values: CLIP_VALUES_TYPE = (0.0, 1.0),
         eps: int = 16,
-        pixel_cnn: Optional["Classifier"] = None,
+        pixel_cnn: Optional["ClassifierNeuralNetworkType"] = None,
+        batch_size: int = 128,
         apply_fit: bool = False,
         apply_predict: bool = True,
     ) -> None:
@@ -76,6 +77,7 @@ class PixelDefend(Preprocessor):
         self._apply_predict = apply_predict
         self.clip_values = clip_values
         self.eps = eps
+        self.batch_size = batch_size
         self.pixel_cnn = pixel_cnn
         self._check_params()
 
@@ -101,7 +103,7 @@ class PixelDefend(Preprocessor):
         # Convert into `uint8`
         original_shape = x.shape
         if self.pixel_cnn is not None:
-            probs = self.pixel_cnn.get_activations(x, layer=-1).reshape(
+            probs = self.pixel_cnn.get_activations(x, layer=-1, batch_size=self.batch_size).reshape(
                 (x.shape[0], -1, 256)
             )
         else:
@@ -170,3 +172,6 @@ class PixelDefend(Preprocessor):
 
         if self.clip_values[1] != 1:
             raise ValueError("`clip_values` max value must be 1.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")

@@ -245,7 +245,7 @@ class TensorFlowClassifier(
             and self.preprocessing == (0, 1)
         ):
             for _ in range(nb_epochs):
-                for _ in range(int(generator.size / generator.batch_size)):
+                for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
                     i_batch, o_batch = generator.get_batch()
 
                     if self._reduce_labels:

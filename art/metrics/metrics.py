@@ -36,7 +36,7 @@ from art.utils import random_sphere
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
-    from art.classifiers.classifier import Classifier, ClassifierGradients
+    from art.classifiers.classifier import Classifier, ClassifierGradientsType
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +163,7 @@ def empirical_robustness(
 
 
 def loss_sensitivity(
-    classifier: "ClassifierGradients", x: np.ndarray, y: np.ndarray
+    classifier: "ClassifierGradientsType", x: np.ndarray, y: np.ndarray
 ) -> np.ndarray:
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
@@ -182,7 +182,7 @@ def loss_sensitivity(
 
 
 def clever(
-    classifier: "Classifier",
+    classifier: "ClassifierGradientsType",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -240,7 +240,7 @@ def clever(
 
 
 def clever_u(
-    classifier: "Classifier",
+    classifier: "ClassifierGradientsType",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -281,7 +281,7 @@ def clever_u(
 
 
 def clever_t(
-    classifier: "Classifier",
+    classifier: "ClassifierGradientsType",
     x: np.ndarray,
     target_class: int,
     nb_batches: int,

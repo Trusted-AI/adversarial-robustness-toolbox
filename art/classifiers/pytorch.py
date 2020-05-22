@@ -52,7 +52,7 @@ class PyTorchClassifier(ClassifierNeuralNetworkType):  # lgtm [py/missing-call-t
         self,
         model: "torch.nn.Module",
         loss: "torch.nn.modules.loss._Loss",
-        optimizer: "torch.optim.Optimizer",
+        optimizer: "torch.optim.Optimizer",  # type: ignore
         input_shape: Tuple[int, ...],
         nb_classes: int,
         channel_index: int = 1,
@@ -408,7 +408,7 @@ class PyTorchClassifier(ClassifierNeuralNetworkType):  # lgtm [py/missing-call-t
 
         # Compute gradients
         loss.backward()
-        grads = inputs_t.grad.cpu().numpy().copy()
+        grads = inputs_t.grad.cpu().numpy().copy()  # type: ignore
         grads = self._apply_preprocessing_gradient(x, grads)
         assert grads.shape == x.shape
 
@@ -664,7 +664,7 @@ class PyTorchClassifier(ClassifierNeuralNetworkType):  # lgtm [py/missing-call-t
                         if isinstance(self._model, nn.Sequential):
                             # pylint: disable=W0212
                             # disable pylint because access to _modules required
-                            for name, module_ in self._model._modules.items():
+                            for name, module_ in self._model._modules.items():  # type: ignore
                                 result.append(name + "_" + str(module_))
 
                         elif isinstance(self._model, nn.Module):

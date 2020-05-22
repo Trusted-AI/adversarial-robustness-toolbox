@@ -190,6 +190,8 @@ class MXClassifier(ClassifierNeuralNetworkType):  # lgtm [py/missing-call-to-ini
         import mxnet as mx
         from art.data_generators import MXDataGenerator
 
+        if self._optimizer is None:
+            raise ValueError("An MXNet optimizer is required for fitting the model.")
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
 
         if (

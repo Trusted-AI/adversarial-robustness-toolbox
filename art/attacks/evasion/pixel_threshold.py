@@ -189,6 +189,38 @@ class PixelThreshold(EvasionAttack):
         )
         return adv_x_best
 
+    def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
+        """
+        Define the bounds for the image `img` within the limits `limit`.
+        """
+
+        def bound_limit(value):
+            return np.clip(value - limit, 0, 255), np.clip(value + limit, 0, 255)
+
+        minbounds, maxbounds, bounds, initial = [], [], [], []
+
+        for i, j, k in product(
+            range(img.shape[-3]), range(img.shape[-2]), range(img.shape[-1])
+        ):
+            temp = img[i, j, k]
+            initial += [temp]
+            bound = bound_limit(temp)
+            if self.es == 0:
+                minbounds += [bound[0]]
+                maxbounds += [bound[1]]
+            else:
+                bounds += [bound]
+        if self.es == 0:
+            bounds = [minbounds, maxbounds]
+
+        return bounds, initial
+
+    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
+        """
+        Perturbs the given image `img` with the given perturbation `x`.
+        """
+        return img
+
     def _attack_success(self, adv_x, x, target_class):
         """
         Checks whether the given perturbation `adv_x` for the image `img` is successful.
@@ -409,32 +441,6 @@ class ThresholdAttack(PixelThreshold):
             ):
                 image[i, j, k] = adv[count]
         return imgs
-
-    def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
-        """
-        Define the bounds for the image `img` within the limits `limit`.
-        """
-
-        def bound_limit(value):
-            return np.clip(value - limit, 0, 255), np.clip(value + limit, 0, 255)
-
-        minbounds, maxbounds, bounds, initial = [], [], [], []
-
-        for i, j, k in product(
-            range(img.shape[-3]), range(img.shape[-2]), range(img.shape[-1])
-        ):
-            temp = img[i, j, k]
-            initial += [temp]
-            bound = bound_limit(temp)
-            if self.es == 0:
-                minbounds += [bound[0]]
-                maxbounds += [bound[1]]
-            else:
-                bounds += [bound]
-        if self.es == 0:
-            bounds = [minbounds, maxbounds]
-
-        return bounds, initial
 
 
 # TODO: Make the attack compatible with current version of SciPy Optimize

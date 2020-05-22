@@ -135,8 +135,8 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
             :param x: Samples of input data of shape `(num_samples, num_features)`.
             :return: Predictions with the extracted model of shape `(num_samples, num_classes)`.
             """
-            layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)
-            layer_1 = np.matmul(self.w_1.T, layer_0) + self.b_1
+            layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)  # type: ignore
+            layer_1 = np.matmul(self.w_1.T, layer_0) + self.b_1  # type: ignore
             return layer_1.T
 
         extracted_classifier = BlackBoxClassifier(

@@ -82,7 +82,7 @@ class GPyGaussianProcessClassifier(ClassifierGradientsType):
         self.model = model
 
     # pylint: disable=W0221
-    def class_gradient(
+    def class_gradient(  # type: ignore
         self,
         x: np.ndarray,
         label: Union[int, List[int], None] = None,

@@ -382,11 +382,11 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
         :param kwargs: Dictionary of framework-specific arguments.
         """
         for _ in range(nb_epochs):
-            for _ in range(int(generator.size / generator.batch_size)):
+            for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
                 x, y = generator.get_batch()
 
                 # Apply preprocessing and defences
-                x_preprocessed, y_preprocessed = self._apply_preprocessing(
+                x_preprocessed, y_preprocessed = self._apply_preprocessing(  # type: ignore
                     x, y, fit=True
                 )
 
@@ -417,7 +417,7 @@ class ClassifierNeuralNetwork(abc.ABC, metaclass=input_filter):
 
         :return: Value of the learning phase.
         """
-        return self._learning_phase if hasattr(self, "_learning_phase") else None
+        return self._learning_phase if hasattr(self, "_learning_phase") else None  # type: ignore
 
     @property
     def layer_names(self) -> List[str]:
@@ -538,8 +538,8 @@ class ClassifierGradients(abc.ABC, metaclass=input_filter):
         :param fit: `True` if the gradient is computed during training.
         :return: Gradients after backward step through defences.
         """
-        if self.preprocessing_defences is not None:
-            for defence in self.preprocessing_defences[::-1]:
+        if self.preprocessing_defences is not None:  # type: ignore
+            for defence in self.preprocessing_defences[::-1]:  # type: ignore
                 if fit:
                     if defence.apply_fit:
                         gradients = defence.estimate_gradient(x, gradients)
@@ -558,8 +558,8 @@ class ClassifierGradients(abc.ABC, metaclass=input_filter):
         :param gradients: Input gradients.
         :return: Gradients after backward step through standardisation.
         """
-        if self.preprocessing is not None:
-            _, div = self.preprocessing
+        if self.preprocessing is not None:  # type: ignore
+            _, div = self.preprocessing  # type: ignore
             div = np.asarray(div, dtype=gradients.dtype)
             res = gradients / div
         else:
