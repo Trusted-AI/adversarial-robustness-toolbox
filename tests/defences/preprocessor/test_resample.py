@@ -47,24 +47,19 @@ def image_batch():
 class TestResample:
     """Test Resample preprocessor defense."""
 
-    def test_channel_index_error(self):
-        exc_msg = "Data channel must be an integer equal to 1 or 2. The batch dimension is not a valid channel."
-        with pytest.raises(ValueError, match=exc_msg):
-            Resample(sr_original=16000, sr_new=16000, channel_index=3)
-
     def test_sample_rate_original_error(self):
         exc_msg = "Original sampling rate be must a positive integer."
         with pytest.raises(ValueError, match=exc_msg):
-            Resample(sr_original=0, sr_new=16000, channel_index=1)
+            Resample(sr_original=0, sr_new=16000)
 
     def test_sample_rate_new_error(self):
         exc_msg = "New sampling rate be must a positive integer."
         with pytest.raises(ValueError, match=exc_msg):
-            Resample(sr_original=16000, sr_new=0, channel_index=1)
+            Resample(sr_original=16000, sr_new=0)
 
     def test_non_temporal_data_error(self, image_batch):
         test_input = image_batch
-        resample = Resample(16000, 16000, channel_index=2)
+        resample = Resample(16000, 16000)
 
         exc_msg = "Resampling can only be applied to temporal data across at least one channel."
         with pytest.raises(ValueError, match=exc_msg):
@@ -76,7 +71,7 @@ class TestResample:
         mocker.patch("resampy.resample", autospec=True)
         resampy.resample.return_value = test_input[:, :, :sr_new]
 
-        resampler = Resample(sr_original=sr_orig, sr_new=sr_new, channel_index=1)
+        resampler = Resample(sr_original=sr_orig, sr_new=sr_new, channels_first=True)
         assert resampler(test_input).shape == test_output.shape
 
 
