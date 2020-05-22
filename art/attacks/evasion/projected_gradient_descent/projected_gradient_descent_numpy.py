@@ -41,11 +41,10 @@ logger = logging.getLogger(__name__)
 
 class ProjectedGradientDescentCommon(FastGradientMethod):
     """
-    Common class for different variations of implementation of the Projected Gradient Descent
-    attack. The attack is an iterative method in which, after each iteration, the perturbation
-    is projected on an lp-ball of specified radius (in addition to clipping the values of the
-    adversarial sample so that it lies in the permitted data range). This is the attack proposed
-    by Madry et al. for adversarial training.
+    Common class for different variations of implementation of the Projected Gradient Descent attack. The attack is an
+    iterative method in which, after each iteration, the perturbation is projected on an lp-ball of specified radius (in
+    addition to clipping the values of the adversarial sample so that it lies in the permitted data range). This is the
+    attack proposed by Madry et al. for adversarial training.
 
     | Paper link: https://arxiv.org/abs/1706.06083
     """
@@ -71,23 +70,23 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         :param estimator: An trained estimator.
         :type estimator: :class:`.BaseEstimator`
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
-                           suggests this for FGSM based training to generalize across different epsilons. eps_step
-                           is modified to preserve the ratio of eps / eps_step. The effectiveness of this
-                           method with PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
+                           suggests this for FGSM based training to generalize across different epsilons. eps_step is
+                           modified to preserve the ratio of eps / eps_step. The effectiveness of this method with PGD
+                           is untested (https://arxiv.org/pdf/1611.01236.pdf).
         :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
+        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
+                                at the original input.
         :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
@@ -218,10 +217,9 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
 class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
     """
-    The Projected Gradient Descent attack is an iterative method in which,
-    after each iteration, the perturbation is projected on an lp-ball of specified radius (in
-    addition to clipping the values of the adversarial sample so that it lies in the permitted
-    data range). This is the attack proposed by Madry et al. for adversarial training.
+    The Projected Gradient Descent attack is an iterative method in which, after each iteration, the perturbation is
+    projected on an lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
+    lies in the permitted data range). This is the attack proposed by Madry et al. for adversarial training.
 
     | Paper link: https://arxiv.org/abs/1706.06083
     """
@@ -243,7 +241,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
         :param estimator: An trained estimator.
         :type estimator: :class:`.BaseEstimator`
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
         :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
@@ -251,15 +249,15 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         :type eps_step: `float`
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
                            suggests this for FGSM based training to generalize across different epsilons. eps_step
-                           is modified to preserve the ratio of eps / eps_step. The effectiveness of this
-                           method with PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
+                           is modified to preserve the ratio of eps / eps_step. The effectiveness of this method with
+                           PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
         :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
+        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
+                                at the original input.
         :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`

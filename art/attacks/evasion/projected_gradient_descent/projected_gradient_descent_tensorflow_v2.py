@@ -41,10 +41,9 @@ logger = logging.getLogger(__name__)
 
 class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     """
-    The Projected Gradient Descent attack is an iterative method in which,
-    after each iteration, the perturbation is projected on an lp-ball of specified radius (in
-    addition to clipping the values of the adversarial sample so that it lies in the permitted
-    data range). This is the attack proposed by Madry et al. for adversarial training.
+    The Projected Gradient Descent attack is an iterative method in which, after each iteration, the perturbation is
+    projected on an lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
+    lies in the permitted data range). This is the attack proposed by Madry et al. for adversarial training.
 
     | Paper link: https://arxiv.org/abs/1706.06083
     """
@@ -73,16 +72,16 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
-                           suggests this for FGSM based training to generalize across different epsilons. eps_step
-                           is modified to preserve the ratio of eps / eps_step. The effectiveness of this
-                           method with PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
+                           suggests this for FGSM based training to generalize across different epsilons. eps_step is
+                           modified to preserve the ratio of eps / eps_step. The effectiveness of this method with PGD
+                           is untested (https://arxiv.org/pdf/1611.01236.pdf).
         :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
         :type max_iter: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
         :type targeted: `bool`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
+        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
+                                at the original input.
         :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
@@ -302,8 +301,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
         :type eps_step: `float`
-        :param random_init: Random initialisation within the epsilon ball. For random_init=False
-            starting at the original input.
+        :param random_init: Random initialisation within the epsilon ball. For random_init=False starting at the
+                            original input.
         :type random_init: `bool`
         :return: Adversarial examples.
         :rtype: `tensorflow.Tensor`
@@ -349,7 +348,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :type values: `tensorflow.Tensor`
         :param eps: Maximum norm allowed.
         :type eps: `float`
-        :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+        :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
         :type norm_p: `int`
         :return: Values of `values` after projection.
         :rtype: `tensorflow.Tensor`
