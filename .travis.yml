@@ -13,6 +13,7 @@ matrix:
       script:
         - (pycodestyle --max-line-length=120 art || exit 0) && (pylint --disable=C0415,E1136 -rn art || exit 0)
         - py.test --pep8 -m pep8
+        - mypy art
 
 before_install:
   - sed -i "s/tensorflow/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
