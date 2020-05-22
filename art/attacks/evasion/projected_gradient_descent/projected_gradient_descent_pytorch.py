@@ -90,7 +90,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         if (hasattr(estimator, "preprocessing") and estimator.preprocessing is not None) or (
             hasattr(estimator, "preprocessing_defences") and estimator.preprocessing_defences is not None
         ):
-            logging.warning(
+            raise NotImplementedError(
                 "The framework-specific implementation currently does not apply preprocessing and "
                 "preprocessing defences."
             )
