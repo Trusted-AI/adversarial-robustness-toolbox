@@ -86,10 +86,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        if (hasattr(estimator, "preprocessing") and (estimator.preprocessing is not None and
-            estimator.preprocessing != (0, 1))) or (
-            hasattr(estimator, "preprocessing_defences") and (estimator.preprocessing_defences is not None and
-                                                              estimator.preprocessing_defences != [])
+        if (
+            hasattr(estimator, "preprocessing")
+            and (estimator.preprocessing is not None and estimator.preprocessing != (0, 1))
+        ) or (
+            hasattr(estimator, "preprocessing_defences")
+            and (estimator.preprocessing_defences is not None and estimator.preprocessing_defences != [])
         ):
             raise NotImplementedError(
                 "The framework-specific implementation currently does not apply preprocessing and "
