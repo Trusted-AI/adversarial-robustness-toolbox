@@ -25,7 +25,7 @@ import logging
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 from art.estimators.certification.randomized_smoothing import (
@@ -47,34 +47,50 @@ class ShadowAttack(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params + [
         "sigma",
-        "batch_size",
         "nb_steps",
         "learning_rate",
         "lambda_tv",
         "lambda_c",
         "lambda_s",
+        "batch_size",
+        "targeted",
     ]
 
-    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
 
     def __init__(
         self,
         estimator,
         sigma=0.5,
-        batch_size=32,
         nb_steps=300,
         learning_rate=0.1,
         lambda_tv=0.1,
         lambda_c=20.0,
         lambda_s=10.0,
+        batch_size=32,
+        targeted=False,
     ):
         """
         Create an instance of the :class:`.ShadowAttack`.
 
         :param estimator: A trained classifier.
         :type estimator: :class:`.Classifier`
+        :param sigma: Standard deviation random Gaussian Noise.
+        :type sigma: `float`
+        :param nb_steps: Number of SGD steps.
+        :type nb_steps: `int
+        :param learning_rate: Learning rate for SGD.
+        :type learning_rate: `float`
+        :param lambda_tv: Scalar penalty weight for total variation of the perturbation.
+        :type lambda_tv: `float`
+        :param lambda_c: Scalar penalty weight for change in the mean of each color channel of the perturbation.
+        :type lambda_c: `float`
+        :param lambda_s: Scalar penalty weight for similarity of color channels in perturbation.
+        :type lambda_s: `float`
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
+        :param targeted: True if the attack is targeted.
+        :type targeted: `bool`
         """
         super().__init__(estimator=estimator)
 
@@ -86,6 +102,7 @@ class ShadowAttack(EvasionAttack):
             "lambda_tv": lambda_tv,
             "lambda_c": lambda_c,
             "lambda_s": lambda_s,
+            "targeted": targeted,
         }
 
         self.set_params(**kwargs)
@@ -103,18 +120,24 @@ class ShadowAttack(EvasionAttack):
         """
         Generate adversarial samples and return them in an array.
 
-        :param x: An array with the original inputs. `x` is expected to have spatial dimensions.
+        :param x: An array with the original inputs.
         :type x: `np.ndarray`
-        :param y: An array with the original labels to be predicted.
+        :param y: An array with the target labels.
         :type y: `np.ndarray`
-        :return: An array holding the adversarial patch.
+        :return: An array with the adversarial examples.
         :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
+            # Throw error if attack is targeted, but no targets are provided
+            if self.targeted:
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
+
             logger.info("Using model predictions as correct labels for FGM.")
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+        else:
+            self.targeted = True
 
         if x.ndim != 4:
             raise ValueError(
@@ -126,6 +149,7 @@ class ShadowAttack(EvasionAttack):
 
         # Compute perturbation with implicit batching
         from tqdm import tqdm
+
         for i_batch in tqdm(range(int(np.ceil(x.shape[0] / self.batch_size)))):
 
             batch_index_1, batch_index_2 = i_batch * self.batch_size, (i_batch + 1) * self.batch_size
@@ -141,7 +165,9 @@ class ShadowAttack(EvasionAttack):
 
             for _ in range(self.nb_steps):
 
-                gradients_ce = self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch)
+                gradients_ce = self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch) * (
+                    1 - 2 * int(self.targeted)
+                )
 
                 gradients = gradients_ce - self._get_regularisation_loss_gradients(perturbation)
 
@@ -192,8 +218,6 @@ class ShadowAttack(EvasionAttack):
 
                     loss = self.lambda_tv * loss_tv + self.lambda_s * loss_s + self.lambda_c * loss_c
 
-#                    print("loss reg:", loss)
-
                     gradients = tape.gradient(loss, perturbation_t).numpy()
 
                     if self.estimator.channel_index == 3:
@@ -227,8 +251,6 @@ class ShadowAttack(EvasionAttack):
 
             loss = torch.mean(self.lambda_tv * loss_tv + self.lambda_s * loss_s + self.lambda_c * loss_c)
 
-#            print("loss reg:", loss)
-
             loss.backward()
 
             gradients = perturbation_t.grad.numpy()
@@ -248,12 +270,6 @@ class ShadowAttack(EvasionAttack):
             raise ValueError("The sigma must be of type int or float.")
 
         if self.sigma <= 0:
-            raise ValueError("The sigma must larger than zero.")
-
-        if not isinstance(self.batch_size, int):
-            raise ValueError("The batch size must be of type int.")
-
-        if self.batch_size <= 0:
             raise ValueError("The sigma must larger than zero.")
 
         if not isinstance(self.nb_steps, int):
@@ -285,5 +301,14 @@ class ShadowAttack(EvasionAttack):
 
         if self.lambda_s <= 0:
             raise ValueError("The lambda_s must larger than zero.")
+
+        if not isinstance(self.batch_size, int):
+            raise ValueError("The batch size must be of type int.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The sigma must larger than zero.")
+
+        if not isinstance(self.targeted, bool):
+            raise ValueError("The targeted argument must be of type bool.")
 
         return True
