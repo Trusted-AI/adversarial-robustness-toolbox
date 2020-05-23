@@ -106,6 +106,14 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
         FeatureCollisionAttack.set_params(self, **kwargs)
 
+        self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(self.target,
+                                                                                          self.feature_layer, 1,
+                                                                                          framework=True)
+        self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(self.target,
+                                                                                          self.feature_layer, 1,
+                                                                                          framework=True)
+        self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
+
     def poison(self, x, y=None, **kwargs):
         """
         Iteratively finds optimal attack points starting at values at x
@@ -205,14 +213,15 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :return: poison example closer in feature representation to target space
         :rtype: `np.ndarray`
         """
-        target_placeholder, target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1,
-                                                                                framework=True)
-        poison_placeholder, poison_feature_rep = self.estimator.get_activations(poison, self.feature_layer, 1,
-                                                                                framework=True)
-        attack_loss = tensor_norm(poison_feature_rep - target_feature_rep)
-        attack_grad, = self.estimator.custom_loss_gradient(attack_loss, [poison_placeholder, target_placeholder],
-                                                           [poison, self.target])
-
+        # target_placeholder, target_feature_rep = self.estimator.get_activations(self.target, self.feature_layer, 1,
+        #                                                                         framework=True)
+        # poison_placeholder, poison_feature_rep = self.estimator.get_activations(poison, self.feature_layer, 1,
+        #                                                                         framework=True)
+        # attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
+        attack_grad, = self.estimator.custom_loss_gradient(self.attack_loss, [self.poison_placeholder,
+                                                                              self.target_placeholder],
+                                                           [poison, self.target],
+                                                           name="feature_collision_" + str(self.feature_layer))
         poison -= self.learning_rate * attack_grad[0]
 
         return poison

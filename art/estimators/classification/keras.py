@@ -497,10 +497,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 layer_output = keras_layer.output
             self._activations_func[layer_name] = k.function([self._input], [layer_output])
 
-        if framework:
-            placeholder = k.placeholder(shape=x.shape)
-            return placeholder, keras_layer(placeholder)
-
         # Determine shape of expected output and prepare array
         output_shape = self._activations_func[layer_name]([x_preprocessed[0][None, ...]])[0].shape
         activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
@@ -510,9 +506,13 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             activations[begin:end] = self._activations_func[layer_name]([x_preprocessed[begin:end]])[0]
 
-        return activations
+        if framework:
+            placeholder = k.placeholder(shape=x.shape)
+            return placeholder, keras_layer(placeholder)
+        else:
+            return activations
 
-    def custom_loss_gradient(self, nn_function, tensors, input_values):
+    def custom_loss_gradient(self, nn_function, tensors, input_values, name="default"):
         """
         Returns the gradient of the nn_function with respect to model input
 
@@ -522,13 +522,21 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :type tensors: `list`
         :param input_values: the inputs to evaluate the gradient
         :type input_values: `list`
+        :param name: The name of the function. Functions of the same name are cached
+        :type name: `str`
         :return: the gradient of the function w.r.t vars
         :rtype: `np.ndarray`
         """
         import keras.backend as k
 
-        grads = k.gradients(nn_function, tensors[0])[0]
-        outputs = k.function(tensors, [grads])
+        if not hasattr(self, "_custom_loss_func"):
+            self._custom_loss_func = {}
+
+        if name not in self._custom_loss_func:
+            grads = k.gradients(nn_function, tensors[0])[0]
+            self._custom_loss_func[name] = k.function(tensors, [grads])
+
+        outputs = self._custom_loss_func[name]
         return outputs(input_values)
 
     def _init_class_gradients(self, label=None):
@@ -653,6 +661,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         if "_activations_func" in state:
             del state["_activations_func"]
+
+        if "_custom_loss_func" in state:
+            del state["_custom_loss_func"]
 
         model_name = str(time.time()) + ".h5"
         state["model_name"] = model_name
