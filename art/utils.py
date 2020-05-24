@@ -47,7 +47,9 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- DEPRECATION
 
 
-def deprecated(end_version, *, reason="", replaced_by=""):
+def deprecated(
+    end_version: str, *, reason: str = "", replaced_by: str = ""
+) -> Callable:
     """
     Deprecate a function or method and raise a `DeprecationWarning`.
 
@@ -62,11 +64,8 @@ def deprecated(end_version, *, reason="", replaced_by=""):
         return a + b
 
     :param end_version: Release version of removal.
-    :type end_version: `str`
     :param reason: Additional deprecation reason.
-    :type reason: `str`
     :param replaced_by: Function that replaces deprecated function.
-    :type replaced_by: `str`
     """
 
     def decorator(function):
@@ -92,7 +91,9 @@ def deprecated(end_version, *, reason="", replaced_by=""):
     return decorator
 
 
-def deprecated_keyword_arg(identifier, end_version, *, reason="", replaced_by=""):
+def deprecated_keyword_arg(
+    identifier: str, end_version: str, *, reason: str = "", replaced_by: str = ""
+) -> Callable:
     """
     Deprecate a keyword argument and raise a `DeprecationWarning`.
 
@@ -107,13 +108,9 @@ def deprecated_keyword_arg(identifier, end_version, *, reason="", replaced_by=""
         return a + b
 
     :param identifier: Keyword identifier.
-    :type identifier: `str`
     :param end_version: Release version of removal.
-    :type end_version: `str`
     :param reason: Additional deprecation reason.
-    :type reason: `str`
     :param replaced_by: Function that replaces deprecated function.
-    :type replaced_by: `str`
     """
 
     def decorator(function):
