@@ -18,14 +18,18 @@
 """
 This module implements abstract base and mixin classes for estimators in ART.
 """
-
 from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.defences.postprocessor.postprocessor import Postprocessor
+
+if TYPE_CHECKING:
+    from art.data_generators import DataGenerator
+    from art.metrics.verification_decisions_trees import Tree
 
 
 class BaseEstimator(ABC):
@@ -45,10 +49,14 @@ class BaseEstimator(ABC):
     def __init__(
         self,
         model=None,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=None,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        preprocessing_defences: Union[
+            "Preprocessor", List["Preprocessor"], None
+        ] = None,
+        postprocessing_defences: Union[
+            "Postprocessor", List["Postprocessor"], None
+        ] = None,
+        preprocessing: PREPROCESSING_TYPE = (0, 1),
     ):
         """
         Initialize a `BaseEstimator` object.
@@ -58,31 +66,24 @@ class BaseEstimator(ABC):
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the estimator.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the estimator.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input and the results will be
                divided by the second value.
-        :type preprocessing: `tuple`
         """
-        kwargs = {
-            "model": model,
-            "clip_values": clip_values,
-            "preprocessing_defences": preprocessing_defences,
-            "postprocessing_defences": postprocessing_defences,
-            "preprocessing": preprocessing,
-        }
-        self.set_params(**kwargs)
+        self._model = model
+        self._clip_values = clip_values
+        self.preprocessing_defences = preprocessing_defences
+        self.postprocessing_defences = postprocessing_defences
+        self.preprocessing = preprocessing
+        self._check_params()
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> None:
         """
         Take a dictionary of parameters and apply checks before setting them as attributes.
-        :param kwargs: a dictionary of attributes
-        :type kwargs: `dict`
-        :return: `self`
+
+        :param kwargs: A dictionary of attributes.
         """
         for key, value in kwargs.items():
             if key in self.estimator_params:
@@ -94,7 +95,20 @@ class BaseEstimator(ABC):
                     setattr(self, key, value)
             else:
                 raise ValueError("Unexpected parameter {} found in kwargs.".format(key))
+        self._check_params()
 
+    def get_params(self) -> Dict[str, Any]:
+        """
+        Get all parameters and their values of this estimator.
+
+        :return: A dictionary of string parameter names to their value.
+        """
+        params = dict()
+        for key in self.estimator_params:
+            params[key] = getattr(self, key)
+        return params
+
+    def _check_params(self) -> None:
         if self._clip_values is not None:
             if len(self._clip_values) != 2:
                 raise ValueError(
@@ -147,19 +161,6 @@ class BaseEstimator(ABC):
                 "`preprocessing` should be a tuple of 2 floats with the values to subtract and divide the model inputs."
             )
 
-        return self
-
-    def get_params(self):
-        """
-        Get all parameters and their values of this estimator.
-
-        :return: A dictionary of string parameter names to their value.
-        """
-        params = dict()
-        for key in self.estimator_params:
-            params[key] = getattr(self, key)
-        return params
-
     @abstractmethod
     def predict(
         self, x, **kwargs
@@ -177,7 +178,7 @@ class BaseEstimator(ABC):
     @abstractmethod
     def fit(
         self, x, y, **kwargs
-    ):  # lgtm [py/inheritance/incorrect-overridden-signature]
+    ) -> None:  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Fit the estimator using the training data `(x, y)`.
 
@@ -185,7 +186,6 @@ class BaseEstimator(ABC):
         :type x: Format as expected by the `model`
         :param y: Target values.
         :type y: Format as expected by the `model`
-        :return: `None`
         """
         raise NotImplementedError
 
@@ -199,26 +199,24 @@ class BaseEstimator(ABC):
         return self._model
 
     @property
-    def input_shape(self):
+    def input_shape(self) -> Tuple[int, ...]:
         """
         Return the shape of one input sample.
 
         :return: Shape of one input sample.
-        :rtype: `tuple`
         """
         return self._input_shape
 
     @property
-    def clip_values(self):
+    def clip_values(self) -> CLIP_VALUES_TYPE:
         """
         Return the clip values of the input samples.
 
         :return: Clip values (min, max).
-        :rtype: `tuple`
         """
         return self._clip_values
 
-    def _apply_preprocessing(self, x, y, fit):
+    def _apply_preprocessing(self, x, y, fit: bool) -> Tuple[Any, Any]:
         """
         Apply all defences and preprocessing operations on the inputs `x` and `y`. This function has to be applied to
         all raw inputs `x` and `y` provided to the estimator.
@@ -228,7 +226,6 @@ class BaseEstimator(ABC):
         :param y: Target values.
         :type y: Format as expected by the `model` or `None`
         :param fit: `True` if the defences are applied during training.
-        :type fit: `bool`
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
@@ -239,7 +236,7 @@ class BaseEstimator(ABC):
         x_preprocessed = self._apply_preprocessing_standardisation(x_preprocessed)
         return x_preprocessed, y_preprocessed
 
-    def _apply_preprocessing_defences(self, x, y, fit=False):
+    def _apply_preprocessing_defences(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
         only be called from function `_apply_preprocessing`.
@@ -250,7 +247,6 @@ class BaseEstimator(ABC):
         :type y: Format as expected by the `model`
         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
                     predict operation.
-        :type fit: `bool`
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
@@ -273,7 +269,7 @@ class BaseEstimator(ABC):
         :type x: Format as expected by the `model`
         :return: Standardized `x`.
         :rtype: Format as expected by the `model`
-        :raises: `TypeError`
+        :raises `TypeError`: If the input data type is unsigned.
         """
         if x.dtype in [np.uint8, np.uint16, np.uint32, np.uint64]:
             raise TypeError(
@@ -297,16 +293,14 @@ class BaseEstimator(ABC):
 
         return res
 
-    def _apply_postprocessing(self, preds, fit):
+    def _apply_postprocessing(self, preds, fit: bool) -> np.ndarray:
         """
         Apply all postprocessing defences on model predictions.
 
         :param preds: model output to be post-processed.
         :type preds: Format as expected by the `model`
         :param fit: `True` if the defences are applied during training.
-        :type fit: `bool`
         :return: Post-processed model predictions.
-        :rtype: `np.ndarray`
         """
         post_preds = preds.copy()
         if self.postprocessing_defences is not None:
@@ -383,7 +377,10 @@ class LossGradientsMixin(ABC):
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        if self.preprocessing_defences is not None:
+        if (
+            hasattr(self, "preprocessing_defences")
+            and self.preprocessing_defences is not None
+        ):
             for defence in self.preprocessing_defences[::-1]:
                 if fit:
                     if defence.apply_fit:
@@ -404,9 +401,8 @@ class LossGradientsMixin(ABC):
         :param gradients: Gradients before backward pass through normalization.
         :type gradients: Format as expected by the `model`
         :return: Gradients after backward pass through normalization.
-        :rtype: normalization
         """
-        if self.preprocessing is not None:
+        if hasattr(self, "preprocessing") and self.preprocessing is not None:
             _, div = self.preprocessing
             div = np.asarray(div, dtype=gradients.dtype)
             res = gradients / div
@@ -422,59 +418,53 @@ class NeuralNetworkMixin(ABC):
     has to be mixed in with class `BaseEstimator`.
     """
 
-    def __init__(self, channel_index=None, **kwargs):
+    def __init__(self, channel_index: Optional[int] = None, **kwargs) -> None:
         """
         Initialize a neural network attributes.
 
         :param channel_index: Index of the axis in samples `x` representing the color channels.
-        :type channel_index: `int`
         """
         self._channel_index = channel_index
         super().__init__(**kwargs)
 
     @abstractmethod
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
         Perform prediction of the neural network for samples `x`.
 
         :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :type x: `np.ndarray`
         :param batch_size: Batch size.
-        :type batch_size: `int`
         :return: Predictions.
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
 
     @abstractmethod
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(
+        self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs
+    ) -> None:
         """
         Fit the model of the estimator on the training data `x` and `y`.
 
         :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
-        :type x: `np.ndarray`
         :param y: Target values.
         :type y: Format as expected by the `model`
         :param batch_size: Batch size.
-        :type batch_size: `int`
         :param nb_epochs: Number of training epochs.
-        :type nb_epochs: `int`
-        :return: `None`
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(
+        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
+    ) -> None:
         """
         Fit the estimator using a `generator` yielding training batches. Implementations can
         provide framework-specific versions of this function to speed-up computation.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of training epochs.
-        :type nb_epochs: `int`
-        :return: `None`
         """
         from art.data_generators import DataGenerator
 
@@ -503,43 +493,39 @@ class NeuralNetworkMixin(ABC):
                 )
 
     @abstractmethod
-    def get_activations(self, x, layer, batch_size):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int
+    ) -> np.ndarray:
         """
         Return the output of a specific layer for samples `x` where `layer` is the index of the layer between 0 and
         `nb_layers - 1 or the name of the layer. The number of layers can be determined by counting the results
         returned by calling `layer_names`.
 
         :param x: Samples
-        :type x: `np.ndarray`
         :param layer: Index or name of the layer.
-        :type layer: `int` or `str`
         :param batch_size: Batch size.
-        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
     @abstractmethod
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         """
         Set the learning phase for the backend framework.
 
         :param train: `True` if the learning phase is training, otherwise `False`.
-        :type train: `bool`
         """
         raise NotImplementedError
 
     @property
-    def channel_index(self):
+    def channel_index(self) -> int:
         """
         :return: Index of the axis containing the color channels in the samples `x`.
-        :rtype: `int`
         """
         return self._channel_index
 
     @property
-    def learning_phase(self):
+    def learning_phase(self) -> Optional[bool]:
         """
         The learning phase set by the user. Possible values are `True` for training or `False` for prediction and
         `None` if it has not been set by the library. In the latter case, the library does not do any explicit learning
@@ -547,17 +533,15 @@ class NeuralNetworkMixin(ABC):
         for this property, it will impact all following computations for model fitting, prediction and gradients.
 
         :return: Learning phase.
-        :rtype: `bool` or `None`
         """
         return self._learning_phase
 
     @property
-    def layer_names(self):
+    def layer_names(self) -> List[str]:
         """
         Return the names of the hidden layers in the model, if applicable.
 
         :return: The names of the hidden layers in the model, input and output layers are ignored.
-        :rtype: `list`
 
         .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
@@ -586,11 +570,10 @@ class DecisionTreeMixin(ABC):
     """
 
     @abstractmethod
-    def get_trees(self):
+    def get_trees(self) -> List["Tree"]:
         """
         Get the decision trees.
 
         :return: A list of decision trees.
-        :rtype: `[Tree]`
         """
         raise NotImplementedError

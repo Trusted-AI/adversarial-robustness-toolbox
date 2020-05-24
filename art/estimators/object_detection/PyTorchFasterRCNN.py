@@ -19,11 +19,19 @@
 This module implements the task specific estimator for Faster R-CNN v3 in PyTorch.
 """
 import logging
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
+
+if TYPE_CHECKING:
+    import torchvision
+
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.defences.postprocessor.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -35,19 +43,23 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
     def __init__(
         self,
-        model=None,
-        clip_values=None,
-        channel_index=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=None,
-        attack_losses=(
+        model: Optional["torchvision.models.detection.fasterrcnn_resnet50_fpn"] = None,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        channel_index: Optional[int] = None,
+        preprocessing_defences: Union[
+            "Preprocessor", List["Preprocessor"], None
+        ] = None,
+        postprocessing_defences: Union[
+            "Postprocessor", List["Postprocessor"], None
+        ] = None,
+        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        attack_losses: Tuple[str, ...] = (
             "loss_classifier",
             "loss_box_reg",
             "loss_objectness",
             "loss_rpn_box_reg",
         ),
-        device_type="gpu",
+        device_type: str = "gpu",
     ):
         """
         Initialization.
@@ -58,29 +70,22 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                         between 0 and H and 0 and W
                       - labels (Int64Tensor[N]): the predicted labels for each image
                       - scores (Tensor[N]): the scores or each prediction
-        :type model: `torchvision.models.detection.fasterrcnn_resnet50_fpn`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         :param attack_losses: Tuple of any combination of strings of loss components: 'loss_classifier', 'loss_box_reg',
                               'loss_objectness', and 'loss_rpn_box_reg'.
-        :type attack_losses: `Tuple[str]`
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
-        :type device_type: `string`
         """
+        import torch
 
         super().__init__(
             clip_values=clip_values,
@@ -90,16 +95,22 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
-        assert (
-            clip_values[0] == 0
-        ), "This classifier requires un-normalized input images with clip_vales=(0, max_value)"
-        assert (
-            clip_values[1] > 0
-        ), "This classifier requires un-normalized input images with clip_vales=(0, max_value)"
-        assert preprocessing is None, "This estimator does not support `preprocessing`."
-        assert (
-            postprocessing_defences is None
-        ), "This estimator does not support `postprocessing_defences`."
+        if self.clip_values is not None:
+            if self.clip_values[0] != 0:
+                raise ValueError(
+                    "This classifier requires un-normalized input images with clip_vales=(0, max_value)."
+                )
+            if self.clip_values[1] <= 0:
+                raise ValueError(
+                    "This classifier requires un-normalized input images with clip_vales=(0, max_value)."
+                )
+
+        if self.preprocessing is not None:
+            raise ValueError("This estimator does not support `preprocessing`.")
+        if self.postprocessing_defences is not None:
+            raise ValueError(
+                "This estimator does not support `postprocessing_defences`."
+            )
 
         if model is None:
             import torchvision
@@ -111,8 +122,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             self._model = model
 
         # Set device
-        import torch
-
+        self._device: str
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
         else:
@@ -120,26 +130,21 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
         self._model.to(self._device)
-
         self._model.eval()
+        self.attack_losses: Tuple[str, ...] = attack_losses
 
-        self.attack_losses = attack_losses
-
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :type x: `np.ndarray`
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
                   - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
                     between 0 and H and 0 and W
                   - labels (Int64Tensor[N]): the predicted labels for each image
                   - scores (Tensor[N]): the scores or each prediction.
-        :type y: `np.ndarray`
         :return: Loss gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         import torch
         import torchvision
@@ -199,21 +204,18 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         return grads
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :type x: `np.ndarray`
         :param batch_size: Batch size.
-        :type batch_size: `int`
         :return: Predictions of format `List[Dict[Tensor]]`, one for each input image. The
                  fields of the Dict are as follows:
                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
                    between 0 and H and 0 and W
                  - labels (Int64Tensor[N]): the predicted labels for each image
                  - scores (Tensor[N]): the scores or each prediction.
-        :rtype: `np.ndarray`
         """
         import torchvision
 
@@ -223,8 +225,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-
-        image_tensor_list = list()
+        image_tensor_list: List[np.ndarray] = list()
 
         for i in range(x.shape[0]):
             image_tensor_list.append(
@@ -233,11 +234,15 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         predictions = self._model(image_tensor_list)
         return predictions
 
-    def fit(self):
+    def fit(
+        self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs
+    ) -> None:
         raise NotImplementedError
 
-    def get_activations(self):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int
+    ) -> np.ndarray:
         raise NotImplementedError
 
-    def set_learning_phase(self):
+    def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError
