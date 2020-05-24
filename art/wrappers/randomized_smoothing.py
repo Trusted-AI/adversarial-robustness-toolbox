@@ -244,12 +244,11 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients):
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         """
         Set the learning phase for the backend framework.
 
         :param train: `True` if the learning phase is training, `False` if learning phase is not training.
-        :type train: `bool`
         """
         raise NotImplementedError
 

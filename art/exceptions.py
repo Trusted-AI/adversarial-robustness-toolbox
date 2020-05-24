@@ -18,6 +18,7 @@
 """
 Module containing ART's exceptions.
 """
+from typing import List
 
 
 class EstimatorError(TypeError):
@@ -25,7 +26,7 @@ class EstimatorError(TypeError):
     Basic exception for errors raised by unexpected estimator types.
     """
 
-    def __init__(self, this_class, class_expected_list, classifier_given) -> None:
+    def __init__(self, this_class, class_expected_list: List[str], classifier_given) -> None:
         self.this_class = this_class
         self.class_expected_list = class_expected_list
         self.classifier_given = classifier_given
@@ -47,5 +48,5 @@ class EstimatorError(TypeError):
             )
         )
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.message
