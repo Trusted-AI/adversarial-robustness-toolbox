@@ -130,54 +130,61 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
         :type y: `np.ndarray`
+        :param sampling: True if loss gradients should be determined with Monte Carlo sampling.
+        :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
         import torch
 
-        # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        sampling = kwargs.get("sampling")
 
-        # Check label shape
-        if self._reduce_labels:
-            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        if sampling:
+            # Apply preprocessing
+            x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
-        # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
-        inputs_t.requires_grad = True
+            # Check label shape
+            if self._reduce_labels:
+                y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        # Convert the labels to Tensors
-        labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+            # Convert the inputs to Tensors
+            inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
+            inputs_t.requires_grad = True
 
-        inputs_repeat_t = inputs_t.repeat_interleave(self.sample_size, 0)
+            # Convert the labels to Tensors
+            labels_t = torch.from_numpy(y_preprocessed).to(self._device)
 
-        noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
-        # noise = torch.empty(inputs_repeat_t.shape).normal_(mean=0, std=self.scale).to(self._device)
+            inputs_repeat_t = inputs_t.repeat_interleave(self.sample_size, 0)
 
-        inputs_noise_t = inputs_repeat_t + noise
+            noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
 
-        inputs_noise_t.clamp(self.clip_values[0], self.clip_values[1])
+            inputs_noise_t = inputs_repeat_t + noise
 
-        model_outputs = self._model(inputs_noise_t)[-1]
+            inputs_noise_t.clamp(self.clip_values[0], self.clip_values[1])
 
-        softmax = torch.nn.functional.softmax(model_outputs, dim=1)
+            model_outputs = self._model(inputs_noise_t)[-1]
 
-        average_softmax = (
-            softmax.reshape(-1, self.sample_size, model_outputs.shape[-1]).mean(1, keepdim=True).squeeze(1)
-        )
+            softmax = torch.nn.functional.softmax(model_outputs, dim=1)
 
-        log_softmax = torch.log(average_softmax.clamp(min=1e-20))
+            average_softmax = (
+                softmax.reshape(-1, self.sample_size, model_outputs.shape[-1]).mean(1, keepdim=True).squeeze(1)
+            )
 
-        loss = torch.nn.functional.nll_loss(log_softmax, labels_t)
+            log_softmax = torch.log(average_softmax.clamp(min=1e-20))
 
-        # Clean gradients
-        self._model.zero_grad()
+            loss = torch.nn.functional.nll_loss(log_softmax, labels_t)
 
-        # Compute gradients
-        loss.backward()
-        grads = inputs_t.grad.cpu().numpy().copy()
-        grads = self._apply_preprocessing_gradient(x, grads)
-        assert grads.shape == x.shape
+            # Clean gradients
+            self._model.zero_grad()
+
+            # Compute gradients
+            loss.backward()
+            grads = inputs_t.grad.cpu().numpy().copy()
+            grads = self._apply_preprocessing_gradient(x, grads)
+            assert grads.shape == x.shape
+
+        else:
+            grads = PyTorchClassifier.loss_gradient(self, x, y, **kwargs)
 
         return grads
 
