@@ -169,8 +169,7 @@ class RandomizedSmoothingMixin(ABC):
 
         prediction = []
         radius = []
-        from tqdm import tqdm
-        for x_i in tqdm(x):
+        for x_i in x:
 
             # get sample prediction for classification
             counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
