@@ -64,21 +64,10 @@ def get_crafter(
     """
     Create an attack instance to craft adversarial samples.
 
-<<<<<<< HEAD
     :param classifier: A trained model.
     :param attack: adversarial attack name.
     :param params: Parameters specific to the adversarial attack.
     :return: An attack instance.
-=======
-    :param classifier: A trained model
-    :type classifier: :class:`art.estimators.classification.Classifier`
-    :param attack: adversarial attack name
-    :type attack: `str`
-    :param params: Parameters specific to the adversarial attack
-    :type params: `dict`
-    :return: A crafter
-    :rtype: `Attack`
->>>>>>> dev_1.3.0
     """
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
@@ -104,15 +93,8 @@ def empirical_robustness(
 
     | Paper link: https://arxiv.org/abs/1511.04599
 
-<<<<<<< HEAD
     :param classifier: A trained model.
     :param x: Data sample of shape that can be fed into `classifier`.
-=======
-    :param classifier: A trained model
-    :type classifier: :class:`art.estimators.classification.Classifier`
-    :param x: Data sample of shape that can be fed into `classifier`
-    :type x: `np.ndarray`
->>>>>>> dev_1.3.0
     :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
                         (Fast Gradient Sign Method, Hop Skip Jump).
     :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
