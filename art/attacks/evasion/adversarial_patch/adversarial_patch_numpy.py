@@ -30,7 +30,6 @@ import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import (
