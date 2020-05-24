@@ -122,58 +122,66 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :type x: `np.ndarray`
         :param y: Correct labels, one-vs-rest encoding.
         :type y: `np.ndarray`
+        :param sampling: True if loss gradients should be determined with Monte Carlo sampling.
+        :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
         import tensorflow as tf
 
-        # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
+        sampling = kwargs.get("sampling")
 
-        if tf.executing_eagerly():
-            with tf.GradientTape() as tape:
-                inputs_t = tf.convert_to_tensor(x_preprocessed)
-                tape.watch(inputs_t)
+        if sampling:
+            # Apply preprocessing
+            x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
-                inputs_repeat_t = tf.repeat(inputs_t, repeats=self.sample_size, axis=0)
+            if tf.executing_eagerly():
+                with tf.GradientTape() as tape:
+                    inputs_t = tf.convert_to_tensor(x_preprocessed)
+                    tape.watch(inputs_t)
 
-                noise = (
-                    tf.random.normal(
-                        shape=inputs_repeat_t.shape,
-                        mean=0.0,
-                        stddev=self.scale,
-                        dtype=inputs_repeat_t.dtype,
-                        seed=None,
-                        name=None,
+                    inputs_repeat_t = tf.repeat(inputs_t, repeats=self.sample_size, axis=0)
+
+                    noise = (
+                        tf.random.normal(
+                            shape=inputs_repeat_t.shape,
+                            mean=0.0,
+                            stddev=self.scale,
+                            dtype=inputs_repeat_t.dtype,
+                            seed=None,
+                            name=None,
+                        )
                     )
-                )
 
-                inputs_noise_t = inputs_repeat_t + noise
+                    inputs_noise_t = inputs_repeat_t + noise
 
-                inputs_noise_t = tf.clip_by_value(
-                    inputs_noise_t, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1], name=None
-                )
-
-                model_outputs = self._model(inputs_noise_t)
-
-                softmax = tf.nn.softmax(model_outputs, axis=1, name=None)
-
-                average_softmax = tf.reduce_mean(
-                    tf.reshape(softmax, shape=(-1, self.sample_size, model_outputs.shape[-1])), axis=1
-                )
-
-                loss = tf.reduce_mean(
-                    tf.keras.losses.categorical_crossentropy(
-                        y_true=y, y_pred=average_softmax, from_logits=False, label_smoothing=0
+                    inputs_noise_t = tf.clip_by_value(
+                        inputs_noise_t, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1], name=None
                     )
-                )
 
-            gradients = tape.gradient(loss, inputs_t).numpy()
+                    model_outputs = self._model(inputs_noise_t)
+
+                    softmax = tf.nn.softmax(model_outputs, axis=1, name=None)
+
+                    average_softmax = tf.reduce_mean(
+                        tf.reshape(softmax, shape=(-1, self.sample_size, model_outputs.shape[-1])), axis=1
+                    )
+
+                    loss = tf.reduce_mean(
+                        tf.keras.losses.categorical_crossentropy(
+                            y_true=y, y_pred=average_softmax, from_logits=False, label_smoothing=0
+                        )
+                    )
+
+                gradients = tape.gradient(loss, inputs_t).numpy()
+            else:
+                raise ValueError("Expecting eager execution.")
+
+            # Apply preprocessing gradients
+            gradients = self._apply_preprocessing_gradient(x, gradients)
+
         else:
-            raise ValueError("Expecting eager execution.")
-
-        # Apply preprocessing gradients
-        gradients = self._apply_preprocessing_gradient(x, gradients)
+            gradients = TensorFlowV2Classifier.loss_gradient(self, x, y, **kwargs)
 
         return gradients
 

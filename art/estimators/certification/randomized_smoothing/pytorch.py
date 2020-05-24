@@ -179,14 +179,14 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
             # Compute gradients
             loss.backward()
-            grads = inputs_t.grad.cpu().numpy().copy()
-            grads = self._apply_preprocessing_gradient(x, grads)
-            assert grads.shape == x.shape
+            gradients = inputs_t.grad.cpu().numpy().copy()
+            gradients = self._apply_preprocessing_gradient(x, gradients)
+            assert gradients.shape == x.shape
 
         else:
-            grads = PyTorchClassifier.loss_gradient(self, x, y, **kwargs)
+            gradients = PyTorchClassifier.loss_gradient(self, x, y, **kwargs)
 
-        return grads
+        return gradients
 
     def class_gradient(self, x, label=None, **kwargs):
         """

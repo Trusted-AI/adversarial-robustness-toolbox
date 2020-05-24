@@ -163,7 +163,7 @@ class ShadowAttack(EvasionAttack):
 
             for _ in range(self.nb_steps):
 
-                gradients_ce = self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch) * (
+                gradients_ce = self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch, sampling=False) * (
                     1 - 2 * int(self.targeted)
                 )
 
