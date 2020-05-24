@@ -22,7 +22,7 @@ from art.utils import load_cifar10
 
 
 
-DEVICE = 'cpu'
+DEVICE = 'gpu'
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
