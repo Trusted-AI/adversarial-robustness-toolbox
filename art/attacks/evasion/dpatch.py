@@ -20,10 +20,10 @@ This module implements the adversarial patch attack `DPatch` for object detector
 
 | Paper link: https://arxiv.org/abs/1806.02299v4
 """
-
 import logging
 import math
 import random
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -52,57 +52,51 @@ class DPatch(EvasionAttack):
 
     def __init__(
         self,
-        estimator,
-        patch_shape=(40, 40, 3),
-        learning_rate=5.0,
-        max_iter=500,
-        batch_size=16,
+        estimator: ObjectDetectorMixin,
+        patch_shape: Tuple[int, int, int] = (40, 40, 3),
+        learning_rate: float = 5.0,
+        max_iter: int = 500,
+        batch_size: int = 16,
     ):
         """
         Create an instance of the :class:`.DPatch`.
 
         :param estimator: A trained object detector.
-        :type estimator: :class:`.ObjectDetectorMixin`
         :param patch_shape: The shape of the adversarial path as a tuple of shape (height, width, nb_channels).
-        :type patch_shape: (`int`, `int`, `int`)
         :param learning_rate: The learning rate of the optimization.
-        :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
-        :type max_iter: `int`
         :param batch_size: The size of the training batch.
-        :type batch_size: `int`
         """
         super(DPatch, self).__init__(estimator=estimator)
 
-        kwargs = {
-            "patch_shape": patch_shape,
-            "learning_rate": learning_rate,
-            "max_iter": max_iter,
-            "batch_size": batch_size,
-        }
-        self.set_params(**kwargs)
+        self.patch_shape = patch_shape
+        self.learning_rate = learning_rate
+        self.max_iter = max_iter
+        self.batch_size = batch_size
         self._patch = np.ones(shape=patch_shape) * self.estimator.clip_values[1] / 2.0
+        self._check_params()
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> np.ndarray:
         """
         Generate DPatch.
 
         :param x: Sample images.
-        :type x: `np.ndarray`
         :param y: Target labels for object detector.
-        :type y: `np.ndarray`
         :return: Adversarial patch.
-        :rtype: `np.ndarray`
         """
-
-        assert (
+        if (
             x.shape[self.estimator.channel_index]
-            == self.patch_shape[self.estimator.channel_index - 1]
-        ), "The color channel index of the images and the patch have to be identical."
-
-        assert y is None, "The DPatch attack does not use target labels."
-
-        assert x.ndim == 4, "The adversarial patch can only be applied to images."
+            != self.patch_shape[self.estimator.channel_index - 1]
+        ):
+            raise ValueError(
+                "The color channel index of the images and the patch have to be identical."
+            )
+        if y is not None:
+            raise ValueError("The DPatch attack does not use target labels.")
+        if x.ndim != 4:
+            raise ValueError("The adversarial patch can only be applied to images.")
 
         for i_step in range(self.max_iter):
             if i_step == 0 or (i_step + 1) % 100 == 0:
@@ -111,8 +105,7 @@ class DPatch(EvasionAttack):
             patched_images, transforms = self._augment_images_with_patch(
                 x, self._patch, random_location=True
             )
-
-            patch_target = list()
+            patch_target: List[Dict[str, np.ndarray]] = list()
 
             for i_image in range(patched_images.shape[0]):
 
@@ -129,7 +122,6 @@ class DPatch(EvasionAttack):
                 patch_target.append(target_dict)
 
             num_batches = math.ceil(x.shape[0] / self.batch_size)
-
             patch_gradients = np.zeros_like(self._patch)
 
             for i_batch in range(num_batches):
@@ -173,19 +165,17 @@ class DPatch(EvasionAttack):
         return self._patch
 
     @staticmethod
-    def _augment_images_with_patch(x, patch, random_location, channel_index):
+    def _augment_images_with_patch(
+        x: np.ndarray, patch: np.ndarray, random_location: bool, channel_index: int
+    ) -> Tuple[np.ndarray, List[Dict[str, int]]]:
         """
         Augment images with patch.
 
         :param x: Sample images.
-        :type x: `np.ndarray`
         :param patch: The patch to be applied.
-        :param patch: `np.ndarray`
         :param random_location: If True apply patch at randomly shifted locations, otherwise place patch at origin
                                 (top-left corner).
-        :type random_location: `bool`
         :param channel_index: Index of the color channel.
-        :type channel_index: `Int`
         """
         transformations = list()
         x_copy = x.copy()
@@ -218,18 +208,19 @@ class DPatch(EvasionAttack):
 
         return x_copy, transformations
 
-    def apply_patch(self, x, patch_external=None, random_location=False):
+    def apply_patch(
+        self,
+        x: np.ndarray,
+        patch_external: Optional[np.ndarray] = None,
+        random_location: bool = False,
+    ) -> np.ndarray:
         """
         Apply the adversarial patch to images.
 
         :param x: Images to be patched.
-        :type x: `np.ndarray`
         :param patch_external: External patch to apply to images `x`. If None the attacks patch will be applied.
-        :type patch_external: `np.ndarray`
         :param random_location: True if patch location should be random.
-        :type random_location: `bool`
         :return: The patched images.
-        :rtype: `np.ndarray`
         """
         if patch_external is not None:
             patch_local = patch_external
@@ -242,21 +233,7 @@ class DPatch(EvasionAttack):
 
         return patched_images
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param patch_shape: The shape of the adversarial path as a tuple of shape (height, width, nb_channels).
-        :type patch_shape: (`int`, `int`, `int`)
-        :param learning_rate: The learning rate of the optimization.
-        :type learning_rate: `float`
-        :param max_iter: The number of optimization steps.
-        :type max_iter: `int`
-        :param batch_size: The size of the training batch.
-        :type batch_size: `int`
-        """
-        super(DPatch, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.patch_shape, tuple):
             raise ValueError("The patch shape must be a tuple of integers.")
         if len(self.patch_shape) != 3:

@@ -21,6 +21,7 @@ This module implements the Feature Adversaries attack.
 | Paper link: https://arxiv.org/abs/1511.05122
 """
 import logging
+from typing import Optional
 
 import numpy as np
 
@@ -62,33 +63,20 @@ class FeatureAdversaries(EvasionAttack):
         """
         super(FeatureAdversaries, self).__init__(classifier)
 
-        kwargs = {
-            "delta": delta,
-            "layer": layer,
-            "batch_size": batch_size,
-        }
-
-        FeatureAdversaries.set_params(self, **kwargs)
-
+        self.delta = delta
+        self.layer = layer
+        self.batch_size = batch_size
         self.norm = np.inf
+        self._check_params()
 
-    @classmethod
-    def is_valid_classifier_type(cls, classifier):
-        """
-        Checks whether the classifier provided is a classifer which this class can perform an attack on
-        :param classifier:
-        :return:
-        """
-        return True if isinstance(classifier, ClassifierNeuralNetwork) else False
-
-    def generate(self, x, y=None, **kwargs):
+    def generate(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: Source samples.
-        :type x: `np.ndarray`
         :param y: Guide samples.
-        :type y: `np.ndarray`
         :param kwargs: The kwargs are used as `options` for the minimisation with `scipy.optimize.minimize` using
                        `method="L-BFGS-B"`. Valid options are based on the output of
                        `scipy.optimize.show_options(solver='minimize', method='L-BFGS-B')`:
@@ -138,9 +126,7 @@ class FeatureAdversaries(EvasionAttack):
                        relationship between the two is ``ftol = factr * numpy.finfo(float).eps``.
                        I.e., `factr` multiplies the default machine floating-point precision to
                        arrive at `ftol`.
-        :type kwargs: `dict`
         :return: Adversarial examples.
-        :rtype: `np.ndarray`
         :raises KeyError: The argument {} in kwargs is not allowed as option for `scipy.optimize.minimize` using
                           `method="L-BFGS-B".`
         """
@@ -200,30 +186,15 @@ class FeatureAdversaries(EvasionAttack):
                     "The argument `{}` in kwargs is not allowed as option for `scipy.optimize.minimize` using "
                     '`method="L-BFGS-B".`'.format(key)
                 )
-
         options.update(kwargs)
 
         res = minimize(func, x_0, method="L-BFGS-B", bounds=bound, options=options)
-        logger.info(res)
-
         x_adv = res.x
+        logger.info(res)
 
         return x_adv.reshape(-1, *self.estimator.input_shape)
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param delta: The maximum deviation between source and guide images.
-        :type delta: `float`
-        :param layer: Index of the representation layer.
-        :type layer: `int`
-        :param batch_size: Batch size.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(FeatureAdversaries, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.delta <= 0:
             raise ValueError("The maximum deviation `delta` has to be positive.")
 
