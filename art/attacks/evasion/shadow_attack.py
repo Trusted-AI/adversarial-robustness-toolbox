@@ -148,9 +148,7 @@ class ShadowAttack(EvasionAttack):
         x_adv = np.zeros_like(x, dtype=ART_NUMPY_DTYPE)
 
         # Compute perturbation with implicit batching
-        from tqdm import tqdm
-
-        for i_batch in tqdm(range(int(np.ceil(x.shape[0] / self.batch_size)))):
+        for i_batch in range(int(np.ceil(x.shape[0] / self.batch_size))):
 
             batch_index_1, batch_index_2 = i_batch * self.batch_size, (i_batch + 1) * self.batch_size
             x_batch = x[batch_index_1:batch_index_2]
