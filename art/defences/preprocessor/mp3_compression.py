@@ -27,6 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from io import BytesIO
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -42,44 +43,47 @@ class Mp3Compression(Preprocessor):
 
     params = ["channel_index", "sample_rate"]
 
-    def __init__(self, channel_index, sample_rate, apply_fit=True, apply_predict=False):
+    def __init__(
+        self,
+        channel_index: int,
+        sample_rate: int,
+        apply_fit: bool = True,
+        apply_predict: bool = False,
+    ) -> None:
         """
         Create an instance of MP3 compression.
 
         :param channel_index: Index of the axis containing the audio channels.
-        :type channel_index: `int`
         :param sample_rate: Specifies the sampling rate of sample.
-        :type sample_rate: `int`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(channel_index=channel_index, sample_rate=sample_rate)
+        self.channel_index = channel_index
+        self.sample_rate = sample_rate
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, x, y=None):
+    def __call__(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None
+    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply MP3 compression to sample `x`.
 
         :param x: Sample to compress with shape `(batch_size, length, channel)`. `x` values are
-        recommended to be of type `np.int16`.
-        :type x: `np.ndarray`
+            recommended to be of type `np.int16`.
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :type y: `np.ndarray`
         :return: Compressed sample.
-        :rtype: `np.ndarray`
         """
 
         def wav_to_mp3(x, sample_rate):
@@ -126,21 +130,16 @@ class Mp3Compression(Preprocessor):
             x_mp3 = np.swapaxes(x_mp3, 1, 2)
         return x_mp3
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-        """
-        super().set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not (
             isinstance(self.channel_index, (int, np.int))
             and self.channel_index in [1, 2]
@@ -151,4 +150,3 @@ class Mp3Compression(Preprocessor):
 
         if not (isinstance(self.sample_rate, (int, np.int)) and self.sample_rate > 0):
             raise ValueError("Sample rate be must a positive integer.")
-        return True
