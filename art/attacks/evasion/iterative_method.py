@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -31,7 +31,7 @@ import numpy as np
 from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
-    from art.classifiers.classifier import ClassifierGradientsType
+    from art.estimators.classification.classifier import ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +47,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
 
     def __init__(
         self,
-        classifier: "ClassifierGradientsType",
+        estimator: "ClassifierGradients",
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -57,7 +57,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained classifier.
+        :param estimator: A trained classifier.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param max_iter: The maximum number of iterations.
@@ -65,7 +65,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         super(BasicIterativeMethod, self).__init__(
-            classifier,
+            estimator=estimator,
             norm=np.inf,
             eps=eps,
             eps_step=eps_step,

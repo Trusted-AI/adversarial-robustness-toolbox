@@ -20,7 +20,7 @@ import art
 # -- Project information -----------------------------------------------------
 
 project = 'Adversarial Robustness Toolbox'
-copyright = '2018, IBM Corporation'
+copyright = '2018, The Adversarial Robustness Toolbox (ART) Authors'
 author = 'Maria-Irina Nicolae'
 
 # The short X.Y version

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -26,16 +26,14 @@ from typing import List, Optional, Tuple, Union
 import numpy as np
 from scipy.stats import entropy
 
-from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.estimators.classification.classifier import ClassifierGradients
 from art.utils import clip_and_round
 from art.wrappers.wrapper import ClassifierWrapper
 
 logger = logging.getLogger(__name__)
 
 
-class QueryEfficientBBGradientEstimation(
-    ClassifierWrapper, ClassifierGradients, Classifier
-):
+class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients):
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
@@ -47,7 +45,7 @@ class QueryEfficientBBGradientEstimation(
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: ClassifierGradients,
         num_basis: int,
         sigma: float,
         round_samples: float = 0.0,
@@ -67,12 +65,13 @@ class QueryEfficientBBGradientEstimation(
         self.sigma = sigma
         self.round_samples = round_samples
 
-    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction of the classifier for input `x`.
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         return self._wrap_predict(x, **kwargs)
@@ -175,14 +174,29 @@ class QueryEfficientBBGradientEstimation(
             **{"batch_size": batch_size}
         )
 
-    def nb_classes(self) -> int:
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int
+    ) -> np.ndarray:
         """
-        Return the number of output classes.
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
 
-        :return: Number of classes in the data.
+        :param x: Input for computing the activations.
+        :param layer: Layer for computing the activations.
+        :param batch_size: Size of batches.
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        # pylint: disable=W0212
-        return self.classifier.nb_classes()
+        raise NotImplementedError
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
+        :type train: `bool`
+        """
+        raise NotImplementedError
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

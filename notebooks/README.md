@@ -45,7 +45,7 @@ demonstrates ART with TensorFlow v2 using tensorflow.keras without eager executi
 
 ## Attacks
 
-[attack_adversarial_patch.ipynb](attack_adversarial_patch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/attack_adversarial_patch.ipynb)]
+[attack_adversarial_patch.ipynb](adversarial_patch/attack_adversarial_patch.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/attack_adversarial_patch.ipynb)]
 shows how to use ART to create real-world adversarial patches that fool real-world object detection and classification 
 models.
 

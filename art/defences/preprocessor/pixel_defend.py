@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -36,7 +36,7 @@ from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
-    from art.classifiers.classifier import ClassifierNeuralNetworkType
+    from art.estimators.classification.classifier import ClassifierNeuralNetwork
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class PixelDefend(Preprocessor):
         self,
         clip_values: CLIP_VALUES_TYPE = (0.0, 1.0),
         eps: int = 16,
-        pixel_cnn: Optional["ClassifierNeuralNetworkType"] = None,
+        pixel_cnn: Optional["ClassifierNeuralNetwork"] = None,
         batch_size: int = 128,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -103,9 +103,9 @@ class PixelDefend(Preprocessor):
         # Convert into `uint8`
         original_shape = x.shape
         if self.pixel_cnn is not None:
-            probs = self.pixel_cnn.get_activations(x, layer=-1, batch_size=self.batch_size).reshape(
-                (x.shape[0], -1, 256)
-            )
+            probs = self.pixel_cnn.get_activations(
+                x, layer=-1, batch_size=self.batch_size
+            ).reshape((x.shape[0], -1, 256))
         else:
             raise ValueError("No model received for `pixel_cnn`.")
 
@@ -156,12 +156,14 @@ class PixelDefend(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        from art.classifiers import Classifier
+        from art.estimators.classification.classifier import ClassifierMixin
 
         if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
-        if self.pixel_cnn is not None and not isinstance(self.pixel_cnn, Classifier):
+        if hasattr(self, "pixel_cnn") and not isinstance(
+            self.pixel_cnn, ClassifierMixin
+        ):
             raise TypeError("PixelCNN model must be of type Classifier.")
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -20,6 +20,7 @@ Module providing convenience functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from functools import wraps
 import logging
 import math
 import os
@@ -27,20 +28,118 @@ import shutil
 import sys
 import tarfile
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
+import warnings
 import zipfile
 
 import numpy as np
 from scipy.special import gammainc
 import six
-from sklearn.metrics import accuracy_score, f1_score
 
 from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE, DATASET_TYPE
 
 if TYPE_CHECKING:
     from art.config import CLIP_VALUES_TYPE
-    from art.classifiers.classifier import Classifier
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
+
+
+# ------------------------------------------------------------------------------------------------- DEPRECATION
+
+
+def deprecated(end_version, *, reason="", replaced_by=""):
+    """
+    Deprecate a function or method and raise a `DeprecationWarning`.
+
+    The `@deprecated` decorator is used to deprecate functions and methods. Several cases are supported. For example
+    one can use it to depcreate a function that has become redundant or renaming a function. The following code examples
+    provide different use cases of how to use decorator.
+
+    .. code-block:: python
+
+    @deprecated("0.1.5", replaced_by="sum")
+    def simple_addition(a, b):
+        return a + b
+
+    :param end_version: Release version of removal.
+    :type end_version: `str`
+    :param reason: Additional deprecation reason.
+    :type reason: `str`
+    :param replaced_by: Function that replaces deprecated function.
+    :type replaced_by: `str`
+    """
+
+    def decorator(function):
+        reason_msg = "\n" + reason if reason else reason
+        replaced_msg = (
+            f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
+        )
+        deprecated_msg = f"Function '{function.__name__}' is deprecated and will be removed in future release {end_version}."
+
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            warnings.simplefilter("always", category=DeprecationWarning)
+            warnings.warn(
+                deprecated_msg + replaced_msg + reason_msg,
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            warnings.simplefilter("default", category=DeprecationWarning)
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def deprecated_keyword_arg(identifier, end_version, *, reason="", replaced_by=""):
+    """
+    Deprecate a keyword argument and raise a `DeprecationWarning`.
+
+    The `@deprecated_keyword_arg` decorator is used to deprecate keyword arguments. Several cases are supported. For
+    example one can use it to depcreate the default value of a keyword or rename a keyword identifier. The following
+    code examples provide different use cases of how to use the decorator.
+
+    .. code-block:: python
+
+    @deprecated_keyword_arg("verbose", "1.1.0", replaced_by="verbose=False")
+    def simple_addition(a, b, verbose=True):
+        return a + b
+
+    :param identifier: Keyword identifier.
+    :type identifier: `str`
+    :param end_version: Release version of removal.
+    :type end_version: `str`
+    :param reason: Additional deprecation reason.
+    :type reason: `str`
+    :param replaced_by: Function that replaces deprecated function.
+    :type replaced_by: `str`
+    """
+
+    def decorator(function):
+        reason_msg = "\n" + reason if reason else reason
+        replaced_msg = (
+            f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
+        )
+        deprecated_msg = (
+            f"Keyword argument '{identifier}' in '{function.__name__}' is deprecated and will be removed in"
+            f" future release {end_version}."
+        )
+
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            warnings.simplefilter("always", category=DeprecationWarning)
+            warnings.warn(
+                deprecated_msg + replaced_msg + reason_msg,
+                category=DeprecationWarning,
+                stacklevel=2,
+            )
+            warnings.simplefilter("default", category=DeprecationWarning)
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
@@ -241,7 +340,7 @@ def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
     :return: Least-likely class predicted by `classifier` for sample `x` in one-hot encoding.
     """
     return to_categorical(
-        np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes()
+        np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes
     )
 
 
@@ -256,7 +355,7 @@ def second_most_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndar
     """
     return to_categorical(
         np.argpartition(classifier.predict(x), -2, axis=1)[:, -2],
-        nb_classes=classifier.nb_classes(),
+        nb_classes=classifier.nb_classes,
     )
 
 
@@ -286,7 +385,7 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     return y
 
 
-def compute_success(
+def compute_success_array(
     classifier: "Classifier",
     x_clean: np.ndarray,
     labels: np.ndarray,
@@ -308,12 +407,39 @@ def compute_success(
     """
     adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
     if targeted:
-        rate = np.sum(adv_preds == np.argmax(labels, axis=1)) / x_adv.shape[0]
+        attack_success = adv_preds == np.argmax(labels, axis=1)
     else:
         preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
-        rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+        attack_success = adv_preds != preds
 
-    return rate
+    return attack_success
+
+
+def compute_success(
+    classifier: "Classifier",
+    x_clean: np.ndarray,
+    labels: np.ndarray,
+    x_adv: np.ndarray,
+    targeted: bool = False,
+    batch_size: int = 1,
+) -> float:
+    """
+    Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
+
+    :param classifier: Classifier used for prediction.
+    :param x_clean: Original clean samples.
+    :param labels: Correct labels of `x_clean` if the attack is untargeted, or target labels of the attack otherwise.
+    :param x_adv: Adversarial samples to be evaluated.
+    :param targeted: `True` if the attack is targeted. In that case, `labels` are treated as target classes instead of
+           correct labels of the clean samples.
+    :param batch_size: Batch size.
+    :return: Percentage of successful adversarial samples.
+    :rtype: `float`
+    """
+    attack_success = compute_success_array(
+        classifier, x_clean, labels, x_adv, targeted, batch_size
+    )
+    return np.sum(attack_success) / x_adv.shape[0]
 
 
 def compute_accuracy(
@@ -452,6 +578,7 @@ def load_stl() -> DATASET_TYPE:
     min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
+
     path = get_file(
         "stl10_binary",
         path=ART_DATA_PATH,
@@ -627,6 +754,7 @@ def get_file(
         path_ = os.path.expanduser(path)
     if not os.access(path_, os.W_OK):
         path_ = os.path.join("/tmp", ".art")
+
     if not os.path.exists(path_):
         os.makedirs(path_)
 
@@ -644,10 +772,19 @@ def get_file(
         error_msg = "URL fetch failure on {}: {} -- {}"
         try:
             try:
-                six.moves.urllib.request.urlretrieve(url, full_path)
-            except six.moves.urllib.error.HTTPError as exception:
+                from six.moves.urllib.error import HTTPError, URLError
+                from six.moves.urllib.request import urlretrieve
+
+                # The following two lines should prevent occasionally occurring
+                # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
+                import ssl
+
+                ssl._create_default_https_context = ssl._create_unverified_context
+
+                urlretrieve(url, full_path)
+            except HTTPError as exception:
                 raise Exception(error_msg.format(url, exception.code, exception.msg))  # type: ignore
-            except six.moves.urllib.error.URLError as exception:
+            except URLError as exception:
                 raise Exception(
                     error_msg.format(url, exception.errno, exception.reason)
                 )
@@ -753,7 +890,7 @@ def performance_diff(
     test_data: np.ndarray,
     test_labels: np.ndarray,
     perf_function: Union[str, Callable] = "accuracy",
-    **kwargs
+    **kwargs,
 ) -> float:
     """
     Calculates the difference in performance between two models on the test_data with a performance function.
@@ -770,6 +907,9 @@ def performance_diff(
     :return: The difference in performance performance(model1) - performance(model2).
     :raises `ValueError`: If an unsupported performance function is requested.
     """
+    from sklearn.metrics import accuracy_score
+    from sklearn.metrics import f1_score
+
     model1_labels = model1.predict(test_data)
     model2_labels = model2.predict(test_data)
 

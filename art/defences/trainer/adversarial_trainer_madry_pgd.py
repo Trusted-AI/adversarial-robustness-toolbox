@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -34,7 +34,7 @@ from art.defences.trainer.trainer import Trainer
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 
 if TYPE_CHECKING:
-    from art.classifiers.classifier import Classifier, ClassifierGradientsType
+    from art.estimators.classification.classifier import Classifier, ClassifierGradients
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +53,7 @@ class AdversarialTrainerMadryPGD(Trainer):
 
     def __init__(
         self,
-        classifier: "ClassifierGradientsType",
+        classifier: "ClassifierGradients",
         nb_epochs: int = 391,
         batch_size: int = 128,
         eps: float = 8.0,

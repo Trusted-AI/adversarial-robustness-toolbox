@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -31,11 +31,12 @@ from typing import Any, Dict, Optional, Union
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.classifiers.classifier import (
-    ClassifierNeuralNetworkType,
-    ClassifierGradientsType,
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierGradients,
+    ClassifierNeuralNetwork,
 )
-from art.exceptions import ClassifierError
 from art.utils import projection
 
 logger = logging.getLogger(__name__)
@@ -69,10 +70,11 @@ class UniversalPerturbation(EvasionAttack):
         "eps",
         "norm",
     ]
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
 
     def __init__(
         self,
-        classifier: Union[ClassifierGradientsType, ClassifierNeuralNetworkType],
+        classifier: Union[ClassifierGradients, ClassifierNeuralNetwork],
         attacker: str = "deepfool",
         attacker_params: Optional[Dict[str, Any]] = None,
         delta: float = 0.2,
@@ -91,7 +93,7 @@ class UniversalPerturbation(EvasionAttack):
         :param eps: Attack step size (input variation).
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2.
         """
-        super(UniversalPerturbation, self).__init__(classifier)
+        super(UniversalPerturbation, self).__init__(estimator=classifier)
         self.attacker = attacker
         self.attacker_params = attacker_params
         self.delta = delta
@@ -121,7 +123,7 @@ class UniversalPerturbation(EvasionAttack):
 
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        pred_y = self.classifier.predict(x, batch_size=1)
+        pred_y = self.estimator.predict(x, batch_size=1)
         pred_y_max = np.argmax(pred_y, axis=1)
 
         # Start to generate the adversarial examples
@@ -134,13 +136,13 @@ class UniversalPerturbation(EvasionAttack):
             for j, ex in enumerate(x[rnd_idx]):
                 x_i = ex[None, ...]
 
-                current_label = np.argmax(self.classifier.predict(x_i + noise)[0])
+                current_label = np.argmax(self.estimator.predict(x_i + noise)[0])
                 original_label = np.argmax(pred_y[rnd_idx][j])
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(x_i + noise)
-                    new_label = np.argmax(self.classifier.predict(adv_xi)[0])
+                    new_label = np.argmax(self.estimator.predict(adv_xi)[0])
 
                     # If the class has changed, update v
                     if current_label != new_label:
@@ -153,14 +155,14 @@ class UniversalPerturbation(EvasionAttack):
             # Apply attack and clip
             x_adv = x + noise
             if (
-                hasattr(self.classifier, "clip_values")
-                and self.classifier.clip_values is not None
+                hasattr(self.estimator, "clip_values")
+                and self.estimator.clip_values is not None
             ):
-                clip_min, clip_max = self.classifier.clip_values
+                clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
             # Compute the error rate
-            y_adv = np.argmax(self.classifier.predict(x_adv, batch_size=1), axis=1)
+            y_adv = np.argmax(self.estimator.predict(x_adv, batch_size=1), axis=1)
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
 
         self.fooling_rate = fooling_rate
@@ -173,14 +175,6 @@ class UniversalPerturbation(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(
-            self.classifier, ClassifierNeuralNetworkType
-        ) and not isinstance(self.classifier, ClassifierGradientsType):
-            raise ClassifierError(
-                self.__class__,
-                [ClassifierNeuralNetworkType, ClassifierGradientsType],
-                self.classifier,
-            )
         if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
             raise ValueError("The desired accuracy must be in the range [0, 1].")
 
@@ -203,7 +197,7 @@ class UniversalPerturbation(EvasionAttack):
         """
         try:
             attack_class = self._get_class(self.attacks_dict[a_name])
-            a_instance = attack_class(self.classifier)  # type: ignore
+            a_instance = attack_class(self.estimator)  # type: ignore
 
             if params:
                 a_instance.set_params(**params)

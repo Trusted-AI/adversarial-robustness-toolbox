@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -26,7 +26,7 @@ from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.classifiers.classifier import ClassifierDecisionTreeType
+    from art.estimators.classification.classifier import ClassifierDecisionTree
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +166,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
     | Paper link: https://arxiv.org/abs/1906.03849
     """
 
-    def __init__(self, classifier: "ClassifierDecisionTreeType") -> None:
+    def __init__(self, classifier: "ClassifierDecisionTree") -> None:
         """
         Create robustness verification for a decision-tree-based classifier.
 
@@ -222,7 +222,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
                 is_robust = True
 
-                if self._classifier.nb_classes() <= 2:
+                if self._classifier.nb_classes <= 2:
                     best_score = self._get_best_score(
                         i_sample, eps, norm, target_label=None
                     )
@@ -230,7 +230,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                         self.y[i_sample] > 0.5 and best_score > 0.0
                     )
                 else:
-                    for i_class in range(self._classifier.nb_classes()):
+                    for i_class in range(self._classifier.nb_classes):
                         if i_class != self.y[i_sample]:
                             best_score = self._get_best_score(
                                 i_sample, eps, norm, target_label=i_class
@@ -311,7 +311,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
             # Start searching for cliques
             for accessible_leaf in accessible_leaves[start_tree]:
                 if (
-                    self._classifier.nb_classes() > 2
+                    self._classifier.nb_classes > 2
                     and target_label is not None
                     and target_label == accessible_leaf.class_label
                 ):
@@ -335,7 +335,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                         leaf_box = accessible_leaf.box.get_intersection(clique["box"])  # type: ignore
                         if leaf_box.intervals:
                             if (
-                                self._classifier.nb_classes() > 2
+                                self._classifier.nb_classes > 2
                                 and target_label is not None
                                 and target_label == accessible_leaf.class_label
                             ):
@@ -368,7 +368,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
                 if i == 0:
                     best_score = clique["value"]  # type: ignore
                 else:
-                    if label < 0.5 and self._classifier.nb_classes() <= 2:
+                    if label < 0.5 and self._classifier.nb_classes <= 2:
                         best_score = max(best_score, clique["value"])  # type: ignore
                     else:
                         best_score = min(best_score, clique["value"])  # type: ignore
@@ -394,7 +394,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         best_score: float = 0.0
 
         for i_level in range(self.max_level):
-            if self._classifier.nb_classes() > 2 and i_level > 0:
+            if self._classifier.nb_classes > 2 and i_level > 0:
                 target_label = None
             best_score, nodes = self._get_k_partite_clique(
                 nodes, label=self.y[i_sample], target_label=target_label
@@ -460,7 +460,7 @@ class RobustnessVerificationTreeModelsCliqueMethod:
 
         for tree in self._trees:
             if (
-                self._classifier.nb_classes() <= 2
+                self._classifier.nb_classes <= 2
                 or target_label is None
                 or tree.class_id in [self.y[i_sample], target_label]
             ):

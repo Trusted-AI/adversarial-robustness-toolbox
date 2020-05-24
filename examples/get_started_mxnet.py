@@ -8,8 +8,8 @@ import mxnet
 from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
 import numpy as np
 
-from art.attacks import FastGradientMethod
-from art.classifiers import MXClassifier
+from art.attacks.evasion import FastGradientMethod
+from art.estimators.classification import MXClassifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset
@@ -63,7 +63,7 @@ accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) /
 print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
-attack = FastGradientMethod(classifier=classifier, eps=0.2)
+attack = FastGradientMethod(estimator=classifier, eps=0.2)
 x_test_adv = attack.generate(x=x_test)
 
 # Step 7: Evaluate the ART classifier on adversarial test examples

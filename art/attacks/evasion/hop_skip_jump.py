@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -30,10 +30,12 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.classifiers import Classifier
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +58,7 @@ class HopSkipJump(EvasionAttack):
         "curr_iter",
         "batch_size",
     ]
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
@@ -78,7 +81,7 @@ class HopSkipJump(EvasionAttack):
         :param init_eval: Initial number of evaluations for estimating gradient.
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         """
-        super(HopSkipJump, self).__init__(classifier=classifier)
+        super(HopSkipJump, self).__init__(estimator=classifier)
         self.targeted = targeted
         self.norm = norm
         self.max_iter = max_iter
@@ -92,9 +95,9 @@ class HopSkipJump(EvasionAttack):
 
         # Set binary search threshold
         if norm == 2:
-            self.theta = 0.01 / np.sqrt(np.prod(self.classifier.input_shape))
+            self.theta = 0.01 / np.sqrt(np.prod(self.estimator.input_shape))
         else:
-            self.theta = 0.01 / np.prod(self.classifier.input_shape)
+            self.theta = 0.01 / np.prod(self.estimator.input_shape)
 
     def generate(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
@@ -111,7 +114,7 @@ class HopSkipJump(EvasionAttack):
         :type resume: `bool`
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Check whether users need a stateful attack
         resume = kwargs.get("resume")
@@ -123,24 +126,22 @@ class HopSkipJump(EvasionAttack):
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if (
-            hasattr(self.classifier, "clip_values")
-            and self.classifier.clip_values is not None
+            hasattr(self.estimator, "clip_values")
+            and self.estimator.clip_values is not None
         ):
-            clip_min, clip_max = self.classifier.clip_values
+            clip_min, clip_max = self.estimator.clip_values
         else:
             clip_min, clip_max = np.min(x), np.max(x)
 
         # Prediction from the original images
-        preds = np.argmax(
-            self.classifier.predict(x, batch_size=self.batch_size), axis=1
-        )
+        preds = np.argmax(self.estimator.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
         x_adv_init = kwargs.get("x_adv_init")
 
         if x_adv_init is not None:
             init_preds = np.argmax(
-                self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1
+                self.estimator.predict(x_adv_init, batch_size=self.batch_size), axis=1
             )
         else:
             init_preds = [None] * len(x)
@@ -183,13 +184,13 @@ class HopSkipJump(EvasionAttack):
                 )
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes())
+            y = to_categorical(y, self.estimator.nb_classes)
 
         logger.info(
             "Success rate of HopSkipJump attack: %.2f%%",
             100
             * compute_success(
-                self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size
+                self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size
             ),
         )
 
@@ -273,7 +274,7 @@ class HopSkipJump(EvasionAttack):
                     x.dtype
                 )
                 random_class = np.argmax(
-                    self.classifier.predict(
+                    self.estimator.predict(
                         np.array([random_img]), batch_size=self.batch_size
                     ),
                     axis=1,
@@ -310,7 +311,7 @@ class HopSkipJump(EvasionAttack):
                     x.dtype
                 )
                 random_class = np.argmax(
-                    self.classifier.predict(
+                    self.estimator.predict(
                         np.array([random_img]), batch_size=self.batch_size
                     ),
                     axis=1,
@@ -512,10 +513,10 @@ class HopSkipJump(EvasionAttack):
 
         if self.norm == 2:
             dist = np.linalg.norm(original_sample - current_sample)
-            delta = np.sqrt(np.prod(self.classifier.input_shape)) * self.theta * dist
+            delta = np.sqrt(np.prod(self.estimator.input_shape)) * self.theta * dist
         else:
             dist = np.max(abs(original_sample - current_sample))
-            delta = np.prod(self.classifier.input_shape) * self.theta * dist
+            delta = np.prod(self.estimator.input_shape) * self.theta * dist
 
         return delta
 
@@ -540,7 +541,7 @@ class HopSkipJump(EvasionAttack):
         :return: an updated perturbation.
         """
         # Generate random noise
-        rnd_noise_shape = [num_eval] + list(self.classifier.input_shape)
+        rnd_noise_shape = [num_eval] + list(self.estimator.input_shape)
         if self.norm == 2:
             rnd_noise = np.random.randn(*rnd_noise_shape).astype(ART_NUMPY_DTYPE)
         else:
@@ -565,7 +566,7 @@ class HopSkipJump(EvasionAttack):
             samples=eval_samples, target=target, clip_min=clip_min, clip_max=clip_max
         )
         f_val = (
-            2 * satisfied.reshape([num_eval] + [1] * len(self.classifier.input_shape))
+            2 * satisfied.reshape([num_eval] + [1] * len(self.estimator.input_shape))
             - 1.0
         )
         f_val = f_val.astype(ART_NUMPY_DTYPE)
@@ -600,7 +601,7 @@ class HopSkipJump(EvasionAttack):
         """
         samples = np.clip(samples, clip_min, clip_max)
         preds = np.argmax(
-            self.classifier.predict(samples, batch_size=self.batch_size), axis=1
+            self.estimator.predict(samples, batch_size=self.batch_size), axis=1
         )
 
         if self.targeted:

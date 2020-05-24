@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -41,6 +41,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
     """
 
     attack_params = PoisoningAttackBlackBox.attack_params + ["perturbation"]
+    _estimator_requirements = ()
 
     def __init__(self, perturbation: Union[Callable, List[Callable]]) -> None:
         """

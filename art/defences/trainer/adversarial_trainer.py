@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -42,7 +42,7 @@ from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
     from art.attacks.attack import EvasionAttack
-    from art.classifiers.classifier import Classifier
+    from art.estimators.classification.classifier import Classifier
     from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
@@ -134,7 +134,7 @@ class AdversarialTrainer(Trainer):
                         "Adversarial training with targeted attacks is currently not implemented"
                     )
 
-            if attack.classifier != self._classifier:
+            if attack.estimator != self._classifier:
                 if not logged:
                     logger.info("Precomputing transferred adversarial samples.")
                     logged = True
@@ -177,7 +177,7 @@ class AdversarialTrainer(Trainer):
                     np.random.shuffle(adv_ids)
 
                 # If source and target models are the same, craft fresh adversarial samples
-                if attack.classifier == self._classifier:
+                if attack.estimator == self._classifier:
                     x_batch[adv_ids] = attack.generate(
                         x_batch[adv_ids], y=y_batch[adv_ids]
                     )
@@ -236,7 +236,7 @@ class AdversarialTrainer(Trainer):
                         "Adversarial training with targeted attacks is currently not implemented"
                     )
 
-            if attack.classifier != self._classifier:
+            if attack.estimator != self._classifier:
                 if not logged:
                     logger.info("Precomputing transferred adversarial samples.")
                     logged = True
@@ -277,7 +277,7 @@ class AdversarialTrainer(Trainer):
                     np.random.shuffle(adv_ids)
 
                 # If source and target models are the same, craft fresh adversarial samples
-                if attack.classifier == self._classifier:
+                if attack.estimator == self._classifier:
                     x_batch[adv_ids] = attack.generate(
                         x_batch[adv_ids], y=y_batch[adv_ids]
                     )

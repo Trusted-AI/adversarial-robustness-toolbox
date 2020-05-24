@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,9 +22,9 @@ import unittest
 import keras.backend as k
 import numpy as np
 
-from art.attacks import ElasticNet
-from art.classifiers import KerasClassifier
-from art.classifiers.classifier import ClassifierGradients
+from art.attacks.evasion.elastic_net import ElasticNet
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import random_targets, to_categorical
 
 from tests.utils import TestBase, master_seed
@@ -69,7 +69,7 @@ class TestElasticNet(TestBase):
         ead = ElasticNet(
             classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0, initial_const=1
         )
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -91,7 +91,7 @@ class TestElasticNet(TestBase):
 
         # First attack
         ead = ElasticNet(classifier=tfc, targeted=True, max_iter=2)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
         expected_x_test_adv = np.asarray(
             [
@@ -137,7 +137,7 @@ class TestElasticNet(TestBase):
 
         # Second attack
         ead = ElasticNet(classifier=tfc, targeted=False, max_iter=2)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -196,7 +196,7 @@ class TestElasticNet(TestBase):
 
         # First attack without batching
         ead_wob = ElasticNet(classifier=tfc, targeted=True, max_iter=2, batch_size=1)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead_wob.generate(self.x_test_mnist, **params)
         expected_x_test_adv = np.asarray(
             [
@@ -242,7 +242,7 @@ class TestElasticNet(TestBase):
 
         # Second attack without batching
         ead_wob = ElasticNet(classifier=tfc, targeted=False, max_iter=2, batch_size=1)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = ead_wob.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -347,7 +347,7 @@ class TestElasticNet(TestBase):
 
         # First attack
         ead = ElasticNet(classifier=ptc, targeted=True, max_iter=2)
-        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         expected_x_test_adv = np.asarray(
             [
@@ -390,7 +390,7 @@ class TestElasticNet(TestBase):
 
         # Second attack
         ead = ElasticNet(classifier=ptc, targeted=False, max_iter=2)
-        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = ead.generate(x_test, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -403,7 +403,7 @@ class TestElasticNet(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ElasticNet, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(ElasticNet, [ClassGradientsMixin])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
@@ -737,7 +737,7 @@ class TestElasticNet(TestBase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
             LogisticRegression(solver="lbfgs", multi_class="auto"),

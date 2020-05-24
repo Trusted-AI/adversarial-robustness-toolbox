@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -31,7 +31,7 @@ from art.defences.transformer.transformer import Transformer
 from art.utils import is_probability
 
 if TYPE_CHECKING:
-    from art.classifiers.classifier import Classifier
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 

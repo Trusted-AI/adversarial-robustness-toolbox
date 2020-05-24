@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -29,13 +29,13 @@ import numpy as np
 from scipy.stats import binom_test, norm
 from statsmodels.stats.proportion import proportion_confint
 
-from art.classifiers.classifier import ClassifierGradientsType
 from art.wrappers.wrapper import ClassifierWrapper
+from art.estimators.classification.classifier import ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
 
-class RandomizedSmoothing(ClassifierWrapper, ClassifierGradientsType):
+class RandomizedSmoothing(ClassifierWrapper, ClassifierGradients):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
     in Cohen et al. (2019).
@@ -45,7 +45,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradientsType):
 
     def __init__(
         self,
-        classifier: ClassifierGradientsType,
+        classifier: ClassifierGradients,
         sample_size: int,
         scale: float = 0.1,
         alpha: float = 0.001,
@@ -62,6 +62,7 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradientsType):
         self.sample_size = sample_size
         self.scale = scale
         self.alpha = alpha
+        self._nb_classes = classifier.nb_classes
 
     # pylint: disable=W0221
     def predict(
@@ -228,14 +229,29 @@ class RandomizedSmoothing(ClassifierWrapper, ClassifierGradientsType):
         """
         raise NotImplementedError
 
-    def nb_classes(self) -> int:
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int
+    ) -> np.ndarray:
         """
-        Return the number of output classes.
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
 
-        :return: Number of classes in the data.
+        :param x: Input for computing the activations.
+        :param layer: Layer for computing the activations.
+        :param batch_size: Size of batches.
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        # pylint: disable=W0212
-        return self.classifier.nb_classes()
+        raise NotImplementedError
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
+        :type train: `bool`
+        """
+        raise NotImplementedError
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -29,9 +29,11 @@ import numpy as np
 import six
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradientsType
 from art.attacks.attack import EvasionAttack
-from art.exceptions import ClassifierError
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierGradients,
+)
 from art.utils import (
     compute_success,
     get_labels_np_array,
@@ -60,9 +62,11 @@ class ElasticNet(EvasionAttack):
         "decision_rule",
     ]
 
+    _estimator_requirements = (ClassGradientsMixin,)
+
     def __init__(
         self,
-        classifier: ClassifierGradientsType,
+        classifier: ClassifierGradients,
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 1e-2,
@@ -91,7 +95,7 @@ class ElasticNet(EvasionAttack):
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :param decision_rule: Decision rule. 'EN' means Elastic Net rule, 'L1' means L1 rule, 'L2' means L2 rule.
         """
-        super(ElasticNet, self).__init__(classifier)
+        super(ElasticNet, self).__init__(estimator=classifier)
         self.confidence = confidence
         self.targeted = targeted
         self.learning_rate = learning_rate
@@ -115,7 +119,7 @@ class ElasticNet(EvasionAttack):
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        predictions = self.classifier.predict(
+        predictions = self.estimator.predict(
             np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size
         )
 
@@ -138,7 +142,7 @@ class ElasticNet(EvasionAttack):
         :return: An array with the gradient of the loss function.
         """
         # Compute the current predictions
-        predictions = self.classifier.predict(
+        predictions = self.estimator.predict(
             np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size
         )
 
@@ -157,8 +161,8 @@ class ElasticNet(EvasionAttack):
                 axis=1,
             )
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
+        loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c_weight
@@ -200,7 +204,7 @@ class ElasticNet(EvasionAttack):
                   targets are the original class labels.
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Assert that, if attack is targeted, y is provided:
@@ -212,7 +216,7 @@ class ElasticNet(EvasionAttack):
         # No labels provided, use model prediction as correct class
         if y is None:
             y = get_labels_np_array(
-                self.classifier.predict(x, batch_size=self.batch_size)
+                self.estimator.predict(x, batch_size=self.batch_size)
             )
 
         # Compute adversarial examples with implicit batching
@@ -230,11 +234,11 @@ class ElasticNet(EvasionAttack):
 
         # Apply clip
         if (
-            hasattr(self.classifier, "clip_values")
-            and self.classifier.clip_values is not None
+            hasattr(self.estimator, "clip_values")
+            and self.estimator.clip_values is not None
         ):
             x_adv = np.clip(
-                x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1]
+                x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1]
             )
 
         # Compute success rate of the EAD attack
@@ -242,7 +246,7 @@ class ElasticNet(EvasionAttack):
             "Success rate of EAD attack: %.2f%%",
             100
             * compute_success(
-                self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size
+                self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size
             ),
         )
 
@@ -422,11 +426,6 @@ class ElasticNet(EvasionAttack):
         return result
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, ClassifierGradientsType):
-            raise ClassifierError(
-                self.__class__, [ClassifierGradientsType], self.classifier
-            )
-
         if (
             not isinstance(self.binary_search_steps, int)
             or self.binary_search_steps < 0

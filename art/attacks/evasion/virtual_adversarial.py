@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -27,14 +27,15 @@ from typing import Optional, Union
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import (
-    ClassifierNeuralNetworkType,
-    ClassifierGradientsType,
-)
 from art.attacks.attack import EvasionAttack
+from art.config import ART_NUMPY_DTYPE
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierGradients,
+    ClassifierNeuralNetwork,
+)
 from art.utils import compute_success
-from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +53,11 @@ class VirtualAdversarialMethod(EvasionAttack):
         "max_iter",
         "batch_size",
     ]
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
 
     def __init__(
         self,
-        classifier: Union[ClassifierGradientsType, ClassifierNeuralNetworkType],
+        classifier: Union[ClassifierGradients, ClassifierNeuralNetwork],
         max_iter: int = 10,
         finite_diff: float = 1e-6,
         eps: float = 0.1,
@@ -88,7 +90,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
-        preds = self.classifier.predict(x_adv, batch_size=self.batch_size)
+        preds = self.estimator.predict(x_adv, batch_size=self.batch_size)
         if (preds < 0.0).any() or (preds > 1.0).any():
             raise TypeError(
                 "This attack requires a classifier predicting probabilities in the range [0, 1] as output."
@@ -112,8 +114,8 @@ class VirtualAdversarialMethod(EvasionAttack):
             # Main loop of the algorithm
             for _ in range(self.max_iter):
                 var_d = self._normalize(var_d)
-                preds_new = self.classifier.predict(
-                    (batch + var_d).reshape((-1,) + self.classifier.input_shape)
+                preds_new = self.estimator.predict(
+                    (batch + var_d).reshape((-1,) + self.estimator.input_shape)
                 )
                 if (preds_new < 0.0).any() or (preds_new > 1.0).any():
                     raise TypeError(
@@ -133,8 +135,8 @@ class VirtualAdversarialMethod(EvasionAttack):
                 var_d_new = np.zeros(var_d.shape).astype(ART_NUMPY_DTYPE)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
-                    preds_new = self.classifier.predict(
-                        (batch + var_d).reshape((-1,) + self.classifier.input_shape)
+                    preds_new = self.estimator.predict(
+                        (batch + var_d).reshape((-1,) + self.estimator.input_shape)
                     )
                     if (preds_new < 0.0).any() or (preds_new > 1.0).any():
                         raise TypeError(
@@ -154,22 +156,22 @@ class VirtualAdversarialMethod(EvasionAttack):
 
             # Apply perturbation and clip
             if (
-                hasattr(self.classifier, "clip_values")
-                and self.classifier.clip_values is not None
+                hasattr(self.estimator, "clip_values")
+                and self.estimator.clip_values is not None
             ):
-                clip_min, clip_max = self.classifier.clip_values
+                clip_min, clip_max = self.estimator.clip_values
                 x_adv[batch_index_1:batch_index_2] = np.clip(
                     batch + self.eps * self._normalize(var_d), clip_min, clip_max
-                ).reshape((-1,) + self.classifier.input_shape)
+                ).reshape((-1,) + self.estimator.input_shape)
             else:
                 x_adv[batch_index_1:batch_index_2] = (
                     batch + self.eps * self._normalize(var_d)
-                ).reshape((-1,) + self.classifier.input_shape)
+                ).reshape((-1,) + self.estimator.input_shape)
 
         logger.info(
             "Success rate of virtual adversarial attack: %.2f%%",
             100
-            * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+            * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
         )
 
         return x_adv
@@ -208,15 +210,6 @@ class VirtualAdversarialMethod(EvasionAttack):
         return res
 
     def _check_params(self) -> None:
-        if not isinstance(
-            self.classifier, ClassifierNeuralNetworkType
-        ) and not isinstance(self.classifier, ClassifierGradientsType):
-            raise ClassifierError(
-                self.__class__,
-                [ClassifierGradientsType, ClassifierNeuralNetworkType],
-                self.classifier,
-            )
-
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 

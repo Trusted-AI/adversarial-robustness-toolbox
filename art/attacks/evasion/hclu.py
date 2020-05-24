@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -30,7 +30,7 @@ import numpy as np
 from scipy.optimize import minimize
 
 from art.attacks.attack import EvasionAttack
-from art.classifiers.GPy import GPyGaussianProcessClassifier
+from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
@@ -44,6 +44,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
     """
 
     attack_params = ["conf", "unc_increase", "min_val", "max_val"]
+    _estimator_requirements = (GPyGaussianProcessClassifier,)
 
     def __init__(
         self,
@@ -60,7 +61,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         :param min_val: minimal value any feature can take.
         :param max_val: maximal value any feature can take.
         """
-        super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
+        super(HighConfidenceLowUncertainty, self).__init__(estimator=classifier)
         self.conf = conf
         self.unc_increase = unc_increase
         self.min_val = min_val
@@ -102,14 +103,12 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             bounds.append((self.min_val, self.max_val))
         for i in range(np.shape(x)[0]):  # go though data amd craft
             # get properties for attack
-            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(
+            max_uncertainty = self.unc_increase * self.estimator.predict_uncertainty(
                 x_adv[i].reshape(1, -1)
             )
-            class_zero = (
-                not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
-            )
+            class_zero = not self.estimator.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
             init_args = {
-                "classifier": self.classifier,
+                "classifier": self.estimator,
                 "class_zero": class_zero,
                 "max_uncertainty": max_uncertainty,
                 "conf": self.conf,
@@ -127,12 +126,12 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             )["x"]
         logger.info(
             "Success rate of HCLU attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv),
+            100 * compute_success(self.estimator, x, y, x_adv),
         )
         return x_adv
 
     def _check_params(self) -> None:
-        if not isinstance(self.classifier, GPyGaussianProcessClassifier):
+        if not isinstance(self.estimator, GPyGaussianProcessClassifier):
             raise TypeError("Model must be a GPy Gaussian Process classifier.")
         if self.conf <= 0.5 or self.conf > 1.0:
             raise ValueError("Confidence value has to be a value between 0.5 and 1.0.")

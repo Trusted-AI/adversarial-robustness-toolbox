@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -23,8 +23,8 @@ import unittest
 
 import numpy as np
 
-from art.attacks import FastGradientMethod
-from art.classifiers import KerasClassifier
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.estimators.classification.keras import KerasClassifier
 from art.utils import load_dataset, random_targets, compute_accuracy
 from art.wrappers.randomized_smoothing import RandomizedSmoothing
 
@@ -66,13 +66,13 @@ class TestRandomizedSmoothing(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # First FGSM attack:
-        fgsm = FastGradientMethod(classifier=krc, targeted=True)
-        params = {"y": random_targets(y_test, krc.nb_classes())}
+        fgsm = FastGradientMethod(estimator=krc, targeted=True)
+        params = {"y": random_targets(y_test, krc.nb_classes)}
         x_test_adv = fgsm.generate(x_test, **params)
 
         # Initialize RS object and attack with FGSM
         rs = RandomizedSmoothing(classifier=krc, sample_size=100, scale=0.01, alpha=0.001)
-        fgsm_with_rs = FastGradientMethod(classifier=rs, targeted=True)
+        fgsm_with_rs = FastGradientMethod(estimator=rs, targeted=True)
         x_test_adv_with_rs = fgsm_with_rs.generate(x_test, **params)
 
         # Compare results

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -23,9 +23,10 @@ import keras
 import keras.backend as k
 import numpy as np
 
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
-from art.attacks import CarliniL2Method, CarliniLInfMethod
-from art.classifiers import KerasClassifier
+from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import random_targets, to_categorical
 
 from tests.utils import TestBase, master_seed
@@ -70,7 +71,7 @@ class TestCarlini(TestBase):
         cl2m = CarliniL2Method(
             classifier=tfc, targeted=True, max_iter=0, binary_search_steps=0, learning_rate=0, initial_const=1
         )
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = cl2m.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -95,7 +96,7 @@ class TestCarlini(TestBase):
 
         # First attack
         cl2m = CarliniL2Method(classifier=tfc, targeted=True, max_iter=10)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = cl2m.generate(self.x_test_mnist, **params)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -183,7 +184,7 @@ class TestCarlini(TestBase):
 
         # First attack
         cl2m = CarliniL2Method(classifier=ptc, targeted=True, max_iter=10)
-        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = cl2m.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -207,7 +208,7 @@ class TestCarlini(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(CarliniL2Method, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(CarliniL2Method, [BaseEstimator, ClassGradientsMixin])
 
     def test_keras_iris_clipped_L2(self):
         classifier = get_tabular_classifier_kr()
@@ -281,7 +282,7 @@ class TestCarlini(TestBase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
             LogisticRegression(solver="lbfgs", multi_class="auto"),
@@ -343,7 +344,7 @@ class TestCarlini(TestBase):
 
         # Failure attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=0, learning_rate=0, eps=0.5)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = clinfm.generate(self.x_test_mnist, **params)
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
         self.assertGreaterEqual(np.amin(x_test_adv), 0.0)
@@ -363,7 +364,7 @@ class TestCarlini(TestBase):
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=tfc, targeted=True, max_iter=10, eps=0.5)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_adv = clinfm.generate(self.x_test_mnist, **params)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -406,7 +407,7 @@ class TestCarlini(TestBase):
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=krc, targeted=True, max_iter=10, eps=0.5)
-        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
         x_test_adv = clinfm.generate(self.x_test_mnist, **params)
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.000001)
@@ -445,7 +446,7 @@ class TestCarlini(TestBase):
 
         # First attack
         clinfm = CarliniLInfMethod(classifier=ptc, targeted=True, max_iter=10, eps=0.5)
-        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, ptc.nb_classes)}
         x_test_adv = clinfm.generate(x_test, **params)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0 + 1e-6)
@@ -465,7 +466,7 @@ class TestCarlini(TestBase):
         self.assertTrue((target != y_pred_adv).any())
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(CarliniLInfMethod, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(CarliniLInfMethod, [BaseEstimator, ClassGradientsMixin])
 
     def test_keras_iris_clipped_LInf(self):
         classifier = get_tabular_classifier_kr()
@@ -539,7 +540,7 @@ class TestCarlini(TestBase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
             LogisticRegression(solver="lbfgs", multi_class="auto"),

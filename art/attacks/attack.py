@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -26,8 +26,10 @@ from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
+from art.exceptions import EstimatorError
+
 if TYPE_CHECKING:
-    from art.classifiers.classifier import Classifier
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -91,11 +93,22 @@ class Attack(abc.ABC, metaclass=input_filter):
 
     attack_params: List[str] = list()
 
-    def __init__(self, classifier) -> None:
+    def __init__(self, estimator):
         """
-        :param classifier: A trained classifier.
+        :param estimator: An estimator.
         """
-        self.classifier = classifier
+        if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
+            raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
+
+        self._estimator = estimator
+
+    @property
+    def estimator(self):
+        return self._estimator
+
+    @property
+    def estimator_requirements(self):
+        return self._estimator_requirements
 
     def set_params(self, **kwargs) -> None:
         """
@@ -133,7 +146,35 @@ class EvasionAttack(Attack):
         raise NotImplementedError
 
 
-class PoisoningAttackBlackBox(Attack):
+class PoisoningAttack(Attack):
+    """
+    Abstract base class for poisoning attack classes
+    """
+
+    def __init__(self, classifier) -> None:
+        """
+        :param classifier: A trained classifier (or none if no classifier is needed)
+        :type classifier: `art.estimators.classification.Classifier` or `None`
+        """
+        super().__init__(classifier)
+
+    @abc.abstractmethod
+    def poison(self, x, y=None, **kwargs):
+        """
+        Generate poisoning examples and return them as an array. This method should be overridden by all concrete
+        poisoning attack implementations.
+
+        :param x: An array with the original inputs to be attacked.
+        :type x: `np.ndarray`
+        :param y:  Target labels for `x`. Untargeted attacks set this value to None.
+        :type y: `np.ndarray`
+        :return: An tuple holding the (poisoning examples, poisoning labels).
+        :rtype: `(np.ndarray, np.ndarray)`
+        """
+        raise NotImplementedError
+
+
+class PoisoningAttackBlackBox(PoisoningAttack):
     """
     Abstract base class for poisoning attack classes that have no access to the model (classifier object).
     """
@@ -159,7 +200,7 @@ class PoisoningAttackBlackBox(Attack):
         raise NotImplementedError
 
 
-class PoisoningAttackWhiteBox(Attack):
+class PoisoningAttackWhiteBox(PoisoningAttack):
     """
     Abstract base class for poisoning attack classes that have white-box access to the model (classifier object).
     """

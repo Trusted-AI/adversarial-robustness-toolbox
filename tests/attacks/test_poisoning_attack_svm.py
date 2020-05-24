@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -23,11 +23,12 @@ import unittest
 import numpy as np
 from sklearn.svm import LinearSVC, NuSVC, SVC
 
-from art.attacks import PoisoningAttackSVM
-from art.classifiers import SklearnClassifier
+from art.attacks.poisoning import PoisoningAttackSVM
+from art.estimators.classification.scikitlearn import SklearnClassifier, ScikitlearnSVC
 from art.utils import load_iris
 
 from tests.utils import master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ class TestSVMAttack(unittest.TestCase):
         return dup
 
     @classmethod
-    def setUpIRIS(self):
+    def setUpIRIS(cls):
         (x_train, y_train), (x_test, y_test), min_, max_ = load_iris()
         # Naturally IRIS has labels 0, 1, and 2. For binary classification use only classes 1 and 2.
         no_zero = np.where(np.argmax(y_train, axis=1) != 0)
@@ -88,13 +89,13 @@ class TestSVMAttack(unittest.TestCase):
 
         x_train = x_train[: int(0.9 * n_sample)]
         y_train = y_train[: int(0.9 * n_sample)]
-        train_dups = self.find_duplicates(x_train)
+        train_dups = cls.find_duplicates(x_train)
         x_train = x_train[np.logical_not(train_dups)]
         y_train = y_train[np.logical_not(train_dups)]
-        test_dups = self.find_duplicates(x_test)
+        test_dups = cls.find_duplicates(x_test)
         x_test = x_test[np.logical_not(test_dups)]
         y_test = y_test[np.logical_not(test_dups)]
-        self.iris = (x_train, y_train), (x_test, y_test), min_, max_
+        cls.iris = (x_train, y_train), (x_test, y_test), min_, max_
 
     def setUp(self):
         super().setUp()
@@ -144,7 +145,7 @@ class TestSVMAttack(unittest.TestCase):
 
     def test_SVC_kernels(self):
         """
-        First test with the TFClassifier.
+        First test with the TensorFlowClassifier.
         :return:
         """
         # Get MNIST
@@ -174,6 +175,9 @@ class TestSVMAttack(unittest.TestCase):
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(PoisoningAttackSVM, [ScikitlearnSVC])
 
 
 if __name__ == "__main__":

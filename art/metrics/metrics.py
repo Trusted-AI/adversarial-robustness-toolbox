@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -31,12 +31,13 @@ from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks import FastGradientMethod, HopSkipJump
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
-    from art.classifiers.classifier import Classifier, ClassifierGradientsType
+    from art.estimators.classification.classifier import Classifier, ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
@@ -63,10 +64,21 @@ def get_crafter(
     """
     Create an attack instance to craft adversarial samples.
 
+<<<<<<< HEAD
     :param classifier: A trained model.
     :param attack: adversarial attack name.
     :param params: Parameters specific to the adversarial attack.
     :return: An attack instance.
+=======
+    :param classifier: A trained model
+    :type classifier: :class:`art.estimators.classification.Classifier`
+    :param attack: adversarial attack name
+    :type attack: `str`
+    :param params: Parameters specific to the adversarial attack
+    :type params: `dict`
+    :return: A crafter
+    :rtype: `Attack`
+>>>>>>> dev_1.3.0
     """
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
@@ -92,8 +104,15 @@ def empirical_robustness(
 
     | Paper link: https://arxiv.org/abs/1511.04599
 
+<<<<<<< HEAD
     :param classifier: A trained model.
     :param x: Data sample of shape that can be fed into `classifier`.
+=======
+    :param classifier: A trained model
+    :type classifier: :class:`art.estimators.classification.Classifier`
+    :param x: Data sample of shape that can be fed into `classifier`
+    :type x: `np.ndarray`
+>>>>>>> dev_1.3.0
     :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
                         (Fast Gradient Sign Method, Hop Skip Jump).
     :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
@@ -163,7 +182,7 @@ def empirical_robustness(
 
 
 def loss_sensitivity(
-    classifier: "ClassifierGradientsType", x: np.ndarray, y: np.ndarray
+    classifier: "ClassifierGradients", x: np.ndarray, y: np.ndarray
 ) -> np.ndarray:
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
@@ -182,7 +201,7 @@ def loss_sensitivity(
 
 
 def clever(
-    classifier: "ClassifierGradientsType",
+    classifier: "ClassifierGradients",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -220,7 +239,7 @@ def clever(
             target_classes = np.argsort(y_pred)[0][:-1]
         else:
             target_classes = [
-                i for i in range(classifier.nb_classes()) if i != pred_class
+                i for i in range(classifier.nb_classes) if i != pred_class
             ]
     elif isinstance(target, (int, np.integer)):
         target_classes = [target]
@@ -240,7 +259,7 @@ def clever(
 
 
 def clever_u(
-    classifier: "ClassifierGradientsType",
+    classifier: "ClassifierGradients",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -267,7 +286,7 @@ def clever_u(
     # Get a list of untargeted classes
     y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
-    untarget_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
+    untarget_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
 
     # Compute CLEVER score for each untargeted class
     score_list = []
@@ -281,7 +300,7 @@ def clever_u(
 
 
 def clever_t(
-    classifier: "ClassifierGradientsType",
+    classifier: "ClassifierGradients",
     x: np.ndarray,
     target_class: int,
     nb_batches: int,
@@ -376,3 +395,46 @@ def clever_t(
     score = np.min([-value[0] / loc, radius])
 
     return score
+
+
+def wasserstein_distance(
+    u_values: np.ndarray,
+    v_values: np.ndarray,
+    u_weights: Optional[np.ndarray] = None,
+    v_weights: Optional[np.ndarray] = None,
+) -> np.ndarray:
+    """
+    Compute the first Wasserstein distance between two 1D distributions.
+
+    :param u_values: Values of first distribution with shape (nb_samples, feature_dim_1, ..., feature_dim_n).
+    :param v_values: Values of second distribution with shape (nb_samples, feature_dim_1, ..., feature_dim_n).
+    :param u_weights: Weight for each value. If None, equal weights will be used.
+    :param v_weights: Weight for each value. If None, equal weights will be used.
+    :return: The Wasserstein distance between the two distributions.
+    """
+    from scipy.stats import wasserstein_distance
+
+    assert u_values.shape == v_values.shape
+    if u_weights is not None:
+        assert v_weights is not None
+    if u_weights is None:
+        assert v_weights is None
+    if u_weights is not None and v_weights is not None:
+        assert u_weights.shape == v_weights.shape
+    if u_weights is not None:
+        assert u_values.shape[0] == u_weights.shape[0]
+
+    u_values = u_values.flatten().reshape(u_values.shape[0], -1)
+    v_values = v_values.flatten().reshape(v_values.shape[0], -1)
+
+    wd = np.zeros(u_values.shape[0])
+
+    for i in range(u_values.shape[0]):
+        if u_weights is None and v_weights is None:
+            wd[i] = wasserstein_distance(u_values[i], v_values[i])
+        elif u_weights is not None and v_weights is not None:
+            wd[i] = wasserstein_distance(
+                u_values[i], v_values[i], u_weights[i], v_weights[i]
+            )
+
+    return wd

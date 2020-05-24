@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,9 +21,10 @@ import logging
 import unittest
 import numpy as np
 
-from art.attacks import UniversalPerturbation
-from art.classifiers import KerasClassifier
-from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.attacks.evasion.universal_perturbation import UniversalPerturbation
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassGradientsMixin
 
 from tests.utils import TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
@@ -129,9 +130,6 @@ class TestUniversalPerturbation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(UniversalPerturbation, [ClassifierNeuralNetwork, ClassifierGradients])
-
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
@@ -197,6 +195,11 @@ class TestUniversalPerturbation(TestBase):
         self.assertFalse((np.argmax(self.y_test_iris, axis=1) == preds_adv).all())
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(
+            UniversalPerturbation, [BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin]
+        )
 
 
 if __name__ == "__main__":

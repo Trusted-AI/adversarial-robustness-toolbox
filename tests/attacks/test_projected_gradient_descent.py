@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,9 +21,9 @@ import logging
 import unittest
 import numpy as np
 
-from art.attacks import ProjectedGradientDescent
-from art.classifiers import KerasClassifier
-from art.classifiers.classifier import ClassifierGradients
+from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import get_labels_np_array, random_targets
 
 from tests.utils import TestBase
@@ -134,8 +134,14 @@ class TestPGD(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [ClassifierGradients])
+        # Test the masking:
+        attack = ProjectedGradientDescent(classifier, num_random_init=1)
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test.shape))
+        mask = mask.reshape(x_test.shape)
+
+        x_test_adv = attack.generate(x_test, mask=mask)
+        mask_diff = (1 - mask) * (x_test_adv - x_test)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
@@ -241,7 +247,7 @@ class TestPGD(TestBase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import SklearnClassifier
+        from art.estimators.classification.scikitlearn import SklearnClassifier
 
         scikitlearn_test_cases = [
             LogisticRegression(solver="lbfgs", multi_class="auto"),
@@ -287,6 +293,9 @@ class TestPGD(TestBase):
 
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
 
 if __name__ == "__main__":

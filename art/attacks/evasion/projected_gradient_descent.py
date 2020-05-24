@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -33,8 +33,11 @@ from scipy.stats import truncnorm
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradientsType
-from art.exceptions import ClassifierError
+from art.estimators.classification.classifier import (
+    ClassifierMixin,
+    ClassifierGradients,
+)
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import (
     compute_success,
     get_labels_np_array,
@@ -55,10 +58,11 @@ class ProjectedGradientDescent(FastGradientMethod):
     """
 
     attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps"]
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
         self,
-        classifier: ClassifierGradientsType,
+        estimator: ClassifierGradients,
         norm: int = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
@@ -71,7 +75,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained classifier.
+        :param estimator: A trained classifier.
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
@@ -86,7 +90,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         super(ProjectedGradientDescent, self).__init__(
-            classifier,
+            estimator=estimator,
             norm=norm,
             eps=eps,
             eps_step=eps_step,
@@ -119,35 +123,113 @@ class ProjectedGradientDescent(FastGradientMethod):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
-
-        if y is None:
-            # Throw error if attack is targeted, but no targets are provided
-            if self.targeted:
-                raise ValueError(
-                    "Target labels `y` need to be provided for a targeted attack."
-                )
-
-            # Use model predictions as correct outputs
-            targets = get_labels_np_array(
-                self.classifier.predict(x, batch_size=self.batch_size)
-            )
-        else:
-            targets = y
-
-        adv_x_best: Optional[np.ndarray] = None
-        rate_best: Optional[float] = None
-
-        self.eps: float
-        self.eps_step: float
         if self.random_eps:
             ratio = self.eps_step / self.eps
             self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
             self.eps_step = ratio * self.eps
 
-        for _ in range(max(1, self.num_random_init)):
+        if isinstance(self.estimator, ClassifierMixin):
+            y = check_and_transform_label_format(y, self.estimator.nb_classes)
+
+            if y is None:
+                # Throw error if attack is targeted, but no targets are provided
+                if self.targeted:
+                    raise ValueError(
+                        "Target labels `y` need to be provided for a targeted attack."
+                    )
+
+                # Use model predictions as correct outputs
+                targets = get_labels_np_array(
+                    self.estimator.predict(x, batch_size=self.batch_size)
+                )
+            else:
+                targets = y
+
+            mask = kwargs.get("mask")
+            if mask is not None:
+                # ensure the mask is broadcastable:
+                if (
+                    len(mask.shape) > len(x.shape)
+                    or mask.shape != x.shape[-len(mask.shape) :]
+                ):
+                    raise ValueError("mask shape must be broadcastable to input shape")
+
+            adv_x_best = None
+            rate_best = None
+
+            for _ in range(max(1, self.num_random_init)):
+                adv_x = x.astype(ART_NUMPY_DTYPE)
+
+                for i_max_iter in range(self.max_iter):
+                    adv_x = self._compute(
+                        adv_x,
+                        x,
+                        targets,
+                        mask,
+                        self.eps,
+                        self.eps_step,
+                        self._project,
+                        self.num_random_init > 0 and i_max_iter == 0,
+                    )
+
+                if self.num_random_init > 1:
+                    rate = 100 * compute_success(
+                        self.estimator,
+                        x,
+                        targets,
+                        adv_x,
+                        self.targeted,
+                        batch_size=self.batch_size,
+                    )
+                    if rate_best is None or rate > rate_best or adv_x_best is None:
+                        rate_best = rate
+                        adv_x_best = adv_x
+                else:
+                    adv_x_best = adv_x
+
+            logger.info(
+                "Success rate of attack: %.2f%%",
+                rate_best
+                if rate_best is not None
+                else 100
+                * compute_success(
+                    self.estimator,
+                    x,
+                    y,
+                    adv_x_best,
+                    self.targeted,
+                    batch_size=self.batch_size,
+                ),
+            )
+        else:
+
+            if self.num_random_init > 0:
+                raise ValueError(
+                    "Random initialisation is only supported for classification."
+                )
+
+            if kwargs.get("mask") is not None:
+                raise ValueError("Mask is only supported for classification.")
+
+            if y is None:
+                # Throw error if attack is targeted, but no targets are provided
+                if self.targeted:
+                    raise ValueError(
+                        "Target labels `y` need to be provided for a targeted attack."
+                    )
+
+                # Use model predictions as correct outputs
+                targets = self.estimator.predict(x, batch_size=self.batch_size)
+            else:
+                targets = y
+
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for i_max_iter in range(self.max_iter):
@@ -155,51 +237,19 @@ class ProjectedGradientDescent(FastGradientMethod):
                     adv_x,
                     x,
                     targets,
+                    kwargs["mask"],
                     self.eps,
                     self.eps_step,
                     self._project,
                     self.num_random_init > 0 and i_max_iter == 0,
                 )
 
-            if self.num_random_init > 1:
-                rate = 100 * compute_success(
-                    self.classifier,
-                    x,
-                    targets,
-                    adv_x,
-                    self.targeted,
-                    batch_size=self.batch_size,
-                )
-                if rate_best is None or rate > rate_best or adv_x_best is None:
-                    rate_best = rate
-                    adv_x_best = adv_x
-            else:
-                adv_x_best = adv_x
-
-        logger.info(
-            "Success rate of attack: %.2f%%",
-            rate_best
-            if rate_best is not None
-            else 100
-            * compute_success(
-                self.classifier,
-                x,
-                y,
-                adv_x_best,
-                self.targeted,
-                batch_size=self.batch_size,
-            ),
-        )
+            adv_x_best = adv_x
 
         return adv_x_best
 
     def _check_params(self) -> None:
         super(ProjectedGradientDescent, self)._check_params()
-
-        if not isinstance(self.classifier, ClassifierGradientsType):
-            raise ClassifierError(
-                self.__class__, [ClassifierGradientsType], self.classifier
-            )
 
         if self.eps_step > self.eps:
             raise ValueError(

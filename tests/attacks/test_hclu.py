@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -23,10 +23,11 @@ import unittest
 import numpy as np
 import GPy
 
-from art.attacks import HighConfidenceLowUncertainty
-from art.classifiers import GPyGaussianProcessClassifier
+from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
+from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 
 from tests.utils import TestBase
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,9 @@ class TestHCLU(TestBase):
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test))), 0.0, delta=0.00001)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(HighConfidenceLowUncertainty, [GPyGaussianProcessClassifier])
 
 
 if __name__ == "__main__":

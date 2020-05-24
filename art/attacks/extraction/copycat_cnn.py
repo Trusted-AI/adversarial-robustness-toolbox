@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -28,8 +28,9 @@ from typing import Optional
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import Classifier
 from art.attacks.attack import ExtractionAttack
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin, Classifier
 from art.utils import to_categorical
 
 
@@ -49,6 +50,7 @@ class CopycatCNN(ExtractionAttack):
         "nb_epochs",
         "nb_stolen",
     ]
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
@@ -67,7 +69,7 @@ class CopycatCNN(ExtractionAttack):
         :param nb_epochs: Number of epochs to use for training.
         :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
         """
-        super(CopycatCNN, self).__init__(classifier=classifier)
+        super(CopycatCNN, self).__init__(estimator=classifier)
 
         self.batch_size_fit = batch_size_fit
         self.batch_size_query = batch_size_query
@@ -100,8 +102,10 @@ class CopycatCNN(ExtractionAttack):
             )
 
         # Check if there is a thieved classifier provided for training
-        thieved_classifier = kwargs.get("thieved_classifier")
-        if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
+        thieved_classifier = kwargs["thieved_classifier"]
+        if thieved_classifier is None or not isinstance(
+            thieved_classifier, ClassifierMixin
+        ):
             raise ValueError("A thieved classifier is needed.")
 
         # Select data to attack
@@ -139,9 +143,9 @@ class CopycatCNN(ExtractionAttack):
         :param x: An array with the source input to the victim classifier.
         :return: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         """
-        labels = self.classifier.predict(x=x, batch_size=self.batch_size_query)
+        labels = self.estimator.predict(x=x, batch_size=self.batch_size_query)
         labels = np.argmax(labels, axis=1)
-        labels = to_categorical(labels=labels, nb_classes=self.classifier.nb_classes())
+        labels = to_categorical(labels=labels, nb_classes=self.estimator.nb_classes)
 
         return labels
 
