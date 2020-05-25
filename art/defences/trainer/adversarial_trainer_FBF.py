@@ -144,9 +144,9 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 else:
                     x_batch = X.numpy()
                     y_batch = y.numpy()
-                # lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
+                lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
                 #
-                # self.classifier._optimizer.param_groups[0].update(lr=lr)
+                self.classifier._optimizer.param_groups[0].update(lr=lr)
                 # Create batch data
                 # x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
                 # y_batch = y[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]]
