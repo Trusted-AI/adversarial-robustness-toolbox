@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,7 +21,7 @@ import pickle
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from sklearn.linear_model import LogisticRegression
-from art.classifiers import SklearnClassifier
+from art.estimators.classification import SklearnClassifier
 from sklearn.svm import SVC, LinearSVC
 from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier, BaggingClassifier, ExtraTreesClassifier

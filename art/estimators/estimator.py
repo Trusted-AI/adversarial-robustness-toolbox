@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -94,12 +94,12 @@ class BaseEstimator(ABC):
                 )
             if np.array(self._clip_values[0] >= self._clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
-            
+
             if isinstance(self._clip_values, np.ndarray):
                 self._clip_values = self._clip_values.astype(ART_NUMPY_DTYPE)
             else:
                 self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)
-            
+
         if isinstance(self.preprocessing_defences, Preprocessor):
             self.preprocessing_defences = [self.preprocessing_defences]
         elif isinstance(self.preprocessing_defences, list):
@@ -545,7 +545,7 @@ class NeuralNetworkMixin(ABC):
 
     def __repr__(self):
         name = self.__class__.__name__
-        
+
         attributes = {}
         for k, v in self.__dict__.items():
             k = k[1:] if k[0] == "_" else k

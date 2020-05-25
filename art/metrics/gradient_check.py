@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -33,8 +33,8 @@ def loss_gradient_check(estimator, x, y):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
         :type y: `np.ndarray`
-        :return: Array of booleans with the shape (len(x), 3). If true means the gradient of the loss w.r.t. the 
-                 particular `x` was bad (zero, nan, inf) 
+        :return: Array of booleans with the shape (len(x), 3). If true means the gradient of the loss w.r.t. the
+                 particular `x` was bad (zero, nan, inf)
         :rtype: `np.ndarray, np.ndarray`
         """
     assert len(x) == len(y), "x and y must be the same length"

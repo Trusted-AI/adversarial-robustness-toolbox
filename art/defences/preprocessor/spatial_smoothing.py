@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -30,9 +30,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
-from scipy import ndimage
+from scipy.ndimage.filters import median_filter
 
-from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -92,22 +91,34 @@ class SpatialSmoothing(Preprocessor):
         :return: Smoothed sample
         :rtype: `np.ndarray`
         """
-        if len(x.shape) == 2:
+
+        x_ndim = x.ndim
+        if x_ndim == 2:
+            raise ValueError("Feature vectors detected. Smoothing can only be applied to data with spatial dimensions.")
+
+        if x_ndim > 5:
             raise ValueError(
-                "Feature vectors detected. Smoothing can only be applied to data with spatial " "dimensions."
+                "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data."
             )
-        if self.channel_index >= len(x.shape):
-            raise ValueError("Channel index does not match input shape.")
 
-        size = [1] + [self.window_size] * (len(x.shape) - 1)
-        size[self.channel_index] = 1
-        size = tuple(size)
+        filter_size = [self.window_size] * x_ndim
+        # set filter_size at batch and channel indices to 1
+        filter_size[0] = 1
+        filter_size[self.channel_index] = 1
+        # set filter_size at temporal index to 1
+        if x_ndim == 5:
+            # check if NCFHW or NFHWC
+            temporal_index = 2 if self.channel_index == 1 else 1
+            filter_size[temporal_index] = 1
+        # Note median_filter:
+        # * center pixel located lower right
+        # * if window size even, use larger value (e.g. median(4,5)=5)
+        result = median_filter(x, size=tuple(filter_size), mode="reflect")
 
-        result = ndimage.filters.median_filter(x, size=size, mode="reflect")
         if self.clip_values is not None:
             np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
 
-        return result.astype(ART_NUMPY_DTYPE), y
+        return result, y
 
     def estimate_gradient(self, x, grad):
         return grad
@@ -133,24 +144,18 @@ class SpatialSmoothing(Preprocessor):
         # Save defence-specific parameters
         super(SpatialSmoothing, self).set_params(**kwargs)
 
-        if not isinstance(self.window_size, (int, np.int)) or self.window_size <= 0:
-            logger.error("Sliding window size must be a positive integer.")
+        if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
             raise ValueError("Sliding window size must be a positive integer.")
 
-        if not isinstance(self.channel_index, (int, np.int)) or self.channel_index <= 0:
-            logger.error(
-                "Data channel for smoothing must be a positive integer. The batch dimension is not a" "valid channel."
-            )
+        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3, 4]):
             raise ValueError(
-                "Data channel for smoothing must be a positive integer. The batch dimension is not a" "valid channel."
+                "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
             )
 
-        if self.clip_values is not None:
+        if self.clip_values is not None and len(self.clip_values) != 2:
+            raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")
 
-            if len(self.clip_values) != 2:
-                raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
-
-            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
-                raise ValueError("Invalid `clip_values`: min >= max.")
+        if self.clip_values is not None and np.array(self.clip_values[0] >= self.clip_values[1]).any():
+            raise ValueError("Invalid 'clip_values': min >= max.")
 
         return True

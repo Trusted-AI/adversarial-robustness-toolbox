@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -42,7 +42,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
 
         :param detector: The detector architecture to be trained and applied for the binary classification.
-        :type detector: :class:`art.classifiers.Classifier`
+        :type detector: :class:`art.estimators.classification.Classifier`
         """
         super(BinaryInputDetector, self).__init__(
             clip_values=detector.clip_values,
@@ -149,7 +149,7 @@ class BinaryActivationDetector(
         The shape of the input of the detector has to match that of the output of the chosen layer.
 
         :param classifier: The classifier of which the activation information is to be used for detection.
-        :type classifier: `art.classifiers.Classifier`
+        :type classifier: `art.estimators.classification.Classifier`
         :param detector: The detector architecture to be trained and applied for the binary classification.
         :type detector: `art.classifier.Classifier`
         :param layer: Layer for computing the activations to use for training the detector.

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -479,7 +479,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # pylint: disable=W0212
         # disable pylint because access to _modules required
-        torch.save(self._model._model.state_dict(), full_path + ".model")
+        torch.save(self.model.state_dict(), full_path + ".model")
         torch.save(self._optimizer.state_dict(), full_path + ".optimizer")
         logger.info("Model state dict saved in path: %s.", full_path + ".model")
         logger.info("Optimizer state dict saved in path: %s.", full_path + ".optimizer")

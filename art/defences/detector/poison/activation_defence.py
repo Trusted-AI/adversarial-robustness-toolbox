@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -63,7 +63,7 @@ class ActivationDefence(PoisonFilteringDefence):
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
         :param classifier: Model evaluated for poison.
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         :param x_train: dataset used to train the classifier.
         :type x_train: `np.ndarray`
         :param y_train: labels used to train the classifier.
@@ -245,7 +245,7 @@ class ActivationDefence(PoisonFilteringDefence):
         to use for test set.
 
         :param classifier: Classifier to be fixed
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         :param x: samples
         :type x: `np.ndarray`
         :param y_fix: true label of x_poison
@@ -301,7 +301,7 @@ class ActivationDefence(PoisonFilteringDefence):
         number of cross validation splits.
 
         :param classifier: Classifier to be fixed
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         :param x: Samples that were miss-labeled.
         :type x: `np.ndarray`
         :param y_fix: True label of `x`.
@@ -361,7 +361,7 @@ class ActivationDefence(PoisonFilteringDefence):
         Pickles the self.classifier and stores it using the provided file_name in folder `art.ART_DATA_PATH`.
 
         :param classifier: Classifier to be pickled.
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         :param file_name: Name of the file where the classifier will be pickled
         :return: None
         """
@@ -570,7 +570,7 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
     Trains the provider classifier until the tolerance or number of maximum epochs are reached.
 
     :param classifier: art.classifier to be used for predictions
-    :type classifier: `art.classifiers.Classifier`
+    :type classifier: `art.estimators.classification.Classifier`
     :param x_train: training set
     :type x_train: `np.darray`
     :param y_train: labels used for training
