@@ -132,6 +132,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         return self._device
 
+    @property
     def model(self):
         return self._model._model
 
