@@ -906,9 +906,40 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
         else:
-            raise ValueError("Expecting eager execution.")
+            raise NotImplementedError("Expecting eager execution.")
 
         return gradients
+
+    def loss_gradient_framework(self, x, y, **kwargs):
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Input with shape as expected by the model.
+        :type x: `tensorflow.Tensor`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `tensorflow.Tensor`
+        :return: Gradients of the same shape as `x`.
+        :rtype: `tensorflow.Tensor`
+        """
+        import tensorflow as tf
+
+        if tf.executing_eagerly():
+            with tf.GradientTape() as tape:
+                tape.watch(x)
+                predictions = self._model(x)
+
+                if self._reduce_labels:
+                    loss = self._loss_object(tf.argmax(y, axis=1), predictions)
+                else:
+                    loss = self._loss_object(y, predictions)
+
+                loss_grads = tape.gradient(loss, x)
+
+        else:
+            raise NotImplementedError("Expecting eager execution.")
+
+        return loss_grads
 
     def loss_gradient(self, x, y, **kwargs):
         """
@@ -937,8 +968,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                     loss = self._loss_object(y, predictions)
 
             gradients = tape.gradient(loss, x_preprocessed_tf).numpy()
+
         else:
-            raise ValueError("Expecting eager execution.")
+            raise NotImplementedError("Expecting eager execution.")
 
         # Apply preprocessing gradients
         gradients = self._apply_preprocessing_gradient(x, gradients)
