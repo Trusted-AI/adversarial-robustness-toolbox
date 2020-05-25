@@ -67,7 +67,7 @@ class ShadowAttack(EvasionAttack):
         lambda_tv=0.1,
         lambda_c=20.0,
         lambda_s=10.0,
-        batch_size=32,
+        batch_size=400,
         targeted=False,
     ):
         """
@@ -145,39 +145,38 @@ class ShadowAttack(EvasionAttack):
             )
 
         x = x.astype(ART_NUMPY_DTYPE)
-        x_adv = np.zeros_like(x, dtype=ART_NUMPY_DTYPE)
 
-        # Compute perturbation with implicit batching
-        for i_batch in range(int(np.ceil(x.shape[0] / self.batch_size))):
+        x_batch = np.repeat(x, repeats=self.batch_size, axis=0)
 
-            batch_index_1, batch_index_2 = i_batch * self.batch_size, (i_batch + 1) * self.batch_size
-            x_batch = x[batch_index_1:batch_index_2]
-            y_batch = y[batch_index_1:batch_index_2]
+        x_batch = x_batch + np.random.normal(scale=self.sigma, size=x_batch)
 
-            perturbation = (
-                np.random.uniform(
-                    low=self.estimator.clip_values[0], high=self.estimator.clip_values[1], size=x_batch.shape
-                ).astype(ART_NUMPY_DTYPE)
-                - (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2
+        y_batch = np.repeat(y, repeats=self.batch_size, axis=0)
+
+        perturbation = (
+            np.random.uniform(
+                low=self.estimator.clip_values[0], high=self.estimator.clip_values[1], size=x.shape
+            ).astype(ART_NUMPY_DTYPE)
+            - (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2
+        )
+
+        for _ in range(self.nb_steps):
+
+            gradients_ce = np.mean(
+                self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch, sampling=False)
+                * (1 - 2 * int(self.targeted)),
+                axis=0,
+                keepdims=True,
             )
 
-            for _ in range(self.nb_steps):
+            gradients = gradients_ce - self._get_regularisation_loss_gradients(perturbation)
 
-                gradients_ce = self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch, sampling=False) * (
-                    1 - 2 * int(self.targeted)
-                )
+            perturbation += self.learning_rate * gradients
 
-                gradients = gradients_ce - self._get_regularisation_loss_gradients(perturbation)
+        x_p = x_batch + perturbation
 
-                perturbation += self.learning_rate * gradients
-
-            x_p = x_batch + perturbation
-
-            x_p = np.clip(x_p, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1])
-
-            perturbation = x_p - x_batch
-
-            x_adv[batch_index_1:batch_index_2] = x_batch + perturbation
+        x_adv = np.clip(x_p, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1]).astype(
+            ART_NUMPY_DTYPE
+        )
 
         return x_adv
 
