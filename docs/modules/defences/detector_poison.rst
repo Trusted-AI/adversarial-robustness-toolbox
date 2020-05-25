@@ -1,6 +1,6 @@
-:mod:`art.poison_detection`
-===========================
-.. automodule:: art.poison_detection
+:mod:`art.defences.detector.poison`
+===================================
+.. automodule:: art.defences.detector.poison
 
 Activation Defence
 ------------------
