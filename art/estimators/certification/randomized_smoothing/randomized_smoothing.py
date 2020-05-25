@@ -136,7 +136,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
-    def fit(self, x, y, batch_size=128, **kwargs):
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -147,19 +147,13 @@ class RandomizedSmoothingMixin(ABC):
         :type y: `np.ndarray`
         :param batch_size: Batch size.
         :type batch_size: `int`
-        :key nb_epochs: Number of epochs to use for training. Default: 10
+        :key nb_epochs: Number of epochs to use for training
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
         :return: `None`
         """
-        nb_epochs = kwargs.get("nb_epochs")
-        if nb_epochs is not None and not isinstance(nb_epochs, int):
-            raise ValueError("The argument is_abstain needs to be of type int.")
-        if nb_epochs is None:
-            nb_epochs = 10
-
         ga = GaussianAugmentation(sigma=self.scale, augmentation=False)
         x_rs, _ = ga(x)
         self._fit_classifier(x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
