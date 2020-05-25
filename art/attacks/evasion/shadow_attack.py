@@ -148,7 +148,7 @@ class ShadowAttack(EvasionAttack):
 
         x_batch = np.repeat(x, repeats=self.batch_size, axis=0)
 
-        x_batch = x_batch + np.random.normal(scale=self.sigma, size=x_batch)
+        x_batch = x_batch + np.random.normal(scale=self.sigma, size=x_batch.shape)
 
         y_batch = np.repeat(y, repeats=self.batch_size, axis=0)
 
