@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 import torch
 import torchvision
 import torchvision.transforms as transforms
+
 transform = transforms.Compose(
     [transforms.RandomCrop(32, padding=4),
      transforms.RandomHorizontalFlip(),
@@ -64,8 +65,7 @@ class Batches():
         return len(self.dataloader)
 
 DEVICE = 'gpu'
-# transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
-# cifar10_std = (0.2471, 0.2435, 0.2616)
+
 
 if DEVICE != 'cpu':
     trainset = torchvision.datasets.CIFAR10(root='/home/ambrish/github/cifar-data', train=True,
@@ -247,7 +247,7 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 # loss.backward()
                 with amp.scale_loss(loss, self.classifier._optimizer) as scaled_loss:
                     scaled_loss.backward()
-                nn.utils.clip_grad_norm_(self.classifier._model.parameters(), 0.5)
+                # nn.utils.clip_grad_norm_(self.classifier._model.parameters(), 0.5)
                 self.classifier._optimizer.step()
 
 
