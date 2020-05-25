@@ -12,6 +12,9 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evation tests"; fi
 pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
+pytest -q tests/utils --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
+
 #Only classifier tests need to be run for each frameworks
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
@@ -68,12 +71,10 @@ declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_gaussian_augmentation.py" \
                      "tests/defences/test_gaussian_noise.py" \
                      "tests/defences/test_high_confidence.py" \
-                     "tests/defences/test_jpeg_compression.py" \
                      "tests/defences/test_label_smoothing.py" \
                      "tests/defences/test_pixel_defend.py" \
                      "tests/defences/test_reverse_sigmoid.py" \
                      "tests/defences/test_rounded.py" \
-                     "tests/defences/test_spatial_smoothing.py" \
                      "tests/defences/test_thermometer_encoding.py" \
                      "tests/defences/test_variance_minimization.py" \
                      "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
