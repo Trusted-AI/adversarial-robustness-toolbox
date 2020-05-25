@@ -268,16 +268,16 @@ class Wasserstein(EvasionAttack):
         adv_x_best = x.copy().astype(ART_NUMPY_DTYPE)
 
         if targeted:
-            err = (
-                    np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
-                    == np.argmax(targets, axis=1)
-            )
+            err = np.argmax(
+                self.estimator.predict(adv_x, batch_size=batch_size),
+                axis=1
+            ) == np.argmax(targets, axis=1)
 
         else:
-            err = (
-                    np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
-                    != np.argmax(targets, axis=1)
-            )
+            err = np.argmax(
+                self.estimator.predict(adv_x, batch_size=batch_size),
+                axis=1
+            ) != np.argmax(targets, axis=1)
 
         err_best = err
         eps = np.ones(batch_size) * eps
@@ -302,16 +302,16 @@ class Wasserstein(EvasionAttack):
             )
 
             if targeted:
-                err = (
-                    np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
-                    == np.argmax(targets, axis=1)
-                )
+                err = np.argmax(
+                    self.estimator.predict(adv_x, batch_size=batch_size),
+                    axis=1
+                ) == np.argmax(targets, axis=1)
 
             else:
-                err = (
-                    np.argmax(self.estimator.predict(adv_x, batch_size=batch_size), axis=1)
-                    != np.argmax(targets, axis=1)
-                )
+                err = np.argmax(
+                    self.estimator.predict(adv_x, batch_size=batch_size),
+                    axis=1
+                ) != np.argmax(targets, axis=1)
 
             if np.mean(err) > np.mean(err_best):
                 err_best = err
@@ -714,7 +714,6 @@ class Wasserstein(EvasionAttack):
 
             if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * np.abs(next_convergence)).all():
                 break
-
             else:
                 convergence = next_convergence
 
@@ -841,7 +840,6 @@ class Wasserstein(EvasionAttack):
 
             if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * np.abs(next_convergence)).all():
                 break
-
             else:
                 convergence = next_convergence
 
