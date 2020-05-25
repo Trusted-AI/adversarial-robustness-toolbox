@@ -145,6 +145,8 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
    modules/defences/transformer
    modules/detection
    modules/estimators
+   modules/estimators/certification
+   modules/estimators/certification_randomized_smoothing
    modules/estimators/classification
    modules/estimators/classification_scikitlearn
    modules/estimators/object_detection
