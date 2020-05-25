@@ -142,21 +142,22 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
                     inputs_repeat_t = tf.repeat(inputs_t, repeats=self.sample_size, axis=0)
 
-                    noise = (
-                        tf.random.normal(
-                            shape=inputs_repeat_t.shape,
-                            mean=0.0,
-                            stddev=self.scale,
-                            dtype=inputs_repeat_t.dtype,
-                            seed=None,
-                            name=None,
-                        )
+                    noise = tf.random.normal(
+                        shape=inputs_repeat_t.shape,
+                        mean=0.0,
+                        stddev=self.scale,
+                        dtype=inputs_repeat_t.dtype,
+                        seed=None,
+                        name=None,
                     )
 
                     inputs_noise_t = inputs_repeat_t + noise
 
                     inputs_noise_t = tf.clip_by_value(
-                        inputs_noise_t, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1], name=None
+                        inputs_noise_t,
+                        clip_value_min=self.clip_values[0],
+                        clip_value_max=self.clip_values[1],
+                        name=None,
                     )
 
                     model_outputs = self._model(inputs_noise_t)
