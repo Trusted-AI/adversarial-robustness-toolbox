@@ -140,8 +140,12 @@ class AdversarialTrainerFBFPyTorch(Trainer):
             # for batch_id in range(nb_batches):
             for batch_id, batch in enumerate(train_batches):
                 X, y = batch['input'], batch['target']
-                x_batch = X.numpy()
-                y_batch = y.numpy()
+                if DEVICE!='cpu':
+                    x_batch = X.cpu().numpy()
+                    y_batch = y.cpu().numpy()
+                else:
+                    x_batch = X.numpy()
+                    y_batch = y.numpy()
                 lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
 
                 self.classifier._optimizer.param_groups[0].update(lr=lr)
