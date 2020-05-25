@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -23,8 +23,6 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-
-import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin

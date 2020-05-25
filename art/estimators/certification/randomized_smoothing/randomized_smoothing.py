@@ -72,7 +72,7 @@ class RandomizedSmoothingMixin(ABC):
         raise NotImplementedError
 
     # pylint: disable=W0221
-    def predict(self, x, batch_size=128, is_abstain=True, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
@@ -80,12 +80,18 @@ class RandomizedSmoothingMixin(ABC):
         :type x: `np.ndarray`
         :param batch_size: Batch size.
         :type batch_size: `int`
-        :param is_abstain: True if function will abstain from prediction and return 0s
+        :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
         :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         from scipy.stats import binom_test
+
+        is_abstain = kwargs.get("is_abstain")
+        if is_abstain is not None and not isinstance(is_abstain, bool):
+            raise ValueError("The argument is_abstain needs to be of type bool.")
+        if is_abstain is None:
+            is_abstain = True
 
         logger.info("Applying randomized smoothing.")
         n_abstained = 0
@@ -130,7 +136,7 @@ class RandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+    def fit(self, x, y, batch_size=128, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -141,13 +147,19 @@ class RandomizedSmoothingMixin(ABC):
         :type y: `np.ndarray`
         :param batch_size: Batch size.
         :type batch_size: `int`
-        :param nb_epochs: Number of epochs to use for training.
+        :key nb_epochs: Number of epochs to use for training. Default: 10
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         :type kwargs: `dict`
         :return: `None`
         """
+        nb_epochs = kwargs.get("nb_epochs")
+        if nb_epochs is not None and not isinstance(nb_epochs, int):
+            raise ValueError("The argument is_abstain needs to be of type int.")
+        if nb_epochs is None:
+            nb_epochs = 10
+
         ga = GaussianAugmentation(sigma=self.scale, augmentation=False)
         x_rs, _ = ga(x)
         self._fit_classifier(x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
