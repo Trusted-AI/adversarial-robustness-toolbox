@@ -30,15 +30,14 @@ from art.config import ART_NUMPY_DTYPE
 from art.classifiers.classifier import ClassifierGradients
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
-from art.utils import projection
 
 logger = logging.getLogger(__name__)
 
 
 class Universal_SimBA_pixel(EvasionAttack):
-    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'delta', 'eps', 'norm', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'delta' ,'batch_size']
 
-    def __init__(self, classifier, max_iter=3000, epsilon=0.1, delta=0.1, eps=10.0, norm=2, batch_size=1):
+    def __init__(self, classifier, max_iter=3000, epsilon=0.1, delta=0.1, batch_size=1):
         """
         Create a universal SimBA (pixel) attack instance.
 
@@ -60,7 +59,7 @@ class Universal_SimBA_pixel(EvasionAttack):
                              + str(classifier.__class__.__bases__) + '. '
                              ' The classifier needs to be a Neural Network and provide gradients.'))
 
-        params = {'max_iter': max_iter, 'epsilon': epsilon, 'delta': delta, 'eps': eps, 'norm': norm, 'batch_size': batch_size}
+        params = {'max_iter': max_iter, 'epsilon': epsilon, 'delta': delta, 'batch_size': batch_size}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
@@ -90,50 +89,31 @@ class Universal_SimBA_pixel(EvasionAttack):
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
 
-        #nb_samples = 50
         fooling_rate = 0.0
         nb_iter = 0
-        noise = 0
         while fooling_rate < 1. - self.delta and nb_iter < self.max_iter:
-            #trainIdx = np.random.choice(range(nb_instances),nb_random_samples)
-            #x_sample = x[trainIdx]
-            #original_labels = original_labels_whole[trainIdx]
-            #current_labels = original_labels
-
-            #preds = self.classifier.predict(x_sample + noise, batch_size=self.batch_size)
-            #last_probs = preds[(range(nb_random_samples),original_labels)]
-
             diff = np.zeros(n_dims)
             diff[np.random.choice(range(n_dims))] = self.epsilon
 
-            left_noise = noise - diff.reshape(x[0][None, ...].shape)
-            left_noise = projection(left_noise, self.eps, self.norm)
-
-            left_preds = self.classifier.predict(np.clip(x + left_noise, clip_min, clip_max), batch_size=self.batch_size)
+            left_preds = self.classifier.predict(np.clip(x - diff.reshape(x[0][None, ...].shape), clip_min, clip_max), batch_size=self.batch_size)
             left_probs = left_preds[(range(nb_instances),original_labels)]
 
-            right_noise = noise + diff.reshape(x[0][None, ...].shape)
-            right_noise = projection(right_noise, self.eps, self.norm)
-
-            right_preds = self.classifier.predict(np.clip(x + right_noise, clip_min, clip_max), batch_size=self.batch_size)
+            right_preds = self.classifier.predict(np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max), batch_size=self.batch_size)
             right_probs = right_preds[(range(nb_instances),original_labels)]
 
             if np.sum(left_probs - last_probs) < 0.0:
                 if np.sum(left_probs - right_probs) < 0.0:
-                    #x = np.clip(x + left_noise, clip_min, clip_max)
+                    x = np.clip(x - diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
                     last_probs = left_probs
-                    noise = left_noise
                     current_labels = np.argmax(left_preds, axis=1)
                 else:
-                    #x = np.clip(x + right_noise, clip_min, clip_max)
+                    x = np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
                     last_probs = right_probs
-                    noise = right_noise
                     current_labels = np.argmax(right_preds, axis=1)
             else:
                 if np.sum(right_probs - last_probs) < 0.0:
-                    #x = np.clip(x + right_noise, clip_min, clip_max)
+                    x = np.clip(x + diff.reshape(x[0][None, ...].shape), clip_min, clip_max)
                     last_probs = right_probs
-                    noise = right_noise
                     current_labels = np.argmax(right_preds, axis=1)
             
             # Compute the error rate
@@ -141,12 +121,11 @@ class Universal_SimBA_pixel(EvasionAttack):
             
             nb_iter = nb_iter + 1
 
-            if nb_iter % 10 == 0:
-                val_norm = np.linalg.norm(noise.flatten(), ord=self.norm)
-                logger.info('Fooling rate of Universal SimBA (pixel) attack at %d iterations: %.2f%% (L%d norm of noise: %.2f)', nb_iter, 100 * fooling_rate, self.norm, val_norm)
+            if nb_iter % 50 == 0:
+                logger.info('Fooling rate of Universal SimBA (pixel) attack at %d iterations: %.2f%%', nb_iter, 100 * fooling_rate)
 
         logger.info('Final fooling rate of Universal SimBA (pixel) attack: %.2f%%', 100 * fooling_rate)
-        return x + noise
+        return x
 
 
     def set_params(self, **kwargs):
@@ -173,9 +152,6 @@ class Universal_SimBA_pixel(EvasionAttack):
         
         if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
             raise ValueError("The desired accuracy must be in the range [0, 1].")
-
-        if not isinstance(self.eps, (float, int)) or self.eps <= 0:
-            raise ValueError("The eps coefficient must be a positive float.")
 
         if self.batch_size <= 0:
             raise ValueError('The batch size `batch_size` has to be positive.')
