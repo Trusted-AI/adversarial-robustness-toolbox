@@ -172,7 +172,7 @@ class ShadowAttack(EvasionAttack):
 
             perturbation += self.learning_rate * gradients
 
-        x_p = x_batch + perturbation
+        x_p = x + perturbation
 
         x_adv = np.clip(x_p, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1]).astype(
             ART_NUMPY_DTYPE
