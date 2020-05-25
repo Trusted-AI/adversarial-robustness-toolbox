@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -30,7 +30,6 @@ import numpy as np
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.attacks.attack import EvasionAttack
-from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
@@ -69,9 +68,6 @@ class DPatch(EvasionAttack):
         :type batch_size: `int`
         """
         super(DPatch, self).__init__(estimator=estimator)
-
-        if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
-            raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
         kwargs = {
             "patch_shape": patch_shape,

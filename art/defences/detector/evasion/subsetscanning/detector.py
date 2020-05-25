@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -49,7 +49,7 @@ class SubsetScanningDetector(
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
         :param classifier: The model being evaluated for its robustness to anomalies (eg. adversarial samples)
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         :bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
         :type bgd_data: `np.ndarray`
         :layer: The layer from which to extract activations to perform scan

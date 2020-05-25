@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -42,7 +42,7 @@ class PoisonFilteringDefence(ABC):
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
         :param classifier: model evaluated for poison
-        :type classifier: :class:`art.classifiers.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         :param x_train: dataset used to train the classifier.
         :type x_train: :class:`numpy.ndarray`
         :param y_train: labels used to train the classifier.

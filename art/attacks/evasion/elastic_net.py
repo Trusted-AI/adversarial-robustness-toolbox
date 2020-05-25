@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -31,7 +31,6 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
-from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
 
