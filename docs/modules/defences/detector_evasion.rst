@@ -1,6 +1,6 @@
-:mod:`art.detection`
-====================
-.. automodule:: art.detection
+:mod:`art.defences.detector.evasion`
+====================================
+.. automodule:: art.defences.detector.evasion
 
 Binary Input Detector
 ---------------------
@@ -11,10 +11,6 @@ Binary Activation Detector
 --------------------------
 .. autoclass:: BinaryActivationDetector
    :members:
-
-:mod:`art.detection.subsetscanning`
-===================================
-.. automodule:: art.detection.subsetscanning
 
 Subset Scanning Detector
 ------------------------
