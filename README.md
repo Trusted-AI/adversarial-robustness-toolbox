@@ -90,6 +90,8 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * MP3 compression ([Carlini, N. & Wagner, D., 2018](https://arxiv.org/abs/1801.01944))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
+* InverseGan ([An Lin et al. 2019](https://arxiv.org/pdf/1911.10291))
+* DefenseGan ([Samangouei et al. 2018](https://arxiv.org/pdf/1805.06605.pdf))
 * Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Spatial smoothing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))

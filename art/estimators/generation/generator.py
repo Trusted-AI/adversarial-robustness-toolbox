@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+# Copyright (C) IBM Corporation 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -15,26 +15,19 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import pytest
-import logging
-from tests import utils
-from art.estimators.classification import KerasClassifier
-from art.defences.preprocessor import FeatureSqueezing
+"""
+This module implements mixin abstract base classes defining properties for all generators in ART.
+"""
 
-logger = logging.getLogger(__name__)
+import abc
 
 
-@pytest.fixture
-def get_tabular_classifier_list(get_tabular_classifier_list):
-    def _tabular_classifier_list(attack, clipped=True):
-        classifier_list = get_tabular_classifier_list(clipped)
-        if classifier_list is None:
-            return None
+class GeneratorMixin(abc.ABC):
+    """
+    Mixin abstract base class defining functionality for generators.
+    """
 
-        return [
-            potential_classifier
-            for potential_classifier in classifier_list
-            if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
-        ]
-
-    return _tabular_classifier_list
+    @property
+    @abc.abstractmethod
+    def encoding_length(self):
+        raise NotImplementedError
