@@ -93,13 +93,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         # Checks:
         if self.estimator.input_shape[0] != x.shape[1]:
-            raise ValueError(
-                 'Shape of x does not match input_shape of classifier'
-            )
+            raise ValueError('Shape of x does not match input_shape of classifier')
         if self.attack_feature >= x.shape[1]:
-            raise ValueError(
-                    'attack_feature must be a valid index to a feature in x'
-            )
+            raise ValueError('attack_feature must be a valid index to a feature in x')
 
         # get model's predictions for x
         predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
@@ -128,13 +124,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         # Checks:
         if y.shape[0] != x.shape[0]:
-            raise ValueError(
-                'Number of rows in x and y do not match'
-            )
+            raise ValueError('Number of rows in x and y do not match')
         if self.estimator.input_shape[0] != x.shape[1] + 1:
-            raise ValueError(
-                'Number of features in x + 1 does not match input_shape of classifier'
-            )
+            raise ValueError('Number of features in x + 1 does not match input_shape of classifier')
 
         x_test = np.concatenate((x, y), axis=1).astype(np.float32)
         return np.array([np.argmax(arr) for arr in self.attack_model.predict(x_test)])
@@ -182,17 +174,11 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
 
         # Checks:
         if self.estimator.input_shape[0] != x.shape[1] + 1:
-            raise ValueError(
-                'Number of features in x + 1 does not match input_shape of classifier'
-            )
+            raise ValueError('Number of features in x + 1 does not match input_shape of classifier')
         if len(priors) != len(values):
-            raise ValueError(
-                'Number of priors does not match number of values'
-            )
+            raise ValueError('Number of priors does not match number of values')
         if self.attack_feature >= x.shape[1]:
-            raise ValueError(
-                    'attack_feature must be a valid index to a feature in x'
-            )
+            raise ValueError('attack_feature must be a valid index to a feature in x')
 
         n_samples = x.shape[0]
 
@@ -286,21 +272,13 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
 
         # Checks:
         if self.estimator.input_shape[0] != x.shape[1] + 1:
-            raise ValueError(
-                'Number of features in x + 1 does not match input_shape of classifier'
-            )
+            raise ValueError('Number of features in x + 1 does not match input_shape of classifier')
         if len(priors) != len(values):
-            raise ValueError(
-                'Number of priors does not match number of values'
-            )
+            raise ValueError('Number of priors does not match number of values')
         if y.shape[0] != x.shape[0]:
-            raise ValueError(
-                'Number of rows in x and y do not match'
-            )
+            raise ValueError('Number of rows in x and y do not match')
         if self.attack_feature >= x.shape[1]:
-            raise ValueError(
-                    'attack_feature must be a valid index to a feature in x'
-            )
+            raise ValueError('attack_feature must be a valid index to a feature in x')
 
         n_values = len(values)
         n_samples = x.shape[0]
@@ -343,7 +321,3 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
 
         return np.array([value if value is not None else predicted_prob[index] for index, value in
                          enumerate(predicted_pred)])
-
-
-
-

@@ -31,20 +31,20 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 
 logger = logging.getLogger(__name__)
 
+
 def test_black_box(get_tabular_classifier_list, get_iris_dataset):
     classifier_list = get_tabular_classifier_list(AttributeInferenceBlackBox)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    attack_feature = 2 # petal length
+    attack_feature = 2  # petal length
 
     # need to transform attacked feature into categorical
     def transform_feature(x):
         x[x > 0.5] = 2.0
         x[(x > 0.2) & (x <= 0.5)] = 1.0
         x[x <= 0.2] = 0.0
-
 
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
     # training data without attacked feature
@@ -80,20 +80,20 @@ def test_black_box(get_tabular_classifier_list, get_iris_dataset):
         # print(test_acc)
         assert train_acc > test_acc
 
+
 def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
     classifier_list = get_tabular_classifier_list(AttributeInferenceBlackBox)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    attack_feature = 2 # petal length
+    attack_feature = 2  # petal length
 
     # need to transform attacked feature into categorical
     def transform_feature(x):
         x[x > 0.5] = 2.0
         x[(x > 0.2) & (x <= 0.5)] = 1.0
         x[x <= 0.2] = 0.0
-
 
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
     # training data without attacked feature
@@ -116,9 +116,8 @@ def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
     # Define a loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    attack_model = PyTorchClassifier(
-            model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=3
-    )
+    attack_model = PyTorchClassifier(model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer,
+                                     input_shape=(4,), nb_classes=3)
 
     for classifier in classifier_list:
         # print(classifier)
@@ -138,13 +137,14 @@ def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
         # print(test_acc)
         assert train_acc > test_acc
 
+
 def test_white_box(get_tabular_classifier_list, get_iris_dataset):
     classifier_list = get_tabular_classifier_list(AttributeInferenceWhiteBoxDecisionTree)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    attack_feature = 2 # petal length
+    attack_feature = 2  # petal length
     # values = [0.14, 0.42, 0.57, 0.71, 0.85] # rounded down
     values = [0.14, 0.42, 0.71]  # rounded down
     # priors = [50/150, 11/150, 43/150, 35/150, 11/150]
@@ -176,13 +176,14 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
         if type(classifier).__name__ is not 'ScikitlearnDecisionTreeClassifier':
             assert sum(train_diff) / len(inferred_train) < sum(test_diff) / len(inferred_test)
 
+
 def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
     classifier_list = get_tabular_classifier_list(AttributeInferenceWhiteBoxLifestyleDecisionTree)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
-    attack_feature = 2 # petal length
+    attack_feature = 2  # petal length
     # values = [0.14, 0.42, 0.57, 0.71, 0.85] # rounded down
     values = [0.14, 0.42, 0.71]  # rounded down
     # priors = [50/150, 11/150, 43/150, 35/150, 11/150]
@@ -206,6 +207,7 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
         # print(sum(train_diff) / len(inferred_train))
         # print(sum(test_diff) / len(inferred_test))
         assert sum(train_diff) / len(inferred_train) < sum(test_diff) / len(inferred_test)
+
 
 if __name__ == "__main__":
     pytest.cmdline.main("-q {} --mlFramework=scikitlearn --durations=0".format(__file__).split(" "))

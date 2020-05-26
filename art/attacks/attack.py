@@ -288,6 +288,7 @@ class InferenceAttack(Attack):
         """
         raise NotImplementedError
 
+
 class AttributeInferenceAttack(InferenceAttack):
     """
     Abstract base class for attribute inference attack classes.
