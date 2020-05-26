@@ -17,19 +17,24 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import pytest
 import logging
 
-import tensorflow as tf
 import numpy as np
+import pytest
+import tensorflow as tf
 
 from art.data_generators import TensorFlowDataGenerator
-
+from art.utils import Deprecated
+from tests.classifiersFrameworks.utils import (
+    backend_test_class_gradient,
+    backend_test_fit_generator,
+    backend_test_input_shape,
+    backend_test_layers,
+    backend_test_loss_gradient,
+    backend_test_nb_classes,
+    backend_test_repr,
+)
 from tests.utils import ExpectedValue
-from tests.classifiersFrameworks.utils import backend_test_layers, backend_test_repr
-from tests.classifiersFrameworks.utils import backend_test_loss_gradient, backend_test_class_gradient
-from tests.classifiersFrameworks.utils import backend_test_fit_generator, backend_test_nb_classes
-from tests.classifiersFrameworks.utils import backend_test_input_shape
 
 logger = logging.getLogger(__name__)
 
@@ -424,8 +429,8 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
                 "input_shape=(28, 28, 1)",
                 "loss_object=<tensorflow.python.keras.losses." "SparseCategoricalCrossentropy",
                 "train_step=<function get_image_classifier_tf_v2." "<locals>.train_step",
-                "channel_index=3, clip_values=array([0., 1.], dtype=float32), preprocessing_defences="
-                "None, postprocessing_defences=None, preprocessing=(0, 1))",
+                f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
+                "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))",
             ],
         )
 
@@ -443,7 +448,7 @@ def test_repr(is_tf_version_2, get_image_classifier_list):
                 "learning=None",
                 "sess=<tensorflow.python.client.session.Session object",
                 "TensorFlowClassifier",
-                "channel_index=3, clip_values=array([0., 1.], dtype=float32), "
+                f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
                 "preprocessing_defences=None, postprocessing_defences=None, "
                 "preprocessing=(0, 1))",
             ],
