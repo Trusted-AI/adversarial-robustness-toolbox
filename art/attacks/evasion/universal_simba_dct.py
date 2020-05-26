@@ -20,28 +20,28 @@ This module implements the black-box attack `simba`.
 
 | Paper link: https://arxiv.org/abs/1905.07121
 """
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 
 import numpy as np
 from scipy.fftpack import dct, idct
 
-from art.attacks.attack import EvasionAttack
-from art.classifiers.classifier import ClassifierGradients
 from art.config import ART_NUMPY_DTYPE
+from art.classifiers.classifier import ClassifierGradients
+from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
+from art.utils import projection
 
 logger = logging.getLogger(__name__)
 
 
-class SimBA_dct(EvasionAttack):
-    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'batch_size', 'freq_dim', 'stride']
+class Universal_SimBA_dct(EvasionAttack):
+    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'freq_dim', 'stride', 'delta', 'eps', 'norm', 'batch_size']
 
-    def __init__(self, classifier, max_iter=3000, epsilon=0.1, freq_dim=4, stride=1, batch_size=1):
+    def __init__(self, classifier, max_iter=3000, epsilon=0.1, freq_dim=4, stride=1, delta=0.1, eps=10.0, norm=2, batch_size=1):
         """
-        Create a SimBA (dct) attack instance.
+        Create a universal SimBA (dct) attack instance.
 
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
@@ -53,17 +53,19 @@ class SimBA_dct(EvasionAttack):
         :type freq_dim: `int`
         :param stride: stride for block order.
         :type stride: `int`
+        :param delta: desired accuracy
+        :type delta: `float`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
         """
-        super(SimBA_dct, self).__init__(classifier=classifier)
+        super(Universal_SimBA_dct, self).__init__(classifier=classifier)
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
                              + str(classifier.__class__.__bases__) + '. '
                              ' The classifier needs to be a Neural Network and provide gradients.'))
 
-        params = {'max_iter': max_iter, 'epsilon': epsilon, 'freq_dim': freq_dim, 'stride': stride, 'batch_size': batch_size}
+        params = {'max_iter': max_iter, 'epsilon': epsilon, 'freq_dim': freq_dim, 'stride': stride, 'delta': delta, 'eps': eps, 'norm': norm, 'batch_size': batch_size}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
@@ -78,14 +80,15 @@ class SimBA_dct(EvasionAttack):
         :rtype: `np.ndarray`
         """
         x = x.astype(ART_NUMPY_DTYPE)
+        nb_instances = x.shape[0]
         preds = self.classifier.predict(x, batch_size=self.batch_size)
         if y is None:
             y = np.argmax(preds, axis=1)
-        original_label = y[0]
-        current_label = original_label
-        last_prob = preds.reshape(-1)[original_label]
+        original_labels = y
+        current_labels = original_labels
+        last_probs = preds[(range(nb_instances),original_labels)]
 
-        n_dims = np.prod(x.shape)
+        n_dims = np.prod(x[0].shape)
         if self.max_iter > n_dims:
             self.max_iter = n_dims
             logger.info('`max_iter` was reset to %d because it needs to be #pixels x #channels or less', n_dims)
@@ -98,40 +101,52 @@ class SimBA_dct(EvasionAttack):
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
 
+        fooling_rate = 0.0
         nb_iter = 0
-        while original_label == current_label and nb_iter < self.max_iter:
+        noise = 0
+        while fooling_rate < 1. - self.delta and nb_iter < self.max_iter:
             diff = np.zeros(n_dims)
             diff[indices[nb_iter]] = self.epsilon
 
-            left_preds = self.classifier.predict(np.clip(x - trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
-            left_prob = left_preds.reshape(-1)[original_label]
+            left_noise = noise - trans(diff.reshape(x[0][None, ...].shape))
+            left_noise = projection(left_noise, self.eps, self.norm)
 
-            right_preds = self.classifier.predict(np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
-            right_prob = right_preds.reshape(-1)[original_label]
+            left_preds = self.classifier.predict(np.clip(x + left_noise, clip_min, clip_max), batch_size=self.batch_size)
+            left_probs = left_preds[(range(nb_instances),original_labels)]
 
-            if left_prob < last_prob:
-                if left_prob < right_prob:
-                    x = np.clip(x - trans(diff.reshape(x.shape)), clip_min, clip_max)
-                    last_prob = left_prob
-                    current_label = np.argmax(left_preds, axis=1)[0]
+            right_noise = noise + trans(diff.reshape(x[0][None, ...].shape))
+            right_noise = projection(right_noise, self.eps, self.norm)
+
+            right_preds = self.classifier.predict(np.clip(x + right_noise, clip_min, clip_max), batch_size=self.batch_size)
+            right_probs = right_preds[(range(nb_instances),original_labels)]
+
+            if np.sum(left_probs - last_probs) < 0.0:
+                if np.sum(left_probs - right_probs) < 0.0:
+                    last_probs = left_probs
+                    noise = left_noise
+                    current_labels = np.argmax(left_preds, axis=1)
                 else:
-                    x = np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max)
-                    last_prob = right_prob
-                    current_label = np.argmax(right_preds, axis=1)[0]
+                    last_probs = right_probs
+                    noise = right_noise
+                    current_labels = np.argmax(right_preds, axis=1)
             else:
-                if right_prob < last_prob:
-                    x = np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max)
-                    last_prob = right_prob
-                    current_label = np.argmax(right_preds, axis=1)[0]
+                if np.sum(right_probs - last_probs) < 0.0:
+                    last_probs = right_probs
+                    noise = right_noise
+                    current_labels = np.argmax(right_preds, axis=1)
+            
+            # Compute the error rate
+            fooling_rate = np.sum(original_labels != current_labels) / nb_instances
             
             nb_iter = nb_iter + 1
 
-        if nb_iter < self.max_iter:
-            logger.info('SimBA (dct) attack succeed')
-        else:
-            logger.info('SimBA (dct) attack failed')
+            if nb_iter % 10 == 0:
+                val_norm = np.linalg.norm(noise.flatten(), ord=self.norm)
+                logger.info('Fooling rate of Universal SimBA (dct) attack at %d iterations: %.2f%% (L%d norm of noise: %.2f)', nb_iter, 100 * fooling_rate, self.norm, val_norm)
 
-        return x
+        logger.info('Final fooling rate of Universal SimBA (dct) attack: %.2f%%', 100 * fooling_rate)
+        return x + noise
+
 
     def set_params(self, **kwargs):
         """
@@ -145,26 +160,34 @@ class SimBA_dct(EvasionAttack):
         :type freq_dim: `int`
         :param stride: stride for block order.
         :type stride: `int`
+        :param delta: desired accuracy
+        :type delta: `float`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
         """
         # Save attack-specific parameters
-        super(SimBA_dct, self).set_params(**kwargs)
+        super(Universal_SimBA_dct, self).set_params(**kwargs)
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
         if self.epsilon < 0:
             raise ValueError("The overshoot parameter must not be negative.")
-
-        if self.batch_size <= 0:
-            raise ValueError('The batch size `batch_size` has to be positive.')
         
         if not isinstance(self.stride, (int, np.int)) or self.stride <= 0:
             raise ValueError("The `stride` value must be a positive integer.")
         
         if not isinstance(self.freq_dim, (int, np.int)) or self.freq_dim <= 0:
             raise ValueError("The `freq_dim` value must be a positive integer.")
+        
+        if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
+            raise ValueError("The desired accuracy must be in the range [0, 1].")
+
+        if not isinstance(self.eps, (float, int)) or self.eps <= 0:
+            raise ValueError("The eps coefficient must be a positive float.")
+
+        if self.batch_size <= 0:
+            raise ValueError('The batch size `batch_size` has to be positive.')
 
         return True
 
