@@ -17,3 +17,4 @@ GPy
 
 scipy
 statsmodels
+japanize_matplotlib

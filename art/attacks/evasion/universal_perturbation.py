@@ -172,8 +172,8 @@ class UniversalPerturbation(EvasionAttack):
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
 
             # permutated noise
-            tmp_noise = x_adv[0] - x[0]
-            random_noise = np.random.permutation(tmp_noise.reshape(-1)).reshape(x[0][None, ...].shape)
+            noise = x_adv[0] - x[0]
+            random_noise = np.random.permutation(noise.reshape(-1)).reshape(x[0][None, ...].shape)
             x_adv_random = x + random_noise
             y_adv_random = np.argmax(self.classifier.predict(x_adv_random, batch_size=self.batch_size), axis=1)
             fooling_rate_random = np.sum(pred_y_max != y_adv_random) / nb_instances
