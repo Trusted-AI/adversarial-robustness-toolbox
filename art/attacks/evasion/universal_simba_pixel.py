@@ -90,19 +90,10 @@ class Universal_SimBA_pixel(EvasionAttack):
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
 
-        #nb_samples = 50
         fooling_rate = 0.0
         nb_iter = 0
         noise = 0
         while fooling_rate < 1. - self.delta and nb_iter < self.max_iter:
-            #trainIdx = np.random.choice(range(nb_instances),nb_random_samples)
-            #x_sample = x[trainIdx]
-            #original_labels = original_labels_whole[trainIdx]
-            #current_labels = original_labels
-
-            #preds = self.classifier.predict(x_sample + noise, batch_size=self.batch_size)
-            #last_probs = preds[(range(nb_random_samples),original_labels)]
-
             diff = np.zeros(n_dims)
             diff[np.random.choice(range(n_dims))] = self.epsilon
 
@@ -120,18 +111,15 @@ class Universal_SimBA_pixel(EvasionAttack):
 
             if np.sum(left_probs - last_probs) < 0.0:
                 if np.sum(left_probs - right_probs) < 0.0:
-                    #x = np.clip(x + left_noise, clip_min, clip_max)
                     last_probs = left_probs
                     noise = left_noise
                     current_labels = np.argmax(left_preds, axis=1)
                 else:
-                    #x = np.clip(x + right_noise, clip_min, clip_max)
                     last_probs = right_probs
                     noise = right_noise
                     current_labels = np.argmax(right_preds, axis=1)
             else:
                 if np.sum(right_probs - last_probs) < 0.0:
-                    #x = np.clip(x + right_noise, clip_min, clip_max)
                     last_probs = right_probs
                     noise = right_noise
                     current_labels = np.argmax(right_preds, axis=1)

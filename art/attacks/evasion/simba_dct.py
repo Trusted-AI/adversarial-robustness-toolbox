@@ -82,6 +82,9 @@ class SimBA_dct(EvasionAttack):
         last_prob = preds.reshape(-1)[original_label]
 
         n_dims = np.prod(x.shape)
+        if self.max_iter > n_dims:
+            self.max_iter = n_dims
+            logger.info('`max_iter` was reset to %d because it needs to be #pixels x #channels or less', n_dims)
 
         indices = self._block_order(x.shape[2], 3, initial_size=self.freq_dim, stride=self.stride)[:self.max_iter]
         trans = lambda z: self._block_idct(z, block_size=x.shape[2])
