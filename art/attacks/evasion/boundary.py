@@ -326,7 +326,6 @@ class BoundaryAttack(EvasionAttack):
             perturb -= np.dot(perturb, direction.T) * direction
         else:
             raise ValueError("Input shape not recognised.")
-        
         hypotenuse = np.sqrt(1 + delta ** 2)
         perturb = ((1 - hypotenuse) * (current_sample - original_sample) + perturb) / hypotenuse
         
