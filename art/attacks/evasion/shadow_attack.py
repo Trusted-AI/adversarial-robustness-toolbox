@@ -227,7 +227,7 @@ class ShadowAttack(EvasionAttack):
 
             import torch
 
-            perturbation_t = torch.from_numpy(perturbation)
+            perturbation_t = torch.from_numpy(perturbation).to('cpu')
             perturbation_t.requires_grad = True
 
             x_ = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
