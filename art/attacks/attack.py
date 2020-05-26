@@ -340,4 +340,3 @@ class AttributeInferenceAttack(InferenceAttack):
             raise ValueError("Attack feature must be positive.")
 
         return True
-
