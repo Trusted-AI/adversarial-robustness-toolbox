@@ -123,6 +123,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             self._reduce_labels = False
 
     @property
+    def device(self):
+        """
+        Get current used device.
+
+        :return: Current used device.
+        :rtype: `torch.device`
+        """
+        return self._device
+
     def model(self):
         return self._model._model
 
@@ -395,6 +404,42 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
+    def loss_gradient_framework(self, x, y, **kwargs):
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Input with shape as expected by the model.
+        :type x: `torch.Tensor`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `torch.Tensor`
+        :return: Gradients of the same shape as `x`.
+        :rtype: `torch.Tensor`
+        """
+        import torch
+        from torch.autograd import Variable
+
+        # Check label shape
+        if self._reduce_labels:
+            y = torch.argmax(y, dim=1)
+
+        # Convert the inputs to Variable
+        x = Variable(x, requires_grad=True)
+
+        # Compute the gradient and return
+        model_outputs = self._model(x)
+        loss = self._loss(model_outputs[-1], y)
+
+        # Clean gradients
+        self._model.zero_grad()
+
+        # Compute gradients
+        loss.backward()
+        grads = x.grad
+        assert grads.shape == x.shape
+
+        return grads
+
     def get_activations(self, x, layer, batch_size=128, framework=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -483,7 +528,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # pylint: disable=W0212
         # disable pylint because access to _modules required
-        torch.save(self.model.state_dict(), full_path + ".model")
+        torch.save(self._model._model.state_dict(), full_path + ".model")
         torch.save(self._optimizer.state_dict(), full_path + ".optimizer")
         logger.info("Model state dict saved in path: %s.", full_path + ".model")
         logger.info("Optimizer state dict saved in path: %s.", full_path + ".optimizer")

@@ -3,7 +3,7 @@ Module providing adversarial attacks under a common interface.
 """
 from art.attacks.attack import Attack, EvasionAttack, PoisoningAttackBlackBox, PoisoningAttackWhiteBox, ExtractionAttack
 
-# from art.attacks.evasion.adversarial_patch import AdversarialPatch
+# from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch
 # from art.attacks.evasion.boundary import BoundaryAttack
 # from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
 # from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack
@@ -14,7 +14,7 @@ from art.attacks.attack import Attack, EvasionAttack, PoisoningAttackBlackBox, P
 # from art.attacks.evasion.hop_skip_jump import HopSkipJump
 # from art.attacks.evasion.iterative_method import BasicIterativeMethod
 # from art.attacks.evasion.newtonfool import NewtonFool
-# from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+# from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 # from art.attacks.evasion.saliency_map import SaliencyMapMethod
 # from art.attacks.evasion.spatial_transformation import SpatialTransformation
 # from art.attacks.evasion.universal_perturbation import UniversalPerturbation
@@ -22,10 +22,9 @@ from art.attacks.attack import Attack, EvasionAttack, PoisoningAttackBlackBox, P
 # from art.attacks.evasion.zoo import ZooAttack
 # from art.attacks.evasion.pixel_threshold import PixelAttack
 # from art.attacks.evasion.pixel_threshold import ThresholdAttack
-# from art.attacks.evasion.frame_saliency import FrameSaliencyAttack
-#
+
 # from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 # from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
-#
+
 # from art.attacks.extraction.functionally_equivalent_extraction import FunctionallyEquivalentExtraction
 # from art.attacks.extraction.copycat_cnn import CopycatCNN
