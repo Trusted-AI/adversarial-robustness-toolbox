@@ -113,6 +113,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :type x: `np.ndarray`
         :param y: Original model's predictions for x.
         :type y: `np.ndarray`
+        :param values: Possible values for attacked feature.
+        :type values: `np.ndarray`
         :return: The inferred feature values.
         :rtype: `np.ndarray`
         """
@@ -123,8 +125,11 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         if self.estimator.input_shape[0] != x.shape[1] + 1:
             raise ValueError('Number of features in x + 1 does not match input_shape of classifier')
 
+        values = kwargs.get("values")
+
         x_test = np.concatenate((x, y), axis=1).astype(np.float32)
-        return np.array([np.argmax(arr) for arr in self.attack_model.predict(x_test)])
+        return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
+        # return np.array([np.argmax(arr) for arr in self.attack_model.predict(x_test)])
 
 
 class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
