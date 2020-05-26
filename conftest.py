@@ -86,7 +86,7 @@ def get_tabular_classifier_list(framework):
                 classifier_list = [get_tabular_classifier_kr()]
             else:
                 classifier = get_tabular_classifier_kr()
-                classifier_list = [KerasClassifier(model=classifier.model, use_logits=False, channel_index=1)]
+                classifier_list = [KerasClassifier(model=classifier.model, use_logits=False, channels_first=True)]
 
         if framework == "tensorflow":
             if clipped:
