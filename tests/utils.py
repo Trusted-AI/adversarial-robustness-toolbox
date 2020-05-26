@@ -30,6 +30,8 @@ import unittest
 import numpy as np
 
 from art.utils import load_dataset
+from art.estimators.encoding.tensorflow1 import Tensorflow1InverseGan
+from art.estimators.generation.tensorflow1 import Tensorflow1Gan
 
 logger = logging.getLogger(__name__)
 
@@ -1328,3 +1330,36 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
                 torch.cuda.manual_seed_all(seed)
         except ImportError:
             logger.info("Could not set random seed for PyTorch.")
+
+def get_gan_inverse_gan_ft():
+    import tensorflow as tf
+    from models.create_inverse_gan_models import build_gan_graph, build_inverse_gan_graph
+
+    if tf.__version__[0] == "2":
+        return None, None, None
+    else:
+
+        lr = 0.0002
+        latent_enc_len = 100
+
+        gen_tf, z_ph, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph = build_gan_graph(lr,
+                                                                                              latent_enc_len)
+
+        enc_tf, image_to_enc_ph, latent_enc_loss, enc_opt = build_inverse_gan_graph(lr, gen_tf, z_ph,
+                                                                                    latent_enc_len)
+
+        sess = tf.Session()
+        sess.run(tf.global_variables_initializer())
+
+        gan = Tensorflow1Gan(
+            input_ph=z_ph,
+            model=gen_tf,
+            sess=sess,
+        )
+
+        inverse_gan = Tensorflow1InverseGan(
+            input_ph=image_to_enc_ph,
+            model=enc_tf,
+            sess=sess,
+        )
+        return gan, inverse_gan, sess

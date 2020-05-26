@@ -28,6 +28,10 @@ This example uses the support vector machine SVC, but any other classifier of Sc
 Because gradient boosted tree classifier do not provide gradients, the adversarial examples are created with the 
 black-box method Zeroth Order Optimization.
 
+### InverseGan
+[get_started_inverse_gan.py](get_started_inverse_gan.py) demonstrates a simple example of using 
+InverseGan and Defense ART with TensorFlow v1.x.
+
 ### LightGBM
 [get_started_lightgbm.py](get_started_lightgbm.py) demonstrates a simple example of using ART with LightGBM.
 Because gradient boosted tree classifier do not provide gradients, the adversarial examples are created with the 
