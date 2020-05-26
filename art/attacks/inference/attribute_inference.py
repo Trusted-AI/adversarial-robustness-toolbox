@@ -195,12 +195,12 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
             x_value = np.concatenate((x[:, :self.attack_feature], v), axis=1)
             x_value = np.concatenate((x_value, x[:, self.attack_feature:]), axis=1)
             # find the relative probability of this value for all samples being attacked
-            prob_value = [((self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[0]) /
+            prob_value = [((self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[-1]) /
                             n_samples) * priors[i] / phi[i]) for row in x_value]
             prob_values.append(prob_value)
 
         # Choose the value with highest probability for each sample
-        return np.array([np.argmax(list(prob)) for prob in zip(*prob_values)])
+        return np.array([values[np.argmax(list(prob))] for prob in zip(*prob_values)])
 
     def _calculate_phi(self, x, values, n_samples):
         phi = []
@@ -309,7 +309,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         for row_index, row in enumerate(pred_rows):
             if y is not None:
                 matches = [1 if row[value_index] == y[row_index] else 0 for value_index in range(n_values)]
-                match_values = [row[value_index] if row[value_index] == y[row_index] else 0 for value_index in
+                match_values = [values[value_index] if row[value_index] == y[row_index] else 0 for value_index in
                                 range(n_values)]
             else:
                 matches = [0 for value_index in range(n_values)]
@@ -319,5 +319,5 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         # Choose the value with highest probability for each sample
         predicted_prob = [np.argmax(list(prob)) for prob in zip(*prob_values)]
 
-        return np.array([value if value is not None else predicted_prob[index] for index, value in
+        return np.array([value if value is not None else values[predicted_prob[index]] for index, value in
                          enumerate(predicted_pred)])
