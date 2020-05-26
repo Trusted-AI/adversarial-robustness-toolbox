@@ -25,6 +25,7 @@ def pytest_addoption(parser):
              "Other options available are {0}".format(art_supported_frameworks)
     )
 
+
 @pytest.fixture
 def get_image_classifier_list_defended(framework):
     def _get_image_classifier_list_defended(one_classifier=False, **kwargs):

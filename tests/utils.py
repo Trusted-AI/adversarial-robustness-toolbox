@@ -95,13 +95,13 @@ class TestBase(unittest.TestCase):
 
         # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
         np.testing.assert_array_almost_equal(
-            self._x_train_mnist_original[0 : self.n_train], self.x_train_mnist, decimal=3
+            self._x_train_mnist_original[0: self.n_train], self.x_train_mnist, decimal=3
         )
         np.testing.assert_array_almost_equal(
-            self._y_train_mnist_original[0 : self.n_train], self.y_train_mnist, decimal=3
+            self._y_train_mnist_original[0: self.n_train], self.y_train_mnist, decimal=3
         )
-        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0 : self.n_test], self.x_test_mnist, decimal=3)
-        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0 : self.n_test], self.y_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0: self.n_test], self.x_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0: self.n_test], self.y_test_mnist, decimal=3)
 
         np.testing.assert_array_almost_equal(self._x_train_iris_original, self.x_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
@@ -385,7 +385,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
 
 def get_image_classifier_kr(
-    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
+        loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
 ):
     """
     Standard Keras classifier for unit testing
@@ -833,7 +833,7 @@ def get_classifier_bb(defences=None):
     # define blackbox classifier
     def predict(x):
         with open(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "data/mnist", "api_output.txt")
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)
@@ -1330,6 +1330,7 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
                 torch.cuda.manual_seed_all(seed)
         except ImportError:
             logger.info("Could not set random seed for PyTorch.")
+
 
 def get_gan_inverse_gan_ft():
     import tensorflow as tf
