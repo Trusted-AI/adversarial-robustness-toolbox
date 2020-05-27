@@ -133,7 +133,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
          do nothing.
          """
-        pass
+        raise NotImplementedError
 
     def loss_gradient(self, z_encoding, image_adv):
         """
