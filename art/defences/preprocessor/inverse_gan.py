@@ -206,7 +206,7 @@ class InverseGAN(Preprocessor):
 class DefenseGAN(InverseGAN):
     def __init__(self, sess, gan):
         """
-          Create an instance of DefenceGAN defense.
+          Create an instance of DefenseGAN.
 
           """
         super(DefenseGan, self).__init__(
