@@ -131,7 +131,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         do nothing.
         """
-        pass
+        raise NotImplementedError
 
     def set_learning_phase(self, train):
         """
