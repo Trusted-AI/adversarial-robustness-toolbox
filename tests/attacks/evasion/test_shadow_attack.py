@@ -37,24 +37,91 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
-# @pytest.mark.only_with_platform("tensorflow")
 @pytest.mark.only_with_platform("pytorch")
-def test_images(is_tf_version_2, fix_get_mnist_subset, get_image_classifier_list_for_attack):
-
-    print(is_tf_version_2)
+def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
     classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
 
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
 
     for classifier in classifier_list:
-        attack = ShadowAttack(classifier, batch_size=32)
-        # x_train_mnist_adv = attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:3], maxiter=1)
-        # assert np.mean(x_train_mnist[0:3]) == pytest.approx(0.13015706282513004, 0.01)
-        # assert np.mean(x_train_mnist_adv) == pytest.approx(0.1592448561261751, 0.01)
+        attack = ShadowAttack(
+            estimator=classifier,
+            sigma=0.5,
+            nb_steps=3,
+            learning_rate=0.1,
+            lambda_tv=0.3,
+            lambda_c=1.0,
+            lambda_s=0.5,
+            batch_size=32,
+            targeted=True,
+        )
+
+        x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
+
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, 0.01)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_classifier_list_for_attack):
+    classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
+    (x_train_mnist, _, _, _) = fix_get_mnist_subset
+
+    x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
+
+    attack = ShadowAttack(
+        estimator=classifier_list[0],
+        sigma=0.5,
+        nb_steps=3,
+        learning_rate=0.1,
+        lambda_tv=0.3,
+        lambda_c=1.0,
+        lambda_s=0.5,
+        batch_size=32,
+        targeted=True,
+    )
+
+    gradients = attack._get_regularisation_loss_gradients(x_train_mnist[0:1])
+
+    gradients_expected = np.array(
+        [
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            -0.27294118,
+            -0.36906054,
+            0.83799828,
+            0.40741005,
+            0.65682181,
+            -0.13141348,
+            -0.39729583,
+            -0.12235294,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+    )
+
+    np.testing.assert_array_almost_equal(gradients[0, 0, 14, :], gradients_expected, decimal=3)
 
 
 def test_classifier_type_check_fail():
