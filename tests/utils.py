@@ -833,7 +833,7 @@ def get_classifier_bb(defences=None):
     # define blackbox classifier
     def predict(x):
         with open(
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), "data/mnist", "api_output.txt")
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)
