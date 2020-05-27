@@ -45,7 +45,7 @@ class InverseGAN(Preprocessor):
 
     def __init__(self, sess, gan, inverse_gan):
         """
-        Create an instance of an InverseGanDefense.
+        Create an instance of an InverseGAN.
 
         """
         super(InverseGanDefense, self).__init__()
