@@ -80,7 +80,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :type feed_dict: `dictionary`
         """
 
-        super(Tensorflow1Gan, self).__init__(
+        super(TensorFlowGenerator, self).__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             preprocessing_defences=preprocessing_defences,

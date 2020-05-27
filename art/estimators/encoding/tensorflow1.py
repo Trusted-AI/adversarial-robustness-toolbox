@@ -79,7 +79,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         :type feed_dict: `dictionary`
         """
 
-        super(Tensorflow1InverseGan, self).__init__(
+        super(TensorFlowEncoder, self).__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             preprocessing_defences=preprocessing_defences,

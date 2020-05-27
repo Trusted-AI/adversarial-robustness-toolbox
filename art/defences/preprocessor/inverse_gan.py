@@ -91,7 +91,7 @@ class InverseGAN(Preprocessor):
 
         def func_gen_gradients(z_i):
             z_i_reshaped = np.reshape(z_i, [batch_size, self.gan.encoding_length])
-            grad = self.loss_gradient(z_i_reshaped, x)
+            grad = self.estimate_gradient(z_i_reshaped, x)
             grad = np.float64(
                 grad)  # scipy fortran code seems to expect float64 not 32 https://github.com/scipy/scipy/issues/5832
 
@@ -155,26 +155,6 @@ class InverseGAN(Preprocessor):
 
         return loss
 
-    def loss_gradient(self, z_encoding, y):
-        """
-        Compute the gradient of the loss function w.r.t. a `z_encoding` input within a GAN against a
-        corresponding adversarial sample
-        :param z_encoding:
-        :type z_encoding: `np.ndarray`
-        :param y: Target values of shape (nb_samples, nb_classes)
-        :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `z_encoding`.
-        :rtype: `np.ndarray`
-        """
-
-        logging.info("Calculating Gradients")
-
-        gradient = self._sess.run(self._grad,
-                                  feed_dict={self._image_adv: y,
-                                             self.gan.input_ph: z_encoding})
-
-        return gradient
-
     @property
     def apply_fit(self):
         """
@@ -189,12 +169,24 @@ class InverseGAN(Preprocessor):
         """
         pass
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, z_encoding, y):
         """
-        do nothing.
+        Compute the gradient of the loss function w.r.t. a `z_encoding` input within a GAN against a
+        corresponding adversarial sample
+        :param z_encoding:
+        :type z_encoding: `np.ndarray`
+        :param y: Target values of shape (nb_samples, nb_classes)
+        :type y: `np.ndarray`
+        :return: Array of gradients of the same shape as `z_encoding`.
+        :rtype: `np.ndarray`
         """
-        pass
-        # return grad
+        logging.info("Calculating Gradients")
+
+        gradient = self._sess.run(self._grad,
+                                  feed_dict={self._image_adv: y,
+                                             self.gan.input_ph: z_encoding})
+
+        return gradient
 
     def fit(self, x, y=None, **kwargs):
         """

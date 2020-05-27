@@ -30,8 +30,8 @@ import unittest
 import numpy as np
 
 from art.utils import load_dataset
-from art.estimators.encoding.tensorflow1 import Tensorflow1InverseGan
-from art.estimators.generation.tensorflow1 import Tensorflow1Gan
+from art.estimators.encoding.tensorflow1 import TensorFlowEncoder
+from art.estimators.generation.tensorflow1 import TensorFlowGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -1352,13 +1352,13 @@ def get_gan_inverse_gan_ft():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        gan = Tensorflow1Gan(
+        gan = TensorFlowGenerator(
             input_ph=z_ph,
             model=gen_tf,
             sess=sess,
         )
 
-        inverse_gan = Tensorflow1InverseGan(
+        inverse_gan = TensorFlowEncoder(
             input_ph=image_to_enc_ph,
             model=enc_tf,
             sess=sess,
