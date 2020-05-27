@@ -7,7 +7,7 @@ import logging
 import numpy as np
 import tensorflow as tf
 
-from art.classifiers import TFClassifier
+from art.estimators.classification import TensorFlowClassifier
 from art.defences.preprocessor.inverse_gan import InverseGanDefense
 from art.estimators.encoding.tensorflow1 import Tensorflow1InverseGan
 from art.estimators.generation.tensorflow1 import Tensorflow1Gan
