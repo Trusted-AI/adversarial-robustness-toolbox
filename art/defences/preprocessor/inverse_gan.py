@@ -38,10 +38,9 @@ logger = logging.getLogger(__name__)
 
 class InverseGAN(Preprocessor):
     """
-    Given a latent variable generating a given adversarial sample, either inferred by an inverse Gan or randomly
-    generated, the InverseGanDefense, optimizes that latent variable to project a sample as close as possible to
+    Given a latent variable generating a given adversarial sample, either inferred by an inverse GAN or randomly
+    generated, the InverseGAN, optimizes that latent variable to project a sample as close as possible to
     the adversarial sample without the adversarial noise
-
     """
 
     def __init__(self, sess, gan, inverse_gan=None):
