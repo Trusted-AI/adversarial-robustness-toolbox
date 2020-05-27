@@ -480,7 +480,7 @@ class NeuralNetworkMixin(ABC):
                 self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
 
     @abstractmethod
-    def get_activations(self, x, layer, batch_size):
+    def get_activations(self, x, layer, batch_size, framework=False):
         """
         Return the output of a specific layer for samples `x` where `layer` is the index of the layer between 0 and
         `nb_layers - 1 or the name of the layer. The number of layers can be determined by counting the results
@@ -492,6 +492,8 @@ class NeuralNetworkMixin(ABC):
         :type layer: `int` or `str`
         :param batch_size: Batch size.
         :type batch_size: `int`
+        :param framework: if true, return the intermediate tensor representation of the activation
+        :type framework: `bool`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :rtype: `np.ndarray`
         """
