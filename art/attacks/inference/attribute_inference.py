@@ -97,7 +97,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
-        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=True)
+        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
 
         # create training set for attack model
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
