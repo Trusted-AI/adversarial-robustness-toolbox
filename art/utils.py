@@ -123,6 +123,11 @@ def deprecated_keyword_arg(identifier, end_version, *, reason="", replaced_by=""
             params = signature(function).bind(*args, **kwargs)
             params.apply_defaults()
 
+            if params.signature.parameters[identifier].default is not Deprecated:
+                raise ValueError("Deprecated keyword argument must default to the Decorator singleton.")
+            if replaced_by != "" and replaced_by not in params.arguments:
+                raise ValueError("Deprecated keyword replacement not found in function signature.")
+
             if params.arguments[identifier] is not Deprecated:
                 warnings.simplefilter("always", category=DeprecationWarning)
                 warnings.warn(deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2)

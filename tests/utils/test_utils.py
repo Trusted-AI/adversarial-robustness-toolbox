@@ -121,6 +121,26 @@ class TestDeprecatedKeyword:
         warn_obj = recwarn.pop(DeprecationWarning)
         assert str(warn_obj.message) == warn_msg_expected
 
+    def test_replaced_by_keyword_missing_signature_error(self, recwarn):
+        @deprecated_keyword_arg("b", "1.3.0", replaced_by="c")
+        def simple_addition(a=1, b=Deprecated):
+            result = a if b is Deprecated else a + b
+            return result
+
+        exc_msg = "Deprecated keyword replacement not found in function signature."
+        with pytest.raises(ValueError, match=exc_msg):
+            simple_addition(a=1)
+
+    def test_deprecated_keyword_default_value_error(self):
+        @deprecated_keyword_arg("a", "1.3.0")
+        def simple_addition(a=None, b=1):
+            result = a if a is None else a + b
+            return result
+
+        exc_msg = "Deprecated keyword argument must default to the Decorator singleton."
+        with pytest.raises(ValueError, match=exc_msg):
+            simple_addition(a=1)
+
 
 if __name__ == "__main__":
     pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
