@@ -54,11 +54,11 @@ class InverseGAN(Preprocessor):
         self.gan = gan
         self.inverse_gan = inverse_gan
         self._sess = sess
-        self._image_adv = tf.placeholder(tf.float32, shape=self.gan.generator_model.get_shape().as_list(),
+        self._image_adv = tf.placeholder(tf.float32, shape=self.gan.model.get_shape().as_list(),
                                          name="image_adv_ph")
 
         num_dim = len(self._image_adv.get_shape())
-        image_loss = tf.reduce_mean(tf.square(self.gan.generator_model - self._image_adv), axis=list(range(1, num_dim)))
+        image_loss = tf.reduce_mean(tf.square(self.gan.model - self._image_adv), axis=list(range(1, num_dim)))
         self._loss = tf.reduce_sum(image_loss)
         self._grad = tf.gradients(self._loss, self.gan.input_ph)
 

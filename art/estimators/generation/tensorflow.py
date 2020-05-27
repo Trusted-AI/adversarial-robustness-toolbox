@@ -139,7 +139,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         raise NotImplementedError
 
     @property
-    def generator_model(self):
+    def model(self):
         """
         Returns the generator tensor
         :return:

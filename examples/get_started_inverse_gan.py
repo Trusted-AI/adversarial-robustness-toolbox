@@ -8,9 +8,9 @@ import numpy as np
 import tensorflow as tf
 
 from art.estimators.classification import TensorFlowClassifier
-from art.defences.preprocessor.inverse_gan import InverseGanDefense
-from art.estimators.encoding.tensorflow import Tensorflow1InverseGan
-from art.estimators.generation.tensorflow import Tensorflow1Gan
+from art.defences.preprocessor.inverse_gan import InverseGAN
+from art.estimators.encoding.tensorflow import TensorFlowEncoder
+from art.estimators.generation.tensorflow import TensorFlowGenerator
 from art.utils import load_mnist
 from art.attacks.evasion import FastGradientMethod
 from examples.inverse_gan_author_utils import EncoderReconstructor, GeneratorReconstructor
@@ -64,7 +64,7 @@ def create_ts1_encoder_model(batch_size):
 
     unmodified_z_tensor, images_tensor = encoder_reconstructor.generate_z_extrapolated_k()
 
-    encoder = Tensorflow1InverseGan(
+    encoder = TensorFlowEncoder(
         input_ph=images_tensor,
         model=unmodified_z_tensor,
         sess=sess,
@@ -78,7 +78,7 @@ def create_ts1_generator_model(batch_size):
 
     generator.sess.run(generator.init_opt)
 
-    generator = Tensorflow1Gan(
+    generator = TensorFlowGenerator(
         input_ph=generator.z_general_placeholder,
         model=generator.z_hats_recs,
         sess=generator.sess,
@@ -138,9 +138,9 @@ def main():
     encoder = create_ts1_encoder_model(batch_size)
     generator = create_ts1_generator_model(batch_size)
 
-    inverse_gan = InverseGanDefense(sess=generator._sess,
-                                    gan=generator,
-                                    inverse_gan=encoder)
+    inverse_gan = InverseGAN(sess=generator._sess,
+                             gan=generator,
+                             inverse_gan=encoder)
     # defense_gan = DefenseGan(sess=generator.sess,
     #                          generator=generator)
 
