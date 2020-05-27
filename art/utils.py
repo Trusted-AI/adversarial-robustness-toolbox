@@ -25,6 +25,7 @@ import math
 import os
 import warnings
 from functools import wraps
+from inspect import signature
 
 import numpy as np
 
@@ -34,12 +35,27 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- DEPRECATION
 
 
+class _Deprecated:
+    """
+    Create Deprecated() singleton object.
+    """
+
+    _instance = None
+
+    def __new__(cls):
+        if _Deprecated._instance is None:
+            _Deprecated._instance = object.__new__(cls)
+        return _Deprecated._instance
+
+
+Deprecated = _Deprecated()
+
+
 def deprecated(end_version, *, reason="", replaced_by=""):
     """
     Deprecate a function or method and raise a `DeprecationWarning`.
 
     The `@deprecated` decorator is used to deprecate functions and methods. Several cases are supported. For example
-    one can use it to depcreate a function that has become redundant or renaming a function. The following code examples
     provide different use cases of how to use decorator.
 
     .. code-block:: python
