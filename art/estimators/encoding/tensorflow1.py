@@ -121,25 +121,25 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         do nothing.
         """
-        pass
+        raise NotImplementedError
 
     def get_activations(self, x, layer, batch_size=128):
         """
         do nothing.
         """
-        pass
+        raise NotImplementedError
 
     def set_learning_phase(self, train):
         """
          do nothing.
          """
-        pass
+        raise NotImplementedError
 
     def loss_gradient(self, z_encoding, image_adv):
         """
         No gradients to compute for this method; do nothing.
         """
-        pass
+        raise NotImplementedError
 
     @property
     def encoding_length(self):
