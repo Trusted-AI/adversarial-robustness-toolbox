@@ -21,8 +21,7 @@ import logging
 
 import pytest
 
-from art.utils import deprecated
-from art.utils import deprecated_keyword_arg
+from art.utils import Deprecated, deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -74,32 +73,44 @@ class TestDeprecatedKeyword:
     Test the deprecation decorator for keyword arguments.
     """
 
-    def test_deprecated_simple(self):
+    def test_deprecated_keyword_used(self):
         @deprecated_keyword_arg("a", "1.3.0")
-        def simple_addition(a=1, b=1):
-            return a + b
+        def simple_addition(a=Deprecated, b=1):
+            result = a if a is Deprecated else a + b
+            return result
 
         with pytest.deprecated_call():
-            simple_addition()
+            simple_addition(a=1)
 
-    def test_deprecated_reason_keyword(self, recwarn):
+    def test_deprecated_keyword_not_used(self, recwarn):
+        @deprecated_keyword_arg("b", "1.3.0")
+        def simple_addition(a, b=Deprecated):
+            result = a if b is Deprecated else a + b
+            return result
+
+        simple_addition(1)
+        assert len(recwarn) == 0
+
+    def test_reason(self, recwarn):
         @deprecated_keyword_arg("a", "1.3.0", reason="With some reason message.")
-        def simple_addition(a=1, b=1):
-            return a + b
+        def simple_addition(a=Deprecated, b=1):
+            result = a if a is Deprecated else a + b
+            return result
 
         warn_msg_expected = (
             "Keyword argument 'a' in 'simple_addition' is deprecated and will be removed in future release 1.3.0."
             "\nWith some reason message."
         )
 
-        simple_addition()
+        simple_addition(a=1)
         warn_obj = recwarn.pop(DeprecationWarning)
         assert str(warn_obj.message) == warn_msg_expected
 
-    def test_deprecated_replaced_by_keyword(self, recwarn):
+    def test_replaced_by(self, recwarn):
         @deprecated_keyword_arg("b", "1.3.0", replaced_by="c")
-        def simple_addition(a=1, b=1):
-            return a + b
+        def simple_addition(a=1, b=Deprecated, c=1):
+            result = a + c if b is Deprecated else a + b
+            return result
 
         warn_msg_expected = (
             "Keyword argument 'b' in 'simple_addition' is deprecated and will be removed in future release 1.3.0."
@@ -109,6 +120,26 @@ class TestDeprecatedKeyword:
         simple_addition(a=1, b=1)
         warn_obj = recwarn.pop(DeprecationWarning)
         assert str(warn_obj.message) == warn_msg_expected
+
+    def test_replaced_by_keyword_missing_signature_error(self, recwarn):
+        @deprecated_keyword_arg("b", "1.3.0", replaced_by="c")
+        def simple_addition(a=1, b=Deprecated):
+            result = a if b is Deprecated else a + b
+            return result
+
+        exc_msg = "Deprecated keyword replacement not found in function signature."
+        with pytest.raises(ValueError, match=exc_msg):
+            simple_addition(a=1)
+
+    def test_deprecated_keyword_default_value_error(self):
+        @deprecated_keyword_arg("a", "1.3.0")
+        def simple_addition(a=None, b=1):
+            result = a if a is None else a + b
+            return result
+
+        exc_msg = "Deprecated keyword argument must default to the Decorator singleton."
+        with pytest.raises(ValueError, match=exc_msg):
+            simple_addition(a=1)
 
 
 if __name__ == "__main__":
