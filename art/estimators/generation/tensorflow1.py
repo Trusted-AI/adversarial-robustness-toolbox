@@ -125,7 +125,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         do nothing.
         """
-        pass
+        raise NotImplementedError
 
     def get_activations(self, x, layer, batch_size=128):
         """
