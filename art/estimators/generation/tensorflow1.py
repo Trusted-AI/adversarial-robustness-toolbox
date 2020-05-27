@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 # TODO change ClassifierMixin to EncoderMixin
-class Tensorflow1Gan(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
+class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
     """
     This class implements a GAN with the TensorFlow framework.
     """
