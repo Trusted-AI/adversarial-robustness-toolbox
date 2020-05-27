@@ -383,7 +383,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         """
         return self._layer_names
 
-    def get_activations(self, x, layer, batch_size=128):
+    def get_activations(self, x, layer, batch_size=128, framework=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -422,6 +422,9 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             x_expanded = x
 
         x_preprocessed, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
+
+        if framework:
+            return self._model[layer_ind]
 
         # Compute activations with batching
         activations = []
