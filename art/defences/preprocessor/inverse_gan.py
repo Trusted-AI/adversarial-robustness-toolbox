@@ -36,7 +36,7 @@ from art.estimators.generation.generator import GeneratorMixin
 logger = logging.getLogger(__name__)
 
 
-class InverseGanDefense(Preprocessor):
+class InverseGAN(Preprocessor):
     """
     Given a latent variable generating a given adversarial sample, either inferred by an inverse Gan or randomly
     generated, the InverseGanDefense, optimizes that latent variable to project a sample as close as possible to
