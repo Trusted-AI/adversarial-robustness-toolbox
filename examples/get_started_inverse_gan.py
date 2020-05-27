@@ -44,7 +44,7 @@ def create_ts1_art_mnist_classifier(min_pixel_value, max_pixel_value):
 
     sess.run(tf.global_variables_initializer())
 
-    classifier = TFClassifier(
+    classifier = TensorFlowClassifier(
         clip_values=(min_pixel_value, max_pixel_value),
         input_ph=input_ph,
         output=logits,
