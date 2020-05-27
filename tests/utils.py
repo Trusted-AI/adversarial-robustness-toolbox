@@ -30,8 +30,8 @@ import unittest
 import numpy as np
 
 from art.utils import load_dataset
-from art.estimators.encoding.tensorflow1 import TensorFlowEncoder
-from art.estimators.generation.tensorflow1 import TensorFlowGenerator
+from art.estimators.encoding.tensorflow import TensorFlowEncoder
+from art.estimators.generation.tensorflow import TensorFlowGenerator
 
 logger = logging.getLogger(__name__)
 
