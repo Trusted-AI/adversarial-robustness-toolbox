@@ -133,7 +133,7 @@ class Wasserstein(EvasionAttack):
             "batch_size": batch_size,
         }
 
-        Wasserstein.set_params(self, **kwargs)
+        self.set_params(**kwargs)
 
     def generate(self, x, y=None, **kwargs):
         """
