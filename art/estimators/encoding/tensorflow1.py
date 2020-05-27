@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
     """
-    This class implements an inverse gan with the TensorFlow framework.
+    This class implements an encoder model using the TensorFlow framework.
     """
 
     def __init__(
