@@ -21,7 +21,7 @@ import pytest
 import logging
 import numpy as np
 
-from art.defences.preprocessor.inverse_gan import InverseGanDefense
+from art.defences.preprocessor.inverse_gan import InverseGAN
 from art.attacks.evasion import FastGradientMethod
 
 
@@ -52,7 +52,7 @@ def test_inverse_gan(fix_get_mnist_subset, get_image_classifier_list_for_attack,
     attack = FastGradientMethod(classifier, eps=0.2)
     x_test_adv = attack.generate(x=x_test_mnist)
 
-    inverse_gan = InverseGanDefense(
+    inverse_gan = InverseGAN(
         sess=sess,
         gan=gan,
         inverse_gan=inverse_gan)
