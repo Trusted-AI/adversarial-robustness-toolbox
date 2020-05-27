@@ -48,7 +48,7 @@ class InverseGAN(Preprocessor):
         Create an instance of an InverseGAN.
 
         """
-        super(InverseGanDefense, self).__init__()
+        super().__init__()
 
         assert isinstance(gan, GeneratorMixin)
         self.gan = gan
