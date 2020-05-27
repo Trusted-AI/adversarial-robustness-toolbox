@@ -139,7 +139,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         No gradients to compute for this method; do nothing.
         """
-        pass
+        raise NotImplementedError
 
     @property
     def encoding_length(self):
