@@ -56,6 +56,7 @@ def deprecated(end_version, *, reason="", replaced_by=""):
     Deprecate a function or method and raise a `DeprecationWarning`.
 
     The `@deprecated` decorator is used to deprecate functions and methods. Several cases are supported. For example
+    one can use it to deprecate a function that has become redundant or rename a function. The following code examples
     provide different use cases of how to use decorator.
 
     .. code-block:: python
@@ -95,9 +96,20 @@ def deprecated_keyword_arg(identifier, end_version, *, reason="", replaced_by=""
     """
     Deprecate a keyword argument and raise a `DeprecationWarning`.
 
+    The `@deprecated_keyword_arg` decorator is used to deprecate keyword arguments. The deprecated keyword argument must
+    default to `Deprecated`. Several use cases are supported. For example one can use it to to rename a keyword
+    identifier. The following code examples provide different use cases of how to use the decorator.
 
     .. code-block:: python
 
+    @deprecated_keyword_arg("print", "1.1.0", replaced_by="verbose")
+    def simple_addition(a, b, print=Deprecated, verbose=False):
+        if verbose:
+            print(a + b)
+        return a + b
+
+    @deprecated_keyword_arg("verbose", "1.1.0")
+    def simple_addition(a, b, verbose=Deprecated):
         return a + b
 
     :param identifier: Keyword identifier.
