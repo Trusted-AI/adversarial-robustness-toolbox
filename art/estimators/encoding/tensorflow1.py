@@ -48,7 +48,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
             feed_dict={}
     ):
         """
-        Initialization specific to TensorFlow inverse gan implementations.
+        Initialization specific to encoder estimator implementation in TensorFlow.
 
         :param input_ph: The input placeholder.
         :type input_ph: `tf.Placeholder`
