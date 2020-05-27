@@ -38,12 +38,10 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.only_with_platform("pytorch")
+@pytest.mark.only_with_platform("tensorflow")
 def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
     classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
-    x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
 
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -62,66 +60,82 @@ def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
             targeted=True,
         )
 
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+        if attack.frame_work == 'pytorch':
+            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
+
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
 
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, 0.01)
 
 
 @pytest.mark.only_with_platform("pytorch")
+@pytest.mark.only_with_platform("tensorflow")
 def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_classifier_list_for_attack):
+
     classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
-    (x_train_mnist, _, _, _) = fix_get_mnist_subset
 
-    x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
+    for classifier in classifier_list:
 
-    attack = ShadowAttack(
-        estimator=classifier_list[0],
-        sigma=0.5,
-        nb_steps=3,
-        learning_rate=0.1,
-        lambda_tv=0.3,
-        lambda_c=1.0,
-        lambda_s=0.5,
-        batch_size=32,
-        targeted=True,
-    )
+        print(classifier)
 
-    gradients = attack._get_regularisation_loss_gradients(x_train_mnist[0:1])
+        attack = ShadowAttack(
+            estimator=classifier,
+            sigma=0.5,
+            nb_steps=3,
+            learning_rate=0.1,
+            lambda_tv=0.3,
+            lambda_c=1.0,
+            lambda_s=0.5,
+            batch_size=32,
+            targeted=True,
+        )
 
-    gradients_expected = np.array(
-        [
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            -0.27294118,
-            -0.36906054,
-            0.83799828,
-            0.40741005,
-            0.65682181,
-            -0.13141348,
-            -0.39729583,
-            -0.12235294,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ]
-    )
+        (x_train_mnist, _, _, _) = fix_get_mnist_subset
 
-    np.testing.assert_array_almost_equal(gradients[0, 0, 14, :], gradients_expected, decimal=3)
+        if attack.frame_work == 'pytorch':
+            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
+
+        gradients = attack._get_regularisation_loss_gradients(x_train_mnist[0:1])
+
+        gradients_expected = np.array(
+            [
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                -0.27294118,
+                -0.36906054,
+                0.83799828,
+                0.40741005,
+                0.65682181,
+                -0.13141348,
+                -0.39729583,
+                -0.12235294,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ]
+        )
+
+        if attack.frame_work == 'pytorch':
+            np.testing.assert_array_almost_equal(gradients[0, 0, 14, :], gradients_expected, decimal=3)
+        else:
+            np.testing.assert_array_almost_equal(gradients[0, 14, :, 0], gradients_expected, decimal=3)
 
 
 def test_classifier_type_check_fail():
@@ -129,4 +143,4 @@ def test_classifier_type_check_fail():
 
 
 if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
+    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
