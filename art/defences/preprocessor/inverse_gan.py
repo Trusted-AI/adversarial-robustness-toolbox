@@ -209,7 +209,7 @@ class DefenseGAN(InverseGAN):
           Create an instance of DefenseGAN.
 
           """
-        super(DefenseGan, self).__init__(
+        super().__init__(
             sess=sess,
             gan=gan
         )
