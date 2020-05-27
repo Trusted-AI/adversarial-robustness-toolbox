@@ -69,7 +69,7 @@ class InverseGAN(Preprocessor):
 
     def __call__(self, x, **kwargs):
         """
-        Applies the EncoderDecoderDefense defence upon the sample input
+        Applies the InverseGAN defence upon the sample input
         :param x: sample input
         :type x: `np.ndarray`
         :param kwargs:
