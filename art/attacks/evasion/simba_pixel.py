@@ -175,4 +175,4 @@ class SimBA_pixel(EvasionAttack):
             order = np.zeros((channels, image_size, image_size))
             for i in range(channels):
                 order[i, :, :] = 3 * order_2d + i
-        return order.reshape(1, -1).squeeze().argsort()
+        return order.transpose(1,2,0).reshape(1, -1).squeeze().argsort()

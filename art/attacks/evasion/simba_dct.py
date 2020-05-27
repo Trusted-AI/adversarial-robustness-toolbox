@@ -168,7 +168,7 @@ class SimBA_dct(EvasionAttack):
 
         return True
 
-    def _block_order(self, img_size, channels, initial_size=28, stride=7):
+    def _block_order(self, img_size, channels, initial_size=2, stride=1):
         order = np.zeros((channels , img_size , img_size))
         total_elems = channels * initial_size * initial_size
         perm = np.random.permutation(total_elems)
@@ -180,10 +180,11 @@ class SimBA_dct(EvasionAttack):
             order[:, :(i+stride), i:(i+stride)] = perm[:num_first].reshape((channels, -1, stride))
             order[:, i:(i+stride), :i] = perm[num_first:].reshape((channels, stride, -1))
             total_elems += num_elems
-        return order.reshape(1, -1).squeeze().argsort()
+        return order.transpose(1,2,0).reshape(1, -1).squeeze().argsort()
 
     # applies IDCT to each block of size block_size
     def _block_idct(self, x, block_size=8, masked=False, ratio=0.5):
+        x = x.transpose(0,3,1,2)
         z = np.zeros(x.shape)
         num_blocks = int(x.shape[2] / block_size)
         mask = np.zeros((x.shape[0], x.shape[1], block_size, block_size))
@@ -198,4 +199,4 @@ class SimBA_dct(EvasionAttack):
                 if masked:
                     submat = submat * mask
                 z[:, :, (i * block_size):((i + 1) * block_size), (j * block_size):((j + 1) * block_size)] = idct(idct(submat, axis=3, norm='ortho'), axis=2, norm='ortho')
-        return z
+        return z.transpose(0,2,3,1)
