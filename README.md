@@ -51,6 +51,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 ## Implemented Attacks, Defences, Detections, Metrics, Certifications and Verifications
 
 **Evasion Attacks:**
+* Wasserstein Attack([Wong et al., 2020](https://arxiv.org/abs/1902.07906))
 * Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
 * Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations))
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
