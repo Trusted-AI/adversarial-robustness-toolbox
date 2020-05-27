@@ -21,7 +21,7 @@ import logging
 
 import pytest
 
-from art.utils import deprecated, deprecated_keyword_arg
+from art.utils import Deprecated, deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -75,39 +75,42 @@ class TestDeprecatedKeyword:
 
     def test_deprecated_keyword_used(self):
         @deprecated_keyword_arg("a", "1.3.0")
-        def simple_addition(a=1, b=1):
-            return a + b
-
-        with pytest.deprecated_call():
-            simple_addition()
-
-    def test_deprecated_keyword_not_used(self, recwarn):
-        @deprecated_keyword_arg("c", "1.3.0")
-        def simple_addition(a, b, c=None):
-            result = a + b if c is None else a + b + c
+        def simple_addition(a=Deprecated, b=1):
+            result = a if a is Deprecated else a + b
             return result
 
-        simple_addition(1, 2, c=1)
+        with pytest.deprecated_call():
+            simple_addition(a=1)
+
+    def test_deprecated_keyword_not_used(self, recwarn):
+        @deprecated_keyword_arg("b", "1.3.0")
+        def simple_addition(a, b=Deprecated):
+            result = a if b is Deprecated else a + b
+            return result
+
+        simple_addition(1)
         assert len(recwarn) == 0
 
-    def test_deprecated_reason_keyword(self, recwarn):
+    def test_reason(self, recwarn):
         @deprecated_keyword_arg("a", "1.3.0", reason="With some reason message.")
-        def simple_addition(a=1, b=1):
-            return a + b
+        def simple_addition(a=Deprecated, b=1):
+            result = a if a is Deprecated else a + b
+            return result
 
         warn_msg_expected = (
             "Keyword argument 'a' in 'simple_addition' is deprecated and will be removed in future release 1.3.0."
             "\nWith some reason message."
         )
 
-        simple_addition()
+        simple_addition(a=1)
         warn_obj = recwarn.pop(DeprecationWarning)
         assert str(warn_obj.message) == warn_msg_expected
 
-    def test_deprecated_replaced_by_keyword(self, recwarn):
+    def test_replaced_by(self, recwarn):
         @deprecated_keyword_arg("b", "1.3.0", replaced_by="c")
-        def simple_addition(a=1, b=1):
-            return a + b
+        def simple_addition(a=1, b=Deprecated, c=1):
+            result = a + c if b is Deprecated else a + b
+            return result
 
         warn_msg_expected = (
             "Keyword argument 'b' in 'simple_addition' is deprecated and will be removed in future release 1.3.0."
