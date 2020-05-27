@@ -71,7 +71,6 @@ def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
 
 @pytest.mark.only_with_platform("pytorch")
-@pytest.mark.only_with_platform("tensorflow")
 def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
     classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
@@ -143,4 +142,4 @@ def test_classifier_type_check_fail():
 
 
 if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
+    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
