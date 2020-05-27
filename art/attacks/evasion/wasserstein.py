@@ -114,7 +114,7 @@ class Wasserstein(EvasionAttack):
         :param batch_size: Size of batches.
         :type batch_size: `int`
         """
-        super(Wasserstein, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         kwargs = {
             "targeted": targeted,
