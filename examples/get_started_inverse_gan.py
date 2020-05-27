@@ -9,8 +9,8 @@ import tensorflow as tf
 
 from art.estimators.classification import TensorFlowClassifier
 from art.defences.preprocessor.inverse_gan import InverseGanDefense
-from art.estimators.encoding.tensorflow1 import Tensorflow1InverseGan
-from art.estimators.generation.tensorflow1 import Tensorflow1Gan
+from art.estimators.encoding.tensorflow import Tensorflow1InverseGan
+from art.estimators.generation.tensorflow import Tensorflow1Gan
 from art.utils import load_mnist
 from art.attacks.evasion import FastGradientMethod
 from examples.inverse_gan_author_utils import EncoderReconstructor, GeneratorReconstructor
