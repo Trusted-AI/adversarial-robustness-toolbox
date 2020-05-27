@@ -29,7 +29,7 @@ from art.estimators.encoding.encoder import EncoderMixin
 logger = logging.getLogger(__name__)
 
 
-class Tensorflow1InverseGan(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
+class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
     """
     This class implements an inverse gan with the TensorFlow framework.
     """
