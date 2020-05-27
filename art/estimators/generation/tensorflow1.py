@@ -137,7 +137,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         do nothing.
         """
-        pass
+        raise NotImplementedError
 
     @property
     def generator_model(self):
