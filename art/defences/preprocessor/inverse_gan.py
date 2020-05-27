@@ -43,7 +43,7 @@ class InverseGAN(Preprocessor):
     the adversarial sample without the adversarial noise
     """
 
-    def __init__(self, sess, gan, inverse_gan=None):
+    def __init__(self, sess, gan, inverse_gan):
         """
         Create an instance of an InverseGanDefense.
 
