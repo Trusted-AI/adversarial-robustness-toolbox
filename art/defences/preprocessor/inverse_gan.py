@@ -211,5 +211,6 @@ class DefenseGAN(InverseGAN):
           """
         super().__init__(
             sess=sess,
-            gan=gan
+            gan=gan,
+            inverse_gan=None
         )
