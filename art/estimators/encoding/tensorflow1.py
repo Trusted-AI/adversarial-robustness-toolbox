@@ -127,7 +127,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         do nothing.
         """
-        pass
+        raise NotImplementedError
 
     def set_learning_phase(self, train):
         """
