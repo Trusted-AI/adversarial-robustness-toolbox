@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the DefenceGAN defence in `FeatureSqueezing`.
+This module implements the InverseGan defence.
 
 | Paper link: https://arxiv.org/abs/1911.10291
 
