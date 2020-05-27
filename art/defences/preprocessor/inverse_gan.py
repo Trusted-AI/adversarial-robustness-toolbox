@@ -24,8 +24,9 @@ This module implements the DefenceGAN defence in `FeatureSqueezing`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from scipy.optimize import minimize
+
 import numpy as np
+from scipy.optimize import minimize
 import tensorflow as tf
 
 from art.defences.preprocessor.preprocessor import Preprocessor
