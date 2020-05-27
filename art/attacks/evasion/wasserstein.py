@@ -28,9 +28,7 @@ import numpy as np
 from scipy.special import lambertw
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator
-from art.estimators.estimator import LossGradientsMixin
-from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array
