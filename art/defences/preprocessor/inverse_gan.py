@@ -18,7 +18,7 @@
 """
 This module implements the DefenceGAN defence in `FeatureSqueezing`.
 
-| Paper link: https://arxiv.org/pdf/1911.10291
+| Paper link: https://arxiv.org/abs/1911.10291
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
