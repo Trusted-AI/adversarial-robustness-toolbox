@@ -181,6 +181,13 @@ class ShadowAttack(EvasionAttack):
         return x_adv
 
     def _get_regularisation_loss_gradients(self, perturbation):
+        """
+        Get regularisation loss gradients.
+
+        :param perturbation: The perturbation to be regularised.
+        :type perturbation: `np.ndarray`
+        :return: The loss gradients of the perturbation.
+        """
 
         if self.frame_work == "tensorflow":
 
@@ -227,7 +234,7 @@ class ShadowAttack(EvasionAttack):
 
             import torch
 
-            perturbation_t = torch.from_numpy(perturbation).to('cpu')
+            perturbation_t = torch.from_numpy(perturbation).to("cpu")
             perturbation_t.requires_grad = True
 
             x_ = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
