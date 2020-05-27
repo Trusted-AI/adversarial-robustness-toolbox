@@ -21,8 +21,7 @@ import logging
 
 import pytest
 
-from art.utils import deprecated
-from art.utils import deprecated_keyword_arg
+from art.utils import deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -74,13 +73,22 @@ class TestDeprecatedKeyword:
     Test the deprecation decorator for keyword arguments.
     """
 
-    def test_deprecated_simple(self):
+    def test_deprecated_keyword_used(self):
         @deprecated_keyword_arg("a", "1.3.0")
         def simple_addition(a=1, b=1):
             return a + b
 
         with pytest.deprecated_call():
             simple_addition()
+
+    def test_deprecated_keyword_not_used(self, recwarn):
+        @deprecated_keyword_arg("c", "1.3.0")
+        def simple_addition(a, b, c=None):
+            result = a + b if c is None else a + b + c
+            return result
+
+        simple_addition(1, 2, c=1)
+        assert len(recwarn) == 0
 
     def test_deprecated_reason_keyword(self, recwarn):
         @deprecated_keyword_arg("a", "1.3.0", reason="With some reason message.")
