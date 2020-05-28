@@ -124,7 +124,8 @@ class Mp3Compression(Preprocessor):
 
         if self.channel_index == 1:
             x_mp3 = np.swapaxes(x_mp3, 1, 2)
-        return x_mp3
+
+        return x_mp3, y
 
     def estimate_gradient(self, x, grad):
         return grad
