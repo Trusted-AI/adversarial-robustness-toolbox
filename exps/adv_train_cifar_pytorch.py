@@ -83,15 +83,18 @@ def main():
     x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
     x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
 
-    # model = PreActResNet18()
-    model = PreActResNet18().cuda()
+    np.save('x_train.npy',x_train)
+    np.save('y_train.npy',y_train)
+    model = PreActResNet18()
+    # model = PreActResNet18().cuda()
     model.apply(initialize_weights)
     model.train()
 
-    opt = torch.optim.SGD(model.parameters(), lr=0.21, momentum=0.9, weight_decay=5e-4)
+    # opt = torch.optim.SGD(model.parameters(), lr=0.21, momentum=0.9, weight_decay=5e-4)
+    opt = torch.optim.SGD(model.parameters(), lr=0.01, momentum=0.9, weight_decay=5e-4)
     # opt = torch.optim.Adam(model.parameters(), lr=1e-2 )
 
-    model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
+    # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
 
     criterion = nn.CrossEntropyLoss()
     # Step 3: Create the ART classifier

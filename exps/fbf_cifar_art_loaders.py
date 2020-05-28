@@ -22,7 +22,7 @@ from art.utils import load_cifar10
 
 
 
-DEVICE = 'gpu'
+DEVICE = 'cpu'
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
@@ -181,8 +181,12 @@ def main():
     # transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))])
     # cifar10_std = (0.2471, 0.2435, 0.2616)
 
-    trainset = torchvision.datasets.CIFAR10(root='/Users/ambrish/github/cifar-data', train=True,
+    if DEVICE != 'cpu':
+        trainset = torchvision.datasets.CIFAR10(root='/home/ambrish/github/cifar-data', train=True,
                                             download=True, transform=transform)
+    else:
+        trainset = torchvision.datasets.CIFAR10(root='/Users/ambrish/github/cifar-data', train=True,
+                                                download=True, transform=transform)
     train_batches = Batches(trainset, args.batch_size, shuffle=True, set_random_choices=False, num_workers=2)
     # train_batches = torch.utils.data.DataLoader(trainset, batch_size=args.batch_size,
     #                                           shuffle=True, num_workers=1)
@@ -200,7 +204,8 @@ def main():
 
     opt = torch.optim.SGD(model.parameters(), lr=args.lr_max, momentum=0.9, weight_decay=5e-4)
 
-    # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
+    if DEVICE != 'cpu':
+        model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
 
     criterion = nn.CrossEntropyLoss()
 
@@ -241,7 +246,7 @@ def main():
         train_n = 0
         for i, batch in enumerate(train_batches):
 
-            X, y = batch['input'], batch['target']
+            # X, y = batch['input'], batch['target']
             i_batch = x_train[ind[i * 128: min((i + 1) * 128, x_train.shape[0])]].copy()
             o_batch = np.argmax(y_train[ind[i * 128: min((i + 1) * 128, x_train.shape[0])]], axis=1)
             if DEVICE!='cpu':
