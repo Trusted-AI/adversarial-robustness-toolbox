@@ -52,7 +52,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         :param model: Faster-RCNN model. The output of the model is `List[Dict[Tensor]]`, one for each input image. The
                       fields of the Dict are as follows:
-                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+
+                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
                         between 0 and H and 0 and W
                       - labels (Int64Tensor[N]): the predicted labels for each image
                       - scores (Tensor[N]): the scores or each prediction
@@ -135,7 +136,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :type x: `np.ndarray`
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
                     between 0 and H and 0 and W
                   - labels (Int64Tensor[N]): the predicted labels for each image
                   - scores (Tensor[N]): the scores or each prediction.
@@ -211,7 +213,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :type batch_size: `int`
         :return: Predictions of format `List[Dict[Tensor]]`, one for each input image. The
                  fields of the Dict are as follows:
-                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+
+                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
                    between 0 and H and 0 and W
                  - labels (Int64Tensor[N]): the predicted labels for each image
                  - scores (Tensor[N]): the scores or each prediction.

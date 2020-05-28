@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -85,7 +85,7 @@ class TestMp3Compression:
         test_input, test_output, sample_rate = audio_batch
         mp3compression = Mp3Compression(sample_rate=sample_rate, channels_first=channels_first)
 
-        assert_array_equal(mp3compression(test_input), test_output)
+        assert_array_equal(mp3compression(test_input)[0], test_output)
 
 
 if __name__ == "__main__":
