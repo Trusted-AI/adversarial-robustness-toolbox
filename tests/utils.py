@@ -227,8 +227,8 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     # pylint: disable=E0401
     import tensorflow as tf
 
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     if tf.__version__[0] == "2":
+        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
         import tensorflow.compat.v1 as tf
 
         tf.disable_eager_execution()
