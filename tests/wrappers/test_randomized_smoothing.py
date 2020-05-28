@@ -165,7 +165,7 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
-        krc = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        krc = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         rs = RandomizedSmoothing(classifier=krc, sample_size=100, scale=0.01, alpha=0.001)
         attack = FastGradientMethod(rs, eps=1)
         x_test_adv = attack.generate(x_test)

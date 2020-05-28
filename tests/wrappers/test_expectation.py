@@ -127,7 +127,7 @@ class TestExpectationVectors(unittest.TestCase):
                 yield t
 
         # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         classifier = ExpectationOverTransformations(classifier, sample_size=1, transformation=transformation)
         attack = FastGradientMethod(classifier, eps=1)
         x_test_adv = attack.generate(x_test)

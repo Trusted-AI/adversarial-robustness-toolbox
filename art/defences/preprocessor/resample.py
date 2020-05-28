@@ -29,6 +29,7 @@ import logging
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import Preprocessor
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -41,9 +42,12 @@ class Resample(Preprocessor):
     is a Windowed Sinc Interpolation function.
     """
 
-    params = ["sr_original", "sr_new", "channel_index"]
+    params = ["sr_original", "sr_new", "channel_index", "channels_first"]
 
-    def __init__(self, sr_original, sr_new, channel_index=2, apply_fit=True, apply_predict=False):
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    def __init__(
+        self, sr_original, sr_new, channel_index=Deprecated, channels_first=False, apply_fit=True, apply_predict=False
+    ):
         """
         Create an instance of the resample preprocessor.
 
@@ -53,16 +57,28 @@ class Resample(Preprocessor):
         :type sr_new: `int`
         :param channel_index: Index of the axis containing the audio channels.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param apply_fit: True if applied during fitting/training.
         :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
         :type apply_predict: `bool`
         """
+        # Remove in 1.5.0
+        if channel_index == 2:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(sr_original=sr_original, sr_new=sr_new, channel_index=channel_index)
+        self.set_params(
+            sr_original=sr_original, sr_new=sr_new, channel_index=channel_index, channels_first=channels_first
+        )
 
     @property
     def apply_fit(self):
@@ -89,7 +105,7 @@ class Resample(Preprocessor):
         if x.ndim != 3:
             raise ValueError("Resampling can only be applied to temporal data across at least one channel.")
 
-        sample_index = 2 if self.channel_index == 1 else 1
+        sample_index = 2 if self.channels_first else 1
         return resampy.resample(x, self.sr_original, self.sr_new, axis=sample_index, filter="sinc_window")
 
     def estimate_gradient(self, x, grad):
@@ -106,11 +122,6 @@ class Resample(Preprocessor):
         Take in a dictionary of parameters and apply defence-specific checks before saving them as attributes.
         """
         super().set_params(**kwargs)
-
-        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 2]):
-            raise ValueError(
-                "Data channel must be an integer equal to 1 or 2. The batch dimension is not a valid channel."
-            )
 
         if not (isinstance(self.sr_original, (int, np.int)) and self.sr_original > 0):
             raise ValueError("Original sampling rate be must a positive integer.")

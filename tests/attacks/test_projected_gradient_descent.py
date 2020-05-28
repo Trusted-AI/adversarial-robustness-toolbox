@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
+
 import numpy as np
 import tensorflow as tf
 
@@ -26,15 +27,20 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent i
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentNumpy,
 )
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification import KerasClassifier
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import get_labels_np_array, random_targets
-
-from tests.utils import master_seed
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (
+    TestBase,
+    get_image_classifier_kr,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+    get_tabular_classifier_kr,
+    get_tabular_classifier_pt,
+    get_tabular_classifier_tf,
+    master_seed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -183,7 +189,7 @@ class TestPGD(TestBase):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.2, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
