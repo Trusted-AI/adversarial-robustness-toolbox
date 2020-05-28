@@ -209,6 +209,7 @@ def main():
         for i, batch in enumerate(train_batches):
 
             X, y = batch['input'], batch['target']
+
             if i == 0:
                 first_batch = batch
             lr = lr_schedule(epoch + (i + 1) / len(train_batches))
