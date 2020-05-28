@@ -32,7 +32,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.utils import to_categorical
+from art.utils import Deprecated, deprecated_keyword_arg, to_categorical
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +48,18 @@ class ThermometerEncoding(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["clip_values", "num_space", "channel_index"]
+    params = ["clip_values", "num_space", "channel_index", "channels_first"]
 
-    def __init__(self, clip_values, num_space=10, channel_index=3, apply_fit=True, apply_predict=True):
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    def __init__(
+        self,
+        clip_values,
+        num_space=10,
+        channel_index=Deprecated,
+        channels_first=False,
+        apply_fit=True,
+        apply_predict=True,
+    ):
         """
         Create an instance of thermometer encoding.
 
@@ -61,16 +70,28 @@ class ThermometerEncoding(Preprocessor):
         :type num_space: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param apply_fit: True if applied during fitting/training.
         :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
         :type apply_predict: `bool`
         """
+        # Remove in 1.5.0
+        if channel_index == 2:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(ThermometerEncoding, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(clip_values=clip_values, num_space=num_space, channel_index=channel_index)
+        self.set_params(
+            clip_values=clip_values, num_space=num_space, channel_index=channel_index, channels_first=channels_first
+        )
 
     @property
     def apply_fit(self):
@@ -91,7 +112,8 @@ class ThermometerEncoding(Preprocessor):
         :return: Encoded sample with shape `(batch_size, width, height, depth x num_space)`.
         :rtype: `np.ndarray`
         """
-        result = np.apply_along_axis(self._perchannel, self.channel_index, x)
+        channel_index = 1 if self.channels_first else x.ndim - 1
+        result = np.apply_along_axis(self._perchannel, channel_index, x)
         np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
         return result.astype(ART_NUMPY_DTYPE), y
 
@@ -154,6 +176,8 @@ class ThermometerEncoding(Preprocessor):
         :type num_space: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         """
         # Save defence-specific parameters
         super(ThermometerEncoding, self).set_params(**kwargs)

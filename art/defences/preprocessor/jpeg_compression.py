@@ -33,6 +33,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -49,9 +50,18 @@ class JpegCompression(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["quality", "channel_index", "clip_values"]
+    params = ["quality", "channel_index", "channels_first", "clip_values"]
 
-    def __init__(self, clip_values, quality=50, channel_index=3, apply_fit=True, apply_predict=False):
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    def __init__(
+        self,
+        clip_values,
+        quality=50,
+        channel_index=Deprecated,
+        channels_first=False,
+        apply_fit=True,
+        apply_predict=False,
+    ):
         """
         Create an instance of JPEG compression.
 
@@ -62,16 +72,28 @@ class JpegCompression(Preprocessor):
         :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param apply_fit: True if applied during fitting/training.
         :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
         :type apply_predict: `bool`
         """
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(JpegCompression, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(quality=quality, channel_index=channel_index, clip_values=clip_values)
+        self.set_params(
+            quality=quality, channel_index=channel_index, channels_first=channels_first, clip_values=clip_values
+        )
 
     @property
     def apply_fit(self):
@@ -108,12 +130,7 @@ class JpegCompression(Preprocessor):
         """
 
         x_ndim = x.ndim
-        if x_ndim == 2:
-            raise ValueError(
-                "Feature vectors detected. JPEG compression can only be applied to data with spatial dimensions."
-            )
-
-        if x_ndim > 5:
+        if x_ndim not in [4, 5]:
             raise ValueError(
                 "Unrecognized input dimension. JPEG compression can only be applied to image and video data."
             )
@@ -124,10 +141,10 @@ class JpegCompression(Preprocessor):
             )
 
         # Swap channel index
-        if self.channel_index == 1 and x_ndim == 4:
+        if self.channels_first and x_ndim == 4:
             # image shape NCHW to NHWC
             x = np.transpose(x, (0, 2, 3, 1))
-        elif self.channel_index == 1 and x_ndim == 5:
+        elif self.channels_first and x_ndim == 5:
             # video shape NCFHW to NFHWC
             x = np.transpose(x, (0, 2, 3, 4, 1))
 
@@ -171,10 +188,10 @@ class JpegCompression(Preprocessor):
             x_jpeg = np.squeeze(x_jpeg, axis=1)
 
         # Swap channel index
-        if self.channel_index == 1 and x_jpeg.ndim == 4:
+        if self.channels_first and x_jpeg.ndim == 4:
             # image shape NHWC to NCHW
             x_jpeg = np.transpose(x_jpeg, (0, 3, 1, 2))
-        elif self.channel_index == 1 and x_ndim == 5:
+        elif self.channels_first and x_ndim == 5:
             # video shape NFHWC to NCFHW
             x_jpeg = np.transpose(x_jpeg, (0, 4, 1, 2, 3))
         return x_jpeg, y
@@ -199,17 +216,14 @@ class JpegCompression(Preprocessor):
         :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         """
         # Save defense-specific parameters
         super(JpegCompression, self).set_params(**kwargs)
 
         if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
             raise ValueError("Image quality must be a positive integer <= 100.")
-
-        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3, 4]):
-            raise ValueError(
-                "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
-            )
 
         if len(self.clip_values) != 2:
             raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")

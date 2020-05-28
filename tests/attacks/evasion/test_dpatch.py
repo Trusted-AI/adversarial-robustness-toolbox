@@ -16,15 +16,15 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import logging
+
 import numpy as np
 import pytest
 
 from art.attacks.evasion import DPatch
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-
-from tests.utils import master_seed
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -47,14 +47,14 @@ def test_augment_images_with_patch(random_location, image_format, fix_get_mnist_
     if image_format == "NHWC":
         patch = np.ones(shape=(4, 4, 1)) * 0.5
         x = x_train_mnist[0:3]
-        channel_index = 3
+        channels_first = False
     elif image_format == "NCHW":
         patch = np.ones(shape=(1, 4, 4)) * 0.5
         x = np.transpose(x_train_mnist[0:3], (0, 3, 1, 2))
-        channel_index = 1
+        channels_first = True
 
     patched_images, transformations = DPatch._augment_images_with_patch(
-        x=x, patch=patch, random_location=random_location, channel_index=channel_index
+        x=x, patch=patch, random_location=random_location, channels_first=channels_first
     )
 
     if random_location:

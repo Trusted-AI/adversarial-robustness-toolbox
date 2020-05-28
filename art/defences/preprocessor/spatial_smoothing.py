@@ -33,6 +33,7 @@ import numpy as np
 from scipy.ndimage.filters import median_filter
 
 from art.defences.preprocessor.preprocessor import Preprocessor
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -48,14 +49,25 @@ class SpatialSmoothing(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["window_size", "channel_index", "clip_values"]
+    params = ["window_size", "channel_index", "channels_first", "clip_values"]
 
-    def __init__(self, window_size=3, channel_index=3, clip_values=None, apply_fit=False, apply_predict=True):
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    def __init__(
+        self,
+        window_size=3,
+        channel_index=Deprecated,
+        channels_first=False,
+        clip_values=None,
+        apply_fit=False,
+        apply_predict=True,
+    ):
         """
         Create an instance of local spatial smoothing.
 
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param window_size: The size of the sliding window.
         :type window_size: `int`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
@@ -66,11 +78,21 @@ class SpatialSmoothing(Preprocessor):
         :param apply_predict: True if applied during predicting.
         :type apply_predict: `bool`
         """
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(SpatialSmoothing, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(channel_index=channel_index, window_size=window_size, clip_values=clip_values)
+        self.set_params(
+            channel_index=channel_index, channels_first=channels_first, window_size=window_size, clip_values=clip_values
+        )
 
     @property
     def apply_fit(self):
@@ -93,22 +115,22 @@ class SpatialSmoothing(Preprocessor):
         """
 
         x_ndim = x.ndim
-        if x_ndim == 2:
-            raise ValueError("Feature vectors detected. Smoothing can only be applied to data with spatial dimensions.")
-
-        if x_ndim > 5:
+        if x_ndim not in [4, 5]:
             raise ValueError(
                 "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data."
             )
 
+        # get channel index
+        channel_index = 1 if self.channels_first else x_ndim - 1
+
         filter_size = [self.window_size] * x_ndim
         # set filter_size at batch and channel indices to 1
         filter_size[0] = 1
-        filter_size[self.channel_index] = 1
+        filter_size[channel_index] = 1
         # set filter_size at temporal index to 1
         if x_ndim == 5:
             # check if NCFHW or NFHWC
-            temporal_index = 2 if self.channel_index == 1 else 1
+            temporal_index = 2 if self.channels_first else 1
             filter_size[temporal_index] = 1
         # Note median_filter:
         # * center pixel located lower right
@@ -146,11 +168,6 @@ class SpatialSmoothing(Preprocessor):
 
         if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
             raise ValueError("Sliding window size must be a positive integer.")
-
-        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3, 4]):
-            raise ValueError(
-                "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
-            )
 
         if self.clip_values is not None and len(self.clip_values) != 2:
             raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")
