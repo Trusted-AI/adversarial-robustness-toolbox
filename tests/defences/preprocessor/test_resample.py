@@ -77,7 +77,7 @@ class TestResample:
         resampy.resample.return_value = test_input[:, :, :sr_new]
 
         resampler = Resample(sr_original=sr_orig, sr_new=sr_new, channel_index=1)
-        assert resampler(test_input).shape == test_output.shape
+        assert resampler(test_input)[0].shape == test_output.shape
 
 
 if __name__ == "__main__":

@@ -96,7 +96,7 @@ class TestMp3Compression:
             sample_rate=sample_rate, channel_index=channel_index
         )
 
-        assert_array_equal(mp3compression(test_input), test_output)
+        assert_array_equal(mp3compression(test_input)[0], test_output)
 
 
 if __name__ == "__main__":
