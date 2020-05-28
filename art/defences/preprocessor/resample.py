@@ -90,7 +90,8 @@ class Resample(Preprocessor):
             raise ValueError("Resampling can only be applied to temporal data across at least one channel.")
 
         sample_index = 2 if self.channel_index == 1 else 1
-        return resampy.resample(x, self.sr_original, self.sr_new, axis=sample_index, filter="sinc_window")
+
+        return resampy.resample(x, self.sr_original, self.sr_new, axis=sample_index, filter="sinc_window"), y
 
     def estimate_gradient(self, x, grad):
         return grad
