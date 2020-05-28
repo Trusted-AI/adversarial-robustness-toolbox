@@ -85,17 +85,15 @@ class TestJpegCompression:
 
     @pytest.mark.parametrize("channels_first", [True, False])
     def test_jpeg_compression_image_data(self, image_batch, channels_first):
-        channel_index = 1 if channels_first else 3
         test_input, test_output = image_batch
-        jpeg_compression = JpegCompression(clip_values=(0, 255), channel_index=channel_index)
+        jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=channels_first)
 
         assert_array_equal(jpeg_compression(test_input)[0], test_output)
 
     @pytest.mark.parametrize("channels_first", [True, False])
     def test_jpeg_compression_video_data(self, video_batch, channels_first):
-        channel_index = 1 if channels_first else 4
         test_input, test_output = video_batch
-        jpeg_compression = JpegCompression(clip_values=(0, 255), channel_index=channel_index)
+        jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=channels_first)
 
         assert_array_equal(jpeg_compression(test_input)[0], test_output)
 
@@ -110,28 +108,23 @@ class TestJpegCompression:
 
         assert_array_equal(jpeg_compression._compress(test_single_input, image_mode), test_single_output)
 
-    def test_channel_index_error(self):
-        exc_msg = "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
-        with pytest.raises(ValueError, match=exc_msg):
-            JpegCompression(clip_values=(0, 255), channel_index=0)
-
     def test_non_spatial_data_error(self, tabular_batch):
         test_input = tabular_batch
-        jpeg_compression = JpegCompression(clip_values=(0, 255), channel_index=1)
+        jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=True)
 
-        exc_msg = "Feature vectors detected. JPEG compression can only be applied to data with spatial dimensions."
+        exc_msg = "Unrecognized input dimension. JPEG compression can only be applied to image and video data."
         with pytest.raises(ValueError, match=exc_msg):
             jpeg_compression(test_input)
 
     def test_negative_clip_values_error(self):
         exc_msg = "'clip_values' min value must be 0."
         with pytest.raises(ValueError, match=exc_msg):
-            JpegCompression(clip_values=(-1, 255), channel_index=1)
+            JpegCompression(clip_values=(-1, 255), channels_first=True)
 
     def test_maximum_clip_values_error(self):
         exc_msg = "'clip_values' max value must be either 1 or 255."
         with pytest.raises(ValueError, match=exc_msg):
-            JpegCompression(clip_values=(0, 2), channel_index=1)
+            JpegCompression(clip_values=(0, 2), channels_first=True)
 
 
 if __name__ == "__main__":

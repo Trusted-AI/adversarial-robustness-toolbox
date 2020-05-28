@@ -25,8 +25,9 @@ import logging
 import numpy as np
 import six
 
+from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.estimators.keras import KerasEstimator
-from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +37,13 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         model,
         use_logits=False,
-        channel_index=3,
+        channel_index=Deprecated,
+        channels_first=False,
         clip_values=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
@@ -58,6 +61,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -80,12 +85,21 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                              layer this values is not required.
         :type output_layer: `int`
         """
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(KerasClassifier, self).__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
             channel_index=channel_index,
+            channels_first=channels_first,
         )
 
         self._model = model
@@ -696,13 +710,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, use_logits=%r, channel_index=%r, clip_values=%r, preprocessing_defences=%r, "
-            "postprocessing_defences=%r, preprocessing=%r, input_layer=%r, output_layer=%r)"
+            "%s(model=%r, use_logits=%r, channel_index=%r, channels_first=%r, clip_values=%r, preprocessing_defences=%r"
+            ", postprocessing_defences=%r, preprocessing=%r, input_layer=%r, output_layer=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._model,
                 self._use_logits,
                 self.channel_index,
+                self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
                 self.postprocessing_defences,

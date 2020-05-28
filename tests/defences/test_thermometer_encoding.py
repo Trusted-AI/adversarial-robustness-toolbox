@@ -92,7 +92,7 @@ class TestThermometerEncoding(unittest.TestCase):
         x = np.random.rand(5, 2, 28, 28)
         x_copy = x.copy()
         num_space = 5
-        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channel_index=1)
+        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channels_first=True)
         x_encoded, _ = encoder(x)
         self.assertTrue((x == x_copy).all())
         self.assertEqual(x_encoded.shape, (5, 10, 28, 28))
@@ -109,7 +109,7 @@ class TestThermometerEncoding(unittest.TestCase):
         x = np.random.rand(10, 4)
         x_original = x.copy()
         num_space = 5
-        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channel_index=1)
+        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channels_first=True)
         x_encoded, _ = encoder(x)
         self.assertEqual(x_encoded.shape, (10, 20))
         # Check that x has not been modified by attack and classifier

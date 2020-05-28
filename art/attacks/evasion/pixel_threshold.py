@@ -86,7 +86,7 @@ class PixelThreshold(EvasionAttack):
         PixelThreshold.set_params(self, **kwargs)
         self.type_attack = -1
 
-        if self.estimator.channel_index == 1:
+        if self.estimator.channels_first:
             self.img_rows = self.estimator.input_shape[-2]
             self.img_cols = self.estimator.input_shape[-1]
             self.img_channels = self.estimator.input_shape[-3]
@@ -311,7 +311,7 @@ class PixelAttack(PixelThreshold):
         for adv, image in zip(x, imgs):
             for pixel in np.split(adv, len(adv) // (2 + self.img_channels)):
                 x_pos, y_pos, *rgb = pixel
-                if self.estimator.channel_index == 3:
+                if not self.estimator.channels_first:
                     image[x_pos % self.img_rows, y_pos % self.img_cols] = rgb
                 else:
                     image[:, x_pos % self.img_rows, y_pos % self.img_cols] = rgb
@@ -326,7 +326,7 @@ class PixelAttack(PixelThreshold):
             for count, (i, j) in enumerate(product(range(self.img_rows), range(self.img_cols))):
                 initial += [i, j]
                 for k in range(self.img_channels):
-                    if self.estimator.channel_index == 3:
+                    if not self.estimator.channels_first:
                         initial += [img[i, j, k]]
                     else:
                         initial += [img[k, i, j]]

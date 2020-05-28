@@ -153,7 +153,7 @@ class TestQueryEfficientVectors(unittest.TestCase):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64.0, round_samples=1 / 255.0)
         attack = FastGradientMethod(classifier, eps=1)
         x_test_adv = attack.generate(x_test)
