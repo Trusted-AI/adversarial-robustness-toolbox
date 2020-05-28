@@ -20,11 +20,11 @@ Module providing convenience functions specifically for unit tests.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
-import logging
 import json
-import time
+import logging
+import os
 import pickle
+import time
 import unittest
 
 import numpy as np
@@ -93,13 +93,13 @@ class TestBase(unittest.TestCase):
 
         # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
         np.testing.assert_array_almost_equal(
-            self._x_train_mnist_original[0: self.n_train], self.x_train_mnist, decimal=3
+            self._x_train_mnist_original[0 : self.n_train], self.x_train_mnist, decimal=3
         )
         np.testing.assert_array_almost_equal(
-            self._y_train_mnist_original[0: self.n_train], self.y_train_mnist, decimal=3
+            self._y_train_mnist_original[0 : self.n_train], self.y_train_mnist, decimal=3
         )
-        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0: self.n_test], self.x_test_mnist, decimal=3)
-        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0: self.n_test], self.y_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0 : self.n_test], self.x_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0 : self.n_test], self.y_test_mnist, decimal=3)
 
         np.testing.assert_array_almost_equal(self._x_train_iris_original, self.x_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
@@ -340,30 +340,36 @@ def get_image_classifier_tf_v2(from_logits=False):
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
     model = Sequential()
-    model.add(Conv2D(
-        filters=1,
-        kernel_size=7,
-        activation="relu",
-        kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
-        bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
-        input_shape=(28, 28, 1),
-    ))
+    model.add(
+        Conv2D(
+            filters=1,
+            kernel_size=7,
+            activation="relu",
+            kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
+            bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
+            input_shape=(28, 28, 1),
+        )
+    )
     model.add(MaxPool2D(pool_size=(4, 4), strides=(4, 4), padding="valid", data_format=None))
     model.add(Flatten())
     if from_logits:
-        model.add(Dense(
-            10,
-            activation="linear",
-            kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-            bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-        ))
+        model.add(
+            Dense(
+                10,
+                activation="linear",
+                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+            )
+        )
     else:
-        model.add(Dense(
-            10,
-            activation="softmax",
-            kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-            bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-        ))
+        model.add(
+            Dense(
+                10,
+                activation="softmax",
+                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+            )
+        )
 
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
@@ -878,7 +884,7 @@ def get_classifier_mx():
         nb_classes=10,
         optimizer=trainer,
         ctx=None,
-        channel_index=1,
+        channels_first=True,
         clip_values=(0, 1),
         defences=None,
         preprocessing=(0, 1),
@@ -982,7 +988,7 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
         loss=loss,
         learning=None,
         sess=sess,
-        channel_index=1,
+        channels_first=True,
     )
 
     return tfc, sess
@@ -1170,7 +1176,7 @@ def get_tabular_classifier_kr(load_init=True):
     model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
 
     return krc
 
@@ -1253,7 +1259,7 @@ def get_tabular_classifier_pt(load_init=True):
         input_shape=(4,),
         nb_classes=3,
         clip_values=(0, 1),
-        channel_index=1,
+        channels_first=True,
     )
 
     return ptc

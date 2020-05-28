@@ -25,8 +25,16 @@ import logging
 
 import six
 
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierMixin,
+)
+from art.estimators.estimator import (
+    BaseEstimator,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
+)
+from art.utils import deprecated
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +55,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         super(BinaryInputDetector, self).__init__(
             clip_values=detector.clip_values,
             channel_index=detector.channel_index,
+            channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
         )
@@ -105,8 +114,17 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         return self.detector.clip_values
 
     @property
+    @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self):
         return self.detector.channel_index
+
+    @property
+    def channels_first(self):
+        """
+        :return: Boolean to indicate index of the color channels in the sample `x`.
+        :type: `bool`
+        """
+        return self._channels_first
 
     @property
     def learning_phase(self):

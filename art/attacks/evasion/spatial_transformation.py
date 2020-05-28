@@ -171,14 +171,14 @@ class SpatialTransformation(EvasionAttack):
         return x_adv
 
     def _perturb(self, x, trans_x, trans_y, rot):
-        if self.estimator.channel_index == 3:
+        if not self.estimator.channels_first:
             x_adv = shift(x, [0, trans_x, trans_y, 0])
             x_adv = rotate(x_adv, angle=rot, axes=(1, 2), reshape=False)
-        elif self.estimator.channel_index == 1:
+        elif self.estimator.channels_first:
             x_adv = shift(x, [0, 0, trans_x, trans_y])
             x_adv = rotate(x_adv, angle=rot, axes=(2, 3), reshape=False)
         else:
-            raise ValueError("Unsupported channel index.")
+            raise ValueError("Unsupported channel_first value.")
 
         if self.estimator.clip_values is not None:
             np.clip(x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1], out=x_adv)
