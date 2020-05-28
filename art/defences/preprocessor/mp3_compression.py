@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -134,7 +134,8 @@ class Mp3Compression(Preprocessor):
 
         if self.channels_first:
             x_mp3 = np.swapaxes(x_mp3, 1, 2)
-        return x_mp3
+
+        return x_mp3, y
 
     def estimate_gradient(self, x, grad):
         return grad

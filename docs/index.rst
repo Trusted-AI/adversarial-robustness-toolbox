@@ -139,18 +139,18 @@ Implemented Attacks, Defences, Detections, Metrics, Certifications and Verificat
    modules/attacks/poisoning
    modules/data_generators
    modules/defences
+   modules/defences/detector_evasion
+   modules/defences/detector_poison
    modules/defences/postprocessor
    modules/defences/preprocessor
    modules/defences/trainer
    modules/defences/transformer
-   modules/detection
    modules/estimators
    modules/estimators/classification
    modules/estimators/classification_scikitlearn
    modules/estimators/object_detection
    modules/estimators/regression
    modules/exceptions
-   modules/poison_detection
    modules/metrics
    modules/utils
    modules/wrappers
