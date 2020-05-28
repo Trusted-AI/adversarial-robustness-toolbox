@@ -97,7 +97,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         elif "<class 'keras" in str(type(model)):
             self.is_tensorflow = False
         else:
-            raise TypeError("Type of model not recognized:" + type(model))
+            raise TypeError("Type of model not recognized:" + str(type(model)))
 
         self._initialize_params(model, use_logits, input_layer, output_layer)
 
@@ -442,7 +442,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    def get_activations(self, x, layer, batch_size):
+    def get_activations(self, x, layer, batch_size, framework=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -488,8 +488,13 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if not hasattr(self, "_activations_func"):
             self._activations_func = {}
 
+        keras_layer = self._model.get_layer(layer_name)
         if layer_name not in self._activations_func:
-            layer_output = self._model.get_layer(layer_name).output
+            num_inbound_nodes = len(getattr(keras_layer, '_inbound_nodes', []))
+            if num_inbound_nodes > 1:
+                layer_output = keras_layer.get_output_at(0)
+            else:
+                layer_output = keras_layer.output
             self._activations_func[layer_name] = k.function([self._input], [layer_output])
 
         # Determine shape of expected output and prepare array
@@ -501,7 +506,38 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
             activations[begin:end] = self._activations_func[layer_name]([x_preprocessed[begin:end]])[0]
 
-        return activations
+        if framework:
+            placeholder = k.placeholder(shape=x.shape)
+            return placeholder, keras_layer(placeholder)
+        else:
+            return activations
+
+    def custom_loss_gradient(self, nn_function, tensors, input_values, name="default"):
+        """
+        Returns the gradient of the nn_function with respect to model input
+
+        :param nn_function: an intermediate tensor representation of the function to differentiate
+        :type nn_function: a Keras tensor
+        :param tensors: the tensors or variables to differentiate with respect to
+        :type tensors: `list`
+        :param input_values: the inputs to evaluate the gradient
+        :type input_values: `list`
+        :param name: The name of the function. Functions of the same name are cached
+        :type name: `str`
+        :return: the gradient of the function w.r.t vars
+        :rtype: `np.ndarray`
+        """
+        import keras.backend as k
+
+        if not hasattr(self, "_custom_loss_func"):
+            self._custom_loss_func = {}
+
+        if name not in self._custom_loss_func:
+            grads = k.gradients(nn_function, tensors[0])[0]
+            self._custom_loss_func[name] = k.function(tensors, [grads])
+
+        outputs = self._custom_loss_func[name]
+        return outputs(input_values)
 
     def _init_class_gradients(self, label=None):
         # pylint: disable=E0401
@@ -625,6 +661,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         if "_activations_func" in state:
             del state["_activations_func"]
+
+        if "_custom_loss_func" in state:
+            del state["_custom_loss_func"]
 
         model_name = str(time.time()) + ".h5"
         state["model_name"] = model_name

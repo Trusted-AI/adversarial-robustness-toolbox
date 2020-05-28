@@ -4,6 +4,7 @@ scipy>=1.4.1
 six>=1.13.0
 scikit-learn>=0.22.1
 Pillow>=6.0.0
+tqdm>=4.45.0
 
 #NOTE to contributors: When changing/adding packages, please make sure that the packages are consitent with those
 # present within the Dockerfile
