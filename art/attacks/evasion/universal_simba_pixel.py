@@ -36,9 +36,9 @@ logger = logging.getLogger(__name__)
 
 
 class Universal_SimBA_pixel(EvasionAttack):
-    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'delta', 'eps', 'norm', 'batch_size']
+    attack_params = EvasionAttack.attack_params + ['max_iter', 'epsilon', 'order', 'delta', 'eps', 'norm', 'batch_size']
 
-    def __init__(self, classifier, max_iter=3000, epsilon=0.1, delta=0.1, eps=10.0, norm=2, batch_size=1):
+    def __init__(self, classifier, max_iter=3000, epsilon=0.1, order='random', delta=0.1, eps=10.0, norm=2, batch_size=1):
         """
         Create a universal SimBA (pixel) attack instance.
 
@@ -48,8 +48,14 @@ class Universal_SimBA_pixel(EvasionAttack):
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
         :type epsilon: `float`
+        :param order: The attack order
+        :type order: `str`
         :param delta: desired accuracy
         :type delta: `float`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
+        :type norm: `int`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
         """
@@ -60,7 +66,7 @@ class Universal_SimBA_pixel(EvasionAttack):
                              + str(classifier.__class__.__bases__) + '. '
                              ' The classifier needs to be a Neural Network and provide gradients.'))
 
-        params = {'max_iter': max_iter, 'epsilon': epsilon, 'delta': delta, 'eps': eps, 'norm': norm, 'batch_size': batch_size}
+        params = {'max_iter': max_iter, 'epsilon': epsilon, 'order': order, 'delta': delta, 'eps': eps, 'norm': norm, 'batch_size': batch_size}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
@@ -84,6 +90,17 @@ class Universal_SimBA_pixel(EvasionAttack):
         last_probs = preds[(range(nb_instances),original_labels)]
 
         n_dims = np.prod(x[0].shape)
+        if self.order == "diag" or self.order == "perm":
+            if self.max_iter > n_dims:
+                self.max_iter = n_dims
+                logger.info('`max_iter` was reset to %d because it needs to be #pixels x #channels or less for `order` of %s', n_dims, self.order)
+        else:
+            actual_max_iter = self.max_iter
+
+        if self.order == "diag":
+            indices = self.diagonal_order(x.shape[2], 3)[:self.max_iter]
+        elif self.order == "perm":
+            indices = np.random.permutation(n_dims)
 
         clip_min = -np.inf
         clip_max = np.inf 
@@ -95,7 +112,12 @@ class Universal_SimBA_pixel(EvasionAttack):
         noise = 0
         while fooling_rate < 1. - self.delta and nb_iter < self.max_iter:
             diff = np.zeros(n_dims)
-            diff[np.random.choice(range(n_dims))] = self.epsilon
+            if self.order == "random":
+                diff[np.random.choice(range(n_dims))] = self.epsilon
+            elif self.order == "diag":
+                diff[indices[nb_iter]] = self.epsilon
+            elif self.order == "perm":
+                diff[indices[nb_iter]] = self.epsilon
 
             left_noise = noise - diff.reshape(x[0][None, ...].shape)
             left_noise = projection(left_noise, self.eps, self.norm)
@@ -145,8 +167,14 @@ class Universal_SimBA_pixel(EvasionAttack):
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
         :type epsilon: `float`
+        :param order: The attack order
+        :type order: `str`
         :param delta: desired accuracy
         :type delta: `float`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
+        :type norm: `int`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
         """
@@ -167,5 +195,23 @@ class Universal_SimBA_pixel(EvasionAttack):
 
         if self.batch_size <= 0:
             raise ValueError('The batch size `batch_size` has to be positive.')
+        
+        if self.order != "random" and self.order != "perm" and self.order != "diag":
+            raise ValueError('The attack `order` has to be `random`, `perm`, or `diag`')
 
         return True
+
+    def diagonal_order(self, image_size, channels):
+        x = np.arange(0, image_size).cumsum()
+        order = np.zeros((image_size, image_size))
+        for i in range(image_size):
+            order[i, :(image_size - i)] = i + x[i:]
+        for i in range(1, image_size):
+            reverse = order[image_size - i - 1].take([i for i in range(i-1, -1, -1)])
+            order[i, (image_size - i):] = image_size * image_size - 1 - reverse
+        if channels > 1:
+            order_2d = order
+            order = np.zeros((channels, image_size, image_size))
+            for i in range(channels):
+                order[i, :, :] = 3 * order_2d + i
+        return order.transpose(1,2,0).reshape(1, -1).squeeze().argsort()

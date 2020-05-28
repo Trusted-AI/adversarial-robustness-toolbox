@@ -55,6 +55,10 @@ class Universal_SimBA_dct(EvasionAttack):
         :type stride: `int`
         :param delta: desired accuracy
         :type delta: `float`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
+        :type norm: `int`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
         """
@@ -162,6 +166,10 @@ class Universal_SimBA_dct(EvasionAttack):
         :type stride: `int`
         :param delta: desired accuracy
         :type delta: `float`
+        :param eps: Attack step size (input variation)
+        :type eps: `float`
+        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
+        :type norm: `int`
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :type batch_size: `int`
         """
@@ -191,7 +199,7 @@ class Universal_SimBA_dct(EvasionAttack):
 
         return True
 
-    def _block_order(self, img_size, channels, initial_size=28, stride=7):
+    def _block_order(self, img_size, channels, initial_size=2, stride=1):
         order = np.zeros((channels , img_size , img_size))
         total_elems = channels * initial_size * initial_size
         perm = np.random.permutation(total_elems)
@@ -203,10 +211,11 @@ class Universal_SimBA_dct(EvasionAttack):
             order[:, :(i+stride), i:(i+stride)] = perm[:num_first].reshape((channels, -1, stride))
             order[:, i:(i+stride), :i] = perm[num_first:].reshape((channels, stride, -1))
             total_elems += num_elems
-        return order.reshape(1, -1).squeeze().argsort()
+        return order.transpose(1,2,0).reshape(1, -1).squeeze().argsort()
 
     # applies IDCT to each block of size block_size
     def _block_idct(self, x, block_size=8, masked=False, ratio=0.5):
+        x = x.transpose(0,3,1,2)
         z = np.zeros(x.shape)
         num_blocks = int(x.shape[2] / block_size)
         mask = np.zeros((x.shape[0], x.shape[1], block_size, block_size))
@@ -221,4 +230,4 @@ class Universal_SimBA_dct(EvasionAttack):
                 if masked:
                     submat = submat * mask
                 z[:, :, (i * block_size):((i + 1) * block_size), (j * block_size):((j + 1) * block_size)] = idct(idct(submat, axis=3, norm='ortho'), axis=2, norm='ortho')
-        return z
+        return z.transpose(0,2,3,1)

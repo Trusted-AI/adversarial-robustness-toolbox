@@ -47,6 +47,8 @@ class SimBA_pixel(EvasionAttack):
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
         :type epsilon: `float`
+        :param order: The attack order
+        :type order: `str`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
         """
@@ -159,6 +161,9 @@ class SimBA_pixel(EvasionAttack):
 
         if self.batch_size <= 0:
             raise ValueError('The batch size `batch_size` has to be positive.')
+        
+        if self.order != "random" and self.order != "perm" and self.order != "diag":
+            raise ValueError('The attack `order` has to be `random`, `perm`, or `diag`')
 
         return True
 
