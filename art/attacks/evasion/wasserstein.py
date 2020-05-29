@@ -662,14 +662,14 @@ class Wasserstein(EvasionAttack):
         :return: Local transport result.
         """
         # Compute number of channels
-        num_channels = x.shape[self.estimator.channel_index]
+        num_channels = x.shape[1 if self.estimator.channels_first else 3]
 
         # Expand channels
         K = np.repeat(K, num_channels, axis=1)
 
         # Swap channels to prepare for local transport computation
-        if self.estimator.channel_index > 1:
-            x = np.swapaxes(x, 1, self.estimator.channel_index)
+        if not self.estimator.channels_first:
+            x = np.swapaxes(x, 1, 3)
 
         # Compute local transport
         unfold_x = self._unfold(x=x, kernel_size=kernel_size, padding=kernel_size // 2)
@@ -687,8 +687,8 @@ class Wasserstein(EvasionAttack):
         result = result.reshape(*result.shape[:-1], size, size)
 
         # Swap channels for final result
-        if self.estimator.channel_index > 1:
-            result = np.swapaxes(result, 1, self.estimator.channel_index)
+        if not self.estimator.channels_first:
+            result = np.swapaxes(result, 1, 3)
 
         return result
 
