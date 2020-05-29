@@ -47,7 +47,7 @@ class SimBA_pixel(EvasionAttack):
         :type max_iter: `int`
         :param epsilon: Overshoot parameter.
         :type epsilon: `float`
-        :param order: The attack order
+        :param order: order of pixel attacks
         :type order: `str`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
