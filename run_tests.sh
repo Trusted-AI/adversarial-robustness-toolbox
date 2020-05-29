@@ -46,7 +46,8 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_virtual_adversarial.py" \
                     "tests/attacks/test_zoo.py" \
                     "tests/attacks/test_pixel_attack.py" \
-                    "tests/attacks/test_threshold_attack.py" )
+                    "tests/attacks/test_threshold_attack.py" \
+                    "tests/attacks/test_wasserstein.py" )
 
 declare -a classifiers=("tests/estimators/classification/test_blackbox.py" \
                         "tests/estimators/classification/test_catboost.py" \
