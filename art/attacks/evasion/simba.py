@@ -85,6 +85,8 @@ class SimBA(EvasionAttack):
         """
         x = x.astype(ART_NUMPY_DTYPE)
         preds = self.classifier.predict(x, batch_size=self.batch_size)
+
+        # Todo: targeted version
         if y is None:
             y = np.argmax(preds, axis=1)
         original_label = y[0]
