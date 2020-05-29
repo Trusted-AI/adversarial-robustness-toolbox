@@ -210,7 +210,7 @@ class SimBA(EvasionAttack):
         if self.order != 'random' and self.order != 'diag':
             raise ValueError('The order of pixel attacks has to be `random` or `diag`.')
         
-        if self.attack != 'px' and self.order != 'dct':
+        if self.attack != 'px' and self.attack != 'dct':
             raise ValueError('The attack type has to be `px` or `dct`.')
 
         return True
