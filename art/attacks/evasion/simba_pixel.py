@@ -82,17 +82,19 @@ class SimBA_pixel(EvasionAttack):
         last_prob = preds.reshape(-1)[original_label]
 
         n_dims = np.prod(x.shape)
-        if self.order == "diag" or self.order == "perm":
-            if self.max_iter > n_dims:
-                self.max_iter = n_dims
-                logger.info('`max_iter` was reset to %d because it needs to be #pixels x #channels or less for `order` of %s', n_dims, self.order)
-        else:
-            actual_max_iter = self.max_iter
 
         if self.order == "diag":
             indices = self.diagonal_order(x.shape[2], 3)[:self.max_iter]
         elif self.order == "perm":
-            indices = np.random.permutation(n_dims)
+            indices = np.random.permutation(n_dims)[:self.max_iter]
+        indices_size = len(indices)
+        while indices_size < self.max_iter:
+            if self.order == "diag":
+                tmp_indices = self.diagonal_order(x.shape[2], 3)
+            elif self.order == "perm":
+                tmp_indices = np.random.permutation(n_dims)
+            indices = np.hstack((indices, tmp_indices))[:self.max_iter]
+            indices_size = len(indices)
 
         clip_min = -np.inf
         clip_max = np.inf 

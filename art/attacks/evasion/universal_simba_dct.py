@@ -93,11 +93,14 @@ class Universal_SimBA_dct(EvasionAttack):
         last_probs = preds[(range(nb_instances),original_labels)]
 
         n_dims = np.prod(x[0].shape)
-        if self.max_iter > n_dims:
-            self.max_iter = n_dims
-            logger.info('`max_iter` was reset to %d because it needs to be #pixels x #channels or less', n_dims)
 
         indices = self._block_order(x.shape[2], 3, initial_size=self.freq_dim, stride=self.stride)[:self.max_iter]
+        indices_size = len(indices)
+        while indices_size < self.max_iter:
+            tmp_indices = self._block_order(x.shape[2], 3, initial_size=self.freq_dim, stride=self.stride)
+            indices = np.hstack((indices, tmp_indices))[:self.max_iter]
+            indices_size = len(indices)
+        
         trans = lambda z: self._block_idct(z, block_size=x.shape[2])
 
         clip_min = -np.inf
