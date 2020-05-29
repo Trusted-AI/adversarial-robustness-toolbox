@@ -27,15 +27,14 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.trainer.trainer import Trainer
-import apex.amp as amp
+
 from art.utils import random_sphere
-import time
-import torch.nn.functional as F
+import apex.amp as amp
 import torch
+import time
 import torch.nn as nn
 
 logger = logging.getLogger(__name__)
-
 
 class AdversarialTrainerFBFPyTorch(Trainer):
     """
@@ -57,7 +56,6 @@ class AdversarialTrainerFBFPyTorch(Trainer):
         if not isinstance(self.classifier, PyTorchClassifier):
             raise NotImplementedError("The classifier must be a PyTorch classifier")
         self.use_amp = use_amp
-        # Setting up adversary and perform adversarial training:
 
     def fit(self, x, y, validation_data=None, batch_size=128, nb_epochs=20, **kwargs):
         """
@@ -76,11 +74,13 @@ class AdversarialTrainerFBFPyTorch(Trainer):
         :type kwargs: `dict`
         :return: `None`
         """
+        logger.info("Performing adversarial training with Fast is better than Free protocol")
 
         nb_batches = int(np.ceil(len(x) / batch_size))
         ind = np.arange(len(x))
 
         lr_schedule = lambda t: np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
+
 
         for i_epoch in range(nb_epochs):
             logger.info("Adversarial training FBF epoch %i/%i", i_epoch, nb_epochs)
@@ -106,8 +106,7 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 x_batch_pert = np.clip(x_batch + delta, self.classifier.clip_values[0], self.classifier.clip_values[1])
 
                 # Apply preprocessing
-                # x_preprocessed, y_preprocessed = self.classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
-                x_preprocessed, _ = self.classifier._apply_preprocessing(x_batch_pert, None, fit=True)
+                x_preprocessed, y_preprocessed = self.classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
 
                 # Check label shape
                 if self.classifier._reduce_labels:
@@ -115,7 +114,7 @@ class AdversarialTrainerFBFPyTorch(Trainer):
 
                 i_batch = torch.from_numpy(x_preprocessed).to(
                     self.classifier._device)
-                o_batch = torch.from_numpy(y_batch).to(
+                o_batch = torch.from_numpy(y_preprocessed).to(
                     self.classifier._device)
 
                 # Zero the parameter gradients
@@ -150,23 +149,24 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 (x_test, y_test) = validation_data
                 output = np.argmax(self.predict(x_test), axis=1)
                 nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
-                print(
+                logger.info(
                     '{} \t {:.1f} \t {:.4f} \t {:.4f} \t {:.4f} \t {:.4f}'.format(i_epoch, train_time - start_time, lr,
                                                                                   train_loss / train_n,
                                                                                   train_acc / train_n,
-                                                                                  nb_correct_pred / x_test.shape[0]),
-                    flush=True)
+                                                                                  nb_correct_pred / x_test.shape[0]))
+            else:
+                logger.info(
+                    '{} \t {:.1f} \t {:.4f} \t {:.4f} \t {:.4f}'.format(i_epoch, train_time - start_time, lr,
+                                                                                  train_loss / train_n,
+                                                                                  train_acc / train_n))
 
-    def fit_generator(self, x, y, validation_data=None, batch_size=128, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
-        Train a model adversarially. See class documentation for more information on the exact procedure.
+        Train a model adversarially using a data generator.
+        See class documentation for more information on the exact procedure.
 
-        :param x: Training set.
-        :type x: `np.ndarray`
-        :param y: Labels for the training set.
-        :type y: `np.ndarray`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
+        :param generator: Data generator.
+        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
@@ -174,27 +174,25 @@ class AdversarialTrainerFBFPyTorch(Trainer):
         :type kwargs: `dict`
         :return: `None`
         """
-
-        nb_batches = int(np.ceil(len(x) / batch_size))
-        ind = np.arange(len(x))
+        logger.info("Performing adversarial training with Fast is better than Free protocol")
+        size = generator.size
+        batch_size = generator.batch_size
+        nb_batches = int(np.ceil(size / batch_size))
+        ind = np.arange(generator.size)
 
         lr_schedule = lambda t: np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
 
         for i_epoch in range(nb_epochs):
             logger.info("Adversarial training FBF epoch %i/%i", i_epoch, nb_epochs)
-
-            # Shuffle the examples
-            np.random.shuffle(ind)
             start_time = time.time()
             train_loss = 0
             train_acc = 0
             train_n = 0
 
             for batch_id in range(nb_batches):
-
                 # Create batch data
-                x_batch = x[ind[batch_id * batch_size: min((batch_id + 1) * batch_size, x.shape[0])]].copy()
-                y_batch = y[ind[batch_id * batch_size: min((batch_id + 1) * batch_size, x.shape[0])]]
+                x_batch, y_batch = generator.get_batch()
+                x_batch = x_batch.copy()
 
                 n = x_batch.shape[0]
                 m = np.prod(x_batch.shape[1:])
@@ -204,8 +202,7 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 x_batch_pert = np.clip(x_batch + delta, self.classifier.clip_values[0], self.classifier.clip_values[1])
 
                 # Apply preprocessing
-                # x_preprocessed, y_preprocessed = self.classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
-                x_preprocessed, _ = self.classifier._apply_preprocessing(x_batch_pert, None, fit=True)
+                x_preprocessed, y_preprocessed = self.classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)
 
                 # Check label shape
                 if self.classifier._reduce_labels:
@@ -213,7 +210,7 @@ class AdversarialTrainerFBFPyTorch(Trainer):
 
                 i_batch = torch.from_numpy(x_preprocessed).to(
                     self.classifier._device)
-                o_batch = torch.from_numpy(y_batch).to(
+                o_batch = torch.from_numpy(y_preprocessed).to(
                     self.classifier._device)
 
                 # Zero the parameter gradients
@@ -242,18 +239,10 @@ class AdversarialTrainerFBFPyTorch(Trainer):
                 train_n += o_batch.size(0)
 
             train_time = time.time()
-
-            # compute accuracy
-            if validation_data is not None:
-                (x_test, y_test) = validation_data
-                output = np.argmax(self.predict(x_test), axis=1)
-                nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
-                print(
-                    '{} \t {:.1f} \t {:.4f} \t {:.4f} \t {:.4f} \t {:.4f}'.format(i_epoch, train_time - start_time, lr,
-                                                                                  train_loss / train_n,
-                                                                                  train_acc / train_n,
-                                                                                  nb_correct_pred / x_test.shape[0]),
-                    flush=True)
+            logger.info(
+                '{} \t {:.1f} \t {:.4f} \t {:.4f} \t {:.4f}'.format(i_epoch, train_time - start_time, lr,
+                                                                    train_loss / train_n,
+                                                                    train_acc / train_n))
 
     def predict(self, x, **kwargs):
         """
