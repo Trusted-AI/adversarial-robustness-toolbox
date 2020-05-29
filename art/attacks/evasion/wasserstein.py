@@ -178,24 +178,7 @@ class Wasserstein(EvasionAttack):
             batch = x_adv[batch_index_1: batch_index_2]
             batch_labels = targets[batch_index_1: batch_index_2]
 
-            x_adv[batch_index_1:batch_index_2] = self._generate_batch(
-                batch,
-                batch_labels,
-                cost_matrix,
-                self.kernel_size,
-                self.max_iter,
-                self.norm,
-                self.ball,
-                self.targeted,
-                self.eps,
-                self.eps_iter,
-                self.eps_factor,
-                self.eps_step,
-                self.regularization,
-                self.conjugate_sinkhorn_max_iter,
-                self.projected_sinkhorn_max_iter,
-                batch.shape[0],
-            )
+            x_adv[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, cost_matrix)
 
         logger.info(
             "Success rate of attack: %.2f%%",
@@ -204,25 +187,7 @@ class Wasserstein(EvasionAttack):
 
         return x_adv
 
-    def _generate_batch(
-            self,
-            x,
-            targets,
-            cost_matrix,
-            kernel_size,
-            max_iter,
-            norm,
-            ball,
-            targeted,
-            eps,
-            eps_iter,
-            eps_factor,
-            eps_step,
-            regularization,
-            conjugate_sinkhorn_max_iter,
-            projected_sinkhorn_max_iter,
-            batch_size,
-    ):
+    def _generate_batch(self, x, targets, cost_matrix):
         """
         Generate a batch of adversarial samples and return them in an array.
 
@@ -232,81 +197,32 @@ class Wasserstein(EvasionAttack):
         :type targets: `np.ndarray`
         :param cost_matrix: A non-negative cost matrix.
         :type cost_matrix: `np.ndarray`
-        :param kernel_size: Kernel size for computing the cost matrix.
-        :type kernel_size: `int`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param norm: The norm of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
-        :type norm: `string`
-        :param ball: The ball of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
-        :type ball: `string`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
-        :type targeted: `bool`
-        :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
-        :param eps_iter: Number of iterations to increase the epsilon.
-        :type eps_iter: `int`
-        :param eps_factor: Factor to increase the epsilon.
-        :type eps_factor: `float`
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
-        :param regularization: Entropy regularization.
-        :type regularization: `float`
-        :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
-        :type conjugate_sinkhorn_max_iter: `int`
-        :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
-        :type projected_sinkhorn_max_iter: `int`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
         adv_x = x.copy().astype(ART_NUMPY_DTYPE)
         adv_x_best = x.copy().astype(ART_NUMPY_DTYPE)
 
-        if targeted:
-            err = np.argmax(
-                self.estimator.predict(adv_x, batch_size=batch_size),
-                axis=1
-            ) == np.argmax(targets, axis=1)
-
+        if self.targeted:
+            err = np.argmax(self.estimator.predict(adv_x, batch_size=x.shape[0]), axis=1) == np.argmax(targets, axis=1)
         else:
-            err = np.argmax(
-                self.estimator.predict(adv_x, batch_size=batch_size),
-                axis=1
-            ) != np.argmax(targets, axis=1)
+            err = np.argmax(self.estimator.predict(adv_x, batch_size=x.shape[0]), axis=1) != np.argmax(targets, axis=1)
 
         err_best = err
-        eps = np.ones(batch_size) * eps
+        eps_ = np.ones(x.shape[0]) * self.eps
 
-        for i in range(max_iter):
-            adv_x = self._compute(
-                adv_x,
-                x,
-                targets,
-                cost_matrix,
-                kernel_size,
-                norm,
-                ball,
-                targeted,
-                eps,
-                eps_step,
-                regularization,
-                conjugate_sinkhorn_max_iter,
-                projected_sinkhorn_max_iter,
-                batch_size,
-                err,
-            )
+        for i in range(self.max_iter):
+            adv_x = self._compute(adv_x, x, targets, cost_matrix, eps_, err)
 
-            if targeted:
+            if self.targeted:
                 err = np.argmax(
-                    self.estimator.predict(adv_x, batch_size=batch_size),
+                    self.estimator.predict(adv_x, batch_size=x.shape[0]),
                     axis=1
                 ) == np.argmax(targets, axis=1)
 
             else:
                 err = np.argmax(
-                    self.estimator.predict(adv_x, batch_size=batch_size),
+                    self.estimator.predict(adv_x, batch_size=x.shape[0]),
                     axis=1
                 ) != np.argmax(targets, axis=1)
 
@@ -317,29 +233,12 @@ class Wasserstein(EvasionAttack):
             if np.mean(err) == 1:
                 break
 
-            if (i + 1) % eps_iter == 0:
-                eps[~err] *= eps_factor
+            if (i + 1) % self.eps_iter == 0:
+                eps_[~err] *= self.eps_factor
 
         return adv_x_best
 
-    def _compute(
-            self,
-            x_adv,
-            x_init,
-            y,
-            cost_matrix,
-            kernel_size,
-            norm,
-            ball,
-            targeted,
-            eps,
-            eps_step,
-            regularization,
-            conjugate_sinkhorn_max_iter,
-            projected_sinkhorn_max_iter,
-            batch_size,
-            err,
-    ):
+    def _compute(self, x_adv, x_init, y, cost_matrix, eps, err):
         """
         Compute adversarial examples for one iteration.
 
@@ -354,57 +253,18 @@ class Wasserstein(EvasionAttack):
         :type y: `np.ndarray`
         :param cost_matrix: A non-negative cost matrix.
         :type cost_matrix: `np.ndarray`
-        :param kernel_size: Kernel size for computing the cost matrix.
-        :type kernel_size: `int`
-        :param norm: The norm of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
-        :type norm: `string`
-        :param ball: The ball of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
-        :type ball: `string`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type targeted: `bool`
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
-        :param regularization: Entropy regularization.
-        :type regularization: `float`
-        :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
-        :type conjugate_sinkhorn_max_iter: `int`
-        :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
-        :type projected_sinkhorn_max_iter: `int`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
+        :type eps: `np.ndarray`
         :param err: Current successful adversarial examples.
         :type err: `np.ndarray`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
         # Compute and apply perturbation
-        x_adv[~err] = self._compute_apply_perturbation(
-            x_adv,
-            y,
-            cost_matrix,
-            kernel_size,
-            norm,
-            targeted,
-            eps_step,
-            regularization,
-            conjugate_sinkhorn_max_iter,
-            batch_size,
-        )[~err]
+        x_adv[~err] = self._compute_apply_perturbation(x_adv, y, cost_matrix)[~err]
 
         # Do projection
-        x_adv[~err] = self._apply_projection(
-            x_adv,
-            x_init,
-            cost_matrix,
-            kernel_size,
-            ball,
-            eps,
-            regularization,
-            projected_sinkhorn_max_iter,
-            batch_size,
-        )[~err]
+        x_adv[~err] = self._apply_projection(x_adv, x_init, cost_matrix, eps)[~err]
 
         # Clip x_adv
         if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
@@ -413,19 +273,7 @@ class Wasserstein(EvasionAttack):
 
         return x_adv
 
-    def _compute_apply_perturbation(
-            self,
-            x,
-            y,
-            cost_matrix,
-            kernel_size,
-            norm,
-            targeted,
-            eps_step,
-            regularization,
-            conjugate_sinkhorn_max_iter,
-            batch_size,
-    ):
+    def _compute_apply_perturbation(self, x, y, cost_matrix):
         """
         Compute and apply perturbations.
 
@@ -438,20 +286,6 @@ class Wasserstein(EvasionAttack):
         :type y: `np.ndarray`
         :param cost_matrix: A non-negative cost matrix.
         :type cost_matrix: `np.ndarray`
-        :param kernel_size: Kernel size for computing the cost matrix.
-        :type kernel_size: `int`
-        :param norm: The norm of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
-        :type norm: `string`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type targeted: `bool`
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
-        :param regularization: Entropy regularization.
-        :type regularization: `float`
-        :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
-        :type conjugate_sinkhorn_max_iter: `int`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
@@ -459,34 +293,25 @@ class Wasserstein(EvasionAttack):
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient(x, y) * (1 - 2 * int(targeted))
+        grad = self.estimator.loss_gradient(x, y) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
-        if norm == 'inf':
+        if self.norm == 'inf':
             grad = np.sign(grad)
-            x_adv = x + eps_step * grad
+            x_adv = x + self.eps_step * grad
 
-        elif norm == '1':
+        elif self.norm == '1':
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
-            x_adv = x + eps_step * grad
+            x_adv = x + self.eps_step * grad
 
-        elif norm == '2':
+        elif self.norm == '2':
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
-            x_adv = x + eps_step * grad
+            x_adv = x + self.eps_step * grad
 
-        elif norm == 'wasserstein':
-            x_adv = self._conjugate_sinkhorn(
-                x,
-                grad,
-                cost_matrix,
-                kernel_size,
-                eps_step,
-                regularization,
-                conjugate_sinkhorn_max_iter,
-                batch_size,
-            )
+        elif self.norm == 'wasserstein':
+            x_adv = self._conjugate_sinkhorn(x, grad, cost_matrix)
 
         else:
             raise NotImplementedError(
@@ -495,18 +320,7 @@ class Wasserstein(EvasionAttack):
 
         return x_adv
 
-    def _apply_projection(
-            self,
-            x,
-            x_init,
-            cost_matrix,
-            kernel_size,
-            ball,
-            eps,
-            regularization,
-            projected_sinkhorn_max_iter,
-            batch_size,
-    ):
+    def _apply_projection(self, x, x_init, cost_matrix, eps):
         """
         Apply projection on the ball of size `eps`.
 
@@ -516,25 +330,15 @@ class Wasserstein(EvasionAttack):
         :type x_init: `np.ndarray`
         :param cost_matrix: A non-negative cost matrix.
         :type cost_matrix: `np.ndarray`
-        :param kernel_size: Kernel size for computing the cost matrix.
-        :type kernel_size: `int`
-        :param ball: The ball of the adversarial perturbation. Possible values: `inf`, `1`, `2` or `wasserstein`.
-        :type ball: `string`
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
-        :param regularization: Entropy regularization.
-        :type regularization: `float`
-        :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
-        :type projected_sinkhorn_max_iter: `int`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
+        :type eps: `np.ndarray`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
-        if ball == '2':
+        if self.ball == '2':
             values = x - x_init
             values_tmp = values.reshape((values.shape[0], -1))
 
@@ -546,7 +350,7 @@ class Wasserstein(EvasionAttack):
 
             x_adv = values + x_init
 
-        elif ball == '1':
+        elif self.ball == '1':
             values = x - x_init
             values_tmp = values.reshape((values.shape[0], -1))
 
@@ -557,7 +361,7 @@ class Wasserstein(EvasionAttack):
             values = values_tmp.reshape(values.shape)
             x_adv = values + x_init
 
-        elif ball == 'inf':
+        elif self.ball == 'inf':
             values = x - x_init
             values_tmp = values.reshape((values.shape[0], -1))
 
@@ -566,17 +370,8 @@ class Wasserstein(EvasionAttack):
             values = values_tmp.reshape(values.shape)
             x_adv = values + x_init
 
-        elif ball == 'wasserstein':
-            x_adv = self._projected_sinkhorn(
-                x,
-                x_init,
-                cost_matrix,
-                kernel_size,
-                eps,
-                regularization,
-                projected_sinkhorn_max_iter,
-                batch_size,
-            )
+        elif self.ball == 'wasserstein':
+            x_adv = self._projected_sinkhorn(x, x_init, cost_matrix, eps)
 
         else:
             raise NotImplementedError(
@@ -585,17 +380,7 @@ class Wasserstein(EvasionAttack):
 
         return x_adv
 
-    def _conjugate_sinkhorn(
-            self,
-            x,
-            grad,
-            cost_matrix,
-            kernel_size,
-            eps_step,
-            regularization,
-            conjugate_sinkhorn_max_iter,
-            batch_size,
-    ):
+    def _conjugate_sinkhorn(self, x, grad, cost_matrix):
         """
         The conjugate sinkhorn_optimizer.
 
@@ -605,21 +390,11 @@ class Wasserstein(EvasionAttack):
         :type grad: `np.ndarray`
         :param cost_matrix: A non-negative cost matrix.
         :type cost_matrix: `np.ndarray`
-        :param kernel_size: Kernel size for computing the cost matrix.
-        :type kernel_size: `int`
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
-        :param regularization: Entropy regularization.
-        :type regularization: `float`
-        :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
-        :type conjugate_sinkhorn_max_iter: `int`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
         # Normalize inputs
-        normalization = x.reshape(batch_size, -1).sum(-1).reshape(batch_size, 1, 1, 1)
+        normalization = x.reshape(x.shape[0], -1).sum(-1).reshape(x.shape[0], 1, 1, 1)
         x = x.copy() / normalization
 
         # Dimension size for each example
@@ -629,56 +404,41 @@ class Wasserstein(EvasionAttack):
         alpha = np.log(np.ones(x.shape) / m) + 0.5
         exp_alpha = np.exp(-alpha)
 
-        beta = -regularization * grad
+        beta = -self.regularization * grad
         exp_beta = np.exp(-beta)
 
         # Check for overflow
         if (exp_beta == np.inf).any():
             raise ValueError('Overflow error in `_conjugate_sinkhorn` for exponential beta.')
 
-        # EARLY TERMINATION CRITERIA: if the nu_1 and the center of the ball have no pixels with overlapping filters,
-        # then the wasserstein ball has no effect on the objective. Consequently, we should just return the objective
-        # on the center of the ball. Notably, if the filters do not overlap, then the pixels themselves don't either,
-        # so we can conclude that the objective is 0.
-        #
-        # We can detect overlapping filters by applying the cost filter and seeing if the sum is 0 (e.g. X*C*Y).
-        # Referenced to https://github.com/locuslab/projected_sinkhorn.
         cost_matrix_new = cost_matrix.copy() + 1
         cost_matrix_new = np.expand_dims(np.expand_dims(cost_matrix_new, 0), 0)
 
-        I_nonzero = self._batch_dot(x, self._local_transport(cost_matrix_new, grad, kernel_size)) != 0
+        I_nonzero = self._batch_dot(x, self._local_transport(cost_matrix_new, grad, self.kernel_size)) != 0
         I_nonzero_ = np.zeros(alpha.shape).astype(bool)
         I_nonzero_[:, :, :, :] = np.expand_dims(np.expand_dims(np.expand_dims(I_nonzero, -1), -1), -1)
 
-        psi = np.ones(batch_size)
+        psi = np.ones(x.shape[0])
 
         K = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
         K = np.exp(-K * cost_matrix - 1)
 
         convergence = -np.inf
 
-        for _ in range(conjugate_sinkhorn_max_iter):
+        for _ in range(self.conjugate_sinkhorn_max_iter):
             # Block coordinate descent iterates
-            alpha[I_nonzero_] = (np.log(self._local_transport(K, exp_beta, kernel_size)) - np.log(x))[I_nonzero_]
+            alpha[I_nonzero_] = (np.log(self._local_transport(K, exp_beta, self.kernel_size)) - np.log(x))[I_nonzero_]
             exp_alpha = np.exp(-alpha)
 
             # Newton step
-            g = -eps_step + self._batch_dot(
+            g = -self.eps_step + self._batch_dot(
                 exp_alpha,
-                self._local_transport(
-                    cost_matrix * K,
-                    exp_beta,
-                    kernel_size,
-                )
+                self._local_transport(cost_matrix * K, exp_beta, self.kernel_size)
             )
 
             h = -self._batch_dot(
                 exp_alpha,
-                self._local_transport(
-                    cost_matrix * cost_matrix * K,
-                    exp_beta,
-                    kernel_size,
-                )
+                self._local_transport(cost_matrix * cost_matrix * K, exp_beta, self.kernel_size)
             )
 
             delta = g / h
@@ -698,39 +458,20 @@ class Wasserstein(EvasionAttack):
             K = np.exp(-K * cost_matrix - 1)
 
             # Check for convergence
-            next_convergence = self._conjugated_sinkhorn_evaluation(
-                x,
-                eps_step,
-                alpha,
-                exp_alpha,
-                exp_beta,
-                psi,
-                K,
-                kernel_size,
-            )
+            next_convergence = self._conjugated_sinkhorn_evaluation(x, alpha, exp_alpha, exp_beta, psi, K)
 
             if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * np.abs(next_convergence)).all():
                 break
             else:
                 convergence = next_convergence
 
-        result = exp_beta * self._local_transport(K, exp_alpha, kernel_size)
+        result = exp_beta * self._local_transport(K, exp_alpha, self.kernel_size)
         result[~I_nonzero] = 0
         result *= normalization
 
         return result
 
-    def _projected_sinkhorn(
-            self,
-            x,
-            x_init,
-            cost_matrix,
-            kernel_size,
-            eps,
-            regularization,
-            projected_sinkhorn_max_iter,
-            batch_size,
-    ):
+    def _projected_sinkhorn(self, x, x_init, cost_matrix, eps):
         """
         The projected sinkhorn_optimizer.
 
@@ -740,21 +481,13 @@ class Wasserstein(EvasionAttack):
         :type x_init: `np.ndarray`
         :param cost_matrix: A non-negative cost matrix.
         :type cost_matrix: `np.ndarray`
-        :param kernel_size: Kernel size for computing the cost matrix.
-        :type kernel_size: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
-        :param regularization: Entropy regularization.
-        :type regularization: `float`
-        :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
-        :type projected_sinkhorn_max_iter: `int`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
+        :type eps: `np.ndarray`
         :return: Adversarial examples.
         :rtype: `np.ndarray`
         """
         # Normalize inputs
-        normalization = x_init.reshape(batch_size, -1).sum(-1).reshape(batch_size, 1, 1, 1)
+        normalization = x_init.reshape(x.shape[0], -1).sum(-1).reshape(x.shape[0], 1, 1, 1)
         x = x.copy() / normalization
         x_init = x_init.copy() / normalization
 
@@ -768,40 +501,36 @@ class Wasserstein(EvasionAttack):
         beta = np.log(np.ones(x.shape) / m)
         exp_beta = np.exp(-beta)
 
-        psi = np.ones(batch_size)
+        psi = np.ones(x.shape[0])
 
         K = np.expand_dims(np.expand_dims(np.expand_dims(psi, -1), -1), -1)
         K = np.exp(-K * cost_matrix - 1)
 
         convergence = -np.inf
 
-        for _ in range(projected_sinkhorn_max_iter):
+        for _ in range(self.projected_sinkhorn_max_iter):
             # Block coordinate descent iterates
-            alpha = (np.log(self._local_transport(K, exp_beta, kernel_size)) - np.log(x_init))
+            alpha = (np.log(self._local_transport(K, exp_beta, self.kernel_size)) - np.log(x_init))
             exp_alpha = np.exp(-alpha)
 
-            beta = regularization * np.exp(regularization * x) * self._local_transport(K, exp_alpha, kernel_size)
+            beta = self.regularization * np.exp(self.regularization * x) * self._local_transport(
+                K,
+                exp_alpha,
+                self.kernel_size
+            )
             beta[beta > 1e-10] = np.real(lambertw(beta[beta > 1e-10]))
-            beta -= regularization * x
+            beta -= self.regularization * x
             exp_beta = np.exp(-beta)
 
             # Newton step
             g = -eps + self._batch_dot(
                 exp_alpha,
-                self._local_transport(
-                    cost_matrix * K,
-                    exp_beta,
-                    kernel_size,
-                )
+                self._local_transport(cost_matrix * K, exp_beta, self.kernel_size)
             )
 
             h = -self._batch_dot(
                 exp_alpha,
-                self._local_transport(
-                    cost_matrix * cost_matrix * K,
-                    exp_beta,
-                    kernel_size,
-                )
+                self._local_transport(cost_matrix * cost_matrix * K, exp_beta, self.kernel_size)
             )
 
             delta = g / h
@@ -831,8 +560,6 @@ class Wasserstein(EvasionAttack):
                 psi,
                 K,
                 eps,
-                regularization,
-                kernel_size,
             )
 
             if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * np.abs(next_convergence)).all():
@@ -840,7 +567,7 @@ class Wasserstein(EvasionAttack):
             else:
                 convergence = next_convergence
 
-        result = (beta / regularization + x) * normalization
+        result = (beta / self.regularization + x) * normalization
 
         return result
 
@@ -965,20 +692,7 @@ class Wasserstein(EvasionAttack):
 
         return result
 
-    def _projected_sinkhorn_evaluation(
-            self,
-            x,
-            x_init,
-            alpha,
-            exp_alpha,
-            beta,
-            exp_beta,
-            psi,
-            K,
-            eps,
-            regularization,
-            kernel_size,
-    ):
+    def _projected_sinkhorn_evaluation(self, x, x_init, alpha, exp_alpha, beta, exp_beta, psi, K, eps):
         """
         Function to evaluate the objective of the projected sinkhorn optimizer.
 
@@ -1004,36 +718,20 @@ class Wasserstein(EvasionAttack):
         :type K: `np.ndarray`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
-        :param regularization: Entropy regularization.
-        :type regularization: `float`
-        :param kernel_size: Kernel size for computing the cost matrix.
-        :type kernel_size: `int`
         :return: Evaluation result.
         :rtype: `np.ndarray`
         """
-        return (-0.5 / regularization * self._batch_dot(beta, beta) - psi * eps
+        return (-0.5 / self.regularization * self._batch_dot(beta, beta) - psi * eps
                 - self._batch_dot(np.minimum(alpha, 1e10), x_init)
                 - self._batch_dot(np.minimum(beta, 1e10), x)
-                - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, kernel_size)))
+                - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, self.kernel_size)))
 
-    def _conjugated_sinkhorn_evaluation(
-            self,
-            x,
-            eps_step,
-            alpha,
-            exp_alpha,
-            exp_beta,
-            psi,
-            K,
-            kernel_size,
-    ):
+    def _conjugated_sinkhorn_evaluation(self, x, alpha, exp_alpha, exp_beta, psi, K):
         """
         Function to evaluate the objective of the conjugated sinkhorn optimizer.
 
         :param x: Current adversarial examples.
         :type x: `np.ndarray`
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :param alpha: Alpha parameter in the conjugated sinkhorn optimizer of the paper ``Wasserstein Adversarial
         Examples via Projected Sinkhorn Iterations``.
         :type alpha: `np.ndarray`
@@ -1048,13 +746,11 @@ class Wasserstein(EvasionAttack):
         :param K: K parameter in the conjugated sinkhorn optimizer of the paper ``Wasserstein Adversarial Examples
         via Projected Sinkhorn Iterations``.
         :type K: `np.ndarray`
-        :param kernel_size: Kernel size for computing the cost matrix.
-        :type kernel_size: `int`
         :return: Evaluation result.
         :rtype: `np.ndarray`
         """
-        return (-psi * eps_step - self._batch_dot(np.minimum(alpha, 1e38), x)
-                - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, kernel_size)))
+        return (-psi * self.eps_step - self._batch_dot(np.minimum(alpha, 1e38), x)
+                - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, self.kernel_size)))
 
     def set_params(self, **kwargs):
         """
