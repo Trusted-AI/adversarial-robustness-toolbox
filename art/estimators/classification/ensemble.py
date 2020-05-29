@@ -24,8 +24,9 @@ import logging
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
+from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +37,13 @@ class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
     trained when the ensemble is created and no training procedures are provided through this class.
     """
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         classifiers,
         classifier_weights=None,
-        channel_index=3,
+        channel_index=Deprecated,
+        channels_first=False,
         clip_values=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
@@ -57,6 +60,8 @@ class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
         :type classifier_weights: `list` or `np.ndarray` or `None`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -75,9 +80,18 @@ class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(EnsembleClassifier, self).__init__(
             clip_values=clip_values,
             channel_index=channel_index,
+            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
@@ -118,13 +132,13 @@ class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
             classifier_weights = np.ones(self._nb_classifiers) / self._nb_classifiers
         self._classifier_weights = classifier_weights
 
-        # check for consistent channel_index in ensemble members
+        # check for consistent channels_first in ensemble members
         for i_cls, cls in enumerate(classifiers):
-            if cls.channel_index != self.channel_index:
+            if cls.channels_first != self.channels_first:
                 raise ValueError(
-                    "The channel_index value of classifier {} is {} while this ensemble expects a "
-                    "channel_index value of {}. The channel_index values of all classifiers and the "
-                    "ensemble need ot be identical.".format(i_cls, cls.channel_index, self.channel_index)
+                    "The channels_first boolean of classifier {} is {} while this ensemble expects a "
+                    "channels_first boolean of {}. The channels_first booleans of all classifiers and the "
+                    "ensemble need ot be identical.".format(i_cls, cls.channels_first, self.channels_first)
                 )
 
         self._classifiers = classifiers
@@ -165,8 +179,7 @@ class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -297,13 +310,14 @@ class EnsembleClassifier(ClassGradientsMixin, ClassifierMixin, LossGradientsMixi
 
     def __repr__(self):
         repr_ = (
-            "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, "
+            "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, channels_first=%r, clip_values=%r, "
             "preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._classifiers,
                 self._classifier_weights,
                 self.channel_index,
+                self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
                 self.postprocessing_defences,

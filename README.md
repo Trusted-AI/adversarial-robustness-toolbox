@@ -84,6 +84,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 **Poisoning Attacks:**
 * Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 * Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
+* Feature Collision Attack ([Shafahi, Huang et. al., 2018](https://arxiv.org/pdf/1804.00792.pdf))
 
 **Defences - Preprocessor:**
 * Resampling ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
@@ -91,6 +92,8 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * MP3 compression ([Carlini, N. & Wagner, D., 2018](https://arxiv.org/abs/1801.01944))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
+* InverseGan ([An Lin et al. 2019](https://arxiv.org/abs/1911.10291))
+* DefenseGan ([Samangouei et al. 2018](https://arxiv.org/abs/1805.06605))
 * Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Spatial smoothing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
