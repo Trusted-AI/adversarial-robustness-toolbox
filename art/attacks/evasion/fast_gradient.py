@@ -26,7 +26,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
-from scipy.stats import uniform
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
