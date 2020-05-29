@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -17,18 +17,18 @@
 # SOFTWARE.
 """Robustness evaluation module."""
 
+import zipfile
+import importlib
+import re
+
 import numpy as np
 from minio import Minio
 
 import torch
 import torch.utils.data
 
-from art.classifiers.pytorch import PyTorchClassifier
+from art.estimators.classification import PyTorchClassifier
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-
-import zipfile
-import importlib
-import re
 
 from robustness_util import get_metrics
 
@@ -91,7 +91,12 @@ def robustness_evaluation(object_storage_url, object_storage_username, object_st
         optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # create pytorch classifier
-    classifier = PyTorchClassifier(clip_values, model, loss_fn, optimizer, input_shape, nb_classes)
+    classifier = PyTorchClassifier(model=model,
+                                   loss=loss_fn,
+                                   optimizer=optimizer,
+                                   input_shape=input_shape,
+                                   nb_classes=nb_classes,
+                                   clip_values=clip_values)
 
     # load test dataset
     x = np.load(dataset_filenamex)

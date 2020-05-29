@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -25,9 +25,11 @@ import lightgbm
 import numpy as np
 from sklearn.ensemble import ExtraTreesClassifier, RandomForestClassifier, GradientBoostingClassifier
 
-from art.classifiers import XGBoostClassifier, LightGBMClassifier, SklearnClassifier
+from art.estimators.classification.xgboost import XGBoostClassifier
+from art.estimators.classification.lightgbm import LightGBMClassifier
+from art.estimators.classification.scikitlearn import SklearnClassifier
 from art.utils import load_dataset
-from art.metrics import RobustnessVerificationTreeModelsCliqueMethod
+from art.metrics.verification_decisions_trees import RobustnessVerificationTreeModelsCliqueMethod
 
 from tests.utils import master_seed
 

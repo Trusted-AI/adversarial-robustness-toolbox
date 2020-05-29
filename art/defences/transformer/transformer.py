@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -35,7 +35,7 @@ class Transformer(abc.ABC):
         Create a transformation object.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         """
         self.classifier = classifier
         self._is_fitted = False
@@ -55,7 +55,7 @@ class Transformer(abc.ABC):
         Get the internal classifier.
 
         :return: The internal classifier.
-        :rtype: :class:`.Classifier`
+        :rtype: :class:`art.estimators.classification.Classifier`
         """
         return self.classifier
 
@@ -67,9 +67,9 @@ class Transformer(abc.ABC):
         :param x: Dataset for training the transformed classifier.
         :type x: `np.ndarray`
         :param transformed_classifier: A classifier to be transformed for increased robustness.
-        :type transformed_classifier: :class:`.Classifier`
+        :type transformed_classifier: :class:`art.estimators.classification.Classifier`
         :return: The transformed classifier.
-        :rtype: :class:`.Classifier`
+        :rtype: :class:`art.estimators.classification.Classifier`
         """
         raise NotImplementedError
 

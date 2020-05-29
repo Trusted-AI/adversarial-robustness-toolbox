@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -26,13 +26,17 @@ import numpy as np
 from scipy.stats import entropy
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
+
 from art.utils import clip_and_round
 
 logger = logging.getLogger(__name__)
 
 
-class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients, Classifier):
+class QueryEfficientBBGradientEstimation(
+    ClassifierWrapper, ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
+):
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
@@ -59,6 +63,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         # pylint: disable=E0203
         self._predict = self.classifier.predict
         self.set_params(num_basis=num_basis, sigma=sigma, round_samples=round_samples)
+        self._nb_classes = self.classifier.nb_classes
 
     def predict(self, x, **kwargs):
         """
@@ -168,15 +173,31 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         """
         return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{"batch_size": batch_size})
 
-    def nb_classes(self):
+    def get_activations(self, x, layer, batch_size):
         """
-        Return the number of output classes.
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
 
-        :return: Number of classes in the data.
-        :rtype: `int`
+        :param x: Input for computing the activations.
+        :type x: `np.ndarray`
+        :param layer: Layer for computing the activations
+        :type layer: `int` or `str`
+        :param batch_size: Size of batches.
+        :type batch_size: `int`
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
+        :rtype: `np.ndarray`
         """
-        # pylint: disable=W0212
-        return self.classifier.nb_classes()
+        raise NotImplementedError
+
+    def set_learning_phase(self, train):
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
+        :type train: `bool`
+        """
+        raise NotImplementedError
 
     def save(self, filename, path=None):
         """

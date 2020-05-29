@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -20,22 +20,30 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import tensorflow as tf
-import numpy as np
 import keras
 import keras.backend as k
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+import numpy as np
+import tensorflow as tf
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from keras.layers import Conv2D, Dense, Flatten, MaxPooling2D
+from keras.models import Sequential
 
 from art.attacks.extraction.copycat_cnn import CopycatCNN
-from art.classifiers import TensorFlowClassifier, KerasClassifier, PyTorchClassifier
-
-from tests.utils import TestBase, master_seed
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import TensorFlowClassifier
+from tests.utils import (
+    TestBase,
+    get_image_classifier_kr,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+    get_tabular_classifier_kr,
+    get_tabular_classifier_pt,
+    get_tabular_classifier_tf,
+    master_seed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -265,7 +273,7 @@ class TestCopycatCNNVectors(TestBase):
             loss=loss,
             learning=None,
             sess=sess,
-            channel_index=1,
+            channels_first=True,
         )
 
         # Create attack
@@ -305,7 +313,7 @@ class TestCopycatCNNVectors(TestBase):
         model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
 
         # Get classifier
-        thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+        thieved_krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
 
         # Create attack
         copycat_cnn = CopycatCNN(
@@ -370,7 +378,7 @@ class TestCopycatCNNVectors(TestBase):
             input_shape=(4,),
             nb_classes=3,
             clip_values=(0, 1),
-            channel_index=1,
+            channels_first=True,
         )
 
         # Create attack
