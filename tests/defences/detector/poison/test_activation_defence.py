@@ -17,11 +17,14 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import keras
 import logging
 import unittest
 
 import numpy as np
+from keras_preprocessing.image import ImageDataGenerator
 
+from art.data_generators import KerasDataGenerator
 from art.defences.detector.poison import ActivationDefence
 from art.utils import load_mnist
 from art.visualization import convert_to_rgb
@@ -62,6 +65,15 @@ class TestActivationDefence(unittest.TestCase):
         cls.classifier.fit(x_train, y_train, nb_epochs=1, batch_size=128)
 
         cls.defence = ActivationDefence(cls.classifier, x_train, y_train)
+
+        datagen = ImageDataGenerator()
+        datagen.fit(x_train)
+
+        data_gen = KerasDataGenerator(
+            datagen.flow(x_train, y_train, batch_size=20), size=None, batch_size=20
+        )
+
+        cls.defence_gen = ActivationDefence(cls.classifier, None, None, generator=data_gen)
 
     def setUp(self):
         # Set master seed
@@ -114,33 +126,52 @@ class TestActivationDefence(unittest.TestCase):
         _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
         sum_clean1 = sum(is_clean_lst)
 
+        # _, is_clean_lst_gen = self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
+        # sum_clean1_gen = sum(is_clean_lst_gen)
+
         # Check number of items in is_clean
         self.assertEqual(len(x_train), len(is_clean_lst))
+        # self.assertEqual(len(x_train), len(is_clean_lst_gen))
 
         # Test right number of clusters
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
+        # found_clusters_gen = len(np.unique(self.defence_gen.clusters_by_class[0]))
         self.assertEqual(found_clusters, 2)
+        # self.assertEqual(found_clusters_gen, 2)
 
         _, is_clean_lst = self.defence.detect_poison(
             nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance"
         )
+        # _, is_clean_lst_gen = self.defence_gen.detect_poison(
+        #     nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance"
+        # )
         self.assertEqual(len(x_train), len(is_clean_lst))
+        # self.assertEqual(len(x_train), len(is_clean_lst_gen))
 
         # Test change of state to new number of clusters:
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
+        # found_clusters_gen = len(np.unique(self.defence_gen.clusters_by_class[0]))
         self.assertEqual(found_clusters, 3)
+        # self.assertEqual(found_clusters_gen, 3)
 
         # Test clean data has changed
         sum_clean2 = sum(is_clean_lst)
+        # sum_clean2_gen = sum(is_clean_lst_gen)
         self.assertNotEqual(sum_clean1, sum_clean2)
+        # self.assertNotEqual(sum_clean1_gen, sum_clean2_gen)
 
         kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA", "cluster_analysis": "distance"}
         _, is_clean_lst = self.defence.detect_poison(**kwargs)
+        # _, is_clean_lst_gen = self.defence_gen.detect_poison(**kwargs)
         sum_dist = sum(is_clean_lst)
+        # sum_dist_gen = sum(is_clean_lst_gen)
         kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA", "cluster_analysis": "smaller"}
         _, is_clean_lst = self.defence.detect_poison(**kwargs)
+        # _, is_clean_lst_gen = self.defence_gen.detect_poison(**kwargs)
         sum_size = sum(is_clean_lst)
+        # sum_size_gen = sum(is_clean_lst_gen)
         self.assertNotEqual(sum_dist, sum_size)
+        # self.assertNotEqual(sum_dist_gen, sum_size_gen)
 
     def test_evaluate_defense(self):
         # Get MNIST
@@ -148,48 +179,69 @@ class TestActivationDefence(unittest.TestCase):
 
         kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA"}
         _, _ = self.defence.detect_poison(**kwargs)
+        # _, _ = self.defence_gen.detect_poison(**kwargs)
         is_clean = np.zeros(len(x_train))
         self.defence.evaluate_defence(is_clean)
+        # self.defence_gen.evaluate_defence(is_clean)
 
     def test_analyze_cluster(self):
         # Get MNIST
         (x_train, _), (_, _), (_, _) = self.mnist
 
         self.defence.analyze_clusters(cluster_analysis="relative-size")
+        # self.defence_gen.analyze_clusters(cluster_analysis="relative-size")
 
         self.defence.analyze_clusters(cluster_analysis="silhouette-scores")
+        # self.defence_gen.analyze_clusters(cluster_analysis="silhouette-scores")
 
         report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis="distance")
+        # report_gen, dist_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="distance")
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(dist_clean_by_class))
+        # self.assertEqual(n_classes, len(dist_clean_by_class_gen))
 
         # Check right amount of data
         n_dp = 0
+        # n_dp_gen = 0
         for i in range(0, n_classes):
             n_dp += len(dist_clean_by_class[i])
+            # n_dp_gen += len(dist_clean_by_class_gen[i])
         self.assertEqual(len(x_train), n_dp)
+        # self.assertEqual(len(x_train), n_dp_gen)
 
         report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis="smaller")
+        # report_gen, sz_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="smaller")
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(sz_clean_by_class))
+        # self.assertEqual(n_classes, len(sz_clean_by_class_gen))
 
         # Check right amount of data
         n_dp = 0
+        # n_dp_gen = 0
         sum_sz = 0
+        # sum_sz_gen = 0
         sum_dis = 0
+        # sum_dis_gen = 0
 
         for i in range(0, n_classes):
             n_dp += len(sz_clean_by_class[i])
+            # n_dp_gen += len(sz_clean_by_class_gen[i])
             sum_sz += sum(sz_clean_by_class[i])
+            # sum_sz_gen += sum(sz_clean_by_class_gen[i])
             sum_dis += sum(dist_clean_by_class[i])
+            # sum_dis_gen += sum(dist_clean_by_class_gen[i])
         self.assertEqual(len(x_train), n_dp)
+        # self.assertEqual(len(x_train), n_dp_gen)
 
         # Very unlikely that they are the same
         self.assertNotEqual(sum_dis, sum_sz, msg="This is very unlikely to happen... there may be an error")
+        # self.assertNotEqual(sum_dis_gen, sum_sz_gen, msg="This is very unlikely to happen... there may be an error")
 
     def test_plot_clusters(self):
         self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
+        # self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
         self.defence.plot_clusters(save=False)
+        # self.defence_gen.plot_clusters(save=False)
 
     def test_pickle(self):
 
