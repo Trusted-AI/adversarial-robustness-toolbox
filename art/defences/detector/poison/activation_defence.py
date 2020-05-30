@@ -31,6 +31,7 @@ import os
 
 import numpy as np
 
+from art.data_generators import DataGenerator
 from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
@@ -51,14 +52,14 @@ class ActivationDefence(PoisonFilteringDefence):
         in general, see https://arxiv.org/abs/1902.06705
     """
 
-    defence_params = ["nb_clusters", "clustering_method", "nb_dims", "reduce", "cluster_analysis"]
+    defence_params = ["nb_clusters", "clustering_method", "nb_dims", "reduce", "cluster_analysis", "generator"]
     valid_clustering = ["KMeans"]
     valid_reduce = ["PCA", "FastICA", "TSNE"]
     valid_analysis = ["smaller", "distance", "relative-size", "silhouette-scores"]
 
     TOO_SMALL_ACTIVATIONS = 32  # Threshold used to print a warning when activations are not enough
 
-    def __init__(self, classifier, x_train, y_train):
+    def __init__(self, classifier, x_train, y_train, generator=None):
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
@@ -68,6 +69,8 @@ class ActivationDefence(PoisonFilteringDefence):
         :type x_train: `np.ndarray`
         :param y_train: labels used to train the classifier.
         :type y_train: `np.ndarray`
+        :param generator: If true x_train and y_train are data generators
+        :type generator: `art.data_generators.DataGenerator`
         """
         super(ActivationDefence, self).__init__(classifier, x_train, y_train)
         kwargs = {
@@ -76,6 +79,7 @@ class ActivationDefence(PoisonFilteringDefence):
             "nb_dims": 10,
             "reduce": "PCA",
             "cluster_analysis": "smaller",
+            "generator": generator
         }
         self.set_params(**kwargs)
         self.activations_by_class = []
@@ -105,6 +109,13 @@ class ActivationDefence(PoisonFilteringDefence):
             raise ValueError("is_clean was not provided while invoking evaluate_defence.")
 
         self.set_params(**kwargs)
+
+        # TODO: implement this for data generators assuming is_clean has values for the whole set
+        # duh they got is_clean from me so that's how I'll make it
+
+        if self.generator:
+            # TODO: skip right to the cluster activations part
+            pass
 
         if not self.activations_by_class:
             activations = self._get_activations()
@@ -148,6 +159,31 @@ class ActivationDefence(PoisonFilteringDefence):
 
         self.set_params(**kwargs)
 
+        # TODO: finish generator tings here
+        if self.generator:
+            for _ in range(self.generator.size // self.generator.batch_size):
+                # TODO: probably move all this code to cluster_activations
+                # TODO: or (maybe bad idea) add them all as optional params! you already have em right here
+                x_batch, y_batch = self.generator.get_batch()
+                # batch_activations = self._get_activations(x_batch)
+                # self.activations_by_class = self._segment_by_class(batch_activations, y_batch)
+                self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
+                report, self.assigned_clean_by_class = self.analyze_clusters()
+                # TODO: find out how to merge results after each batch
+
+            # TODO: loop though the whole thing again once more, this time to generator a report
+            for _ in range(self.generator.size // self.generator.batch_size):
+                pass
+                # TODO: so on and so forth and don't forget to merge results
+                # x_batch, y_batch = self.generator.get_batch()
+            indices_by_class = self._segment_by_class(np.arange(self.generator.batch_size), y_batch)
+            self.is_clean_lst = [0] * self.generator.batch_size
+            for assigned_clean, indices_dp in zip(self.assigned_clean_by_class, indices_by_class):
+                for assignment, index_dp in zip(assigned_clean, indices_dp):
+                    if assignment == 1:
+                        self.is_clean_lst[index_dp] = 1
+            return report, self.is_clean_lst
+
         if not self.activations_by_class:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
@@ -180,6 +216,15 @@ class ActivationDefence(PoisonFilteringDefence):
         :rtype: `tuple`
         """
         self.set_params(**kwargs)
+
+        if self.generator:
+            pass
+            # TODO: get activations by batch
+            # segment and add to activations by class
+            # keep calling cluster_activations and pass in generator to partially fit
+            # append results to running clusters by class a reduced activations by class
+            # return final results also make sure to set self.clusters_by_class and red_activations too
+
         if not self.activations_by_class:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
@@ -468,6 +513,10 @@ class ActivationDefence(PoisonFilteringDefence):
         if not self.clusters_by_class:
             self.cluster_activations()
 
+        if self.generator:
+            # TODO manually go through and 1) separate each activation by class and 2) reduce each activation
+            pass
+
         # Get activations reduced to 3-components:
         separated_reduced_activations = []
         for activation in self.activations_by_class:
@@ -512,17 +561,25 @@ class ActivationDefence(PoisonFilteringDefence):
             raise ValueError("Unsupported reduction method: " + self.reduce)
         if self.cluster_analysis not in self.valid_analysis:
             raise ValueError("Unsupported method for cluster analysis method: " + self.cluster_analysis)
+        if self.generator and not isinstance(self.generator, DataGenerator):
+            raise TypeError("Generator must a an instance of DataGenerator")
 
         return True
 
-    def _get_activations(self):
+    def _get_activations(self, x_train=None):
         """
         Find activations from :class:`.Classifier`.
         """
         logger.info("Getting activations")
 
         nb_layers = len(self.classifier.layer_names)
-        activations = self.classifier.get_activations(self.x_train, layer=nb_layers - 1, batch_size=128)
+        protected_layer = nb_layers - 1
+
+        if self.generator:
+            activations = self.classifier.get_activations(x_train, layer=protected_layer,
+                                                          batch_size=self.generator.batch_size)
+        else:
+            activations = self.classifier.get_activations(self.x_train, layer=protected_layer, batch_size=128)
 
         # wrong way to get activations activations = self.classifier.predict(self.x_train)
         nodes_last_layer = np.shape(activations)[1]
@@ -604,7 +661,8 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
     return improve_factor, classifier
 
 
-def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce="FastICA", clustering_method="KMeans"):
+def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce="FastICA", clustering_method="KMeans",
+                        generator=False):
     """
     Clusters activations and returns two arrays.
     1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each datapoint
@@ -622,17 +680,20 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     :type reduce: `str`
     :param clustering_method: Clustering method to use, default is KMeans
     :type clustering_method: `str`
+    :param generator: whether or not a the activations are a batch or full activations
+    :type generator: `bool`
     :return: separated_clusters, separated_reduced_activations
     :rtype: `tuple`
     """
     # pylint: disable=E0001
     from sklearn.cluster import KMeans
+    from sklearn.cluster import MiniBatchKMeans
 
     separated_clusters = []
     separated_reduced_activations = []
 
     if clustering_method == "KMeans":
-        clusterer = KMeans(n_clusters=nb_clusters)
+        clusterer = MiniBatchKMeans(n_clusters=nb_clusters) if generator else KMeans(n_clusters=nb_clusters)
     else:
         raise ValueError(clustering_method + " clustering method not supported.")
 
@@ -651,7 +712,7 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
         separated_reduced_activations.append(reduced_activations)
 
         # Get cluster assignments
-        clusters = clusterer.fit_predict(reduced_activations)
+        clusters = clusterer.partial_fit(reduced_activations) if generator else clusterer.fit_predict(reduced_activations)
         separated_clusters.append(clusters)
 
     return separated_clusters, separated_reduced_activations
