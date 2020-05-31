@@ -57,7 +57,7 @@ class SimBA(EvasionAttack):
         :type freq_dim: `int`
         :param stride: stride for block order (DCT).
         :type stride: `int`
-        :param targeted: targeted attacks
+        :param targeted: perform targeted attack
         :type targeted: `bool`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
@@ -148,7 +148,7 @@ class SimBA(EvasionAttack):
             elif self.attack == 'px':
                 left_preds = self.classifier.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
             left_prob = left_preds.reshape(-1)[desired_label]
-            
+
             if self.attack == 'dct':
                 right_preds = self.classifier.predict(np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
             elif self.attack == 'px':
@@ -250,8 +250,8 @@ class SimBA(EvasionAttack):
         if self.epsilon < 0:
             raise ValueError("The overshoot parameter must not be negative.")
 
-        if self.batch_size <= 0:
-            raise ValueError('The batch size `batch_size` has to be positive.')
+        if self.batch_size != 1:
+            raise ValueError('The batch size `batch_size` has to be 1 in this implementation.')
         
         if not isinstance(self.stride, (int, np.int)) or self.stride <= 0:
             raise ValueError("The `stride` value must be a positive integer.")
