@@ -59,8 +59,6 @@ class UniversalPerturbation(EvasionAttack):
                     'carlini_inf': 'art.attacks.evasion.carlini.CarliniLInfMethod',
                     'deepfool': 'art.attacks.evasion.deepfool.DeepFool',
                     'simba': 'art.attacks.evasion.simba.SimBA',
-                    'simba_px': 'art.attacks.evasion.simba_pixel.SimBA_pixel',
-                    'simba_dct': 'art.attacks.evasion.simba_dct.SimBA_dct',
                     'ead': 'art.attacks.evasion.elastic_net.ElasticNet',
                     'fgsm': 'art.attacks.evasion.fast_gradient.FastGradientMethod',
                     'bim': 'art.attacks.evasion.iterative_method.BasicIterativeMethod',
