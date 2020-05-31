@@ -256,6 +256,7 @@ def to_categorical(labels, nb_classes=None):
     categorical[np.arange(labels.shape[0]), np.squeeze(labels)] = 1
     return categorical
 
+
 def float_to_categorical(labels, nb_classes=None):
     """
     Convert an array of floating point labels to binary class matrix.
@@ -274,7 +275,7 @@ def float_to_categorical(labels, nb_classes=None):
     if nb_classes is None:
         nb_classes = len(unique) + 1
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
-    categorical [np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
+    categorical[np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
     return categorical
 
 
