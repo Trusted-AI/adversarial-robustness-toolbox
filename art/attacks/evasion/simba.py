@@ -147,8 +147,8 @@ class SimBA(EvasionAttack):
                 left_preds = self.classifier.predict(np.clip(x - trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
             elif self.attack == 'px':
                 left_preds = self.classifier.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
-            left_prob = left_preds.reshape(-1)[desired_label
-
+            left_prob = left_preds.reshape(-1)[desired_label]
+            
             if self.attack == 'dct':
                 right_preds = self.classifier.predict(np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
             elif self.attack == 'px':
