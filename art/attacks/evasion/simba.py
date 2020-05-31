@@ -97,9 +97,9 @@ class SimBA(EvasionAttack):
         else:
             y_i = np.argmax(y, axis=1)
         
-        original_label = y_i[0]
-        current_label = original_label
-        last_prob = preds.reshape(-1)[original_label]
+        desired_label = y_i[0]
+        current_label = np.argmax(preds, axis=1)[0]
+        last_prob = preds.reshape(-1)[desired_label]
 
         n_dims = np.prod(x.shape)
 
@@ -130,8 +130,16 @@ class SimBA(EvasionAttack):
         if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
 
+        term_flag = 1
+        if self.targeted == True:
+            if desired_label != current_label:
+                term_flag = 0
+        else:
+            if desired_label == current_label:
+                term_flag = 0
+
         nb_iter = 0
-        while original_label == current_label and nb_iter < self.max_iter:
+        while term_flag == 0 and nb_iter < self.max_iter:
             diff = np.zeros(n_dims)
             diff[indices[nb_iter]] = self.epsilon
 
@@ -139,44 +147,76 @@ class SimBA(EvasionAttack):
                 left_preds = self.classifier.predict(np.clip(x - trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
             elif self.attack == 'px':
                 left_preds = self.classifier.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
-            left_prob = left_preds.reshape(-1)[original_label]
+            left_prob = left_preds.reshape(-1)[desired_label
 
             if self.attack == 'dct':
                 right_preds = self.classifier.predict(np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
             elif self.attack == 'px':
                 right_preds = self.classifier.predict(np.clip(x + diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
-            right_prob = right_preds.reshape(-1)[original_label]
+            right_prob = right_preds.reshape(-1)[desired_label]
 
-            if left_prob < last_prob:
-                if left_prob < right_prob:
-                    if self.attack == 'dct':
-                        x = np.clip(x - trans(diff.reshape(x.shape)), clip_min, clip_max)
-                    elif self.attack == 'px':
-                        x = np.clip(x - diff.reshape(x.shape), clip_min, clip_max)
-                    last_prob = left_prob
-                    current_label = np.argmax(left_preds, axis=1)[0]
+            if self.targeted == True:
+                if left_prob > last_prob:
+                    if left_prob > right_prob:
+                        if self.attack == 'dct':
+                            x = np.clip(x - trans(diff.reshape(x.shape)), clip_min, clip_max)
+                        elif self.attack == 'px':
+                            x = np.clip(x - diff.reshape(x.shape), clip_min, clip_max)
+                        last_prob = left_prob
+                        current_label = np.argmax(left_preds, axis=1)[0]
+                    else:
+                        if self.attack == 'dct':
+                            x = np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max)
+                        elif self.attack == 'px':
+                            x = np.clip(x + diff.reshape(x.shape), clip_min, clip_max)
+                        last_prob = right_prob
+                        current_label = np.argmax(right_preds, axis=1)[0]
                 else:
-                    if self.attack == 'dct':
-                        x = np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max)
-                    elif self.attack == 'px':
-                        x = np.clip(x + diff.reshape(x.shape), clip_min, clip_max)
-                    last_prob = right_prob
-                    current_label = np.argmax(right_preds, axis=1)[0]
+                    if right_prob > last_prob:
+                        if self.attack == 'dct':
+                            x = np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max)
+                        elif self.attack == 'px':
+                            x = np.clip(x + diff.reshape(x.shape), clip_min, clip_max)
+                        last_prob = right_prob
+                        current_label = np.argmax(right_preds, axis=1)[0]
             else:
-                if right_prob < last_prob:
-                    if self.attack == 'dct':
-                        x = np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max)
-                    elif self.attack == 'px':
-                        x = np.clip(x + diff.reshape(x.shape), clip_min, clip_max)
-                    last_prob = right_prob
-                    current_label = np.argmax(right_preds, axis=1)[0]
+                if left_prob < last_prob:
+                    if left_prob < right_prob:
+                        if self.attack == 'dct':
+                            x = np.clip(x - trans(diff.reshape(x.shape)), clip_min, clip_max)
+                        elif self.attack == 'px':
+                            x = np.clip(x - diff.reshape(x.shape), clip_min, clip_max)
+                        last_prob = left_prob
+                        current_label = np.argmax(left_preds, axis=1)[0]
+                    else:
+                        if self.attack == 'dct':
+                            x = np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max)
+                        elif self.attack == 'px':
+                            x = np.clip(x + diff.reshape(x.shape), clip_min, clip_max)
+                        last_prob = right_prob
+                        current_label = np.argmax(right_preds, axis=1)[0]
+                else:
+                    if right_prob < last_prob:
+                        if self.attack == 'dct':
+                            x = np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max)
+                        elif self.attack == 'px':
+                            x = np.clip(x + diff.reshape(x.shape), clip_min, clip_max)
+                        last_prob = right_prob
+                        current_label = np.argmax(right_preds, axis=1)[0]
             
+            if self.targeted == True:
+                if desired_label == current_label:
+                    term_flag = 1
+            else:
+                if desired_label != current_label:
+                    term_flag = 1
+
             nb_iter = nb_iter + 1
 
         if nb_iter < self.max_iter:
-            logger.info('SimBA (%s) attack succeed', self.attack)
+            logger.info('SimBA (%s) %s attack succeed', self.attack, ['non-targeted', 'targeted'][self.targeted])
         else:
-            logger.info('SimBA (%s) attack failed', self.attack)
+            logger.info('SimBA (%s) %s attack failed', self.attack, ['non-targeted', 'targeted'][self.targeted])
 
         return x
 
