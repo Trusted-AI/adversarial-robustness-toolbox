@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class SimBA(EvasionAttack):
     attack_params = EvasionAttack.attack_params + ['attack', 'max_iter', 'epsilon', 'order', 'freq_dim', 'stride', 'targeted', 'batch_size',]
 
-    def __init__(self, classifier, attack='dct', max_iter=3000, order='random', epsilon=0.1, freq_dim=4, stride=1, targeted=-999, batch_size=1):
+    def __init__(self, classifier, attack='dct', max_iter=3000, order='random', epsilon=0.1, freq_dim=4, stride=1, targeted=False, batch_size=1):
         """
         Create a SimBA (dct) attack instance.
 
@@ -57,8 +57,8 @@ class SimBA(EvasionAttack):
         :type freq_dim: `int`
         :param stride: stride for block order (DCT).
         :type stride: `int`
-        :param targeted: targeted class (index) (non-targeted if negative)
-        :type stride: `int`
+        :param targeted: targeted attacks
+        :type targeted: `bool`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
         """
@@ -86,10 +86,18 @@ class SimBA(EvasionAttack):
         x = x.astype(ART_NUMPY_DTYPE)
         preds = self.classifier.predict(x, batch_size=self.batch_size)
 
-        # Todo: targeted version
+        #Note: need further implementation for targeted attacks
         if y is None:
-            y = np.argmax(preds, axis=1)
-        original_label = y[0]
+            if self.targeted == True:
+                raise ValueError('Target labels `y` need to be provided for a targeted attack.')
+            else:
+                # Use model predictions as correct outputs
+                logger.info('Using the model prediction as the correct label for SimBA.')
+                y_i = np.argmax(preds, axis=1)
+        else:
+            y_i = np.argmax(y, axis=1)
+        
+        original_label = y_i[0]
         current_label = original_label
         last_prob = preds.reshape(-1)[original_label]
 
@@ -188,6 +196,8 @@ class SimBA(EvasionAttack):
         :type freq_dim: `int`
         :param stride: stride for block order (DCT).
         :type stride: `int`
+        :param targeted: targeted attacks
+        :type targeted: `bool`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
         """
@@ -214,6 +224,9 @@ class SimBA(EvasionAttack):
         
         if self.attack != 'px' and self.attack != 'dct':
             raise ValueError('The attack type has to be `px` or `dct`.')
+        
+        if not isinstance(targeted, (int)) or (targeted != 0 and targeted != 1):
+            raise ValueError('`targeted` has to be a logical value.')
 
         return True
 
