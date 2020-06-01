@@ -8,9 +8,8 @@ from art.attacks.evasion.boundary import BoundaryAttack
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
 from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack
 from art.attacks.evasion.deepfool import DeepFool
-from art.attacks.evasion.simba_pixel import SimBA_pixel
-from art.attacks.evasion.simba_dct import SimBA_dct
 from art.attacks.evasion.simba import SimBA
+from art.attacks.evasion.universal_simba import Universal_SimBA
 from art.attacks.evasion.universal_simba_pixel import Universal_SimBA_pixel
 from art.attacks.evasion.universal_simba_dct import Universal_SimBA_dct
 from art.attacks.evasion.elastic_net import ElasticNet
