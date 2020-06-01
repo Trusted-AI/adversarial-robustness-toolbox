@@ -87,7 +87,7 @@ class SimBA(EvasionAttack):
         preds = self.classifier.predict(x, batch_size=self.batch_size)
 
         if y is None:
-            if self.targeted == True:
+            if self.targeted:
                 raise ValueError('Target labels `y` need to be provided for a targeted attack.')
             else:
                 # Use model predictions as correct outputs
@@ -154,7 +154,7 @@ class SimBA(EvasionAttack):
                 right_preds = self.classifier.predict(np.clip(x + diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
             right_prob = right_preds.reshape(-1)[desired_label]
 
-            if self.targeted == True:
+            if self.targeted:
                 if left_prob > last_prob:
                     if left_prob > right_prob:
                         if self.attack == 'dct':
@@ -203,7 +203,7 @@ class SimBA(EvasionAttack):
                         last_prob = right_prob
                         current_label = np.argmax(right_preds, axis=1)[0]
             
-            if self.targeted == True:
+            if self.targeted:
                 if desired_label == current_label:
                     term_flag = 1
             else:
@@ -213,9 +213,9 @@ class SimBA(EvasionAttack):
             nb_iter = nb_iter + 1
 
         if nb_iter < self.max_iter:
-            logger.info('SimBA (%s) %s attack succeed', self.attack, ['non-targeted', 'targeted'][self.targeted])
+            logger.info('SimBA (%s) %s attack succeed', self.attack, ['non-targeted', 'targeted'][int(self.targeted)])
         else:
-            logger.info('SimBA (%s) %s attack failed', self.attack, ['non-targeted', 'targeted'][self.targeted])
+            logger.info('SimBA (%s) %s attack failed', self.attack, ['non-targeted', 'targeted'][int(self.targeted)])
 
         return x
 
