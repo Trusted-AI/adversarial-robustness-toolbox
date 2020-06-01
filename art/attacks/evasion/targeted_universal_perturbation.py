@@ -42,7 +42,8 @@ class TargetedUniversalPerturbation(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1911.06502
     """
     attacks_dict = {
-                    'fgsm': 'art.attacks.evasion.fast_gradient.FastGradientMethod'
+                    'fgsm': 'art.attacks.evasion.fast_gradient.FastGradientMethod',
+                    'simba': 'art.attacks.evasion.simba.SimBA'
                     }
     attack_params = EvasionAttack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
