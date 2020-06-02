@@ -193,7 +193,7 @@ class ShadowAttack(EvasionAttack):
 
             import tensorflow as tf
 
-            if self.estimator.channel_index == 3:
+            if not self.estimator.channels_first:
                 perturbation = perturbation.transpose((0, 3, 1, 2))
 
             if tf.executing_eagerly():
@@ -224,7 +224,7 @@ class ShadowAttack(EvasionAttack):
 
                     gradients = tape.gradient(loss, perturbation_t).numpy()
 
-                    if self.estimator.channel_index == 3:
+                    if not self.estimator.channels_first:
                         gradients = gradients.transpose(0, 2, 3, 1)
 
             else:
