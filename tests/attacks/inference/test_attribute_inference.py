@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -65,7 +65,7 @@ def test_black_box(get_tabular_classifier_list, get_iris_dataset):
     transform_feature(x_test_feature)
 
     for classifier in classifier_list:
-        print(type(classifier).__name__)
+        # print(type(classifier).__name__)
         attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
@@ -78,8 +78,8 @@ def test_black_box(get_tabular_classifier_list, get_iris_dataset):
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1,-1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1,-1)) / len(inferred_test)
-        print(train_acc)
-        print(test_acc)
+        # print(train_acc)
+        # print(test_acc)
         # assert train_acc > test_acc
 
 
@@ -124,7 +124,7 @@ def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
                                      input_shape=(4,), nb_classes=3)
 
     for classifier in classifier_list:
-        print(type(classifier).__name__)
+        # print(type(classifier).__name__)
         attack = AttributeInferenceBlackBox(classifier, attack_model=attack_model, attack_feature=attack_feature)
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
@@ -137,8 +137,8 @@ def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
         # check accuracy
         train_acc = np.sum(inferred_train == x_train_feature.reshape(1,-1)) / len(inferred_train)
         test_acc = np.sum(inferred_test == x_test_feature.reshape(1,-1)) / len(inferred_test)
-        print(train_acc)
-        print(test_acc)
+        # print(train_acc)
+        # print(test_acc)
         # assert train_acc > test_acc
 
 
@@ -149,9 +149,7 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
         return
 
     attack_feature = 2  # petal length
-    # values = [0.14, 0.42, 0.57, 0.71, 0.85] # rounded down
     values = [0.14, 0.42, 0.71]  # rounded down
-    # priors = [50/150, 11/150, 43/150, 35/150, 11/150]
     priors = [50 / 150, 54 / 150, 46 / 150]
 
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
@@ -161,7 +159,7 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
     x_test_feature = x_test_iris[:, attack_feature]
 
     for classifier in classifier_list:
-        print(type(classifier).__name__)
+        # print(type(classifier).__name__)
         attack = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=attack_feature)
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1,1)
@@ -169,10 +167,8 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
         train_diff = np.abs(inferred_train - x_train_feature.reshape(1,-1))
         test_diff = np.abs(inferred_test - x_test_feature.reshape(1,-1))
-        print(np.sum(train_diff) / len(inferred_train))
-        print(np.sum(test_diff) / len(inferred_test))
-        # if type(classifier).__name__ is not 'ScikitlearnDecisionTreeClassifier':
-        # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
+        # print(np.sum(train_diff) / len(inferred_train))
+        # print(np.sum(test_diff) / len(inferred_test))
 
 
 def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
@@ -182,9 +178,7 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
         return
 
     attack_feature = 2  # petal length
-    # values = [0.14, 0.42, 0.57, 0.71, 0.85] # rounded down
     values = [0.14, 0.42, 0.71]  # rounded down
-    # priors = [50/150, 11/150, 43/150, 35/150, 11/150]
     priors = [50 / 150, 54 / 150, 46 / 150]
 
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
@@ -194,7 +188,7 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
     x_test_feature = x_test_iris[:, attack_feature]
 
     for classifier in classifier_list:
-        print(type(classifier).__name__)
+        # print(type(classifier).__name__)
         attack = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=attack_feature)
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1,1)
@@ -202,8 +196,8 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
         train_diff = np.abs(inferred_train - x_train_feature.reshape(1,-1))
         test_diff = np.abs(inferred_test - x_test_feature.reshape(1,-1))
-        print(np.sum(train_diff) / len(inferred_train))
-        print(np.sum(test_diff) / len(inferred_test))
+        # print(np.sum(train_diff) / len(inferred_train))
+        # print(np.sum(test_diff) / len(inferred_test))
         # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
 
 
