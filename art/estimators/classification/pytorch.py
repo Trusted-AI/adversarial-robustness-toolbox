@@ -145,6 +145,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         return self._device
 
+    @property
     def model(self):
         return self._model._model
 
@@ -160,6 +161,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :rtype: `np.ndarray`
         """
         import torch
+
+        self._model.eval()
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)

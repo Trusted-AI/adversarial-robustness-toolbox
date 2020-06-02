@@ -702,7 +702,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
             the model and computing gradients of the loss w.r.t. the input.
         :type loss_object: `tf.keras.losses`
-        :param train_step: a function that applies a gradient update to the trainable variables.
+        :param train_step: A function that applies a gradient update to the trainable variables with signature
+                           train_step(model, images, labels).
         :type train_step: `function`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
@@ -832,7 +833,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         for _ in range(nb_epochs):
             for images, labels in train_ds:
-                self._train_step(images, labels)
+                self._train_step(self.model, images, labels)
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """

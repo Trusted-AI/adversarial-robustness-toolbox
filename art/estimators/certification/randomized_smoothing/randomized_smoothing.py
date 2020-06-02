@@ -22,20 +22,19 @@ This module implements Randomized Smoothing applied to classifier predictions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from abc import ABC
+
 import logging
 
 import numpy as np
 
-from art.wrappers.wrapper import ClassifierWrapper
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
+from art.config import ART_NUMPY_DTYPE
+from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 
 logger = logging.getLogger(__name__)
 
 
-class RandomizedSmoothing(
-    ClassifierWrapper, ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
-):
+class RandomizedSmoothingMixin(ABC):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
     in Cohen et al. (2019).
@@ -43,12 +42,10 @@ class RandomizedSmoothing(
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
-    def __init__(self, classifier, sample_size, scale=0.1, alpha=0.001):
+    def __init__(self, sample_size, *args, scale=0.1, alpha=0.001, **kwargs):
         """
         Create a randomized smoothing wrapper.
 
-        :param classifier: The Classifier we want to wrap the functionality for the purpose of smoothing.
-        :type classifier: :class:`.Classifier`
         :param sample_size: Number of samples for smoothing
         :type sample_size: `int`
         :param scale: Standard deviation of Gaussian noise added.
@@ -56,31 +53,50 @@ class RandomizedSmoothing(
         :param alpha: The failure probability of smoothing
         :type alpha: `float`
         """
-        super(RandomizedSmoothing, self).__init__(classifier)
+        super().__init__(*args, **kwargs)
         self.sample_size = sample_size
         self.scale = scale
         self.alpha = alpha
-        self._nb_classes = classifier.nb_classes
 
-    # pylint: disable=W0221
-    def predict(self, x, batch_size=128, is_abstain=True, **kwargs):
+    def _predict_classifier(self, x, batch_size):
         """
-        Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
+        Perform prediction for a batch of inputs.
 
         :param x: Test set.
         :type x: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
-        :param is_abstain: True if function will abstain from prediction and return 0s
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    # pylint: disable=W0221
+    def predict(self, x, batch_size=128, **kwargs):
+        """
+        Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
+
+        :param x: Test set.
+        :type x: `np.ndarray`
+        :param batch_size: Batch size.
+        :type batch_size: `int`
+        :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
         :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
         from scipy.stats import binom_test
 
+        is_abstain = kwargs.get("is_abstain")
+        if is_abstain is not None and not isinstance(is_abstain, bool):
+            raise ValueError("The argument is_abstain needs to be of type bool.")
+        if is_abstain is None:
+            is_abstain = True
+
         logger.info("Applying randomized smoothing.")
         n_abstained = 0
         prediction = []
+
         for x_i in x:
 
             # get class counts
@@ -98,43 +114,52 @@ class RandomizedSmoothing(
 
             prediction.append(smooth_prediction)
         if n_abstained > 0:
-            print("%s prediction(s) abstained." % n_abstained)
+            logger.info("%s prediction(s) abstained." % n_abstained)
         return np.array(prediction)
 
-    def loss_gradient(self, x, y, **kwargs):
+    def _fit_classifier(self, x, y, batch_size, nb_epochs, **kwargs):
         """
-        Compute the gradient of the given classifier's loss function w.r.t. `x` of the original classifier.
+         Fit the classifier on the training set `(x, y)`.
 
-        :param x: Sample input with shape as expected by the model.
+        :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Correct labels, one-hot encoded.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
         :type y: `np.ndarray`
-        :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
+        :param batch_size: Batche size.
+        :type batch_size: `int`
+        :param nb_epochs: Number of epochs to use for training.
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
+        :return: `None`
         """
-        logger.info("Applying randomized smoothing.")
-        return self.classifier.loss_gradient(x, y)
+        raise NotImplementedError
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
-        Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
+        Fit the classifier on the training set `(x, y)`.
 
-        :param x: Sample input with shape as expected by the model.
+        :param x: Training data.
         :type x: `np.ndarray`
-        :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
-                      output is computed for all samples. If multiple values as provided, the first dimension should
-                      match the batch size of `x`, and each value will be used as target for its corresponding sample in
-                      `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `list`
-        :return: Array of gradients of input features w.r.t. each class in the form
-                 `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
-                 `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :param batch_size: Batch size.
+        :type batch_size: `int`
+        :key nb_epochs: Number of epochs to use for training
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
+        :return: `None`
         """
-        logger.info("Apply randomized smoothing.")
-        return self.classifier.class_gradient(x, label)
+        ga = GaussianAugmentation(sigma=self.scale, augmentation=False)
+        x_rs, _ = ga(x)
+        self._fit_classifier(x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def certify(self, x, n):
+    def certify(self, x, n, batch_size=32):
         """
         Computes certifiable radius around input `x` and returns radius `r` and prediction.
 
@@ -142,6 +167,8 @@ class RandomizedSmoothing(
         :type x: `np.ndarray`
         :param n: Number of samples for estimate certifiable radius
         :type n: `int`
+        :param batch_size: Batch size.
+        :type batch_size: `int`
         :return: Tuple of length 2 of the selected class and certified radius
         :rtype: `tuple`
         """
@@ -149,14 +176,15 @@ class RandomizedSmoothing(
 
         prediction = []
         radius = []
+
         for x_i in x:
 
             # get sample prediction for classification
-            counts_pred = self._prediction_counts(x_i)
+            counts_pred = self._prediction_counts(x_i, n=self.sample_size, batch_size=batch_size)
             class_select = np.argmax(counts_pred)
 
             # get sample prediction for certification
-            counts_est = self._prediction_counts(x_i, n=n)
+            counts_est = self._prediction_counts(x_i, n=n, batch_size=batch_size)
             count_class = counts_est[class_select]
 
             prob_class = self._lower_confidence_bound(count_class, n)
@@ -188,7 +216,7 @@ class RandomizedSmoothing(
         # augment x
         x = np.expand_dims(x, axis=0)
         x = np.repeat(x, n, axis=0)
-        x = x + np.random.normal(scale=self.scale, size=x.shape)
+        x = x + np.random.normal(scale=self.scale, size=x.shape).astype(ART_NUMPY_DTYPE)
 
         return x
 
@@ -198,14 +226,12 @@ class RandomizedSmoothing(
 
         :param x: Sample input with shape as expected by the model.
         :type x: `np.ndarray`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Array of counts with length equal to number of columns of `x`.
         :rtype: `np.ndarray`
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
-        predictions = self.classifier.predict(x_new, batch_size)
+        predictions = self._predict_classifier(x=x_new, batch_size=batch_size)
 
         # convert to binary predictions
         idx = np.argmax(predictions, axis=-1)
@@ -231,58 +257,3 @@ class RandomizedSmoothing(
         from statsmodels.stats.proportion import proportion_confint
 
         return proportion_confint(n_class_samples, n_total_samples, alpha=2 * self.alpha, method="beta")[0]
-
-    def fit(self, x, y, **kwargs):
-        """
-        Fit the classifier using the training data `(x, y)`.
-
-        :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
-        :type x: `np.ndarray`
-        :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
-                  One Hot Encoding format.
-        :type y: `np.ndarray`
-        :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
-        :return: `None`
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size):
-        """
-        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
-        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
-        calling `layer_names`.
-
-        :param x: Input for computing the activations.
-        :type x: `np.ndarray`
-        :param layer: Layer for computing the activations
-        :type layer: `int` or `str`
-        :param batch_size: Size of batches.
-        :type batch_size: `int`
-        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
-        """
-        raise NotImplementedError
-
-    def set_learning_phase(self, train):
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
-        :type train: `bool`
-        """
-        raise NotImplementedError
-
-    def save(self, filename, path=None):
-        """
-        Save a model to file specific to the backend framework.
-
-        :param filename: Name of the file where to save the model.
-        :type filename: `str`
-        :param path: Path of the directory where to save the model. If no path is specified, the model will be stored in
-                     the default data location of ART at `ART_DATA_PATH`.
-        :type path: `str`
-        :return: None
-        """
-        raise NotImplementedError
