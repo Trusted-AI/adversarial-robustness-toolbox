@@ -28,6 +28,7 @@ import numpy as np
 
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
+from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
@@ -114,11 +115,11 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         )
 
     def _predict_classifier(self, x, batch_size):
-        x = x.astype(np.float32)
+        x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.predict(self, x=x, batch_size=batch_size)
 
     def _fit_classifier(self, x, y, batch_size, nb_epochs, **kwargs):
-        x = x.astype(np.float32)
+        x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def loss_gradient(self, x, y, **kwargs):
