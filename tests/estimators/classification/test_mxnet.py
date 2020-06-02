@@ -17,17 +17,17 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
-import unittest
+import os
 import tempfile
+import unittest
 
 import numpy as np
-from mxnet import init, gluon
+from mxnet import gluon, init
 from mxnet.gluon import nn
 
 from art.estimators.classification.mxnet import MXClassifier
-
+from art.utils import Deprecated
 from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
@@ -208,7 +208,9 @@ class TestMXClassifier(TestBase):
         repr_ = repr(self.classifier)
         self.assertIn("art.estimators.classification.mxnet.MXClassifier", repr_)
         self.assertIn("input_shape=(1, 28, 28), nb_classes=10", repr_)
-        self.assertIn("channel_index=1, clip_values=array([0., 1.], dtype=float32)", repr_)
+        self.assertIn(
+            f"channel_index={Deprecated}, channels_first=True, clip_values=array([0., 1.], dtype=float32)", repr_
+        )
         self.assertIn("defences=None, preprocessing=(0, 1)", repr_)
 
 

@@ -20,13 +20,135 @@ Module providing convenience functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
 import math
+import os
+import warnings
+from functools import wraps
+from inspect import signature
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+
+# ------------------------------------------------------------------------------------------------- DEPRECATION
+
+
+class _Deprecated:
+    """
+    Create Deprecated() singleton object.
+    """
+
+    _instance = None
+
+    def __new__(cls):
+        if _Deprecated._instance is None:
+            _Deprecated._instance = object.__new__(cls)
+        return _Deprecated._instance
+
+
+Deprecated = _Deprecated()
+
+
+def deprecated(end_version, *, reason="", replaced_by=""):
+    """
+    Deprecate a function or method and raise a `DeprecationWarning`.
+
+    The `@deprecated` decorator is used to deprecate functions and methods. Several cases are supported. For example
+    one can use it to deprecate a function that has become redundant or rename a function. The following code examples
+    provide different use cases of how to use decorator.
+
+    .. code-block:: python
+
+    @deprecated("0.1.5", replaced_by="sum")
+    def simple_addition(a, b):
+        return a + b
+
+    :param end_version: Release version of removal.
+    :type end_version: `str`
+    :param reason: Additional deprecation reason.
+    :type reason: `str`
+    :param replaced_by: Function that replaces deprecated function.
+    :type replaced_by: `str`
+    """
+
+    def decorator(function):
+        reason_msg = "\n" + reason if reason else reason
+        replaced_msg = f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
+        deprecated_msg = (
+            f"Function '{function.__name__}' is deprecated and will be removed in future release {end_version}."
+        )
+
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            warnings.simplefilter("always", category=DeprecationWarning)
+            warnings.warn(deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2)
+            warnings.simplefilter("default", category=DeprecationWarning)
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def deprecated_keyword_arg(identifier, end_version, *, reason="", replaced_by=""):
+    """
+    Deprecate a keyword argument and raise a `DeprecationWarning`.
+
+    The `@deprecated_keyword_arg` decorator is used to deprecate keyword arguments. The deprecated keyword argument must
+    default to `Deprecated`. Several use cases are supported. For example one can use it to to rename a keyword
+    identifier. The following code examples provide different use cases of how to use the decorator.
+
+    .. code-block:: python
+
+    @deprecated_keyword_arg("print", "1.1.0", replaced_by="verbose")
+    def simple_addition(a, b, print=Deprecated, verbose=False):
+        if verbose:
+            print(a + b)
+        return a + b
+
+    @deprecated_keyword_arg("verbose", "1.1.0")
+    def simple_addition(a, b, verbose=Deprecated):
+        return a + b
+
+    :param identifier: Keyword identifier.
+    :type identifier: `str`
+    :param end_version: Release version of removal.
+    :type end_version: `str`
+    :param reason: Additional deprecation reason.
+    :type reason: `str`
+    :param replaced_by: Function that replaces deprecated function.
+    :type replaced_by: `str`
+    """
+
+    def decorator(function):
+        reason_msg = "\n" + reason if reason else reason
+        replaced_msg = f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
+        deprecated_msg = (
+            f"Keyword argument '{identifier}' in '{function.__name__}' is deprecated and will be removed in"
+            f" future release {end_version}."
+        )
+
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            params = signature(function).bind(*args, **kwargs)
+            params.apply_defaults()
+
+            if params.signature.parameters[identifier].default is not Deprecated:
+                raise ValueError("Deprecated keyword argument must default to the Decorator singleton.")
+            if replaced_by != "" and replaced_by not in params.arguments:
+                raise ValueError("Deprecated keyword replacement not found in function signature.")
+
+            if params.arguments[identifier] is not Deprecated:
+                warnings.simplefilter("always", category=DeprecationWarning)
+                warnings.warn(deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2)
+                warnings.simplefilter("default", category=DeprecationWarning)
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
@@ -424,8 +546,8 @@ def load_cifar10(raw=False):
     for i in range(1, 6):
         fpath = os.path.join(path, "data_batch_" + str(i))
         data, labels = load_batch(fpath)
-        x_train[(i - 1) * 10000: i * 10000, :, :, :] = data
-        y_train[(i - 1) * 10000: i * 10000] = labels
+        x_train[(i - 1) * 10000 : i * 10000, :, :, :] = data
+        y_train[(i - 1) * 10000 : i * 10000] = labels
 
     fpath = os.path.join(path, "test_batch")
     x_test, y_test = load_batch(fpath)
@@ -557,15 +679,15 @@ def load_iris(raw=False, test_set=0.3):
 
     # Split training and test sets
     split_index = int((1 - test_set) * len(data) / 3)
-    x_train = np.vstack((data[:split_index], data[50: 50 + split_index], data[100: 100 + split_index]))
-    y_train = np.vstack((labels[:split_index], labels[50: 50 + split_index], labels[100: 100 + split_index]))
+    x_train = np.vstack((data[:split_index], data[50 : 50 + split_index], data[100 : 100 + split_index]))
+    y_train = np.vstack((labels[:split_index], labels[50 : 50 + split_index], labels[100 : 100 + split_index]))
 
     if split_index >= 49:
         x_test, y_test = None, None
     else:
 
-        x_test = np.vstack((data[split_index:50], data[50 + split_index: 100], data[100 + split_index:]))
-        y_test = np.vstack((labels[split_index:50], labels[50 + split_index: 100], labels[100 + split_index:]))
+        x_test = np.vstack((data[split_index:50], data[50 + split_index : 100], data[100 + split_index :]))
+        y_test = np.vstack((labels[split_index:50], labels[50 + split_index : 100], labels[100 + split_index :]))
         assert len(x_train) + len(x_test) == 150
 
         # Shuffle test set

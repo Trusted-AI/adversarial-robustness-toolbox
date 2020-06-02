@@ -20,16 +20,18 @@ Module providing convenience functions specifically for unit tests.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
-import logging
 import json
-import time
+import logging
+import os
 import pickle
+import time
 import unittest
 
 import numpy as np
 
 from art.utils import load_dataset
+from art.estimators.encoding.tensorflow import TensorFlowEncoder
+from art.estimators.generation.tensorflow import TensorFlowGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -227,8 +229,8 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     # pylint: disable=E0401
     import tensorflow as tf
 
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     if tf.__version__[0] == "2":
+        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
         import tensorflow.compat.v1 as tf
 
         tf.disable_eager_execution()
@@ -340,30 +342,36 @@ def get_image_classifier_tf_v2(from_logits=False):
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
     model = Sequential()
-    model.add(Conv2D(
-        filters=1,
-        kernel_size=7,
-        activation="relu",
-        kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
-        bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
-        input_shape=(28, 28, 1),
-    ))
+    model.add(
+        Conv2D(
+            filters=1,
+            kernel_size=7,
+            activation="relu",
+            kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
+            bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
+            input_shape=(28, 28, 1),
+        )
+    )
     model.add(MaxPool2D(pool_size=(4, 4), strides=(4, 4), padding="valid", data_format=None))
     model.add(Flatten())
     if from_logits:
-        model.add(Dense(
-            10,
-            activation="linear",
-            kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-            bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-        ))
+        model.add(
+            Dense(
+                10,
+                activation="linear",
+                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+            )
+        )
     else:
-        model.add(Dense(
-            10,
-            activation="softmax",
-            kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-            bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-        ))
+        model.add(
+            Dense(
+                10,
+                activation="softmax",
+                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+            )
+        )
 
     loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
 
@@ -878,7 +886,7 @@ def get_classifier_mx():
         nb_classes=10,
         optimizer=trainer,
         ctx=None,
-        channel_index=1,
+        channels_first=True,
         clip_values=(0, 1),
         defences=None,
         preprocessing=(0, 1),
@@ -982,7 +990,7 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
         loss=loss,
         learning=None,
         sess=sess,
-        channel_index=1,
+        channels_first=True,
     )
 
     return tfc, sess
@@ -1170,7 +1178,7 @@ def get_tabular_classifier_kr(load_init=True):
     model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
 
     return krc
 
@@ -1253,7 +1261,7 @@ def get_tabular_classifier_pt(load_init=True):
         input_shape=(4,),
         nb_classes=3,
         clip_values=(0, 1),
-        channel_index=1,
+        channels_first=True,
     )
 
     return ptc
@@ -1328,3 +1336,37 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
                 torch.cuda.manual_seed_all(seed)
         except ImportError:
             logger.info("Could not set random seed for PyTorch.")
+
+
+def get_gan_inverse_gan_ft():
+    import tensorflow as tf
+    from models.create_inverse_gan_models import build_gan_graph, build_inverse_gan_graph
+
+    if tf.__version__[0] == "2":
+        return None, None, None
+    else:
+
+        lr = 0.0002
+        latent_enc_len = 100
+
+        gen_tf, z_ph, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph = build_gan_graph(lr,
+                                                                                              latent_enc_len)
+
+        enc_tf, image_to_enc_ph, latent_enc_loss, enc_opt = build_inverse_gan_graph(lr, gen_tf, z_ph,
+                                                                                    latent_enc_len)
+
+        sess = tf.Session()
+        sess.run(tf.global_variables_initializer())
+
+        gan = TensorFlowGenerator(
+            input_ph=z_ph,
+            model=gen_tf,
+            sess=sess,
+        )
+
+        inverse_gan = TensorFlowEncoder(
+            input_ph=image_to_enc_ph,
+            model=enc_tf,
+            sess=sess,
+        )
+        return gan, inverse_gan, sess

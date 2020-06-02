@@ -25,8 +25,9 @@ import logging
 import numpy as np
 import six
 
+from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.estimators.keras import KerasEstimator
-from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -36,11 +37,13 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
     """
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         model,
         use_logits=False,
-        channel_index=3,
+        channel_index=Deprecated,
+        channels_first=False,
         clip_values=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
@@ -58,6 +61,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :type use_logits: `bool`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -80,12 +85,21 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                              layer this values is not required.
         :type output_layer: `int`
         """
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(KerasClassifier, self).__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
             channel_index=channel_index,
+            channels_first=channels_first,
         )
 
         self._model = model
@@ -97,7 +111,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         elif "<class 'keras" in str(type(model)):
             self.is_tensorflow = False
         else:
-            raise TypeError("Type of model not recognized:" + type(model))
+            raise TypeError("Type of model not recognized:" + str(type(model)))
 
         self._initialize_params(model, use_logits, input_layer, output_layer)
 
@@ -387,8 +401,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :type y: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
@@ -442,7 +455,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    def get_activations(self, x, layer, batch_size):
+    def get_activations(self, x, layer, batch_size, framework=False):
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -477,9 +490,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             raise TypeError("Layer must be of type `str` or `int`.")
 
-        layer_output = self._model.get_layer(layer_name).output
-        output_func = k.function([self._input], [layer_output])
-
         if x.shape == self.input_shape:
             x_expanded = np.expand_dims(x, 0)
         else:
@@ -488,16 +498,59 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x=x_expanded, y=None, fit=False)
 
+        if not hasattr(self, "_activations_func"):
+            self._activations_func = {}
+
+        keras_layer = self._model.get_layer(layer_name)
+        if layer_name not in self._activations_func:
+            num_inbound_nodes = len(getattr(keras_layer, '_inbound_nodes', []))
+            if num_inbound_nodes > 1:
+                layer_output = keras_layer.get_output_at(0)
+            else:
+                layer_output = keras_layer.output
+            self._activations_func[layer_name] = k.function([self._input], [layer_output])
+
         # Determine shape of expected output and prepare array
-        output_shape = output_func([x_preprocessed[0][None, ...]])[0].shape
+        output_shape = self._activations_func[layer_name]([x_preprocessed[0][None, ...]])[0].shape
         activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
         # Get activations with batching
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
-            activations[begin:end] = output_func([x_preprocessed[begin:end]])[0]
+            activations[begin:end] = self._activations_func[layer_name]([x_preprocessed[begin:end]])[0]
 
-        return activations
+        if framework:
+            placeholder = k.placeholder(shape=x.shape)
+            return placeholder, keras_layer(placeholder)
+        else:
+            return activations
+
+    def custom_loss_gradient(self, nn_function, tensors, input_values, name="default"):
+        """
+        Returns the gradient of the nn_function with respect to model input
+
+        :param nn_function: an intermediate tensor representation of the function to differentiate
+        :type nn_function: a Keras tensor
+        :param tensors: the tensors or variables to differentiate with respect to
+        :type tensors: `list`
+        :param input_values: the inputs to evaluate the gradient
+        :type input_values: `list`
+        :param name: The name of the function. Functions of the same name are cached
+        :type name: `str`
+        :return: the gradient of the function w.r.t vars
+        :rtype: `np.ndarray`
+        """
+        import keras.backend as k
+
+        if not hasattr(self, "_custom_loss_func"):
+            self._custom_loss_func = {}
+
+        if name not in self._custom_loss_func:
+            grads = k.gradients(nn_function, tensors[0])[0]
+            self._custom_loss_func[name] = k.function(tensors, [grads])
+
+        outputs = self._custom_loss_func[name]
+        return outputs(input_values)
 
     def _init_class_gradients(self, label=None):
         # pylint: disable=E0401
@@ -613,6 +666,18 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         del state["_loss_gradients"]
         del state["_layer_names"]
 
+        if "_class_gradients" in state:
+            del state["_class_gradients"]
+
+        if "_class_gradients_idx" in state:
+            del state["_class_gradients_idx"]
+
+        if "_activations_func" in state:
+            del state["_activations_func"]
+
+        if "_custom_loss_func" in state:
+            del state["_custom_loss_func"]
+
         model_name = str(time.time()) + ".h5"
         state["model_name"] = model_name
         self.save(model_name)
@@ -645,13 +710,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, use_logits=%r, channel_index=%r, clip_values=%r, preprocessing_defences=%r, "
-            "postprocessing_defences=%r, preprocessing=%r, input_layer=%r, output_layer=%r)"
+            "%s(model=%r, use_logits=%r, channel_index=%r, channels_first=%r, clip_values=%r, preprocessing_defences=%r"
+            ", postprocessing_defences=%r, preprocessing=%r, input_layer=%r, output_layer=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._model,
                 self._use_logits,
                 self.channel_index,
+                self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
                 self.postprocessing_defences,

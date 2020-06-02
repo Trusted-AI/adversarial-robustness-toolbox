@@ -12,6 +12,9 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evation tests"; fi
 pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
+pytest -q tests/utils --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
+
 #Only classifier tests need to be run for each frameworks
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
@@ -28,6 +31,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
                     "tests/attacks/test_deepfool.py" \
                     "tests/attacks/test_elastic_net.py" \
+                    "tests/attacks/test_feature_collision.py" \
                     "tests/attacks/test_functionally_equivalent_extraction.py" \
                     "tests/attacks/test_hclu.py" \
                     "tests/attacks/test_input_filter.py" \
@@ -43,7 +47,8 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_virtual_adversarial.py" \
                     "tests/attacks/test_zoo.py" \
                     "tests/attacks/test_pixel_attack.py" \
-                    "tests/attacks/test_threshold_attack.py" )
+                    "tests/attacks/test_threshold_attack.py" \
+                    "tests/attacks/test_wasserstein.py" )
 
 declare -a classifiers=("tests/estimators/classification/test_blackbox.py" \
                         "tests/estimators/classification/test_catboost.py" \
@@ -67,12 +72,10 @@ declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_gaussian_augmentation.py" \
                      "tests/defences/test_gaussian_noise.py" \
                      "tests/defences/test_high_confidence.py" \
-                     "tests/defences/test_jpeg_compression.py" \
                      "tests/defences/test_label_smoothing.py" \
                      "tests/defences/test_pixel_defend.py" \
                      "tests/defences/test_reverse_sigmoid.py" \
                      "tests/defences/test_rounded.py" \
-                     "tests/defences/test_spatial_smoothing.py" \
                      "tests/defences/test_thermometer_encoding.py" \
                      "tests/defences/test_variance_minimization.py" \
                      "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
