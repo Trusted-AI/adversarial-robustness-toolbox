@@ -39,6 +39,7 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 
 **逃避攻击：**
 * 暗影攻击 ([Ghiasi et al., 2020](https://arxiv.org/abs/2003.08937))
+* Wasserstein Attack([Wong et al., 2020](https://arxiv.org/abs/1902.07906))
 * 门槛攻击 ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
 * 像素攻击 ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations))
 * HopSkipJump攻击 ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
