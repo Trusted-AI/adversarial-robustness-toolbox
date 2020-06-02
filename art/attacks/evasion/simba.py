@@ -130,7 +130,7 @@ class SimBA(EvasionAttack):
             clip_min, clip_max = self.classifier.clip_values
 
         term_flag = 1
-        if self.targeted == True:
+        if self.targeted:
             if desired_label != current_label:
                 term_flag = 0
         else:
