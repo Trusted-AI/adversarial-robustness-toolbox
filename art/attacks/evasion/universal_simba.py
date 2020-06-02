@@ -74,7 +74,7 @@ class Universal_SimBA(EvasionAttack):
                              + str(classifier.__class__.__bases__) + '. '
                              ' The classifier needs to be a Neural Network and provide gradients.'))
 
-        params = {'max_iter': max_iter, 'epsilon': epsilon, 'freq_dim': freq_dim, 'stride': stride, 'delta': delta, 'eps': eps, 'norm': norm, 'batch_size': batch_size}
+        params = {'attack': attack, 'max_iter': max_iter, 'epsilon': epsilon, 'order':order, 'freq_dim': freq_dim, 'stride': stride, 'targeted': targeted, 'delta': delta, 'eps': eps, 'norm': norm, 'batch_size': batch_size}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
@@ -93,7 +93,7 @@ class Universal_SimBA(EvasionAttack):
         preds = self.classifier.predict(x, batch_size=self.batch_size)
 
         if y is None:
-            if self.targeted == True:
+            if self.targeted:
                 raise ValueError('Target labels `y` need to be provided for targeted attacks.')
             else:
                 # Use model predictions as correct outputs
@@ -163,7 +163,7 @@ class Universal_SimBA(EvasionAttack):
             right_probs = right_preds[(range(nb_instances), desired_labels)]
 
             # use (1 - 2 * int(self.targeted)) to shorten the code?
-            if self.targeted == True:
+            if self.targeted:
                 if np.sum(left_probs - last_probs) > 0.0:
                     if np.sum(left_probs - right_probs) > 0.0:
                         last_probs = left_probs
@@ -195,7 +195,7 @@ class Universal_SimBA(EvasionAttack):
                         current_labels = np.argmax(right_preds, axis=1)
             
             # Compute the error rate
-            if self.targeted == True:
+            if self.targeted:
                 success_rate = np.sum(desired_labels == current_labels) / nb_instances
             else:
                 success_rate = np.sum(desired_labels != current_labels) / nb_instances
