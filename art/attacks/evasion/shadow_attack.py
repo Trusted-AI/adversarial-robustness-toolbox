@@ -141,7 +141,7 @@ class ShadowAttack(EvasionAttack):
 
         if x.ndim != 4:
             raise ValueError(
-                "Feature vectors detected. The adversarial patch can only be applied to image data dimensions."
+                "Unrecognized input dimension. Shadow Attack can only be applied to image data."
             )
 
         x = x.astype(ART_NUMPY_DTYPE)
