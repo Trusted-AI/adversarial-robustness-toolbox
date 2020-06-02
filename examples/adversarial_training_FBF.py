@@ -2,7 +2,6 @@
 This is an example of how to use ART and Keras to perform adversarial training using data generators for CIFAR10
 """
 from keras.preprocessing.image import ImageDataGenerator
-from art.attacks import ProjectedGradientDescent
 
 from art.data_generators import KerasDataGenerator
 from art.defences.trainer import AdversarialTrainerFBFPyTorch
