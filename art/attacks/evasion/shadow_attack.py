@@ -291,19 +291,19 @@ class ShadowAttack(EvasionAttack):
         if not isinstance(self.lambda_tv, float):
             raise ValueError("The lambda_tv must be of type float.")
 
-        if self.lambda_tv <= 0:
+        if self.lambda_tv < 0:
             raise ValueError("The lambda_tv must larger than zero.")
 
         if not isinstance(self.lambda_c, float):
             raise ValueError("The lambda_c must be of type float.")
 
-        if self.lambda_c <= 0:
+        if self.lambda_c < 0:
             raise ValueError("The lambda_c must larger than zero.")
 
         if not isinstance(self.lambda_s, float):
             raise ValueError("The lambda_s must be of type float.")
 
-        if self.lambda_s <= 0:
+        if self.lambda_s < 0:
             raise ValueError("The lambda_s must larger than zero.")
 
         if not isinstance(self.batch_size, int):
