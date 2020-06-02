@@ -194,7 +194,7 @@ class ShadowAttack(EvasionAttack):
             import tensorflow as tf
 
             if self.estimator.channel_index == 3:
-                perturbation = perturbation.transpose(0, 3, 1, 2)
+                perturbation = perturbation.transpose((0, 3, 1, 2))
 
             if tf.executing_eagerly():
                 with tf.GradientTape() as tape:
