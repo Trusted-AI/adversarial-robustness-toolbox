@@ -46,19 +46,10 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         model: Optional["torchvision.models.detection.fasterrcnn_resnet50_fpn"] = None,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         channel_index: Optional[int] = None,
-        preprocessing_defences: Union[
-            "Preprocessor", List["Preprocessor"], None
-        ] = None,
-        postprocessing_defences: Union[
-            "Postprocessor", List["Postprocessor"], None
-        ] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: PREPROCESSING_TYPE = (0, 1),
-        attack_losses: Tuple[str, ...] = (
-            "loss_classifier",
-            "loss_box_reg",
-            "loss_objectness",
-            "loss_rpn_box_reg",
-        ),
+        attack_losses: Tuple[str, ...] = ("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg",),
         device_type: str = "gpu",
     ):
         """
@@ -97,20 +88,14 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
-                raise ValueError(
-                    "This classifier requires un-normalized input images with clip_vales=(0, max_value)."
-                )
+                raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
             if self.clip_values[1] <= 0:
-                raise ValueError(
-                    "This classifier requires un-normalized input images with clip_vales=(0, max_value)."
-                )
+                raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
 
         if self.preprocessing is not None:
             raise ValueError("This estimator does not support `preprocessing`.")
         if self.postprocessing_defences is not None:
-            raise ValueError(
-                "This estimator does not support `postprocessing_defences`."
-            )
+            raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         if model is None:
             import torchvision
@@ -156,16 +141,18 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         if y is not None:
             for i, y_i in enumerate(y):
-                y[i]["boxes"] = torch.FloatTensor(y_i["boxes"]).to(self._device)
-                y[i]["labels"] = torch.LongTensor(y_i["labels"]).to(self._device)
-                y[i]["scores"] = torch.Tensor(y_i["scores"]).to(self._device)
+                y[i]["boxes"] = torch.tensor(y_i["boxes"], dtype=torch.float).to(self._device)
+                y[i]["labels"] = torch.tensor(y_i["labels"], dtype=torch.int64).to(self._device)
+                y[i]["scores"] = torch.tensor(y_i["scores"]).to(self._device)
 
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-
         image_tensor_list = list()
 
         for i in range(x.shape[0]):
-            img = transform(x[i] / self.clip_values[1]).to(self._device)
+            if self.clip_values is not None:
+                img = transform(x[i] / self.clip_values[1]).to(self._device)
+            else:
+                img = transform(x[i]).to(self._device)
             img.requires_grad = True
             image_tensor_list.append(img)
 
@@ -183,7 +170,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         self._model.zero_grad()
 
         # Compute gradients
-        loss.backward(retain_graph=True)
+        loss.backward(retain_graph=True)  # type: ignore
 
         grad_list = list()
         for img in image_tensor_list:
@@ -194,13 +181,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         # BB
         grads = self._apply_preprocessing_gradient(x, grads)
-
         grads = np.swapaxes(grads, 1, 3)
         grads = np.swapaxes(grads, 1, 2)
-
         assert grads.shape == x.shape
 
-        grads = grads / self.clip_values[1]
+        if self.clip_values is not None:
+            grads = grads / self.clip_values[1]
 
         return grads
 
@@ -227,21 +213,19 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
         image_tensor_list: List[np.ndarray] = list()
 
+        if self.clip_values is not None:
+            norm_factor = self.clip_values[1]
+        else:
+            norm_factor = 1.0
         for i in range(x.shape[0]):
-            image_tensor_list.append(
-                transform(x[i] / self.clip_values[1]).to(self._device)
-            )
+            image_tensor_list.append(transform(x[i] / norm_factor).to(self._device))
         predictions = self._model(image_tensor_list)
         return predictions
 
-    def fit(
-        self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         raise NotImplementedError
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int) -> np.ndarray:
         raise NotImplementedError
 
     def set_learning_phase(self, train: bool) -> None:

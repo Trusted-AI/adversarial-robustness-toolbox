@@ -29,7 +29,8 @@ from art.estimators.classification.classifier import Classifier
 
 if TYPE_CHECKING:
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-    from art.defences import Preprocessor, Postprocessor
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -45,12 +46,8 @@ class BlackBoxClassifier(Classifier):
         input_shape: Tuple[int, ...],
         nb_classes: int,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union[
-            "Preprocessor", List["Preprocessor"], None
-        ] = None,
-        postprocessing_defences: Union[
-            "Postprocessor", List["Postprocessor"], None
-        ] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ):
         """
@@ -95,12 +92,8 @@ class BlackBoxClassifier(Classifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        predictions = np.zeros(
-            (x_preprocessed.shape[0], self.nb_classes), dtype=ART_NUMPY_DTYPE
-        )
-        for batch_index in range(
-            int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))
-        ):
+        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=ART_NUMPY_DTYPE)
+        for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
             begin, end = (
                 batch_index * batch_size,
                 min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),

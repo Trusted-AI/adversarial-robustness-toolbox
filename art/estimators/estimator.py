@@ -50,12 +50,8 @@ class BaseEstimator(ABC):
         self,
         model=None,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
-        preprocessing_defences: Union[
-            "Preprocessor", List["Preprocessor"], None
-        ] = None,
-        postprocessing_defences: Union[
-            "Postprocessor", List["Postprocessor"], None
-        ] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: PREPROCESSING_TYPE = (0, 1),
     ):
         """
@@ -74,8 +70,19 @@ class BaseEstimator(ABC):
         """
         self._model = model
         self._clip_values = clip_values
-        self.preprocessing_defences = preprocessing_defences
-        self.postprocessing_defences = postprocessing_defences
+
+        self.preprocessing_defences: Optional[List[Preprocessor]]
+        if isinstance(preprocessing_defences, Preprocessor):
+            self.preprocessing_defences = [preprocessing_defences]
+        else:
+            self.preprocessing_defences = preprocessing_defences
+
+        self.postprocessing_defences: Optional[List[Postprocessor]]
+        if isinstance(postprocessing_defences, Postprocessor):
+            self.postprocessing_defences = [postprocessing_defences]
+        else:
+            self.postprocessing_defences = postprocessing_defences
+
         self.preprocessing = preprocessing
         self._check_params()
 
@@ -87,9 +94,7 @@ class BaseEstimator(ABC):
         """
         for key, value in kwargs.items():
             if key in self.estimator_params:
-                if hasattr(BaseEstimator, key) and isinstance(
-                    getattr(BaseEstimator, key), property
-                ):
+                if hasattr(BaseEstimator, key) and isinstance(getattr(BaseEstimator, key), property):
                     setattr(self, "_" + key, value)
                 else:
                     setattr(self, key, value)
@@ -122,11 +127,9 @@ class BaseEstimator(ABC):
             else:
                 self._clip_values = np.array(self._clip_values, dtype=ART_NUMPY_DTYPE)
 
-        if isinstance(self.preprocessing_defences, Preprocessor):
-            self.preprocessing_defences = [self.preprocessing_defences]
-        elif isinstance(self.preprocessing_defences, list):
-            for defence in self.preprocessing_defences:
-                if not isinstance(defence, Preprocessor):
+        if isinstance(self.preprocessing_defences, list):
+            for preproc_defence in self.preprocessing_defences:
+                if not isinstance(preproc_defence, Preprocessor):
                     raise ValueError(
                         "All preprocessing defences have to be instance of "
                         "art.defences.preprocessor.preprocessor.Preprocessor."
@@ -138,12 +141,9 @@ class BaseEstimator(ABC):
                 "All preprocessing defences have to be instance of "
                 "art.defences.preprocessor.preprocessor.Preprocessor."
             )
-
-        if isinstance(self.postprocessing_defences, Postprocessor):
-            self.postprocessing_defences = [self.postprocessing_defences]
-        elif isinstance(self.postprocessing_defences, list):
-            for defence in self.postprocessing_defences:
-                if not isinstance(defence, Postprocessor):
+        if isinstance(self.postprocessing_defences, list):
+            for postproc_defence in self.postprocessing_defences:
+                if not isinstance(postproc_defence, Postprocessor):
                     raise ValueError(
                         "All postprocessing defences have to be instance of "
                         "art.defences.postprocessor.postprocessor.Postprocessor."
@@ -162,9 +162,7 @@ class BaseEstimator(ABC):
             )
 
     @abstractmethod
-    def predict(
-        self, x, **kwargs
-    ):  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def predict(self, x, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Perform prediction of the estimator for input `x`.
 
@@ -176,9 +174,7 @@ class BaseEstimator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def fit(
-        self, x, y, **kwargs
-    ) -> None:  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def fit(self, x, y, **kwargs) -> None:  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Fit the estimator using the training data `(x, y)`.
 
@@ -205,10 +201,10 @@ class BaseEstimator(ABC):
 
         :return: Shape of one input sample.
         """
-        return self._input_shape
+        return self._input_shape  # type: ignore
 
     @property
-    def clip_values(self) -> CLIP_VALUES_TYPE:
+    def clip_values(self) -> Optional[CLIP_VALUES_TYPE]:
         """
         Return the clip values of the input samples.
 
@@ -230,9 +226,7 @@ class BaseEstimator(ABC):
         :rtype: Format as expected by the `model`
         """
         # y = check_and_transform_label_format(y, self.nb_classes)
-        x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(
-            x, y, fit=fit
-        )
+        x_preprocessed, y_preprocessed = self._apply_preprocessing_defences(x, y, fit=fit)
         x_preprocessed = self._apply_preprocessing_standardisation(x_preprocessed)
         return x_preprocessed, y_preprocessed
 
@@ -377,10 +371,7 @@ class LossGradientsMixin(ABC):
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        if (
-            hasattr(self, "preprocessing_defences")
-            and self.preprocessing_defences is not None
-        ):
+        if hasattr(self, "preprocessing_defences") and self.preprocessing_defences is not None:
             for defence in self.preprocessing_defences[::-1]:
                 if fit:
                     if defence.apply_fit:
@@ -425,7 +416,7 @@ class NeuralNetworkMixin(ABC):
         :param channel_index: Index of the axis in samples `x` representing the color channels.
         """
         self._channel_index = channel_index
-        super().__init__(**kwargs)
+        super().__init__()
 
     @abstractmethod
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
@@ -441,9 +432,7 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def fit(
-        self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the model of the estimator on the training data `x` and `y`.
 
@@ -456,9 +445,7 @@ class NeuralNetworkMixin(ABC):
         """
         raise NotImplementedError
 
-    def fit_generator(
-        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the estimator using a `generator` yielding training batches. Implementations can
         provide framework-specific versions of this function to speed-up computation.
@@ -470,32 +457,21 @@ class NeuralNetworkMixin(ABC):
 
         if not isinstance(generator, DataGenerator):
             raise ValueError(
-                "Expected instance of `DataGenerator` for `fit_generator`, got %s instead."
-                % str(type(generator))
+                "Expected instance of `DataGenerator` for `fit_generator`, got %s instead." % str(type(generator))
             )
 
         for _ in range(nb_epochs):
-            for _ in range(int(generator.size / generator.batch_size)):
+            for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
                 x, y = generator.get_batch()
 
                 # Apply preprocessing and defences
-                x_preprocessed, y_preprocessed = self._apply_preprocessing(
-                    x, y, fit=True
-                )
+                x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)  # type: ignore
 
                 # Fit for current batch
-                self.fit(
-                    x_preprocessed,
-                    y_preprocessed,
-                    nb_epochs=1,
-                    batch_size=generator.batch_size,
-                    **kwargs
-                )
+                self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
 
     @abstractmethod
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int) -> np.ndarray:
         """
         Return the output of a specific layer for samples `x` where `layer` is the index of the layer between 0 and
         `nb_layers - 1 or the name of the layer. The number of layers can be determined by counting the results
@@ -518,7 +494,7 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @property
-    def channel_index(self) -> int:
+    def channel_index(self) -> Optional[int]:
         """
         :return: Index of the axis containing the color channels in the samples `x`.
         """
@@ -534,7 +510,7 @@ class NeuralNetworkMixin(ABC):
 
         :return: Learning phase.
         """
-        return self._learning_phase
+        return self._learning_phase  # type: ignore
 
     @property
     def layer_names(self) -> List[str]:
@@ -548,7 +524,7 @@ class NeuralNetworkMixin(ABC):
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either.
         """
-        return self._layer_names
+        return self._layer_names  # type: ignore
 
     def __repr__(self):
         name = self.__class__.__name__

@@ -75,28 +75,18 @@ class AdversarialTrainerMadryPGD(Trainer):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         """
-        super(AdversarialTrainerMadryPGD, self).__init__(classifier=classifier)
+        super(AdversarialTrainerMadryPGD, self).__init__(classifier=classifier)  # type: ignore
         self.batch_size = batch_size
         self.nb_epochs = nb_epochs
 
         # Setting up adversary and perform adversarial training:
         self.attack = ProjectedGradientDescent(
-            classifier,
-            eps=eps,
-            eps_step=eps_step,
-            max_iter=max_iter,
-            num_random_init=num_random_init,
+            classifier, eps=eps, eps_step=eps_step, max_iter=max_iter, num_random_init=num_random_init,
         )
 
-        self.trainer = AdversarialTrainer(classifier, self.attack, ratio=1.0)
+        self.trainer = AdversarialTrainer(classifier, self.attack, ratio=1.0)  # type: ignore
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        validation_data: Optional[np.ndarray] = None,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, validation_data: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
 
@@ -106,12 +96,7 @@ class AdversarialTrainerMadryPGD(Trainer):
         :param kwargs: Dictionary of framework-specific arguments.
         """
         self.trainer.fit(
-            x,
-            y,
-            validation_data=validation_data,
-            nb_epochs=self.nb_epochs,
-            batch_size=self.batch_size,
-            **kwargs
+            x, y, validation_data=validation_data, nb_epochs=self.nb_epochs, batch_size=self.batch_size, **kwargs
         )
 
     def get_classifier(self) -> "Classifier":

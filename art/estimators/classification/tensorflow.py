@@ -47,9 +47,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowClassifier(
-    ClassGradientsMixin, ClassifierMixin, TensorFlowEstimator
-):  # lgtm [py/missing-call-to-init]
+class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstimator):  # lgtm [py/missing-call-to-init]
     """
     This class implements a classifier with the TensorFlow framework.
     """
@@ -65,12 +63,8 @@ class TensorFlowClassifier(
         sess: Optional["tf.Session"] = None,
         channel_index: int = 3,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
-        preprocessing_defences: Union[
-            "Preprocessor", List["Preprocessor"], None
-        ] = None,
-        postprocessing_defences: Union[
-            "Postprocessor", List["Postprocessor"], None
-        ] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: PREPROCESSING_TYPE = (0, 1),
         feed_dict: Dict[Any, Any] = {},
     ) -> None:
@@ -172,14 +166,7 @@ class TensorFlowClassifier(
 
         return predictions
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -193,9 +180,7 @@ class TensorFlowClassifier(
         """
         # Check if train and output_ph available
         if self._train is None or self._labels_ph is None:
-            raise ValueError(
-                "Need the training objective and the output placeholder to train the model."
-            )
+            raise ValueError("Need the training objective and the output placeholder to train the model.")
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -224,9 +209,7 @@ class TensorFlowClassifier(
                 # Run train step
                 self._sess.run(self._train, feed_dict=feed_dict)
 
-    def fit_generator(
-        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
@@ -241,9 +224,7 @@ class TensorFlowClassifier(
         # Train directly in TensorFlow
         if (
             isinstance(generator, TensorFlowDataGenerator)
-            and (
-                self.preprocessing_defences is None or self.preprocessing_defences == []
-            )
+            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
             and self.preprocessing == (0, 1)
         ):
             for _ in range(nb_epochs):
@@ -260,13 +241,9 @@ class TensorFlowClassifier(
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
         else:
-            super(TensorFlowClassifier, self).fit_generator(
-                generator, nb_epochs=nb_epochs, **kwargs
-            )
+            super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
-    ) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -282,9 +259,7 @@ class TensorFlowClassifier(
         # Check value of label for computing gradients
         if not (
             label is None
-            or (
-                isinstance(label, (int, np.integer)) and label in range(self.nb_classes)
-            )
+            or (isinstance(label, (int, np.integer)) and label in range(self.nb_classes))
             or (
                 isinstance(label, np.ndarray)
                 and len(label.shape) == 1
@@ -318,9 +293,7 @@ class TensorFlowClassifier(
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
-            grads = self._sess.run(
-                [self._class_grads[l] for l in unique_label], feed_dict=feed_dict
-            )
+            grads = self._sess.run([self._class_grads[l] for l in unique_label], feed_dict=feed_dict)
             grads = np.swapaxes(np.array(grads), 0, 1)
             lst = [unique_label.index(i) for i in label]
             grads = np.expand_dims(grads[np.arange(len(grads)), lst], axis=1)
@@ -342,14 +315,8 @@ class TensorFlowClassifier(
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Check if loss available
-        if (
-            not hasattr(self, "_loss_grads")
-            or self._loss_grads is None
-            or self._labels_ph is None
-        ):
-            raise ValueError(
-                "Need the loss function and the labels placeholder to compute the loss gradient."
-            )
+        if not hasattr(self, "_loss_grads") or self._loss_grads is None or self._labels_ph is None:
+            raise ValueError("Need the loss function and the labels placeholder to compute the loss gradient.")
 
         # Check label shape
         if self._reduce_labels:
@@ -377,22 +344,17 @@ class TensorFlowClassifier(
         if label is None:
             if None in self._class_grads:
                 self._class_grads = [
-                    tf.gradients(self._output[:, i], self._input_ph)[0]
-                    for i in range(self.nb_classes)
+                    tf.gradients(self._output[:, i], self._input_ph)[0] for i in range(self.nb_classes)
                 ]
 
         elif isinstance(label, int):
             if self._class_grads[label] is None:
-                self._class_grads[label] = tf.gradients(
-                    self._output[:, label], self._input_ph
-                )[0]
+                self._class_grads[label] = tf.gradients(self._output[:, label], self._input_ph)[0]
 
         else:
             for unique_label in np.unique(label):
                 if self._class_grads[unique_label] is None:
-                    self._class_grads[unique_label] = tf.gradients(
-                        self._output[:, unique_label], self._input_ph
-                    )[0]
+                    self._class_grads[unique_label] = tf.gradients(self._output[:, unique_label], self._input_ph)[0]
 
     def _get_layers(self) -> List[str]:
         """
@@ -420,9 +382,7 @@ class TensorFlowClassifier(
                             if op.values()[0].get_shape().as_list()[0] is None:
                                 if op.values()[0].get_shape().as_list()[1] is not None:
                                     if not op.values()[0].name.startswith("gradients"):
-                                        if not op.values()[0].name.startswith(
-                                            "softmax_cross_entropy_loss"
-                                        ):
+                                        if not op.values()[0].name.startswith("softmax_cross_entropy_loss"):
                                             if not op.type == "Placeholder":
                                                 tmp_list.append(op.values()[0].name)
 
@@ -438,9 +398,7 @@ class TensorFlowClassifier(
 
         return result
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -458,9 +416,7 @@ class TensorFlowClassifier(
         with self._sess.graph.as_default():
             graph = tf.get_default_graph()
 
-        if isinstance(
-            layer, six.string_types
-        ):  # basestring for Python 2 (str, unicode) support
+        if isinstance(layer, six.string_types):  # basestring for Python 2 (str, unicode) support
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             layer_tensor = graph.get_tensor_by_name(layer)
@@ -469,9 +425,7 @@ class TensorFlowClassifier(
             layer_tensor = graph.get_tensor_by_name(self._layer_names[layer])
 
         else:
-            raise TypeError(
-                "Layer must be of type `str` or `int`. Received %s." % layer
-            )
+            raise TypeError("Layer must be of type `str` or `int`. Received %s." % layer)
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -519,9 +473,7 @@ class TensorFlowClassifier(
         # pylint: disable=E0611
         from tensorflow.python import saved_model
         from tensorflow.python.saved_model import tag_constants
-        from tensorflow.python.saved_model.signature_def_utils_impl import (
-            predict_signature_def,
-        )
+        from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
 
         if path is None:
             full_path = os.path.join(ART_DATA_PATH, filename)
@@ -533,13 +485,10 @@ class TensorFlowClassifier(
 
         builder = saved_model.builder.SavedModelBuilder(full_path)
         signature = predict_signature_def(
-            inputs={"SavedInputPhD": self._input_ph},
-            outputs={"SavedOutput": self._output},
+            inputs={"SavedInputPhD": self._input_ph}, outputs={"SavedOutput": self._output},
         )
         builder.add_meta_graph_and_variables(
-            sess=self._sess,
-            tags=[tag_constants.SERVING],
-            signature_def_map={"predict": signature},
+            sess=self._sess, tags=[tag_constants.SERVING], signature_def_map={"predict": signature},
         )
         builder.save()
 
@@ -576,9 +525,7 @@ class TensorFlowClassifier(
             state["_train"] = self._train.name
 
         if hasattr(self, "_class_grads"):
-            state["_class_grads"] = [
-                ts if ts is None else ts.name for ts in self._class_grads
-            ]
+            state["_class_grads"] = [ts if ts is None else ts.name for ts in self._class_grads]
         else:
             state["_class_grads"] = False
 
@@ -643,10 +590,7 @@ class TensorFlowClassifier(
 
         # Recover class_grads if any
         if state["_class_grads"]:
-            self._class_grads = [
-                ts if ts is None else graph.get_tensor_by_name(ts)
-                for ts in state["_class_grads"]
-            ]
+            self._class_grads = [ts if ts is None else graph.get_tensor_by_name(ts) for ts in state["_class_grads"]]
         else:
             self.__dict__.pop("_class_grads", None)
 
@@ -680,9 +624,7 @@ class TensorFlowClassifier(
 TFClassifier = TensorFlowClassifier
 
 
-class TensorFlowV2Classifier(
-    ClassGradientsMixin, ClassifierMixin, TensorFlowV2Estimator
-):
+class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2Estimator):
     """
     This class implements a classifier with the TensorFlow v2 framework.
     """
@@ -696,12 +638,8 @@ class TensorFlowV2Classifier(
         train_step: Optional[Callable] = None,
         channel_index: int = 3,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
-        preprocessing_defences: Union[
-            "Preprocessor", List["Preprocessor"], None
-        ] = None,
-        postprocessing_defences: Union[
-            "Postprocessor", List["Postprocessor"], None
-        ] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: PREPROCESSING_TYPE = (0, 1),
     ) -> None:
         """
@@ -790,14 +728,7 @@ class TensorFlowV2Classifier(
 
         return self._model(x_preprocessed)
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 10,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -812,8 +743,7 @@ class TensorFlowV2Classifier(
 
         if self._train_step is None:
             raise TypeError(
-                "The training function `train_step` is required for fitting a model but it has not been "
-                "defined."
+                "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
 
         # Apply preprocessing
@@ -823,19 +753,13 @@ class TensorFlowV2Classifier(
         if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        train_ds = (
-            tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed))
-            .shuffle(10000)
-            .batch(batch_size)
-        )
+        train_ds = tf.data.Dataset.from_tensor_slices((x_preprocessed, y_preprocessed)).shuffle(10000).batch(batch_size)
 
         for _ in range(nb_epochs):
             for images, labels in train_ds:
                 self._train_step(images, labels)
 
-    def fit_generator(
-        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
@@ -850,16 +774,13 @@ class TensorFlowV2Classifier(
 
         if self._train_step is None:
             raise TypeError(
-                "The training function `train_step` is required for fitting a model but it has not been "
-                "defined."
+                "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
 
         # Train directly in TensorFlow
         if (
             isinstance(generator, TensorFlowV2DataGenerator)
-            and (
-                self.preprocessing_defences is None or self.preprocessing_defences == []
-            )
+            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
             and self.preprocessing == (0, 1)
         ):
             for _ in range(nb_epochs):
@@ -871,9 +792,7 @@ class TensorFlowV2Classifier(
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
-    ) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -905,9 +824,7 @@ class TensorFlowV2Classifier(
                         prediction = predictions[:, i]
                         tape.watch(prediction)
 
-                    class_gradient = tape.gradient(
-                        prediction, x_preprocessed_tf
-                    ).numpy()
+                    class_gradient = tape.gradient(prediction, x_preprocessed_tf).numpy()
                     class_gradients.append(class_gradient)
 
                 gradients = np.swapaxes(np.array(class_gradients), 0, 1)
@@ -937,16 +854,12 @@ class TensorFlowV2Classifier(
                         prediction = predictions[:, unique_label]
                         tape.watch(prediction)
 
-                    class_gradient = tape.gradient(
-                        prediction, x_preprocessed_tf
-                    ).numpy()
+                    class_gradient = tape.gradient(prediction, x_preprocessed_tf).numpy()
                     class_gradients.append(class_gradient)
 
                 gradients = np.swapaxes(np.array(class_gradients), 0, 1)
                 lst = [unique_labels.index(i) for i in label]
-                gradients = np.expand_dims(
-                    gradients[np.arange(len(gradients)), lst], axis=1
-                )
+                gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
         else:
             raise ValueError("Expecting eager execution.")
@@ -1012,16 +925,12 @@ class TensorFlowV2Classifier(
         """
         import tensorflow as tf
 
-        if isinstance(self._model, tf.keras.Model) or isinstance(
-            self._model, tf.keras.model.Sequential
-        ):
+        if isinstance(self._model, tf.keras.Model) or isinstance(self._model, tf.keras.model.Sequential):
             return self._model.layers
         else:
-            return None
+            return None  # type: ignore
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -1047,37 +956,28 @@ class TensorFlowV2Classifier(
             elif isinstance(layer, int):
                 if layer < 0 or layer >= len(self.layer_names):
                     raise ValueError(
-                        "Layer index %d is outside of range (0 to %d included)."
-                        % (layer, len(self.layer_names) - 1)
+                        "Layer index %d is outside of range (0 to %d included)." % (layer, len(self.layer_names) - 1)
                     )
                 i_layer = layer
             else:
                 raise TypeError("Layer must be of type `str` or `int`.")
 
-            activation_model = tf.keras.Model(
-                self._model.layers[0].input, self._model.layers[i_layer].output
-            )
+            activation_model = tf.keras.Model(self._model.layers[0].input, self._model.layers[i_layer].output)
 
             # Apply preprocessing
             x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
 
             # Determine shape of expected output and prepare array
             output_shape = self._model.layers[i_layer].output_shape
-            activations = np.zeros(
-                (x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE
-            )
+            activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
             # Get activations with batching
-            for batch_index in range(
-                int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))
-            ):
+            for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
                 begin, end = (
                     batch_index * batch_size,
                     min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
                 )
-                activations[begin:end] = activation_model(
-                    [x_preprocessed[begin:end]]
-                ).numpy()
+                activations[begin:end] = activation_model([x_preprocessed[begin:end]]).numpy()
 
             return activations
         else:

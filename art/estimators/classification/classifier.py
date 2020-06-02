@@ -18,8 +18,8 @@
 """
 This module implements mixin abstract base classes defining properties for all classifiers in ART.
 """
-
 from abc import ABC, ABCMeta, abstractmethod
+from typing import Optional
 
 import numpy as np
 
@@ -60,9 +60,7 @@ class InputFilter(ABCMeta):
                         lst[0] = np.array(args[0])
 
                 if "y" in kwargs:
-                    if kwargs["y"] is not None and not isinstance(
-                        kwargs["y"], np.ndarray
-                    ):
+                    if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
                         kwargs["y"] = np.array(kwargs["y"])
                 elif has_y:
                     if not isinstance(args[1], np.ndarray):
@@ -132,29 +130,29 @@ class ClassGradientsMixin(ABC):
         raise NotImplementedError
 
 
-class Classifier(ClassifierMixin, BaseEstimator):
+class Classifier(ClassifierMixin, BaseEstimator, ABC):
     pass
 
 
 class ClassifierNeuralNetwork(
-    ClassGradientsMixin,
-    ClassifierMixin,
-    LossGradientsMixin,
-    NeuralNetworkMixin,
-    BaseEstimator,
+    ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator, ABC
 ):
+    @abstractmethod
+    def save(self, filename: str, path: Optional[str] = None) -> None:
+        """
+        Save a model to file in the format specific to the backend framework. This function is not supported for
+        ensembles.
+
+        :param filename: Name of the file where to store the model.
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `ART_DATA_PATH`.
+        """
+        raise NotImplementedError
+
+
+class ClassifierGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
     pass
 
 
-class ClassifierGradients(
-    ClassGradientsMixin,
-    ClassifierMixin,
-    LossGradientsMixin,
-    NeuralNetworkMixin,
-    BaseEstimator,
-):
-    pass
-
-
-class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
+class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, ABC):
     pass
