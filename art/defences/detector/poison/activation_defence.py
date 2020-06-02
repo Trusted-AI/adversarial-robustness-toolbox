@@ -159,29 +159,26 @@ class ActivationDefence(PoisonFilteringDefence):
 
         self.set_params(**kwargs)
 
-        # TODO: finish generator tings here
         if self.generator:
-            for _ in range(self.generator.size // self.generator.batch_size):
-                # TODO: probably move all this code to cluster_activations
-                # TODO: or (maybe bad idea) add them all as optional params! you already have em right here
-                x_batch, y_batch = self.generator.get_batch()
-                # batch_activations = self._get_activations(x_batch)
-                # self.activations_by_class = self._segment_by_class(batch_activations, y_batch)
-                self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
-                report, self.assigned_clean_by_class = self.analyze_clusters()
-                # TODO: find out how to merge results after each batch
+            self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
+            report, self.assigned_clean_by_class = self.analyze_clusters()
 
-            # TODO: loop though the whole thing again once more, this time to generator a report
-            for _ in range(self.generator.size // self.generator.batch_size):
-                pass
-                # TODO: so on and so forth and don't forget to merge results
-                # x_batch, y_batch = self.generator.get_batch()
-            indices_by_class = self._segment_by_class(np.arange(self.generator.batch_size), y_batch)
-            self.is_clean_lst = [0] * self.generator.batch_size
-            for assigned_clean, indices_dp in zip(self.assigned_clean_by_class, indices_by_class):
-                for assignment, index_dp in zip(assigned_clean, indices_dp):
-                    if assignment == 1:
-                        self.is_clean_lst[index_dp] = 1
+            batch_size = self.generator.batch_size
+            num_samples = self.generator.size
+            self.is_clean_lst = []
+
+            # loop though the generator to generator a report
+            for _ in range(num_samples // batch_size):
+                x_batch, y_batch = self.generator.get_batch()
+                indices_by_class = self._segment_by_class(
+                    batch_size,
+                    y_batch
+                )
+                is_clean_lst = [0] * batch_size
+                for class_idx, idxs in enumerate(indices_by_class):
+                    for idx in idxs:
+                        is_clean_lst[idx] = int(idx in self.assigned_clean_by_class[class_idx])
+                self.is_clean_lst += is_clean_lst
             return report, self.is_clean_lst
 
         if not self.activations_by_class:
@@ -218,12 +215,36 @@ class ActivationDefence(PoisonFilteringDefence):
         self.set_params(**kwargs)
 
         if self.generator:
-            pass
-            # TODO: get activations by batch
-            # segment and add to activations by class
-            # keep calling cluster_activations and pass in generator to partially fit
-            # append results to running clusters by class a reduced activations by class
-            # return final results also make sure to set self.clusters_by_class and red_activations too
+            batch_size = self.generator.batch_size
+            num_samples = self.generator.size
+            for batch_idx in range(num_samples // batch_size):
+                x_batch, y_batch = self.generator.get_batch()
+
+                # initialize values list of lists on first run
+                if batch_idx == 0:
+                    num_classes = len(y_batch[0])
+                    self.activations_by_class = [[] for _ in range(num_classes)]
+                    self.clusters_by_class = [[] for _ in range(num_classes)]
+                    self.red_activations_by_class = [[] for _ in range(num_classes)]
+
+                batch_activations = self._get_activations(x_batch)
+                activations_by_class = self._segment_by_class(batch_activations, y_batch)
+                clusters_by_class, red_activations_by_class = cluster_activations(
+                    activations_by_class,
+                    nb_clusters=self.nb_clusters,
+                    nb_dims=self.nb_dims,
+                    reduce=self.reduce,
+                    clustering_method=self.clustering_method,
+                    generator=True,
+                )
+                self.activations_by_class = [self.activations_by_class[class_idx] + activations_by_class[class_idx]
+                                             for class_idx in range(num_classes)]
+                self.clusters_by_class = [self.clusters_by_class[class_idx] + clusters_by_class[class_idx]
+                                          for class_idx in range(num_classes)]
+                self.red_activations_by_class = [self.red_activations_by_class[class_idx] +
+                                                 red_activations_by_class[class_idx]
+                                                 for class_idx in range(num_classes)]
+            return self.clusters_by_class, self.red_activations_by_class
 
         if not self.activations_by_class:
             activations = self._get_activations()
