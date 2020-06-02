@@ -45,7 +45,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         input_shape,
         loss_object=None,
         train_step=None,
-        channel_index=3,
+        channels_first=False,
         clip_values=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
@@ -68,8 +68,8 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :type loss_object: `tf.keras.losses`
         :param train_step: a function that applies a gradient update to the trainable variables.
         :type train_step: `function`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -96,7 +96,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             input_shape=input_shape,
             loss_object=loss_object,
             train_step=train_step,
-            channel_index=channel_index,
+            channels_first=channels_first,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,

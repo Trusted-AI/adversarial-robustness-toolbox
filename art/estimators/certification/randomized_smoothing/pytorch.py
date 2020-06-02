@@ -47,7 +47,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         input_shape,
         nb_classes,
         optimizer=None,
-        channel_index=1,
+        channels_first=True,
         clip_values=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
@@ -72,8 +72,8 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :type nb_classes: `int`
         :param optimizer: The optimizer used to train the classifier.
         :type optimizer: `torch.optim.Optimizer`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -102,7 +102,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             input_shape=input_shape,
             nb_classes=nb_classes,
             optimizer=optimizer,
-            channel_index=channel_index,
+            channels_first=channels_first,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
