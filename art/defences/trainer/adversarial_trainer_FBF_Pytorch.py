@@ -28,7 +28,6 @@ from art.config import ART_NUMPY_DTYPE
 from art.defences.trainer.adversarial_trainer_FBF import AdversarialTrainerFBF
 
 from art.utils import random_sphere
-import apex.amp as amp
 import torch
 import time
 import torch.nn as nn
@@ -210,6 +209,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
         # Actual training
         if self._use_amp:
+            import apex.amp as amp
             with amp.scale_loss(loss, self._classifier._optimizer) as scaled_loss:
                 scaled_loss.backward()
         else:
