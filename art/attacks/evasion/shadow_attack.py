@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the evasion attack `ShadowAttackTensorFlowV2` for TensorFlow v2.
+This module implements the evasion attack `ShadowAttack`.
 
 | Paper link: https://arxiv.org/abs/2003.08937
 """
