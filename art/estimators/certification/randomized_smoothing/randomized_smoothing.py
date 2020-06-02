@@ -114,7 +114,7 @@ class RandomizedSmoothingMixin(ABC):
 
             prediction.append(smooth_prediction)
         if n_abstained > 0:
-            print("%s prediction(s) abstained." % n_abstained)
+            logger.info("%s prediction(s) abstained." % n_abstained)
         return np.array(prediction)
 
     def _fit_classifier(self, x, y, batch_size, nb_epochs, **kwargs):
