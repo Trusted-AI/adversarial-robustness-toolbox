@@ -29,6 +29,7 @@ import six
 
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
+from art.utils import deprecated
 
 from art.defences.detector.evasion import Scanner
 
@@ -58,6 +59,7 @@ class SubsetScanningDetector(
         super(SubsetScanningDetector, self).__init__(
             clip_values=classifier.clip_values,
             channel_index=classifier.channel_index,
+            channels_first=classifier.channels_first,
             preprocessing_defences=classifier.preprocessing_defences,
             preprocessing=classifier.preprocessing,
         )
@@ -217,8 +219,17 @@ class SubsetScanningDetector(
         return self.detector.clip_values
 
     @property
+    @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self):
         return self.detector.channel_index
+
+    @property
+    def channels_first(self):
+        """
+        :return: Boolean to indicate index of the color channels in the sample `x`.
+        :type: `bool`
+        """
+        return self.channels_first
 
     @property
     def learning_phase(self):

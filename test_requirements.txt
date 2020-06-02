@@ -28,5 +28,7 @@ GPy==1.9.9
 pytest-mock==3.1.0
 resampy==0.2.2
 
+tqdm==4.45.0
+
 #NOTE to contributors: When changing/adding packages, please make sure that the packages are consitent with those
 # present within the Dockerfile

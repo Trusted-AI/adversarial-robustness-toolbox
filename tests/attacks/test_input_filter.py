@@ -166,7 +166,7 @@ class TestInputFilter(unittest.TestCase):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.2, max_iter=5)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((np.array(x_test) == x_test_adv).all())

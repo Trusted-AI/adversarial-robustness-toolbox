@@ -314,19 +314,21 @@ class BoundaryAttack(EvasionAttack):
         direction = original_sample - current_sample
 
         if len(self.estimator.input_shape) == 3:
-            perturb = np.swapaxes(perturb, 0, self.estimator.channel_index - 1)
-            direction = np.swapaxes(direction, 0, self.estimator.channel_index - 1)
+            channel_index = 1 if self.estimator.channels_first else 3
+            perturb = np.swapaxes(perturb, 0, channel_index - 1)
+            direction = np.swapaxes(direction, 0, channel_index - 1)
             for i in range(direction.shape[0]):
                 direction[i] /= np.linalg.norm(direction[i])
                 perturb[i] -= np.dot(np.dot(perturb[i], direction[i].T), direction[i])
 
-            perturb = np.swapaxes(perturb, 0, self.estimator.channel_index - 1)
+            perturb = np.swapaxes(perturb, 0, channel_index - 1)
         elif len(self.estimator.input_shape) == 1:
             direction /= np.linalg.norm(direction)
             perturb -= np.dot(perturb, direction.T) * direction
         else:
             raise ValueError("Input shape not recognised.")
-
+        hypotenuse = np.sqrt(1 + delta ** 2)
+        perturb = ((1 - hypotenuse) * (current_sample - original_sample) + perturb) / hypotenuse
         return perturb
 
     def _init_sample(self, x, y, y_p, init_pred, adv_init, clip_min, clip_max):
