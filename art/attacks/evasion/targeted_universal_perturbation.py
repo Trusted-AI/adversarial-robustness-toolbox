@@ -119,7 +119,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
                 y_i = ey[None, ...]
 
                 current_label = np.argmax(self.classifier.predict(x_i + noise)[0])
-                target_label = np.argmax(ey)
+                target_label = np.argmax(y_i)
 
                 if current_label != target_label:
                     # Compute adversarial perturbation
@@ -146,11 +146,12 @@ class TargetedUniversalPerturbation(EvasionAttack):
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
             targeted_success_rate = np.sum(y_adv == np.argmax(y, axis=1)) / nb_instances
 
+        noise = x_adv[0] - x[0]
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
-        logger.info('Success rate of universal perturbation attack: %.2f%%', 100 * fooling_rate)
-        logger.info('Targeted success rate of universal perturbation attack: %.2f%%', targeted_success_rate)
+        logger.info('Fooling rate of universal perturbation attack: %.2f%%', 100 * fooling_rate)
+        logger.info('Targeted success rate of universal perturbation attack: %.2f%%', 100 * targeted_success_rate)
 
         return x_adv
 
