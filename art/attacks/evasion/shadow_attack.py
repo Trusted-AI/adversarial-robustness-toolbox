@@ -64,9 +64,9 @@ class ShadowAttack(EvasionAttack):
         sigma=0.5,
         nb_steps=300,
         learning_rate=0.1,
-        lambda_tv=0.1,
-        lambda_c=20.0,
-        lambda_s=10.0,
+        lambda_tv=0.3,
+        lambda_c=1.0,
+        lambda_s=0.5,
         batch_size=400,
         targeted=False,
     ):
