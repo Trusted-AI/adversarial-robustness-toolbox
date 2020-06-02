@@ -34,6 +34,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
                     "tests/attacks/test_deepfool.py" \
                     "tests/attacks/test_elastic_net.py" \
+                    "tests/attacks/test_feature_collision.py" \
                     "tests/attacks/test_functionally_equivalent_extraction.py" \
                     "tests/attacks/test_hclu.py" \
                     "tests/attacks/test_input_filter.py" \
@@ -49,7 +50,8 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_virtual_adversarial.py" \
                     "tests/attacks/test_zoo.py" \
                     "tests/attacks/test_pixel_attack.py" \
-                    "tests/attacks/test_threshold_attack.py" )
+                    "tests/attacks/test_threshold_attack.py" \
+                    "tests/attacks/test_wasserstein.py" )
 
 declare -a classifiers=("tests/estimators/classification/test_blackbox.py" \
                         "tests/estimators/classification/test_catboost.py" \

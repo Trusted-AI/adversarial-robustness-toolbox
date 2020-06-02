@@ -15,33 +15,32 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
 import logging
+import os
 
-import pytest
-import numpy as np
 import keras
-from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
-from keras.models import Model
-from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import LearningRateScheduler
+import numpy as np
+import pytest
 from keras.applications.resnet50 import ResNet50, decode_predictions
-from keras.preprocessing.image import load_img, img_to_array
+from keras.callbacks import LearningRateScheduler
+from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+from keras.models import Model
+from keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
 
-from art.estimators.classification.keras import KerasClassifier, generator_fit
-from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
-
-from tests.utils import ExpectedValue
+from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.estimators.classification.keras import KerasClassifier, generator_fit
+from art.utils import Deprecated
 from tests.classifiersFrameworks.utils import (
-    backend_test_nb_classes,
-    backend_test_input_shape,
-    backend_test_fit_generator,
-    backend_test_loss_gradient,
-    backend_test_layers,
     backend_test_class_gradient,
+    backend_test_fit_generator,
+    backend_test_input_shape,
+    backend_test_layers,
+    backend_test_loss_gradient,
+    backend_test_nb_classes,
     backend_test_repr,
 )
+from tests.utils import ExpectedValue
 
 logger = logging.getLogger(__name__)
 
@@ -725,8 +724,9 @@ def test_repr(get_image_classifier_list):
         get_image_classifier_list(),
         [
             "art.estimators.classification.keras.KerasClassifier",
-            "use_logits=False, channel_index=3",
-            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, " "postprocessing_defences=None, "
+            f"use_logits=False, channel_index={Deprecated}, channels_first=False",
+            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, "
+            "postprocessing_defences=None, "
             "preprocessing=(0, 1)",
             "input_layer=0, output_layer=0",
         ],

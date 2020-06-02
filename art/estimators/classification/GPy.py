@@ -205,8 +205,7 @@ class GPyGaussianProcessClassifier(ClassGradientsMixin, LossGradientsMixin, Clas
 
         :param x: Training data. Not used, as given to model in initialized earlier.
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :type y: `np.ndarray`
         :type kwargs: `dict`
         :return: `None`

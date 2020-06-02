@@ -158,9 +158,9 @@ class ZooAttack(EvasionAttack):
             logger.info("Disable resizing and importance sampling because feature vector input has been detected.")
 
         if self.use_resize:
-            if self.estimator.channel_index == 3:
+            if not self.estimator.channels_first:
                 dims = (batch_size, self._init_size, self._init_size, self.estimator.input_shape[-1])
-            elif self.estimator.channel_index == 1:
+            elif self.estimator.channels_first:
                 dims = (batch_size, self.estimator.input_shape[0], self._init_size, self._init_size)
             self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
         else:
@@ -422,12 +422,12 @@ class ZooAttack(EvasionAttack):
         # Resize images to original size before returning
         best_attack = np.array(best_attack)
         if self.use_resize:
-            if self.estimator.channel_index == 3:
+            if not self.estimator.channels_first:
                 best_attack = zoom(
                     best_attack,
                     [1, int(x_batch.shape[1]) / best_attack.shape[1], int(x_batch.shape[2]) / best_attack.shape[2], 1],
                 )
-            elif self.estimator.channel_index == 1:
+            elif self.estimator.channels_first:
                 best_attack = zoom(
                     best_attack,
                     [1, 1, int(x_batch.shape[2]) / best_attack.shape[2], int(x_batch.shape[2]) / best_attack.shape[3]],
@@ -530,9 +530,9 @@ class ZooAttack(EvasionAttack):
             self.adam_epochs = np.ones(nb_vars, dtype=np.int32)
 
     def _resize_image(self, x, size_x, size_y, reset=False):
-        if self.estimator.channel_index == 3:
+        if not self.estimator.channels_first:
             dims = (x.shape[0], size_x, size_y, x.shape[-1])
-        elif self.estimator.channel_index == 1:
+        elif self.estimator.channels_first:
             dims = (x.shape[0], x.shape[1], size_x, size_y)
         nb_vars = np.prod(dims)
 
@@ -558,22 +558,23 @@ class ZooAttack(EvasionAttack):
 
     def _get_prob(self, prev_noise, double=False):
         dims = list(prev_noise.shape)
+        channel_index = 1 if self.estimator.channels_first else 3
 
         # Double size if needed
         if double:
-            dims = [2 * size if i not in [0, self.estimator.channel_index] else size for i, size in enumerate(dims)]
+            dims = [2 * size if i not in [0, channel_index] else size for i, size in enumerate(dims)]
 
         prob = np.empty(shape=dims, dtype=np.float32)
         image = np.abs(prev_noise)
 
-        for channel in range(prev_noise.shape[self.estimator.channel_index]):
-            if self.estimator.channel_index == 3:
+        for channel in range(prev_noise.shape[channel_index]):
+            if not self.estimator.channels_first:
                 image_pool = self._max_pooling(image[:, :, :, channel], dims[1] // 8)
                 if double:
                     prob[:, :, :, channel] = np.abs(zoom(image_pool, [1, 2, 2]))
                 else:
                     prob[:, :, :, channel] = image_pool
-            elif self.estimator.channel_index == 1:
+            elif self.estimator.channels_first:
                 image_pool = self._max_pooling(image[:, channel, :, :], dims[2] // 8)
                 if double:
                     prob[:, channel, :, :] = np.abs(zoom(image_pool, [1, 2, 2]))

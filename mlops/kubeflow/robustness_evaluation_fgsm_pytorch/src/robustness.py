@@ -91,7 +91,12 @@ def robustness_evaluation(object_storage_url, object_storage_username, object_st
         optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     # create pytorch classifier
-    classifier = PyTorchClassifier(clip_values, model, loss_fn, optimizer, input_shape, nb_classes)
+    classifier = PyTorchClassifier(model=model,
+                                   loss=loss_fn,
+                                   optimizer=optimizer,
+                                   input_shape=input_shape,
+                                   nb_classes=nb_classes,
+                                   clip_values=clip_values)
 
     # load test dataset
     x = np.load(dataset_filenamex)
