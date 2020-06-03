@@ -140,7 +140,8 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         batch_size = generator.batch_size
         nb_batches = int(np.ceil(size / batch_size))
 
-        lr_schedule = lambda t: np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
+        def lr_schedule(t):
+            return np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
 
         for i_epoch in range(nb_epochs):
             logger.info("Adversarial training FBF epoch %i/%i", i_epoch, nb_epochs)
