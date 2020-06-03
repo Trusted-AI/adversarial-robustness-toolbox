@@ -20,9 +20,9 @@ This module implements the `SquareAttack` attack.
 
 | Paper link: https://arxiv.org/abs/1912.00049
 """
+import bisect
 import logging
 import math
-import bisect
 import random
 
 import numpy as np
