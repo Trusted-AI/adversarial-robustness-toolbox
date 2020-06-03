@@ -41,7 +41,6 @@ class AutoAttack(EvasionAttack):
         "eps",
         "eps_step",
         "attacks",
-        "targeted",
         "batch_size",
         "estimator_orig",
     ]
@@ -55,7 +54,6 @@ class AutoAttack(EvasionAttack):
         eps=0.3,
         eps_step=0.1,
         attacks=None,
-        targeted=False,
         batch_size=32,
         estimator_orig=None,
     ):
@@ -73,8 +71,6 @@ class AutoAttack(EvasionAttack):
         :param attacks: The list of `art.attacks.EvasionAttack` attacks to be used for AutoAttack. If it is `None` the
                         original AutoAttack (PGD, APGD-ce, APGD-dlr, FAB, Square) will be used.
         :type attacks: `[.art.attacks.EvasionAttack]`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type targeted: `bool`
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         :param estimator_orig: Original estimator to be attacked by adversarial examples.
@@ -94,7 +90,7 @@ class AutoAttack(EvasionAttack):
                     eps=eps,
                     eps_step=eps_step,
                     max_iter=100,
-                    targeted=targeted,
+                    targeted=False,
                     nb_random_init=5,
                     batch_size=batch_size,
                     loss_type="cross_entropy",
@@ -107,7 +103,7 @@ class AutoAttack(EvasionAttack):
                     eps=eps,
                     eps_step=eps_step,
                     max_iter=100,
-                    targeted=targeted,
+                    targeted=False,
                     nb_random_init=5,
                     batch_size=batch_size,
                     loss_type="difference_logits_ratio",
@@ -166,13 +162,13 @@ class AutoAttack(EvasionAttack):
             x_robust = x_adv[sample_is_robust]
             y_robust = y[sample_is_robust]
 
-            # Generate adversarial examples
+            # Generate adversarial examples with untargeted attack
             x_robust_adv = attack.generate(x=x_robust, y=y_robust)
             y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
 
             norm_is_smaller_eps = np.linalg.norm(
                 (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm
-            ) <= (self.eps + 0.001)
+            ) <= self.eps
 
             sample_is_not_robust = np.logical_and(
                 np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1), norm_is_smaller_eps
@@ -187,11 +183,3 @@ class AutoAttack(EvasionAttack):
 
     def set_params(self, **kwargs):
         super().set_params(**kwargs)
-
-    def get_attacks(self):
-        """
-        Return the list of evasion attacks applied in this AutoAttack instance.
-
-        :return: [.art.attacks.EvasionAttack]
-        """
-        return self.attacks
