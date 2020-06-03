@@ -720,21 +720,26 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
 
     for activation in separated_activations:
         # Apply dimensionality reduction
-        nb_activations = np.shape(activation)[1]
-        if nb_activations > nb_dims:
-            reduced_activations = reduce_dimensionality(activation, nb_dims=nb_dims, reduce=reduce)
-        else:
-            logger.info(
-                "Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality " "reduction.",
-                nb_activations,
-                nb_dims,
-            )
-            reduced_activations = activation
-        separated_reduced_activations.append(reduced_activations)
+        if activation.any():
+            nb_activations = np.shape(activation)[1]
+            if nb_activations > nb_dims:
+                # TODO: address issue where if fewer samples than nb_dims this fails
+                reduced_activations = reduce_dimensionality(activation, nb_dims=nb_dims, reduce=reduce)
+            else:
+                logger.info(
+                    "Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality " "reduction.",
+                    nb_activations,
+                    nb_dims,
+                )
+                reduced_activations = activation
+            separated_reduced_activations.append(reduced_activations)
 
-        # Get cluster assignments
-        clusters = clusterer.partial_fit(reduced_activations) if generator else clusterer.fit_predict(reduced_activations)
-        separated_clusters.append(clusters)
+            # Get cluster assignments
+            clusters = clusterer.partial_fit(reduced_activations) if generator else clusterer.fit_predict(reduced_activations)
+            separated_clusters.append(clusters)
+        else:
+            separated_reduced_activations.append(np.array([]))
+            separated_clusters.append(np.array([]))
 
     return separated_clusters, separated_reduced_activations
 
