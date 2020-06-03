@@ -26,12 +26,14 @@ from art.defences.trainer.trainer import Trainer
 
 class AdversarialTrainerFBF(Trainer, abc.ABC):
     """
+    This is abstract class for different backend-specific implementations of Fast is better than free protocol
+    for adversarial training
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
     """
 
     def __init__(self, classifier, eps=8, **kwargs):
         """
-        Create an :class:`.AdversarialTrainer` instance.
+        Create an :class:`.AdversarialTrainerFBF` instance.
 
         :param classifier: Model to train adversarially.
         :type classifier: :class:`.Classifier`
@@ -45,7 +47,7 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
     @abc.abstractmethod
     def fit(self, x, y, validation_data=None, batch_size=128, nb_epochs=20, **kwargs):
         """
-        Train a model adversarially. See class documentation for more information on the exact procedure.
+        Train a model adversarially with FBF. See class documentation for more information on the exact procedure.
 
         :param x: Training set.
         :type x: `np.ndarray`
