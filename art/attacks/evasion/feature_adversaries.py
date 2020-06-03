@@ -72,15 +72,6 @@ class FeatureAdversaries(EvasionAttack):
 
         self.norm = np.inf
 
-    @classmethod
-    def is_valid_classifier_type(cls, classifier):
-        """
-        Checks whether the classifier provided is a classifer which this class can perform an attack on
-        :param classifier:
-        :return:
-        """
-        return True if isinstance(classifier, ClassifierNeuralNetwork) else False
-
     def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
@@ -148,10 +139,10 @@ class FeatureAdversaries(EvasionAttack):
         from scipy.linalg import norm
 
         lb = x.flatten() - self.delta
-        lb[lb < 0.0] = 0.0
+        lb[lb < self.estimator.clip_values[0]] = self.estimator.clip_values[0]
 
         ub = x.flatten() + self.delta
-        ub[ub > 1.0] = 1.0
+        ub[ub > self.estimator.clip_values[1]] = self.estimator.clip_values[1]
 
         bound = Bounds(lb=lb, ub=ub, keep_feasible=False)
 

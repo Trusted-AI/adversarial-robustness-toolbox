@@ -552,7 +552,6 @@ class TestPyTorchClassifier(TestBase):
 
     def test_set_learning(self):
         ptc = self.module_classifier
-        self.assertTrue(ptc._model.training)
         ptc.set_learning_phase(False)
         self.assertFalse(ptc._model.training)
         ptc.set_learning_phase(True)

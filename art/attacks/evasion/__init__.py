@@ -24,6 +24,7 @@ from art.attacks.evasion.pixel_threshold import ThresholdAttack
 from art.attacks.evasion.frame_saliency import FrameSaliencyAttack
 from art.attacks.evasion.feature_adversaries import FeatureAdversaries
 from art.attacks.evasion.dpatch import DPatch
+from art.attacks.evasion.shadow_attack import ShadowAttack
 from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
 from art.attacks.evasion.square_attack import SquareAttack
