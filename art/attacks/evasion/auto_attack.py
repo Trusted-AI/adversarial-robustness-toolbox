@@ -183,3 +183,15 @@ class AutoAttack(EvasionAttack):
 
     def set_params(self, **kwargs):
         super().set_params(**kwargs)
+
+        if self.norm not in [1, 2, np.inf]:
+            raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
+
+        if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
+            raise ValueError("The argument eps has to be either of type int or float and larger than zero.")
+
+        if not isinstance(self.eps_step, (int, float)) or self.eps_step <= 0.0:
+            raise ValueError("The argument eps_step has to be either of type int or float and larger than zero.")
+
+        if not isinstance(self.batch_size, int) or self.batch_size <= 0:
+            raise ValueError("The argument batch_size has to be of type int and larger than zero.")
