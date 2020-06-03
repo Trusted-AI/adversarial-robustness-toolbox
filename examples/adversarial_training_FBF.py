@@ -1,5 +1,5 @@
 """
-This is an example of how to use ART and Keras to perform adversarial training using data generators for CIFAR10
+This is an example of how to use ART for adversarial training of a model with Fast is better than free protocol
 """
 from keras.preprocessing.image import ImageDataGenerator
 
@@ -13,6 +13,12 @@ import numpy as np
 import torch
 import torch.nn as nn
 import math
+
+"""
+For this example we choose the PreActResNet model as used in the paper (https://openreview.net/forum?id=BJx040EFvH)
+The code for the model architecture has been adopted from
+https://github.com/anonymous-sushi-armadillo/fast_is_better_than_free_CIFAR10/blob/master/preact_resnet.py
+"""
 
 
 class PreActBlock(nn.Module):
@@ -117,8 +123,10 @@ def initialize_weights(module):
         module.bias.data.zero_()
 
 
+# Step 1: Load the CIFAR10 dataset
 (x_train, y_train), (x_test, y_test), min_pixel_value, max_pixel_value = load_cifar10()
 
+# prepare the tensors for preprocessing
 cifar_mu = np.ones((3, 32, 32))
 cifar_mu[0, :, :] = 0.4914
 cifar_mu[1, :, :] = 0.4822
@@ -132,16 +140,17 @@ cifar_std[2, :, :] = 0.2616
 x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
 x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
 
-np.save('x_train.npy', x_train)
-np.save('y_train.npy', y_train)
+# Step 2: create the PyTorch model
 model = PreActResNet18()
-
+# For running on GPU replace the model with the
 # model = PreActResNet18().cuda()
+
 model.apply(initialize_weights)
 model.train()
 
 opt = torch.optim.SGD(model.parameters(), lr=0.21, momentum=0.9, weight_decay=5e-4)
 
+# if you have apex installed, the following line should be uncommented for faster processing
 # model, opt = amp.initialize(model, opt, opt_level="O2", loss_scale=1.0, master_weights=False)
 
 criterion = nn.CrossEntropyLoss()
@@ -157,8 +166,9 @@ classifier = PyTorchClassifier(
     nb_classes=10,
 )
 
+# Step 4: Create the trainer object - AdversarialTrainerFBFPyTorch
+# if you have apex installed, change use_amp to True
 epsilon = (8.0 / 255.)
-
 trainer = AdversarialTrainerFBFPyTorch(classifier, eps=epsilon, use_amp=False)
 
 # Build a Keras image augmentation object and wrap it in ART
@@ -174,4 +184,5 @@ art_datagen = KerasDataGenerator(
     batch_size=batch_size,
 )
 
+# Step 5: fit the trainer
 trainer.fit_generator(art_datagen, nb_epochs=30)
