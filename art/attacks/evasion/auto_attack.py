@@ -48,14 +48,7 @@ class AutoAttack(EvasionAttack):
     _estimator_requirements = (BaseEstimator,)
 
     def __init__(
-        self,
-        estimator,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        attacks=None,
-        batch_size=32,
-        estimator_orig=None,
+        self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, batch_size=32, estimator_orig=None,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -166,9 +159,10 @@ class AutoAttack(EvasionAttack):
             x_robust_adv = attack.generate(x=x_robust, y=y_robust)
             y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
 
-            norm_is_smaller_eps = np.linalg.norm(
-                (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm
-            ) <= self.eps
+            norm_is_smaller_eps = (
+                np.linalg.norm((x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm)
+                <= self.eps
+            )
 
             sample_is_not_robust = np.logical_and(
                 np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1), norm_is_smaller_eps

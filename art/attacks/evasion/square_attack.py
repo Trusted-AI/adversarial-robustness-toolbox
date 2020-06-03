@@ -59,7 +59,7 @@ class SquareAttack(EvasionAttack):
         }
         self.set_params(**kwargs)
 
-    def get_logits_diff(self, x, y):
+    def _get_logits_diff(self, x, y):
         y_pred = self.estimator.predict(x)
 
         logit_correct = np.take_along_axis(y_pred, np.expand_dims(np.argmax(y, axis=1), axis=1), axis=1)
@@ -69,7 +69,7 @@ class SquareAttack(EvasionAttack):
 
         return (logit_correct - logit_highest_incorrect)[:, 0]
 
-    def _get_p(self, i_iter):
+    def _get_percentage_of_elements(self, i_iter):
 
         i_p = i_iter / self.max_iter
 
@@ -95,9 +95,7 @@ class SquareAttack(EvasionAttack):
         :rtype: `np.ndarray`
         """
         if x.ndim != 4:
-            raise ValueError(
-                "Unrecognized input dimension. Attack can only be applied to image data."
-            )
+            raise ValueError("Unrecognized input dimension. Attack can only be applied to image data.")
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
@@ -124,7 +122,7 @@ class SquareAttack(EvasionAttack):
             # x_robust = x_adv[sample_is_robust]
             x_robust = x[sample_is_robust]
             y_robust = y[sample_is_robust]
-            sample_logits_diff_init = self.get_logits_diff(x_robust, y_robust)
+            sample_logits_diff_init = self._get_logits_diff(x_robust, y_robust)
 
             if self.norm == np.inf:
 
@@ -140,7 +138,7 @@ class SquareAttack(EvasionAttack):
                     a_max=self.estimator.clip_values[1],
                 )
 
-                sample_logits_diff_new = self.get_logits_diff(x_robust_new, y_robust)
+                sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
                 logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
 
                 x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
@@ -149,7 +147,7 @@ class SquareAttack(EvasionAttack):
 
                 for i_iter in range(self.max_iter):
 
-                    p = self._get_p(i_iter)
+                    percentage_of_elements = self._get_percentage_of_elements(i_iter)
 
                     # Determine correctly predicted samples
                     y_pred = self.estimator.predict(x_adv)
@@ -162,23 +160,23 @@ class SquareAttack(EvasionAttack):
                     x_init = x[sample_is_robust]
                     y_robust = y[sample_is_robust]
 
-                    sample_logits_diff_init = self.get_logits_diff(x_robust, y_robust)
+                    sample_logits_diff_init = self._get_logits_diff(x_robust, y_robust)
 
-                    h_tile = max(int(round(math.sqrt(p * height * width))), 1)
+                    height_tile = max(int(round(math.sqrt(percentage_of_elements * height * width))), 1)
 
-                    h_mid = np.random.randint(0, height - h_tile)
-                    w_start = np.random.randint(0, width - h_tile)
+                    height_mid = np.random.randint(0, height - height_tile)
+                    width_start = np.random.randint(0, width - height_tile)
 
                     delta_new = np.zeros(self.estimator.input_shape)
 
                     if self.estimator.channels_first:
-                        delta_new[:, h_mid : h_mid + h_tile, w_start : w_start + h_tile] = np.random.choice(
-                            [-2 * self.eps, 2 * self.eps], size=[channels, 1, 1]
-                        )
+                        delta_new[
+                            :, height_mid : height_mid + height_tile, width_start : width_start + height_tile
+                        ] = np.random.choice([-2 * self.eps, 2 * self.eps], size=[channels, 1, 1])
                     else:
-                        delta_new[h_mid : h_mid + h_tile, w_start : w_start + h_tile, :] = np.random.choice(
-                            [-2 * self.eps, 2 * self.eps], size=[1, 1, channels]
-                        )
+                        delta_new[
+                            height_mid : height_mid + height_tile, width_start : width_start + height_tile, :
+                        ] = np.random.choice([-2 * self.eps, 2 * self.eps], size=[1, 1, channels])
 
                     x_robust_new = x_robust + delta_new
 
@@ -188,7 +186,7 @@ class SquareAttack(EvasionAttack):
                         x_robust_new, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1]
                     )
 
-                    sample_logits_diff_new = self.get_logits_diff(x_robust_new, y_robust)
+                    sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
                     logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
 
                     x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
@@ -199,7 +197,7 @@ class SquareAttack(EvasionAttack):
 
                 n_tiles = 5
 
-                h_tile = height // n_tiles
+                height_tile = height // n_tiles
 
                 def _get_perturbation(h):
                     delta = np.zeros([h, h])
@@ -232,27 +230,31 @@ class SquareAttack(EvasionAttack):
 
                 delta_init = np.zeros(x_robust.shape)
 
-                h_start = 0
+                height_start = 0
                 for _ in range(n_tiles):
-                    w_start = 0
+                    width_start = 0
                     for _ in range(n_tiles):
                         if self.estimator.channels_first:
-                            perturbation_size = (1, 1, h_tile, h_tile)
+                            perturbation_size = (1, 1, height_tile, height_tile)
                             random_size = (x_robust.shape[0], channels, 1, 1)
                         else:
-                            perturbation_size = (1, h_tile, h_tile, 1)
+                            perturbation_size = (1, height_tile, height_tile, 1)
                             random_size = (x_robust.shape[0], 1, 1, channels)
 
-                        perturbation = _get_perturbation(h_tile).reshape(perturbation_size) * np.random.choice(
+                        perturbation = _get_perturbation(height_tile).reshape(perturbation_size) * np.random.choice(
                             [-1, 1], size=random_size
                         )
 
                         if self.estimator.channels_first:
-                            delta_init[:, :, h_start : h_start + h_tile, w_start : w_start + h_tile] += perturbation
+                            delta_init[
+                                :, :, height_start : height_start + height_tile, width_start : width_start + height_tile
+                            ] += perturbation
                         else:
-                            delta_init[:, h_start : h_start + h_tile, w_start : w_start + h_tile, :] += perturbation
-                        w_start += h_tile
-                    h_start += h_tile
+                            delta_init[
+                                :, height_start : height_start + height_tile, width_start : width_start + height_tile, :
+                            ] += perturbation
+                        width_start += height_tile
+                    height_start += height_tile
 
                 x_robust_new = np.clip(
                     x_robust + delta_init / np.sqrt(np.sum(delta_init ** 2, axis=(1, 2, 3), keepdims=True)) * self.eps,
@@ -260,7 +262,7 @@ class SquareAttack(EvasionAttack):
                     self.estimator.clip_values[1],
                 )
 
-                sample_logits_diff_new = self.get_logits_diff(x_robust_new, y_robust)
+                sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
                 logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
 
                 x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
@@ -269,7 +271,7 @@ class SquareAttack(EvasionAttack):
 
                 for i_iter in range(self.max_iter):
 
-                    p = self._get_p(i_iter)
+                    percentage_of_elements = self._get_percentage_of_elements(i_iter)
 
                     # Determine correctly predicted samples
                     y_pred = self.estimator.predict(x_adv)
@@ -282,50 +284,72 @@ class SquareAttack(EvasionAttack):
                     x_init = x[sample_is_robust]
                     y_robust = y[sample_is_robust]
 
-                    sample_logits_diff_init = self.get_logits_diff(x_robust, y_robust)
+                    sample_logits_diff_init = self._get_logits_diff(x_robust, y_robust)
 
                     delta_x_robust_init = x_robust - x_init
 
-                    h_tile = max(int(round(math.sqrt(p * height * width))), 3)
+                    height_tile = max(int(round(math.sqrt(percentage_of_elements * height * width))), 3)
 
-                    if h_tile % 2 == 0:
-                        h_tile += 1
-                    h_tile_2 = h_tile
+                    if height_tile % 2 == 0:
+                        height_tile += 1
+                    height_tile_2 = height_tile
 
-                    h_start = np.random.randint(0, height - h_tile)
-                    w_start = np.random.randint(0, width - h_tile)
+                    height_start = np.random.randint(0, height - height_tile)
+                    width_start = np.random.randint(0, width - height_tile)
 
                     new_deltas_mask = np.zeros(x_init.shape)
                     if self.estimator.channels_first:
-                        new_deltas_mask[:, :, h_start : h_start + h_tile, w_start : w_start + h_tile] = 1.0
+                        new_deltas_mask[
+                            :, :, height_start : height_start + height_tile, width_start : width_start + height_tile
+                        ] = 1.0
                         W_1_norm = np.sqrt(
                             np.sum(
-                                delta_x_robust_init[:, :, h_start : h_start + h_tile, w_start : w_start + h_tile] ** 2,
+                                delta_x_robust_init[
+                                    :,
+                                    :,
+                                    height_start : height_start + height_tile,
+                                    width_start : width_start + height_tile,
+                                ]
+                                ** 2,
                                 axis=(2, 3),
                                 keepdims=True,
                             )
                         )
                     else:
-                        new_deltas_mask[:, h_start : h_start + h_tile, w_start : w_start + h_tile, :] = 1.0
+                        new_deltas_mask[
+                            :, height_start : height_start + height_tile, width_start : width_start + height_tile, :
+                        ] = 1.0
                         W_1_norm = np.sqrt(
                             np.sum(
-                                delta_x_robust_init[:, h_start : h_start + h_tile, w_start : w_start + h_tile, :] ** 2,
+                                delta_x_robust_init[
+                                    :,
+                                    height_start : height_start + height_tile,
+                                    width_start : width_start + height_tile,
+                                    :,
+                                ]
+                                ** 2,
                                 axis=(1, 2),
                                 keepdims=True,
                             )
                         )
 
-                    h_2_start = np.random.randint(0, height - h_tile_2)
-                    w_2_start = np.random.randint(0, width - h_tile_2)
+                    height_2_start = np.random.randint(0, height - height_tile_2)
+                    width_2_start = np.random.randint(0, width - height_tile_2)
 
                     new_deltas_mask_2 = np.zeros(x_init.shape)
                     if self.estimator.channels_first:
                         new_deltas_mask_2[
-                            :, :, h_2_start : h_2_start + h_tile_2, w_2_start : w_2_start + h_tile_2
+                            :,
+                            :,
+                            height_2_start : height_2_start + height_tile_2,
+                            width_2_start : width_2_start + height_tile_2,
                         ] = 1.0
                     else:
                         new_deltas_mask_2[
-                            :, h_2_start : h_2_start + h_tile_2, w_2_start : w_2_start + h_tile_2, :
+                            :,
+                            height_2_start : height_2_start + height_tile_2,
+                            width_2_start : width_2_start + height_tile_2,
+                            :,
                         ] = 1.0
 
                     norms_x_robust = np.sqrt(np.sum((x_robust - x_init) ** 2, axis=(1, 2, 3), keepdims=True))
@@ -338,27 +362,27 @@ class SquareAttack(EvasionAttack):
                     )
 
                     if self.estimator.channels_first:
-                        new_deltas_size = [x_init.shape[0], channels, h_tile, h_tile]
+                        new_deltas_size = [x_init.shape[0], channels, height_tile, height_tile]
                         random_choice_size = [x_init.shape[0], channels, 1, 1]
-                        perturbation_size = [1, 1, h_tile, h_tile]
+                        perturbation_size = [1, 1, height_tile, height_tile]
                     else:
-                        new_deltas_size = [x_init.shape[0], h_tile, h_tile, channels]
+                        new_deltas_size = [x_init.shape[0], height_tile, height_tile, channels]
                         random_choice_size = [x_init.shape[0], 1, 1, channels]
-                        perturbation_size = [1, h_tile, h_tile, 1]
+                        perturbation_size = [1, height_tile, height_tile, 1]
 
                     delta_new = (
                         np.ones(new_deltas_size)
-                        * _get_perturbation(h_tile).reshape(perturbation_size)
+                        * _get_perturbation(height_tile).reshape(perturbation_size)
                         * np.random.choice([-1, 1], size=random_choice_size)
                     )
 
                     if self.estimator.channels_first:
                         delta_new += delta_x_robust_init[
-                            :, :, h_start : h_start + h_tile, w_start : w_start + h_tile
+                            :, :, height_start : height_start + height_tile, width_start : width_start + height_tile
                         ] / (np.maximum(1e-9, W_1_norm))
                     else:
                         delta_new += delta_x_robust_init[
-                            :, h_start : h_start + h_tile, w_start : w_start + h_tile, :
+                            :, height_start : height_start + height_tile, width_start : width_start + height_tile, :
                         ] / (np.maximum(1e-9, W_1_norm))
 
                     diff_norm = (self.eps * np.ones(delta_new.shape)) ** 2 - norms_x_robust ** 2
@@ -369,17 +393,27 @@ class SquareAttack(EvasionAttack):
                             diff_norm / channels + W_norm ** 2
                         )
                         delta_x_robust_init[
-                            :, :, h_2_start : h_2_start + h_tile_2, w_2_start : w_2_start + h_tile_2
+                            :,
+                            :,
+                            height_2_start : height_2_start + height_tile_2,
+                            width_2_start : width_2_start + height_tile_2,
                         ] = 0.0
-                        delta_x_robust_init[:, :, h_start : h_start + h_tile, w_start : w_start + h_tile] = delta_new
+                        delta_x_robust_init[
+                            :, :, height_start : height_start + height_tile, width_start : width_start + height_tile
+                        ] = delta_new
                     else:
                         delta_new /= np.sqrt(np.sum(delta_new ** 2, axis=(1, 2), keepdims=True)) * np.sqrt(
                             diff_norm / channels + W_norm ** 2
                         )
                         delta_x_robust_init[
-                            :, h_2_start : h_2_start + h_tile_2, w_2_start : w_2_start + h_tile_2, :
+                            :,
+                            height_2_start : height_2_start + height_tile_2,
+                            width_2_start : width_2_start + height_tile_2,
+                            :,
                         ] = 0.0
-                        delta_x_robust_init[:, h_start : h_start + h_tile, w_start : w_start + h_tile, :] = delta_new
+                        delta_x_robust_init[
+                            :, height_start : height_start + height_tile, width_start : width_start + height_tile, :
+                        ] = delta_new
 
                     x_robust_new = np.clip(
                         x_init
@@ -390,7 +424,7 @@ class SquareAttack(EvasionAttack):
                         self.estimator.clip_values[1],
                     )
 
-                    sample_logits_diff_new = self.get_logits_diff(x_robust_new, y_robust)
+                    sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
                     logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
 
                     x_robust[logits_diff_improved] = x_robust_new[logits_diff_improved]
