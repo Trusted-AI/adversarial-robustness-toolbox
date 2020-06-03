@@ -261,7 +261,7 @@ def tanh_to_original(x_tanh, clip_min, clip_max):
     :return: An array holding the transformed input.
     :rtype: `np.ndarray`
     """
-    return np.tanh(x_tanh) * (clip_max - clip_min) + clip_min
+    return (np.tanh(x_tanh) + 1.0) / 2.0 * (clip_max - clip_min) + clip_min
 
 
 # --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
