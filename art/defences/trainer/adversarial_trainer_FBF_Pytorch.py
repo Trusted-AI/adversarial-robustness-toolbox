@@ -42,12 +42,14 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
     def __init__(self, classifier, eps=8, use_amp=False, **kwargs):
         """
-        Create an :class:`.AdversarialTrainer` instance.
+        Create an :class:`.AdversarialTrainerFBFPyTorch` instance.
 
         :param classifier: Model to train adversarially.
         :type classifier: :class:`.Classifier`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
+        :param use_amp: Boolean that decides if apex should be used for mixed precision arithmantic during training
+        :type use_amp: `bool`
 
         """
         super().__init__(classifier,
@@ -57,12 +59,14 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
     def fit(self, x, y, validation_data=None, batch_size=128, nb_epochs=20, **kwargs):
         """
-        Train a model adversarially. See class documentation for more information on the exact procedure.
+        Train a model adversarially with FBF protocol. See class documentation for more information on the exact procedure.
 
         :param x: Training set.
         :type x: `np.ndarray`
         :param y: Labels for the training set.
         :type y: `np.ndarray`
+        :param validation_data: Tuple consisting of validation data
+        :type validation_data: `np.ndarray`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for trainings.
@@ -123,7 +127,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
     def fit_generator(self, generator, nb_epochs=20, **kwargs):
         """
-        Train a model adversarially using a data generator.
+        Train a model adversarially with FBF protocol using a data generator.
         See class documentation for more information on the exact procedure.
 
         :param generator: Data generator.
@@ -171,11 +175,16 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
     def _batch_process(self, x_batch, y_batch, lr):
         """
+        Perform the operations of FBF for a batch of data.
+        See class documentation for more information on the exact procedure.
 
-        :param x_batch:
-        :param y_batch:
-        :param lr:
-        :return:
+        :param x_batch: batch of x.
+        :type x_batch: `np.ndarray`
+        :param y_batch: batch of y.
+        :type y_batch: `np.ndarray`
+        :param lr: learning rate for the optimisation step.
+        :type lr: `float`
+        :return: `(float, float, float)`
         """
 
         n = x_batch.shape[0]
