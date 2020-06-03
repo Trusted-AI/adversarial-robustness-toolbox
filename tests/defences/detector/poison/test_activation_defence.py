@@ -70,7 +70,7 @@ class TestActivationDefence(unittest.TestCase):
         datagen.fit(x_train)
 
         data_gen = KerasDataGenerator(
-            datagen.flow(x_train, y_train, batch_size=20), size=None, batch_size=20
+            datagen.flow(x_train, y_train, batch_size=NB_TRAIN), size=NB_TRAIN, batch_size=NB_TRAIN
         )
 
         cls.defence_gen = ActivationDefence(cls.classifier, None, None, generator=data_gen)
@@ -126,12 +126,12 @@ class TestActivationDefence(unittest.TestCase):
         _, is_clean_lst = self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
         sum_clean1 = sum(is_clean_lst)
 
-        # _, is_clean_lst_gen = self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
-        # sum_clean1_gen = sum(is_clean_lst_gen)
+        _, is_clean_lst_gen = self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
+        sum_clean1_gen = sum(is_clean_lst_gen)
 
         # Check number of items in is_clean
         self.assertEqual(len(x_train), len(is_clean_lst))
-        # self.assertEqual(len(x_train), len(is_clean_lst_gen))
+        self.assertEqual(len(x_train), len(is_clean_lst_gen))
 
         # Test right number of clusters
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
