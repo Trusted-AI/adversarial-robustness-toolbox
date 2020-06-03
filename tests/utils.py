@@ -334,7 +334,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-    def train_step(images, labels):
+    def train_step(model, images, labels):
         with tf.GradientTape() as tape:
             predictions = model(images, training=True)
             loss = loss_object(labels, predictions)
@@ -373,7 +373,7 @@ def get_image_classifier_tf_v2(from_logits=False):
             )
         )
 
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits)
 
     model.compile(optimizer=optimizer, loss=loss_object)
 
@@ -1061,7 +1061,7 @@ def get_tabular_classifier_tf_v2():
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-    def train_step(images, labels):
+    def train_step(model, images, labels):
         with tf.GradientTape() as tape:
             predictions = model(images, training=True)
             loss = loss_object(labels, predictions)

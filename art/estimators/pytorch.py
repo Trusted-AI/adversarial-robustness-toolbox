@@ -29,15 +29,3 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
     Estimator class for PyTorch models.
     """
-
-    @property
-    def model(self):
-        """
-        Return the model.
-
-        :return: The model.
-        :rtype: `torch.nn.Module`
-        """
-        import torch
-        assert isinstance(self._model, torch.nn.Module)
-        return self._model

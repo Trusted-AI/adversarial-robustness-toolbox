@@ -24,6 +24,7 @@ import logging
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -99,7 +100,7 @@ class GaussianAugmentation(Preprocessor):
             indices = np.random.randint(0, x.shape[0], size=size)
 
             # Generate noisy samples
-            x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x.shape[1:])
+            x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x.shape[1:]).astype(ART_NUMPY_DTYPE)
             x_aug = np.vstack((x, x_aug))
             if y is not None:
                 y_aug = np.concatenate((y, y[indices]))
@@ -107,7 +108,7 @@ class GaussianAugmentation(Preprocessor):
                 y_aug = y
             logger.info("Augmented dataset size: %d", x_aug.shape[0])
         else:
-            x_aug = np.random.normal(x, scale=self.sigma, size=x.shape)
+            x_aug = np.random.normal(x, scale=self.sigma, size=x.shape).astype(ART_NUMPY_DTYPE)
             y_aug = y
             logger.info("Created %i samples with Gaussian noise.")
 

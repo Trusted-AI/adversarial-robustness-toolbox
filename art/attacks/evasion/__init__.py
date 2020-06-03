@@ -17,9 +17,11 @@ from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
+from art.attacks.evasion.wasserstein import Wasserstein
 from art.attacks.evasion.zoo import ZooAttack
 from art.attacks.evasion.pixel_threshold import PixelAttack
 from art.attacks.evasion.pixel_threshold import ThresholdAttack
 from art.attacks.evasion.frame_saliency import FrameSaliencyAttack
 from art.attacks.evasion.feature_adversaries import FeatureAdversaries
 from art.attacks.evasion.dpatch import DPatch
+from art.attacks.evasion.shadow_attack import ShadowAttack
