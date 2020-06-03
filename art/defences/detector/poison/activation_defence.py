@@ -92,6 +92,9 @@ class ActivationDefence(PoisonFilteringDefence):
         self.is_clean_lst = []
         self.confidence_level = []
         self.poisonous_clusters = []
+        from sklearn.cluster import KMeans
+        from sklearn.cluster import MiniBatchKMeans
+        self.clusterer = MiniBatchKMeans(n_clusters=self.nb_clusters)
 
     def evaluate_defence(self, is_clean, **kwargs):
         """
@@ -171,7 +174,7 @@ class ActivationDefence(PoisonFilteringDefence):
             for _ in range(num_samples // batch_size):
                 x_batch, y_batch = self.generator.get_batch()
                 indices_by_class = self._segment_by_class(
-                    batch_size,
+                    np.arange(batch_size),
                     y_batch
                 )
                 is_clean_lst = [0] * batch_size
@@ -217,17 +220,19 @@ class ActivationDefence(PoisonFilteringDefence):
         if self.generator:
             batch_size = self.generator.batch_size
             num_samples = self.generator.size
+            num_classes = self.classifier.nb_classes
             for batch_idx in range(num_samples // batch_size):
                 x_batch, y_batch = self.generator.get_batch()
 
+                batch_activations = self._get_activations(x_batch)
+                activation_dim = batch_activations.shape[-1]
+
                 # initialize values list of lists on first run
                 if batch_idx == 0:
-                    num_classes = len(y_batch[0])
-                    self.activations_by_class = [[] for _ in range(num_classes)]
-                    self.clusters_by_class = [[] for _ in range(num_classes)]
-                    self.red_activations_by_class = [[] for _ in range(num_classes)]
+                    self.activations_by_class = [np.empty((0, activation_dim)) for _ in range(num_classes)]
+                    self.clusters_by_class = [np.empty(0, dtype=int) for _ in range(num_classes)]
+                    self.red_activations_by_class = [np.empty((0, self.nb_dims)) for _ in range(num_classes)]
 
-                batch_activations = self._get_activations(x_batch)
                 activations_by_class = self._segment_by_class(batch_activations, y_batch)
                 clusters_by_class, red_activations_by_class = cluster_activations(
                     activations_by_class,
@@ -236,14 +241,28 @@ class ActivationDefence(PoisonFilteringDefence):
                     reduce=self.reduce,
                     clustering_method=self.clustering_method,
                     generator=True,
+                    clusterer_new=self.clusterer,
                 )
-                self.activations_by_class = [self.activations_by_class[class_idx] + activations_by_class[class_idx]
-                                             for class_idx in range(num_classes)]
-                self.clusters_by_class = [self.clusters_by_class[class_idx] + clusters_by_class[class_idx]
-                                          for class_idx in range(num_classes)]
-                self.red_activations_by_class = [self.red_activations_by_class[class_idx] +
-                                                 red_activations_by_class[class_idx]
-                                                 for class_idx in range(num_classes)]
+
+                for class_idx in range(num_classes):
+                    self.activations_by_class[class_idx] = np.vstack([self.activations_by_class[class_idx],
+                                                                      activations_by_class[class_idx]])
+                    self.clusters_by_class[class_idx] = np.append(self.clusters_by_class[class_idx],
+                                                                  clusters_by_class[class_idx])
+                    self.red_activations_by_class[class_idx] = np.vstack([self.red_activations_by_class[class_idx],
+                                                                          red_activations_by_class[class_idx]])
+                # self.activations_by_class = [np.vstack([self.activations_by_class[class_idx],
+                #                                         activations_by_class[class_idx]])
+                #                              for class_idx in range(num_classes)]
+                #
+                # self.clusters_by_class = [np.vstack([self.clusters_by_class[class_idx],
+                #                                      clusters_by_class[class_idx]])
+                #                           for class_idx in range(num_classes)]
+                #
+                # self.red_activations_by_class = [np.vstack([self.red_activations_by_class[class_idx],
+                #                                  red_activations_by_class[class_idx]])
+                #                                  for class_idx in range(num_classes)]
+                #
             return self.clusters_by_class, self.red_activations_by_class
 
         if not self.activations_by_class:
@@ -681,9 +700,9 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
     improve_factor = initial_missed - curr_missed
     return improve_factor, classifier
 
-
+from sklearn.cluster import MiniBatchKMeans
 def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce="FastICA", clustering_method="KMeans",
-                        generator=False):
+                        generator=False, clusterer_new=None):
     """
     Clusters activations and returns two arrays.
     1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each datapoint
@@ -703,6 +722,8 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     :type clustering_method: `str`
     :param generator: whether or not a the activations are a batch or full activations
     :type generator: `bool`
+    :param clusterer_new: whether or not a the activations are a batch or full activations
+    :type clusterer_new: `MiniBatchKMeans`
     :return: separated_clusters, separated_reduced_activations
     :rtype: `tuple`
     """
@@ -735,7 +756,12 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
             separated_reduced_activations.append(reduced_activations)
 
             # Get cluster assignments
-            clusters = clusterer.partial_fit(reduced_activations) if generator else clusterer.fit_predict(reduced_activations)
+            if generator:
+                clusterer_new = clusterer_new.partial_fit(reduced_activations)
+                # TODO: this may cause earlier predictions to be less accurate
+                clusters = clusterer_new.predict(reduced_activations)
+            else:
+                clusters = clusterer.fit_predict(reduced_activations)
             separated_clusters.append(clusters)
         else:
             separated_reduced_activations.append(np.array([]))
