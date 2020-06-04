@@ -248,7 +248,7 @@ def original_to_tanh(x_original, clip_min, clip_max, tanh_smoother=0.999999):
     return x_tanh
 
 
-def tanh_to_original(x_tanh, clip_min, clip_max, tanh_smoother=0.999999):
+def tanh_to_original(x_tanh, clip_min, clip_max):
     """
     Transform input from tanh to original space.
 
@@ -258,13 +258,10 @@ def tanh_to_original(x_tanh, clip_min, clip_max, tanh_smoother=0.999999):
     :type clip_min: `float` or `np.ndarray`
     :param clip_max: Maximum clipping value.
     :type clip_max: `float` or `np.ndarray`
-    :param tanh_smoother: Scalar for dividing arguments of tanh to avoid division by zero.
-    :type tanh_smoother: `float`
     :return: An array holding the transformed input.
     :rtype: `np.ndarray`
     """
-    x_original = (np.tanh(x_tanh) / tanh_smoother + 1) / 2
-    return x_original * (clip_max - clip_min) + clip_min
+    return (np.tanh(x_tanh) + 1.0) / 2.0 * (clip_max - clip_min) + clip_min
 
 
 # --------------------------------------------------------------------------------------------------- LABELS OPERATIONS

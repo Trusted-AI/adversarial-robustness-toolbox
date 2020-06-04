@@ -42,6 +42,7 @@ tests_require = [
     "GPy==1.9.9",
     "pytest-mock==3.1.0",
     "resampy==0.2.2",
+    "ffmpeg-python==0.2.0",
 ]
 
 docs_require = ["sphinx >= 1.4", "sphinx_rtd_theme"]

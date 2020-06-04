@@ -53,7 +53,8 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_threshold_attack.py" \
                     "tests/attacks/test_wasserstein.py" )
 
-declare -a classifiers=("tests/estimators/classification/test_blackbox.py" \
+declare -a classifiers=("tests/estimators/certification/test_randomized_smoothing.py" \
+                        "tests/estimators/classification/test_blackbox.py" \
                         "tests/estimators/classification/test_catboost.py" \
                         "tests/estimators/classification/test_classifier.py" \
                         "tests/estimators/classification/test_detector_classifier.py" \
@@ -96,7 +97,6 @@ declare -a metrics=("tests/metrics/test_gradient_check.py" \
 
 declare -a wrappers=("tests/wrappers/test_expectation.py" \
                      "tests/wrappers/test_query_efficient_bb.py" \
-                     "tests/wrappers/test_randomized_smoothing.py" \
                      "tests/wrappers/test_wrapper.py" )
 
 declare -a art=("tests/test_data_generators.py" \

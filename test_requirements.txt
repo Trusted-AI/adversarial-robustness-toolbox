@@ -27,6 +27,7 @@ catboost==0.22
 GPy==1.9.9
 pytest-mock==3.1.0
 resampy==0.2.2
+ffmpeg-python==0.2.0
 
 tqdm==4.45.0
 

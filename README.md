@@ -51,6 +51,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 ## Implemented Attacks, Defences, Detections, Metrics, Certifications and Verifications
 
 **Evasion Attacks:**
+* Shadow Attack ([Ghiasi et al., 2020](https://arxiv.org/abs/2003.08937))
 * Wasserstein Attack([Wong et al., 2020](https://arxiv.org/abs/1902.07906))
 * Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
 * Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations))
@@ -87,6 +88,7 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Feature Collision Attack ([Shafahi, Huang et. al., 2018](https://arxiv.org/pdf/1804.00792.pdf))
 
 **Defences - Preprocessor:**
+* Video compression
 * Resampling ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * MP3 compression ([Carlini, N. & Wagner, D., 2018](https://arxiv.org/abs/1801.01944))

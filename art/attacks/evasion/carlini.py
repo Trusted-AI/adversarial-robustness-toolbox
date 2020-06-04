@@ -346,9 +346,7 @@ class CarliniL2Method(EvasionAttack):
 
                         x_adv1 = x_adv_batch_tanh[active_and_do_halving]
                         new_x_adv_batch_tanh = x_adv1 + lr_mult * perturbation_tanh[do_halving]
-                        new_x_adv_batch = tanh_to_original(
-                            new_x_adv_batch_tanh, clip_min, clip_max, self._tanh_smoother
-                        )
+                        new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                         _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
                             x_batch[active_and_do_halving],
                             new_x_adv_batch,
@@ -384,9 +382,7 @@ class CarliniL2Method(EvasionAttack):
 
                         x_adv2 = x_adv_batch_tanh[active_and_do_doubling]
                         new_x_adv_batch_tanh = x_adv2 + lr_mult * perturbation_tanh[do_doubling]
-                        new_x_adv_batch = tanh_to_original(
-                            new_x_adv_batch_tanh, clip_min, clip_max, self._tanh_smoother
-                        )
+                        new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                         _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
                             x_batch[active_and_do_doubling],
                             new_x_adv_batch,
@@ -416,9 +412,7 @@ class CarliniL2Method(EvasionAttack):
                         x_adv_batch_tanh[active_and_update_adv] = x_adv4 + best_lr1
 
                         x_adv6 = x_adv_batch_tanh[active_and_update_adv]
-                        x_adv_batch[active_and_update_adv] = tanh_to_original(
-                            x_adv6, clip_min, clip_max, self._tanh_smoother
-                        )
+                        x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv6, clip_min, clip_max)
                         (
                             z_logits[active_and_update_adv],
                             l2dist[active_and_update_adv],
