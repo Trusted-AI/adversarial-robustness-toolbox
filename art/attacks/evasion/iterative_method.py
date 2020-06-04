@@ -27,7 +27,7 @@ import logging
 
 import numpy as np
 
-from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 logger = logging.getLogger(__name__)
 

@@ -114,8 +114,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
 
         :param x: Training data.
         :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `sklearn` classifier and will be passed to this function as such.

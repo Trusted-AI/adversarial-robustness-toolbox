@@ -68,39 +68,32 @@ class TestLocalSpatialSmoothing:
     def test_spatial_smoothing_median_filter_call(self):
         test_input = np.array([[[[1, 2], [3, 4]]]])
         test_output = np.array([[[[1, 2], [3, 3]]]])
-        spatial_smoothing = SpatialSmoothing(channel_index=1, window_size=2)
+        spatial_smoothing = SpatialSmoothing(channels_first=True, window_size=2)
 
         assert_array_equal(spatial_smoothing(test_input)[0], test_output)
 
     @pytest.mark.parametrize("channels_first", [True, False])
     @pytest.mark.parametrize("window_size", [1, 2, 10])
     def test_spatial_smoothing_image_data(self, image_batch, channels_first, window_size):
-        channel_index = 1 if channels_first else 3
         test_input, test_output = image_batch
-        spatial_smoothing = SpatialSmoothing(channel_index=channel_index, window_size=window_size)
+        spatial_smoothing = SpatialSmoothing(channels_first=channels_first, window_size=window_size)
 
         assert_array_equal(spatial_smoothing(test_input)[0], test_output)
 
     @pytest.mark.parametrize("channels_first", [True, False])
     def test_spatial_smoothing_video_data(self, video_batch, channels_first):
-        channel_index = 1 if channels_first else 4
         test_input, test_output = video_batch
-        spatial_smoothing = SpatialSmoothing(channel_index=channel_index, window_size=2)
+        spatial_smoothing = SpatialSmoothing(channels_first=channels_first, window_size=2)
 
         assert_array_equal(spatial_smoothing(test_input)[0], test_output)
 
     def test_non_spatial_data_error(self, tabular_batch):
         test_input = tabular_batch
-        spatial_smoothing = SpatialSmoothing(channel_index=1)
+        spatial_smoothing = SpatialSmoothing(channels_first=True)
 
-        exc_msg = "Feature vectors detected. Smoothing can only be applied to data with spatial dimensions."
+        exc_msg = "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data."
         with pytest.raises(ValueError, match=exc_msg):
             spatial_smoothing(test_input)
-
-    def test_channel_index_error(self):
-        exc_msg = "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
-        with pytest.raises(ValueError, match=exc_msg):
-            SpatialSmoothing(channel_index=0)
 
     def test_window_size_error(self):
         exc_msg = "Sliding window size must be a positive integer."

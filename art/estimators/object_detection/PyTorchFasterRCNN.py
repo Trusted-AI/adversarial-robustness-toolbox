@@ -22,8 +22,9 @@ import logging
 
 import numpy as np
 
-from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
+from art.estimators.pytorch import PyTorchEstimator
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -33,11 +34,13 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     This class implements a model-specific object detector using Faster-RCNN and PyTorch.
     """
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         model=None,
         clip_values=None,
-        channel_index=None,
+        channel_index=Deprecated,
+        channels_first=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
         preprocessing=None,
@@ -49,7 +52,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         :param model: Faster-RCNN model. The output of the model is `List[Dict[Tensor]]`, one for each input image. The
                       fields of the Dict are as follows:
-                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+
+                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
                         between 0 and H and 0 and W
                       - labels (Int64Tensor[N]): the predicted labels for each image
                       - scores (Tensor[N]): the scores or each prediction
@@ -61,6 +65,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :type clip_values: `tuple`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
@@ -76,10 +82,18 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                             if available otherwise run on CPU.
         :type device_type: `string`
         """
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
+            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
@@ -122,7 +136,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :type x: `np.ndarray`
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
                     between 0 and H and 0 and W
                   - labels (Int64Tensor[N]): the predicted labels for each image
                   - scores (Tensor[N]): the scores or each prediction.
@@ -198,7 +213,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :type batch_size: `int`
         :return: Predictions of format `List[Dict[Tensor]]`, one for each input image. The
                  fields of the Dict are as follows:
-                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+
+                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
                    between 0 and H and 0 and W
                  - labels (Int64Tensor[N]): the predicted labels for each image
                  - scores (Tensor[N]): the scores or each prediction.

@@ -199,7 +199,7 @@ class TestActivationDefence(unittest.TestCase):
         loaded = ActivationDefence._unpickle_classifier(filename)
 
         np.testing.assert_equal(self.classifier._clip_values, loaded._clip_values)
-        self.assertEqual(self.classifier._channel_index, loaded._channel_index)
+        self.assertEqual(self.classifier._channels_first, loaded._channels_first)
         self.assertEqual(self.classifier._use_logits, loaded._use_logits)
         self.assertEqual(self.classifier._input_layer, loaded._input_layer)
 

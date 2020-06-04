@@ -17,11 +17,11 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
-import unittest
-import tempfile
+import os
 import pickle
+import tempfile
+import unittest
 
 import numpy as np
 import torch
@@ -33,9 +33,8 @@ from torch.utils.data import DataLoader
 from art.config import ART_DATA_PATH
 from art.data_generators import PyTorchDataGenerator
 from art.estimators.classification.pytorch import PyTorchClassifier
-
+from art.utils import Deprecated
 from tests.utils import TestBase, get_image_classifier_pt, master_seed
-
 
 logger = logging.getLogger(__name__)
 
@@ -576,7 +575,7 @@ class TestPyTorchClassifier(TestBase):
     def test_repr(self):
         repr_ = repr(self.module_classifier)
         self.assertIn("art.estimators.classification.pytorch.PyTorchClassifier", repr_)
-        self.assertIn("input_shape=(1, 28, 28), nb_classes=10, channel_index=1", repr_)
+        self.assertIn(f"input_shape=(1, 28, 28), nb_classes=10, channel_index={Deprecated}, channels_first=True", repr_)
         self.assertIn("clip_values=array([0., 1.], dtype=float32)", repr_)
         self.assertIn("defences=None, preprocessing=(0, 1)", repr_)
 
@@ -592,7 +591,7 @@ class TestPyTorchClassifier(TestBase):
         with open(full_path, "rb") as f:
             loaded = pickle.load(f)
             np.testing.assert_equal(self.module_classifier._clip_values, loaded._clip_values)
-            self.assertEqual(self.module_classifier._channel_index, loaded._channel_index)
+            self.assertEqual(self.module_classifier._channels_first, loaded._channels_first)
             self.assertEqual(set(self.module_classifier.__dict__.keys()), set(loaded.__dict__.keys()))
 
         # Test predict
