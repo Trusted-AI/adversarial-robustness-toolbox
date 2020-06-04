@@ -239,9 +239,9 @@ class TestActivationDefence(unittest.TestCase):
 
     def test_plot_clusters(self):
         self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
-        # self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
+        self.defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
         self.defence.plot_clusters(save=False)
-        # self.defence_gen.plot_clusters(save=False)
+        self.defence_gen.plot_clusters(save=False)
 
     def test_pickle(self):
 

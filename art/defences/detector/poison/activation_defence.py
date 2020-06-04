@@ -552,10 +552,6 @@ class ActivationDefence(PoisonFilteringDefence):
         if not self.clusters_by_class:
             self.cluster_activations()
 
-        if self.generator:
-            # TODO manually go through and 1) separate each activation by class and 2) reduce each activation
-            pass
-
         # Get activations reduced to 3-components:
         separated_reduced_activations = []
         for activation in self.activations_by_class:
