@@ -26,7 +26,6 @@ import logging
 import numpy as np
 
 from sklearn.neural_network import MLPClassifier
-from sklearn.exceptions import ConvergenceWarning
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification import ClassifierMixin
