@@ -51,7 +51,6 @@ class VideoCompression(Preprocessor):
         """
         Create an instance of VideoCompression.
 
-
         :param video_format: Specify one of supported video file extensions, e.g. `avi`, `mp4` or `mkv`.
         :type video_format: `str`
         :param constant_rate_factor: Specifiy constant rate factor (range 0 to 51, where 0 is lossless)
