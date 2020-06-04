@@ -31,13 +31,12 @@ from art.data_generators import KerasDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.estimators.classification.keras import KerasClassifier, generator_fit
 from art.utils import Deprecated
+
 from tests.classifiersFrameworks.utils import (
-    backend_test_class_gradient,
     backend_test_fit_generator,
-    backend_test_input_shape,
-    backend_test_layers,
     backend_test_loss_gradient,
-    backend_test_nb_classes,
+    backend_test_class_gradient,
+    backend_test_layers,
     backend_test_repr,
 )
 from tests.utils import ExpectedValue
@@ -94,13 +93,29 @@ def get_functional_model(get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_nb_classes(get_image_classifier_list):
-    backend_test_nb_classes(get_image_classifier_list)
+def test_predict(get_image_classifier_list, get_default_mnist_subset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
+    classifier, _ = get_image_classifier_list(one_classifier=True)
 
-@pytest.mark.only_with_platform("keras")
-def test_input_shape(get_image_classifier_list):
-    backend_test_input_shape(get_image_classifier_list)
+    y_predicted = classifier.predict(x_test_mnist[0:1])
+    y_expected = np.asarray(
+        [
+            [
+                0.12109935,
+                0.0498215,
+                0.0993958,
+                0.06410097,
+                0.11366927,
+                0.04645343,
+                0.06419806,
+                0.30685693,
+                0.07616713,
+                0.05823758,
+            ]
+        ]
+    )
+    np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -324,7 +339,8 @@ def test_functional_model(get_functional_model):
 
 @pytest.mark.only_with_platform("keras")
 def test_layers(get_default_mnist_subset, framework, get_image_classifier_list):
-    backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list, batch_size=128, layer_count=3)
+    backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list, batch_size=128,
+                        layer_count=3)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -911,12 +927,12 @@ def test_loss_functions(get_default_mnist_subset, get_image_classifier_list):
     )
 
     def _run_tests(
-        _loss_name,
-        _loss_type,
-        _y_test_pred_expected,
-        _class_gradient_probabilities_expected,
-        _loss_gradient_expected,
-        _from_logits,
+            _loss_name,
+            _loss_type,
+            _y_test_pred_expected,
+            _class_gradient_probabilities_expected,
+            _loss_gradient_expected,
+            _from_logits,
     ):
 
         classifier, _ = get_image_classifier_list(

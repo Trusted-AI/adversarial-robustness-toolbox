@@ -25,16 +25,11 @@ import tensorflow as tf
 
 from art.data_generators import TensorFlowDataGenerator
 from art.utils import Deprecated
-from tests.classifiersFrameworks.utils import (
-    backend_test_class_gradient,
-    backend_test_fit_generator,
-    backend_test_input_shape,
-    backend_test_layers,
-    backend_test_loss_gradient,
-    backend_test_nb_classes,
-    backend_test_repr,
-)
+
 from tests.utils import ExpectedValue
+from tests.classifiersFrameworks.utils import backend_test_layers, backend_test_repr
+from tests.classifiersFrameworks.utils import backend_test_loss_gradient, backend_test_class_gradient
+from tests.classifiersFrameworks.utils import backend_test_fit_generator
 
 logger = logging.getLogger(__name__)
 
@@ -82,19 +77,10 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
             sess=sess, iterator=iterator, iterator_type="initializable", iterator_arg={}, size=1000, batch_size=100
         )
 
-        expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
+        expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 6),
+                           "post_fit_accuracy": ExpectedValue(0.68, 6)}
 
-        backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=2)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_nb_classes(get_image_classifier_list):
-    backend_test_nb_classes(get_image_classifier_list)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_input_shape(get_image_classifier_list):
-    backend_test_input_shape(get_image_classifier_list)
+        backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=3)
 
 
 @pytest.mark.only_with_platform("tensorflow")
@@ -320,6 +306,14 @@ def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
     backend_test_class_gradient(get_default_mnist_subset, classifier_logits, expected_values, labels)
 
 
+def test_layers(is_tf_version_2, framework, get_default_mnist_subset, get_image_classifier_list):
+    if framework == "tensorflow" and is_tf_version_2:
+        return
+
+    backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list, batch_size=128,
+                        layer_count=3)
+
+
 @pytest.mark.only_with_platform("tensorflow")
 def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
     expected_values = {
@@ -396,12 +390,6 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
     }
 
     backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_layers(is_tf_version_2, framework, get_default_mnist_subset, get_image_classifier_list):
-    if not is_tf_version_2:
-        backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list, batch_size=5)
 
 
 @pytest.mark.only_with_platform("tensorflow")

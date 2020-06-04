@@ -17,10 +17,12 @@ art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
 
 master_seed(1234)
 
+default_framework = "tensorflow"
+
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--mlFramework", action="store", default="tensorflow",
+        "--mlFramework", action="store", default=default_framework,
         help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is tensorflow. "
              "Other options available are {0}".format(art_supported_frameworks)
     )
@@ -292,6 +294,13 @@ def skip_by_platform(request, framework):
     if request.node.get_closest_marker('skipMlFramework'):
         if framework in request.node.get_closest_marker('skipMlFramework').args:
             pytest.skip('skipped on this platform: {}'.format(framework))
+
+
+@pytest.fixture(autouse=True)
+def framework_agnostic(request, framework):
+    if request.node.get_closest_marker('framework_agnostic'):
+        if framework is not default_framework:
+            pytest.skip('framework agnostic test skipped for framework : {}'.format(framework))
 
 
 @pytest.fixture

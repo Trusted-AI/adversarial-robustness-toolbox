@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 def backend_test_layers(
-    get_mlFramework, get_default_mnist_subset, get_image_classifier_list, batch_size, layer_count=None
+        get_mlFramework, get_default_mnist_subset, get_image_classifier_list, batch_size, layer_count=None
 ):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, _ = get_image_classifier_list(one_classifier=True)
@@ -40,6 +40,22 @@ def backend_test_repr(classifier, message_list):
     repr_ = repr(classifier)
     for message in message_list:
         assert message in repr_, "{0}: was not contained within repr".format(message)
+
+
+def fw_agnostic_backend_test_nb_classes(get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+    if classifier is not None:
+        assert classifier.nb_classes == 10
+
+
+def fw_agnostic_backend_test_input_shape(framework, get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+
+    if classifier is not None:
+        if framework == "pytorch":
+            assert classifier.input_shape == (1, 28, 28)
+        else:
+            assert classifier.input_shape == (28, 28, 1)
 
 
 def backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels):
@@ -101,16 +117,6 @@ def backend_test_class_gradient(get_default_mnist_subset, classifier, expected_v
             expected_values["expected_gradients_2_labelArray"].value,
             decimal=expected_values["expected_gradients_2_labelArray"].decimals,
         )
-
-
-def backend_test_nb_classes(get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    assert classifier.nb_classes == 10
-
-
-def backend_test_input_shape(get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    assert classifier.input_shape == (28, 28, 1)
 
 
 def backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values):
