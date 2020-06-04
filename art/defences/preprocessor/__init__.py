@@ -12,3 +12,4 @@ from art.defences.preprocessor.resample import Resample
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 from art.defences.preprocessor.thermometer_encoding import ThermometerEncoding
 from art.defences.preprocessor.variance_minimization import TotalVarMin
+from art.defences.preprocessor.video_compression import VideoCompression
