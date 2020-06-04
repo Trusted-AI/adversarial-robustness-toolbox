@@ -2,6 +2,8 @@ import logging
 import pytest
 import numpy as np
 import tensorflow as tf
+from torch.utils.data import DataLoader
+import torch
 import keras
 import os
 import requests
@@ -10,6 +12,8 @@ import shutil
 from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset
+
+from art.data_generators import PyTorchDataGenerator
 from art.estimators.classification import KerasClassifier
 
 logger = logging.getLogger(__name__)
@@ -102,6 +106,28 @@ def setup_tear_down_framework(framework):
         pass
     if framework == "scikitlearn":
         pass
+
+
+@pytest.fixture
+def image_data_generator(framework, get_default_mnist_subset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    if framework == "keras":
+        return None
+    if framework == "tensorflow":
+        return None
+
+    if framework == "pytorch":
+        # Create tensors from data
+        x_train_tens = torch.from_numpy(x_train_mnist)
+        x_train_tens = x_train_tens.float()
+        y_train_tens = torch.from_numpy(y_train_mnist)
+
+        dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
+        data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
+        return PyTorchDataGenerator(data_loader, size=x_train_mnist.shape[0], batch_size=5)
+
+    return None
 
 
 @pytest.fixture

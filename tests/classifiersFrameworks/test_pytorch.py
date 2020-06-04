@@ -43,24 +43,14 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_fit_generator(get_default_mnist_subset, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+def test_fit_generator(get_image_classifier_list, image_data_generator, get_default_mnist_subset):
 
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
-    # Create tensors from data
-    x_train_tens = torch.from_numpy(x_train_mnist)
-    x_train_tens = x_train_tens.float()
-    y_train_tens = torch.from_numpy(y_train_mnist)
-
-    # Create PyTorch dataset and loader
-    dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
-    data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
-    data_gen = PyTorchDataGenerator(data_loader, size=x_train_mnist.shape[0], batch_size=5)
-
+    image_data_generator = image_data_generator
     expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.75, 0.06)}
 
-    backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=2)
+    backend_test_fit_generator(expected_values, classifier, image_data_generator, get_default_mnist_subset, nb_epochs=2)
 
 
 @pytest.mark.only_with_platform("pytorch")
