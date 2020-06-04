@@ -19,11 +19,9 @@ import logging
 import pytest
 
 import numpy as np
-import tensorflow as tf
 
 from art.attacks.evasion import AutoAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification import PyTorchClassifier
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.utils import get_image_classifier_tf

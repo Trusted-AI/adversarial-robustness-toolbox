@@ -39,34 +39,36 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-    classifier_list = get_image_classifier_list_for_attack(AutoProjectedGradientDescent)
+def test_generate(is_tf_version_2, fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+    if is_tf_version_2:
+        classifier_list = get_image_classifier_list_for_attack(AutoProjectedGradientDescent)
 
-    for classifier in classifier_list:
-        attack = AutoProjectedGradientDescent(
-            estimator=classifier,
-            norm=np.inf,
-            eps=0.3,
-            eps_step=0.1,
-            max_iter=2,
-            targeted=False,
-            nb_random_init=1,
-            batch_size=32,
-            loss_type="cross_entropy",
-        )
+        if classifier_list is None:
+            logging.warning("Couldn't perform  this test because no classifier is defined")
+            return
 
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        for classifier in classifier_list:
+            attack = AutoProjectedGradientDescent(
+                estimator=classifier,
+                norm=np.inf,
+                eps=0.3,
+                eps_step=0.1,
+                max_iter=2,
+                targeted=False,
+                nb_random_init=1,
+                batch_size=32,
+                loss_type="cross_entropy",
+            )
 
-        if isinstance(classifier, PyTorchClassifier):
-            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2)).astype(np.float32)
+            (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
+            if isinstance(classifier, PyTorchClassifier):
+                x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2)).astype(np.float32)
 
-        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(1.3741340340614755e-09, 1.0e-09)
+            x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
+
+            assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(1.3741340340614755e-09, 1.0e-09)
 
 
 # def test_classifier_type_check_fail():
