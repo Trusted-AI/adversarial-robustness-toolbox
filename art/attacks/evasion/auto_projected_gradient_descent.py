@@ -28,6 +28,7 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.attacks import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, projection, random_sphere, is_probability, get_labels_np_array
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         "loss_type",
     ]
 
-    _estimator_requirements = (BaseEstimator, LossGradientsMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
 
     _predefined_losses = [None, "cross_entropy", "difference_logits_ratio"]
 
@@ -260,7 +261,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             import torch
 
             if loss_type == "cross_entropy":
-                if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
+                if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=np.float32))):
                     raise ValueError(
                         "The provided estimator seems to predict probabilities. If loss_type='cross_entropy' "
                         "the estimator has to to predict logits."
@@ -339,18 +340,20 @@ class AutoProjectedGradientDescent(EvasionAttack):
             )
 
         else:
+            print(estimator)
             raise NotImplementedError
 
         super().__init__(estimator=estimator_apgd)
 
         kwargs = {
-            "max_iter": max_iter,
             "norm": norm,
             "eps": eps,
             "eps_step": eps_step,
+            "max_iter": max_iter,
             "targeted": targeted,
             "nb_random_init": nb_random_init,
             "batch_size": batch_size,
+            "loss_type": loss_type,
         }
         self.set_params(**kwargs)
 

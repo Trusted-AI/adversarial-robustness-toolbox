@@ -30,6 +30,7 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -45,7 +46,7 @@ class SquareAttack(EvasionAttack):
         "nb_restarts",
     ]
 
-    _estimator_requirements = (BaseEstimator,)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(self, estimator, norm=np.inf, max_iter=100, eps=0.3, p_init=0.8, nb_restarts=1):
         super().__init__(estimator=estimator)
