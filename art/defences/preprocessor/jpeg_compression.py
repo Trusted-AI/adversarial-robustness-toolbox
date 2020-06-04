@@ -60,7 +60,7 @@ class JpegCompression(Preprocessor):
         channel_index=Deprecated,
         channels_first=False,
         apply_fit=True,
-        apply_predict=False,
+        apply_predict=True,
     ):
         """
         Create an instance of JPEG compression.
