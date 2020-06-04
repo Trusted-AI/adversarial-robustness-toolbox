@@ -70,5 +70,11 @@ if not os.path.exists(_config_path):
     except IOError:
         logger.warning("Unable to create configuration file", exc_info=True)
 
+if not os.path.exists(_config["ART_DATA_PATH"]):
+    try:
+        os.makedirs(_config["ART_DATA_PATH"])
+    except OSError:
+        logger.warning("Unable to create folder for ART_DATA_PATH dir.", exc_info=True)
+
 if "ART_DATA_PATH" in _config:
     ART_DATA_PATH = _config["ART_DATA_PATH"]
