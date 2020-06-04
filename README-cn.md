@@ -74,6 +74,7 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 
 **防御 - 预处理器：**
+* 视频压缩
 * 重采样 ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
 * 温度计编码 ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * MP3压缩 ([Carlini, N. & Wagner, D., 2018](https://arxiv.org/abs/1801.01944))
