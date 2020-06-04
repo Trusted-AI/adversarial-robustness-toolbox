@@ -61,22 +61,12 @@ def test_predict(get_image_classifier_list, get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
+def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_classifier_list, image_dataset,
+                       image_data_generator):
     if not is_tf_version_2:
         classifier, sess = get_image_classifier_list(one_classifier=True)
 
-        # Create TensorFlow data generator
-        x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
-        y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
-        dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
-
-        iterator = dataset.make_initializable_iterator()
-        n_train_size = x_train_mnist.shape[0]
-        data_gen = TensorFlowDataGenerator(
-            sess=sess, iterator=iterator, iterator_type="initializable", iterator_arg={}, size=n_train_size, batch_size=100
-        )
+        data_gen = image_data_generator(sess=sess)
 
         expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 6),
                            "post_fit_accuracy": ExpectedValue(0.68, 6)}
