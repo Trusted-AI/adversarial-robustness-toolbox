@@ -189,53 +189,53 @@ class TestActivationDefence(unittest.TestCase):
         (x_train, _), (_, _), (_, _) = self.mnist
 
         self.defence.analyze_clusters(cluster_analysis="relative-size")
-        # self.defence_gen.analyze_clusters(cluster_analysis="relative-size")
+        self.defence_gen.analyze_clusters(cluster_analysis="relative-size")
 
         self.defence.analyze_clusters(cluster_analysis="silhouette-scores")
-        # self.defence_gen.analyze_clusters(cluster_analysis="silhouette-scores")
+        self.defence_gen.analyze_clusters(cluster_analysis="silhouette-scores")
 
         report, dist_clean_by_class = self.defence.analyze_clusters(cluster_analysis="distance")
-        # report_gen, dist_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="distance")
+        report_gen, dist_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="distance")
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(dist_clean_by_class))
-        # self.assertEqual(n_classes, len(dist_clean_by_class_gen))
+        self.assertEqual(n_classes, len(dist_clean_by_class_gen))
 
         # Check right amount of data
         n_dp = 0
-        # n_dp_gen = 0
+        n_dp_gen = 0
         for i in range(0, n_classes):
             n_dp += len(dist_clean_by_class[i])
-            # n_dp_gen += len(dist_clean_by_class_gen[i])
+            n_dp_gen += len(dist_clean_by_class_gen[i])
         self.assertEqual(len(x_train), n_dp)
-        # self.assertEqual(len(x_train), n_dp_gen)
+        self.assertEqual(len(x_train), n_dp_gen)
 
         report, sz_clean_by_class = self.defence.analyze_clusters(cluster_analysis="smaller")
-        # report_gen, sz_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="smaller")
+        report_gen, sz_clean_by_class_gen = self.defence_gen.analyze_clusters(cluster_analysis="smaller")
         n_classes = self.classifier.nb_classes
         self.assertEqual(n_classes, len(sz_clean_by_class))
-        # self.assertEqual(n_classes, len(sz_clean_by_class_gen))
+        self.assertEqual(n_classes, len(sz_clean_by_class_gen))
 
         # Check right amount of data
         n_dp = 0
-        # n_dp_gen = 0
+        n_dp_gen = 0
         sum_sz = 0
-        # sum_sz_gen = 0
+        sum_sz_gen = 0
         sum_dis = 0
-        # sum_dis_gen = 0
+        sum_dis_gen = 0
 
         for i in range(0, n_classes):
             n_dp += len(sz_clean_by_class[i])
-            # n_dp_gen += len(sz_clean_by_class_gen[i])
+            n_dp_gen += len(sz_clean_by_class_gen[i])
             sum_sz += sum(sz_clean_by_class[i])
-            # sum_sz_gen += sum(sz_clean_by_class_gen[i])
+            sum_sz_gen += sum(sz_clean_by_class_gen[i])
             sum_dis += sum(dist_clean_by_class[i])
-            # sum_dis_gen += sum(dist_clean_by_class_gen[i])
+            sum_dis_gen += sum(dist_clean_by_class_gen[i])
         self.assertEqual(len(x_train), n_dp)
-        # self.assertEqual(len(x_train), n_dp_gen)
+        self.assertEqual(len(x_train), n_dp_gen)
 
         # Very unlikely that they are the same
         self.assertNotEqual(sum_dis, sum_sz, msg="This is very unlikely to happen... there may be an error")
-        # self.assertNotEqual(sum_dis_gen, sum_sz_gen, msg="This is very unlikely to happen... there may be an error")
+        self.assertNotEqual(sum_dis_gen, sum_sz_gen, msg="This is very unlikely to happen... there may be an error")
 
     def test_plot_clusters(self):
         self.defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
