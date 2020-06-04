@@ -110,6 +110,8 @@ class TestPyTorchClassifier(TestBase):
         self.x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 28, 28, 1)).astype(np.float32)
         super().tearDown()
 
+
+
     def test_fit_predict(self):
         classifier = get_image_classifier_pt()
         predictions = classifier.predict(self.x_test_mnist)

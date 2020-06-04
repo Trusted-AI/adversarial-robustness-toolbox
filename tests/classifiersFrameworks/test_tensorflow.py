@@ -68,14 +68,7 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
 
         data_gen = image_data_generator(sess=sess)
 
-        # expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 6), "post_fit_accuracy": ExpectedValue(0.68, 6)}
         expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 6), "post_fit_accuracy": ExpectedValue(0.79, 6)}
-
-        # keras
-        # expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 6), "post_fit_accuracy": ExpectedValue(0.74, 6)}
-        # epoch 3
-        #pytorch
-        #expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.75, 0.06)}
 
         backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=3)
 
