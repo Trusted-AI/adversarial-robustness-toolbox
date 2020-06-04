@@ -162,7 +162,7 @@ class Universal_SimBA(EvasionAttack):
             right_preds = self.classifier.predict(np.clip(x + right_noise, clip_min, clip_max), batch_size=self.batch_size)
             right_probs = right_preds[(range(nb_instances), desired_labels)]
 
-            # use (1 - 2 * int(self.targeted)) to shorten the code?
+            # use Use (2 * int(self.targeted) - 1) to shorten code?
             if self.targeted:
                 if np.sum(left_probs - last_probs) > 0.0:
                     if np.sum(left_probs - right_probs) > 0.0:

@@ -153,7 +153,8 @@ class SimBA(EvasionAttack):
             elif self.attack == 'px':
                 right_preds = self.classifier.predict(np.clip(x + diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
             right_prob = right_preds.reshape(-1)[desired_label]
-
+            
+            # Use (2 * int(self.targeted) - 1) to shorten code?
             if self.targeted:
                 if left_prob > last_prob:
                     if left_prob > right_prob:
