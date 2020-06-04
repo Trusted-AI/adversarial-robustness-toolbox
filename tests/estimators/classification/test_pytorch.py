@@ -117,42 +117,44 @@ class TestPyTorchClassifier(TestBase):
         logger.info("Accuracy after fitting: %.2f%%", (accuracy * 100))
         self.assertEqual(accuracy, 0.32)
 
-    def test_fit_generator(self):
-        classifier = get_image_classifier_pt()
-        accuracy = (
-            np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist, axis=1))
-            / self.n_test
-        )
-        logger.info("Accuracy: %.2f%%", (accuracy * 100))
+    # def test_fit_generator(self):
+    #     classifier = get_image_classifier_pt()
+    #     accuracy = (
+    #         np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist, axis=1))
+    #         / self.n_test
+    #     )
+    #     logger.info("Accuracy: %.2f%%", (accuracy * 100))
+    #
+    #     self.assertEqual(accuracy, 0.32)
+    #
+    #     # Create tensors from data
+    #     x_train_tens = torch.from_numpy(self.x_train_mnist)
+    #     x_train_tens = x_train_tens.float()
+    #     y_train_tens = torch.from_numpy(self.y_train_mnist)
+    #
+    #     # Create PyTorch dataset and loader
+    #     dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
+    #     data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
+    #     data_gen = PyTorchDataGenerator(data_loader, size=self.n_train, batch_size=5)
+    #
+    #     # Fit model with generator
+    #     classifier.fit_generator(data_gen, nb_epochs=2)
+    #     accuracy_2 = (
+    #         np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist, axis=1))
+    #         / self.n_test
+    #     )
+    #     logger.info("Accuracy: %.2f%%", (accuracy_2 * 100))
+    #
+    #
+    #     self.assertAlmostEqual(accuracy_2, 0.75, delta=0.1)
 
-        # Create tensors from data
-        x_train_tens = torch.from_numpy(self.x_train_mnist)
-        x_train_tens = x_train_tens.float()
-        y_train_tens = torch.from_numpy(self.y_train_mnist)
+    # def test_nb_classes(self):
+    #     classifier = get_image_classifier_pt()
+    #     self.assertEqual(classifier.nb_classes, 10)
 
-        # Create PyTorch dataset and loader
-        dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
-        data_loader = DataLoader(dataset=dataset, batch_size=5, shuffle=True)
-        data_gen = PyTorchDataGenerator(data_loader, size=self.n_train, batch_size=5)
-
-        # Fit model with generator
-        classifier.fit_generator(data_gen, nb_epochs=2)
-        accuracy_2 = (
-            np.sum(np.argmax(classifier.predict(self.x_test_mnist), axis=1) == np.argmax(self.y_test_mnist, axis=1))
-            / self.n_test
-        )
-        logger.info("Accuracy: %.2f%%", (accuracy_2 * 100))
-
-        self.assertEqual(accuracy, 0.32)
-        self.assertAlmostEqual(accuracy_2, 0.75, delta=0.1)
-
-    def test_nb_classes(self):
-        classifier = get_image_classifier_pt()
-        self.assertEqual(classifier.nb_classes, 10)
-
-    def test_input_shape(self):
-        classifier = get_image_classifier_pt()
-        self.assertEqual(classifier.input_shape, (1, 28, 28))
+    # def test_input_shape(self):
+    #     classifier = get_image_classifier_pt()
+    #     self.assertEqual(classifier.input_shape, (1, 28, 28))
 
     # def test_class_gradient(self):
     #     classifier = get_image_classifier_pt()
