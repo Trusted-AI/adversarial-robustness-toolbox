@@ -68,7 +68,7 @@ def test_generate(is_tf_version_2, fix_get_mnist_subset, get_image_classifier_li
 
             x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
 
-            assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(1.37e-09, 1.0e-09)
+            assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(1.37e-09, abs=1.0e-09)
 
 
 # def test_classifier_type_check_fail():
