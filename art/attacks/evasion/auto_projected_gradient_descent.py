@@ -459,11 +459,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
                     assert x_k.shape == grad.shape
 
-                    mask_batch = None
-                    if mask_batch is None:
-                        perturbation = grad
-                    else:
-                        perturbation = grad * (mask_batch.astype(ART_NUMPY_DTYPE))
+                    perturbation = grad
 
                     # Apply perturbation and clip
                     z_k_p_1 = x_k + eta * perturbation
