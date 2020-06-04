@@ -43,6 +43,80 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.only_with_platform("pytorch")
+def test_set_learning(get_image_classifier_list):
+    ptc, _ = get_image_classifier_list(one_classifier=True)
+    # ptc = self.module_classifier
+    assert ptc._model.training
+    ptc.set_learning_phase(False)
+    assert ptc._model.training is False
+    ptc.set_learning_phase(True)
+    assert ptc._model.training
+    assert ptc.learning_phase
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_layers(get_image_classifier_list, get_default_mnist_subset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    # classifier, _ = get_image_classifier_list(one_classifier=True)
+
+    class Flatten(nn.Module):
+        def forward(self, x):
+            n, _, _, _ = x.size()
+            result = x.view(n, -1)
+
+            return result
+
+    def create_model():
+        # Define the network
+        model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
+
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        classifier = PyTorchClassifier(
+            model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+        )
+        classifier.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
+        return classifier
+
+    # TODO this should be using the default get_image_classifier_list
+    ptc = create_model()
+    # ptc = self.seq_classifier
+    layer_names = ptc.layer_names
+    backend_test_repr(ptc, [
+        "0_Conv2d(1, 2, kernel_size=(5, 5), stride=(1, 1))",
+        "1_ReLU()",
+        "2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)",
+        "3_Flatten()",
+        "4_Linear(in_features=288, out_features=10, bias=True)",
+    ])
+
+    #
+    # self.assertEqual(
+    #     layer_names,
+    #     [
+    #         "0_Conv2d(1, 2, kernel_size=(5, 5), stride=(1, 1))",
+    #         "1_ReLU()",
+    #         "2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)",
+    #         "3_Flatten()",
+    #         "4_Linear(in_features=288, out_features=10, bias=True)",
+    #     ],
+    # )
+
+    for i, name in enumerate(layer_names):
+        activation_i = ptc.get_activations(x_test_mnist, i, batch_size=5)
+        activation_name = ptc.get_activations(x_test_mnist, name, batch_size=5)
+        np.testing.assert_array_equal(activation_name, activation_i)
+
+    assert ptc.get_activations(x_test_mnist, 0, batch_size=5).shape == (100, 2, 24, 24)
+    assert ptc.get_activations(x_test_mnist, 1, batch_size=5).shape == (100, 2, 24, 24)
+    assert ptc.get_activations(x_test_mnist, 2, batch_size=5).shape == (100, 2, 12, 12)
+    assert ptc.get_activations(x_test_mnist, 3, batch_size=5).shape == (100, 288)
+    assert ptc.get_activations(x_test_mnist, 4, batch_size=5).shape == (100, 10)
+
+
+@pytest.mark.only_with_platform("pytorch")
 def test_fit_predict(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, _ = get_image_classifier_list(one_classifier=True)
