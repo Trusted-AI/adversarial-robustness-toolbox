@@ -823,9 +823,6 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     ptc = PyTorchClassifier(
         model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
     )
-
-
-
     return ptc
 
 

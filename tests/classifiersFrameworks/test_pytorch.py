@@ -17,9 +17,9 @@
 # SOFTWARE.
 import os
 import logging
-
-import pytest
 import numpy as np
+import pytest
+import pickle
 import tempfile
 import torch
 import torch.nn as nn
@@ -41,6 +41,118 @@ from tests.classifiersFrameworks.utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_device():
+    class Flatten(nn.Module):
+        def forward(self, x):
+            n, _, _, _ = x.size()
+            result = x.view(n, -1)
+
+            return result
+
+    # Define the network
+    model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
+
+    # Define a loss function and optimizer
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+    # First test cpu
+    classifier_cpu = PyTorchClassifier(
+        model=model,
+        clip_values=(0, 1),
+        loss=loss_fn,
+        optimizer=optimizer,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+        device_type="cpu",
+    )
+
+    assert classifier_cpu._device == torch.device("cpu")
+    assert classifier_cpu._device != torch.device("cuda")
+
+    # Then test gpu
+    if torch.cuda.device_count() >= 2:
+        with torch.cuda.device(0):
+            classifier_gpu0 = PyTorchClassifier(
+                model=model,
+                clip_values=(0, 1),
+                loss=loss_fn,
+                optimizer=optimizer,
+                input_shape=(1, 28, 28),
+                nb_classes=10,
+            )
+            assert classifier_gpu0._device == torch.device("cuda:0")
+            assert classifier_gpu0._device != torch.device("cuda:1")
+
+        with torch.cuda.device(1):
+            classifier_gpu1 = PyTorchClassifier(
+                model=model,
+                clip_values=(0, 1),
+                loss=loss_fn,
+                optimizer=optimizer,
+                input_shape=(1, 28, 28),
+                nb_classes=10,
+            )
+            assert classifier_gpu1._device == torch.device("cuda:1")
+            assert classifier_gpu1._device != torch.device("cuda:0")
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_pickle(get_default_mnist_subset, get_image_classifier_list):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+
+    from art.config import ART_DATA_PATH
+    full_path = os.path.join(ART_DATA_PATH, "my_classifier")
+    folder = os.path.split(full_path)[0]
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    class Model(nn.Module):
+        def __init__(self):
+            super(Model, self).__init__()
+            self.conv = nn.Conv2d(1, 2, 5)
+            self.pool = nn.MaxPool2d(2, 2)
+            self.fc = nn.Linear(288, 10)
+
+        def forward(self, x):
+            x = self.pool(F.relu(self.conv(x)))
+            x = x.view(-1, 288)
+            logit_output = self.fc(x)
+            return logit_output
+
+    # Define the network
+    model = Model()
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    classifier_2 = PyTorchClassifier(
+        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+    )
+    classifier_2.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
+    module_classifier = classifier_2
+
+    classifier = module_classifier
+
+    # TODO doesn't seem like the issue is with the model since here the same model doesn't work either
+    pickle.dump(classifier, open(full_path, "wb"))
+
+    # Unpickle:
+    with open(full_path, "rb") as f:
+        loaded = pickle.load(f)
+        np.testing.assert_equal(classifier._clip_values, loaded._clip_values)
+        assert classifier._channel_index == loaded._channel_index
+        assert set(classifier.__dict__.keys()) == set(loaded.__dict__.keys())
+
+    # Test predict
+    predictions_1 = classifier.predict(x_test_mnist)
+    accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+    predictions_2 = loaded.predict(x_test_mnist)
+    accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+    assert accuracy_1 == accuracy_2
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -68,6 +180,16 @@ def test_set_learning(get_image_classifier_list):
     assert classifier._model.training
     assert classifier.learning_phase
 
+
+# TODO refactor this with the test_layers
+# @pytest.mark.only_with_platform("pytorch")
+# def test_repr(self):
+#
+#     repr_ = repr(self.module_classifier)
+#     self.assertIn("art.estimators.classification.pytorch.PyTorchClassifier", repr_)
+#     self.assertIn("input_shape=(1, 28, 28), nb_classes=10, channel_index=1", repr_)
+#     self.assertIn("clip_values=array([0., 1.], dtype=float32)", repr_)
+#     self.assertIn("defences=None, preprocessing=(0, 1)", repr_)
 
 @pytest.mark.only_with_platform("pytorch")
 def test_layers(get_image_classifier_list, get_default_mnist_subset):
