@@ -47,10 +47,10 @@ def test_fit_generator(get_image_classifier_list, image_data_generator, get_defa
 
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
-    image_data_generator = image_data_generator
-    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.75, 0.06)}
+    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.73, 0.06)}
 
-    backend_test_fit_generator(expected_values, classifier, image_data_generator, get_default_mnist_subset, nb_epochs=2)
+    data_gen = image_data_generator()
+    backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=2)
 
 
 @pytest.mark.only_with_platform("pytorch")
