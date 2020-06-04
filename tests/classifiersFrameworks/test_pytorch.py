@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_fit_generator(get_image_classifier_list, image_data_generator, get_default_mnist_subset):
+def test_fit_image_generator(get_image_classifier_list, image_data_generator, get_default_mnist_subset):
 
     classifier, _ = get_image_classifier_list(one_classifier=True)
 

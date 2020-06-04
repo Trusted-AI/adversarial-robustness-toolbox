@@ -6,6 +6,7 @@ import tensorflow as tf
 from torch.utils.data import DataLoader
 import torch
 import keras
+from keras.preprocessing.image import ImageDataGenerator
 import os
 import requests
 import tempfile
@@ -115,7 +116,16 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     if framework == "keras":
-        return generator_fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
+        keras_gen = ImageDataGenerator(
+            width_shift_range=0.075,
+            height_shift_range=0.075,
+            rotation_range=12,
+            shear_range=0.075,
+            zoom_range=0.05,
+            fill_mode="constant",
+            cval=0,
+        )
+        return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
 
     if framework == "tensorflow":
         if not is_tf_version_2:
@@ -144,8 +154,11 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         if framework == "keras":
-            return KerasDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
-                                      batch_size=default_batch_size)
+            return KerasDataGenerator(
+                iterator=image_iterator,
+                size=x_train_mnist.shape[0],
+                batch_size=default_batch_size,
+            )
 
         if framework == "tensorflow":
             if not is_tf_version_2:

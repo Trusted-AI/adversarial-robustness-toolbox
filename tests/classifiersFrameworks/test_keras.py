@@ -136,46 +136,14 @@ def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_
 
 
 @pytest.mark.only_with_platform("keras")
-def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list, image_data_generator):
+def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list, image_data_generator):
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
     data_gen = image_data_generator()
 
-    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 6), "post_fit_accuracy": ExpectedValue(0.74, 6)}
+    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 6), "post_fit_accuracy": ExpectedValue(0.69, 6)}
 
     backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=3)
-
-
-@pytest.mark.only_with_platform("keras")
-def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    labels_test = np.argmax(y_test_mnist, axis=1)
-    accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]
-    logger.info("Accuracy: %.2f%%", (accuracy * 100))
-
-    keras_gen = ImageDataGenerator(
-        width_shift_range=0.075,
-        height_shift_range=0.075,
-        rotation_range=12,
-        shear_range=0.075,
-        zoom_range=0.05,
-        fill_mode="constant",
-        cval=0,
-    )
-    keras_gen.fit(x_train_mnist)
-    data_gen = KerasDataGenerator(
-        iterator=keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size),
-        size=x_train_mnist.shape[0],
-        batch_size=default_batch_size,
-    )
-    classifier.fit_generator(generator=data_gen, nb_epochs=5)
-    accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]
-    logger.info("Accuracy: %.2f%%", (accuracy_2 * 100))
-
-    assert accuracy == 0.32
-    np.testing.assert_array_almost_equal(accuracy_2, 0.35, decimal=0.06)
 
 
 @pytest.mark.only_with_platform("keras")
