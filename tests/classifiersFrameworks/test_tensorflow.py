@@ -61,7 +61,7 @@ def test_predict(get_image_classifier_list, get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_classifier_list, image_dataset,
+def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_classifier_list,
                        image_data_generator):
     if not is_tf_version_2:
         classifier, sess = get_image_classifier_list(one_classifier=True)

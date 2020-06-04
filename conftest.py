@@ -14,8 +14,9 @@ from tests.utils import master_seed, get_image_classifier_kr, get_image_classifi
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset
 
-from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator
+from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator
 from art.estimators.classification import KerasClassifier
+from art.estimators.classification.keras import generator_fit
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
@@ -110,17 +111,19 @@ def setup_tear_down_framework(framework):
 
 
 @pytest.fixture
-def image_dataset(framework, get_default_mnist_subset):
+def image_iterator(framework, get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     if framework == "keras":
-        return None
+        return generator_fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
+
     if framework == "tensorflow":
         # if not is_tf_version_2:
         # Create TensorFlow data generator
         x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
         y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
-        return tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+        tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+        return image_iterator.make_initializable_iterator()
 
     if framework == "pytorch":
         # Create tensors from data
@@ -134,24 +137,25 @@ def image_dataset(framework, get_default_mnist_subset):
 
 
 @pytest.fixture
-def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, image_dataset):
+def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, image_iterator, default_batch_size):
     def _image_data_generator(**kwargs):
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         if framework == "keras":
-            return None
+            return KerasDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
+                                      batch_size=default_batch_size)
+
         if framework == "tensorflow":
             if not is_tf_version_2:
-                iterator = image_dataset.make_initializable_iterator()
-                n_train_size = x_train_mnist.shape[0]
                 return TensorFlowDataGenerator(
-                    sess=kwargs["sess"], iterator=iterator, iterator_type="initializable", iterator_arg={}, size=n_train_size,
+                    sess=kwargs["sess"], iterator=image_iterator, iterator_type="initializable", iterator_arg={},
+                    size=x_train_mnist.shape[0],
                     batch_size=100
                 )
 
         if framework == "pytorch":
-            data_loader = DataLoader(dataset=image_dataset, batch_size=5, shuffle=True)
-            return PyTorchDataGenerator(data_loader, size=x_train_mnist.shape[0], batch_size=5)
+            data_loader = DataLoader(dataset=image_iterator, batch_size=5, shuffle=True)
+            return PyTorchDataGenerator(iterator=data_loader, size=x_train_mnist.shape[0], batch_size=5)
 
     return _image_data_generator
 
