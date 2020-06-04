@@ -135,43 +135,43 @@ class TestActivationDefence(unittest.TestCase):
 
         # Test right number of clusters
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
-        # found_clusters_gen = len(np.unique(self.defence_gen.clusters_by_class[0]))
+        found_clusters_gen = len(np.unique(self.defence_gen.clusters_by_class[0]))
         self.assertEqual(found_clusters, 2)
-        # self.assertEqual(found_clusters_gen, 2)
+        self.assertEqual(found_clusters_gen, 2)
 
         _, is_clean_lst = self.defence.detect_poison(
             nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance"
         )
-        # _, is_clean_lst_gen = self.defence_gen.detect_poison(
-        #     nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance"
-        # )
+        _, is_clean_lst_gen = self.defence_gen.detect_poison(
+            nb_clusters=3, nb_dims=10, reduce="PCA", cluster_analysis="distance"
+        )
         self.assertEqual(len(x_train), len(is_clean_lst))
-        # self.assertEqual(len(x_train), len(is_clean_lst_gen))
+        self.assertEqual(len(x_train), len(is_clean_lst_gen))
 
         # Test change of state to new number of clusters:
         found_clusters = len(np.unique(self.defence.clusters_by_class[0]))
-        # found_clusters_gen = len(np.unique(self.defence_gen.clusters_by_class[0]))
+        found_clusters_gen = len(np.unique(self.defence_gen.clusters_by_class[0]))
         self.assertEqual(found_clusters, 3)
-        # self.assertEqual(found_clusters_gen, 3)
+        self.assertEqual(found_clusters_gen, 3)
 
         # Test clean data has changed
         sum_clean2 = sum(is_clean_lst)
-        # sum_clean2_gen = sum(is_clean_lst_gen)
+        sum_clean2_gen = sum(is_clean_lst_gen)
         self.assertNotEqual(sum_clean1, sum_clean2)
-        # self.assertNotEqual(sum_clean1_gen, sum_clean2_gen)
+        self.assertNotEqual(sum_clean1_gen, sum_clean2_gen)
 
         kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA", "cluster_analysis": "distance"}
         _, is_clean_lst = self.defence.detect_poison(**kwargs)
-        # _, is_clean_lst_gen = self.defence_gen.detect_poison(**kwargs)
+        _, is_clean_lst_gen = self.defence_gen.detect_poison(**kwargs)
         sum_dist = sum(is_clean_lst)
-        # sum_dist_gen = sum(is_clean_lst_gen)
+        sum_dist_gen = sum(is_clean_lst_gen)
         kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA", "cluster_analysis": "smaller"}
         _, is_clean_lst = self.defence.detect_poison(**kwargs)
-        # _, is_clean_lst_gen = self.defence_gen.detect_poison(**kwargs)
+        _, is_clean_lst_gen = self.defence_gen.detect_poison(**kwargs)
         sum_size = sum(is_clean_lst)
-        # sum_size_gen = sum(is_clean_lst_gen)
+        sum_size_gen = sum(is_clean_lst_gen)
         self.assertNotEqual(sum_dist, sum_size)
-        # self.assertNotEqual(sum_dist_gen, sum_size_gen)
+        self.assertNotEqual(sum_dist_gen, sum_size_gen)
 
     def test_evaluate_defense(self):
         # Get MNIST

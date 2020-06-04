@@ -31,6 +31,8 @@ import os
 
 import numpy as np
 
+from sklearn.cluster import KMeans, MiniBatchKMeans
+
 from art.data_generators import DataGenerator
 from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
@@ -92,8 +94,7 @@ class ActivationDefence(PoisonFilteringDefence):
         self.is_clean_lst = []
         self.confidence_level = []
         self.poisonous_clusters = []
-        from sklearn.cluster import KMeans
-        from sklearn.cluster import MiniBatchKMeans
+
         self.clusterer = MiniBatchKMeans(n_clusters=self.nb_clusters)
 
     def evaluate_defence(self, is_clean, **kwargs):
@@ -120,7 +121,7 @@ class ActivationDefence(PoisonFilteringDefence):
             # TODO: skip right to the cluster activations part
             pass
 
-        if not self.activations_by_class:
+        if not self.activations_by_class and not self.generator:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
 
@@ -128,7 +129,11 @@ class ActivationDefence(PoisonFilteringDefence):
         _, self.assigned_clean_by_class = self.analyze_clusters()
 
         # Now check ground truth:
-        self.is_clean_by_class = self._segment_by_class(is_clean, self.y_train)
+        if self.generator:
+            self.is_clean_by_class = []
+
+        else:
+            self.is_clean_by_class = self._segment_by_class(is_clean, self.y_train)
         self.errors_by_class, conf_matrix_json = self.evaluator.analyze_correctness(
             self.assigned_clean_by_class, self.is_clean_by_class
         )
@@ -159,8 +164,10 @@ class ActivationDefence(PoisonFilteringDefence):
                 there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison.
         :rtype: `tuple`
         """
-
+        old_nb_clusters = self.nb_clusters
         self.set_params(**kwargs)
+        if self.nb_clusters != old_nb_clusters:
+            self.clusterer = MiniBatchKMeans(n_clusters=self.nb_clusters)
 
         if self.generator:
             self.clusters_by_class, self.red_activations_by_class = self.cluster_activations()
@@ -179,8 +186,8 @@ class ActivationDefence(PoisonFilteringDefence):
                 )
                 is_clean_lst = [0] * batch_size
                 for class_idx, idxs in enumerate(indices_by_class):
-                    for idx in idxs:
-                        is_clean_lst[idx] = int(idx in self.assigned_clean_by_class[class_idx])
+                    for idx_in_class, idx in enumerate(idxs):
+                        is_clean_lst[idx] = self.assigned_clean_by_class[class_idx][idx_in_class]
                 self.is_clean_lst += is_clean_lst
             return report, self.is_clean_lst
 
@@ -251,18 +258,6 @@ class ActivationDefence(PoisonFilteringDefence):
                                                                   clusters_by_class[class_idx])
                     self.red_activations_by_class[class_idx] = np.vstack([self.red_activations_by_class[class_idx],
                                                                           red_activations_by_class[class_idx]])
-                # self.activations_by_class = [np.vstack([self.activations_by_class[class_idx],
-                #                                         activations_by_class[class_idx]])
-                #                              for class_idx in range(num_classes)]
-                #
-                # self.clusters_by_class = [np.vstack([self.clusters_by_class[class_idx],
-                #                                      clusters_by_class[class_idx]])
-                #                           for class_idx in range(num_classes)]
-                #
-                # self.red_activations_by_class = [np.vstack([self.red_activations_by_class[class_idx],
-                #                                  red_activations_by_class[class_idx]])
-                #                                  for class_idx in range(num_classes)]
-                #
             return self.clusters_by_class, self.red_activations_by_class
 
         if not self.activations_by_class:
@@ -700,7 +695,6 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
     improve_factor = initial_missed - curr_missed
     return improve_factor, classifier
 
-from sklearn.cluster import MiniBatchKMeans
 def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce="FastICA", clustering_method="KMeans",
                         generator=False, clusterer_new=None):
     """
@@ -727,45 +721,37 @@ def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce
     :return: separated_clusters, separated_reduced_activations
     :rtype: `tuple`
     """
-    # pylint: disable=E0001
-    from sklearn.cluster import KMeans
-    from sklearn.cluster import MiniBatchKMeans
-
     separated_clusters = []
     separated_reduced_activations = []
 
     if clustering_method == "KMeans":
-        clusterer = MiniBatchKMeans(n_clusters=nb_clusters) if generator else KMeans(n_clusters=nb_clusters)
+        clusterer = KMeans(n_clusters=nb_clusters)
     else:
         raise ValueError(clustering_method + " clustering method not supported.")
 
     for activation in separated_activations:
         # Apply dimensionality reduction
-        if activation.any():
-            nb_activations = np.shape(activation)[1]
-            if nb_activations > nb_dims:
-                # TODO: address issue where if fewer samples than nb_dims this fails
-                reduced_activations = reduce_dimensionality(activation, nb_dims=nb_dims, reduce=reduce)
-            else:
-                logger.info(
-                    "Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality " "reduction.",
-                    nb_activations,
-                    nb_dims,
-                )
-                reduced_activations = activation
-            separated_reduced_activations.append(reduced_activations)
-
-            # Get cluster assignments
-            if generator:
-                clusterer_new = clusterer_new.partial_fit(reduced_activations)
-                # TODO: this may cause earlier predictions to be less accurate
-                clusters = clusterer_new.predict(reduced_activations)
-            else:
-                clusters = clusterer.fit_predict(reduced_activations)
-            separated_clusters.append(clusters)
+        nb_activations = np.shape(activation)[1]
+        if nb_activations > nb_dims:
+            # TODO: address issue where if fewer samples than nb_dims this fails
+            reduced_activations = reduce_dimensionality(activation, nb_dims=nb_dims, reduce=reduce)
         else:
-            separated_reduced_activations.append(np.array([]))
-            separated_clusters.append(np.array([]))
+            logger.info(
+                "Dimensionality of activations = %i less than nb_dims = %i. Not applying dimensionality " "reduction.",
+                nb_activations,
+                nb_dims,
+            )
+            reduced_activations = activation
+        separated_reduced_activations.append(reduced_activations)
+
+        # Get cluster assignments
+        if generator:
+            clusterer_new = clusterer_new.partial_fit(reduced_activations)
+            # NOTE: this may cause earlier predictions to be less accurate
+            clusters = clusterer_new.predict(reduced_activations)
+        else:
+            clusters = clusterer.fit_predict(reduced_activations)
+        separated_clusters.append(clusters)
 
     return separated_clusters, separated_reduced_activations
 
