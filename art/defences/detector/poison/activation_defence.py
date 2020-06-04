@@ -114,13 +114,6 @@ class ActivationDefence(PoisonFilteringDefence):
 
         self.set_params(**kwargs)
 
-        # TODO: implement this for data generators assuming is_clean has values for the whole set
-        # duh they got is_clean from me so that's how I'll make it
-
-        if self.generator:
-            # TODO: skip right to the cluster activations part
-            pass
-
         if not self.activations_by_class and not self.generator:
             activations = self._get_activations()
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
@@ -130,7 +123,18 @@ class ActivationDefence(PoisonFilteringDefence):
 
         # Now check ground truth:
         if self.generator:
-            self.is_clean_by_class = []
+            batch_size = self.generator.batch_size
+            num_samples = self.generator.size
+            num_classes = self.classifier.nb_classes
+            self.is_clean_by_class = [np.empty(0, dtype=int) for _ in range(num_classes)]
+
+            # calculate is_clean_by_class for each batch
+            for batch_idx in range(num_samples // batch_size):
+                x_batch, y_batch = self.generator.get_batch()
+                is_clean_batch = is_clean[batch_idx * batch_size:batch_idx * batch_size + batch_size]
+                clean_by_class_batch = self._segment_by_class(is_clean_batch, y_batch)
+                self.is_clean_by_class = [np.append(self.is_clean_by_class[class_idx], clean_by_class_batch[class_idx])
+                                          for class_idx in range(num_classes)]
 
         else:
             self.is_clean_by_class = self._segment_by_class(is_clean, self.y_train)

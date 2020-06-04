@@ -182,7 +182,7 @@ class TestActivationDefence(unittest.TestCase):
         # _, _ = self.defence_gen.detect_poison(**kwargs)
         is_clean = np.zeros(len(x_train))
         self.defence.evaluate_defence(is_clean)
-        # self.defence_gen.evaluate_defence(is_clean)
+        self.defence_gen.evaluate_defence(is_clean)
 
     def test_analyze_cluster(self):
         # Get MNIST
