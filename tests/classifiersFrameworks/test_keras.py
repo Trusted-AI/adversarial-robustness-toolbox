@@ -410,7 +410,7 @@ def test_save(get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
+def test_class_gradient(get_default_mnist_subset, get_image_classifier_list, framework):
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
     expected_values = {
@@ -731,7 +731,7 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
         ]
     )
 
-    backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels)
+    backend_test_class_gradient(framework, get_default_mnist_subset, classifier, expected_values, labels)
 
 
 @pytest.mark.only_with_platform("keras")

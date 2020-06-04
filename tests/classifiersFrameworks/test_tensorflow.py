@@ -84,7 +84,7 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
+def test_class_gradient(get_image_classifier_list, get_default_mnist_subset, framework):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier_logits, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
@@ -303,7 +303,7 @@ def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
     }
 
     labels = np.random.randint(5, size=x_test_mnist.shape[0])
-    backend_test_class_gradient(get_default_mnist_subset, classifier_logits, expected_values, labels)
+    backend_test_class_gradient(framework, get_default_mnist_subset, classifier_logits, expected_values, labels)
 
 
 def test_layers(is_tf_version_2, framework, get_default_mnist_subset, get_image_classifier_list):
