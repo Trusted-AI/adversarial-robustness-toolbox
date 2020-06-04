@@ -283,27 +283,6 @@ class TestPyTorchClassifier(TestBase):
         self.assertEqual(ptc.get_activations(self.x_test_mnist, 3, batch_size=5).shape, (100, 288))
         self.assertEqual(ptc.get_activations(self.x_test_mnist, 4, batch_size=5).shape, (100, 10))
 
-    def test_set_learning(self):
-        ptc = self.module_classifier
-        ptc.set_learning_phase(False)
-        self.assertFalse(ptc._model.training)
-        ptc.set_learning_phase(True)
-        self.assertTrue(ptc._model.training)
-        self.assertTrue(ptc.learning_phase)
-
-    def test_save(self):
-        model = self.module_classifier
-        t_file = tempfile.NamedTemporaryFile()
-        full_path = t_file.name
-        t_file.close()
-        base_name = os.path.basename(full_path)
-        dir_name = os.path.dirname(full_path)
-        model.save(base_name, path=dir_name)
-        self.assertTrue(os.path.exists(full_path + ".optimizer"))
-        self.assertTrue(os.path.exists(full_path + ".model"))
-        os.remove(full_path + ".optimizer")
-        os.remove(full_path + ".model")
-
     def test_repr(self):
         repr_ = repr(self.module_classifier)
         self.assertIn("art.estimators.classification.pytorch.PyTorchClassifier", repr_)

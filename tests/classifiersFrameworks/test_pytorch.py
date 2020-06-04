@@ -20,6 +20,7 @@ import logging
 
 import pytest
 import numpy as np
+import tempfile
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -42,7 +43,19 @@ from tests.classifiersFrameworks.utils import (
 logger = logging.getLogger(__name__)
 
 
-
+@pytest.mark.only_with_platform("pytorch")
+def test_save(get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+    t_file = tempfile.NamedTemporaryFile()
+    full_path = t_file.name
+    t_file.close()
+    base_name = os.path.basename(full_path)
+    dir_name = os.path.dirname(full_path)
+    classifier.save(base_name, path=dir_name)
+    assert os.path.exists(full_path + ".optimizer")
+    assert os.path.exists(full_path + ".model")
+    os.remove(full_path + ".optimizer")
+    os.remove(full_path + ".model")
 
 
 @pytest.mark.only_with_platform("pytorch")
