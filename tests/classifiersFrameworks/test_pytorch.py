@@ -42,16 +42,18 @@ from tests.classifiersFrameworks.utils import (
 logger = logging.getLogger(__name__)
 
 
+
+
+
 @pytest.mark.only_with_platform("pytorch")
 def test_set_learning(get_image_classifier_list):
-    ptc, _ = get_image_classifier_list(one_classifier=True)
-    # ptc = self.module_classifier
-    assert ptc._model.training
-    ptc.set_learning_phase(False)
-    assert ptc._model.training is False
-    ptc.set_learning_phase(True)
-    assert ptc._model.training
-    assert ptc.learning_phase
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+    assert classifier._model.training
+    classifier.set_learning_phase(False)
+    assert classifier._model.training is False
+    classifier.set_learning_phase(True)
+    assert classifier._model.training
+    assert classifier.learning_phase
 
 
 @pytest.mark.only_with_platform("pytorch")
