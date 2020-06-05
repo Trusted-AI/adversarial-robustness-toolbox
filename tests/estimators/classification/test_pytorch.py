@@ -283,20 +283,37 @@ class TestPyTorchClassifier(TestBase):
         self.assertEqual(ptc.get_activations(self.x_test_mnist, 3, batch_size=5).shape, (100, 288))
         self.assertEqual(ptc.get_activations(self.x_test_mnist, 4, batch_size=5).shape, (100, 10))
 
-    def test_repr(self):
-        repr_ = repr(self.module_classifier)
-        self.assertIn("art.estimators.classification.pytorch.PyTorchClassifier", repr_)
-        self.assertIn(f"input_shape=(1, 28, 28), nb_classes=10, channel_index={Deprecated}, channels_first=True", repr_)
-        self.assertIn("clip_values=array([0., 1.], dtype=float32)", repr_)
-        self.assertIn("defences=None, preprocessing=(0, 1)", repr_)
-
     def test_pickle(self):
+
         full_path = os.path.join(ART_DATA_PATH, "my_classifier")
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+        model = Model()
+
+        # Define a loss function and optimizer
+        loss_fn = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+
+        # Get classifier
+        ptc = PyTorchClassifier(
+            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+        )
+
+        # self.classifier = ptc
+        self.classifier = get_image_classifier_pt(load_init=False)
+
+        self.classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
+
+        # works with tensorflow
+        # from tests.utils import get_image_classifier_tf
+        # classifier, sess = get_image_classifier_tf()
+
         pickle.dump(self.module_classifier, open(full_path, "wb"))
+
+        # TODO the error is not coming from the classifier itself created but simply the fact that it's created within ghet get_image classifier_pt method
+        pickle.dump(self.classifier, open(full_path, "wb"))
 
         # Unpickle:
         with open(full_path, "rb") as f:
@@ -311,7 +328,6 @@ class TestPyTorchClassifier(TestBase):
         predictions_2 = loaded.predict(self.x_test_mnist)
         accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
         self.assertEqual(accuracy_1, accuracy_2)
-
 
 
 if __name__ == "__main__":

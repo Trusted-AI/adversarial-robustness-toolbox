@@ -760,70 +760,97 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
 
     from art.estimators.classification.pytorch import PyTorchClassifier
 
-    class Model(torch.nn.Module):
-        """
-        Create model for pytorch.
-
-        The weights and biases are identical to the TensorFlow model in get_classifier_tf().
-        """
-
-        def __init__(self):
-            super(Model, self).__init__()
-
-            self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
-            self.pool = torch.nn.MaxPool2d(4, 4)
-            self.fullyconnected = torch.nn.Linear(25, 10)
-
-            if load_init:
-                w_conv2d = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "W_CONV2D_MNIST.npy")
-                )
-                b_conv2d = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "B_CONV2D_MNIST.npy")
-                )
-                w_dense = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "W_DENSE_MNIST.npy")
-                )
-                b_dense = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "B_DENSE_MNIST.npy")
-                )
-
-                w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
-
-                self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d_pt))
-                self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
-                self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense)))
-                self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
-
-        # pylint: disable=W0221
-        # disable pylint because of API requirements for function
-        def forward(self, x):
-            """
-            Forward function to evaluate the model
-            :param x: Input to the model
-            :return: Prediction of the model
-            """
-            x = self.conv(x)
-            x = torch.nn.functional.relu(x)
-            x = self.pool(x)
-            x = x.reshape(-1, 25)
-            x = self.fullyconnected(x)
-            if not from_logits:
-                x = torch.nn.functional.softmax(x, dim=1)
-            return x
+    # class Model(torch.nn.Module):
+    #     """
+    #     Create model for pytorch.
+    #
+    #     The weights and biases are identical to the TensorFlow model in get_classifier_tf().
+    #     """
+    #
+    #     def __init__(self):
+    #         super(Model, self).__init__()
+    #
+    #         self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+    #         self.pool = torch.nn.MaxPool2d(4, 4)
+    #         self.fullyconnected = torch.nn.Linear(25, 10)
+    #
+    #         if load_init:
+    #             w_conv2d = np.load(
+    #                 os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "W_CONV2D_MNIST.npy")
+    #             )
+    #             b_conv2d = np.load(
+    #                 os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "B_CONV2D_MNIST.npy")
+    #             )
+    #             w_dense = np.load(
+    #                 os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "W_DENSE_MNIST.npy")
+    #             )
+    #             b_dense = np.load(
+    #                 os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "B_DENSE_MNIST.npy")
+    #             )
+    #
+    #             w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
+    #
+    #             self.conv.weight = torch.nn.Parameter(torch.Tensor(w_conv2d_pt))
+    #             self.conv.bias = torch.nn.Parameter(torch.Tensor(b_conv2d))
+    #             self.fullyconnected.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense)))
+    #             self.fullyconnected.bias = torch.nn.Parameter(torch.Tensor(b_dense))
+    #
+    #     # pylint: disable=W0221
+    #     # disable pylint because of API requirements for function
+    #     def forward(self, x):
+    #         """
+    #         Forward function to evaluate the model
+    #         :param x: Input to the model
+    #         :return: Prediction of the model
+    #         """
+    #         x = self.conv(x)
+    #         x = torch.nn.functional.relu(x)
+    #         x = self.pool(x)
+    #         x = x.reshape(-1, 25)
+    #         x = self.fullyconnected(x)
+    #         if not from_logits:
+    #             x = torch.nn.functional.softmax(x, dim=1)
+    #         return x
 
     # Define the network
+    # model = Model()
+    #
+    # # Define a loss function and optimizer
+    # loss_fn = torch.nn.CrossEntropyLoss()
+    # optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
+    #
+    # # Get classifier
+    # ptc = PyTorchClassifier(
+    #     model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+    # )
+    # return ptc
+
+    import torch.nn as nn
+    import torch.nn.functional as F
+    import torch.optim as optim
+
+    class Model(nn.Module):
+        def __init__(self):
+            super(Model, self).__init__()
+            self.conv = nn.Conv2d(1, 2, 5)
+            self.pool = nn.MaxPool2d(2, 2)
+            self.fc = nn.Linear(288, 10)
+
+        def forward(self, x):
+            x = self.pool(F.relu(self.conv(x)))
+            x = x.view(-1, 288)
+            logit_output = self.fc(x)
+            return logit_output
+
     model = Model()
-
-    # Define a loss function and optimizer
-    loss_fn = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-
-    # Get classifier
-    ptc = PyTorchClassifier(
-        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    classifier_2 = PyTorchClassifier(
+        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
     )
-    return ptc
+
+    module_classifier = classifier_2
+    return classifier_2
 
 
 def get_classifier_bb(defences=None):
