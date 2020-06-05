@@ -65,16 +65,34 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
-                raise ValueError('Attack model must be of type classifier')
+                raise ValueError("Attack model must be of type classifier")
             self.attack_model = attack_model
         else:
-            self.attack_model = MLPClassifier(hidden_layer_sizes=(100, ), activation='relu', solver='adam',
-                                              alpha=0.0001, batch_size='auto', learning_rate='constant',
-                                              learning_rate_init=0.001, power_t=0.5, max_iter=2000, shuffle=True,
-                                              random_state=None, tol=0.0001, verbose=False, warm_start=False,
-                                              momentum=0.9, nesterovs_momentum=True, early_stopping=False,
-                                              validation_fraction=0.1, beta_1=0.9, beta_2=0.999, epsilon=1e-08,
-                                              n_iter_no_change=10, max_fun=15000)
+            self.attack_model = MLPClassifier(
+                hidden_layer_sizes=(100,),
+                activation="relu",
+                solver="adam",
+                alpha=0.0001,
+                batch_size="auto",
+                learning_rate="constant",
+                learning_rate_init=0.001,
+                power_t=0.5,
+                max_iter=2000,
+                shuffle=True,
+                random_state=None,
+                tol=0.0001,
+                verbose=False,
+                warm_start=False,
+                momentum=0.9,
+                nesterovs_momentum=True,
+                early_stopping=False,
+                validation_fraction=0.1,
+                beta_1=0.9,
+                beta_2=0.999,
+                epsilon=1e-08,
+                n_iter_no_change=10,
+                max_fun=15000,
+            )
 
     def fit(self, x, **kwargs):
         """
@@ -87,9 +105,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         # Checks:
         if self.estimator.input_shape[0] != x.shape[1]:
-            raise ValueError('Shape of x does not match input_shape of classifier')
+            raise ValueError("Shape of x does not match input_shape of classifier")
         if self.attack_feature >= x.shape[1]:
-            raise ValueError('attack_feature must be a valid index to a feature in x')
+            raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get model's predictions for x
         predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
@@ -121,9 +139,9 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         # Checks:
         if y.shape[0] != x.shape[0]:
-            raise ValueError('Number of rows in x and y do not match')
+            raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape[0] != x.shape[1] + 1:
-            raise ValueError('Number of features in x + 1 does not match input_shape of classifier')
+            raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
 
         values = kwargs.get("values")
 
@@ -152,8 +170,9 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         :type attack_feature: `int`
         """
-        super(AttributeInferenceWhiteBoxLifestyleDecisionTree, self).__init__(estimator=classifier,
-                                                                              attack_feature=attack_feature)
+        super(AttributeInferenceWhiteBoxLifestyleDecisionTree, self).__init__(
+            estimator=classifier, attack_feature=attack_feature
+        )
 
     def infer(self, x, y=None, **kwargs):
         """
@@ -174,11 +193,11 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
 
         # Checks:
         if self.estimator.input_shape[0] != x.shape[1] + 1:
-            raise ValueError('Number of features in x + 1 does not match input_shape of classifier')
+            raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
         if len(priors) != len(values):
-            raise ValueError('Number of priors does not match number of values')
+            raise ValueError("Number of priors does not match number of values")
         if self.attack_feature >= x.shape[1]:
-            raise ValueError('attack_feature must be a valid index to a feature in x')
+            raise ValueError("attack_feature must be a valid index to a feature in x")
 
         n_samples = x.shape[0]
 
@@ -192,11 +211,17 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         for i, value in enumerate(values):
             # prepare data with the given value in the attacked feature
             v = np.full((n_samples, 1), value)
-            x_value = np.concatenate((x[:, :self.attack_feature], v), axis=1)
-            x_value = np.concatenate((x_value, x[:, self.attack_feature:]), axis=1)
+            x_value = np.concatenate((x[:, : self.attack_feature], v), axis=1)
+            x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
             # find the relative probability of this value for all samples being attacked
-            prob_value = [((self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[-1]) /
-                            n_samples) * priors[i] / phi[i]) for row in x_value]
+            prob_value = [
+                (
+                    (self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[-1]) / n_samples)
+                    * priors[i]
+                    / phi[i]
+                )
+                for row in x_value
+            ]
             prob_values.append(prob_value)
 
         # Choose the value with highest probability for each sample
@@ -206,8 +231,8 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         phi = []
         for value in values:
             v = np.full((n_samples, 1), value)
-            x_value = np.concatenate((x[:, :self.attack_feature], v), axis=1)
-            x_value = np.concatenate((x_value, x[:, self.attack_feature:]), axis=1)
+            x_value = np.concatenate((x[:, : self.attack_feature], v), axis=1)
+            x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
             nodes_value = {}
 
             for row in x_value:
@@ -244,8 +269,9 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         :type attack_feature: `int`
         """
-        super(AttributeInferenceWhiteBoxDecisionTree, self).__init__(estimator=classifier,
-                                                                     attack_feature=attack_feature)
+        super(AttributeInferenceWhiteBoxDecisionTree, self).__init__(
+            estimator=classifier, attack_feature=attack_feature
+        )
 
     def infer(self, x, y=None, **kwargs):
         """
@@ -272,13 +298,13 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
 
         # Checks:
         if self.estimator.input_shape[0] != x.shape[1] + 1:
-            raise ValueError('Number of features in x + 1 does not match input_shape of classifier')
+            raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
         if len(priors) != len(values):
-            raise ValueError('Number of priors does not match number of values')
+            raise ValueError("Number of priors does not match number of values")
         if y.shape[0] != x.shape[0]:
-            raise ValueError('Number of rows in x and y do not match')
+            raise ValueError("Number of rows in x and y do not match")
         if self.attack_feature >= x.shape[1]:
-            raise ValueError('attack_feature must be a valid index to a feature in x')
+            raise ValueError("attack_feature must be a valid index to a feature in x")
 
         n_values = len(values)
         n_samples = x.shape[0]
@@ -291,16 +317,21 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         for i, value in enumerate(values):
             # prepare data with the given value in the attacked feature
             v = np.full((n_samples, 1), value)
-            x_value = np.concatenate((x[:, :self.attack_feature], v), axis=1)
-            x_value = np.concatenate((x_value, x[:, self.attack_feature:]), axis=1)
+            x_value = np.concatenate((x[:, : self.attack_feature], v), axis=1)
+            x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
 
             # Obtain the model's prediction for each possible value of the attacked feature
             pred_value = [np.argmax(arr) for arr in self.estimator.predict(x_value)]
             pred_values.append(pred_value)
 
             # find the relative probability of this value for all samples being attacked
-            prob_value = [((self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[-1]) /
-                            n_samples) * priors[i]) for row in x_value]
+            prob_value = [
+                (
+                    (self.estimator.get_samples_at_node(self.estimator.get_decision_path([row])[-1]) / n_samples)
+                    * priors[i]
+                )
+                for row in x_value
+            ]
             prob_values.append(prob_value)
 
         # Find the single value that coincides with the real prediction for the sample (if it exists)
@@ -309,8 +340,9 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         for row_index, row in enumerate(pred_rows):
             if y is not None:
                 matches = [1 if row[value_index] == y[row_index] else 0 for value_index in range(n_values)]
-                match_values = [values[value_index] if row[value_index] == y[row_index] else 0 for value_index in
-                                range(n_values)]
+                match_values = [
+                    values[value_index] if row[value_index] == y[row_index] else 0 for value_index in range(n_values)
+                ]
             else:
                 matches = [0 for value_index in range(n_values)]
                 match_values = [0 for value_index in range(n_values)]
@@ -319,5 +351,9 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         # Choose the value with highest probability for each sample
         predicted_prob = [np.argmax(list(prob)) for prob in zip(*prob_values)]
 
-        return np.array([value if value is not None else values[predicted_prob[index]] for index, value in
-                         enumerate(predicted_pred)])
+        return np.array(
+            [
+                value if value is not None else values[predicted_prob[index]]
+                for index, value in enumerate(predicted_pred)
+            ]
+        )

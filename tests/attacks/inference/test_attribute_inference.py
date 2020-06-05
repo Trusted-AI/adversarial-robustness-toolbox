@@ -24,8 +24,11 @@ import pytest
 import torch.nn as nn
 import torch.optim as optim
 
-from art.attacks.inference import AttributeInferenceWhiteBoxDecisionTree, AttributeInferenceBlackBox, \
-    AttributeInferenceWhiteBoxLifestyleDecisionTree
+from art.attacks.inference import (
+    AttributeInferenceWhiteBoxDecisionTree,
+    AttributeInferenceBlackBox,
+    AttributeInferenceWhiteBoxLifestyleDecisionTree,
+)
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 
@@ -68,16 +71,16 @@ def test_black_box(get_tabular_classifier_list, get_iris_dataset):
         # print(type(classifier).__name__)
         attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
         # get original model's predictions
-        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
-        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1,1)
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
         # train attack model
         attack.fit(x_train)
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1,-1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1,-1)) / len(inferred_test)
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
         # print(train_acc)
         # print(test_acc)
         # assert train_acc > test_acc
@@ -120,23 +123,24 @@ def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
     # Define a loss function and optimizer
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.01)
-    attack_model = PyTorchClassifier(model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer,
-                                     input_shape=(4,), nb_classes=3)
+    attack_model = PyTorchClassifier(
+        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=3
+    )
 
     for classifier in classifier_list:
         # print(type(classifier).__name__)
         attack = AttributeInferenceBlackBox(classifier, attack_model=attack_model, attack_feature=attack_feature)
         # get original model's predictions
-        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
-        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1,1)
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
         # train attack model
         attack.fit(x_train)
         # infer attacked feature
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
         # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1,-1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1,-1)) / len(inferred_test)
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
         # print(train_acc)
         # print(test_acc)
         # assert train_acc > test_acc
@@ -161,12 +165,12 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
     for classifier in classifier_list:
         # print(type(classifier).__name__)
         attack = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=attack_feature)
-        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
-        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1,1)
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
-        train_diff = np.abs(inferred_train - x_train_feature.reshape(1,-1))
-        test_diff = np.abs(inferred_test - x_test_feature.reshape(1,-1))
+        train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
+        test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
         # print(np.sum(train_diff) / len(inferred_train))
         # print(np.sum(test_diff) / len(inferred_test))
 
@@ -190,12 +194,12 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
     for classifier in classifier_list:
         # print(type(classifier).__name__)
         attack = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=attack_feature)
-        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1,1)
-        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1,1)
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
         inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
         inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
-        train_diff = np.abs(inferred_train - x_train_feature.reshape(1,-1))
-        test_diff = np.abs(inferred_test - x_test_feature.reshape(1,-1))
+        train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
+        test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
         # print(np.sum(train_diff) / len(inferred_train))
         # print(np.sum(test_diff) / len(inferred_test))
         # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
