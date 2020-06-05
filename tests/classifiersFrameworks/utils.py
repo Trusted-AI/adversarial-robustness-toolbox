@@ -125,10 +125,11 @@ def backend_test_class_gradient(framework, get_default_mnist_subset, classifier,
             decimal=expected_values["expected_gradients_2_label5"].decimals,
         )
 
-    # Test a set of gradients label = array
-    # label = np.random.randint(5, size=self.n_test)
-    gradients = classifier.class_gradient(x_test_mnist, label=labels)
+    # # Test a set of gradients label = array
+    # # label = np.random.randint(5, size=self.n_test)
+    # gradients = classifier.class_gradient(x_test_mnist, label=labels)
 
+    # backend_test_class_gradient_target(framework, classifier, get_default_mnist_subset, expected_values)
     if framework == "pytorch":
         assert gradients.shape == (x_test_mnist.shape[0], 1, 1, 28, 28)
     else:

@@ -34,7 +34,7 @@ from tests.utils import ExpectedValue
 
 from tests.classifiersFrameworks.utils import (
     backend_test_fit_generator,
-    backend_test_loss_gradient,
+    backend_test_class_gradient_target,
     backend_test_class_gradient,
     backend_test_layers,
     backend_test_repr,
@@ -470,3 +470,5 @@ def test_class_gradient(get_image_classifier_list, get_default_mnist_subset, fra
 
     labels = np.random.randint(5, size=x_test_mnist.shape[0])
     backend_test_class_gradient(framework, get_default_mnist_subset, classifier_logits, expected_values, labels)
+
+

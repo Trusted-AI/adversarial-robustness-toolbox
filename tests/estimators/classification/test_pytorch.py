@@ -110,80 +110,6 @@ class TestPyTorchClassifier(TestBase):
         self.x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 28, 28, 1)).astype(np.float32)
         super().tearDown()
 
-    def test_class_gradient_target(self):
-        classifier = get_image_classifier_pt()
-        gradients = classifier.class_gradient(self.x_test_mnist, label=3)
-
-        self.assertEqual(gradients.shape, (self.n_test, 1, 1, 28, 28))
-
-        expected_gradients_1 = np.asarray(
-            [
-                -0.00195835,
-                -0.00134457,
-                -0.00307221,
-                -0.00340564,
-                0.00175022,
-                -0.00239714,
-                -0.00122619,
-                0.0,
-                0.0,
-                -0.00520899,
-                -0.00046105,
-                0.00414874,
-                -0.00171095,
-                0.00429184,
-                0.0075138,
-                0.00792443,
-                0.0019566,
-                0.00035517,
-                0.00504575,
-                -0.00037397,
-                0.00022343,
-                -0.00530035,
-                0.0020528,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ]
-        )
-        np.testing.assert_array_almost_equal(gradients[0, 0, 0, :, 14], expected_gradients_1, decimal=4)
-
-        expected_gradients_2 = np.asarray(
-            [
-                5.0867130e-03,
-                4.8564533e-03,
-                6.1040395e-03,
-                8.6531248e-03,
-                -6.0958802e-03,
-                -1.4114541e-02,
-                -7.1085966e-04,
-                -5.0330797e-04,
-                1.2943064e-02,
-                8.2416134e-03,
-                -1.9859453e-04,
-                -9.8110031e-05,
-                -3.8902226e-03,
-                -1.2945874e-03,
-                7.5138002e-03,
-                1.7720887e-03,
-                3.1399354e-04,
-                2.3657191e-04,
-                -3.0891625e-03,
-                -1.0211228e-03,
-                2.0828887e-03,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-            ]
-        )
-        np.testing.assert_array_almost_equal(gradients[0, 0, 0, 14, :], expected_gradients_2, decimal=4)
-
     def test_loss_gradient(self):
         classifier = get_image_classifier_pt()
         gradients = classifier.loss_gradient(self.x_test_mnist, self.y_test_mnist)
@@ -258,33 +184,7 @@ class TestPyTorchClassifier(TestBase):
         )
         np.testing.assert_array_almost_equal(gradients[0, 0, 14, :], expected_gradients_2, decimal=4)
 
-    def test_layers(self):
-        ptc = self.seq_classifier
-        layer_names = self.seq_classifier.layer_names
-        self.assertEqual(
-            layer_names,
-            [
-                "0_Conv2d(1, 2, kernel_size=(5, 5), stride=(1, 1))",
-                "1_ReLU()",
-                "2_MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)",
-                "3_Flatten()",
-                "4_Linear(in_features=288, out_features=10, bias=True)",
-            ],
-        )
-
-        for i, name in enumerate(layer_names):
-            activation_i = ptc.get_activations(self.x_test_mnist, i, batch_size=5)
-            activation_name = ptc.get_activations(self.x_test_mnist, name, batch_size=5)
-            np.testing.assert_array_equal(activation_name, activation_i)
-
-        self.assertEqual(ptc.get_activations(self.x_test_mnist, 0, batch_size=5).shape, (100, 2, 24, 24))
-        self.assertEqual(ptc.get_activations(self.x_test_mnist, 1, batch_size=5).shape, (100, 2, 24, 24))
-        self.assertEqual(ptc.get_activations(self.x_test_mnist, 2, batch_size=5).shape, (100, 2, 12, 12))
-        self.assertEqual(ptc.get_activations(self.x_test_mnist, 3, batch_size=5).shape, (100, 288))
-        self.assertEqual(ptc.get_activations(self.x_test_mnist, 4, batch_size=5).shape, (100, 10))
-
     def test_pickle(self):
-
         full_path = os.path.join(ART_DATA_PATH, "my_classifier")
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
