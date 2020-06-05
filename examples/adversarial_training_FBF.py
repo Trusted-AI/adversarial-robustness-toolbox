@@ -1,18 +1,18 @@
 """
 This is an example of how to use ART for adversarial training of a model with Fast is better than free protocol
 """
-from keras.preprocessing.image import ImageDataGenerator
+import math
 
-from art.data_generators import KerasDataGenerator
-from art.defences.trainer import AdversarialTrainerFBFPyTorch
-from art.utils import load_cifar10
-
-import torch.nn.functional as F
-from art.classifiers import PyTorchClassifier
 import numpy as np
 import torch
 import torch.nn as nn
-import math
+import torch.nn.functional as F
+from keras.preprocessing.image import ImageDataGenerator
+
+from art.classifiers import PyTorchClassifier
+from art.data_generators import KerasDataGenerator
+from art.defences.trainer import AdversarialTrainerFBFPyTorch
+from art.utils import load_cifar10
 
 """
 For this example we choose the PreActResNet model as used in the paper (https://openreview.net/forum?id=BJx040EFvH)
