@@ -45,19 +45,19 @@ def test_input_shape(framework, get_image_classifier_list):
 
 def test_save(get_image_classifier_list):
     classifier, _ = get_image_classifier_list(one_classifier=True)
+    if classifier is not None:
+        t_file = tempfile.NamedTemporaryFile()
+        path = t_file.name
+        t_file.close()
+        filename = "model_to_save"
 
-    t_file = tempfile.NamedTemporaryFile()
-    path = t_file.name
-    t_file.close()
-    filename = "model_to_save"
+        classifier.save(filename, path=path)
+    
+        assert path.exists(path)
 
-    classifier.save(filename, path=path)
+        created_model = False
 
-    assert path.exists(path)
-
-    created_model = False
-
-    for file in listdir(path):
-        if filename in file:
-            created_model = True
-    assert created_model
+        for file in listdir(path):
+            if filename in file:
+                created_model = True
+        assert created_model
