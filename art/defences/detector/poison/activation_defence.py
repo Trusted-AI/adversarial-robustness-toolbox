@@ -695,6 +695,7 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
     improve_factor = initial_missed - curr_missed
     return improve_factor, classifier
 
+
 def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce="FastICA", clustering_method="KMeans",
                         generator=False, clusterer_new=None):
     """
