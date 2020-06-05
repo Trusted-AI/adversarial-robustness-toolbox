@@ -379,7 +379,7 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
         ),
     }
 
-    backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
+    backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list, expected_values)
 
 
 @pytest.mark.only_with_platform("tensorflow")

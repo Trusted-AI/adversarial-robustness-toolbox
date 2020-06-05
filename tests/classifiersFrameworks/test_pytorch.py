@@ -23,20 +23,16 @@ import pickle
 import tempfile
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from torch.utils.data import DataLoader
 
-from art.data_generators import PyTorchDataGenerator
 from art.estimators.classification.pytorch import PyTorchClassifier
 
 from tests.utils import ExpectedValue
 
 from tests.classifiersFrameworks.utils import (
     backend_test_fit_generator,
-    backend_test_class_gradient_target,
     backend_test_class_gradient,
-    backend_test_layers,
+    backend_test_loss_gradient,
     backend_test_repr,
 )
 
@@ -472,3 +468,81 @@ def test_class_gradient(get_image_classifier_list, get_default_mnist_subset, fra
     backend_test_class_gradient(framework, get_default_mnist_subset, classifier_logits, expected_values, labels)
 
 
+@pytest.mark.only_with_platform("pytorch")
+def test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list):
+    expected_gradients_1 = np.asarray(
+        [
+            7.36792526e-06,
+            6.50995162e-06,
+            1.55499711e-05,
+            1.66183436e-05,
+            -7.46988326e-06,
+            1.26695295e-05,
+            7.61196816e-06,
+            0.00000000e00,
+            0.00000000e00,
+            -1.74639266e-04,
+            -1.83985649e-05,
+            1.57154878e-04,
+            -7.07946092e-05,
+            1.57594535e-04,
+            3.20027815e-04,
+            3.82224127e-04,
+            2.06750279e-04,
+            4.05299688e-05,
+            3.00343090e-04,
+            5.03358315e-05,
+            -9.70281690e-07,
+            -1.66648446e-04,
+            4.36533046e-05,
+            0.00000000e00,
+            0.00000000e00,
+            0.00000000e00,
+            0.00000000e00,
+            0.00000000e00,
+        ]
+    )
+    expected_gradients_2 = np.asarray(
+        [
+            1.6708217e-04,
+            1.5951888e-04,
+            1.9378442e-04,
+            2.3605554e-04,
+            -1.2112357e-04,
+            -3.3699317e-04,
+            5.4395932e-05,
+            8.7142853e-06,
+            2.4337447e-04,
+            9.9849363e-05,
+            9.5080861e-05,
+            -7.2551797e-05,
+            -2.3405801e-04,
+            -1.4076763e-04,
+            3.2002782e-04,
+            1.2220720e-04,
+            -1.0334983e-04,
+            3.2093230e-05,
+            -1.2616906e-04,
+            -4.1350944e-05,
+            8.4347754e-05,
+            0.0000000e00,
+            0.0000000e00,
+            0.0000000e00,
+            0.0000000e00,
+            0.0000000e00,
+            0.0000000e00,
+            0.0000000e00,
+        ]
+    )
+    expected_values = {
+        "expected_gradients_1": ExpectedValue(
+            expected_gradients_1,
+            4,
+        ),
+        "expected_gradients_2": ExpectedValue(
+            expected_gradients_2,
+            4,
+        ),
+    }
+
+    backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list, expected_values)

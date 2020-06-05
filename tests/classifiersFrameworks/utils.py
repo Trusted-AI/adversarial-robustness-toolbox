@@ -161,25 +161,38 @@ def backend_test_class_gradient(framework, get_default_mnist_subset, classifier,
         )
 
 
-def backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values):
+def backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list, expected_values):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
     # Test gradient
     gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
 
-    assert gradients.shape == (x_test_mnist.shape[0], 28, 28, 1)
+    if framework == "pytorch":
+        assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28)
+    else:
+        assert gradients.shape == (x_test_mnist.shape[0], 28, 28, 1)
+
+    if framework == "pytorch":
+        sub_gradients = gradients[0, 0, :, 14]
+    else:
+        sub_gradients = gradients[0, 14, :, 0]
 
     if "expected_gradients_1" in expected_values:
         np.testing.assert_array_almost_equal(
-            gradients[0, 14, :, 0],
+            sub_gradients,
             expected_values["expected_gradients_1"].value,
             decimal=expected_values["expected_gradients_1"].decimals,
         )
 
+    if framework == "pytorch":
+        sub_gradients = gradients[0, 0, 14, :]
+    else:
+        sub_gradients = gradients[0, :, 14, 0]
+
     if "expected_gradients_2" in expected_values:
         np.testing.assert_array_almost_equal(
-            gradients[0, :, 14, 0],
+            sub_gradients,
             expected_values["expected_gradients_2"].value,
             decimal=expected_values["expected_gradients_2"].decimals,
         )
