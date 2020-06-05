@@ -27,8 +27,9 @@ from art.defences.trainer.trainer import Trainer
 
 class AdversarialTrainerFBF(Trainer, abc.ABC):
     """
-    This is abstract class for different backend-specific implementations of Fast is better than free protocol
-    for adversarial training
+    This is abstract class for different backend-specific implementations of Fast is Better than Free protocol
+    for adversarial training.
+    
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
     """
 
