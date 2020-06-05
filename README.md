@@ -87,6 +87,16 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 * Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 * Feature Collision Attack ([Shafahi, Huang et. al., 2018](https://arxiv.org/pdf/1804.00792.pdf))
 
+**Inference Attacks:**
+
+*Model Inversion*
+* MIFace ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+
+*Attribute Inference*
+* AttributeInferenceBlackBox
+* AttributeInferenceWhiteBoxLifestyleDecisionTree ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+* AttributeInferenceWhiteBoxDecisionTree ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+
 **Defences - Preprocessor:**
 * Video compression
 * Resampling ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
