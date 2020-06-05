@@ -45,7 +45,7 @@ class Mp3Compression(Preprocessor):
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
-        self, sample_rate, channel_index=Deprecated, channels_first=False, apply_fit=True, apply_predict=False
+        self, sample_rate, channel_index=Deprecated, channels_first=False, apply_fit=False, apply_predict=True
     ):
         """
         Create an instance of MP3 compression.
