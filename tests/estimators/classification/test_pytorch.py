@@ -169,8 +169,8 @@ class TestPyTorchClassifier(TestBase):
         self.classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
 
         # works with tensorflow
-        # from tests.utils import get_image_classifier_tf
-        # classifier, sess = get_image_classifier_tf()
+        from tests.utils import get_image_classifier_tf
+        classifier_tf, sess = get_image_classifier_tf()
 
         # Define the network
         # model = Model()
@@ -183,7 +183,18 @@ class TestPyTorchClassifier(TestBase):
         # self.module_classifier = classifier_2
 
         pickle.dump(self.module_classifier, open(full_path, "wb"))
-        pickle.dump(ptc, open(full_path, "wb"))
+
+        # Define the network
+        model = Model()
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        classifier_2 = PyTorchClassifier(
+            model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+        )
+        classifier_2.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
+        import copy
+        deep_classifier_2 = copy.deepcopy(classifier_2)
+        pickle.dump(deep_classifier_2, open(full_path, "wb"))
 
         # TODO the error is not coming from the classifier itself created but simply the fact that it's
         #  created within ghet get_image classifier_pt method

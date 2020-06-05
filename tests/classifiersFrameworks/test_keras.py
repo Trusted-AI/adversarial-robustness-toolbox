@@ -136,7 +136,8 @@ def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_
 
 
 @pytest.mark.only_with_platform("keras")
-def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list, image_data_generator):
+def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list,
+                             image_data_generator):
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
     data_gen = image_data_generator()
@@ -334,17 +335,6 @@ def test_learning_phase(get_image_classifier_list):
     classifier.set_learning_phase(True)
     assert classifier.learning_phase
     assert hasattr(classifier, "_learning_phase")
-
-
-@pytest.mark.only_with_platform("keras")
-def test_save(get_image_classifier_list):
-    path = "tmp"
-    filename = "model.h5"
-
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    classifier.save(filename, path=path)
-    assert os.path.isfile(os.path.join(path, filename))
-    os.remove(os.path.join(path, filename))
 
 
 # def test_pickle(self):
