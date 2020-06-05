@@ -67,7 +67,6 @@ declare -a classifiers=("tests/estimators/certification/test_randomized_smoothin
                         "tests/estimators/classification/test_keras_tf.py" \
                         "tests/estimators/classification/test_lightgbm.py" \
                         "tests/estimators/classification/test_mxnet.py" \
-                        "tests/estimators/classification/test_pytorch.py" \
                         "tests/estimators/classification/test_scikitlearn.py" \
                         "tests/estimators/classification/test_xgboost.py" )
 
