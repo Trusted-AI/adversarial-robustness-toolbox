@@ -2,6 +2,7 @@ import logging
 import numpy as np
 from os import listdir, path
 import tempfile
+import warnings
 
 from tests.classifiersFrameworks.utils import fw_agnostic_backend_test_nb_classes
 from tests.classifiersFrameworks.utils import fw_agnostic_backend_test_input_shape
@@ -51,7 +52,6 @@ def test_save(get_image_classifier_list):
             model_path = t_file.name
             t_file.close()
             filename = "model_to_save"
-
             classifier.save(filename, path=model_path)
 
             assert path.exists(model_path)
@@ -64,4 +64,4 @@ def test_save(get_image_classifier_list):
             assert created_model
 
     except NotImplementedError as e:
-        logging.warning(e)
+        warnings.warn(UserWarning(e))

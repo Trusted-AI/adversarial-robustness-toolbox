@@ -20,7 +20,6 @@ import logging
 import numpy as np
 import pytest
 import pickle
-import tempfile
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -32,7 +31,6 @@ from tests.utils import ExpectedValue
 from tests.classifiersFrameworks.utils import (
     backend_test_fit_generator,
     backend_test_class_gradient,
-    backend_test_layers,
     backend_test_loss_gradient,
     backend_test_repr,
 )

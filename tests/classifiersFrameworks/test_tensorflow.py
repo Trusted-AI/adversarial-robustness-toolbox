@@ -18,13 +18,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from art.utils import Deprecated
 
 import numpy as np
 import pytest
-import tensorflow as tf
-
-from art.data_generators import TensorFlowDataGenerator
-from art.utils import Deprecated
 
 from tests.utils import ExpectedValue
 from tests.classifiersFrameworks.utils import backend_test_layers, backend_test_repr
