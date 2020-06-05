@@ -2,17 +2,20 @@
 This is an example of how to use ART for adversarial training of a model with Fast is better than free protocol
 """
 import math
+from PIL import Image
 
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from keras.preprocessing.image import ImageDataGenerator
+import torchvision.transforms as transforms
+from torch.utils.data import TensorDataset, Dataset, DataLoader
 
 from art.classifiers import PyTorchClassifier
-from art.data_generators import KerasDataGenerator
+from art.data_generators import PyTorchDataGenerator
 from art.defences.trainer import AdversarialTrainerFBFPyTorch
 from art.utils import load_cifar10
+from art.attacks.evasion import FastGradientMethod
 
 """
 For this example we choose the PreActResNet model as used in the paper (https://openreview.net/forum?id=BJx040EFvH)
@@ -123,14 +126,31 @@ def initialize_weights(module):
         module.bias.data.zero_()
 
 
+class CIFAR10_dataset(Dataset):
+    def __init__(self, data, targets, transform=None):
+        self.data = data
+        self.targets = torch.LongTensor(targets)
+        self.transform = transform
+
+    def __getitem__(self, index):
+        x = Image.fromarray(self.data[index].astype(np.uint8).transpose(1, 2, 0))
+        x = self.transform(x)
+        y = self.targets[index]
+        return x, y
+
+    def __len__(self):
+        return len(self.data)
+
+
 # Step 1: Load the CIFAR10 dataset
 (x_train, y_train), (x_test, y_test), min_pixel_value, max_pixel_value = load_cifar10()
 
-# prepare the tensors for preprocessing
 cifar_mu = np.ones((3, 32, 32))
 cifar_mu[0, :, :] = 0.4914
 cifar_mu[1, :, :] = 0.4822
 cifar_mu[2, :, :] = 0.4465
+
+# (0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
 
 cifar_std = np.ones((3, 32, 32))
 cifar_std[0, :, :] = 0.2471
@@ -139,6 +159,20 @@ cifar_std[2, :, :] = 0.2616
 
 x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
 x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
+
+tensor_x = torch.Tensor(x_train)  # transform to torch tensor
+tensor_y = torch.Tensor(y_train)
+
+my_dataset = TensorDataset(tensor_x, tensor_y)  # create your datset
+my_dataloader = DataLoader(my_dataset)  # create your dataloader
+
+transform = transforms.Compose(
+    [transforms.RandomCrop(32, padding=4),
+     transforms.RandomHorizontalFlip(),
+     transforms.ToTensor()])
+
+dataset = CIFAR10_dataset(x_train, y_train, transform=transform)
+dataloader = DataLoader(dataset, batch_size=128)
 
 # Step 2: create the PyTorch model
 model = PreActResNet18()
@@ -158,12 +192,22 @@ criterion = nn.CrossEntropyLoss()
 
 classifier = PyTorchClassifier(
     model=model,
-    clip_values=(0.0, 1.0),
+    clip_values=(0, 1),
     preprocessing=(cifar_mu, cifar_std),
     loss=criterion,
     optimizer=opt,
     input_shape=(3, 32, 32),
     nb_classes=10,
+)
+
+fgsm = FastGradientMethod(classifier, norm=np.inf, eps=8.0 / 255.0,
+                          eps_step=2.0 / 255.0, targeted=False,
+                          num_random_init=5, batch_size=32)
+x_test_attack = fgsm.generate(x_test)
+x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
+print(
+    "Accuracy on original FGSM adversarial samples: %.2f%%"
+    % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1)) / x_test.shape[0] * 100
 )
 
 # Step 4: Create the trainer object - AdversarialTrainerFBFPyTorch
@@ -172,17 +216,15 @@ epsilon = (8.0 / 255.)
 trainer = AdversarialTrainerFBFPyTorch(classifier, eps=epsilon, use_amp=False)
 
 # Build a Keras image augmentation object and wrap it in ART
-batch_size = 128
-datagen = ImageDataGenerator(
-    horizontal_flip=True
-)
-
-datagen.fit(x_train)
-art_datagen = KerasDataGenerator(
-    datagen.flow(x=x_train, y=y_train, batch_size=batch_size, shuffle=True),
-    size=x_train.shape[0],
-    batch_size=batch_size,
-)
+art_datagen = PyTorchDataGenerator(iterator=dataloader, size=x_train.shape[0],
+                                   batch_size=128)
 
 # Step 5: fit the trainer
 trainer.fit_generator(art_datagen, nb_epochs=30)
+
+x_test_attack = fgsm.generate(x_test)
+x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
+print(
+    "Accuracy on original FGSM adversarial samples after adversarial training: %.2f%%"
+    % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1)) / x_test.shape[0] * 100
+)
