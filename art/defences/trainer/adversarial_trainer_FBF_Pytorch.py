@@ -72,7 +72,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         :param nb_epochs: Number of epochs to use for trainings.
         :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
-               the target classifier.
+                                  the target classifier.
         :type kwargs: `dict`
         :return: `None`
         """
