@@ -340,8 +340,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             )
 
         else:
-            print(estimator)
-            raise NotImplementedError
+            estimator_apgd = None
 
         super().__init__(estimator=estimator_apgd)
 

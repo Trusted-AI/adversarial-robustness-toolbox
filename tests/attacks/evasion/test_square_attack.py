@@ -22,7 +22,6 @@ import numpy as np
 
 from art.attacks.evasion import SquareAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification import PyTorchClassifier
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
@@ -39,27 +38,22 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-@pytest.mark.only_with_platform("pytorch")
 def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(SquareAttack)
 
     if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
+        logging.warning("Couldn't perform this test because no classifier is defined")
         return
 
     for classifier in classifier_list:
-        attack = SquareAttack(estimator=classifier, norm=np.inf, max_iter=100, eps=0.3, p_init=0.8, nb_restarts=1)
+        attack = SquareAttack(estimator=classifier, norm=np.inf, max_iter=5, eps=0.3, p_init=0.8, nb_restarts=1)
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        if isinstance(classifier, PyTorchClassifier):
-            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-        x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
-
-        print(np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:1])))
-
-        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(1.37e-09, abs=1.0e-09)
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0535, abs=0.005)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.01)
 
 
 def test_classifier_type_check_fail():
@@ -67,4 +61,4 @@ def test_classifier_type_check_fail():
 
 
 if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
+    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

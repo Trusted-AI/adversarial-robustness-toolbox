@@ -49,9 +49,10 @@ def test_generate(fix_get_mnist_subset):
 
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
+    x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-    assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(1.37e-09, abs=1.0e-09)
+    assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0292, abs=0.005)
+    assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.01)
 
 
 def test_classifier_type_check_fail():

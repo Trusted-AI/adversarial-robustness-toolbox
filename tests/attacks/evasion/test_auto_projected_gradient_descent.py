@@ -23,7 +23,6 @@ import numpy as np
 from art.attacks.evasion import AutoProjectedGradientDescent
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.estimators.classification import PyTorchClassifier
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
@@ -45,7 +44,7 @@ def test_generate(is_tf_version_2, fix_get_mnist_subset, get_image_classifier_li
         classifier_list = get_image_classifier_list_for_attack(AutoProjectedGradientDescent)
 
         if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
+            logging.warning("Couldn't perform this test because no classifier is defined")
             return
 
         for classifier in classifier_list:
@@ -54,7 +53,7 @@ def test_generate(is_tf_version_2, fix_get_mnist_subset, get_image_classifier_li
                 norm=np.inf,
                 eps=0.3,
                 eps_step=0.1,
-                max_iter=2,
+                max_iter=5,
                 targeted=False,
                 nb_random_init=1,
                 batch_size=32,
@@ -63,17 +62,15 @@ def test_generate(is_tf_version_2, fix_get_mnist_subset, get_image_classifier_li
 
             (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-            if isinstance(classifier, PyTorchClassifier):
-                x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2)).astype(np.float32)
+            x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-            x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
-
-            assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(1.37e-09, abs=1.0e-09)
+            assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0329, abs=0.005)
+            assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.01)
 
 
-# def test_classifier_type_check_fail():
-#     backend_test_classifier_type_check_fail(AutoProjectedGradientDescent,
-#                                             [BaseEstimator, LossGradientsMixin, ClassifierMixin])
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(AutoProjectedGradientDescent,
+                                            [BaseEstimator, LossGradientsMixin, ClassifierMixin])
 
 
 if __name__ == "__main__":
