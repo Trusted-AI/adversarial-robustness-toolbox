@@ -58,9 +58,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
-    def __init__(
-        self, classifier: "Classifier", num_neurons: Optional[int] = None
-    ) -> None:
+    def __init__(self, classifier: "Classifier", num_neurons: Optional[int] = None) -> None:
         """
         Create a `FunctionallyEquivalentExtraction` instance.
 
@@ -72,12 +70,8 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         self.num_classes = classifier.nb_classes
         self.num_features = int(np.prod(classifier.input_shape))
 
-        self.vector_u = np.random.normal(0, 1, (1, self.num_features)).astype(
-            dtype=NUMPY_DTYPE
-        )
-        self.vector_v = np.random.normal(0, 1, (1, self.num_features)).astype(
-            dtype=NUMPY_DTYPE
-        )
+        self.vector_u = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
+        self.vector_v = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
 
         self.critical_points: List[np.ndarray] = list()
 
@@ -121,10 +115,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :return: ART :class:`.BlackBoxClassifier` of the extracted model.
         """
         self._critical_point_search(
-            delta_0=delta_0,
-            fraction_true=fraction_true,
-            rel_diff_slope=rel_diff_slope,
-            rel_diff_value=rel_diff_value,
+            delta_0=delta_0, fraction_true=fraction_true, rel_diff_slope=rel_diff_slope, rel_diff_value=rel_diff_value,
         )
         self._weight_recovery(
             delta_init_value=delta_init_value,
@@ -180,11 +171,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         return self.vector_u + var_t * self.vector_v
 
     def _critical_point_search(
-        self,
-        delta_0: float,
-        fraction_true: float,
-        rel_diff_slope: float,
-        rel_diff_value: float,
+        self, delta_0: float, fraction_true: float, rel_diff_slope: float, rel_diff_value: float,
     ) -> None:
         """
         Search for critical points.
@@ -195,6 +182,9 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :param rel_diff_value: Relative value difference at critical points.
         """
         logger.info("Searching for critical points.")
+
+        if self.num_neurons is None:
+            raise ValueError("The value of `num_neurons` is required for critical point search.")
         h_square = self.num_neurons * self.num_neurons
 
         t_current = float(-h_square)
@@ -219,10 +209,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                 y_1 = self._o_l(x_1)
                 y_2 = self._o_l(x_2)
 
-                if (
-                    np.sum(np.abs((m_1 - m_2) / m_1) < rel_diff_slope)
-                    > fraction_true * self.num_classes
-                ):
+                if np.sum(np.abs((m_1 - m_2) / m_1) < rel_diff_slope) > fraction_true * self.num_classes:
                     t_current = t_2
                     break
 
@@ -241,11 +228,9 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                 m_x_2 = (self._o_l(x_mean) - self._o_l(x_mean_m)) / epsilon
 
                 if (
-                    np.sum(np.abs((y_hat - y) / y) < rel_diff_value)
-                    > fraction_true * self.num_classes
+                    np.sum(np.abs((y_hat - y) / y) < rel_diff_value) > fraction_true * self.num_classes
                     and t_1 < t_mean < t_2
-                    and np.sum(np.abs((m_x_1 - m_x_2) / m_x_1) > rel_diff_slope)
-                    > fraction_true * self.num_classes
+                    and np.sum(np.abs((m_x_1 - m_x_2) / m_x_1) > rel_diff_slope) > fraction_true * self.num_classes
                 ):
                     found_critical_point = True
                     self.critical_points.append(x_mean)
@@ -256,18 +241,11 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         if len(self.critical_points) != self.num_neurons:
             raise AssertionError(
                 "The number of critical points found ({}) does not equal the number of expected"
-                "neurons in the first layer ({}).".format(
-                    len(self.critical_points), self.num_neurons
-                )
+                "neurons in the first layer ({}).".format(len(self.critical_points), self.num_neurons)
             )
 
     def _weight_recovery(
-        self,
-        delta_init_value: float,
-        delta_value_max: float,
-        d2_min: float,
-        d_step: float,
-        delta_sign: float,
+        self, delta_init_value: float, delta_value_max: float, d2_min: float, d_step: float, delta_sign: float,
     ) -> None:
         """
         Recover the weights and biases of the first layer.
@@ -280,10 +258,11 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         """
         logger.info("Recovering weights of first layer.")
 
+        if self.num_neurons is None:
+            raise ValueError("The value of `num_neurons` is required for critical point search.")
+
         # Absolute Value Recovery
-        d2_ol_d2ej_xi = np.zeros(
-            (self.num_features, self.num_neurons), dtype=NUMPY_DTYPE
-        )
+        d2_ol_d2ej_xi = np.zeros((self.num_features, self.num_neurons), dtype=NUMPY_DTYPE)
 
         for i in range(self.num_neurons):
             for j in range(self.num_features):
@@ -297,32 +276,24 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                     e_j[0, j] = delta
 
                     d_ol_dej_xi_p_cej = (
-                        self._o_l(self.critical_points[i], e_j=e_j)
-                        - self._o_l(self.critical_points[i])
+                        self._o_l(self.critical_points[i], e_j=e_j) - self._o_l(self.critical_points[i])
                     ) / delta
                     d_ol_dej_xi_m_cej = (
-                        self._o_l(self.critical_points[i])
-                        - self._o_l(self.critical_points[i], e_j=-e_j)
+                        self._o_l(self.critical_points[i]) - self._o_l(self.critical_points[i], e_j=-e_j)
                     ) / delta
 
-                    d2_ol_d2ej_xi[j, i] = (
-                        np.sum(np.abs(d_ol_dej_xi_p_cej - d_ol_dej_xi_m_cej)) / delta
-                    )
+                    d2_ol_d2ej_xi[j, i] = np.sum(np.abs(d_ol_dej_xi_p_cej - d_ol_dej_xi_m_cej)) / delta
 
                     if d2_ol_d2ej_xi[j, i] < d2_min and delta < delta_value_max:
                         delta = delta + d_step
                     else:
                         d2_ol_d2ej_xi_ok = True
 
-        self.a0_pairwise_ratios = np.zeros(
-            (self.num_features, self.num_neurons), dtype=NUMPY_DTYPE
-        )
+        self.a0_pairwise_ratios = np.zeros((self.num_features, self.num_neurons), dtype=NUMPY_DTYPE)
 
         for i in range(self.num_neurons):
             for k in range(self.num_features):
-                self.a0_pairwise_ratios[k, i] = (
-                    d2_ol_d2ej_xi[0, i] / d2_ol_d2ej_xi[k, i]
-                )
+                self.a0_pairwise_ratios[k, i] = d2_ol_d2ej_xi[0, i] / d2_ol_d2ej_xi[k, i]
 
         # Weight Sign Recovery
 
@@ -336,12 +307,10 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                 e_j[0, j] += delta_sign
 
                 d_ol_dejek_xi_p_cejek = (
-                    self._o_l(self.critical_points[i], e_j=e_j)
-                    - self._o_l(self.critical_points[i])
+                    self._o_l(self.critical_points[i], e_j=e_j) - self._o_l(self.critical_points[i])
                 ) / delta_sign
                 d_ol_dejek_xi_m_cejek = (
-                    self._o_l(self.critical_points[i])
-                    - self._o_l(self.critical_points[i], e_j=-e_j)
+                    self._o_l(self.critical_points[i]) - self._o_l(self.critical_points[i], e_j=-e_j)
                 ) / delta_sign
 
                 d2_ol_dejek_xi = d_ol_dejek_xi_p_cejek - d_ol_dejek_xi_m_cejek
@@ -349,18 +318,8 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
                 if j == 0:
                     d2_ol_dejek_xi_0 = d2_ol_dejek_xi / 2.0
 
-                co_p = np.sum(
-                    np.abs(
-                        d2_ol_dejek_xi_0 * (1 + 1 / self.a0_pairwise_ratios[j, i])
-                        - d2_ol_dejek_xi
-                    )
-                )
-                co_m = np.sum(
-                    np.abs(
-                        d2_ol_dejek_xi_0 * (1 - 1 / self.a0_pairwise_ratios[j, i])
-                        - d2_ol_dejek_xi
-                    )
-                )
+                co_p = np.sum(np.abs(d2_ol_dejek_xi_0 * (1 + 1 / self.a0_pairwise_ratios[j, i]) - d2_ol_dejek_xi))
+                co_m = np.sum(np.abs(d2_ol_dejek_xi_0 * (1 - 1 / self.a0_pairwise_ratios[j, i]) - d2_ol_dejek_xi))
 
                 if co_m < co_p * np.max(1 / self.a0_pairwise_ratios[:, i]):
                     self.a0_pairwise_ratios[j, i] *= -1
@@ -373,6 +332,9 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         """
         logger.info("Recover sign of the weights of the first layer.")
 
+        if self.num_neurons is None:
+            raise ValueError("The value of `num_neurons` is required for critical point search.")
+
         a0_pairwise_ratios_inverse = 1.0 / self.a0_pairwise_ratios
         self.b_0 = np.zeros((self.num_neurons, 1), dtype=NUMPY_DTYPE)
 
@@ -383,10 +345,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         z_0 = np.random.normal(0, 1, (self.num_features,)).astype(dtype=NUMPY_DTYPE)
 
         def f_z(z_i):
-            return np.squeeze(
-                np.matmul(a0_pairwise_ratios_inverse.T, np.expand_dims(z_i, axis=0).T)
-                + self.b_0
-            )
+            return np.squeeze(np.matmul(a0_pairwise_ratios_inverse.T, np.expand_dims(z_i, axis=0).T) + self.b_0)
 
         result_z = least_squares(f_z, z_0)
 
@@ -396,12 +355,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
             def f_v(v_i):
                 # pylint: disable=W0640
-                return np.squeeze(
-                    np.matmul(
-                        -a0_pairwise_ratios_inverse.T, np.expand_dims(v_i, axis=0).T
-                    )
-                    - e_i
-                )
+                return np.squeeze(np.matmul(-a0_pairwise_ratios_inverse.T, np.expand_dims(v_i, axis=0).T) - e_i)
 
             v_0 = np.random.normal(0, 1, self.num_features)
             result_v_i = least_squares(f_v, v_0)
@@ -432,20 +386,17 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         """
         logger.info("Extract second layer.")
 
+        if self.num_neurons is None:
+            raise ValueError("The value of `num_neurons` is required for critical point search.")
+
         predictions = self._o_l(x)
-        w_1_b_1_0 = np.random.normal(
-            0, 1, ((self.num_neurons + 1) * self.num_classes)
-        ).astype(dtype=NUMPY_DTYPE)
+        w_1_b_1_0 = np.random.normal(0, 1, ((self.num_neurons + 1) * self.num_classes)).astype(dtype=NUMPY_DTYPE)
 
         def f_w_1_b_1(w_1_b_1_i):
             layer_0 = np.maximum(np.matmul(self.w_0.T, x.T) + self.b_0, 0.0)
 
-            w_1 = w_1_b_1_i[0 : self.num_neurons * self.num_classes].reshape(
-                self.num_neurons, self.num_classes
-            )
-            b_1 = w_1_b_1_i[self.num_neurons * self.num_classes :].reshape(
-                self.num_classes, 1
-            )
+            w_1 = w_1_b_1_i[0 : self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
+            b_1 = w_1_b_1_i[self.num_neurons * self.num_classes :].reshape(self.num_classes, 1)
 
             layer_1 = np.matmul(w_1.T, layer_0) + b_1
 
@@ -453,12 +404,8 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         result_a1_b1 = least_squares(f_w_1_b_1, w_1_b_1_0)
 
-        self.w_1 = result_a1_b1.x[0 : self.num_neurons * self.num_classes].reshape(
-            self.num_neurons, self.num_classes
-        )
-        self.b_1 = result_a1_b1.x[self.num_neurons * self.num_classes :].reshape(
-            self.num_classes, 1
-        )
+        self.w_1 = result_a1_b1.x[0 : self.num_neurons * self.num_classes].reshape(self.num_neurons, self.num_classes)
+        self.b_1 = result_a1_b1.x[self.num_neurons * self.num_classes :].reshape(self.num_classes, 1)
 
 
 # pylint: disable=C0103, E0401
@@ -485,12 +432,8 @@ if __name__ == "__main__":
     x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, number_channels)
     input_shape = (number_channels * img_rows * img_cols,)
 
-    x_train = x_train.reshape(
-        (x_train.shape[0], number_channels * img_rows * img_cols)
-    ).astype("float64")
-    x_test = x_test.reshape(
-        (x_test.shape[0], number_channels * img_rows * img_cols)
-    ).astype("float64")
+    x_train = x_train.reshape((x_train.shape[0], number_channels * img_rows * img_cols)).astype("float64")
+    x_test = x_test.reshape((x_test.shape[0], number_channels * img_rows * img_cols)).astype("float64")
 
     mean = np.mean(x_train)
     std = np.std(x_train)
@@ -515,24 +458,17 @@ if __name__ == "__main__":
         )
 
         model.fit(
-            x_train,
-            y_train,
-            batch_size=batch_size,
-            epochs=epochs,
-            verbose=1,
-            validation_data=(x_test, y_test),
+            x_train, y_train, batch_size=batch_size, epochs=epochs, verbose=1, validation_data=(x_test, y_test),
         )
 
         model.save("./model.h5")
 
     score_target = model.evaluate(x_test, y_test, verbose=0)
 
-    target_classifier = KerasClassifier(
-        model=model, use_logits=True, clip_values=(0, 1)
-    )
+    target_classifier = KerasClassifier(model=model, use_logits=True, clip_values=(0, 1))
 
     fee = FunctionallyEquivalentExtraction(
-        classifier=target_classifier, num_neurons=number_neurons
+        classifier=target_classifier, num_neurons=number_neurons  # type: ignore
     )
     bbc = fee.extract(x_test[0:100])
 
@@ -542,16 +478,10 @@ if __name__ == "__main__":
     print("Target model - Test accuracy:", score_target[1])
     print(
         "Extracted model - Test accuracy:",
-        np.sum(
-            np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test, axis=1)
-        )
-        / y_test.shape[0],
+        np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0],
     )
     print(
         "Extracted model - Test Fidelity:",
-        np.sum(
-            np.argmax(y_test_predicted_extracted, axis=1)
-            == np.argmax(y_test_predicted_target, axis=1)
-        )
+        np.sum(np.argmax(y_test_predicted_extracted, axis=1) == np.argmax(y_test_predicted_target, axis=1))
         / y_test_predicted_target.shape[0],
     )

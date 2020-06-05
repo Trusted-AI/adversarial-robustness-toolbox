@@ -77,9 +77,7 @@ class CopycatCNN(ExtractionAttack):
         self.nb_stolen = nb_stolen
         self._check_params()
 
-    def extract(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Classifier:
+    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Classifier:
         """
         Extract a thieved classifier.
 
@@ -103,9 +101,7 @@ class CopycatCNN(ExtractionAttack):
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs["thieved_classifier"]
-        if thieved_classifier is None or not isinstance(
-            thieved_classifier, ClassifierMixin
-        ):
+        if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
             raise ValueError("A thieved classifier is needed.")
 
         # Select data to attack
@@ -116,10 +112,7 @@ class CopycatCNN(ExtractionAttack):
 
         # Train the thieved classifier
         thieved_classifier.fit(
-            x=selected_x,
-            y=fake_labels,
-            batch_size=self.batch_size_fit,
-            nb_epochs=self.nb_epochs,
+            x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs,
         )
 
         return thieved_classifier
@@ -150,26 +143,14 @@ class CopycatCNN(ExtractionAttack):
         return labels
 
     def _check_params(self) -> None:
-        if (
-            not isinstance(self.batch_size_fit, (int, np.int))
-            or self.batch_size_fit <= 0
-        ):
-            raise ValueError(
-                "The size of batches for fitting the thieved classifier must be a positive integer."
-            )
+        if not isinstance(self.batch_size_fit, (int, np.int)) or self.batch_size_fit <= 0:
+            raise ValueError("The size of batches for fitting the thieved classifier must be a positive integer.")
 
-        if (
-            not isinstance(self.batch_size_query, (int, np.int))
-            or self.batch_size_query <= 0
-        ):
-            raise ValueError(
-                "The size of batches for querying the victim classifier must be a positive integer."
-            )
+        if not isinstance(self.batch_size_query, (int, np.int)) or self.batch_size_query <= 0:
+            raise ValueError("The size of batches for querying the victim classifier must be a positive integer.")
 
         if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
             raise ValueError("The number of epochs must be a positive integer.")
 
         if not isinstance(self.nb_stolen, (int, np.int)) or self.nb_stolen <= 0:
-            raise ValueError(
-                "The number of queries submitted to the victim classifier must be a positive integer."
-            )
+            raise ValueError("The number of queries submitted to the victim classifier must be a positive integer.")

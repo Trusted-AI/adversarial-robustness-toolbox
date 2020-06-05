@@ -28,12 +28,8 @@ from typing import Optional, Tuple, Union
 
 import numpy as np
 
-from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import (
-    AdversarialPatchNumpy,
-)
-from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import (
-    AdversarialPatchTensorFlowV2,
-)
+from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
+from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import (
     ClassifierMixin,
@@ -94,10 +90,9 @@ class AdversarialPatch(EvasionAttack):
         """
         super(AdversarialPatch, self).__init__(estimator=classifier)
         if self.estimator.clip_values is None:
-            raise ValueError(
-                "Adversarial Patch attack requires a classifier with clip_values."
-            )
+            raise ValueError("Adversarial Patch attack requires a classifier with clip_values.")
 
+        self._attack: Union[AdversarialPatchTensorFlowV2, AdversarialPatchNumpy]
         if isinstance(self.estimator, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
                 classifier=classifier,
@@ -121,9 +116,7 @@ class AdversarialPatch(EvasionAttack):
             )
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -144,9 +137,7 @@ class AdversarialPatch(EvasionAttack):
 
         return self._attack.generate(x=x, y=y, **kwargs)
 
-    def apply_patch(
-        self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None
-    ) -> np.ndarray:
+    def apply_patch(self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images.
 
@@ -159,34 +150,21 @@ class AdversarialPatch(EvasionAttack):
 
     def _check_params(self) -> None:
         if not isinstance(self._attack.rotation_max, (float, int)):
-            raise ValueError(
-                "The maximum rotation of the random patches must be of type float."
-            )
+            raise ValueError("The maximum rotation of the random patches must be of type float.")
         if self._attack.rotation_max < 0 or self._attack.rotation_max > 180.0:
-            raise ValueError(
-                "The maximum rotation of the random patches must be between 0 and 180 degrees."
-            )
+            raise ValueError("The maximum rotation of the random patches must be between 0 and 180 degrees.")
 
         if not isinstance(self._attack.scale_min, float):
-            raise ValueError(
-                "The minimum scale of the random patched must be of type float."
-            )
-        if (
-            self._attack.scale_min < 0
-            or self._attack.scale_min >= self._attack.scale_max
-        ):
+            raise ValueError("The minimum scale of the random patched must be of type float.")
+        if self._attack.scale_min < 0 or self._attack.scale_min >= self._attack.scale_max:
             raise ValueError(
                 "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling."
             )
 
         if not isinstance(self._attack.scale_max, float):
-            raise ValueError(
-                "The maximum scale of the random patched must be of type float."
-            )
+            raise ValueError("The maximum scale of the random patched must be of type float.")
         if self._attack.scale_max > 1:
-            raise ValueError(
-                "The maximum scale of the random patched must not be greater than 1."
-            )
+            raise ValueError("The maximum scale of the random patched must not be greater than 1.")
 
         if not isinstance(self._attack.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")

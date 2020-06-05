@@ -69,9 +69,7 @@ class FeatureAdversaries(EvasionAttack):
         self.norm = np.inf
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -142,25 +140,17 @@ class FeatureAdversaries(EvasionAttack):
         bound = Bounds(lb=lb, ub=ub, keep_feasible=False)
 
         guide_representation = self.estimator.get_activations(
-            x=y.reshape(-1, *self.estimator.input_shape),
+            x=y.reshape(-1, *self.estimator.input_shape),  # type: ignore
             layer=self.layer,
             batch_size=self.batch_size,
         )
 
         def func(x_i):
             source_representation = self.estimator.get_activations(
-                x=x_i.reshape(-1, *self.estimator.input_shape),
-                layer=self.layer,
-                batch_size=self.batch_size,
+                x=x_i.reshape(-1, *self.estimator.input_shape), layer=self.layer, batch_size=self.batch_size,
             )
 
-            n = (
-                norm(
-                    source_representation.flatten() - guide_representation.flatten(),
-                    ord=2,
-                )
-                ** 2
-            )
+            n = norm(source_representation.flatten() - guide_representation.flatten(), ord=2,) ** 2
 
             return n
 
@@ -199,9 +189,7 @@ class FeatureAdversaries(EvasionAttack):
             raise ValueError("The maximum deviation `delta` has to be positive.")
 
         if not isinstance(self.layer, int):
-            raise ValueError(
-                "The index of the representation layer `layer` has to be integer."
-            )
+            raise ValueError("The index of the representation layer `layer` has to be integer.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")

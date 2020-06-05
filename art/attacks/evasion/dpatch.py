@@ -76,9 +76,7 @@ class DPatch(EvasionAttack):
         self._patch = np.ones(shape=patch_shape) * self.estimator.clip_values[1] / 2.0
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate DPatch.
 
@@ -86,13 +84,8 @@ class DPatch(EvasionAttack):
         :param y: Target labels for object detector.
         :return: Adversarial patch.
         """
-        if (
-            x.shape[self.estimator.channel_index]
-            != self.patch_shape[self.estimator.channel_index - 1]
-        ):
-            raise ValueError(
-                "The color channel index of the images and the patch have to be identical."
-            )
+        if x.shape[self.estimator.channel_index] != self.patch_shape[self.estimator.channel_index - 1]:
+            raise ValueError("The color channel index of the images and the patch have to be identical.")
         if y is not None:
             raise ValueError("The DPatch attack does not use target labels.")
         if x.ndim != 4:
@@ -103,7 +96,7 @@ class DPatch(EvasionAttack):
                 logger.info("Training Step: %i", i_step + 1)
 
             patched_images, transforms = self._augment_images_with_patch(
-                x, self._patch, random_location=True
+                x, self._patch, random_location=True, channel_index=self.estimator.channel_index
             )
             patch_target: List[Dict[str, np.ndarray]] = list()
 
@@ -126,13 +119,10 @@ class DPatch(EvasionAttack):
 
             for i_batch in range(num_batches):
                 i_batch_start = i_batch * self.batch_size
-                i_batch_end = min(
-                    (i_batch + 1) * self.batch_size, patched_images.shape[0]
-                )
+                i_batch_end = min((i_batch + 1) * self.batch_size, patched_images.shape[0])
 
                 gradients = self.estimator.loss_gradient(
-                    x=patched_images[i_batch_start:i_batch_end],
-                    y=patch_target[i_batch_start:i_batch_end],
+                    x=patched_images[i_batch_start:i_batch_end], y=patch_target[i_batch_start:i_batch_end],
                 )
 
                 for i_image in range(self.batch_size):
@@ -143,13 +133,9 @@ class DPatch(EvasionAttack):
                     i_y_2 = transforms[i_batch_start + i_image]["i_y_2"]
 
                     if self.estimator.channel_index == 3:
-                        patch_gradients_i = gradients[
-                            i_image, i_x_1:i_x_2, i_y_1:i_y_2, :
-                        ]
+                        patch_gradients_i = gradients[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :]
                     elif self.estimator.channel_index == 1:
-                        patch_gradients_i = gradients[
-                            i_image, :, i_x_1:i_x_2, i_y_1:i_y_2
-                        ]
+                        patch_gradients_i = gradients[i_image, :, i_x_1:i_x_2, i_y_1:i_y_2]
                     else:
                         raise ValueError("Unrecognized channel index.")
 
@@ -157,9 +143,7 @@ class DPatch(EvasionAttack):
 
             self._patch -= patch_gradients * self.learning_rate
             self._patch = np.clip(
-                self._patch,
-                a_min=self.estimator.clip_values[0],
-                a_max=self.estimator.clip_values[1],
+                self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
             )
 
         return self._patch
@@ -197,9 +181,7 @@ class DPatch(EvasionAttack):
             i_x_2 = i_x_1 + patch_copy.shape[0]
             i_y_2 = i_y_1 + patch_copy.shape[1]
 
-            transformations.append(
-                {"i_x_1": i_x_1, "i_y_1": i_y_1, "i_x_2": i_x_2, "i_y_2": i_y_2}
-            )
+            transformations.append({"i_x_1": i_x_1, "i_y_1": i_y_1, "i_x_2": i_x_2, "i_y_2": i_y_2})
 
             x_copy[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :] = patch_copy
 
@@ -209,10 +191,7 @@ class DPatch(EvasionAttack):
         return x_copy, transformations
 
     def apply_patch(
-        self,
-        x: np.ndarray,
-        patch_external: Optional[np.ndarray] = None,
-        random_location: bool = False,
+        self, x: np.ndarray, patch_external: Optional[np.ndarray] = None, random_location: bool = False,
     ) -> np.ndarray:
         """
         Apply the adversarial patch to images.
@@ -228,7 +207,7 @@ class DPatch(EvasionAttack):
             patch_local = self._patch
 
         patched_images, _ = self._augment_images_with_patch(
-            x=x, patch=patch_local, random_location=random_location
+            x=x, patch=patch_local, random_location=random_location, channel_index=self.estimator.channel_index
         )
 
         return patched_images

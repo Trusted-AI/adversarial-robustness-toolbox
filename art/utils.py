@@ -39,7 +39,7 @@ from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE, DATASET_TYPE
 
 if TYPE_CHECKING:
     from art.config import CLIP_VALUES_TYPE
-    from art.estimators.classification.classifier import Classifier
+    from art.estimators.classification.classifier import Classifier, ClassifierMixin
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +47,7 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- DEPRECATION
 
 
-def deprecated(
-    end_version: str, *, reason: str = "", replaced_by: str = ""
-) -> Callable:
+def deprecated(end_version: str, *, reason: str = "", replaced_by: str = "") -> Callable:
     """
     Deprecate a function or method and raise a `DeprecationWarning`.
 
@@ -70,18 +68,16 @@ def deprecated(
 
     def decorator(function):
         reason_msg = "\n" + reason if reason else reason
-        replaced_msg = (
-            f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
+        replaced_msg = f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
+        deprecated_msg = (
+            f"Function '{function.__name__}' is deprecated and will be removed in future release {end_version}."
         )
-        deprecated_msg = f"Function '{function.__name__}' is deprecated and will be removed in future release {end_version}."
 
         @wraps(function)
         def wrapper(*args, **kwargs):
             warnings.simplefilter("always", category=DeprecationWarning)
             warnings.warn(
-                deprecated_msg + replaced_msg + reason_msg,
-                category=DeprecationWarning,
-                stacklevel=2,
+                deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2,
             )
             warnings.simplefilter("default", category=DeprecationWarning)
             return function(*args, **kwargs)
@@ -91,9 +87,7 @@ def deprecated(
     return decorator
 
 
-def deprecated_keyword_arg(
-    identifier: str, end_version: str, *, reason: str = "", replaced_by: str = ""
-) -> Callable:
+def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "", replaced_by: str = "") -> Callable:
     """
     Deprecate a keyword argument and raise a `DeprecationWarning`.
 
@@ -115,9 +109,7 @@ def deprecated_keyword_arg(
 
     def decorator(function):
         reason_msg = "\n" + reason if reason else reason
-        replaced_msg = (
-            f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
-        )
+        replaced_msg = f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
         deprecated_msg = (
             f"Keyword argument '{identifier}' in '{function.__name__}' is deprecated and will be removed in"
             f" future release {end_version}."
@@ -127,9 +119,7 @@ def deprecated_keyword_arg(
         def wrapper(*args, **kwargs):
             warnings.simplefilter("always", category=DeprecationWarning)
             warnings.warn(
-                deprecated_msg + replaced_msg + reason_msg,
-                category=DeprecationWarning,
-                stacklevel=2,
+                deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2,
             )
             warnings.simplefilter("default", category=DeprecationWarning)
             return function(*args, **kwargs)
@@ -161,23 +151,18 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.
         )
     elif norm_p == 1:
         values_tmp = values_tmp * np.expand_dims(
-            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)),
-            axis=1,
+            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
         )
     elif norm_p == np.inf:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
-        raise NotImplementedError(
-            "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported."
-        )
+        raise NotImplementedError("Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
 
     values = values_tmp.reshape(values.shape)
     return values
 
 
-def random_sphere(
-    nb_points: int, nb_dims: int, radius: float, norm: Union[int, float]
-) -> np.ndarray:
+def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, float]) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
 
@@ -194,15 +179,11 @@ def random_sphere(
         for i in range(nb_points):
             a_tmp[i, 1:-1] = np.sort(np.random.uniform(0, a_tmp[i, -1], nb_dims - 1))
 
-        res = (a_tmp[:, 1:] - a_tmp[:, :-1]) * np.random.choice(
-            [-1, 1], (nb_points, nb_dims)
-        )
+        res = (a_tmp[:, 1:] - a_tmp[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
     elif norm == 2:
         a_tmp = np.random.randn(nb_points, nb_dims)
         s_2 = np.sum(a_tmp ** 2, axis=1)
-        base = (
-            gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
-        )
+        base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
         res = a_tmp * (np.tile(base, (nb_dims, 1))).T
     elif norm == np.inf:
         res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
@@ -336,9 +317,7 @@ def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
     :param classifier: The classifier used for computing predictions.
     :return: Least-likely class predicted by `classifier` for sample `x` in one-hot encoding.
     """
-    return to_categorical(
-        np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes
-    )
+    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
 def second_most_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
@@ -350,10 +329,7 @@ def second_most_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndar
     :param classifier: The classifier used for computing predictions.
     :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
     """
-    return to_categorical(
-        np.argpartition(classifier.predict(x), -2, axis=1)[:, -2],
-        nb_classes=classifier.nb_classes,
-    )
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes,)
 
 
 def get_label_conf(y_vec: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -433,15 +409,11 @@ def compute_success(
     :return: Percentage of successful adversarial samples.
     :rtype: `float`
     """
-    attack_success = compute_success_array(
-        classifier, x_clean, labels, x_adv, targeted, batch_size
-    )
+    attack_success = compute_success_array(classifier, x_clean, labels, x_adv, targeted, batch_size)
     return np.sum(attack_success) / x_adv.shape[0]
 
 
-def compute_accuracy(
-    preds: np.ndarray, labels: np.ndarray, abstain: bool = True
-) -> Tuple[np.ndarray, int]:
+def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True) -> Tuple[np.ndarray, int]:
     """
     Compute the accuracy rate and coverage rate of predictions
     In the case where predictions are abstained, those samples are ignored.
@@ -541,11 +513,7 @@ def load_mnist(raw: bool = False,) -> DATASET_TYPE:
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :return: `(x_train, y_train), (x_test, y_test), min, max`.
     """
-    path = get_file(
-        "mnist.npz",
-        path=ART_DATA_PATH,
-        url="https://s3.amazonaws.com/img-datasets/mnist.npz",
-    )
+    path = get_file("mnist.npz", path=ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz",)
 
     dict_mnist = np.load(path)
     x_train = dict_mnist["x_train"]
@@ -631,43 +599,21 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     # Preprocess
     if not raw:
         label_map = {"Iris-setosa": 0, "Iris-versicolor": 1, "Iris-virginica": 2}
-        labels = np.array(
-            [label_map[labels[i]] for i in range(labels.size)], dtype=np.int32
-        )
+        labels = np.array([label_map[labels[i]] for i in range(labels.size)], dtype=np.int32)
         data, labels = preprocess(data, labels, nb_classes=3)
     min_, max_ = np.amin(data), np.amax(data)
 
     # Split training and test sets
     split_index = int((1 - test_set) * len(data) / 3)
-    x_train = np.vstack(
-        (data[:split_index], data[50 : 50 + split_index], data[100 : 100 + split_index])
-    )
-    y_train = np.vstack(
-        (
-            labels[:split_index],
-            labels[50 : 50 + split_index],
-            labels[100 : 100 + split_index],
-        )
-    )
+    x_train = np.vstack((data[:split_index], data[50 : 50 + split_index], data[100 : 100 + split_index]))
+    y_train = np.vstack((labels[:split_index], labels[50 : 50 + split_index], labels[100 : 100 + split_index],))
 
     if split_index >= 49:
         x_test, y_test = None, None
     else:
 
-        x_test = np.vstack(
-            (
-                data[split_index:50],
-                data[50 + split_index : 100],
-                data[100 + split_index :],
-            )
-        )
-        y_test = np.vstack(
-            (
-                labels[split_index:50],
-                labels[50 + split_index : 100],
-                labels[100 + split_index :],
-            )
-        )
+        x_test = np.vstack((data[split_index:50], data[50 + split_index : 100], data[100 + split_index :],))
+        y_test = np.vstack((labels[split_index:50], labels[50 + split_index : 100], labels[100 + split_index :],))
         assert len(x_train) + len(x_test) == 150
 
         # Shuffle test set
@@ -729,9 +675,7 @@ def _extract(full_path: str, path: str) -> bool:
     return True
 
 
-def get_file(
-    filename: str, url: str, path: Optional[str] = None, extract: bool = False
-) -> str:
+def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool = False) -> str:
     """
     Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
     path `path` (default is ~/.art/data). and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip formats
@@ -782,9 +726,7 @@ def get_file(
             except HTTPError as exception:
                 raise Exception(error_msg.format(url, exception.code, exception.msg))  # type: ignore
             except URLError as exception:
-                raise Exception(
-                    error_msg.format(url, exception.errno, exception.reason)
-                )
+                raise Exception(error_msg.format(url, exception.errno, exception.reason))
         except (Exception, KeyboardInterrupt):
             if os.path.exists(full_path):
                 os.remove(full_path)
@@ -808,9 +750,7 @@ def make_directory(dir_path: str) -> None:
         os.makedirs(dir_path)
 
 
-def clip_and_round(
-    x: np.ndarray, clip_values: Optional["CLIP_VALUES_TYPE"], round_samples: float
-) -> np.ndarray:
+def clip_and_round(x: np.ndarray, clip_values: Optional["CLIP_VALUES_TYPE"], round_samples: float) -> np.ndarray:
     """
     Rounds the input to the correct level of granularity.
     Useful to ensure data passed to classifier can be represented
@@ -832,10 +772,7 @@ def clip_and_round(
 
 
 def preprocess(
-    x: np.ndarray,
-    y: np.ndarray,
-    nb_classes: int = 10,
-    clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+    x: np.ndarray, y: np.ndarray, nb_classes: int = 10, clip_values: Optional["CLIP_VALUES_TYPE"] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Scales `x` to [0, 1] and converts `y` to class categorical confidences.
@@ -858,9 +795,7 @@ def preprocess(
     return normalized_x, categorical_y
 
 
-def segment_by_class(
-    data: np.ndarray, classes: np.ndarray, num_classes: int
-) -> List[np.ndarray]:
+def segment_by_class(data: np.ndarray, classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
     """
     Returns segmented data according to specified features.
 
@@ -924,13 +859,9 @@ def performance_diff(
         return model1_f1 - model2_f1
 
     if callable(perf_function):
-        return perf_function(test_labels, model1_labels, **kwargs) - perf_function(
-            test_labels, model2_labels, **kwargs
-        )
+        return perf_function(test_labels, model1_labels, **kwargs) - perf_function(test_labels, model2_labels, **kwargs)
 
-    raise ValueError(
-        "Performance function '{}' not supported".format(str(perf_function))
-    )
+    raise ValueError("Performance function '{}' not supported".format(str(perf_function)))
 
 
 def is_probability(vector: np.ndarray) -> bool:

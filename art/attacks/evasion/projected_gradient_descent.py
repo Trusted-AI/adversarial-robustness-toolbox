@@ -106,15 +106,11 @@ class ProjectedGradientDescent(FastGradientMethod):
         if self.random_eps:
             lower, upper = 0, eps
             mu, sigma = 0, (eps / 2)
-            self.norm_dist = truncnorm(
-                (lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma
-            )
+            self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
         self._project = True
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -141,13 +137,11 @@ class ProjectedGradientDescent(FastGradientMethod):
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided
                 if self.targeted:
-                    raise ValueError(
-                        "Target labels `y` need to be provided for a targeted attack."
-                    )
+                    raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
                 # Use model predictions as correct outputs
                 targets = get_labels_np_array(
-                    self.estimator.predict(x, batch_size=self.batch_size)
+                    self.estimator.predict(x, batch_size=self.batch_size)  # type: ignore
                 )
             else:
                 targets = y
@@ -155,10 +149,7 @@ class ProjectedGradientDescent(FastGradientMethod):
             mask = kwargs.get("mask")
             if mask is not None:
                 # ensure the mask is broadcastable:
-                if (
-                    len(mask.shape) > len(x.shape)
-                    or mask.shape != x.shape[-len(mask.shape) :]
-                ):
+                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
                     raise ValueError("mask shape must be broadcastable to input shape")
 
             adv_x_best = None
@@ -181,12 +172,7 @@ class ProjectedGradientDescent(FastGradientMethod):
 
                 if self.num_random_init > 1:
                     rate = 100 * compute_success(
-                        self.estimator,
-                        x,
-                        targets,
-                        adv_x,
-                        self.targeted,
-                        batch_size=self.batch_size,
+                        self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size,  # type: ignore
                     )
                     if rate_best is None or rate > rate_best or adv_x_best is None:
                         rate_best = rate
@@ -200,20 +186,13 @@ class ProjectedGradientDescent(FastGradientMethod):
                 if rate_best is not None
                 else 100
                 * compute_success(
-                    self.estimator,
-                    x,
-                    y,
-                    adv_x_best,
-                    self.targeted,
-                    batch_size=self.batch_size,
+                    self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size,  # type: ignore
                 ),
             )
         else:
 
             if self.num_random_init > 0:
-                raise ValueError(
-                    "Random initialisation is only supported for classification."
-                )
+                raise ValueError("Random initialisation is only supported for classification.")
 
             if kwargs.get("mask") is not None:
                 raise ValueError("Mask is only supported for classification.")
@@ -221,9 +200,7 @@ class ProjectedGradientDescent(FastGradientMethod):
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided
                 if self.targeted:
-                    raise ValueError(
-                        "Target labels `y` need to be provided for a targeted attack."
-                    )
+                    raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
                 # Use model predictions as correct outputs
                 targets = self.estimator.predict(x, batch_size=self.batch_size)
@@ -252,11 +229,7 @@ class ProjectedGradientDescent(FastGradientMethod):
         super(ProjectedGradientDescent, self)._check_params()
 
         if self.eps_step > self.eps:
-            raise ValueError(
-                "The iteration step `eps_step` has to be smaller than the total attack `eps`."
-            )
+            raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         if self.max_iter <= 0:
-            raise ValueError(
-                "The number of iterations `max_iter` has to be a positive integer."
-            )
+            raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
