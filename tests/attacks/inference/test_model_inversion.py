@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -18,10 +18,15 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy as np
 import pytest
 
+import numpy as np
+
 from art.attacks.inference import MIFace
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassGradientsMixin
+
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +80,10 @@ def test_miface(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     for classifier in classifier_list:
         attack = MIFace(classifier, max_iter=150, batch_size=3)
         backend_check_inferred_values(attack, fix_get_mnist_subset, classifier)
+
+
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassGradientsMixin])
 
 
 if __name__ == "__main__":

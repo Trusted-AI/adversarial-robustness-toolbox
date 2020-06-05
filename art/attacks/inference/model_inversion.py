@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -38,9 +38,9 @@ logger = logging.getLogger(__name__)
 
 class MIFace(InferenceAttack):
     """
-    Implementation of the MIFace algorithm from Fredrikson et al. (2015). While in that paper the attack is
-    demonstrated specifically against face recognition models, it is applicable more broadly to classifiers with
-    continuous features which expose class gradients.
+    Implementation of the MIFace algorithm from Fredrikson et al. (2015). While in that paper the attack is demonstrated
+    specifically against face recognition models, it is applicable more broadly to classifiers with continuous features
+    which expose class gradients.
 
     | Paper link: https://dl.acm.org/doi/10.1145/2810103.2813677
     """

@@ -9,8 +9,10 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
 
-pytest -q tests/attacks/inference/ --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
+mlFrameworkList=("tensorflow" "scikitlearn")
+for mlFramework in "${mlFrameworkList[@]}"; do
+  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 
 pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi

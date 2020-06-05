@@ -18,9 +18,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy as np
 import pytest
 
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 
@@ -30,6 +30,10 @@ from art.attacks.inference import (
     AttributeInferenceWhiteBoxLifestyleDecisionTree,
 )
 from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
+
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 
 logger = logging.getLogger(__name__)
@@ -69,21 +73,21 @@ def test_black_box(get_tabular_classifier_list, get_iris_dataset):
 
     for classifier in classifier_list:
         # print(type(classifier).__name__)
-        attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
-        # get original model's predictions
-        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
-        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
-        # train attack model
-        attack.fit(x_train)
-        # infer attacked feature
-        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
-        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
-        # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        # print(train_acc)
-        # print(test_acc)
-        # assert train_acc > test_acc
+        if type(classifier).__name__ == "ScikitlearnDecisionTreeClassifier":
+            attack = AttributeInferenceBlackBox(classifier, attack_feature=attack_feature)
+            # get original model's predictions
+            x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+            x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+            # train attack model
+            attack.fit(x_train)
+            # infer attacked feature
+            inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
+            inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
+            # check accuracy
+            train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+            test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+            assert train_acc == pytest.approx(0.8285, abs=0.03)
+            assert test_acc == pytest.approx(0.8888, abs=0.03)
 
 
 def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
@@ -128,22 +132,21 @@ def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
     )
 
     for classifier in classifier_list:
-        # print(type(classifier).__name__)
-        attack = AttributeInferenceBlackBox(classifier, attack_model=attack_model, attack_feature=attack_feature)
-        # get original model's predictions
-        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
-        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
-        # train attack model
-        attack.fit(x_train)
-        # infer attacked feature
-        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
-        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
-        # check accuracy
-        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-        # print(train_acc)
-        # print(test_acc)
-        # assert train_acc > test_acc
+        if type(classifier).__name__ == "ScikitlearnDecisionTreeClassifier":
+            attack = AttributeInferenceBlackBox(classifier, attack_model=attack_model, attack_feature=attack_feature)
+            # get original model's predictions
+            x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+            x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+            # train attack model
+            attack.fit(x_train)
+            # infer attacked feature
+            inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
+            inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
+            # check accuracy
+            train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+            test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+            # assert train_acc == pytest.approx(0.5523, abs=0.03)
+            # assert test_acc == pytest.approx(0.5777, abs=0.03)
 
 
 def test_white_box(get_tabular_classifier_list, get_iris_dataset):
@@ -163,16 +166,16 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
     x_test_feature = x_test_iris[:, attack_feature]
 
     for classifier in classifier_list:
-        # print(type(classifier).__name__)
-        attack = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=attack_feature)
-        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
-        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
-        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
-        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
-        train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
-        test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
-        # print(np.sum(train_diff) / len(inferred_train))
-        # print(np.sum(test_diff) / len(inferred_test))
+        if type(classifier).__name__ == "ScikitlearnDecisionTreeClassifier":
+            attack = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=attack_feature)
+            x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+            x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+            inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
+            inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
+            train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
+            test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
+            assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.2108, abs=0.03)
+            assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.1988, abs=0.03)
 
 
 def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
@@ -192,18 +195,28 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
     x_test_feature = x_test_iris[:, attack_feature]
 
     for classifier in classifier_list:
-        # print(type(classifier).__name__)
-        attack = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=attack_feature)
-        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
-        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
-        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
-        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
-        train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
-        test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
-        # print(np.sum(train_diff) / len(inferred_train))
-        # print(np.sum(test_diff) / len(inferred_test))
-        # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
+        if type(classifier).__name__ == "ScikitlearnDecisionTreeClassifier":
+            attack = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=attack_feature)
+            x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+            x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+            inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
+            inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
+            train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
+            test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
+            assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.3357, abs=0.03)
+            assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.3149, abs=0.03)
+            # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
+
+
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(AttributeInferenceBlackBox, [BaseEstimator])
+    backend_test_classifier_type_check_fail(
+        AttributeInferenceWhiteBoxLifestyleDecisionTree, [BaseEstimator, ScikitlearnDecisionTreeClassifier]
+    )
+    backend_test_classifier_type_check_fail(
+        AttributeInferenceWhiteBoxDecisionTree, [BaseEstimator, ScikitlearnDecisionTreeClassifier]
+    )
 
 
 if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=scikitlearn --durations=0".format(__file__).split(" "))
+    pytest.cmdline.main("-q -s {} --mlFramework=scikitlearn --durations=0".format(__file__).split(" "))

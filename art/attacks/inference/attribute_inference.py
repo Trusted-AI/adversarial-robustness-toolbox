@@ -24,7 +24,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
-
 from sklearn.neural_network import MLPClassifier
 
 from art.estimators.estimator import BaseEstimator
@@ -41,11 +40,10 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     """
     Implementation of a simple black-box attribute inference attack.
 
-    The idea is to train a simple neural network to learn the attacked
-    feature from the rest of the features and the model's predictions.
-    Assumes the availability of the attacked model's predictions for the samples under attack,
-    in addition to the rest of the feature values.
-    If this is not available, the true class label of the samples may be used as a proxy.
+    The idea is to train a simple neural network to learn the attacked feature from the rest of the features and the
+    model's predictions. Assumes the availability of the attacked model's predictions for the samples under attack,
+    in addition to the rest of the feature values. If this is not available, the true class label of the samples may be
+    used as a proxy.
     """
 
     _estimator_requirements = [BaseEstimator]
@@ -147,16 +145,16 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         x_test = np.concatenate((x, y), axis=1).astype(np.float32)
         return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
-        # return np.array([np.argmax(arr) for arr in self.attack_model.predict(x_test)])
 
 
 class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
     """
     Implementation of Fredrikson et al. white box inference attack for decision trees.
 
-    Paper link: https://dl.acm.org/doi/10.1145/2810103.2813677
-    Assumes that the attacked feature is discrete or categorical, with limited number
-    of possible values. For example: a boolean feature.
+    Assumes that the attacked feature is discrete or categorical, with limited number of possible values. For example:
+    a boolean feature.
+
+    | Paper link: https://dl.acm.org/doi/10.1145/2810103.2813677
     """
 
     _estimator_requirements = (BaseEstimator, ScikitlearnDecisionTreeClassifier)
@@ -182,8 +180,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         :type x: `np.ndarray`
         :param values: Possible values for attacked feature.
         :type values: `np.ndarray`
-        :param priors: Prior distributions of attacked feature values. Same size array
-            as `values`.
+        :param priors: Prior distributions of attacked feature values. Same size array as `values`.
         :type priors: `np.ndarray`
         :return: The inferred feature values.
         :rtype: `np.ndarray`
@@ -213,6 +210,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
             v = np.full((n_samples, 1), value)
             x_value = np.concatenate((x[:, : self.attack_feature], v), axis=1)
             x_value = np.concatenate((x_value, x[:, self.attack_feature :]), axis=1)
+
             # find the relative probability of this value for all samples being attacked
             prob_value = [
                 (
@@ -251,11 +249,12 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
     A variation of the method proposed by of Fredrikson et al. in:
     https://dl.acm.org/doi/10.1145/2810103.2813677
 
-    Assumes the availability of the attacked model's predictions for the samples under attack,
-    in addition to access to the model itself and the rest of the feature values.
-    If this is not available, the true class label of the samples may be used as a proxy.
-    Also assumes that the attacked feature is discrete or categorical, with limited number
-    of possible values. For example: a boolean feature.
+    Assumes the availability of the attacked model's predictions for the samples under attack, in addition to access to
+    the model itself and the rest of the feature values. If this is not available, the true class label of the samples
+    may be used as a proxy. Also assumes that the attacked feature is discrete or categorical, with limited number of
+    possible values. For example: a boolean feature.
+
+    | Paper link: https://dl.acm.org/doi/10.1145/2810103.2813677
     """
 
     _estimator_requirements = (BaseEstimator, ScikitlearnDecisionTreeClassifier)
@@ -277,9 +276,8 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         """
         Infer the attacked feature.
 
-        If the model's prediction coincides with the real prediction for the sample for a single
-        value, choose it as the predicted value
-        If not, fall back to the Fredrikson method (without phi)
+        If the model's prediction coincides with the real prediction for the sample for a single value, choose it as the
+        predicted value. If not, fall back to the Fredrikson method (without phi)
 
         :param x: Input to attack. Includes all features except the attacked feature.
         :type x: `np.ndarray`
