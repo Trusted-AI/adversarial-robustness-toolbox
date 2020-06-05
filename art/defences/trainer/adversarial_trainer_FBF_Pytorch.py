@@ -21,16 +21,15 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import time
 
 import numpy as np
+import torch
+import torch.nn as nn
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.trainer.adversarial_trainer_FBF import AdversarialTrainerFBF
-
 from art.utils import random_sphere
-import torch
-import time
-import torch.nn as nn
 
 logger = logging.getLogger(__name__)
 
