@@ -6,6 +6,7 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
+
 pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
 
@@ -15,6 +16,9 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 done
 
+
+
+#NOTE the following line should be removed and tested as part of the all framework tests below
 pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
@@ -26,6 +30,7 @@ mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
   pytest -q tests/classifiersFrameworks/ --mlFramework=$mlFramework --durations=0
+  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed tests for framework $mlFramework"; fi
 done
 

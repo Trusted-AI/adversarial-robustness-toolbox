@@ -38,6 +38,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.parametrize("clipped_classifier, targeted", [(True, True), (True, False), (False, True), (False, False)])
+@pytest.mark.skipMlFramework("scikitlearn")
 def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, clipped_classifier, targeted):
     classifier_list = get_tabular_classifier_list(BoundaryAttack, clipped=clipped_classifier)
     if classifier_list is None:
