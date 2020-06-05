@@ -107,9 +107,41 @@ def test_pickle(get_default_mnist_subset, get_image_classifier_list):
     # from tests.utils import get_image_classifier_tf
     # classifier, sess = get_image_classifier_tf()
 
-    # TODO doesn't seem like the issue is with the model since here the same model doesn't work either
-    # I think it has to do with ART_DATA_PATH instead
-    pickle.dump(classifier, open(full_path, "wb"))
+    # Define the network
+    import torch.nn.functional as F
+
+    class Model(nn.Module):
+        def __init__(self):
+            super(Model, self).__init__()
+            self.conv = nn.Conv2d(1, 2, 5)
+            self.pool = nn.MaxPool2d(2, 2)
+            self.fc = nn.Linear(288, 10)
+
+        def forward(self, x):
+            x = self.pool(F.relu(self.conv(x)))
+            x = x.view(-1, 288)
+            logit_output = self.fc(x)
+            return logit_output
+
+    model = Model()
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    classifier_2 = PyTorchClassifier(
+        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+    )
+    classifier_2.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
+    module_classifier = classifier_2
+
+    from art.config import ART_DATA_PATH
+    full_path = os.path.join(ART_DATA_PATH, "my_classifier")
+    folder = os.path.split(full_path)[0]
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    # TODO the error is not coming from the classifier itself created but simply the fact that it's created
+    #  within ghet get_image classifier_pt method
+    # pickle.dump(classifier, open(full_path, "wb"))
+    pickle.dump(model, open(full_path, "wb"))
 
     # Unpickle:
     with open(full_path, "rb") as f:

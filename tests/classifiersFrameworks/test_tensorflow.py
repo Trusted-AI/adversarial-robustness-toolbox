@@ -305,7 +305,7 @@ def test_layers(is_tf_version_2, framework, get_default_mnist_subset, get_image_
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
+def test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list):
     expected_values = {
         "expected_gradients_1": ExpectedValue(
             np.asarray(

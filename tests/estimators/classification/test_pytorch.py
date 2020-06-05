@@ -110,85 +110,47 @@ class TestPyTorchClassifier(TestBase):
         self.x_test_mnist = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 28, 28, 1)).astype(np.float32)
         super().tearDown()
 
-    def test_loss_gradient(self):
-        classifier = get_image_classifier_pt()
-        gradients = classifier.loss_gradient(self.x_test_mnist, self.y_test_mnist)
-
-        self.assertEqual(gradients.shape, (self.n_test, 1, 28, 28))
-
-        expected_gradients_1 = np.asarray(
-            [
-                7.36792526e-06,
-                6.50995162e-06,
-                1.55499711e-05,
-                1.66183436e-05,
-                -7.46988326e-06,
-                1.26695295e-05,
-                7.61196816e-06,
-                0.00000000e00,
-                0.00000000e00,
-                -1.74639266e-04,
-                -1.83985649e-05,
-                1.57154878e-04,
-                -7.07946092e-05,
-                1.57594535e-04,
-                3.20027815e-04,
-                3.82224127e-04,
-                2.06750279e-04,
-                4.05299688e-05,
-                3.00343090e-04,
-                5.03358315e-05,
-                -9.70281690e-07,
-                -1.66648446e-04,
-                4.36533046e-05,
-                0.00000000e00,
-                0.00000000e00,
-                0.00000000e00,
-                0.00000000e00,
-                0.00000000e00,
-            ]
-        )
-        np.testing.assert_array_almost_equal(gradients[0, 0, :, 14], expected_gradients_1, decimal=4)
-
-        expected_gradients_2 = np.asarray(
-            [
-                1.6708217e-04,
-                1.5951888e-04,
-                1.9378442e-04,
-                2.3605554e-04,
-                -1.2112357e-04,
-                -3.3699317e-04,
-                5.4395932e-05,
-                8.7142853e-06,
-                2.4337447e-04,
-                9.9849363e-05,
-                9.5080861e-05,
-                -7.2551797e-05,
-                -2.3405801e-04,
-                -1.4076763e-04,
-                3.2002782e-04,
-                1.2220720e-04,
-                -1.0334983e-04,
-                3.2093230e-05,
-                -1.2616906e-04,
-                -4.1350944e-05,
-                8.4347754e-05,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-                0.0000000e00,
-            ]
-        )
-        np.testing.assert_array_almost_equal(gradients[0, 0, 14, :], expected_gradients_2, decimal=4)
-
     def test_pickle(self):
+        from art.config import ART_DATA_PATH
         full_path = os.path.join(ART_DATA_PATH, "my_classifier")
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
+
+        import torch.nn.functional as F
+
+        class Model(nn.Module):
+            def __init__(self):
+                super(Model, self).__init__()
+                self.conv = nn.Conv2d(1, 2, 5)
+                self.pool = nn.MaxPool2d(2, 2)
+                self.fc = nn.Linear(288, 10)
+
+            def forward(self, x):
+                x = self.pool(F.relu(self.conv(x)))
+                x = x.view(-1, 288)
+                logit_output = self.fc(x)
+                return logit_output
+
+        model = Model()
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        classifier_2 = PyTorchClassifier(
+            model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+        )
+        classifier_2.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
+        module_classifier = classifier_2
+
+        from art.config import ART_DATA_PATH
+        full_path = os.path.join(ART_DATA_PATH, "my_classifier")
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        # TODO the error is not coming from the classifier itself created but simply the fact that it's created
+        #  within ghet get_image classifier_pt method
+        # pickle.dump(classifier, open(full_path, "wb"))
+        # pickle.dump(model, open(full_path, "wb"))
 
         model = Model()
 
@@ -210,9 +172,21 @@ class TestPyTorchClassifier(TestBase):
         # from tests.utils import get_image_classifier_tf
         # classifier, sess = get_image_classifier_tf()
 
-        pickle.dump(self.module_classifier, open(full_path, "wb"))
+        # Define the network
+        # model = Model()
+        # loss_fn = nn.CrossEntropyLoss()
+        # optimizer = optim.Adam(model.parameters(), lr=0.01)
+        # classifier_2 = PyTorchClassifier(
+        #     model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+        # )
+        # classifier_2.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
+        # self.module_classifier = classifier_2
 
-        # TODO the error is not coming from the classifier itself created but simply the fact that it's created within ghet get_image classifier_pt method
+        pickle.dump(self.module_classifier, open(full_path, "wb"))
+        pickle.dump(ptc, open(full_path, "wb"))
+
+        # TODO the error is not coming from the classifier itself created but simply the fact that it's
+        #  created within ghet get_image classifier_pt method
         pickle.dump(self.classifier, open(full_path, "wb"))
 
         # Unpickle:
