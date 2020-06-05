@@ -16,6 +16,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
+This is a PyTorch implementation of the Fast is better than free protocol.
+
 | Paper link: https://openreview.net/forum?id=BJx040EFvH
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -36,7 +38,14 @@ logger = logging.getLogger(__name__)
 
 class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
     """
+    Class performing adversarial training following Fast is Better Than Free protocol.
+
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
+
+    | The effectiveness of this protoocl is found to be sensitive to the use of techniques like
+        data augmentation, gradient clipping and learning rate schedules. Optionally, the use of
+        mixed precision arithmetic operation via apex library can significantly reduce the training
+        time making this one of the fastest adversarial training protocol.
     """
 
     def __init__(self, classifier, eps=8, use_amp=False, **kwargs):

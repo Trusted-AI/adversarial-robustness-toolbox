@@ -16,7 +16,12 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
+This module implements adversarial training with Fast is better than free protocol.
+
 | Paper link: https://openreview.net/forum?id=BJx040EFvH
+
+| It was noted that this protocol is sensitive to the use of techniques like data augmentation, gradient clipping,
+    and learning rate schedules. Consequently, framework specific implementations are being provided in ART.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -44,7 +49,8 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
 
         """
         self._eps = eps
-        self._classifier = classifier
+        super().__init__(classifier,
+                         **kwargs)
 
     @abc.abstractmethod
     def fit(self, x, y, validation_data=None, batch_size=128, nb_epochs=20, **kwargs):
