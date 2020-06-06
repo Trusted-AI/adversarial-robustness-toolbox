@@ -76,6 +76,16 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * 对SVM的中毒攻击 ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 * Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 
+**推理攻击:**
+
+*模型反转*
+* MIFace ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+
+*属性推论*
+* AttributeInferenceBlackBox
+* AttributeInferenceWhiteBoxLifestyleDecisionTree ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+* AttributeInferenceWhiteBoxDecisionTree ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+
 **防御 - 预处理器：**
 * 视频压缩
 * 重采样 ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
