@@ -38,8 +38,13 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 ## ART中实施的攻击，防御，检测，指标，认证和验证
 
 **逃避攻击：**
-* Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
-* Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations)) 
+* Auto Attack ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Auto Projected Gradient Descent ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Square Attack ([Andriushchenko et al., 2020](https://arxiv.org/abs/1912.00049))
+* 暗影攻击 ([Ghiasi et al., 2020](https://arxiv.org/abs/2003.08937))
+* Wasserstein Attack([Wong et al., 2020](https://arxiv.org/abs/1902.07906))
+* 门槛攻击 ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
+* 像素攻击 ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations))
 * HopSkipJump攻击 ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
 * 高可信度低不确定性对抗性例子 ([Grosse et al., 2018](https://arxiv.org/abs/1812.02606))
 * Iterative frame saliency attack ([Inkawhich et al., 2018](https://arxiv.org/abs/1811.11875))
@@ -71,12 +76,25 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 * 对SVM的中毒攻击 ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 * Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
 
+**推理攻击:**
+
+*模型反转*
+* MIFace ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+
+*属性推论*
+* AttributeInferenceBlackBox
+* AttributeInferenceWhiteBoxLifestyleDecisionTree ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+* AttributeInferenceWhiteBoxDecisionTree ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+
 **防御 - 预处理器：**
+* 视频压缩
 * 重采样 ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
 * 温度计编码 ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * MP3压缩 ([Carlini, N. & Wagner, D., 2018](https://arxiv.org/abs/1801.01944))
 * 总方差最小化 ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
+* 逆甘 ([An Lin et al. 2019](https://arxiv.org/abs/1911.10291))
+* 国防军 ([Samangouei et al. 2018](https://arxiv.org/abs/1805.06605))
 * 高斯数据增强 ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
 * 特征挤压 ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * 空间平滑 ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))

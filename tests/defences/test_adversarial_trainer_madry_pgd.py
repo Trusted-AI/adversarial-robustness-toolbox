@@ -60,22 +60,16 @@ class TestAdversarialTrainerMadryPGD(unittest.TestCase):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_test_original = x_test.copy()
 
-        adv_trainer = AdversarialTrainerMadryPGD(
-            self.classifier, nb_epochs=1, batch_size=128
-        )
+        adv_trainer = AdversarialTrainerMadryPGD(self.classifier, nb_epochs=1, batch_size=128)
         adv_trainer.fit(x_train, y_train)
 
-        predictions_new = np.argmax(
-            adv_trainer.trainer.get_classifier().predict(x_test), axis=1
-        )
+        predictions_new = np.argmax(adv_trainer.trainer.get_classifier().predict(x_test), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
         self.assertEqual(accuracy_new, 0.38)
 
         # Check that x_test has not been modified by attack and classifier
-        self.assertAlmostEqual(
-            float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001
-        )
+        self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
 
 if __name__ == "__main__":

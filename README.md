@@ -51,6 +51,11 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 ## Implemented Attacks, Defences, Detections, Metrics, Certifications and Verifications
 
 **Evasion Attacks:**
+* Auto Attack ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Auto Projected Gradient Descent ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Square Attack ([Andriushchenko et al., 2020](https://arxiv.org/abs/1912.00049))
+* Shadow Attack ([Ghiasi et al., 2020](https://arxiv.org/abs/2003.08937))
+* Wasserstein Attack([Wong et al., 2020](https://arxiv.org/abs/1902.07906))
 * Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
 * Pixel Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026), [Su et al., 2019](https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations))
 * HopSkipJump attack ([Chen et al., 2019](https://arxiv.org/abs/1904.02144))
@@ -83,13 +88,27 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 **Poisoning Attacks:**
 * Poisoning Attack on SVM ([Biggio et al., 2013](https://arxiv.org/abs/1206.6389))
 * Backdoor Attack ([Gu, et. al., 2017](https://arxiv.org/abs/1708.06733))
+* Feature Collision Attack ([Shafahi, Huang et. al., 2018](https://arxiv.org/pdf/1804.00792.pdf))
+
+**Inference Attacks:**
+
+*Model Inversion*
+* MIFace ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+
+*Attribute Inference*
+* AttributeInferenceBlackBox
+* AttributeInferenceWhiteBoxLifestyleDecisionTree ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
+* AttributeInferenceWhiteBoxDecisionTree ([Fredrikson et al., 2015](https://dl.acm.org/doi/10.1145/2810103.2813677))
 
 **Defences - Preprocessor:**
+* Video compression
 * Resampling ([Yang et al., 2019](https://arxiv.org/abs/1809.10875))
 * Thermometer encoding ([Buckman et al., 2018](https://openreview.net/forum?id=S18Su--CW))
 * MP3 compression ([Carlini, N. & Wagner, D., 2018](https://arxiv.org/abs/1801.01944))
 * Total variance minimization ([Guo et al., 2018](https://openreview.net/forum?id=SyJ7ClWCb))
 * PixelDefend ([Song et al., 2017](https://arxiv.org/abs/1710.10766))
+* InverseGan ([An Lin et al. 2019](https://arxiv.org/abs/1911.10291))
+* DefenseGan ([Samangouei et al. 2018](https://arxiv.org/abs/1805.06605))
 * Gaussian data augmentation ([Zantedeschi et al., 2017](https://arxiv.org/abs/1707.06728))
 * Feature squeezing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))
 * Spatial smoothing ([Xu et al., 2017](http://arxiv.org/abs/1704.01155))

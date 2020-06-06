@@ -35,9 +35,7 @@ class GaussianNoise(Postprocessor):
 
     params = ["scale"]
 
-    def __init__(
-        self, scale: float = 0.2, apply_fit: bool = False, apply_predict: bool = True
-    ) -> None:
+    def __init__(self, scale: float = 0.2, apply_fit: bool = False, apply_predict: bool = True) -> None:
         """
         Create a GaussianNoise postprocessor.
 

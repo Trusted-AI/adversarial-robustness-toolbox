@@ -34,6 +34,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -50,15 +51,17 @@ class JpegCompression(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["quality", "channel_index", "clip_values"]
+    params = ["quality", "channel_index", "channels_first", "clip_values"]
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         clip_values: CLIP_VALUES_TYPE,
         quality: int = 50,
-        channel_index: int = 3,
+        channel_index: int = Deprecated,
+        channels_first: bool = False,
         apply_fit: bool = True,
-        apply_predict: bool = False,
+        apply_predict: bool = True,
     ):
         """
         Create an instance of JPEG compression.
@@ -67,15 +70,25 @@ class JpegCompression(Preprocessor):
                for features.
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(JpegCompression, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
         self.quality = quality
         self.channel_index = channel_index
+        self.channels_first = channels_first
         self.clip_values = clip_values
         self._check_params()
 
@@ -100,9 +113,7 @@ class JpegCompression(Preprocessor):
         tmp_jpeg.close()
         return x_jpeg
 
-    def __call__(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply JPEG compression to sample `x`.
 
@@ -112,12 +123,7 @@ class JpegCompression(Preprocessor):
         :return: compressed sample.
         """
         x_ndim = x.ndim
-        if x_ndim == 2:
-            raise ValueError(
-                "Feature vectors detected. JPEG compression can only be applied to data with spatial dimensions."
-            )
-
-        if x_ndim > 5:
+        if x_ndim not in [4, 5]:
             raise ValueError(
                 "Unrecognized input dimension. JPEG compression can only be applied to image and video data."
             )
@@ -128,10 +134,10 @@ class JpegCompression(Preprocessor):
             )
 
         # Swap channel index
-        if self.channel_index == 1 and x_ndim == 4:
+        if self.channels_first and x_ndim == 4:
             # image shape NCHW to NHWC
             x = np.transpose(x, (0, 2, 3, 1))
-        elif self.channel_index == 1 and x_ndim == 5:
+        elif self.channels_first and x_ndim == 5:
             # video shape NCFHW to NFHWC
             x = np.transpose(x, (0, 2, 3, 4, 1))
 
@@ -175,10 +181,10 @@ class JpegCompression(Preprocessor):
             x_jpeg = np.squeeze(x_jpeg, axis=1)
 
         # Swap channel index
-        if self.channel_index == 1 and x_jpeg.ndim == 4:
+        if self.channels_first and x_jpeg.ndim == 4:
             # image shape NHWC to NCHW
             x_jpeg = np.transpose(x_jpeg, (0, 3, 1, 2))
-        elif self.channel_index == 1 and x_ndim == 5:
+        elif self.channels_first and x_ndim == 5:
             # video shape NFHWC to NCFHW
             x_jpeg = np.transpose(x_jpeg, (0, 4, 1, 2, 3))
         return x_jpeg, y
@@ -193,25 +199,16 @@ class JpegCompression(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        if (
-            not isinstance(self.quality, (int, np.int))
-            or self.quality <= 0
-            or self.quality > 100
-        ):
+        if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
             raise ValueError("Image quality must be a positive integer <= 100.")
 
-        if not (
-            isinstance(self.channel_index, (int, np.int))
-            and self.channel_index in [1, 3, 4]
-        ):
+        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3, 4]):
             raise ValueError(
                 "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
             )
 
         if len(self.clip_values) != 2:
-            raise ValueError(
-                "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
-            )
+            raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():
             raise ValueError("Invalid 'clip_values': min >= max.")

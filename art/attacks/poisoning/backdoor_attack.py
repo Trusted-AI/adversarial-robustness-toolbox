@@ -53,9 +53,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         self.perturbation = perturbation
         self._check_params()
 
-    def poison(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Iteratively finds optimal attack points starting at values at x.
 
@@ -64,9 +62,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         if y is None:
-            raise ValueError(
-                "Target labels `y` need to be provided for a targeted attack."
-            )
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
         else:
             y_attack = np.copy(y)
 
@@ -84,8 +80,5 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
         return poisoned, y_attack
 
     def _check_params(self) -> None:
-        if not (
-            callable(self.perturbation)
-            or all((callable(perturb) for perturb in self.perturbation))
-        ):
+        if not (callable(self.perturbation) or all((callable(perturb) for perturb in self.perturbation))):
             raise ValueError("Perturbation must be a function or a list of functions.")

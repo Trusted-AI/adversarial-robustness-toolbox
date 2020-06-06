@@ -63,9 +63,7 @@ class input_filter(abc.ABCMeta):
                         lst[0] = np.array(args[0])
 
                 if "y" in kwargs:
-                    if kwargs["y"] is not None and not isinstance(
-                        kwargs["y"], np.ndarray
-                    ):
+                    if kwargs["y"] is not None and not isinstance(kwargs["y"], np.ndarray):
                         kwargs["y"] = np.array(kwargs["y"])
                 elif len(args) == 2:
                     if not isinstance(args[1], np.ndarray):
@@ -186,9 +184,7 @@ class PoisoningAttackBlackBox(PoisoningAttack):
         super().__init__(None)  # type: ignore
 
     @abc.abstractmethod
-    def poison(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.
@@ -206,9 +202,7 @@ class PoisoningAttackWhiteBox(PoisoningAttack):
     """
 
     @abc.abstractmethod
-    def poison(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.
@@ -227,9 +221,7 @@ class ExtractionAttack(Attack):
     """
 
     @abc.abstractmethod
-    def extract(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> "Classifier":
+    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "Classifier":
         """
         Extract models and return them as an ART classifier. This method should be overridden by all concrete extraction
         attack implementations.
@@ -240,3 +232,82 @@ class ExtractionAttack(Attack):
         :return: ART classifier of the extracted model.
         """
         raise NotImplementedError
+
+
+class InferenceAttack(Attack):
+    """
+    Abstract base class for inference attack classes.
+    """
+
+    def __init__(self, estimator):
+        """
+        :param estimator: A trained estimator targeted for inference attack.
+        :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
+        """
+        super().__init__(estimator)
+
+    @abc.abstractmethod
+    def infer(self, x, y=None, **kwargs):
+        """
+        Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
+        should be overridden by all concrete inference attack implementations.
+
+        :param x: An array with reference inputs to be used in the attack.
+        :type x: `np.ndarray`
+        :param y: Labels for `x`. This parameter is only used by some of the attacks.
+        :type y: `np.ndarray`
+        :return: An array holding the inferred properties.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+
+class AttributeInferenceAttack(InferenceAttack):
+    """
+    Abstract base class for attribute inference attack classes.
+    """
+
+    attack_params = InferenceAttack.attack_params + ["attack_feature"]
+
+    def __init__(self, estimator, attack_feature=0):
+        """
+        :param estimator: A trained estimator targeted for inference attack.
+        :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
+        :param attack_feature: The index of the feature to be attacked.
+        :type attack_feature: `int`
+        """
+        super().__init__(estimator)
+
+        params = {"attack_feature": attack_feature}
+        self.set_params(**params)
+
+    @abc.abstractmethod
+    def infer(self, x, y=None, **kwargs):
+        """
+        Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
+        should be overridden by all concrete inference attack implementations.
+
+        :param x: An array with reference inputs to be used in the attack.
+        :type x: `np.ndarray`
+        :param y: Labels for `x`. This parameter is only used by some of the attacks.
+        :type y: `np.ndarray`
+        :return: An array holding the inferred properties.
+        :rtype: `np.ndarray`
+        """
+        raise NotImplementedError
+
+    def set_params(self, **kwargs):
+        """
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+
+        :param attack_feature: The index of the feature to be attacked.
+        :type attack_feature: `int`
+        """
+
+        # Save attack-specific parameters
+        super(AttributeInferenceAttack, self).set_params(**kwargs)
+
+        if self.attack_feature < 0:
+            raise ValueError("Attack feature must be positive.")
+
+        return True

@@ -43,9 +43,7 @@ class DecisionTreeAttack(EvasionAttack):
     attack_params = ["classifier", "offset"]
     _estimator_requirements = (ScikitlearnDecisionTreeClassifier,)
 
-    def __init__(
-        self, classifier: ScikitlearnDecisionTreeClassifier, offset: float = 0.001
-    ) -> None:
+    def __init__(self, classifier: ScikitlearnDecisionTreeClassifier, offset: float = 0.001) -> None:
         """
         :param classifier: A trained model of type scikit decision tree.
         :param offset: How much the value is pushed away from tree's threshold.
@@ -55,10 +53,7 @@ class DecisionTreeAttack(EvasionAttack):
         self._check_params()
 
     def _df_subtree(
-        self,
-        position: int,
-        original_class: Union[int, np.ndarray],
-        target: Optional[int] = None,
+        self, position: int, original_class: Union[int, np.ndarray], target: Optional[int] = None,
     ) -> List[int]:
         """
         Search a decision tree for a mis-classifying instance.
@@ -70,9 +65,7 @@ class DecisionTreeAttack(EvasionAttack):
                  ==target class if provided.
         """
         # base case, we're at a leaf
-        if self.estimator.get_left_child(position) == self.estimator.get_right_child(
-            position
-        ):
+        if self.estimator.get_left_child(position) == self.estimator.get_right_child(position):
             if target is None:  # untargeted case
                 if self.estimator.get_classes_at_node(position) != original_class:
                     path = [position]
@@ -84,14 +77,10 @@ class DecisionTreeAttack(EvasionAttack):
                 else:
                     path = [-1]
         else:  # go deeper, depths first
-            res = self._df_subtree(
-                self.estimator.get_left_child(position), original_class, target
-            )
+            res = self._df_subtree(self.estimator.get_left_child(position), original_class, target)
             if res[0] == -1:
                 # no result, try right subtree
-                res = self._df_subtree(
-                    self.estimator.get_right_child(position), original_class, target
-                )
+                res = self._df_subtree(self.estimator.get_right_child(position), original_class, target)
                 if res[0] == -1:
                     # no desired result
                     path = [-1]
@@ -105,9 +94,7 @@ class DecisionTreeAttack(EvasionAttack):
 
         return path
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array.
 
@@ -116,16 +103,12 @@ class DecisionTreeAttack(EvasionAttack):
                   (nb_samples,).
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(
-            y, self.estimator.nb_classes, return_one_hot=False
-        )
+        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
         x_adv = x.copy()
 
         for index in range(np.shape(x_adv)[0]):
             path = self.estimator.get_decision_path(x_adv[index])
-            legitimate_class = np.argmax(
-                self.estimator.predict(x_adv[index].reshape(1, -1))
-            )
+            legitimate_class = np.argmax(self.estimator.predict(x_adv[index].reshape(1, -1)))
             position = -2
             adv_path = [-1]
             ancestor = path[position]
@@ -135,25 +118,17 @@ class DecisionTreeAttack(EvasionAttack):
                 # search in right subtree
                 if current_child == self.estimator.get_left_child(ancestor):
                     if y is None:
-                        adv_path = self._df_subtree(
-                            self.estimator.get_right_child(ancestor), legitimate_class
-                        )
+                        adv_path = self._df_subtree(self.estimator.get_right_child(ancestor), legitimate_class)
                     else:
                         adv_path = self._df_subtree(
-                            self.estimator.get_right_child(ancestor),
-                            legitimate_class,
-                            y[index],
+                            self.estimator.get_right_child(ancestor), legitimate_class, y[index],
                         )
                 else:  # search in left subtree
                     if y is None:
-                        adv_path = self._df_subtree(
-                            self.estimator.get_left_child(ancestor), legitimate_class
-                        )
+                        adv_path = self._df_subtree(self.estimator.get_left_child(ancestor), legitimate_class)
                     else:
                         adv_path = self._df_subtree(
-                            self.estimator.get_left_child(ancestor),
-                            legitimate_class,
-                            y[index],
+                            self.estimator.get_left_child(ancestor), legitimate_class, y[index],
                         )
                 position = position - 1  # we are going the decision path upwards
             adv_path.append(ancestor)
@@ -164,20 +139,13 @@ class DecisionTreeAttack(EvasionAttack):
                 threshold = self.estimator.get_threshold_at_node(adv_path[i])
                 feature = self.estimator.get_feature_at_node(adv_path[i])
                 # only perturb if the feature is actually wrong
-                if x_adv[index][
-                    feature
-                ] > threshold and go_for == self.estimator.get_left_child(adv_path[i]):
+                if x_adv[index][feature] > threshold and go_for == self.estimator.get_left_child(adv_path[i]):
                     x_adv[index][feature] = threshold - self.offset
-                elif x_adv[index][
-                    feature
-                ] <= threshold and go_for == self.estimator.get_right_child(
-                    adv_path[i]
-                ):
+                elif x_adv[index][feature] <= threshold and go_for == self.estimator.get_right_child(adv_path[i]):
                     x_adv[index][feature] = threshold + self.offset
 
         logger.info(
-            "Success rate of decision tree attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv),
+            "Success rate of decision tree attack: %.2f%%", 100 * compute_success(self.estimator, x, y, x_adv),
         )
         return x_adv
 

@@ -23,8 +23,9 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
+from art.estimators.pytorch import PyTorchEstimator
+from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     import torchvision
@@ -41,11 +42,13 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     This class implements a model-specific object detector using Faster-RCNN and PyTorch.
     """
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         model: Optional["torchvision.models.detection.fasterrcnn_resnet50_fpn"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channel_index: Optional[int] = None,
+        channel_index: Optional[int] = Deprecated,
+        channels_first: Optional[bool] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
@@ -57,7 +60,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         :param model: Faster-RCNN model. The output of the model is `List[Dict[Tensor]]`, one for each input image. The
                       fields of the Dict are as follows:
-                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+
+                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
                         between 0 and H and 0 and W
                       - labels (Int64Tensor[N]): the predicted labels for each image
                       - scores (Tensor[N]): the scores or each prediction
@@ -66,6 +70,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :param channels_first: Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
@@ -78,9 +83,18 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         """
         import torch
 
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
+            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
@@ -125,7 +139,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
                   fields of the Dict are as follows:
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+
+                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
                     between 0 and H and 0 and W
                   - labels (Int64Tensor[N]): the predicted labels for each image
                   - scores (Tensor[N]): the scores or each prediction.
@@ -198,7 +213,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :param batch_size: Batch size.
         :return: Predictions of format `List[Dict[Tensor]]`, one for each input image. The
                  fields of the Dict are as follows:
-                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values
+
+                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
                    between 0 and H and 0 and W
                  - labels (Int64Tensor[N]): the predicted labels for each image
                  - scores (Tensor[N]): the scores or each prediction.
@@ -225,7 +241,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         raise NotImplementedError
 
-    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False) -> np.ndarray:
         raise NotImplementedError
 
     def set_learning_phase(self, train: bool) -> None:

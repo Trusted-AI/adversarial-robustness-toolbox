@@ -413,12 +413,13 @@ if __name__ == "__main__":
     import tensorflow as tf
 
     tf.compat.v1.disable_eager_execution()
+    tf.keras.backend.set_floatx("float64")
 
     from tensorflow.keras.datasets import mnist
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense
 
-    np.random.seed(0)
+    np.random.seed(1)
     number_neurons = 16
     batch_size = 128
     number_classes = 10

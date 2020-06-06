@@ -79,9 +79,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         self.batch_size = batch_size
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -114,9 +112,7 @@ class VirtualAdversarialMethod(EvasionAttack):
             # Main loop of the algorithm
             for _ in range(self.max_iter):
                 var_d = self._normalize(var_d)
-                preds_new = self.estimator.predict(
-                    (batch + var_d).reshape((-1,) + self.estimator.input_shape)
-                )
+                preds_new = self.estimator.predict((batch + var_d).reshape((-1,) + self.estimator.input_shape))
                 if (preds_new < 0.0).any() or (preds_new > 1.0).any():
                     raise TypeError(
                         "This attack requires a classifier predicting probabilities in the range [0, 1] as "
@@ -128,16 +124,13 @@ class VirtualAdversarialMethod(EvasionAttack):
                 from scipy.stats import entropy
 
                 kl_div1 = entropy(
-                    np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
-                    np.transpose(preds_new_rescaled),
+                    np.transpose(preds_rescaled[batch_index_1:batch_index_2]), np.transpose(preds_new_rescaled),
                 )
 
                 var_d_new = np.zeros(var_d.shape).astype(ART_NUMPY_DTYPE)
                 for current_index in range(var_d.shape[1]):
                     var_d[:, current_index] += self.finite_diff
-                    preds_new = self.estimator.predict(
-                        (batch + var_d).reshape((-1,) + self.estimator.input_shape)
-                    )
+                    preds_new = self.estimator.predict((batch + var_d).reshape((-1,) + self.estimator.input_shape))
                     if (preds_new < 0.0).any() or (preds_new > 1.0).any():
                         raise TypeError(
                             "This attack requires a classifier predicting probabilities in the range [0, 1]"
@@ -147,31 +140,26 @@ class VirtualAdversarialMethod(EvasionAttack):
                     preds_new_rescaled = preds_new
 
                     kl_div2 = entropy(
-                        np.transpose(preds_rescaled[batch_index_1:batch_index_2]),
-                        np.transpose(preds_new_rescaled),
+                        np.transpose(preds_rescaled[batch_index_1:batch_index_2]), np.transpose(preds_new_rescaled),
                     )
                     var_d_new[:, current_index] = (kl_div2 - kl_div1) / self.finite_diff
                     var_d[:, current_index] -= self.finite_diff
                 var_d = var_d_new
 
             # Apply perturbation and clip
-            if (
-                hasattr(self.estimator, "clip_values")
-                and self.estimator.clip_values is not None
-            ):
+            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv[batch_index_1:batch_index_2] = np.clip(
                     batch + self.eps * self._normalize(var_d), clip_min, clip_max
                 ).reshape((-1,) + self.estimator.input_shape)
             else:
-                x_adv[batch_index_1:batch_index_2] = (
-                    batch + self.eps * self._normalize(var_d)
-                ).reshape((-1,) + self.estimator.input_shape)
+                x_adv[batch_index_1:batch_index_2] = (batch + self.eps * self._normalize(var_d)).reshape(
+                    (-1,) + self.estimator.input_shape
+                )
 
         logger.info(
             "Success rate of virtual adversarial attack: %.2f%%",
-            100
-            * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
         )
 
         return x_adv
@@ -202,9 +190,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         # Tolerance range avoids actually setting minimum value to 0, as this value is invalid for KL divergence
         tol = 1e-5
 
-        current_range = np.amax(x, axis=1, keepdims=True) - np.amin(
-            x, axis=1, keepdims=True
-        )
+        current_range = np.amax(x, axis=1, keepdims=True) - np.amin(x, axis=1, keepdims=True)
         current_range[current_range == 0] = 1
         res = (x - np.amin(x, axis=1, keepdims=True) + tol) / current_range
         return res
@@ -217,9 +203,7 @@ class VirtualAdversarialMethod(EvasionAttack):
             raise ValueError("The attack step must be positive.")
 
         if not isinstance(self.finite_diff, float) or self.finite_diff <= 0:
-            raise ValueError(
-                "The finite difference parameter must be a positive float."
-            )
+            raise ValueError("The finite difference parameter must be a positive float.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")

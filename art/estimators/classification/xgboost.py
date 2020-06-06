@@ -51,12 +51,8 @@ class XGBoostClassifier(ClassifierDecisionTree):
         self,
         model: Union["xgboost.Booster", "xgboost.XGBClassifier", None] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union[
-            "Preprocessor", List["Preprocessor"], None
-        ] = None,
-        postprocessing_defences: Union[
-            "Postprocessor", List["Postprocessor"], None
-        ] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
         nb_features: Optional[int] = None,
         nb_classes: Optional[int] = None,
@@ -79,9 +75,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         from xgboost import Booster, XGBClassifier
 
         if not isinstance(model, Booster) and not isinstance(model, XGBClassifier):
-            raise TypeError(
-                "Model must be of type xgboost.Booster or xgboost.XGBClassifier."
-            )
+            raise TypeError("Model must be of type xgboost.Booster or xgboost.XGBClassifier.")
 
         super(XGBoostClassifier, self).__init__(
             clip_values=clip_values,
@@ -98,8 +92,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  `(nb_samples,)`.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                        `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this
                        function as such.
@@ -124,9 +117,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
             predictions = self._model.predict(train_data)
             y_prediction = np.asarray([line for line in predictions])
             if len(y_prediction.shape) == 1:
-                y_prediction = to_categorical(
-                    labels=y_prediction, nb_classes=self.nb_classes
-                )
+                y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes)
         elif isinstance(self._model, xgboost.XGBClassifier):
             y_prediction = self._model.predict_proba(x_preprocessed)
 
@@ -145,10 +136,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         if isinstance(self._model, Booster):
             try:
-                return int(
-                    len(self._model.get_dump(dump_format="json"))
-                    / self._model.n_estimators
-                )
+                return int(len(self._model.get_dump(dump_format="json")) / self._model.n_estimators)
             except AttributeError:
                 if nb_classes is not None:
                     return nb_classes
@@ -187,12 +175,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
             tree_json = json.loads(tree_dump)
             trees.append(
-                Tree(
-                    class_id=class_label,
-                    leaf_nodes=self._get_leaf_nodes(
-                        tree_json, i_tree, class_label, box
-                    ),
-                )
+                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box),)
             )
 
         return trees
@@ -203,16 +186,10 @@ class XGBoostClassifier(ClassifierDecisionTree):
         leaf_nodes: List[LeafNode] = list()
 
         if "children" in node:
-            if (
-                node["children"][0]["nodeid"] == node["yes"]
-                and node["children"][1]["nodeid"] == node["no"]
-            ):
+            if node["children"][0]["nodeid"] == node["yes"] and node["children"][1]["nodeid"] == node["no"]:
                 node_left = node["children"][0]
                 node_right = node["children"][1]
-            elif (
-                node["children"][1]["nodeid"] == node["yes"]
-                and node["children"][0]["nodeid"] == node["no"]
-            ):
+            elif node["children"][1]["nodeid"] == node["yes"] and node["children"][0]["nodeid"] == node["no"]:
                 node_left = node["children"][1]
                 node_right = node["children"][0]
             else:
@@ -222,12 +199,8 @@ class XGBoostClassifier(ClassifierDecisionTree):
             box_right = deepcopy(box)
 
             feature = int(node["split"][1:])
-            box_split_left = Box(
-                intervals={feature: Interval(-np.inf, node["split_condition"])}
-            )
-            box_split_right = Box(
-                intervals={feature: Interval(node["split_condition"], np.inf)}
-            )
+            box_split_left = Box(intervals={feature: Interval(-np.inf, node["split_condition"])})
+            box_split_right = Box(intervals={feature: Interval(node["split_condition"], np.inf)})
 
             if box.intervals:
                 box_left.intersect_with_box(box_split_left)
@@ -237,19 +210,11 @@ class XGBoostClassifier(ClassifierDecisionTree):
                 box_right = box_split_right
 
             leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
-            leaf_nodes += self._get_leaf_nodes(
-                node_right, i_tree, class_label, box_right
-            )
+            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
 
         if "leaf" in node:
             leaf_nodes.append(
-                LeafNode(
-                    tree_id=i_tree,
-                    class_label=class_label,
-                    node_id=node["nodeid"],
-                    box=box,
-                    value=node["leaf"],
-                )
+                LeafNode(tree_id=i_tree, class_label=class_label, node_id=node["nodeid"], box=box, value=node["leaf"],)
             )
 
         return leaf_nodes

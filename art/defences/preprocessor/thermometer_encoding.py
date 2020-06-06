@@ -33,7 +33,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.utils import to_categorical
+from art.utils import Deprecated, deprecated_keyword_arg, to_categorical
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +49,15 @@ class ThermometerEncoding(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["clip_values", "num_space", "channel_index"]
+    params = ["clip_values", "num_space", "channel_index", "channels_first"]
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         clip_values: CLIP_VALUES_TYPE,
         num_space: int = 10,
-        channel_index: int = 3,
+        channel_index: int = Deprecated,
+        channels_first: bool = False,
         apply_fit: bool = True,
         apply_predict: bool = True,
     ) -> None:
@@ -66,9 +68,18 @@ class ThermometerEncoding(Preprocessor):
                for features.
         :param num_space: Number of evenly spaced levels within [0, 1].
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
+        # Remove in 1.5.0
+        if channel_index == 2:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(ThermometerEncoding, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
@@ -76,6 +87,7 @@ class ThermometerEncoding(Preprocessor):
         self.clip_values = clip_values
         self.num_space = num_space
         self.channel_index = channel_index
+        self.channels_first = channels_first
         self._check_params()
 
     @property
@@ -86,9 +98,7 @@ class ThermometerEncoding(Preprocessor):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply thermometer encoding to sample `x`. The new axis with the encoding is added as last dimension.
 
@@ -96,7 +106,8 @@ class ThermometerEncoding(Preprocessor):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Encoded sample with shape `(batch_size, width, height, depth x num_space)`.
         """
-        result = np.apply_along_axis(self._perchannel, self.channel_index, x)
+        channel_index = 1 if self.channels_first else x.ndim - 1
+        result = np.apply_along_axis(self._perchannel, channel_index, x)
         np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
         return result.astype(ART_NUMPY_DTYPE), y
 
@@ -146,14 +157,10 @@ class ThermometerEncoding(Preprocessor):
     def _check_params(self) -> None:
         if not isinstance(self.num_space, (int, np.int)) or self.num_space <= 0:
             logger.error("Number of evenly spaced levels must be a positive integer.")
-            raise ValueError(
-                "Number of evenly spaced levels must be a positive integer."
-            )
+            raise ValueError("Number of evenly spaced levels must be a positive integer.")
 
         if len(self.clip_values) != 2:
-            raise ValueError(
-                "`clip_values` should be a tuple of 2 floats containing the allowed data range."
-            )
+            raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
 
         if self.clip_values[0] != 0:
             raise ValueError("`clip_values` min value must be 0.")

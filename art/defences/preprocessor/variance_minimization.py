@@ -95,9 +95,7 @@ class TotalVarMin(Preprocessor):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply total variance minimization to sample `x`.
 
@@ -148,9 +146,7 @@ class TotalVarMin(Preprocessor):
         return z_min
 
     @staticmethod
-    def _loss_func(
-        z_init: np.ndarray, x: np.ndarray, mask: np.ndarray, norm: int, lamb: float
-    ) -> float:
+    def _loss_func(z_init: np.ndarray, x: np.ndarray, mask: np.ndarray, norm: int, lamb: float) -> float:
         """
         Loss function to be minimized.
 
@@ -169,9 +165,7 @@ class TotalVarMin(Preprocessor):
         return res
 
     @staticmethod
-    def _deri_loss_func(
-        z_init: np.ndarray, x: np.ndarray, mask: np.ndarray, norm: int, lamb: float
-    ) -> float:
+    def _deri_loss_func(z_init: np.ndarray, x: np.ndarray, mask: np.ndarray, norm: int, lamb: float) -> float:
         """
         Derivative of loss function to be minimized.
 
@@ -195,12 +189,8 @@ class TotalVarMin(Preprocessor):
             z_d1 = np.sign(z_init[1:, :] - z_init[:-1, :])
             z_d2 = np.sign(z_init[:, 1:] - z_init[:, :-1])
         else:
-            z_d1_norm = np.power(
-                np.linalg.norm(z_init[1:, :] - z_init[:-1, :], norm, axis=1), norm - 1
-            )
-            z_d2_norm = np.power(
-                np.linalg.norm(z_init[:, 1:] - z_init[:, :-1], norm, axis=0), norm - 1
-            )
+            z_d1_norm = np.power(np.linalg.norm(z_init[1:, :] - z_init[:-1, :], norm, axis=1), norm - 1)
+            z_d2_norm = np.power(np.linalg.norm(z_init[:, 1:] - z_init[:, :-1], norm, axis=0), norm - 1)
             z_d1_norm[z_d1_norm < 1e-6] = 1e-6
             z_d2_norm[z_d2_norm < 1e-6] = 1e-6
             z_d1_norm = np.repeat(z_d1_norm[:, np.newaxis], z_init.shape[1], axis=1)
@@ -225,11 +215,7 @@ class TotalVarMin(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        if (
-            not isinstance(self.prob, (float, int))
-            or self.prob < 0.0
-            or self.prob > 1.0
-        ):
+        if not isinstance(self.prob, (float, int)) or self.prob < 0.0 or self.prob > 1.0:
             logger.error("Probability must be between 0 and 1.")
             raise ValueError("Probability must be between 0 and 1.")
 
@@ -237,11 +223,7 @@ class TotalVarMin(Preprocessor):
             logger.error("Norm must be a positive integer.")
             raise ValueError("Norm must be a positive integer.")
 
-        if not (
-            self.solver == "L-BFGS-B"
-            or self.solver == "CG"
-            or self.solver == "Newton-CG"
-        ):
+        if not (self.solver == "L-BFGS-B" or self.solver == "CG" or self.solver == "Newton-CG"):
             logger.error("Current support only L-BFGS-B, CG, Newton-CG.")
             raise ValueError("Current support only L-BFGS-B, CG, Newton-CG.")
 
@@ -252,9 +234,7 @@ class TotalVarMin(Preprocessor):
         if self.clip_values is not None:
 
             if len(self.clip_values) != 2:
-                raise ValueError(
-                    "`clip_values` should be a tuple of 2 floats containing the allowed data range."
-                )
+                raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")

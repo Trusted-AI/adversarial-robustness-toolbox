@@ -27,6 +27,7 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
+from art.utils import deprecated
 
 if TYPE_CHECKING:
     from art.config import CLIP_VALUES_TYPE
@@ -50,6 +51,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         super(BinaryInputDetector, self).__init__(
             clip_values=detector.clip_values,
             channel_index=detector.channel_index,
+            channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
         )
@@ -108,8 +110,16 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         return self.detector.clip_values
 
     @property
+    @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
+
+    @property
+    def channels_first(self) -> bool:
+        """
+        :return: Boolean to indicate index of the color channels in the sample `x`.
+        """
+        return self._channels_first
 
     @property
     def learning_phase(self) -> Optional[bool]:
@@ -124,7 +134,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         return self.detector.loss_gradient(x, y)
 
     def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
@@ -242,8 +252,16 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         return self.detector.clip_values
 
     @property
+    @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
+
+    @property
+    def channels_first(self) -> bool:
+        """
+        :return: Boolean to indicate index of the color channels in the sample `x`.
+        """
+        return self._channels_first
 
     @property
     def learning_phase(self) -> Optional[bool]:
@@ -262,7 +280,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         return self.detector.loss_gradient(x, y)
 
     def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and

@@ -63,9 +63,7 @@ class Transformer(abc.ABC):
         return self.classifier
 
     @abc.abstractmethod
-    def __call__(
-        self, x: np.ndarray, transformed_classifier: "Classifier"
-    ) -> "Classifier":
+    def __call__(self, x: np.ndarray, transformed_classifier: "Classifier") -> "Classifier":
         """
         Perform the transformation defence and return a robuster classifier.
 

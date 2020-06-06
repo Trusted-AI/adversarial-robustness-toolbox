@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -245,7 +245,8 @@ class AdversarialPatchNumpy(EvasionAttack):
             mask, pad_width=(pad_1, pad_2), mode="constant", constant_values=(0, 0)
         )
 
-        axis = self.estimator.channel_index - 1
+        channel_index = 1 if self.estimator.channels_first else 3
+        axis = channel_index - 1
         mask = np.expand_dims(mask, axis=axis)
         mask = np.broadcast_to(mask, self.estimator.input_shape).astype(np.float32)
         return mask
@@ -285,26 +286,26 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _rotate(self, x, angle):
         axes = None
-        if self.estimator.channel_index == 3:
+        if not self.estimator.channels_first:
             axes = (0, 1)
-        elif self.estimator.channel_index == 1:
+        elif self.estimator.channels_first:
             axes = (1, 2)
         return rotate(x, angle=angle, reshape=False, axes=axes, order=1)
 
     def _scale(self, x, scale, shape):
         zooms = None
-        if self.estimator.channel_index == 3:
+        if not self.estimator.channels_first:
             zooms = (scale, scale, 1.0)
-        elif self.estimator.channel_index == 1:
+        elif self.estimator.channels_first:
             zooms = (1.0, scale, scale)
         x = zoom(x, zoom=zooms, order=1)
 
         if x.shape[1] <= self.estimator.input_shape[1]:
             pad_1 = int((shape - x.shape[1]) / 2)
             pad_2 = int(shape - pad_1 - x.shape[1])
-            if self.estimator.channel_index == 3:
+            if not self.estimator.channels_first:
                 pad_width = ((pad_1, pad_2), (pad_1, pad_2), (0, 0))
-            elif self.estimator.channel_index == 1:
+            elif self.estimator.channels_first:
                 pad_width = ((0, 0), (pad_1, pad_2), (pad_1, pad_2))
             else:
                 pad_width = None
@@ -313,18 +314,10 @@ class AdversarialPatchNumpy(EvasionAttack):
             center = int(x.shape[1] / 2)
             patch_hw_1 = int(self.estimator.input_shape[1] / 2)
             patch_hw_2 = self.estimator.input_shape[1] - patch_hw_1
-            if self.estimator.channel_index == 3:
-                x = x[
-                    center - patch_hw_1 : center + patch_hw_2,
-                    center - patch_hw_1 : center + patch_hw_2,
-                    :,
-                ]
-            elif self.estimator.channel_index == 1:
-                x = x[
-                    :,
-                    center - patch_hw_1 : center + patch_hw_2,
-                    center - patch_hw_1 : center + patch_hw_2,
-                ]
+            if not self.estimator.channels_first:
+                x = x[center - patch_hw_1 : center + patch_hw_2, center - patch_hw_1 : center + patch_hw_2, :]
+            elif self.estimator.channels_first:
+                x = x[:, center - patch_hw_1 : center + patch_hw_2, center - patch_hw_1 : center + patch_hw_2]
             else:
                 x = None
 
@@ -332,9 +325,9 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _shift(self, x, shift_1, shift_2):
         shift_xy = None
-        if self.estimator.channel_index == 3:
+        if not self.estimator.channels_first:
             shift_xy = (shift_1, shift_2, 0)
-        elif self.estimator.channel_index == 1:
+        elif self.estimator.channels_first:
             shift_xy = (0, shift_1, shift_2)
         x = shift(x, shift=shift_xy, order=1)
         return x, shift_1, shift_2

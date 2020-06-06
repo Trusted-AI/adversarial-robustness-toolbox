@@ -24,8 +24,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-from art.defences.preprocessor.preprocessor import Preprocessor
 from art.defences.postprocessor.postprocessor import Postprocessor
+from art.defences.preprocessor.preprocessor import Preprocessor
+from art.utils import Deprecated, deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     from art.data_generators import DataGenerator
@@ -409,14 +410,27 @@ class NeuralNetworkMixin(ABC):
     has to be mixed in with class `BaseEstimator`.
     """
 
-    def __init__(self, channel_index: Optional[int] = None, **kwargs) -> None:
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    def __init__(
+        self, channel_index: Optional[int] = Deprecated, channels_first: Optional[bool] = None, **kwargs
+    ) -> None:
         """
         Initialize a neural network attributes.
 
         :param channel_index: Index of the axis in samples `x` representing the color channels.
+        :param channels_first: Set channels first or last.
         """
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         self._channel_index = channel_index
-        super().__init__()
+        self._channels_first: bool = channels_first
+        super().__init__(**kwargs)
 
     @abstractmethod
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
@@ -471,7 +485,9 @@ class NeuralNetworkMixin(ABC):
                 self.fit(x_preprocessed, y_preprocessed, nb_epochs=1, batch_size=generator.batch_size, **kwargs)
 
     @abstractmethod
-    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int) -> np.ndarray:
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         """
         Return the output of a specific layer for samples `x` where `layer` is the index of the layer between 0 and
         `nb_layers - 1 or the name of the layer. The number of layers can be determined by counting the results
@@ -480,6 +496,7 @@ class NeuralNetworkMixin(ABC):
         :param x: Samples
         :param layer: Index or name of the layer.
         :param batch_size: Batch size.
+        :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         raise NotImplementedError
@@ -494,11 +511,18 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @property
+    @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         """
         :return: Index of the axis containing the color channels in the samples `x`.
         """
         return self._channel_index
+
+    def channels_first(self) -> bool:
+        """
+        :return: Boolean to indicate index of the color channels in the sample `x`.
+        """
+        return self._channels_first
 
     @property
     def learning_phase(self) -> Optional[bool]:

@@ -102,9 +102,7 @@ class UniversalPerturbation(EvasionAttack):
         self.norm = norm
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -112,9 +110,7 @@ class UniversalPerturbation(EvasionAttack):
         :param y: An array with the original labels to be predicted.
         :return: An array holding the adversarial examples.
         """
-        logger.info(
-            "Computing universal perturbation based on %s attack.", self.attacker
-        )
+        logger.info("Computing universal perturbation based on %s attack.", self.attacker)
 
         # Init universal perturbation
         noise = 0
@@ -154,10 +150,7 @@ class UniversalPerturbation(EvasionAttack):
 
             # Apply attack and clip
             x_adv = x + noise
-            if (
-                hasattr(self.estimator, "clip_values")
-                and self.estimator.clip_values is not None
-            ):
+            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
@@ -168,9 +161,7 @@ class UniversalPerturbation(EvasionAttack):
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
-        logger.info(
-            "Success rate of universal perturbation attack: %.2f%%", 100 * fooling_rate
-        )
+        logger.info("Success rate of universal perturbation attack: %.2f%%", 100 * fooling_rate)
 
         return x_adv
 
@@ -184,9 +175,7 @@ class UniversalPerturbation(EvasionAttack):
         if not isinstance(self.eps, (float, int)) or self.eps <= 0:
             raise ValueError("The eps coefficient must be a positive float.")
 
-    def _get_attack(
-        self, a_name: str, params: Optional[Dict[str, Any]] = None
-    ) -> EvasionAttack:
+    def _get_attack(self, a_name: str, params: Optional[Dict[str, Any]] = None) -> EvasionAttack:
         """
         Get an attack object from its name.
 

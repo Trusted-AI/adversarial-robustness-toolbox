@@ -45,9 +45,7 @@ class DefensiveDistillation(Transformer):
 
     params = ["batch_size", "nb_epochs"]
 
-    def __init__(
-        self, classifier: "Classifier", batch_size: int = 128, nb_epochs: int = 10
-    ) -> None:
+    def __init__(self, classifier: "Classifier", batch_size: int = 128, nb_epochs: int = 10) -> None:
         """
         Create an instance of the defensive distillation defence.
 
@@ -61,9 +59,7 @@ class DefensiveDistillation(Transformer):
         self.nb_epochs = nb_epochs
         self._check_params()
 
-    def __call__(
-        self, x: np.ndarray, transformed_classifier: "Classifier"
-    ) -> "Classifier":
+    def __call__(self, x: np.ndarray, transformed_classifier: "Classifier") -> "Classifier":
         """
         Perform the defensive distillation defence mechanism and return a robuster classifier.
 
@@ -79,26 +75,18 @@ class DefensiveDistillation(Transformer):
         all_probability = np.sum(are_probability) == preds.shape[0]
 
         if not all_probability:
-            raise ValueError(
-                "The input trained classifier do not produce probability outputs."
-            )
+            raise ValueError("The input trained classifier do not produce probability outputs.")
 
         # Check if the transformed classifier produces probability outputs
-        transformed_preds = transformed_classifier.predict(
-            x=x, batch_size=self.batch_size
-        )
+        transformed_preds = transformed_classifier.predict(x=x, batch_size=self.batch_size)
         are_probability = [is_probability(y) for y in transformed_preds]
         all_probability = np.sum(are_probability) == transformed_preds.shape[0]
 
         if not all_probability:
-            raise ValueError(
-                "The input transformed classifier do not produce probability outputs."
-            )
+            raise ValueError("The input transformed classifier do not produce probability outputs.")
 
         # Train the transformed classifier with soft labels
-        transformed_classifier.fit(
-            x=x, y=preds, batch_size=self.batch_size, nb_epochs=self.nb_epochs
-        )
+        transformed_classifier.fit(x=x, y=preds, batch_size=self.batch_size, nb_epochs=self.nb_epochs)
 
         return transformed_classifier
 

@@ -85,9 +85,7 @@ class SpatialTransformation(EvasionAttack):
         self.attack_trans_y: Optional[np.ndarray] = None
         self.attack_rot: Optional[np.ndarray] = None
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -99,15 +97,10 @@ class SpatialTransformation(EvasionAttack):
 
         if len(x.shape) == 2:
             raise ValueError(
-                "Feature vectors detected. The attack can only be applied to data with spatial"
-                "dimensions."
+                "Feature vectors detected. The attack can only be applied to data with spatial" "dimensions."
             )
 
-        if (
-            self.attack_trans_x is None
-            or self.attack_trans_y is None
-            or self.attack_rot is None
-        ):
+        if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
             y_pred = self.estimator.predict(x, batch_size=1)
             y_pred_max = np.argmax(y_pred, axis=1)
@@ -115,38 +108,18 @@ class SpatialTransformation(EvasionAttack):
             nb_instances = len(x)
 
             # Determine grids
-            max_num_pixel_trans_x = int(
-                round((x.shape[1] * self.max_translation / 100.0))
-            )
-            max_num_pixel_trans_y = int(
-                round((x.shape[2] * self.max_translation / 100.0))
-            )
+            max_num_pixel_trans_x = int(round((x.shape[1] * self.max_translation / 100.0)))
+            max_num_pixel_trans_y = int(round((x.shape[2] * self.max_translation / 100.0)))
 
             grid_trans_x = [
                 int(round(g))
-                for g in list(
-                    np.linspace(
-                        -max_num_pixel_trans_x,
-                        max_num_pixel_trans_x,
-                        num=self.num_translations,
-                    )
-                )
+                for g in list(np.linspace(-max_num_pixel_trans_x, max_num_pixel_trans_x, num=self.num_translations,))
             ]
             grid_trans_y = [
                 int(round(g))
-                for g in list(
-                    np.linspace(
-                        -max_num_pixel_trans_y,
-                        max_num_pixel_trans_y,
-                        num=self.num_translations,
-                    )
-                )
+                for g in list(np.linspace(-max_num_pixel_trans_y, max_num_pixel_trans_y, num=self.num_translations,))
             ]
-            grid_rot = list(
-                np.linspace(
-                    -self.max_rotation, self.max_rotation, num=self.num_rotations
-                )
-            )
+            grid_rot = list(np.linspace(-self.max_rotation, self.max_rotation, num=self.num_rotations))
 
             # Remove duplicates
             grid_trans_x = list(set(grid_trans_x))
@@ -172,9 +145,7 @@ class SpatialTransformation(EvasionAttack):
                         x_adv_i = self._perturb(x, trans_x_i, trans_y_i, rot_i)
 
                         # Compute the error rate
-                        y_adv_i = np.argmax(
-                            self.estimator.predict(x_adv_i, batch_size=1), axis=1
-                        )
+                        y_adv_i = np.argmax(self.estimator.predict(x_adv_i, batch_size=1), axis=1)
                         fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
                         if fooling_rate_i > fooling_rate:
@@ -190,61 +161,42 @@ class SpatialTransformation(EvasionAttack):
             self.attack_rot = rot
 
             logger.info(
-                "Success rate of spatial transformation attack: %.2f%%",
-                100 * self.fooling_rate,
+                "Success rate of spatial transformation attack: %.2f%%", 100 * self.fooling_rate,
             )
             logger.info("Attack-translation in x: %.2f%%", self.attack_trans_x)
             logger.info("Attack-translation in y: %.2f%%", self.attack_trans_y)
             logger.info("Attack-rotation: %.2f%%", self.attack_rot)
 
         else:
-            x_adv = self._perturb(
-                x, self.attack_trans_x, self.attack_trans_y, self.attack_rot
-            )
+            x_adv = self._perturb(x, self.attack_trans_x, self.attack_trans_y, self.attack_rot)
 
         return x_adv
 
-    def _perturb(
-        self, x: np.ndarray, trans_x: int, trans_y: int, rot: float
-    ) -> np.ndarray:
-        if self.estimator.channel_index == 3:
+    def _perturb(self, x: np.ndarray, trans_x: int, trans_y: int, rot: float) -> np.ndarray:
+        if not self.estimator.channels_first:
             x_adv = shift(x, [0, trans_x, trans_y, 0])
             x_adv = rotate(x_adv, angle=rot, axes=(1, 2), reshape=False)
-        elif self.estimator.channel_index == 1:
+        elif self.estimator.channels_first:
             x_adv = shift(x, [0, 0, trans_x, trans_y])
             x_adv = rotate(x_adv, angle=rot, axes=(2, 3), reshape=False)
         else:
-            raise ValueError("Unsupported channel index.")
+            raise ValueError("Unsupported channel_first value.")
 
-        if (
-            hasattr(self.estimator, "clip_values")
-            and self.estimator.clip_values is not None
-        ):
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
             np.clip(
-                x_adv,
-                self.estimator.clip_values[0],
-                self.estimator.clip_values[1],
-                out=x_adv,
+                x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1], out=x_adv,
             )
 
         return x_adv
 
     def _check_params(self) -> None:
-        if (
-            not isinstance(self.max_translation, (float, int))
-            or self.max_translation < 0
-            or self.max_translation > 100
-        ):
+        if not isinstance(self.max_translation, (float, int)) or self.max_translation < 0 or self.max_translation > 100:
             raise ValueError("The maximum translation must be in the range [0, 100].")
 
         if not isinstance(self.num_translations, int) or self.num_translations <= 0:
             raise ValueError("The number of translations must be a positive integer.")
 
-        if (
-            not isinstance(self.max_rotation, (float, int))
-            or self.max_rotation < 0
-            or self.max_translation > 180
-        ):
+        if not isinstance(self.max_rotation, (float, int)) or self.max_rotation < 0 or self.max_translation > 180:
             raise ValueError("The maximum rotation must be in the range [0, 180].")
 
         if not isinstance(self.num_rotations, int) or self.num_rotations <= 0:

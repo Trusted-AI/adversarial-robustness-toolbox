@@ -50,11 +50,7 @@ class NewtonFool(EvasionAttack):
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-        self,
-        classifier: ClassifierGradients,
-        max_iter: int = 100,
-        eta: float = 0.01,
-        batch_size: int = 1,
+        self, classifier: ClassifierGradients, max_iter: int = 100, eta: float = 0.01, batch_size: int = 1,
     ) -> None:
         """
         Create a NewtonFool attack instance.
@@ -70,9 +66,7 @@ class NewtonFool(EvasionAttack):
         self.batch_size = batch_size
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in a Numpy array.
 
@@ -108,9 +102,7 @@ class NewtonFool(EvasionAttack):
                 grads = self.estimator.class_gradient(batch, label=l_batch)
                 if grads.shape[1] == 1:
                     grads = np.squeeze(grads, axis=1)
-                norm_grad = np.linalg.norm(
-                    np.reshape(grads, (batch.shape[0], -1)), axis=1
-                )
+                norm_grad = np.linalg.norm(np.reshape(grads, (batch.shape[0], -1)), axis=1)
 
                 # Theta
                 theta = self._compute_theta(norm_batch, score, norm_grad)
@@ -122,10 +114,7 @@ class NewtonFool(EvasionAttack):
                 batch += di_batch
 
             # Apply clip
-            if (
-                hasattr(self.estimator, "clip_values")
-                and self.estimator.clip_values is not None
-            ):
+            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv[batch_index_1:batch_index_2] = np.clip(batch, clip_min, clip_max)
             else:
@@ -133,8 +122,7 @@ class NewtonFool(EvasionAttack):
 
         logger.info(
             "Success rate of NewtonFool attack: %.2f%%",
-            100
-            * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
         )
         return x_adv
 
@@ -148,9 +136,7 @@ class NewtonFool(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-    def _compute_theta(
-        self, norm_batch: np.ndarray, score: np.ndarray, norm_grad: np.ndarray
-    ) -> np.ndarray:
+    def _compute_theta(self, norm_batch: np.ndarray, score: np.ndarray, norm_grad: np.ndarray) -> np.ndarray:
         """
         Function to compute the theta at each step.
 
@@ -166,9 +152,7 @@ class NewtonFool(EvasionAttack):
         return result
 
     @staticmethod
-    def _compute_pert(
-        theta: np.ndarray, grads: np.ndarray, norm_grad: np.ndarray
-    ) -> np.ndarray:
+    def _compute_pert(theta: np.ndarray, grads: np.ndarray, norm_grad: np.ndarray) -> np.ndarray:
         """
         Function to compute the perturbation at each step.
 

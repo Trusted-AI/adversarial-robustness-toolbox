@@ -37,11 +37,7 @@ class ReverseSigmoid(Postprocessor):
     params = ["beta", "gamma"]
 
     def __init__(
-        self,
-        beta: float = 1.0,
-        gamma: float = 0.1,
-        apply_fit: bool = False,
-        apply_predict: bool = True,
+        self, beta: float = 1.0, gamma: float = 0.1, apply_fit: bool = False, apply_predict: bool = True,
     ) -> None:
         """
         Create a ReverseSigmoid postprocessor.
@@ -83,10 +79,7 @@ class ReverseSigmoid(Postprocessor):
         preds_clipped = np.clip(preds, clip_min, clip_max)
 
         if preds.shape[1] > 1:
-            perturbation_r = self.beta * (
-                sigmoid(-self.gamma * np.log((1.0 - preds_clipped) / preds_clipped))
-                - 0.5
-            )
+            perturbation_r = self.beta * (sigmoid(-self.gamma * np.log((1.0 - preds_clipped) / preds_clipped)) - 0.5)
             preds_perturbed = preds - perturbation_r
             preds_perturbed = np.clip(preds_perturbed, 0.0, 1.0)
             alpha = 1.0 / np.sum(preds_perturbed, axis=-1, keepdims=True)
@@ -99,12 +92,10 @@ class ReverseSigmoid(Postprocessor):
             preds_clipped_2 = 1.0 - preds_clipped
 
             perturbation_r_1 = self.beta * (
-                sigmoid(-self.gamma * np.log((1.0 - preds_clipped_1) / preds_clipped_1))
-                - 0.5
+                sigmoid(-self.gamma * np.log((1.0 - preds_clipped_1) / preds_clipped_1)) - 0.5
             )
             perturbation_r_2 = self.beta * (
-                sigmoid(-self.gamma * np.log((1.0 - preds_clipped_2) / preds_clipped_2))
-                - 0.5
+                sigmoid(-self.gamma * np.log((1.0 - preds_clipped_2) / preds_clipped_2)) - 0.5
             )
 
             preds_perturbed_1 = preds_1 - perturbation_r_1

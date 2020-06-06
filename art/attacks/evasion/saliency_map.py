@@ -50,11 +50,7 @@ class SaliencyMapMethod(EvasionAttack):
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-        self,
-        classifier: ClassifierGradients,
-        theta: float = 0.1,
-        gamma: float = 1.0,
-        batch_size: int = 1,
+        self, classifier: ClassifierGradients, theta: float = 0.1, gamma: float = 1.0, batch_size: int = 1,
     ) -> None:
         """
         Create a SaliencyMapMethod instance.
@@ -70,9 +66,7 @@ class SaliencyMapMethod(EvasionAttack):
         self.batch_size = batch_size
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -94,9 +88,7 @@ class SaliencyMapMethod(EvasionAttack):
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
 
-            targets = np.argmax(
-                random_targets(preds, self.estimator.nb_classes), axis=1
-            )
+            targets = np.argmax(random_targets(preds, self.estimator.nb_classes), axis=1)
         else:
             targets = np.argmax(y, axis=1)
 
@@ -111,10 +103,7 @@ class SaliencyMapMethod(EvasionAttack):
             # Main algorithm for each batch
             # Initialize the search space; optimize to remove features that can't be changed
             search_space = np.zeros(batch.shape)
-            if (
-                hasattr(self.estimator, "clip_values")
-                and self.estimator.clip_values is not None
-            ):
+            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 if self.theta > 0:
                     search_space[batch < clip_max] = 1
@@ -140,10 +129,7 @@ class SaliencyMapMethod(EvasionAttack):
                 all_feat[active_indices, feat_ind[:, 1]] = 1
 
                 # Apply attack with clipping
-                if (
-                    hasattr(self.estimator, "clip_values")
-                    and self.estimator.clip_values is not None
-                ):
+                if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
                     # Prepare update depending of theta
                     if self.theta > 0:
                         clip_func, clip_value = np.minimum, clip_max
@@ -152,19 +138,11 @@ class SaliencyMapMethod(EvasionAttack):
 
                     # Update adversarial examples
                     tmp_batch = batch[active_indices]
-                    tmp_batch[
-                        np.arange(len(active_indices)), feat_ind[:, 0]
-                    ] = clip_func(
-                        clip_value,
-                        tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]]
-                        + self.theta,
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] = clip_func(
+                        clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] + self.theta,
                     )
-                    tmp_batch[
-                        np.arange(len(active_indices)), feat_ind[:, 1]
-                    ] = clip_func(
-                        clip_value,
-                        tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]]
-                        + self.theta,
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] = clip_func(
+                        clip_value, tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] + self.theta,
                     )
                     batch[active_indices] = tmp_batch
 
@@ -174,19 +152,12 @@ class SaliencyMapMethod(EvasionAttack):
                 # Apply attack without clipping
                 else:
                     tmp_batch = batch[active_indices]
-                    tmp_batch[
-                        np.arange(len(active_indices)), feat_ind[:, 0]
-                    ] += self.theta
-                    tmp_batch[
-                        np.arange(len(active_indices)), feat_ind[:, 1]
-                    ] += self.theta
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 0]] += self.theta
+                    tmp_batch[np.arange(len(active_indices)), feat_ind[:, 1]] += self.theta
                     batch[active_indices] = tmp_batch
 
                 # Recompute model prediction
-                current_pred = np.argmax(
-                    self.estimator.predict(np.reshape(batch, [batch.shape[0]] + dims)),
-                    axis=1,
-                )
+                current_pred = np.argmax(self.estimator.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1,)
 
                 # Update active_indices
                 active_indices = np.where(
@@ -201,24 +172,19 @@ class SaliencyMapMethod(EvasionAttack):
 
         logger.info(
             "Success rate of JSMA attack: %.2f%%",
-            100
-            * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
         )
 
         return x_adv
 
     def _check_params(self) -> None:
         if self.gamma <= 0 or self.gamma > 1:
-            raise ValueError(
-                "The total perturbation percentage `gamma` must be between 0 and 1."
-            )
+            raise ValueError("The total perturbation percentage `gamma` must be between 0 and 1.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-    def _saliency_map(
-        self, x: np.ndarray, target: np.ndarray, search_space: np.ndarray
-    ) -> np.ndarray:
+    def _saliency_map(self, x: np.ndarray, target: np.ndarray, search_space: np.ndarray) -> np.ndarray:
         """
         Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize
         the saliency map.

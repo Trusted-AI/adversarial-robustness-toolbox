@@ -27,6 +27,7 @@ import numpy as np
 
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import NeuralNetworkMixin
+from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -43,18 +44,16 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
     trained when the ensemble is created and no training procedures are provided through this class.
     """
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         classifiers: List[ClassifierNeuralNetwork],
         classifier_weights: Union[list, np.ndarray, None] = None,
-        channel_index: int = 3,
+        channel_index: int = Deprecated,
+        channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union[
-            "Preprocessor", List["Preprocessor"], None
-        ] = None,
-        postprocessing_defences: Union[
-            "Postprocessor", List["Postprocessor"], None
-        ] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
@@ -65,6 +64,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param classifier_weights: List of weights, one scalar per classifier, to assign to their prediction when
                aggregating results. If `None`, all classifiers are assigned the same weight.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -77,13 +77,20 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
                be divided by the second one. Not applicable in this classifier.
         """
         if preprocessing_defences is not None:
-            raise NotImplementedError(
-                "Preprocessing is not applicable in this classifier."
-            )
+            raise NotImplementedError("Preprocessing is not applicable in this classifier.")
+
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super(EnsembleClassifier, self).__init__(
             clip_values=clip_values,
             channel_index=channel_index,
+            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
@@ -93,9 +100,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         # Assert all classifiers are the right shape(s)
         for classifier in classifiers:
             if not isinstance(classifier, NeuralNetworkMixin):
-                raise TypeError(
-                    "Expected type `Classifier`, found %s instead." % type(classifier)
-                )
+                raise TypeError("Expected type `Classifier`, found %s instead." % type(classifier))
 
             if not np.array_equal(self.clip_values, classifier.clip_values):
                 raise ValueError(
@@ -123,23 +128,19 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
             classifier_weights = np.ones(self._nb_classifiers) / self._nb_classifiers
         self._classifier_weights = classifier_weights
 
-        # check for consistent channel_index in ensemble members
+        # check for consistent channels_first in ensemble members
         for i_cls, cls in enumerate(classifiers):
-            if cls.channel_index != self.channel_index:
+            if cls.channels_first != self.channels_first:
                 raise ValueError(
-                    "The channel_index value of classifier {} is {} while this ensemble expects a "
-                    "channel_index value of {}. The channel_index values of all classifiers and the "
-                    "ensemble need ot be identical.".format(
-                        i_cls, cls.channel_index, self.channel_index
-                    )
+                    "The channels_first boolean of classifier {} is {} while this ensemble expects a "
+                    "channels_first boolean of {}. The channels_first booleans of all classifiers and the "
+                    "ensemble need ot be identical.".format(i_cls, cls.channels_first, self.channels_first)
                 )
 
         self._classifiers = classifiers
         self._learning_phase: Optional[bool] = None
 
-    def predict(
-        self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs
-    ) -> np.ndarray:
+    def predict(self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs. Predictions from classifiers should only be aggregated if they all
         have the same type of output (e.g., probabilities). Otherwise, use `raw=True` to get predictions from all
@@ -153,10 +154,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
                  `(nb_classifiers, nb_inputs, nb_classes)` if `raw=True`.
         """
         preds = np.array(
-            [
-                self._classifier_weights[i] * self._classifiers[i].predict(x)
-                for i in range(self._nb_classifiers)
-            ]
+            [self._classifier_weights[i] * self._classifiers[i].predict(x) for i in range(self._nb_classifiers)]
         )
         if raw:
             return preds
@@ -169,20 +167,12 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return predictions
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 20,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`. This function is not supported for ensembles.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments.
@@ -190,9 +180,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def fit_generator(
-        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified. This function is not supported for
         ensembles.
@@ -215,9 +203,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -232,11 +218,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         raise NotImplementedError
 
     def class_gradient(
-        self,
-        x: np.ndarray,
-        label: Union[int, List[int], None] = None,
-        raw: bool = False,
-        **kwargs
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, raw: bool = False, **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -252,8 +234,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         grads = np.array(
             [
-                self._classifier_weights[i]
-                * self._classifiers[i].class_gradient(x, label)
+                self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label)
                 for i in range(self._nb_classifiers)
             ]
         )
@@ -262,9 +243,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
-    def loss_gradient(
-        self, x: np.ndarray, y: np.ndarray, raw: bool = False, **kwargs
-    ) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, raw: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -298,13 +277,14 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
     def __repr__(self):
         repr_ = (
-            "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, clip_values=%r, "
+            "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, channels_first=%r, clip_values=%r, "
             "preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._classifiers,
                 self._classifier_weights,
                 self.channel_index,
+                self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
                 self.postprocessing_defences,

@@ -48,12 +48,8 @@ class LightGBMClassifier(ClassifierDecisionTree):
         self,
         model: Optional["lightgbm.Booster"] = None,  # type: ignore
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union[
-            "Preprocessor", List["Preprocessor"], None
-        ] = None,
-        postprocessing_defences: Union[
-            "Postprocessor", List["Postprocessor"], None
-        ] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
@@ -89,8 +85,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  `(nb_samples,)`.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `lightgbm.Booster` and will be passed to this function as such.
         :raises `NotImplementedException`: This method is not supported for LightGBM classifiers.
@@ -153,9 +148,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
             trees.append(
                 Tree(
                     class_id=class_label,
-                    leaf_nodes=self._get_leaf_nodes(
-                        tree_dump["tree_structure"], i_tree, class_label, box
-                    ),
+                    leaf_nodes=self._get_leaf_nodes(tree_dump["tree_structure"], i_tree, class_label, box),
                 )
             )
 
@@ -174,12 +167,8 @@ class LightGBMClassifier(ClassifierDecisionTree):
             box_right = deepcopy(box)
 
             feature = node["split_feature"]
-            box_split_left = Box(
-                intervals={feature: Interval(-np.inf, node["threshold"])}
-            )
-            box_split_right = Box(
-                intervals={feature: Interval(node["threshold"], np.inf)}
-            )
+            box_split_left = Box(intervals={feature: Interval(-np.inf, node["threshold"])})
+            box_split_right = Box(intervals={feature: Interval(node["threshold"], np.inf)})
 
             if box.intervals:
                 box_left.intersect_with_box(box_split_left)
@@ -189,9 +178,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
                 box_right = box_split_right
 
             leaf_nodes += self._get_leaf_nodes(node_left, i_tree, class_label, box_left)
-            leaf_nodes += self._get_leaf_nodes(
-                node_right, i_tree, class_label, box_right
-            )
+            leaf_nodes += self._get_leaf_nodes(node_right, i_tree, class_label, box_right)
 
         if "leaf_index" in node:
             leaf_nodes.append(

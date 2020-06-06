@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,7 +21,7 @@ This module implements the MP3 compression defence `Mp3Compression`.
 | Paper link: https://arxiv.org/abs/1801.01944
 
 | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
-    see https://arxiv.org/abs/1902.06705  .
+    see https://arxiv.org/abs/1902.06705.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -32,6 +32,7 @@ from typing import Optional, Tuple
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import Preprocessor
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -41,28 +42,40 @@ class Mp3Compression(Preprocessor):
     Implement the MP3 compression defense approach.
     """
 
-    params = ["channel_index", "sample_rate"]
+    params = ["channel_index", "channels_first", "sample_rate"]
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        channel_index: int,
         sample_rate: int,
-        apply_fit: bool = True,
-        apply_predict: bool = False,
+        channel_index: int = Deprecated,
+        channels_first: bool = False,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
     ) -> None:
         """
         Create an instance of MP3 compression.
 
-        :param channel_index: Index of the axis containing the audio channels.
         :param sample_rate: Specifies the sampling rate of sample.
+        :param channel_index: Index of the axis containing the audio channels.
+        :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
         self.channel_index = channel_index
+        self.channels_first = channels_first
         self.sample_rate = sample_rate
         self._check_params()
 
@@ -74,9 +87,7 @@ class Mp3Compression(Preprocessor):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply MP3 compression to sample `x`.
 
@@ -106,19 +117,15 @@ class Mp3Compression(Preprocessor):
             audio_segment = AudioSegment.from_mp3(tmp_mp3)
             tmp_wav.close()
             tmp_mp3.close()
-            x_mp3 = np.array(audio_segment.get_array_of_samples()).reshape(
-                (-1, audio_segment.channels)
-            )
+            x_mp3 = np.array(audio_segment.get_array_of_samples()).reshape((-1, audio_segment.channels))
             # WARNING: Due to above problem, we need to manually resize x_mp3 to original length.
             x_mp3 = x_mp3[: x.shape[0]]
             return x_mp3
 
         if x.ndim != 3:
-            raise ValueError(
-                "Mp3 compression can only be applied to temporal data across at least one channel."
-            )
+            raise ValueError("Mp3 compression can only be applied to temporal data across at least one channel.")
 
-        if self.channel_index == 1:
+        if self.channels_first:
             x = np.swapaxes(x, 1, 2)
 
         # apply mp3 compression per audio item
@@ -126,9 +133,10 @@ class Mp3Compression(Preprocessor):
         for i, x_i in enumerate(x):
             x_mp3[i] = wav_to_mp3(x_i, self.sample_rate)
 
-        if self.channel_index == 1:
+        if self.channels_first:
             x_mp3 = np.swapaxes(x_mp3, 1, 2)
-        return x_mp3
+
+        return x_mp3, y
 
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
@@ -140,10 +148,7 @@ class Mp3Compression(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        if not (
-            isinstance(self.channel_index, (int, np.int))
-            and self.channel_index in [1, 2]
-        ):
+        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 2]):
             raise ValueError(
                 "Data channel must be an integer equal to 1 or 2. The batch dimension is not a valid channel."
             )

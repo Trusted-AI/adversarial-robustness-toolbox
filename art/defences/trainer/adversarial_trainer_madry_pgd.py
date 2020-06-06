@@ -29,7 +29,7 @@ from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.defences.trainer.trainer import Trainer
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 

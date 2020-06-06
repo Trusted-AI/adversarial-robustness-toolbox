@@ -36,6 +36,7 @@ from art.estimators.classification.classifier import (
     ClassifierMixin,
 )
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
+from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -52,6 +53,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     This class implements a classifier with the TensorFlow framework.
     """
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         input_ph: "tf.Placeholder",
@@ -61,7 +63,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         loss: Optional["tf.Tensor"] = None,
         learning: Optional["tf.Placeholder"] = None,
         sess: Optional["tf.Session"] = None,
-        channel_index: int = 3,
+        channel_index: int = Deprecated,
+        channels_first: bool = False,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -83,6 +86,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :param learning: The placeholder to indicate if the model is training.
         :param sess: Computation session.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -98,13 +102,23 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # pylint: disable=E0401
         import tensorflow as tf
 
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(TensorFlowClassifier, self).__init__(
             clip_values=clip_values,
             channel_index=channel_index,
+            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
+
         self._nb_classes = int(output.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
@@ -171,8 +185,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
@@ -398,7 +411,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return result
 
-    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128) -> np.ndarray:
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -407,6 +422,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :param x: Input for computing the activations.
         :param layer: Layer for computing the activations.
         :param batch_size: Size of batches.
+        :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         # pylint: disable=E0401
@@ -426,6 +442,9 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         else:
             raise TypeError("Layer must be of type `str` or `int`. Received %s." % layer)
+
+        if framework:
+            return layer_tensor
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -599,7 +618,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     def __repr__(self):
         repr_ = (
             "%s(input_ph=%r, output=%r, labels_ph=%r, train=%r, loss=%r, learning=%r, sess=%r, channel_index=%r, "
-            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            "channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
+            "preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._input_ph,
@@ -610,6 +630,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 self._learning,
                 self._sess,
                 self.channel_index,
+                self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
                 self.postprocessing_defences,
@@ -629,6 +650,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     This class implements a classifier with the TensorFlow v2 framework.
     """
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         model: Callable,
@@ -636,7 +658,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         input_shape: Tuple[int, ...],
         loss_object: Optional["tf.keras.losses.Loss"] = None,
         train_step: Optional[Callable] = None,
-        channel_index: int = 3,
+        channel_index: int = Deprecated,
+        channels_first: bool = False,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -649,9 +672,12 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param nb_classes: the number of classes in the classification task.
         :param input_shape: shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1).
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
-               the model and computing gradients of the loss w.r.t. the input.
-        :param train_step: a function that applies a gradient update to the trainable variables.
+            the model and computing gradients of the loss w.r.t. the input.
+        :type loss_object: `tf.keras.losses`
+        :param train_step: A function that applies a gradient update to the trainable variables with signature
+                           train_step(model, images, labels).
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -664,9 +690,18 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf
 
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super(TensorFlowV2Classifier, self).__init__(
             clip_values=clip_values,
             channel_index=channel_index,
+            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
@@ -733,7 +768,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Labels, one-vs-rest encoding.
+        :param y: Labels, one-hot-encoded of shape (nb_samples, nb_classes).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
@@ -757,7 +792,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         for _ in range(nb_epochs):
             for images, labels in train_ds:
-                self._train_step(images, labels)
+                self._train_step(self.model, images, labels)
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -862,9 +897,37 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
         else:
-            raise ValueError("Expecting eager execution.")
+            raise NotImplementedError("Expecting eager execution.")
 
         return gradients
+
+    def loss_gradient_framework(self, x: "tf.Tensor", y: "tf.Tensor", **kwargs) -> "tf.Tensor":
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :return: Gradients of the same shape as `x`.
+        """
+        import tensorflow as tf
+
+        if tf.executing_eagerly():
+            with tf.GradientTape() as tape:
+                tape.watch(x)
+                predictions = self._model(x)
+
+                if self._reduce_labels:
+                    loss = self._loss_object(tf.argmax(y, axis=1), predictions)
+                else:
+                    loss = self._loss_object(y, predictions)
+
+                loss_grads = tape.gradient(loss, x)
+
+        else:
+            raise NotImplementedError("Expecting eager execution.")
+
+        return loss_grads
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -896,8 +959,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                     loss = self._loss_object(y, predictions)
 
             gradients = tape.gradient(loss, x_preprocessed_tf).numpy()
+
         else:
-            raise ValueError("Expecting eager execution.")
+            raise NotImplementedError("Expecting eager execution.")
 
         # Apply preprocessing gradients
         gradients = self._apply_preprocessing_gradient(x, gradients)
@@ -930,7 +994,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         else:
             return None  # type: ignore
 
-    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128) -> np.ndarray:
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -1004,7 +1070,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     def __repr__(self):
         repr_ = (
             "%s(model=%r, nb_classes=%r, input_shape=%r, loss_object=%r, train_step=%r, channel_index=%r, "
-            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+            "channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
+            "preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._model,
@@ -1013,6 +1080,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 self._loss_object,
                 self._train_step,
                 self.channel_index,
+                self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
                 self.postprocessing_defences,

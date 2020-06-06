@@ -22,7 +22,7 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import load_dataset, get_labels_np_array
@@ -166,7 +166,7 @@ class TestInputFilter(unittest.TestCase):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.2, max_iter=5)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((np.array(x_test) == x_test_adv).all())

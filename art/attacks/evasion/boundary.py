@@ -97,9 +97,7 @@ class BoundaryAttack(EvasionAttack):
         self.batch_size = 1
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -110,15 +108,10 @@ class BoundaryAttack(EvasionAttack):
         :type x_adv_init: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        y = check_and_transform_label_format(
-            y, self.estimator.nb_classes, return_one_hot=False
-        )
+        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         # Get clip_min and clip_max from the classifier or infer them from data
-        if (
-            hasattr(self.estimator, "clip_values")
-            and self.estimator.clip_values is not None
-        ):
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
         else:
             clip_min, clip_max = np.min(x), np.max(x)
@@ -130,18 +123,14 @@ class BoundaryAttack(EvasionAttack):
         x_adv_init = kwargs.get("x_adv_init")
 
         if x_adv_init is not None:
-            init_preds = np.argmax(
-                self.estimator.predict(x_adv_init, batch_size=self.batch_size), axis=1
-            )
+            init_preds = np.argmax(self.estimator.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
             x_adv_init = [None] * len(x)
 
         # Assert that, if attack is targeted, y is provided
         if self.targeted and y is None:
-            raise ValueError(
-                "Target labels `y` need to be provided for a targeted attack."
-            )
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # Some initial setups
         x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -174,23 +163,13 @@ class BoundaryAttack(EvasionAttack):
 
         logger.info(
             "Success rate of Boundary attack: %.2f%%",
-            100
-            * compute_success(
-                self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size
-            ),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv
 
     def _perturb(
-        self,
-        x: np.ndarray,
-        y: int,
-        y_p: int,
-        init_pred: int,
-        adv_init: np.ndarray,
-        clip_min: float,
-        clip_max: float,
+        self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
     ) -> np.ndarray:
         """
         Internal attack function for one example.
@@ -205,24 +184,14 @@ class BoundaryAttack(EvasionAttack):
         :return: An adversarial example.
         """
         # First, create an initial adversarial sample
-        initial_sample = self._init_sample(
-            x, y, y_p, init_pred, adv_init, clip_min, clip_max
-        )
+        initial_sample = self._init_sample(x, y, y_p, init_pred, adv_init, clip_min, clip_max)
 
         # If an initial adversarial example is not found, then return the original image
         if initial_sample is None:
             return x
 
         # If an initial adversarial example found, then go with boundary attack
-        x_adv = self._attack(
-            initial_sample[0],
-            x,
-            initial_sample[1],
-            self.delta,
-            self.epsilon,
-            clip_min,
-            clip_max,
-        )
+        x_adv = self._attack(initial_sample[0], x, initial_sample[1], self.delta, self.epsilon, clip_min, clip_max,)
 
         return x_adv
 
@@ -259,18 +228,11 @@ class BoundaryAttack(EvasionAttack):
             for _ in range(self.num_trial):
                 potential_advs = []
                 for _ in range(self.sample_size):
-                    potential_adv = x_adv + self._orthogonal_perturb(
-                        self.curr_delta, x_adv, original_sample
-                    )
+                    potential_adv = x_adv + self._orthogonal_perturb(self.curr_delta, x_adv, original_sample)
                     potential_adv = np.clip(potential_adv, clip_min, clip_max)
                     potential_advs.append(potential_adv)
 
-                preds = np.argmax(
-                    self.estimator.predict(
-                        np.array(potential_advs), batch_size=self.batch_size
-                    ),
-                    axis=1,
-                )
+                preds = np.argmax(self.estimator.predict(np.array(potential_advs), batch_size=self.batch_size), axis=1,)
                 satisfied = preds == target
                 delta_ratio = np.mean(satisfied)
 
@@ -288,16 +250,11 @@ class BoundaryAttack(EvasionAttack):
 
             # Trust region method to adjust epsilon
             for _ in range(self.num_trial):
-                perturb = (
-                    np.repeat(np.array([original_sample]), len(x_advs), axis=0) - x_advs
-                )
+                perturb = np.repeat(np.array([original_sample]), len(x_advs), axis=0) - x_advs
                 perturb *= self.curr_epsilon
                 potential_advs = x_advs + perturb
                 potential_advs = np.clip(potential_advs, clip_min, clip_max)
-                preds = np.argmax(
-                    self.estimator.predict(potential_advs, batch_size=self.batch_size),
-                    axis=1,
-                )
+                preds = np.argmax(self.estimator.predict(potential_advs, batch_size=self.batch_size), axis=1,)
                 satisfied = preds == target
                 epsilon_ratio = np.mean(satisfied)
 
@@ -315,9 +272,7 @@ class BoundaryAttack(EvasionAttack):
 
         return x_adv
 
-    def _orthogonal_perturb(
-        self, delta: float, current_sample: np.ndarray, original_sample: np.ndarray
-    ) -> np.ndarray:
+    def _orthogonal_perturb(self, delta: float, current_sample: np.ndarray, original_sample: np.ndarray) -> np.ndarray:
         """
         Create an orthogonal perturbation.
 
@@ -337,30 +292,25 @@ class BoundaryAttack(EvasionAttack):
         direction = original_sample - current_sample
 
         if len(self.estimator.input_shape) == 3:
-            perturb = np.swapaxes(perturb, 0, self.estimator.channel_index - 1)
-            direction = np.swapaxes(direction, 0, self.estimator.channel_index - 1)
+            channel_index = 1 if self.estimator.channels_first else 3
+            perturb = np.swapaxes(perturb, 0, channel_index - 1)
+            direction = np.swapaxes(direction, 0, channel_index - 1)
             for i in range(direction.shape[0]):
                 direction[i] /= np.linalg.norm(direction[i])
                 perturb[i] -= np.dot(np.dot(perturb[i], direction[i].T), direction[i])
 
-            perturb = np.swapaxes(perturb, 0, self.estimator.channel_index - 1)
+            perturb = np.swapaxes(perturb, 0, channel_index - 1)
         elif len(self.estimator.input_shape) == 1:
             direction /= np.linalg.norm(direction)
             perturb -= np.dot(perturb, direction.T) * direction
         else:
             raise ValueError("Input shape not recognised.")
-
+        hypotenuse = np.sqrt(1 + delta ** 2)
+        perturb = ((1 - hypotenuse) * (current_sample - original_sample) + perturb) / hypotenuse
         return perturb
 
     def _init_sample(
-        self,
-        x: np.ndarray,
-        y: int,
-        y_p: int,
-        init_pred: int,
-        adv_init: np.ndarray,
-        clip_min: float,
-        clip_max: float,
+        self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
     ) -> Optional[np.ndarray]:
         """
         Find initial adversarial example for the attack.
@@ -388,14 +338,9 @@ class BoundaryAttack(EvasionAttack):
 
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
-                random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(
-                    x.dtype
-                )
+                random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
-                    self.estimator.predict(
-                        np.array([random_img]), batch_size=self.batch_size
-                    ),
-                    axis=1,
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
                 )[0]
 
                 if random_class == y:
@@ -404,9 +349,7 @@ class BoundaryAttack(EvasionAttack):
                     logger.info("Found initial adversarial image for targeted attack.")
                     break
             else:
-                logger.warning(
-                    "Failed to draw a random image that is adversarial, attack failed."
-                )
+                logger.warning("Failed to draw a random image that is adversarial, attack failed.")
 
         else:
             # The initial image satisfied
@@ -415,27 +358,18 @@ class BoundaryAttack(EvasionAttack):
 
             # The initial image unsatisfied
             for _ in range(self.init_size):
-                random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(
-                    x.dtype
-                )
+                random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
-                    self.estimator.predict(
-                        np.array([random_img]), batch_size=self.batch_size
-                    ),
-                    axis=1,
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
                 )[0]
 
                 if random_class != y_p:
                     initial_sample = random_img, random_class
 
-                    logger.info(
-                        "Found initial adversarial image for untargeted attack."
-                    )
+                    logger.info("Found initial adversarial image for untargeted attack.")
                     break
             else:
-                logger.warning(
-                    "Failed to draw a random image that is adversarial, attack failed."
-                )
+                logger.warning("Failed to draw a random image that is adversarial, attack failed.")
 
         return initial_sample
 
@@ -453,14 +387,10 @@ class BoundaryAttack(EvasionAttack):
             raise ValueError("The number of initial trials must be a positive integer.")
 
         if self.epsilon <= 0:
-            raise ValueError(
-                "The initial step size for the step towards the target must be positive."
-            )
+            raise ValueError("The initial step size for the step towards the target must be positive.")
 
         if self.delta <= 0:
-            raise ValueError(
-                "The initial step size for the orthogonal step must be positive."
-            )
+            raise ValueError("The initial step size for the orthogonal step must be positive.")
 
         if self.step_adapt <= 0 or self.step_adapt >= 1:
             raise ValueError("The adaptation factor must be in the range (0, 1).")

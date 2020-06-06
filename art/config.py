@@ -30,9 +30,7 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
 
 ART_NUMPY_DTYPE = np.float32
-DATASET_TYPE = Tuple[
-    Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float
-]
+DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
 CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
 PREPROCESSING_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
 
@@ -77,6 +75,12 @@ if not os.path.exists(_config_path):
             f.write(json.dumps(_config, indent=4))
     except IOError:
         logger.warning("Unable to create configuration file", exc_info=True)
+
+if not os.path.exists(_config["ART_DATA_PATH"]):
+    try:
+        os.makedirs(_config["ART_DATA_PATH"])
+    except OSError:
+        logger.warning("Unable to create folder for ART_DATA_PATH dir.", exc_info=True)
 
 if "ART_DATA_PATH" in _config:
     ART_DATA_PATH = _config["ART_DATA_PATH"]

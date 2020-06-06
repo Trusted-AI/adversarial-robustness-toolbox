@@ -68,9 +68,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         self.max_val = max_val
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         attack implementations.
@@ -92,9 +90,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             return (pred - args["conf"]).reshape(-1)
 
         def constraint_unc(x, args):  # constraint for uncertainty
-            cur_unc = (
-                args["classifier"].predict_uncertainty(x.reshape(1, -1))
-            ).reshape(-1)
+            cur_unc = (args["classifier"].predict_uncertainty(x.reshape(1, -1))).reshape(-1)
             return (args["max_uncertainty"] - cur_unc)[0]
 
         bounds = []
@@ -103,9 +99,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             bounds.append((self.min_val, self.max_val))
         for i in range(np.shape(x)[0]):  # go though data amd craft
             # get properties for attack
-            max_uncertainty = self.unc_increase * self.estimator.predict_uncertainty(
-                x_adv[i].reshape(1, -1)
-            )
+            max_uncertainty = self.unc_increase * self.estimator.predict_uncertainty(x_adv[i].reshape(1, -1))
             class_zero = not self.estimator.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
             init_args = {
                 "classifier": self.estimator,
@@ -117,16 +111,9 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             constr_unc = {"type": "ineq", "fun": constraint_unc, "args": (init_args,)}
             args = {"args": init_args, "orig": x[i].reshape(-1)}
             # finally, run optimization
-            x_adv[i] = minimize(
-                minfun,
-                x_adv[i],
-                args=args,
-                bounds=bounds,
-                constraints=[constr_conf, constr_unc],
-            )["x"]
+            x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc],)["x"]
         logger.info(
-            "Success rate of HCLU attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, x_adv),
+            "Success rate of HCLU attack: %.2f%%", 100 * compute_success(self.estimator, x, y, x_adv),
         )
         return x_adv
 

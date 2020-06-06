@@ -47,7 +47,7 @@ classifier = MXClassifier(
     nb_classes=10,
     optimizer=trainer,
     ctx=None,
-    channel_index=1,
+    channels_first=True,
     preprocessing_defences=None,
     preprocessing=(0, 1),
 )

@@ -43,6 +43,7 @@ tests_require = [
     "pytest-mock==3.1.0",
     "resampy==0.2.2",
     "mypy==0.770",
+    "ffmpeg-python==0.2.0",
 ]
 
 docs_require = [

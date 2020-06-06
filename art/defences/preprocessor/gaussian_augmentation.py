@@ -25,7 +25,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 
-from art.config import CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -72,10 +72,13 @@ class GaussianAugmentation(Preprocessor):
         """
         super(GaussianAugmentation, self).__init__()
         self._is_fitted = True
-        if augmentation and apply_fit and apply_predict:
+        if augmentation and not apply_fit and apply_predict:
             raise ValueError(
                 "If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict` must be `False`."
             )
+        if augmentation and not (apply_fit or apply_predict):
+            raise ValueError("If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`.")
+
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
         self.sigma = sigma
@@ -92,9 +95,7 @@ class GaussianAugmentation(Preprocessor):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Augment the sample `(x, y)` with Gaussian noise. The result is either an extended dataset containing the
         original sample, as well as the newly created noisy samples (augmentation=True) or just the noisy counterparts
@@ -113,9 +114,7 @@ class GaussianAugmentation(Preprocessor):
             indices = np.random.randint(0, x.shape[0], size=size)
 
             # Generate noisy samples
-            x_aug = np.random.normal(
-                x[indices], scale=self.sigma, size=(size,) + x.shape[1:]
-            )
+            x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x.shape[1:]).astype(ART_NUMPY_DTYPE)
             x_aug = np.vstack((x, x_aug))
             if y is not None:
                 y_aug = np.concatenate((y, y[indices]))
@@ -123,7 +122,7 @@ class GaussianAugmentation(Preprocessor):
                 y_aug = y
             logger.info("Augmented dataset size: %d", x_aug.shape[0])
         else:
-            x_aug = np.random.normal(x, scale=self.sigma, size=x.shape)
+            x_aug = np.random.normal(x, scale=self.sigma, size=x.shape).astype(ART_NUMPY_DTYPE)
             y_aug = y
             logger.info("Created %i samples with Gaussian noise.")
 

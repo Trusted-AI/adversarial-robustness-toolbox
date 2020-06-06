@@ -20,13 +20,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 
-import numpy as np
 import keras.backend as k
+import numpy as np
 
 from art.estimators.classification.ensemble import EnsembleClassifier
-
+from art.utils import Deprecated
 from tests.utils import TestBase, get_image_classifier_kr
-
 
 logger = logging.getLogger(__name__)
 
@@ -255,8 +254,8 @@ class TestEnsembleClassifier(TestBase):
         self.assertIn("art.estimators.classification.ensemble.EnsembleClassifier", repr_)
         self.assertIn("classifier_weights=array([0.5, 0.5])", repr_)
         self.assertIn(
-            "channel_index=3, clip_values=None, preprocessing_defences=None, "
-            "postprocessing_defences=None, preprocessing=(0, 1)",
+            f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
+            "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)",
             repr_,
         )
 

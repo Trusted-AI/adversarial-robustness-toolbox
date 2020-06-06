@@ -34,9 +34,7 @@ class Rounded(Postprocessor):
 
     params = ["decimals"]
 
-    def __init__(
-        self, decimals: int = 3, apply_fit: bool = False, apply_predict: bool = True
-    ) -> None:
+    def __init__(self, decimals: int = 3, apply_fit: bool = False, apply_predict: bool = True) -> None:
         """
         Create a Rounded postprocessor.
 

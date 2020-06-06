@@ -51,12 +51,7 @@ class LabelSmoothing(Preprocessor):
 
     params = ["max_value"]
 
-    def __init__(
-        self,
-        max_value: float = 0.9,
-        apply_fit: bool = True,
-        apply_predict: bool = False,
-    ) -> None:
+    def __init__(self, max_value: float = 0.9, apply_fit: bool = True, apply_predict: bool = False,) -> None:
         """
         Create an instance of label smoothing.
 
@@ -79,9 +74,7 @@ class LabelSmoothing(Preprocessor):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply label smoothing.
 
@@ -112,6 +105,4 @@ class LabelSmoothing(Preprocessor):
 
     def _check_params(self) -> None:
         if self.max_value <= 0 or self.max_value > 1:
-            raise ValueError(
-                "The maximum value for correct labels must be between 0 and 1."
-            )
+            raise ValueError("The maximum value for correct labels must be between 0 and 1.")

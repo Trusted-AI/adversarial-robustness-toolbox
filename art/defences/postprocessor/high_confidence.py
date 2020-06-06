@@ -34,9 +34,7 @@ class HighConfidence(Postprocessor):
 
     params = ["cutoff"]
 
-    def __init__(
-        self, cutoff: float = 0.25, apply_fit: bool = False, apply_predict: bool = True
-    ) -> None:
+    def __init__(self, cutoff: float = 0.25, apply_fit: bool = False, apply_predict: bool = True) -> None:
         """
         Create a HighConfidence postprocessor.
 

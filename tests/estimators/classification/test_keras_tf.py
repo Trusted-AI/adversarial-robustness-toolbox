@@ -17,28 +17,28 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
-import unittest
+import os
 import pickle
+import unittest
 
+import numpy as np
 import tensorflow as tf
+from tensorflow.keras.callbacks import LearningRateScheduler
+from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+from art.config import ART_DATA_PATH
+from art.data_generators import KerasDataGenerator
+from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.estimators.classification.keras import KerasClassifier, generator_fit
+from art.utils import Deprecated
+from tests.utils import TestBase, get_image_classifier_kr_tf, master_seed
 
 if tf.__version__[0] == "2":
     tf.compat.v1.disable_eager_execution()
-from tensorflow.keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
-from tensorflow.keras.models import Model
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.callbacks import LearningRateScheduler
 
-import numpy as np
-
-from art.config import ART_DATA_PATH
-from art.estimators.classification.keras import KerasClassifier, generator_fit
-from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.data_generators import KerasDataGenerator
-
-from tests.utils import TestBase, master_seed, get_image_classifier_kr_tf
 
 logger = logging.getLogger(__name__)
 
@@ -563,7 +563,7 @@ class TestKerasClassifierTensorFlow(TestBase):
             loaded = pickle.load(load_file)
 
         np.testing.assert_equal(keras_model._clip_values, loaded._clip_values)
-        self.assertEqual(keras_model._channel_index, loaded._channel_index)
+        self.assertEqual(keras_model._channels_first, loaded._channels_first)
         self.assertEqual(keras_model._use_logits, loaded._use_logits)
         self.assertEqual(keras_model._input_layer, loaded._input_layer)
         self.assertEqual(self.functional_model.get_config(), loaded._model.get_config())
@@ -575,7 +575,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         classifier = get_image_classifier_kr_tf()
         repr_ = repr(classifier)
         self.assertIn("art.estimators.classification.keras.KerasClassifier", repr_)
-        self.assertIn("use_logits=False, channel_index=3", repr_)
+        self.assertIn(f"use_logits=False, channel_index={Deprecated}, channels_first=False", repr_)
         self.assertIn(
             "clip_values=None, preprocessing_defences=None, postprocessing_defences=None, " "preprocessing=(0, 1)",
             repr_,

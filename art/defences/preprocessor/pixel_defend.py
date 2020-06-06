@@ -89,9 +89,7 @@ class PixelDefend(Preprocessor):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply pixel defence to sample `x`.
 
@@ -103,9 +101,9 @@ class PixelDefend(Preprocessor):
         # Convert into `uint8`
         original_shape = x.shape
         if self.pixel_cnn is not None:
-            probs = self.pixel_cnn.get_activations(
-                x, layer=-1, batch_size=self.batch_size
-            ).reshape((x.shape[0], -1, 256))
+            probs = self.pixel_cnn.get_activations(x, layer=-1, batch_size=self.batch_size).reshape(
+                (x.shape[0], -1, 256)
+            )
         else:
             raise ValueError("No model received for `pixel_cnn`.")
 
@@ -118,10 +116,7 @@ class PixelDefend(Preprocessor):
             for feat_index in range(x.shape[1]):
                 # Setup the search space
                 f_probs = probs[i, feat_index, :]
-                f_range = range(
-                    int(max(x_i[feat_index] - self.eps, 0)),
-                    int(min(x_i[feat_index] + self.eps, 255) + 1),
-                )
+                f_range = range(int(max(x_i[feat_index] - self.eps, 0)), int(min(x_i[feat_index] + self.eps, 255) + 1),)
 
                 # Look in the search space
                 best_prob = -1
@@ -161,9 +156,7 @@ class PixelDefend(Preprocessor):
         if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
-        if hasattr(self, "pixel_cnn") and not isinstance(
-            self.pixel_cnn, ClassifierMixin
-        ):
+        if hasattr(self, "pixel_cnn") and not isinstance(self.pixel_cnn, ClassifierMixin):
             raise TypeError("PixelCNN model must be of type Classifier.")
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():

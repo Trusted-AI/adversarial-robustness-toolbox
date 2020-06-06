@@ -21,6 +21,7 @@ Module providing convenience functions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from functools import wraps
+from inspect import signature
 import logging
 import math
 import os
@@ -39,7 +40,7 @@ from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE, DATASET_TYPE
 
 if TYPE_CHECKING:
     from art.config import CLIP_VALUES_TYPE
-    from art.estimators.classification.classifier import Classifier, ClassifierMixin
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +48,28 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- DEPRECATION
 
 
+class _Deprecated:
+    """
+    Create Deprecated() singleton object.
+    """
+
+    _instance = None
+
+    def __new__(cls):
+        if _Deprecated._instance is None:
+            _Deprecated._instance = object.__new__(cls)
+        return _Deprecated._instance
+
+
+Deprecated = _Deprecated()
+
+
 def deprecated(end_version: str, *, reason: str = "", replaced_by: str = "") -> Callable:
     """
     Deprecate a function or method and raise a `DeprecationWarning`.
 
     The `@deprecated` decorator is used to deprecate functions and methods. Several cases are supported. For example
-    one can use it to depcreate a function that has become redundant or renaming a function. The following code examples
+    one can use it to deprecate a function that has become redundant or rename a function. The following code examples
     provide different use cases of how to use decorator.
 
     .. code-block:: python
@@ -91,14 +108,20 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
     """
     Deprecate a keyword argument and raise a `DeprecationWarning`.
 
-    The `@deprecated_keyword_arg` decorator is used to deprecate keyword arguments. Several cases are supported. For
-    example one can use it to depcreate the default value of a keyword or rename a keyword identifier. The following
-    code examples provide different use cases of how to use the decorator.
+    The `@deprecated_keyword_arg` decorator is used to deprecate keyword arguments. The deprecated keyword argument must
+    default to `Deprecated`. Several use cases are supported. For example one can use it to to rename a keyword
+    identifier. The following code examples provide different use cases of how to use the decorator.
 
     .. code-block:: python
 
-    @deprecated_keyword_arg("verbose", "1.1.0", replaced_by="verbose=False")
-    def simple_addition(a, b, verbose=True):
+    @deprecated_keyword_arg("print", "1.1.0", replaced_by="verbose")
+    def simple_addition(a, b, print=Deprecated, verbose=False):
+        if verbose:
+            print(a + b)
+        return a + b
+
+    @deprecated_keyword_arg("verbose", "1.1.0")
+    def simple_addition(a, b, verbose=Deprecated):
         return a + b
 
     :param identifier: Keyword identifier.
@@ -117,11 +140,18 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 
         @wraps(function)
         def wrapper(*args, **kwargs):
-            warnings.simplefilter("always", category=DeprecationWarning)
-            warnings.warn(
-                deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2,
-            )
-            warnings.simplefilter("default", category=DeprecationWarning)
+            params = signature(function).bind(*args, **kwargs)
+            params.apply_defaults()
+
+            if params.signature.parameters[identifier].default is not Deprecated:
+                raise ValueError("Deprecated keyword argument must default to the Decorator singleton.")
+            if replaced_by != "" and replaced_by not in params.arguments:
+                raise ValueError("Deprecated keyword replacement not found in function signature.")
+
+            if params.arguments[identifier] is not Deprecated:
+                warnings.simplefilter("always", category=DeprecationWarning)
+                warnings.warn(deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2)
+                warnings.simplefilter("default", category=DeprecationWarning)
             return function(*args, **kwargs)
 
         return wrapper
@@ -215,10 +245,7 @@ def original_to_tanh(
 
 
 def tanh_to_original(
-    x_tanh: np.ndarray,
-    clip_min: Union[float, np.ndarray],
-    clip_max: Union[float, np.ndarray],
-    tanh_smoother: float = 0.999999,
+    x_tanh: np.ndarray, clip_min: Union[float, np.ndarray], clip_max: Union[float, np.ndarray],
 ) -> np.ndarray:
     """
     Transform input from tanh to original space.
@@ -226,11 +253,9 @@ def tanh_to_original(
     :param x_tanh: An array with the input to be transformed.
     :param clip_min: Minimum clipping value.
     :param clip_max: Maximum clipping value.
-    :param tanh_smoother: Scalar for dividing arguments of tanh to avoid division by zero.
     :return: An array holding the transformed input.
     """
-    x_original = (np.tanh(x_tanh) / tanh_smoother + 1) / 2
-    return x_original * (clip_max - clip_min) + clip_min
+    return (np.tanh(x_tanh) + 1.0) / 2.0 * (clip_max - clip_min) + clip_min
 
 
 # --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
@@ -249,6 +274,28 @@ def to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None) -> np.n
         nb_classes = np.max(labels) + 1
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
     categorical[np.arange(labels.shape[0]), np.squeeze(labels)] = 1
+    return categorical
+
+
+def float_to_categorical(labels, nb_classes=None):
+    """
+    Convert an array of floating point labels to binary class matrix.
+
+    :param labels: An array of integer labels of shape `(nb_samples,)`
+    :type labels: `np.ndarray`
+    :param nb_classes: The number of classes (possible labels)
+    :type nb_classes: `int`
+    :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`
+    :rtype: `np.ndarray`
+    """
+    labels = np.array(labels)
+    unique = np.unique(labels)
+    unique.sort()
+    indexes = [np.where(unique == value)[0] for value in labels]
+    if nb_classes is None:
+        nb_classes = len(unique) + 1
+    categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
+    categorical[np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
     return categorical
 
 

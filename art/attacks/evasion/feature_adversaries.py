@@ -132,10 +132,10 @@ class FeatureAdversaries(EvasionAttack):
         from scipy.linalg import norm
 
         lb = x.flatten() - self.delta
-        lb[lb < 0.0] = 0.0
+        lb[lb < self.estimator.clip_values[0]] = self.estimator.clip_values[0]
 
         ub = x.flatten() + self.delta
-        ub[ub > 1.0] = 1.0
+        ub[ub > self.estimator.clip_values[1]] = self.estimator.clip_values[1]
 
         bound = Bounds(lb=lb, ub=ub, keep_feasible=False)
 

@@ -7,7 +7,13 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evation tests"; fi
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
+
+mlFrameworkList=("tensorflow" "scikitlearn")
+for mlFramework in "${mlFrameworkList[@]}"; do
+  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
+done
 
 pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
@@ -31,6 +37,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
                     "tests/attacks/test_deepfool.py" \
                     "tests/attacks/test_elastic_net.py" \
+                    "tests/attacks/test_feature_collision.py" \
                     "tests/attacks/test_functionally_equivalent_extraction.py" \
                     "tests/attacks/test_hclu.py" \
                     "tests/attacks/test_input_filter.py" \
@@ -46,9 +53,11 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_virtual_adversarial.py" \
                     "tests/attacks/test_zoo.py" \
                     "tests/attacks/test_pixel_attack.py" \
-                    "tests/attacks/test_threshold_attack.py" )
+                    "tests/attacks/test_threshold_attack.py" \
+                    "tests/attacks/test_wasserstein.py" )
 
-declare -a classifiers=("tests/estimators/classification/test_blackbox.py" \
+declare -a classifiers=("tests/estimators/certification/test_randomized_smoothing.py" \
+                        "tests/estimators/classification/test_blackbox.py" \
                         "tests/estimators/classification/test_catboost.py" \
                         "tests/estimators/classification/test_classifier.py" \
                         "tests/estimators/classification/test_detector_classifier.py" \
@@ -91,7 +100,6 @@ declare -a metrics=("tests/metrics/test_gradient_check.py" \
 
 declare -a wrappers=("tests/wrappers/test_expectation.py" \
                      "tests/wrappers/test_query_efficient_bb.py" \
-                     "tests/wrappers/test_randomized_smoothing.py" \
                      "tests/wrappers/test_wrapper.py" )
 
 declare -a art=("tests/test_data_generators.py" \

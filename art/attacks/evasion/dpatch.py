@@ -27,9 +27,10 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
+from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.attacks.attack import EvasionAttack
+from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,8 @@ class DPatch(EvasionAttack):
         :param y: Target labels for object detector.
         :return: Adversarial patch.
         """
-        if x.shape[self.estimator.channel_index] != self.patch_shape[self.estimator.channel_index - 1]:
+        channel_index = 1 if self.estimator.channels_first else x.ndim - 1
+        if x.shape[channel_index] != self.patch_shape[channel_index - 1]:
             raise ValueError("The color channel index of the images and the patch have to be identical.")
         if y is not None:
             raise ValueError("The DPatch attack does not use target labels.")
@@ -132,12 +134,10 @@ class DPatch(EvasionAttack):
                     i_y_1 = transforms[i_batch_start + i_image]["i_y_1"]
                     i_y_2 = transforms[i_batch_start + i_image]["i_y_2"]
 
-                    if self.estimator.channel_index == 3:
-                        patch_gradients_i = gradients[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :]
-                    elif self.estimator.channel_index == 1:
+                    if self.estimator.channels_first:
                         patch_gradients_i = gradients[i_image, :, i_x_1:i_x_2, i_y_1:i_y_2]
                     else:
-                        raise ValueError("Unrecognized channel index.")
+                        patch_gradients_i = gradients[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :]
 
                     patch_gradients += patch_gradients_i
 
@@ -149,8 +149,9 @@ class DPatch(EvasionAttack):
         return self._patch
 
     @staticmethod
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def _augment_images_with_patch(
-        x: np.ndarray, patch: np.ndarray, random_location: bool, channel_index: int
+        x: np.ndarray, patch: np.ndarray, random_location: bool, channels_first: bool, channel_index: int = Deprecated
     ) -> Tuple[np.ndarray, List[Dict[str, int]]]:
         """
         Augment images with patch.
@@ -159,13 +160,22 @@ class DPatch(EvasionAttack):
         :param patch: The patch to be applied.
         :param random_location: If True apply patch at randomly shifted locations, otherwise place patch at origin
                                 (top-left corner).
+        :param channels_first: Set channels first or last.
         :param channel_index: Index of the color channel.
         """
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         transformations = list()
         x_copy = x.copy()
         patch_copy = patch.copy()
 
-        if channel_index == 1:
+        if channels_first:
             x_copy = np.transpose(x_copy, (0, 2, 3, 1))
             patch_copy = np.transpose(patch_copy, (1, 2, 0))
 
@@ -185,7 +195,7 @@ class DPatch(EvasionAttack):
 
             x_copy[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :] = patch_copy
 
-        if channel_index == 1:
+        if channels_first:
             x_copy = np.transpose(x_copy, (0, 3, 1, 2))
 
         return x_copy, transformations

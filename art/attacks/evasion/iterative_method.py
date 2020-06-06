@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import ClassifierGradients

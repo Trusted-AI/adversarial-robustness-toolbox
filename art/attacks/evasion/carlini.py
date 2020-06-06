@@ -142,15 +142,11 @@ class CarliniL2Method(EvasionAttack):
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         z_predicted = self.estimator.predict(
-            np.array(x_adv, dtype=ART_NUMPY_DTYPE),
-            logits=True,
-            batch_size=self.batch_size,
+            np.array(x_adv, dtype=ART_NUMPY_DTYPE), logits=True, batch_size=self.batch_size,
         )
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(
-            z_predicted * (1 - target)
-            + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target,
-            axis=1,
+            z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1,
         )
 
         # The following differs from the exact definition given in Carlini and Wagner (2016). There (page 9, left
@@ -161,14 +157,10 @@ class CarliniL2Method(EvasionAttack):
 
         if self.targeted:
             # if targeted, optimize for making the target class most likely
-            loss = np.maximum(
-                z_other - z_target + self.confidence, np.zeros(x.shape[0])
-            )
+            loss = np.maximum(z_other - z_target + self.confidence, np.zeros(x.shape[0]))
         else:
             # if untargeted, optimize for making any other class most likely
-            loss = np.maximum(
-                z_target - z_other + self.confidence, np.zeros(x.shape[0])
-            )
+            loss = np.maximum(z_target - z_other + self.confidence, np.zeros(x.shape[0]))
 
         return z_predicted, l2dist, c_weight * loss + l2dist
 
@@ -198,18 +190,10 @@ class CarliniL2Method(EvasionAttack):
         """
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
-            i_add = np.argmax(
-                z_logits * (1 - target)
-                + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target,
-                axis=1,
-            )
+            i_add = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
         else:
             i_add = np.argmax(target, axis=1)
-            i_sub = np.argmax(
-                z_logits * (1 - target)
-                + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target,
-                axis=1,
-            )
+            i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
 
         loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
         loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
@@ -222,15 +206,11 @@ class CarliniL2Method(EvasionAttack):
         loss_gradient *= c_mult
         loss_gradient += 2 * (x_adv - x)
         loss_gradient *= clip_max - clip_min
-        loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (
-            2 * self._tanh_smoother
-        )
+        loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (2 * self._tanh_smoother)
 
         return loss_gradient
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -244,25 +224,18 @@ class CarliniL2Method(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if (
-            hasattr(self.estimator, "clip_values")
-            and self.estimator.clip_values is not None
-        ):
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
         else:
             clip_min, clip_max = np.amin(x), np.amax(x)
 
         # Assert that, if attack is targeted, y_val is provided:
         if self.targeted and y is None:
-            raise ValueError(
-                "Target labels `y` need to be provided for a targeted attack."
-            )
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(
-                self.estimator.predict(x, batch_size=self.batch_size)
-            )
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -277,9 +250,7 @@ class CarliniL2Method(EvasionAttack):
             y_batch = y[batch_index_1:batch_index_2]
 
             # The optimization is performed in tanh space to keep the adversarial images bounded in correct range
-            x_batch_tanh = original_to_tanh(
-                x_batch, clip_min, clip_max, self._tanh_smoother
-            )
+            x_batch_tanh = original_to_tanh(x_batch, clip_min, clip_max, self._tanh_smoother)
 
             # Initialize binary search:
             c_current = self.initial_const * np.ones(x_batch.shape[0])
@@ -292,16 +263,11 @@ class CarliniL2Method(EvasionAttack):
 
             for bss in range(self.binary_search_steps):
                 logger.debug(
-                    "Binary search step %i out of %i (c_mean==%f)",
-                    bss,
-                    self.binary_search_steps,
-                    np.mean(c_current),
+                    "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current),
                 )
                 nb_active = int(np.sum(c_current < self._c_upper_bound))
                 logger.debug(
-                    "Number of samples with c_current < _c_upper_bound: %i out of %i",
-                    nb_active,
-                    x_batch.shape[0],
+                    "Number of samples with c_current < _c_upper_bound: %i out of %i", nb_active, x_batch.shape[0],
                 )
                 if nb_active == 0:
                     break
@@ -311,9 +277,7 @@ class CarliniL2Method(EvasionAttack):
                 x_adv_batch = x_batch.copy()
                 x_adv_batch_tanh = x_batch_tanh.copy()
 
-                z_logits, l2dist, loss = self._loss(
-                    x_batch, x_adv_batch, y_batch, c_current
-                )
+                z_logits, l2dist, loss = self._loss(x_batch, x_adv_batch, y_batch, c_current)
                 attack_success = loss - l2dist <= 0
                 overall_attack_success = attack_success
 
@@ -329,9 +293,7 @@ class CarliniL2Method(EvasionAttack):
                     )
 
                     improved_adv = attack_success & (l2dist < best_l2dist)
-                    logger.debug(
-                        "Number of improved L2 distances: %i", int(np.sum(improved_adv))
-                    )
+                    logger.debug("Number of improved L2 distances: %i", int(np.sum(improved_adv)))
                     if np.sum(improved_adv) > 0:
                         best_l2dist[improved_adv] = l2dist[improved_adv]
                         best_x_adv_batch[improved_adv] = x_adv_batch[improved_adv]
@@ -368,14 +330,11 @@ class CarliniL2Method(EvasionAttack):
 
                     for i_halve in range(self.max_halving):
                         logger.debug(
-                            "Perform halving iteration %i out of %i",
-                            i_halve,
-                            self.max_halving,
+                            "Perform halving iteration %i out of %i", i_halve, self.max_halving,
                         )
                         do_halving = loss[active] >= prev_loss[active]
                         logger.debug(
-                            "Halving to be performed on %i samples",
-                            int(np.sum(do_halving)),
+                            "Halving to be performed on %i samples", int(np.sum(do_halving)),
                         )
                         if np.sum(do_halving) == 0:
                             break
@@ -387,20 +346,9 @@ class CarliniL2Method(EvasionAttack):
                             lr_mult = lr_mult[:, np.newaxis]
 
                         x_adv1 = x_adv_batch_tanh[active_and_do_halving]
-                        new_x_adv_batch_tanh = (
-                            x_adv1 + lr_mult * perturbation_tanh[do_halving]
-                        )
-                        new_x_adv_batch = tanh_to_original(
-                            new_x_adv_batch_tanh,
-                            clip_min,
-                            clip_max,
-                            self._tanh_smoother,
-                        )
-                        (
-                            _,
-                            l2dist[active_and_do_halving],
-                            loss[active_and_do_halving],
-                        ) = self._loss(
+                        new_x_adv_batch_tanh = x_adv1 + lr_mult * perturbation_tanh[do_halving]
+                        new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
+                        _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
                             x_batch[active_and_do_halving],
                             new_x_adv_batch,
                             y_batch[active_and_do_halving],
@@ -409,9 +357,7 @@ class CarliniL2Method(EvasionAttack):
 
                         logger.debug("New Average Loss: %f", np.mean(loss))
                         logger.debug("New Average L2Dist: %f", np.mean(l2dist))
-                        logger.debug(
-                            "New Average Margin Loss: %f", np.mean(loss - l2dist)
-                        )
+                        logger.debug("New Average Margin Loss: %f", np.mean(loss - l2dist))
 
                         best_lr[loss < best_loss] = learning_rate[loss < best_loss]
                         best_loss[loss < best_loss] = loss[loss < best_loss]
@@ -423,16 +369,11 @@ class CarliniL2Method(EvasionAttack):
                     # decreases the loss:
                     for i_double in range(self.max_doubling):
                         logger.debug(
-                            "Perform doubling iteration %i out of %i",
-                            i_double,
-                            self.max_doubling,
+                            "Perform doubling iteration %i out of %i", i_double, self.max_doubling,
                         )
-                        do_doubling = (halving[active] == 1) & (
-                            loss[active] <= best_loss[active]
-                        )
+                        do_doubling = (halving[active] == 1) & (loss[active] <= best_loss[active])
                         logger.debug(
-                            "Doubling to be performed on %i samples",
-                            int(np.sum(do_doubling)),
+                            "Doubling to be performed on %i samples", int(np.sum(do_doubling)),
                         )
                         if np.sum(do_doubling) == 0:
                             break
@@ -445,20 +386,9 @@ class CarliniL2Method(EvasionAttack):
                             lr_mult = lr_mult[:, np.newaxis]
 
                         x_adv2 = x_adv_batch_tanh[active_and_do_doubling]
-                        new_x_adv_batch_tanh = (
-                            x_adv2 + lr_mult * perturbation_tanh[do_doubling]
-                        )
-                        new_x_adv_batch = tanh_to_original(
-                            new_x_adv_batch_tanh,
-                            clip_min,
-                            clip_max,
-                            self._tanh_smoother,
-                        )
-                        (
-                            _,
-                            l2dist[active_and_do_doubling],
-                            loss[active_and_do_doubling],
-                        ) = self._loss(
+                        new_x_adv_batch_tanh = x_adv2 + lr_mult * perturbation_tanh[do_doubling]
+                        new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
+                        _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
                             x_batch[active_and_do_doubling],
                             new_x_adv_batch,
                             y_batch[active_and_do_doubling],
@@ -466,9 +396,7 @@ class CarliniL2Method(EvasionAttack):
                         )
                         logger.debug("New Average Loss: %f", np.mean(loss))
                         logger.debug("New Average L2Dist: %f", np.mean(l2dist))
-                        logger.debug(
-                            "New Average Margin Loss: %f", np.mean(loss - l2dist)
-                        )
+                        logger.debug("New Average Margin Loss: %f", np.mean(loss - l2dist))
                         best_lr[loss < best_loss] = learning_rate[loss < best_loss]
                         best_loss[loss < best_loss] = loss[loss < best_loss]
 
@@ -476,8 +404,7 @@ class CarliniL2Method(EvasionAttack):
 
                     update_adv = best_lr[active] > 0
                     logger.debug(
-                        "Number of adversarial samples to be finally updated: %i",
-                        int(np.sum(update_adv)),
+                        "Number of adversarial samples to be finally updated: %i", int(np.sum(update_adv)),
                     )
 
                     if np.sum(update_adv) > 0:
@@ -492,9 +419,7 @@ class CarliniL2Method(EvasionAttack):
                         x_adv_batch_tanh[active_and_update_adv] = x_adv4 + best_lr1
 
                         x_adv6 = x_adv_batch_tanh[active_and_update_adv]
-                        x_adv_batch[active_and_update_adv] = tanh_to_original(
-                            x_adv6, clip_min, clip_max, self._tanh_smoother
-                        )
+                        x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv6, clip_min, clip_max)
                         (
                             z_logits[active_and_update_adv],
                             l2dist[active_and_update_adv],
@@ -510,25 +435,19 @@ class CarliniL2Method(EvasionAttack):
 
                 # Update depending on attack success:
                 improved_adv = attack_success & (l2dist < best_l2dist)
-                logger.debug(
-                    "Number of improved L2 distances: %i", int(np.sum(improved_adv))
-                )
+                logger.debug("Number of improved L2 distances: %i", int(np.sum(improved_adv)))
 
                 if np.sum(improved_adv) > 0:
                     best_l2dist[improved_adv] = l2dist[improved_adv]
                     best_x_adv_batch[improved_adv] = x_adv_batch[improved_adv]
 
                 c_double[overall_attack_success] = False
-                c_current[overall_attack_success] = (c_lower_bound + c_current)[
-                    overall_attack_success
-                ] / 2
+                c_current[overall_attack_success] = (c_lower_bound + c_current)[overall_attack_success] / 2
 
                 c_old = c_current
                 c_current[~overall_attack_success & c_double] *= 2
 
-                c_current1 = (c_current - c_lower_bound)[
-                    ~overall_attack_success & ~c_double
-                ]
+                c_current1 = (c_current - c_lower_bound)[~overall_attack_success & ~c_double]
                 c_current[~overall_attack_success & ~c_double] += c_current1 / 2
                 c_lower_bound[~overall_attack_success] = c_old[~overall_attack_success]
 
@@ -536,35 +455,23 @@ class CarliniL2Method(EvasionAttack):
 
         logger.info(
             "Success rate of C&W L_2 attack: %.2f%%",
-            100
-            * compute_success(
-                self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size
-            ),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv
 
     def _check_params(self) -> None:
-        if (
-            not isinstance(self.binary_search_steps, (int, np.int))
-            or self.binary_search_steps < 0
-        ):
-            raise ValueError(
-                "The number of binary search steps must be a non-negative integer."
-            )
+        if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
+            raise ValueError("The number of binary search steps must be a non-negative integer.")
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
         if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
-            raise ValueError(
-                "The number of halving steps must be an integer greater than zero."
-            )
+            raise ValueError("The number of halving steps must be an integer greater than zero.")
 
         if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
-            raise ValueError(
-                "The number of doubling steps must be an integer greater than zero."
-            )
+            raise ValueError("The number of doubling steps must be an integer greater than zero.")
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
@@ -631,9 +538,7 @@ class CarliniLInfMethod(EvasionAttack):
         # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
         self._tanh_smoother = 0.999999
 
-    def _loss(
-        self, x_adv: np.ndarray, target: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _loss(self, x_adv: np.ndarray, target: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute the objective function value.
 
@@ -641,26 +546,18 @@ class CarliniLInfMethod(EvasionAttack):
         :param target: An array with the target class (one-hot encoded).
         :return: A tuple holding the current predictions and overall loss.
         """
-        z_predicted = self.estimator.predict(
-            np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size
-        )
+        z_predicted = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(
-            z_predicted * (1 - target)
-            + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target,
-            axis=1,
+            z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1,
         )
 
         if self.targeted:
             # if targeted, optimize for making the target class most likely
-            loss = np.maximum(
-                z_other - z_target + self.confidence, np.zeros(x_adv.shape[0])
-            )
+            loss = np.maximum(z_other - z_target + self.confidence, np.zeros(x_adv.shape[0]))
         else:
             # if untargeted, optimize for making any other class most likely
-            loss = np.maximum(
-                z_target - z_other + self.confidence, np.zeros(x_adv.shape[0])
-            )
+            loss = np.maximum(z_target - z_other + self.confidence, np.zeros(x_adv.shape[0]))
 
         return z_predicted, loss
 
@@ -686,33 +583,21 @@ class CarliniLInfMethod(EvasionAttack):
         """
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
-            i_add = np.argmax(
-                z_logits * (1 - target)
-                + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target,
-                axis=1,
-            )
+            i_add = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
         else:
             i_add = np.argmax(target, axis=1)
-            i_sub = np.argmax(
-                z_logits * (1 - target)
-                + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target,
-                axis=1,
-            )
+            i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
 
         loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
         loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x_adv.shape)
 
         loss_gradient *= clip_max - clip_min
-        loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (
-            2 * self._tanh_smoother
-        )
+        loss_gradient *= (1 - np.square(np.tanh(x_adv_tanh))) / (2 * self._tanh_smoother)
 
         return loss_gradient
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -725,25 +610,18 @@ class CarliniLInfMethod(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if (
-            hasattr(self.estimator, "clip_values")
-            and self.estimator.clip_values is not None
-        ):
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
             clip_min_per_pixel, clip_max_per_pixel = self.estimator.clip_values
         else:
             clip_min_per_pixel, clip_max_per_pixel = np.amin(x), np.amax(x)
 
         # Assert that, if attack is targeted, y_val is provided:
         if self.targeted and y is None:
-            raise ValueError(
-                "Target labels `y` need to be provided for a targeted attack."
-            )
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(
-                self.estimator.predict(x, batch_size=self.batch_size)
-            )
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -758,18 +636,12 @@ class CarliniLInfMethod(EvasionAttack):
             y_batch = y[batch_index_1:batch_index_2]
 
             # Determine values for later clipping
-            clip_min = np.clip(
-                x_batch - self.eps, clip_min_per_pixel, clip_max_per_pixel
-            )
-            clip_max = np.clip(
-                x_batch + self.eps, clip_min_per_pixel, clip_max_per_pixel
-            )
+            clip_min = np.clip(x_batch - self.eps, clip_min_per_pixel, clip_max_per_pixel)
+            clip_max = np.clip(x_batch + self.eps, clip_min_per_pixel, clip_max_per_pixel)
 
             # The optimization is performed in tanh space to keep the
             # adversarial images bounded from clip_min and clip_max.
-            x_batch_tanh = original_to_tanh(
-                x_batch, clip_min, clip_max, self._tanh_smoother
-            )
+            x_batch_tanh = original_to_tanh(x_batch, clip_min, clip_max, self._tanh_smoother)
 
             # Initialize perturbation in tanh space:
             x_adv_batch = x_batch.copy()
@@ -785,9 +657,7 @@ class CarliniLInfMethod(EvasionAttack):
                 logger.debug("Average Loss: %f", np.mean(loss))
 
                 logger.debug(
-                    "Successful attack samples: %i out of %i",
-                    int(np.sum(attack_success)),
-                    x_batch.shape[0],
+                    "Successful attack samples: %i out of %i", int(np.sum(attack_success)), x_batch.shape[0],
                 )
 
                 # only continue optimization for those samples where attack hasn't succeeded yet:
@@ -815,14 +685,10 @@ class CarliniLInfMethod(EvasionAttack):
 
                 for i_halve in range(self.max_halving):
                     logger.debug(
-                        "Perform halving iteration %i out of %i",
-                        i_halve,
-                        self.max_halving,
+                        "Perform halving iteration %i out of %i", i_halve, self.max_halving,
                     )
                     do_halving = loss[active] >= prev_loss[active]
-                    logger.debug(
-                        "Halving to be performed on %i samples", int(np.sum(do_halving))
-                    )
+                    logger.debug("Halving to be performed on %i samples", int(np.sum(do_halving)))
                     if np.sum(do_halving) == 0:
                         break
                     active_and_do_halving = active.copy()
@@ -833,18 +699,12 @@ class CarliniLInfMethod(EvasionAttack):
                         lr_mult = lr_mult[:, np.newaxis]
 
                     adv_10 = x_adv_batch_tanh[active_and_do_halving]
-                    new_x_adv_batch_tanh = (
-                        adv_10 + lr_mult * perturbation_tanh[do_halving]
-                    )
+                    new_x_adv_batch_tanh = adv_10 + lr_mult * perturbation_tanh[do_halving]
 
                     new_x_adv_batch = tanh_to_original(
-                        new_x_adv_batch_tanh,
-                        clip_min[active_and_do_halving],
-                        clip_max[active_and_do_halving],
+                        new_x_adv_batch_tanh, clip_min[active_and_do_halving], clip_max[active_and_do_halving],
                     )
-                    _, loss[active_and_do_halving] = self._loss(
-                        new_x_adv_batch, y_batch[active_and_do_halving]
-                    )
+                    _, loss[active_and_do_halving] = self._loss(new_x_adv_batch, y_batch[active_and_do_halving])
                     logger.debug("New Average Loss: %f", np.mean(loss))
                     logger.debug("Loss: %s", str(loss))
                     logger.debug("Prev_loss: %s", str(prev_loss))
@@ -860,16 +720,11 @@ class CarliniLInfMethod(EvasionAttack):
                 # decreases the loss:
                 for i_double in range(self.max_doubling):
                     logger.debug(
-                        "Perform doubling iteration %i out of %i",
-                        i_double,
-                        self.max_doubling,
+                        "Perform doubling iteration %i out of %i", i_double, self.max_doubling,
                     )
-                    do_doubling = (halving[active] == 1) & (
-                        loss[active] <= best_loss[active]
-                    )
+                    do_doubling = (halving[active] == 1) & (loss[active] <= best_loss[active])
                     logger.debug(
-                        "Doubling to be performed on %i samples",
-                        int(np.sum(do_doubling)),
+                        "Doubling to be performed on %i samples", int(np.sum(do_doubling)),
                     )
                     if np.sum(do_doubling) == 0:
                         break
@@ -882,17 +737,11 @@ class CarliniLInfMethod(EvasionAttack):
                         lr_mult = lr_mult[:, np.newaxis]
 
                     x_adv15 = x_adv_batch_tanh[active_and_do_doubling]
-                    new_x_adv_batch_tanh = (
-                        x_adv15 + lr_mult * perturbation_tanh[do_doubling]
-                    )
+                    new_x_adv_batch_tanh = x_adv15 + lr_mult * perturbation_tanh[do_doubling]
                     new_x_adv_batch = tanh_to_original(
-                        new_x_adv_batch_tanh,
-                        clip_min[active_and_do_doubling],
-                        clip_max[active_and_do_doubling],
+                        new_x_adv_batch_tanh, clip_min[active_and_do_doubling], clip_max[active_and_do_doubling],
                     )
-                    _, loss[active_and_do_doubling] = self._loss(
-                        new_x_adv_batch, y_batch[active_and_do_doubling]
-                    )
+                    _, loss[active_and_do_doubling] = self._loss(new_x_adv_batch, y_batch[active_and_do_doubling])
                     logger.debug("New Average Loss: %f", np.mean(loss))
                     best_lr[loss < best_loss] = learning_rate[loss < best_loss]
                     best_loss[loss < best_loss] = loss[loss < best_loss]
@@ -901,8 +750,7 @@ class CarliniLInfMethod(EvasionAttack):
 
                 update_adv = best_lr[active] > 0
                 logger.debug(
-                    "Number of adversarial samples to be finally updated: %i",
-                    int(np.sum(update_adv)),
+                    "Number of adversarial samples to be finally updated: %i", int(np.sum(update_adv)),
                 )
 
                 if np.sum(update_adv) > 0:
@@ -913,20 +761,14 @@ class CarliniLInfMethod(EvasionAttack):
                         best_lr_mult = best_lr_mult[:, np.newaxis]
 
                     best_13 = best_lr_mult * perturbation_tanh[update_adv]
-                    x_adv_batch_tanh[active_and_update_adv] = (
-                        x_adv_batch_tanh[active_and_update_adv] + best_13
-                    )
+                    x_adv_batch_tanh[active_and_update_adv] = x_adv_batch_tanh[active_and_update_adv] + best_13
                     x_adv_batch[active_and_update_adv] = tanh_to_original(
                         x_adv_batch_tanh[active_and_update_adv],
                         clip_min[active_and_update_adv],
                         clip_max[active_and_update_adv],
                     )
-                    (
-                        z_logits[active_and_update_adv],
-                        loss[active_and_update_adv],
-                    ) = self._loss(
-                        x_adv_batch[active_and_update_adv],
-                        y_batch[active_and_update_adv],
+                    (z_logits[active_and_update_adv], loss[active_and_update_adv],) = self._loss(
+                        x_adv_batch[active_and_update_adv], y_batch[active_and_update_adv],
                     )
                     attack_success = loss <= 0
 
@@ -936,10 +778,7 @@ class CarliniLInfMethod(EvasionAttack):
 
         logger.info(
             "Success rate of C&W L_inf attack: %.2f%%",
-            100
-            * compute_success(
-                self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size
-            ),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv
@@ -952,14 +791,10 @@ class CarliniLInfMethod(EvasionAttack):
             raise ValueError("The number of iterations must be a non-negative integer.")
 
         if not isinstance(self.max_halving, (int, np.int)) or self.max_halving < 1:
-            raise ValueError(
-                "The number of halving steps must be an integer greater than zero."
-            )
+            raise ValueError("The number of halving steps must be an integer greater than zero.")
 
         if not isinstance(self.max_doubling, (int, np.int)) or self.max_doubling < 1:
-            raise ValueError(
-                "The number of doubling steps must be an integer greater than zero."
-            )
+            raise ValueError("The number of doubling steps must be an integer greater than zero.")
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")

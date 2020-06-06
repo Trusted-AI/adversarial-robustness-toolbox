@@ -36,6 +36,7 @@ from art.estimators.classification.classifier import (
     ClassifierMixin,
 )
 from art.estimators.pytorch import PyTorchEstimator
+from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     import torch
@@ -52,14 +53,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     This class implements a classifier with the PyTorch framework.
     """
 
+    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         model: "torch.nn.Module",
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
-        optimizer: Optional["torch.optim.Optimizer"],  # type: ignore
         nb_classes: int,
-        channel_index: int = 1,
+        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        channel_index: int = Deprecated,
+        channels_first: bool = True,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -78,6 +81,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param nb_classes: The number of classes of the model.
         :param optimizer: The optimizer used to train the classifier.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -91,14 +95,22 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch
 
+        # Remove in 1.5.0
+        if channel_index == 3:
+            channels_first = False
+        elif channel_index == 1:
+            channels_first = True
+        elif channel_index is not Deprecated:
+            raise ValueError("Not a proper channel_index. Use channels_first.")
+
         super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
+            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
-
         self._nb_classes = nb_classes
         self._input_shape = input_shape
         self._model = self._make_model_wrapper(model)
@@ -128,7 +140,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             self._reduce_labels = False
 
     @property
-    def model(self):
+    def device(self) -> "torch.device":
+        """
+        Get current used device.
+
+        :return: Current used device.
+        """
+        return self._device
+
+    @property
+    def model(self) -> "torch.nn.Module":
         return self._model._model
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
@@ -140,6 +161,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         import torch
+
+        self._model.eval()
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -168,8 +191,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  `(nb_samples,)`.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
@@ -390,7 +412,42 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128) -> np.ndarray:
+    def loss_gradient_framework(self, x: "torch.Tensor", y: "torch.Tensor", **kwargs) -> "torch.Tensor":
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :return: Gradients of the same shape as `x`.
+        """
+        import torch
+        from torch.autograd import Variable
+
+        # Check label shape
+        if self._reduce_labels:
+            y = torch.argmax(y, dim=1)
+
+        # Convert the inputs to Variable
+        x = Variable(x, requires_grad=True)
+
+        # Compute the gradient and return
+        model_outputs = self._model(x)
+        loss = self._loss(model_outputs[-1], y)
+
+        # Clean gradients
+        self._model.zero_grad()
+
+        # Compute gradients
+        loss.backward()
+        grads = x.grad
+        assert grads.shape == x.shape
+
+        return grads
+
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -399,6 +456,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param x: Input for computing the activations.
         :param layer: Layer for computing the activations
         :param batch_size: Size of batches.
+        :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         import torch
@@ -418,9 +476,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             raise TypeError("Layer must be of type str or int")
 
+        if framework:
+            return self._model(torch.from_numpy(x).to(self._device))[layer_index]
+
         # Run prediction with batch processing
         results = []
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+
         for m in range(num_batch):
             # Batch indexes
             begin, end = (
@@ -465,7 +527,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # pylint: disable=W0212
         # disable pylint because access to _modules required
-        torch.save(self.model.state_dict(), full_path + ".model")
+        torch.save(self._model._model.state_dict(), full_path + ".model")
         torch.save(self._optimizer.state_dict(), full_path + ".optimizer")  # type: ignore
         logger.info("Model state dict saved in path: %s.", full_path + ".model")
         logger.info("Optimizer state dict saved in path: %s.", full_path + ".optimizer")
@@ -520,7 +582,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, "
+            "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, channels_first=%r, "
             "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
@@ -530,6 +592,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 self._input_shape,
                 self.nb_classes,
                 self.channel_index,
+                self.channels_first,
                 self.clip_values,
                 self.preprocessing_defences,
                 self.postprocessing_defences,

@@ -140,43 +140,24 @@ class ZooAttack(EvasionAttack):
         # Initialize some internal variables
         self._init_size = 32
         if self.abort_early:
-            self._early_stop_iters = (
-                self.max_iter // 10 if self.max_iter >= 10 else self.max_iter
-            )
+            self._early_stop_iters = self.max_iter // 10 if self.max_iter >= 10 else self.max_iter
         self.nb_parallel = nb_parallel
 
         # Initialize noise variable to zero
         if self.input_is_feature_vector:
             self.use_resize = False
             self.use_importance = False
-            logger.info(
-                "Disable resizing and importance sampling because feature vector input has been detected."
-            )
+            logger.info("Disable resizing and importance sampling because feature vector input has been detected.")
 
         if self.use_resize:
-            if self.estimator.channel_index == 3:
-                dims = (
-                    batch_size,
-                    self._init_size,
-                    self._init_size,
-                    self.estimator.input_shape[-1],
-                )
-            elif self.estimator.channel_index == 1:
-                dims = (
-                    batch_size,
-                    self.estimator.input_shape[0],
-                    self._init_size,
-                    self._init_size,
-                )
+            if not self.estimator.channels_first:
+                dims = (batch_size, self._init_size, self._init_size, self.estimator.input_shape[-1])
+            else:
+                dims = (batch_size, self.estimator.input_shape[0], self._init_size, self._init_size)
             self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
         else:
-            self._current_noise = np.zeros(
-                (batch_size,) + self.estimator.input_shape, dtype=ART_NUMPY_DTYPE
-            )
-        self._sample_prob = (
-            np.ones(self._current_noise.size, dtype=ART_NUMPY_DTYPE)
-            / self._current_noise.size
-        )
+            self._current_noise = np.zeros((batch_size,) + self.estimator.input_shape, dtype=ART_NUMPY_DTYPE)
+        self._sample_prob = np.ones(self._current_noise.size, dtype=ART_NUMPY_DTYPE) / self._current_noise.size
 
         self.adam_mean = None
         self.adam_var = None
@@ -196,17 +177,11 @@ class ZooAttack(EvasionAttack):
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x_adv.shape[0], -1), axis=1)
         ratios = [1.0] + [
-            int(new_size) / int(old_size)
-            for new_size, old_size in zip(self.estimator.input_shape, x.shape[1:])
+            int(new_size) / int(old_size) for new_size, old_size in zip(self.estimator.input_shape, x.shape[1:])
         ]
-        preds = self.estimator.predict(
-            np.array(zoom(x_adv, zoom=ratios)), batch_size=self.batch_size
-        )
+        preds = self.estimator.predict(np.array(zoom(x_adv, zoom=ratios)), batch_size=self.batch_size)
         z_target = np.sum(preds * target, axis=1)
-        z_other = np.max(
-            preds * (1 - target) + (np.min(preds, axis=1) - 1)[:, np.newaxis] * target,
-            axis=1,
-        )
+        z_other = np.max(preds * (1 - target) + (np.min(preds, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
 
         if self.targeted:
             # If targeted, optimize for making the target class most likely
@@ -217,9 +192,7 @@ class ZooAttack(EvasionAttack):
 
         return preds, l2dist, c_weight * loss + l2dist
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -232,15 +205,11 @@ class ZooAttack(EvasionAttack):
 
         # Check that `y` is provided for targeted attacks
         if self.targeted and y is None:
-            raise ValueError(
-                "Target labels `y` need to be provided for a targeted attack."
-            )
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(
-                self.estimator.predict(x, batch_size=self.batch_size)
-            )
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
@@ -259,20 +228,14 @@ class ZooAttack(EvasionAttack):
         x_adv = np.vstack(x_adv)
 
         # Apply clip
-        if (
-            hasattr(self.estimator, "clip_values")
-            and self.estimator.clip_values is not None
-        ):
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             np.clip(x_adv, clip_min, clip_max, out=x_adv)
 
         # Log success rate of the ZOO attack
         logger.info(
             "Success rate of ZOO attack: %.2f%%",
-            100
-            * compute_success(
-                self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size
-            ),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv
@@ -297,21 +260,14 @@ class ZooAttack(EvasionAttack):
         # Start with a binary search
         for bss in range(self.binary_search_steps):
             logger.debug(
-                "Binary search step %i out of %i (c_mean==%f)",
-                bss,
-                self.binary_search_steps,
-                np.mean(c_current),
+                "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current),
             )
 
             # Run with 1 specific binary search step
-            best_dist, best_label, best_attack = self._generate_bss(
-                x_batch, y_batch, c_current
-            )
+            best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c_current)
 
             # Update best results so far
-            o_best_attack[best_dist < o_best_dist] = best_attack[
-                best_dist < o_best_dist
-            ]
+            o_best_attack[best_dist < o_best_dist] = best_attack[best_dist < o_best_dist]
             o_best_dist[best_dist < o_best_dist] = best_dist[best_dist < o_best_dist]
 
             # Adjust the constant as needed
@@ -345,8 +301,7 @@ class ZooAttack(EvasionAttack):
             return object1 == object2 if self.targeted else object1 != object2
 
         comparison = [
-            compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf
-            for i in range(len(c_batch))
+            compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf for i in range(len(c_batch))
         ]
         for i, comp in enumerate(comparison):
             if comp:
@@ -357,11 +312,7 @@ class ZooAttack(EvasionAttack):
             else:
                 # Failure attack
                 c_lower_bound[i] = max(c_lower_bound[i], c_batch[i])
-                c_batch[i] = (
-                    (c_lower_bound[i] + c_upper_bound[i]) / 2
-                    if c_upper_bound[i] < 1e9
-                    else c_batch[i] * 10
-                )
+                c_batch[i] = (c_lower_bound[i] + c_upper_bound[i]) / 2 if c_upper_bound[i] < 1e9 else c_batch[i] * 10
 
         return c_batch, c_lower_bound, c_upper_bound
 
@@ -434,9 +385,7 @@ class ZooAttack(EvasionAttack):
             preds, l2dist, loss = self._loss(x_orig, x_adv, y_batch, c_batch)
 
             # Reset Adam if a valid example has been found to avoid overshoot
-            mask_fine_tune = (
-                (~fine_tuning) & (loss == l2dist) & (prev_loss != prev_l2dist)
-            )
+            mask_fine_tune = (~fine_tuning) & (loss == l2dist) & (prev_loss != prev_l2dist)
             fine_tuning[mask_fine_tune] = True
             self._reset_adam(
                 self.adam_mean.size, np.repeat(mask_fine_tune, x_adv[0].size)  # type: ignore
@@ -460,37 +409,23 @@ class ZooAttack(EvasionAttack):
         # Resize images to original size before returning
         best_attack = np.array(best_attack)
         if self.use_resize:
-            if self.estimator.channel_index == 3:
+            if not self.estimator.channels_first:
                 best_attack = zoom(
                     best_attack,
-                    [
-                        1,
-                        int(x_batch.shape[1]) / best_attack.shape[1],
-                        int(x_batch.shape[2]) / best_attack.shape[2],
-                        1,
-                    ],
+                    [1, int(x_batch.shape[1]) / best_attack.shape[1], int(x_batch.shape[2]) / best_attack.shape[2], 1,],
                 )
-            elif self.estimator.channel_index == 1:
+            else:
                 best_attack = zoom(
                     best_attack,
-                    [
-                        1,
-                        1,
-                        int(x_batch.shape[2]) / best_attack.shape[2],
-                        int(x_batch.shape[2]) / best_attack.shape[3],
-                    ],
+                    [1, 1, int(x_batch.shape[2]) / best_attack.shape[2], int(x_batch.shape[2]) / best_attack.shape[3],],
                 )
 
         return best_dist, best_label, best_attack
 
-    def _optimizer(
-        self, x: np.ndarray, targets: np.ndarray, c_batch: float
-    ) -> np.ndarray:
+    def _optimizer(self, x: np.ndarray, targets: np.ndarray, c_batch: float) -> np.ndarray:
         # Variation of input for computing loss, same as in original implementation
         coord_batch = np.repeat(self._current_noise, 2 * self.nb_parallel, axis=0)
-        coord_batch = coord_batch.reshape(
-            2 * self.nb_parallel * self._current_noise.shape[0], -1
-        )
+        coord_batch = coord_batch.reshape(2 * self.nb_parallel * self._current_noise.shape[0], -1)
 
         # Sample indices to prioritize for optimization
         if self.use_importance and np.unique(self._sample_prob).size != 1:
@@ -506,9 +441,7 @@ class ZooAttack(EvasionAttack):
         else:
             indices = (
                 np.random.choice(
-                    coord_batch.shape[-1] * x.shape[0],
-                    self.nb_parallel * self._current_noise.shape[0],
-                    replace=False,
+                    coord_batch.shape[-1] * x.shape[0], self.nb_parallel * self._current_noise.shape[0], replace=False,
                 )
                 % coord_batch.shape[-1]
             )
@@ -519,18 +452,11 @@ class ZooAttack(EvasionAttack):
             coord_batch[2 * i + 1, indices[i]] -= self.variable_h
 
         # Compute loss for all samples and coordinates, then optimize
-        expanded_x = np.repeat(x, 2 * self.nb_parallel, axis=0).reshape(
-            (-1,) + x.shape[1:]
-        )
-        expanded_targets = np.repeat(targets, 2 * self.nb_parallel, axis=0).reshape(
-            (-1,) + targets.shape[1:]
-        )
+        expanded_x = np.repeat(x, 2 * self.nb_parallel, axis=0).reshape((-1,) + x.shape[1:])
+        expanded_targets = np.repeat(targets, 2 * self.nb_parallel, axis=0).reshape((-1,) + targets.shape[1:])
         expanded_c = np.repeat(c_batch, 2 * self.nb_parallel)
         _, _, loss = self._loss(
-            expanded_x,
-            expanded_x + coord_batch.reshape(expanded_x.shape),
-            expanded_targets,
-            expanded_c,
+            expanded_x, expanded_x + coord_batch.reshape(expanded_x.shape), expanded_targets, expanded_c,
         )
         self._current_noise = self._optimizer_adam_coordinate(
             loss,
@@ -565,32 +491,19 @@ class ZooAttack(EvasionAttack):
         beta1, beta2 = 0.9, 0.999
 
         # Estimate grads from loss variation (constant `h` from the paper is fixed to .0001)
-        grads = np.array(
-            [
-                (losses[i] - losses[i + 1]) / (2 * self.variable_h)
-                for i in range(0, len(losses), 2)
-            ]
-        )
+        grads = np.array([(losses[i] - losses[i + 1]) / (2 * self.variable_h) for i in range(0, len(losses), 2)])
 
         # ADAM update
         mean[index] = beta1 * mean[index] + (1 - beta1) * grads
         var[index] = beta2 * var[index] + (1 - beta2) * grads ** 2
 
-        corr = (np.sqrt(1 - np.power(beta2, adam_epochs[index]))) / (
-            1 - np.power(beta1, adam_epochs[index])
-        )
+        corr = (np.sqrt(1 - np.power(beta2, adam_epochs[index]))) / (1 - np.power(beta1, adam_epochs[index]))
         orig_shape = current_noise.shape
         current_noise = current_noise.reshape(-1)
-        current_noise[index] -= (
-            learning_rate * corr * mean[index] / (np.sqrt(var[index]) + 1e-8)
-        )
+        current_noise[index] -= learning_rate * corr * mean[index] / (np.sqrt(var[index]) + 1e-8)
         adam_epochs[index] += 1
 
-        if (
-            proj
-            and hasattr(self.estimator, "clip_values")
-            and self.estimator.clip_values is not None
-        ):
+        if proj and hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             current_noise[index] = np.clip(current_noise[index], clip_min, clip_max)
 
@@ -613,12 +526,10 @@ class ZooAttack(EvasionAttack):
             self.adam_var = np.zeros(nb_vars, dtype=ART_NUMPY_DTYPE)
             self.adam_epochs = np.ones(nb_vars, dtype=np.int32)
 
-    def _resize_image(
-        self, x: np.ndarray, size_x: int, size_y: int, reset: bool = False
-    ) -> np.ndarray:
-        if self.estimator.channel_index == 3:
+    def _resize_image(self, x: np.ndarray, size_x: int, size_y: int, reset: bool = False) -> np.ndarray:
+        if not self.estimator.channels_first:
             dims = (x.shape[0], size_x, size_y, x.shape[-1])
-        elif self.estimator.channel_index == 1:
+        else:
             dims = (x.shape[0], x.shape[1], size_x, size_y)
         nb_vars = np.prod(dims)
 
@@ -628,25 +539,13 @@ class ZooAttack(EvasionAttack):
                 resized_x = x
                 self._current_noise.fill(0)
             else:
-                resized_x = zoom(
-                    x,
-                    (
-                        1,
-                        dims[1] / x.shape[1],
-                        dims[2] / x.shape[2],
-                        dims[3] / x.shape[3],
-                    ),
-                )
+                resized_x = zoom(x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3],),)
                 self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
             self._sample_prob = np.ones(nb_vars, dtype=ART_NUMPY_DTYPE) / nb_vars
         else:
             # Rescale variables and reset values
-            resized_x = zoom(
-                x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3])
-            )
-            self._sample_prob = self._get_prob(
-                self._current_noise, double=True
-            ).flatten()
+            resized_x = zoom(x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3]))
+            self._sample_prob = self._get_prob(self._current_noise, double=True).flatten()
             self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
 
         # Reset Adam
@@ -656,25 +555,23 @@ class ZooAttack(EvasionAttack):
 
     def _get_prob(self, prev_noise: np.ndarray, double: bool = False) -> np.ndarray:
         dims = list(prev_noise.shape)
+        channel_index = 1 if self.estimator.channels_first else 3
 
         # Double size if needed
         if double:
-            dims = [
-                2 * size if i not in [0, self.estimator.channel_index] else size
-                for i, size in enumerate(dims)
-            ]
+            dims = [2 * size if i not in [0, channel_index] else size for i, size in enumerate(dims)]
 
         prob = np.empty(shape=dims, dtype=np.float32)
         image = np.abs(prev_noise)
 
-        for channel in range(prev_noise.shape[self.estimator.channel_index]):
-            if self.estimator.channel_index == 3:
+        for channel in range(prev_noise.shape[channel_index]):
+            if not self.estimator.channels_first:
                 image_pool = self._max_pooling(image[:, :, :, channel], dims[1] // 8)
                 if double:
                     prob[:, :, :, channel] = np.abs(zoom(image_pool, [1, 2, 2]))
                 else:
                     prob[:, :, :, channel] = image_pool
-            elif self.estimator.channel_index == 1:
+            elif self.estimator.channels_first:
                 image_pool = self._max_pooling(image[:, channel, :, :], dims[2] // 8)
                 if double:
                     prob[:, channel, :, :] = np.abs(zoom(image_pool, [1, 2, 2]))
@@ -691,29 +588,20 @@ class ZooAttack(EvasionAttack):
         for i in range(0, image.shape[1], kernel_size):
             for j in range(0, image.shape[2], kernel_size):
                 img_pool[:, i : i + kernel_size, j : j + kernel_size] = np.max(
-                    image[:, i : i + kernel_size, j : j + kernel_size],
-                    axis=(1, 2),
-                    keepdims=True,
+                    image[:, i : i + kernel_size, j : j + kernel_size], axis=(1, 2), keepdims=True,
                 )
 
         return img_pool
 
     def _check_params(self) -> None:
-        if (
-            not isinstance(self.binary_search_steps, (int, np.int))
-            or self.binary_search_steps < 0
-        ):
-            raise ValueError(
-                "The number of binary search steps must be a non-negative integer."
-            )
+        if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
+            raise ValueError("The number of binary search steps must be a non-negative integer.")
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
 
         if not isinstance(self.nb_parallel, (int, np.int)) or self.nb_parallel < 1:
-            raise ValueError(
-                "The number of parallel coordinates must be an integer greater than zero."
-            )
+            raise ValueError("The number of parallel coordinates must be an integer greater than zero.")
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")

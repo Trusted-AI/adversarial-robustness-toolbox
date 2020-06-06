@@ -24,11 +24,10 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.estimators.classification.keras import KerasClassifier
 from art.utils import load_dataset, random_targets, compute_accuracy
-from art.wrappers.randomized_smoothing import RandomizedSmoothing
+from art.estimators.certification.randomized_smoothing import PyTorchRandomizedSmoothing
 
-from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
+from tests.utils import master_seed, get_image_classifier_pt, get_tabular_classifier_pt
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
@@ -54,24 +53,36 @@ class TestRandomizedSmoothing(unittest.TestCase):
     def setUp(self):
         master_seed(seed=1234)
 
-    def test_krclassifier(self):
+    def test_ptclassifier(self):
         """
         Test with a KerasClassifier.
         :return:
         """
         # Build KerasClassifier
-        krc = get_image_classifier_kr()
+        ptc = get_image_classifier_pt()
 
         # Get MNIST
         (_, _), (x_test, y_test) = self.mnist
 
+        x_test = x_test.transpose(0, 3, 1, 2).astype(np.float32)
+
         # First FGSM attack:
-        fgsm = FastGradientMethod(estimator=krc, targeted=True)
-        params = {"y": random_targets(y_test, krc.nb_classes)}
+        fgsm = FastGradientMethod(estimator=ptc, targeted=True)
+        params = {"y": random_targets(y_test, ptc.nb_classes)}
         x_test_adv = fgsm.generate(x_test, **params)
 
         # Initialize RS object and attack with FGSM
-        rs = RandomizedSmoothing(classifier=krc, sample_size=100, scale=0.01, alpha=0.001)
+        rs = PyTorchRandomizedSmoothing(
+            model=ptc.model,
+            loss=ptc._loss,
+            input_shape=ptc.input_shape,
+            nb_classes=ptc.nb_classes,
+            channels_first=ptc.channels_first,
+            clip_values=ptc.clip_values,
+            sample_size=100,
+            scale=0.01,
+            alpha=0.001,
+        )
         fgsm_with_rs = FastGradientMethod(estimator=rs, targeted=True)
         x_test_adv_with_rs = fgsm_with_rs.generate(x_test, **params)
 
@@ -83,18 +94,10 @@ class TestRandomizedSmoothing(unittest.TestCase):
         # Check basic functionality of RS object
         # check predict
         y_test_smooth = rs.predict(x=x_test)
-        y_test_base = krc.predict(x=x_test)
+        y_test_base = ptc.predict(x=x_test)
         self.assertEqual(y_test_smooth.shape, y_test.shape)
         self.assertTrue((np.sum(y_test_smooth, axis=1) <= np.ones((NB_TEST,))).all())
         self.assertTrue((np.argmax(y_test_smooth, axis=1) == np.argmax(y_test_base, axis=1)).all())
-
-        # check gradients
-        grad_smooth1 = rs.loss_gradient(x=x_test, y=y_test)
-        grad_smooth2 = rs.class_gradient(x=x_test, label=None)
-        grad_smooth3 = rs.class_gradient(x=x_test, label=np.argmax(y_test, axis=1))
-        self.assertEqual(grad_smooth1.shape, x_test_adv.shape)
-        self.assertEqual(grad_smooth2.shape[0], NB_TEST)
-        self.assertEqual(grad_smooth3.shape[0], NB_TEST)
 
         # check certification
         pred, radius = rs.certify(x=x_test, n=250)
@@ -117,11 +120,21 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
     def test_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
 
-        krc = get_tabular_classifier_kr()
-        rs = RandomizedSmoothing(classifier=krc, sample_size=100, scale=0.01, alpha=0.001)
+        ptc = get_tabular_classifier_pt()
+        rs = PyTorchRandomizedSmoothing(
+            model=ptc.model,
+            loss=ptc._loss,
+            input_shape=ptc.input_shape,
+            nb_classes=ptc.nb_classes,
+            channels_first=ptc.channels_first,
+            clip_values=ptc.clip_values,
+            sample_size=100,
+            scale=0.01,
+            alpha=0.001,
+        )
 
         # Test untargeted attack
-        attack = FastGradientMethod(krc, eps=0.1)
+        attack = FastGradientMethod(ptc, eps=0.1)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((x_test == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -145,45 +158,12 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         self.assertEqual(y_test_smooth.shape, y_test.shape)
         self.assertTrue((np.sum(y_test_smooth, axis=1) <= 1).all())
 
-        # check gradients
-        grad_smooth1 = rs.loss_gradient(x=x_test, y=y_test)
-        grad_smooth2 = rs.class_gradient(x=x_test, label=None)
-        grad_smooth3 = rs.class_gradient(x=x_test, label=np.argmax(y_test, axis=1))
-        self.assertEqual(grad_smooth1.shape, x_test_adv.shape)
-        self.assertEqual(grad_smooth2.shape[0], len(x_test))
-        self.assertEqual(grad_smooth3.shape[0], len(x_test))
-
         # check certification
         pred, radius = rs.certify(x=x_test, n=250)
         self.assertEqual(len(pred), len(x_test))
         self.assertEqual(len(radius), len(x_test))
         self.assertTrue((radius <= 1).all())
         self.assertTrue((pred < y_test.shape[1]).all())
-
-    def test_iris_unbounded(self):
-        (_, _), (x_test, y_test) = self.iris
-        classifier = get_tabular_classifier_kr()
-
-        # Recreate a classifier without clip values
-        krc = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
-        rs = RandomizedSmoothing(classifier=krc, sample_size=100, scale=0.01, alpha=0.001)
-        attack = FastGradientMethod(rs, eps=1)
-        x_test_adv = attack.generate(x_test)
-        self.assertFalse((x_test == x_test_adv).all())
-        self.assertTrue((x_test_adv > 1).any())
-        self.assertTrue((x_test_adv < 0).any())
-
-        preds_smooth = np.argmax(rs.predict(x_test_adv), axis=1)
-        self.assertFalse((np.argmax(y_test, axis=1) == preds_smooth).all())
-
-        pred = rs.predict(x_test)
-        pred2 = rs.predict(x_test_adv)
-        acc, cov = compute_accuracy(pred, y_test)
-        acc2, cov2 = compute_accuracy(pred2, y_test)
-        logger.info("Accuracy on Iris with smoothing on adversarial examples: %.2f%%", (acc * 100))
-        logger.info("Coverage on Iris with smoothing on adversarial examples: %.2f%%", (cov * 100))
-        logger.info("Accuracy on Iris with smoothing: %.2f%%", (acc2 * 100))
-        logger.info("Coverage on Iris with smoothing: %.2f%%", (cov2 * 100))
 
 
 if __name__ == "__main__":

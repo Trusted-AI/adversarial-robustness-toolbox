@@ -90,9 +90,7 @@ class FrameSaliencyAttack(EvasionAttack):
         self.batch_size = batch_size
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -101,9 +99,7 @@ class FrameSaliencyAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         if len(x.shape) < 3:
-            raise ValueError(
-                "Frame saliency attack works only on inputs of dimension greater than 2."
-            )
+            raise ValueError("Frame saliency attack works only on inputs of dimension greater than 2.")
 
         if self.frame_index >= len(x.shape):
             raise ValueError("Frame index is out of bounds for the given input shape.")
@@ -119,14 +115,10 @@ class FrameSaliencyAttack(EvasionAttack):
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
             if hasattr(self.attacker, "targeted") and self.attacker.targeted:  # type: ignore
-                raise ValueError(
-                    "Target labels `y` need to be provided for a targeted attack."
-                )
+                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
-            targets = get_labels_np_array(
-                self.estimator.predict(x, batch_size=self.batch_size)
-            )
+            targets = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
         else:
             targets = y
 
@@ -163,9 +155,9 @@ class FrameSaliencyAttack(EvasionAttack):
             # Update designated frames with adversarial perturbations:
             x_adv = np.swapaxes(x_adv, 1, self.frame_index)
             x_adv_new = np.swapaxes(x_adv_new, 1, self.frame_index)
-            x_adv[
+            x_adv[attack_failure, frames_to_perturb[:, i][attack_failure], ::] = x_adv_new[
                 attack_failure, frames_to_perturb[:, i][attack_failure], ::
-            ] = x_adv_new[attack_failure, frames_to_perturb[:, i][attack_failure], ::]
+            ]
             x_adv = np.swapaxes(x_adv, 1, self.frame_index)
             x_adv_new = np.swapaxes(x_adv_new, 1, self.frame_index)
 
@@ -175,9 +167,7 @@ class FrameSaliencyAttack(EvasionAttack):
             # For the "refresh" method, update the next frames to be perturbed (disregarding the frames that were
             # perturbed already) and also refresh the adversarial perturbations:
             if self.method == "iterative_saliency_refresh" and i < nb_frames - 1:
-                frames_to_perturb = self._compute_frames_to_perturb(
-                    x_adv, targets, disregard
-                )
+                frames_to_perturb = self._compute_frames_to_perturb(x_adv, targets, disregard)
                 mask = np.zeros(x.shape)
                 mask = np.swapaxes(mask, 1, self.frame_index)
                 mask[:, frames_to_perturb[:, i + 1], ::] = 1
@@ -187,9 +177,7 @@ class FrameSaliencyAttack(EvasionAttack):
 
         return x_adv
 
-    def _compute_attack_failure_array(
-        self, x: np.ndarray, targets: np.ndarray, x_adv: np.ndarray
-    ) -> np.ndarray:
+    def _compute_attack_failure_array(self, x: np.ndarray, targets: np.ndarray, x_adv: np.ndarray) -> np.ndarray:
         attack_success = compute_success_array(
             self.attacker.estimator, x, targets, x_adv, self.attacker.targeted  # type: ignore
         )
@@ -200,9 +188,7 @@ class FrameSaliencyAttack(EvasionAttack):
     ) -> np.ndarray:
         saliency_score = self.estimator.loss_gradient(x_adv, targets)
         saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)
-        saliency_score = saliency_score.reshape(
-            (saliency_score.shape[:2] + (np.prod(saliency_score.shape[2:]),))
-        )
+        saliency_score = saliency_score.reshape((saliency_score.shape[:2] + (np.prod(saliency_score.shape[2:]),)))
         saliency_score = np.mean(np.abs(saliency_score), axis=2)
 
         if disregard is not None:
@@ -222,19 +208,13 @@ class FrameSaliencyAttack(EvasionAttack):
             )
 
         if self.method not in self.method_list:
-            raise ValueError(
-                "Method must be either 'iterative_saliency', 'iterative_saliency_refresh' or 'one_shot'."
-            )
+            raise ValueError("Method must be either 'iterative_saliency', 'iterative_saliency_refresh' or 'one_shot'.")
 
         if self.frame_index < 1:
-            raise ValueError(
-                "The index `frame_index` of the frame dimension has to be >=1."
-            )
+            raise ValueError("The index `frame_index` of the frame dimension has to be >=1.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
         if not self.estimator == self.attacker.estimator:
-            raise Warning(
-                "Different classifiers given for computation of saliency scores and adversarial noise."
-            )
+            raise Warning("Different classifiers given for computation of saliency scores and adversarial noise.")

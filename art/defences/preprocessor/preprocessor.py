@@ -69,9 +69,7 @@ class Preprocessor(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __call__(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None
-    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Perform data preprocessing and return preprocessed data as tuple.
 

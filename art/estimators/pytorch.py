@@ -19,16 +19,12 @@
 This module implements the abstract estimator `PyTorchEstimator` for PyTorch models.
 """
 import logging
-from typing import TYPE_CHECKING
 
 from art.estimators.estimator import (
     BaseEstimator,
     LossGradientsMixin,
     NeuralNetworkMixin,
 )
-
-if TYPE_CHECKING:
-    import torch
 
 logger = logging.getLogger(__name__)
 
@@ -37,15 +33,3 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
     Estimator class for PyTorch models.
     """
-
-    @property
-    def model(self) -> "torch.nn.Module":
-        """
-        Return the model.
-
-        :return: The model.
-        """
-        import torch
-
-        assert isinstance(self._model, torch.nn.Module)
-        return self._model

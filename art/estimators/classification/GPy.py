@@ -47,12 +47,8 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
         self,
         model: Optional["GPClassification"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union[
-            "Preprocessor", List["Preprocessor"], None
-        ] = None,
-        postprocessing_defences: Union[
-            "Postprocessor", List["Postprocessor"], None
-        ] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
@@ -83,10 +79,7 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
 
     # pylint: disable=W0221
     def class_gradient(  # type: ignore
-        self,
-        x: np.ndarray,
-        label: Union[int, List[int], None] = None,
-        eps: float = 0.0001,
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, eps: float = 0.0001,
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -110,9 +103,7 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
             for i_c in range(2):
                 ind = self.predict(x[i].reshape(1, -1))[0, i_c]
                 sur = self.predict(
-                    np.repeat(
-                        x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0
-                    )
+                    np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
                     + eps * np.eye(np.shape(x_preprocessed)[1])
                 )[:, i_c]
                 grads[i, i_c] = ((sur - ind) * eps).reshape(1, -1)
@@ -120,9 +111,7 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
         grads = self._apply_preprocessing_gradient(x, grads)
 
         if label is not None:
-            return grads[:, label, :].reshape(
-                np.shape(x_preprocessed)[0], 1, np.shape(x_preprocessed)[1]
-            )
+            return grads[:, label, :].reshape(np.shape(x_preprocessed)[0], 1, np.shape(x_preprocessed)[1])
 
         return grads
 
@@ -142,15 +131,11 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
         grads = np.zeros(np.shape(x))
         for i in range(np.shape(x)[0]):
             # 1.0 - to mimic loss, [0,np.argmax] to get right class
-            ind = (
-                1.0 - self.predict(x_preprocessed[i].reshape(1, -1))[0, np.argmax(y[i])]
-            )
+            ind = 1.0 - self.predict(x_preprocessed[i].reshape(1, -1))[0, np.argmax(y[i])]
             sur = (
                 1.0
                 - self.predict(
-                    np.repeat(
-                        x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0
-                    )
+                    np.repeat(x_preprocessed[i].reshape(1, -1), np.shape(x_preprocessed)[1], 0)
                     + eps * np.eye(np.shape(x_preprocessed)[1])
                 )[:, np.argmax(y[i])]
             )
@@ -211,8 +196,7 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data. Not used, as given to model in initialized earlier.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  `(nb_samples,)`.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
         """
         raise NotImplementedError
 

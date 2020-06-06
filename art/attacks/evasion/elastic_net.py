@@ -119,18 +119,12 @@ class ElasticNet(EvasionAttack):
         l1dist = np.sum(np.abs(x - x_adv).reshape(x.shape[0], -1), axis=1)
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         endist = self.beta * l1dist + l2dist
-        predictions = self.estimator.predict(
-            np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size
-        )
+        predictions = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
         return np.argmax(predictions, axis=1), l1dist, l2dist, endist
 
     def _gradient_of_loss(
-        self,
-        target: np.ndarray,
-        x: np.ndarray,
-        x_adv: np.ndarray,
-        c_weight: np.ndarray,
+        self, target: np.ndarray, x: np.ndarray, x_adv: np.ndarray, c_weight: np.ndarray,
     ) -> np.ndarray:
         """
         Compute the gradient of the loss function.
@@ -142,23 +136,17 @@ class ElasticNet(EvasionAttack):
         :return: An array with the gradient of the loss function.
         """
         # Compute the current predictions
-        predictions = self.estimator.predict(
-            np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size
-        )
+        predictions = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
 
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
             i_add = np.argmax(
-                predictions * (1 - target)
-                + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
-                axis=1,
+                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1,
             )
         else:
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(
-                predictions * (1 - target)
-                + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target,
-                axis=1,
+                predictions * (1 - target) + (np.min(predictions, axis=1) - 1)[:, np.newaxis] * target, axis=1,
             )
 
         loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
@@ -174,9 +162,7 @@ class ElasticNet(EvasionAttack):
 
         return loss_gradient
 
-    def _decay_learning_rate(
-        self, global_step: int, end_learning_rate: float, decay_steps: int
-    ) -> float:
+    def _decay_learning_rate(self, global_step: int, end_learning_rate: float, decay_steps: int) -> float:
         """
         Applies a square-root decay to the learning rate.
 
@@ -186,15 +172,11 @@ class ElasticNet(EvasionAttack):
         :return: The decayed learning rate
         """
         learn_rate = self.learning_rate - end_learning_rate
-        decayed_learning_rate = (
-            learn_rate * (1 - global_step / decay_steps) ** 2 + end_learning_rate
-        )
+        decayed_learning_rate = learn_rate * (1 - global_step / decay_steps) ** 2 + end_learning_rate
 
         return decayed_learning_rate
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -209,15 +191,11 @@ class ElasticNet(EvasionAttack):
 
         # Assert that, if attack is targeted, y is provided:
         if self.targeted and y is None:
-            raise ValueError(
-                "Target labels `y` need to be provided for a targeted attack."
-            )
+            raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(
-                self.estimator.predict(x, batch_size=self.batch_size)
-            )
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -233,21 +211,13 @@ class ElasticNet(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(x_batch, y_batch)
 
         # Apply clip
-        if (
-            hasattr(self.estimator, "clip_values")
-            and self.estimator.clip_values is not None
-        ):
-            x_adv = np.clip(
-                x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1]
-            )
+        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            x_adv = np.clip(x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1])
 
         # Compute success rate of the EAD attack
         logger.info(
             "Success rate of EAD attack: %.2f%%",
-            100
-            * compute_success(
-                self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size
-            ),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv
@@ -272,21 +242,14 @@ class ElasticNet(EvasionAttack):
         # Start with a binary search
         for bss in range(self.binary_search_steps):
             logger.debug(
-                "Binary search step %i out of %i (c_mean==%f)",
-                bss,
-                self.binary_search_steps,
-                np.mean(c_current),
+                "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current),
             )
 
             # Run with 1 specific binary search step
-            best_dist, best_label, best_attack = self._generate_bss(
-                x_batch, y_batch, c_current
-            )
+            best_dist, best_label, best_attack = self._generate_bss(x_batch, y_batch, c_current)
 
             # Update best results so far
-            o_best_attack[best_dist < o_best_dist] = best_attack[
-                best_dist < o_best_dist
-            ]
+            o_best_attack[best_dist < o_best_dist] = best_attack[best_dist < o_best_dist]
             o_best_dist[best_dist < o_best_dist] = best_dist[best_dist < o_best_dist]
 
             # Adjust the constant as needed
@@ -321,10 +284,7 @@ class ElasticNet(EvasionAttack):
             return o_1 != o_2
 
         for i in range(c_batch.shape[0]):
-            if (
-                compare(best_label[i], np.argmax(y_batch[i]))
-                and best_label[i] != -np.inf
-            ):
+            if compare(best_label[i], np.argmax(y_batch[i])) and best_label[i] != -np.inf:
                 # Successful attack
                 c_upper_bound[i] = min(c_upper_bound[i], c_batch[i])
                 if c_upper_bound[i] < 1e9:
@@ -340,9 +300,7 @@ class ElasticNet(EvasionAttack):
 
         return c_batch, c_lower_bound, c_upper_bound
 
-    def _generate_bss(
-        self, x_batch: np.ndarray, y_batch: np.ndarray, c_batch: np.ndarray
-    ) -> tuple:
+    def _generate_bss(self, x_batch: np.ndarray, y_batch: np.ndarray, c_batch: np.ndarray) -> tuple:
         """
         Generate adversarial examples for a batch of inputs with a specific batch of constants.
 
@@ -374,12 +332,8 @@ class ElasticNet(EvasionAttack):
             )
 
             # Compute adversarial examples
-            grad = self._gradient_of_loss(
-                target=y_batch, x=x_batch, x_adv=y_adv, c_weight=c_batch
-            )
-            x_adv_next = self._shrinkage_threshold(
-                y_adv - learning_rate * grad, x_batch, self.beta
-            )
+            grad = self._gradient_of_loss(target=y_batch, x=x_batch, x_adv=y_adv, c_weight=c_batch)
+            x_adv_next = self._shrinkage_threshold(y_adv - learning_rate * grad, x_batch, self.beta)
             y_adv = x_adv_next + (1.0 * i_iter / (i_iter + 3)) * (x_adv_next - x_adv)
             x_adv = x_adv_next
 
@@ -404,9 +358,7 @@ class ElasticNet(EvasionAttack):
         return best_dist, best_label, best_attack
 
     @staticmethod
-    def _shrinkage_threshold(
-        z_batch: np.ndarray, x_batch: np.ndarray, beta: float
-    ) -> np.ndarray:
+    def _shrinkage_threshold(z_batch: np.ndarray, x_batch: np.ndarray, beta: float) -> np.ndarray:
         """
         Implement the element-wise projected shrinkage-threshold function.
 
@@ -426,13 +378,8 @@ class ElasticNet(EvasionAttack):
         return result
 
     def _check_params(self) -> None:
-        if (
-            not isinstance(self.binary_search_steps, int)
-            or self.binary_search_steps < 0
-        ):
-            raise ValueError(
-                "The number of binary search steps must be a non-negative integer."
-            )
+        if not isinstance(self.binary_search_steps, int) or self.binary_search_steps < 0:
+            raise ValueError("The number of binary search steps must be a non-negative integer.")
 
         if not isinstance(self.max_iter, int) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
@@ -440,7 +387,5 @@ class ElasticNet(EvasionAttack):
         if not isinstance(self.batch_size, int) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
 
-        if not isinstance(
-            self.decision_rule, six.string_types
-        ) or self.decision_rule not in ["EN", "L1", "L2"]:
+        if not isinstance(self.decision_rule, six.string_types) or self.decision_rule not in ["EN", "L1", "L2"]:
             raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
