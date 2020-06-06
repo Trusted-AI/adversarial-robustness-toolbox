@@ -38,6 +38,9 @@ ART正在不断发展中。 我们欢迎您的反馈，错误报告和对ART建�
 ## ART中实施的攻击，防御，检测，指标，认证和验证
 
 **逃避攻击：**
+* Auto Attack ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Auto Projected Gradient Descent ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Square Attack ([Andriushchenko et al., 2020](https://arxiv.org/abs/1912.00049))
 * 暗影攻击 ([Ghiasi et al., 2020](https://arxiv.org/abs/2003.08937))
 * Wasserstein Attack([Wong et al., 2020](https://arxiv.org/abs/1902.07906))
 * 门槛攻击 ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))

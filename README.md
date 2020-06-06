@@ -51,6 +51,9 @@ Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https:
 ## Implemented Attacks, Defences, Detections, Metrics, Certifications and Verifications
 
 **Evasion Attacks:**
+* Auto Attack ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Auto Projected Gradient Descent ([Croce and Hein, 2020](https://arxiv.org/abs/2003.01690))
+* Square Attack ([Andriushchenko et al., 2020](https://arxiv.org/abs/1912.00049))
 * Shadow Attack ([Ghiasi et al., 2020](https://arxiv.org/abs/2003.08937))
 * Wasserstein Attack([Wong et al., 2020](https://arxiv.org/abs/1902.07906))
 * Threshold Attack ([Vargas et al., 2019](https://arxiv.org/abs/1906.06026))
