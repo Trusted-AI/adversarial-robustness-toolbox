@@ -466,8 +466,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # pylint: disable=W0212
         # disable pylint because access to _modules required
         torch.save(self.model.state_dict(), full_path + ".model")
-        if hasattr(self, "_optmizer") and self._optimizer is not None:
-            torch.save(self._optimizer.state_dict(), full_path + ".optimizer")
+        torch.save(self._optimizer.state_dict(), full_path + ".optimizer")  # type: ignore
         logger.info("Model state dict saved in path: %s.", full_path + ".model")
         logger.info("Optimizer state dict saved in path: %s.", full_path + ".optimizer")
 
@@ -514,8 +513,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model.to(self._device)
 
         # Recover optimizer
-        if hasattr(self, "_optimizer") and self._optimizer is not None:
-            self._optimizer.load_state_dict(torch.load(str(full_path) + ".optimizer"))
+        self._optimizer.load_state_dict(torch.load(str(full_path) + ".optimizer"))  # type: ignore
 
         self.__dict__.pop("model_name", None)
         self.__dict__.pop("inner_model", None)

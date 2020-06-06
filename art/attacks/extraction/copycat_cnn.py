@@ -101,7 +101,7 @@ class CopycatCNN(ExtractionAttack):
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs["thieved_classifier"]
-        if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
+        if thieved_classifier is None or not isinstance(thieved_classifier, ClassifierMixin):
             raise ValueError("A thieved classifier is needed.")
 
         # Select data to attack
@@ -111,11 +111,11 @@ class CopycatCNN(ExtractionAttack):
         fake_labels = self._query_label(selected_x)
 
         # Train the thieved classifier
-        thieved_classifier.fit(
+        thieved_classifier.fit(  # type: ignore
             x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs,
         )
 
-        return thieved_classifier
+        return thieved_classifier  # type: ignore
 
     def _select_data(self, x: np.ndarray) -> np.ndarray:
         """

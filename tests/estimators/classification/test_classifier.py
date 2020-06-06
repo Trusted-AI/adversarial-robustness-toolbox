@@ -106,7 +106,7 @@ class TestClassifier(TestBase):
         self.assertIn("ClassifierInstance", repr_)
         self.assertIn("clip_values=None", repr_)
         self.assertIn("defences=None", repr_)
-        self.assertIn("preprocessing=None", repr_)
+        self.assertIn("preprocessing=(0, 1)", repr_)
 
 
 class TestClassifierNeuralNetwork(TestBase):
@@ -131,9 +131,9 @@ class TestClassifierNeuralNetwork(TestBase):
         repr_ = repr(classifier)
         self.assertIn("ClassifierNeuralNetworkInstance", repr_)
         self.assertIn("channel_index=1", repr_)
-        self.assertIn("clip_values=[0. 1.]", repr_)
+        self.assertIn("clip_values=None", repr_)
         self.assertIn("defences=None", repr_)
-        self.assertIn("preprocessing=None", repr_)
+        self.assertIn("preprocessing=(0, 1)", repr_)
 
 
 if __name__ == "__main__":

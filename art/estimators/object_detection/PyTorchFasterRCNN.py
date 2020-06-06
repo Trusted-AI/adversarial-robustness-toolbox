@@ -44,11 +44,11 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     def __init__(
         self,
         model: Optional["torchvision.models.detection.fasterrcnn_resnet50_fpn"] = None,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channel_index: Optional[int] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
         attack_losses: Tuple[str, ...] = ("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg",),
         device_type: str = "gpu",
     ):

@@ -554,6 +554,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         keras_model = KerasClassifier(
             self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1, preprocessing_defences=fs
         )
+        print(keras_model.preprocessing_defences)
         with open(full_path, "wb") as save_file:
             pickle.dump(keras_model, save_file)
 
@@ -576,8 +577,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         self.assertIn("art.estimators.classification.keras.KerasClassifier", repr_)
         self.assertIn("use_logits=False, channel_index=3", repr_)
         self.assertIn(
-            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, postprocessing_defences=None, "
-            "preprocessing=(0, 1)",
+            "clip_values=None, preprocessing_defences=None, postprocessing_defences=None, " "preprocessing=(0, 1)",
             repr_,
         )
         self.assertIn("input_layer=0, output_layer=0", repr_)

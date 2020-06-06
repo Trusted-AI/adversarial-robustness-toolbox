@@ -115,14 +115,14 @@ class KnockoffNets(ExtractionAttack):
 
         # Check if there is a thieved classifier provided for training
         thieved_classifier = kwargs.get("thieved_classifier")
-        if thieved_classifier is None or not isinstance(thieved_classifier, Classifier):
+        if thieved_classifier is None or not isinstance(thieved_classifier, ClassifierMixin):
             raise ValueError("A thieved classifier is needed.")
 
         # Implement model extractions
         if self.sampling_strategy == "random":
-            thieved_classifier = self._random_extraction(x, thieved_classifier)
+            thieved_classifier = self._random_extraction(x, thieved_classifier)  # type: ignore
         else:
-            thieved_classifier = self._adaptive_extraction(x, y, thieved_classifier)
+            thieved_classifier = self._adaptive_extraction(x, y, thieved_classifier)  # type: ignore
 
         return thieved_classifier
 
