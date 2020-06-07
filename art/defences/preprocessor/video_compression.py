@@ -26,6 +26,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 from tempfile import TemporaryDirectory
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -46,29 +47,31 @@ class VideoCompression(Preprocessor):
     params = ["video_format", "constant_rate_factor", "channels_first"]
 
     def __init__(
-        self, *, video_format, constant_rate_factor=28, channels_first=False, apply_fit=False, apply_predict=True,
+        self,
+        *,
+        video_format: str,
+        constant_rate_factor: int = 28,
+        channels_first: bool = False,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
     ):
         """
         Create an instance of VideoCompression.
 
         :param video_format: Specify one of supported video file extensions, e.g. `avi`, `mp4` or `mkv`.
-        :type video_format: `str`
-        :param constant_rate_factor: Specifiy constant rate factor (range 0 to 51, where 0 is lossless)
-        :type constant_rate_factor: `int`
+        :param constant_rate_factor: Specifiy constant rate factor (range 0 to 51, where 0 is lossless).
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(
-            video_format=video_format, constant_rate_factor=constant_rate_factor, channels_first=channels_first,
-        )
+        self.video_format = video_format
+        self.constant_rate_factor = constant_rate_factor
+        self.channels_first = channels_first
+        self._check_params()
 
     @property
     def apply_fit(self):
@@ -78,19 +81,16 @@ class VideoCompression(Preprocessor):
     def apply_predict(self):
         return self._apply_predict
 
-    def __call__(self, x, y=None):
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply video compression to sample `x`.
 
         :param x: Sample to compress of shape NCFHW or NFHWC. `x` values are expected to be in the data range [0, 255].
-        :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :type y: `np.ndarray`
         :return: Compressed sample.
-        :rtype: `np.ndarray`
         """
 
-        def compress_video(x, video_format, constant_rate_factor, dir_=""):
+        def compress_video(x: np.ndarray, video_format: str, constant_rate_factor: int, dir_: str = ""):
             """
             Apply video compression to video input of shape (frames, height, width, channel).
             """
@@ -135,25 +135,15 @@ class VideoCompression(Preprocessor):
 
         return x_compressed, y
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-        """
-        super().set_params(**kwargs)
-
-        if not (
-            isinstance(self.constant_rate_factor, (int, np.int))
-            and self.constant_rate_factor >= 0
-            and self.constant_rate_factor < 52
-        ):
+    def _check_params(self) -> None:
+        if not (isinstance(self.constant_rate_factor, (int, np.int)) and 0 <= self.constant_rate_factor < 52):
             raise ValueError("Constant rate factor must be an integer in the range [0, 51].")
-        return True
