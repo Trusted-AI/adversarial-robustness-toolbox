@@ -23,9 +23,19 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
+
+import numpy as np
 
 from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
+
+if TYPE_CHECKING:
+    import tensorflow as tf
+
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -41,18 +51,18 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
     def __init__(
         self,
         model,
-        nb_classes,
-        input_shape,
-        loss_object=None,
-        train_step=None,
-        channels_first=False,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
-        sample_size=32,
-        scale=0.1,
-        alpha=0.001,
+        nb_classes: int,
+        input_shape: Tuple[int, ...],
+        loss_object: Optional["tf.Tensor"] = None,
+        train_step: Optional[Callable] = None,
+        channels_first: bool = False,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        sample_size: int = 32,
+        scale: float = 0.1,
+        alpha: float = 0.001,
     ):
         """
         Create a randomized smoothing classifier.
@@ -60,35 +70,23 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :param model: a python functions or callable class defining the model and providing it prediction as output.
         :type model: `function` or `callable class`
         :param nb_classes: the number of classes in the classification task.
-        :type nb_classes: `int`
-        :param input_shape: shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1).
-        :type input_shape: `tuple`
+        :param input_shape: Shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1).
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
             the model and computing gradients of the loss w.r.t. the input.
-        :type loss_object: `tf.keras.losses`
-        :param train_step: a function that applies a gradient update to the trainable variables.
-        :type train_step: `function`
+        :param train_step: A function that applies a gradient update to the trainable variables.
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
-        :param sample_size: Number of samples for smoothing
-        :type sample_size: `int`
+        :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
-        :type scale: `float`
-        :param alpha: The failure probability of smoothing
-        :type alpha: `float`
+        :param alpha: The failure probability of smoothing.
         """
         super().__init__(
             model=model,
@@ -106,24 +104,21 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
             alpha=alpha,
         )
 
-    def _predict_classifier(self, x, batch_size):
+    def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
         return TensorFlowV2Classifier.predict(self, x=x, batch_size=batch_size)
 
-    def _fit_classifier(self, x, y, batch_size, nb_epochs, **kwargs):
+    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         return TensorFlowV2Classifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
         :param sampling: True if loss gradients should be determined with Monte Carlo sampling.
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         import tensorflow as tf
 
@@ -150,18 +145,16 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
                     )
 
                     inputs_noise_t = inputs_repeat_t + noise
-
-                    inputs_noise_t = tf.clip_by_value(
-                        inputs_noise_t,
-                        clip_value_min=self.clip_values[0],
-                        clip_value_max=self.clip_values[1],
-                        name=None,
-                    )
+                    if self.clip_values is not None:
+                        inputs_noise_t = tf.clip_by_value(
+                            inputs_noise_t,
+                            clip_value_min=self.clip_values[0],
+                            clip_value_max=self.clip_values[1],
+                            name=None,
+                        )
 
                     model_outputs = self._model(inputs_noise_t)
-
                     softmax = tf.nn.softmax(model_outputs, axis=1, name=None)
-
                     average_softmax = tf.reduce_mean(
                         tf.reshape(softmax, shape=(-1, self.sample_size, model_outputs.shape[-1])), axis=1
                     )
@@ -184,20 +177,17 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
 
         return gradients
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `list`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError

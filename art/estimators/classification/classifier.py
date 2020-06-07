@@ -19,7 +19,7 @@
 This module implements mixin abstract base classes defining properties for all classifiers in ART.
 """
 from abc import ABC, ABCMeta, abstractmethod
-from typing import Optional
+from typing import List, Optional, Union
 
 import numpy as np
 
@@ -93,12 +93,11 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     """
 
     @property
-    def nb_classes(self):
+    def nb_classes(self) -> int:
         """
         Return the number of output classes.
 
         :return: Number of classes in the data.
-        :rtype: `int`
         """
         return self._nb_classes
 
@@ -111,21 +110,19 @@ class ClassGradientsMixin(ABC):
     """
 
     @abstractmethod
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Samples.
-        :type x: `np.ndarray` or 1pandas.DataFrame1
+        :type x: `np.ndarray` or `pandas.DataFrame`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
         :return: Gradients of input features w.r.t. each class in the form `(batch_size, nb_classes, input_shape)` when
                  computing for all classes, otherwise shape becomes `(batch_size, 1, input_shape)` when `label`
                  parameter is specified.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 

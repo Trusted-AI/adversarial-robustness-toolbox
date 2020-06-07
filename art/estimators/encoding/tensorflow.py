@@ -21,10 +21,18 @@ This module implements the classifier `TensorFlowEncoder` for TensorFlow models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import tensorflow as tf
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 
 from art.estimators.tensorflow import TensorFlowEstimator
 from art.estimators.encoding.encoder import EncoderMixin
+
+if TYPE_CHECKING:
+    import numpy as np
+    import tensorflow as tf
+
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -35,49 +43,40 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
     """
 
     def __init__(
-            self,
-            input_ph,
-            model,
-            loss=None,
-            sess=None,
-            channel_index=3,
-            clip_values=None,
-            preprocessing_defences=None,
-            postprocessing_defences=None,
-            preprocessing=(0, 1),
-            feed_dict={}
+        self,
+        input_ph: "tf.Placeholder",
+        model: "tf.Tensor",
+        loss: Optional["tf.Tensor"] = None,
+        sess: Optional["tf.compat.v1.Session"] = None,
+        channel_index: int = 3,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        feed_dict: Dict[Any, Any] = {},
     ):
         """
         Initialization specific to encoder estimator implementation in TensorFlow.
 
         :param input_ph: The input placeholder.
-        :type input_ph: `tf.Placeholder`
         :param model: tensorflow model, neural network or other.
-        :type model: `tf.Tensor`
         :param loss: The loss function for which to compute gradients. This parameter is necessary when training the
         model and when computing gradients w.r.t. the loss function.
-        :type loss: `tf.Tensor`
         :param sess: Computation session.
-        :type sess: `tf.Session`
         :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
-        :type feed_dict: `dictionary`
         """
+        import tensorflow as tf
 
         super(TensorFlowEncoder, self).__init__(
             clip_values=clip_values,
@@ -104,48 +103,49 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: "np.ndarray", batch_size: int = 128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
+        :param batch_size: Batch size.
         :return: Array of encoding predictions of shape `(num_inputs, encoding_length)`.
-        :rtype: `np.ndarray`
         """
         logger.info("Encoding input")
         y = self._sess.run(self._model, feed_dict={self._input_ph: x})
         return y
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+    def fit(self, x: "np.ndarray", y: "np.ndarray", batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
-        do nothing.
-        """
-        raise NotImplementedError
-
-    def get_activations(self, x, layer, batch_size=128):
-        """
-        do nothing.
+        Do nothing.
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train):
+    def get_activations(
+        self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> "np.ndarray":
         """
-         do nothing.
-         """
+        Do nothing.
+        """
         raise NotImplementedError
 
-    def loss_gradient(self, z_encoding, image_adv):
+    def set_learning_phase(self, train: bool) -> None:
+        """
+        Do nothing.
+        """
+        raise NotImplementedError
+
+    def loss_gradient(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """
         No gradients to compute for this method; do nothing.
         """
         raise NotImplementedError
 
     @property
-    def encoding_length(self):
+    def encoding_length(self) -> int:
         """
-        Returns the length of the encoding size output
-        :return:
-        :rtype: `int`
+        Returns the length of the encoding size output.
+
+        :return: The length of the encoding size output.
         """
         return self._encoding_length
