@@ -30,13 +30,12 @@ certification, etc.).
 </p>
 <br />
 
-Documentation of ART: https://adversarial-robustness-toolbox.readthedocs.io
+## Find out more
 
-Get started with [examples](examples/README.md) and [tutorials](notebooks/README.md)
+| **[Get Started][art]**     | **[Documentation][art]**     | **[Contributing][art]**           |
+|-------------------------------------|-------------------------------|-----------------------------------|
+| - [Installation][art]<br>- [Examples](examples/README.md)<br>- [Notebooks](notebooks/README.md) | - [Attacks][art]<br>- [Defences][art]<br>- [Estimators][art]<br>- [Metrics][art]<br>- [Technical Documentation](https://adversarial-robustness-toolbox.readthedocs.io) | - [Slack](https://ibm-art.slack.com), [Invitation](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTA4NGQ1OTMxMzFmY2Q1MzE1NWI2MmEzN2FjNGNjOGVlODVkZDE0MjA1NTA4OGVkMjVkNmQ4MTY1NmMyOGM5YTg)<br>- [Contributing](CONTRIBUTING.md)<br>- [Roadmap][art]<br>- [Citing][art] |
+
+[art]: https://github.com/IBM/adversarial-robustness-toolbox
 
 The library is under continuous development. Feedback, bug reports and contributions are very welcome. 
-Get in touch with us on [Slack](https://ibm-art.slack.com) (invite [here](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTA4NGQ1OTMxMzFmY2Q1MzE1NWI2MmEzN2FjNGNjOGVlODVkZDE0MjA1NTA4OGVkMjVkNmQ4MTY1NmMyOGM5YTg))!
-
-## Contributing to ART
-
-See [CONTRIBUTING.md](CONTRIBUTING.md)
