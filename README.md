@@ -30,12 +30,17 @@ certification, etc.).
 </p>
 <br />
 
-## Find out more
+## Learn more
 
-| **[Get Started][https://github.com/IBM/adversarial-robustness-toolbox/wiki/Get-Started]**     | **[Documentation][art]**     | **[Contributing][art]**           |
+| **[Get Started][get-started]**     | **[Documentation][art]**     | **[Contributing][art]**           |
 |-------------------------------------|-------------------------------|-----------------------------------|
-| - [Installation][art]<br>- [Examples](examples/README.md)<br>- [Notebooks](notebooks/README.md) | - [Attacks][art]<br>- [Defences][art]<br>- [Estimators][art]<br>- [Metrics][art]<br>- [Technical Documentation](https://adversarial-robustness-toolbox.readthedocs.io) | - [Slack](https://ibm-art.slack.com), [Invitation](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTA4NGQ1OTMxMzFmY2Q1MzE1NWI2MmEzN2FjNGNjOGVlODVkZDE0MjA1NTA4OGVkMjVkNmQ4MTY1NmMyOGM5YTg)<br>- [Contributing](CONTRIBUTING.md)<br>- [Roadmap][art]<br>- [Citing][art] |
+| - [Installation][art]<br>- [Examples](examples/README.md)<br>- [Notebooks](notebooks/README.md) | - [Attacks][attacks]<br>- [Defences][defences]<br>- [Estimators][estimators]<br>- [Metrics][metrics]<br>- [Technical Documentation](https://adversarial-robustness-toolbox.readthedocs.io) | - [Slack](https://ibm-art.slack.com), [Invitation](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTA4NGQ1OTMxMzFmY2Q1MzE1NWI2MmEzN2FjNGNjOGVlODVkZDE0MjA1NTA4OGVkMjVkNmQ4MTY1NmMyOGM5YTg)<br>- [Contributing](CONTRIBUTING.md)<br>- [Roadmap][art]<br>- [Citing][art] |
 
 [art]: https://github.com/IBM/adversarial-robustness-toolbox
+[get-started]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/Get-Started
+[attacks]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Attacks
+[defences]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Defences
+[estimators]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Estimators
+[metrics]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Metrics
 
 The library is under continuous development. Feedback, bug reports and contributions are very welcome!
