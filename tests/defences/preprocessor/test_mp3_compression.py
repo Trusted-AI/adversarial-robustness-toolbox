@@ -81,6 +81,7 @@ class TestMp3Compression:
             mp3compression(test_input)
 
     @pytest.mark.parametrize("channels_first", [True, False])
+    @pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn")
     def test_mp3_compresssion(self, audio_batch, channels_first):
         test_input, test_output, sample_rate = audio_batch
         mp3compression = Mp3Compression(sample_rate=sample_rate, channels_first=channels_first)

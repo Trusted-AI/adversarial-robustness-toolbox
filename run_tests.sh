@@ -7,28 +7,27 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 
-mlFrameworkList=("tensorflow" "scikitlearn")
-for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
-done
-
-
-
-#NOTE the following line should be removed and tested as part of the all framework tests below
-pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
-
-pytest -q tests/utils --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
-
-#Only classifier tests need to be run for each frameworks
+#NOTE all new pytests MUST be placed within this loop to garantee all of our tests are framework independent
+# If there is really a necessity to skip a test for specific framework, throw instead a NotImplemented exception. This
+# will generate a pytest report which we can track. As a last resort pytest `@pytest.mark.skipMlFramework("framework")`
+# can also be used decorator
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
-  pytest -q tests/classifiersFrameworks/ --mlFramework=$mlFramework --durations=0
+  pytest -q tests/defences/preprocessor --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
+
   pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed tests for framework $mlFramework"; fi
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/ tests for framework $mlFramework"; fi
+
+  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
+
+  pytest -q tests/classifiersFrameworks/test_all_classifiers.py --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests for framework $mlFramework"; fi
+
+  pytest -q tests/utils --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 done
 
 

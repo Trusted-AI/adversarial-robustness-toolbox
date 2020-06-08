@@ -38,6 +38,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.only_with_platform("pytorch")
+@pytest.mark.skipMlFramework("pytorch")
 def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
     classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
