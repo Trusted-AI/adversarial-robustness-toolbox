@@ -117,12 +117,6 @@ class TestPyTorchClassifier(TestBase):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-
-
-
-
-
-
         import torch.nn.functional as F
 
         # class Model(nn.Module):
@@ -139,7 +133,6 @@ class TestPyTorchClassifier(TestBase):
         #         return logit_output
 
         # Define the network
-
 
         # model = Model()
         #         # loss_fn = nn.CrossEntropyLoss()

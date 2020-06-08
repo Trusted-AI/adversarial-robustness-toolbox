@@ -590,7 +590,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Recover model
         full_path = os.path.join(ART_DATA_PATH, state["model_name"])
-        model = state["inner_model"]
+        # model = state["inner_model"]
+        model = state["model_name"]
         model.load_state_dict(torch.load(str(full_path) + ".model"))
         model.eval()
         self._model = self._make_model_wrapper(model)

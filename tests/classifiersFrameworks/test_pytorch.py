@@ -99,44 +99,16 @@ def test_device():
 def test_pickle(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    # classifier, _ = get_image_classifier_list(one_classifier=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True)
 
     # classifier = classifier_2
 
-    from tests.utils import get_image_classifier_tf
-    classifier_tf, sess = get_image_classifier_tf()
+    # from tests.utils import get_image_classifier_tf
+    # classifier_tf, sess = get_image_classifier_tf()
 
-    from tests.utils import get_image_classifier_pt
+    # from tests.utils import get_image_classifier_pt
 
-    classifier_pt = get_image_classifier_pt()
-
-    # Define the network
-    # import torch.nn.functional as F
-    #
-    # class Model(nn.Module):
-    #     def __init__(self):
-    #         super(Model, self).__init__()
-    #         self.conv = nn.Conv2d(1, 2, 5)
-    #         self.pool = nn.MaxPool2d(2, 2)
-    #         self.fc = nn.Linear(288, 10)
-    #
-    #     def forward(self, x):
-    #         x = self.pool(F.relu(self.conv(x)))
-    #         x = x.view(-1, 288)
-    #         logit_output = self.fc(x)
-    #         return logit_output
-    #
-    # model = Model()
-    # loss_fn = nn.CrossEntropyLoss()
-    # optimizer = optim.Adam(model.parameters(), lr=0.01)
-    # deprecated_classifier = PyTorchClassifier(
-    #     model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
-    # )
-    # deprecated_classifier.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
-
-    # t_file = tempfile.NamedTemporaryFile()
-    # model_path = t_file.name
-    # t_file.close()
+    # classifier_pt = get_image_classifier_pt()
 
     from art.config import ART_DATA_PATH
     full_path = os.path.join(ART_DATA_PATH, "my_classifier")
@@ -148,22 +120,23 @@ def test_pickle(get_default_mnist_subset, get_image_classifier_list):
     #  within ghet get_image classifier_pt method
     # pickle.dump(classifier, open(full_path, "wb"))
     # pickle.dump(classifier_tf, open(full_path, "wb"))
-    pickle.dump(classifier_pt, open(full_path, "wb"))
+    pickle.dump(classifier, open(full_path, "wb"))
     # pickle.dump(deprecated_classifier, open(full_path, "wb"))
+    tmp = ""
 
     # Unpickle:
-    # with open(full_path, "rb") as f:
-    #     loaded = pickle.load(f)
-    #     np.testing.assert_equal(classifier._clip_values, loaded._clip_values)
-    #     assert classifier._channel_index == loaded._channel_index
-    #     assert set(classifier.__dict__.keys()) == set(loaded.__dict__.keys())
-    #
-    # # Test predict
-    # predictions_1 = classifier.predict(x_test_mnist)
-    # accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
-    # predictions_2 = loaded.predict(x_test_mnist)
-    # accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
-    # assert accuracy_1 == accuracy_2
+    with open(full_path, "rb") as f:
+        loaded = pickle.load(f)
+        np.testing.assert_equal(classifier._clip_values, loaded._clip_values)
+        assert classifier._channel_index == loaded._channel_index
+        assert set(classifier.__dict__.keys()) == set(loaded.__dict__.keys())
+
+    # Test predict
+    predictions_1 = classifier.predict(x_test_mnist)
+    accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+    predictions_2 = loaded.predict(x_test_mnist)
+    accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+    assert accuracy_1 == accuracy_2
 
 
 @pytest.mark.only_with_platform("pytorch")
