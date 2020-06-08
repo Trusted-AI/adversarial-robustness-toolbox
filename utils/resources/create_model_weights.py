@@ -54,13 +54,13 @@ def main_mnist_binary():
     w_3, b_3 = model.layers[3].get_weights()
 
     np.save(
-        os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/", 'W_CONV2D_MNIST_BINARY'),
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models/scikit/", 'W_CONV2D_MNIST_BINARY'),
         w_0)
-    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/"'B_CONV2D_MNIST_BINARY'),
+    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models/scikit/"'B_CONV2D_MNIST_BINARY'),
             b_0)
-    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/"'W_DENSE_MNIST_BINARY'),
+    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models/scikit/"'W_DENSE_MNIST_BINARY'),
             w_3)
-    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/"'B_DENSE_MNIST_BINARY'),
+    np.save(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models/scikit/"'B_DENSE_MNIST_BINARY'),
             b_3)
 
 
@@ -86,12 +86,12 @@ def create_scikit_model_weights():
 
     for model_name, model in clipped_models.items():
         model.fit(x=x_train_iris, y=y_train_iris)
-        pickle.dump(model, open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/",
+        pickle.dump(model, open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models/scikit/",
                                              model_name + "iris_clipped.sav"), 'wb'))
 
     for model_name, model in unclipped_models.items():
         model.fit(x=x_train_iris, y=y_train_iris)
-        pickle.dump(model, open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models/scikit/",
+        pickle.dump(model, open(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models/scikit/",
                                              model_name + "iris_unclipped.sav"), 'wb'))
 
 

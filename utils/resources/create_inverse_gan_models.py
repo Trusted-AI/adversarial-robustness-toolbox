@@ -231,7 +231,7 @@ def build_inverse_gan_graph(learning_rate, generator_tf, z_ph, latent_encoding_l
 def main():
     model_name = 'model-dcgan'
 
-    root = '../resources/models/tensorflow1/'
+    root = '../utils/resources/models/tensorflow1/'
 
     if not os.path.isdir(root):
         os.mkdir(root)

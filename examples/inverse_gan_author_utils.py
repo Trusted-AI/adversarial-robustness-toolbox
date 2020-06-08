@@ -63,7 +63,7 @@ path_locations["data"] = inverse_gan_models_dir + "/data/"
 #     pred_train = model.get_logits(images_tensor, dropout=True)
 #     pred_eval = model.get_logits(images_tensor)
 #
-#     path = tf.train.latest_checkpoint('./resources/tmpMnistModel/mnist')
+#     path = tf.train.latest_checkpoint('./utils/resources/tmpMnistModel/mnist')
 #     saver = tf.train.Saver(var_list=used_vars)
 #     saver.restore(model_sess, path)
 #     print('[+] BB model loaded successfully ...')
