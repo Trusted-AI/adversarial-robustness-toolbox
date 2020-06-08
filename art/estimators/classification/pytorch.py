@@ -561,7 +561,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # pylint: disable=W0212
         # disable pylint because access to _model required
         state = self.__dict__.copy()
-        state["inner_model"] = copy.copy(state["_model"]._model)
+        # state["inner_model"] = copy.copy(state["_model"]._model)
 
         # Remove the unpicklable entries
         del state["_model_wrapper"]

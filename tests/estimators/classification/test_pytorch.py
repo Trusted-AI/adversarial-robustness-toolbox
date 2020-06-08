@@ -117,29 +117,50 @@ class TestPyTorchClassifier(TestBase):
         if not os.path.exists(folder):
             os.makedirs(folder)
 
+
+
+
+
+
+
         import torch.nn.functional as F
 
-        class Model(nn.Module):
-            def __init__(self):
-                super(Model, self).__init__()
-                self.conv = nn.Conv2d(1, 2, 5)
-                self.pool = nn.MaxPool2d(2, 2)
-                self.fc = nn.Linear(288, 10)
+        # class Model(nn.Module):
+        #     def __init__(self):
+        #         super(Model, self).__init__()
+        #         self.conv = nn.Conv2d(1, 2, 5)
+        #         self.pool = nn.MaxPool2d(2, 2)
+        #         self.fc = nn.Linear(288, 10)
+        #
+        #     def forward(self, x):
+        #         x = self.pool(F.relu(self.conv(x)))
+        #         x = x.view(-1, 288)
+        #         logit_output = self.fc(x)
+        #         return logit_output
 
-            def forward(self, x):
-                x = self.pool(F.relu(self.conv(x)))
-                x = x.view(-1, 288)
-                logit_output = self.fc(x)
-                return logit_output
+        # Define the network
 
-        model = Model()
+
+        # model = Model()
+        #         # loss_fn = nn.CrossEntropyLoss()
+        #         # optimizer = optim.Adam(model.parameters(), lr=0.01)
+        #         # classifier_2 = PyTorchClassifier(
+        #         #     model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+        #         # )
+        #         # classifier_2.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
+        #         # module_classifier = classifier_2
+
+        # Define the network
+        model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
+
+        # Define a loss function and optimizer
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier_2 = PyTorchClassifier(
+        classifier = PyTorchClassifier(
             model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
         )
-        classifier_2.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
-        module_classifier = classifier_2
+        classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
+        self.seq_classifier1 = classifier
 
         from art.config import ART_DATA_PATH
         full_path = os.path.join(ART_DATA_PATH, "my_classifier")
@@ -149,7 +170,7 @@ class TestPyTorchClassifier(TestBase):
 
         # TODO the error is not coming from the classifier itself created but simply the fact that it's created
         #  within ghet get_image classifier_pt method
-        # pickle.dump(classifier, open(full_path, "wb"))
+        pickle.dump(self.seq_classifier1, open(full_path, "wb"))
         # pickle.dump(model, open(full_path, "wb"))
 
         model = Model()

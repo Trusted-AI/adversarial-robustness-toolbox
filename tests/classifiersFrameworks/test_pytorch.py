@@ -111,28 +111,32 @@ def test_pickle(get_default_mnist_subset, get_image_classifier_list):
     classifier_pt = get_image_classifier_pt()
 
     # Define the network
-    import torch.nn.functional as F
+    # import torch.nn.functional as F
+    #
+    # class Model(nn.Module):
+    #     def __init__(self):
+    #         super(Model, self).__init__()
+    #         self.conv = nn.Conv2d(1, 2, 5)
+    #         self.pool = nn.MaxPool2d(2, 2)
+    #         self.fc = nn.Linear(288, 10)
+    #
+    #     def forward(self, x):
+    #         x = self.pool(F.relu(self.conv(x)))
+    #         x = x.view(-1, 288)
+    #         logit_output = self.fc(x)
+    #         return logit_output
+    #
+    # model = Model()
+    # loss_fn = nn.CrossEntropyLoss()
+    # optimizer = optim.Adam(model.parameters(), lr=0.01)
+    # deprecated_classifier = PyTorchClassifier(
+    #     model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+    # )
+    # deprecated_classifier.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
 
-    class Model(nn.Module):
-        def __init__(self):
-            super(Model, self).__init__()
-            self.conv = nn.Conv2d(1, 2, 5)
-            self.pool = nn.MaxPool2d(2, 2)
-            self.fc = nn.Linear(288, 10)
-
-        def forward(self, x):
-            x = self.pool(F.relu(self.conv(x)))
-            x = x.view(-1, 288)
-            logit_output = self.fc(x)
-            return logit_output
-
-    model = Model()
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    deprecated_classifier = PyTorchClassifier(
-        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
-    )
-    deprecated_classifier.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
+    # t_file = tempfile.NamedTemporaryFile()
+    # model_path = t_file.name
+    # t_file.close()
 
     from art.config import ART_DATA_PATH
     full_path = os.path.join(ART_DATA_PATH, "my_classifier")
@@ -143,9 +147,9 @@ def test_pickle(get_default_mnist_subset, get_image_classifier_list):
     # TODO the error is not coming from the classifier itself created but simply the fact that it's created
     #  within ghet get_image classifier_pt method
     # pickle.dump(classifier, open(full_path, "wb"))
-    pickle.dump(classifier_tf, open(full_path, "wb"))
+    # pickle.dump(classifier_tf, open(full_path, "wb"))
     pickle.dump(classifier_pt, open(full_path, "wb"))
-    pickle.dump(deprecated_classifier, open(full_path, "wb"))
+    # pickle.dump(deprecated_classifier, open(full_path, "wb"))
 
     # Unpickle:
     # with open(full_path, "rb") as f:
@@ -215,9 +219,9 @@ def test_layers(get_image_classifier_list, get_default_mnist_subset):
         return classifier
 
     # TODO this should be using the default fixture get_image_classifier_list but then non of the tests below make sense
-    # classifier, _ = get_image_classifier_list(one_classifier=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True)
     classifier = create_model()
-
+    # TODO investigate going though layers for py torch model layers
     layer_names = classifier.layer_names
 
     for i, name in enumerate(layer_names):
