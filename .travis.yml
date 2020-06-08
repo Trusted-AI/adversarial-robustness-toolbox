@@ -23,12 +23,12 @@ jobs:
 
 before_install:
   - sudo apt-get -y -q install ffmpeg libavcodec-extra
-  - sed -i "s/^tensorflow$/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
-  - sed -i "s/^keras$/keras==${KERAS_V}/" test_requirements.txt
+  - sed -i "s/^tensorflow$/tensorflow==${TENSORFLOW_V}/" requirements.txt
+  - sed -i "s/^keras$/keras==${KERAS_V}/" requirements.txt
 
 install:
   - python -m pip install --upgrade pip==20.1.1 setuptools wheel
-  - pip install -q -r test_requirements.txt
+  - pip install -q -r requirements.txt
   - pip install --upgrade --force-reinstall mxnet
   - pip install -q pylint pycodestyle
   - pip install -q torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
