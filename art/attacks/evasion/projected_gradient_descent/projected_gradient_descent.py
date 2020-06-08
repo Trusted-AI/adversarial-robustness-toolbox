@@ -70,16 +70,16 @@ class ProjectedGradientDescent(EvasionAttack):
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
-        self,
-        estimator,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        max_iter=100,
-        targeted=False,
-        num_random_init=0,
-        batch_size=32,
-        random_eps=False,
+            self,
+            estimator,
+            norm=np.inf,
+            eps=0.3,
+            eps_step=0.1,
+            max_iter=100,
+            targeted=False,
+            num_random_init=0,
+            batch_size=32,
+            random_eps=False,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -121,7 +121,8 @@ class ProjectedGradientDescent(EvasionAttack):
         }
         ProjectedGradientDescent.set_params(self, **kwargs)
 
-        no_preprocessing = self.estimator.preprocessing is None or self.estimator.preprocessing == (0, 1)
+        no_preprocessing = self.estimator.preprocessing is None or (np.all(self.estimator.preprocessing[0] == 0)
+                                                                    and np.all(self.estimator.preprocessing[1] == 0))
         no_defences = not self.estimator.preprocessing_defences and not self.estimator.postprocessing_defences
 
         if isinstance(self.estimator, PyTorchClassifier) and no_preprocessing and no_defences:

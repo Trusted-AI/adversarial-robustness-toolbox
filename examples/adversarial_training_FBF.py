@@ -15,7 +15,7 @@ from art.classifiers import PyTorchClassifier
 from art.data_generators import PyTorchDataGenerator
 from art.defences.trainer import AdversarialTrainerFBFPyTorch
 from art.utils import load_cifar10
-from art.attacks.evasion import FastGradientMethod
+from art.attacks.evasion import ProjectedGradientDescent
 
 """
 For this example we choose the PreActResNet model as used in the paper (https://openreview.net/forum?id=BJx040EFvH)
@@ -200,9 +200,9 @@ classifier = PyTorchClassifier(
     nb_classes=10,
 )
 
-fgsm = FastGradientMethod(classifier, norm=np.inf, eps=8.0 / 255.0,
-                          eps_step=2.0 / 255.0, targeted=False,
-                          num_random_init=5, batch_size=32)
+fgsm = ProjectedGradientDescent(classifier, norm=np.inf, eps=8.0 / 255.0,
+                                eps_step=2.0 / 255.0, max_iter=40, targeted=False,
+                                num_random_init=5, batch_size=32)
 x_test_attack = fgsm.generate(x_test)
 x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
 print(
