@@ -36,8 +36,7 @@ from tests.classifiersFrameworks.utils import (
     backend_test_fit_generator,
     backend_test_loss_gradient,
     backend_test_class_gradient,
-    backend_test_layers,
-    backend_test_repr,
+    backend_test_layers
 )
 from tests.utils import ExpectedValue
 
@@ -687,21 +686,6 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list, fra
     )
 
     backend_test_class_gradient(framework, get_default_mnist_subset, classifier, expected_values, labels)
-
-
-@pytest.mark.only_with_platform("keras")
-def test_repr(get_image_classifier_list):
-    backend_test_repr(
-        get_image_classifier_list(),
-        [
-            "art.estimators.classification.keras.KerasClassifier",
-            f"use_logits=False, channel_index={Deprecated}, channels_first=False",
-            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, "
-            "postprocessing_defences=None, "
-            "preprocessing=(0, 1)",
-            "input_layer=0, output_layer=0",
-        ],
-    )
 
 
 @pytest.mark.only_with_platform("keras")

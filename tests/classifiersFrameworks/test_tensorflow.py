@@ -391,44 +391,5 @@ def test_set_learning(is_tf_version_2, get_image_classifier_list):
         assert classifier.learning_phase
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_repr(is_tf_version_2, get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    if is_tf_version_2:
-        backend_test_repr(
-            classifier,
-            [
-                "TensorFlowV2Classifier",
-                "model=",
-                "nb_classes=10",
-                "input_shape=(28, 28, 1)",
-                "loss_object=<tensorflow.python.keras.losses." "SparseCategoricalCrossentropy",
-                "train_step=<function get_image_classifier_tf_v2." "<locals>.train_step",
-                f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
-                "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))",
-            ],
-        )
-
-    else:
-
-        backend_test_repr(
-            classifier,
-            [
-                "TensorFlowClassifier",
-                "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
-                "output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>",
-                "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
-                "train=<tf.Operation 'Adam' type=NoOp>",
-                "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
-                "learning=None",
-                "sess=<tensorflow.python.client.session.Session object",
-                "TensorFlowClassifier",
-                f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
-                "preprocessing_defences=None, postprocessing_defences=None, "
-                "preprocessing=(0, 1))",
-            ],
-        )
-
-
 if __name__ == "__main__":
     pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

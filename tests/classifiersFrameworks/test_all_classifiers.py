@@ -6,6 +6,7 @@ import warnings
 
 from tests.classifiersFrameworks.utils import fw_agnostic_backend_test_nb_classes
 from tests.classifiersFrameworks.utils import fw_agnostic_backend_test_input_shape
+from tests.classifiersFrameworks.utils import fw_agnostic_backend_test_repr
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +63,16 @@ def test_save(get_image_classifier_list):
                 if filename in file:
                     created_model = True
             assert created_model
+
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))
+
+
+def test_repr(framework, is_tf_version_2, get_image_classifier_list):
+    try:
+        classifier, _ = get_image_classifier_list(one_classifier=True)
+        if classifier is not None:
+            fw_agnostic_backend_test_repr(framework, is_tf_version_2, classifier)
 
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))

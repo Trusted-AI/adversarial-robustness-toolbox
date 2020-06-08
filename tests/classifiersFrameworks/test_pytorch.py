@@ -156,23 +156,6 @@ def test_set_learning(get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_repr(get_image_classifier_list):
-    backend_test_repr(
-        get_image_classifier_list(one_classifier=True),
-        [
-            "art.estimators.classification.pytorch.PyTorchClassifier",
-            "(conv): Conv2d(1, 2, kernel_size=(5, 5), stride=(1, 1))",
-            "(pool): MaxPool2d(kernel_size=2, stride=2, padding=0, dilation=1, ceil_mode=False)",
-            "(fc): Linear(in_features=288, out_features=10, bias=True)",
-            "loss=CrossEntropyLoss(), optimizer=Adam",
-            "input_shape=(1, 28, 28), nb_classes=10, channel_index=1",
-            "clip_values=array([0., 1.], dtype=float32",
-            "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)"
-        ]
-    )
-
-
-@pytest.mark.only_with_platform("pytorch")
 def test_layers(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
