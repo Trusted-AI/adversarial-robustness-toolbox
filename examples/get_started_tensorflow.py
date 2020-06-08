@@ -45,7 +45,7 @@ classifier = TensorFlowClassifier(
     loss=loss,
     learning=None,
     sess=sess,
-    preprocessing_defences=[]
+    preprocessing_defences=[],
 )
 
 # Step 4: Train the ART classifier

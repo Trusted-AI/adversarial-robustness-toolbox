@@ -1349,24 +1349,14 @@ def get_gan_inverse_gan_ft():
         lr = 0.0002
         latent_enc_len = 100
 
-        gen_tf, z_ph, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph = build_gan_graph(lr,
-                                                                                              latent_enc_len)
+        gen_tf, z_ph, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph = build_gan_graph(lr, latent_enc_len)
 
-        enc_tf, image_to_enc_ph, latent_enc_loss, enc_opt = build_inverse_gan_graph(lr, gen_tf, z_ph,
-                                                                                    latent_enc_len)
+        enc_tf, image_to_enc_ph, latent_enc_loss, enc_opt = build_inverse_gan_graph(lr, gen_tf, z_ph, latent_enc_len)
 
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        gan = TensorFlowGenerator(
-            input_ph=z_ph,
-            model=gen_tf,
-            sess=sess,
-        )
+        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess,)
 
-        inverse_gan = TensorFlowEncoder(
-            input_ph=image_to_enc_ph,
-            model=enc_tf,
-            sess=sess,
-        )
+        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess,)
         return gan, inverse_gan, sess

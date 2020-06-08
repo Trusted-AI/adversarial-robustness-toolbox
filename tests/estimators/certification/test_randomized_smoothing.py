@@ -72,15 +72,17 @@ class TestRandomizedSmoothing(unittest.TestCase):
         x_test_adv = fgsm.generate(x_test, **params)
 
         # Initialize RS object and attack with FGSM
-        rs = PyTorchRandomizedSmoothing(model=ptc.model,
-                                        loss=ptc._loss,
-                                        input_shape=ptc.input_shape,
-                                        nb_classes=ptc.nb_classes,
-                                        channels_first=ptc.channels_first,
-                                        clip_values=ptc.clip_values,
-                                        sample_size=100,
-                                        scale=0.01,
-                                        alpha=0.001)
+        rs = PyTorchRandomizedSmoothing(
+            model=ptc.model,
+            loss=ptc._loss,
+            input_shape=ptc.input_shape,
+            nb_classes=ptc.nb_classes,
+            channels_first=ptc.channels_first,
+            clip_values=ptc.clip_values,
+            sample_size=100,
+            scale=0.01,
+            alpha=0.001,
+        )
         fgsm_with_rs = FastGradientMethod(estimator=rs, targeted=True)
         x_test_adv_with_rs = fgsm_with_rs.generate(x_test, **params)
 
@@ -119,15 +121,17 @@ class TestRandomizedSmoothingVectors(unittest.TestCase):
         (_, _), (x_test, y_test) = self.iris
 
         ptc = get_tabular_classifier_pt()
-        rs = PyTorchRandomizedSmoothing(model=ptc.model,
-                                        loss=ptc._loss,
-                                        input_shape=ptc.input_shape,
-                                        nb_classes=ptc.nb_classes,
-                                        channels_first=ptc.channels_first,
-                                        clip_values=ptc.clip_values,
-                                        sample_size=100,
-                                        scale=0.01,
-                                        alpha=0.001)
+        rs = PyTorchRandomizedSmoothing(
+            model=ptc.model,
+            loss=ptc._loss,
+            input_shape=ptc.input_shape,
+            nb_classes=ptc.nb_classes,
+            channels_first=ptc.channels_first,
+            clip_values=ptc.clip_values,
+            sample_size=100,
+            scale=0.01,
+            alpha=0.001,
+        )
 
         # Test untargeted attack
         attack = FastGradientMethod(ptc, eps=0.1)

@@ -35,17 +35,17 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
     """
 
     def __init__(
-            self,
-            input_ph,
-            model,
-            loss=None,
-            sess=None,
-            channel_index=3,
-            clip_values=None,
-            preprocessing_defences=None,
-            postprocessing_defences=None,
-            preprocessing=(0, 1),
-            feed_dict={}
+        self,
+        input_ph,
+        model,
+        loss=None,
+        sess=None,
+        channel_index=3,
+        clip_values=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
+        preprocessing=(0, 1),
+        feed_dict={},
     ):
         """
         Initialization specific to encoder estimator implementation in TensorFlow.

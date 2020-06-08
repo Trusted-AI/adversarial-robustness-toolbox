@@ -503,7 +503,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         keras_layer = self._model.get_layer(layer_name)
         if layer_name not in self._activations_func:
-            num_inbound_nodes = len(getattr(keras_layer, '_inbound_nodes', []))
+            num_inbound_nodes = len(getattr(keras_layer, "_inbound_nodes", []))
             if num_inbound_nodes > 1:
                 layer_output = keras_layer.get_output_at(0)
             else:

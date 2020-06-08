@@ -437,7 +437,7 @@ if __name__ == "__main__":
     import tensorflow as tf
 
     tf.compat.v1.disable_eager_execution()
-    tf.keras.backend.set_floatx('float64')
+    tf.keras.backend.set_floatx("float64")
 
     from tensorflow.keras.datasets import mnist
     from tensorflow.keras.models import Sequential

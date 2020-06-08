@@ -52,15 +52,10 @@ def test_inverse_gan(fix_get_mnist_subset, get_image_classifier_list_for_attack,
     attack = FastGradientMethod(classifier, eps=0.2)
     x_test_adv = attack.generate(x=x_test_mnist)
 
-    inverse_gan = InverseGAN(
-        sess=sess,
-        gan=gan,
-        inverse_gan=inverse_gan)
+    inverse_gan = InverseGAN(sess=sess, gan=gan, inverse_gan=inverse_gan)
 
     x_test_defended = inverse_gan(x_test_adv, maxiter=1)
 
     np.testing.assert_array_almost_equal(
-        float(np.mean(x_test_defended - x_test_adv)),
-        0.08818667382001877,
-        decimal=0.01,
+        float(np.mean(x_test_defended - x_test_adv)), 0.08818667382001877, decimal=0.01,
     )

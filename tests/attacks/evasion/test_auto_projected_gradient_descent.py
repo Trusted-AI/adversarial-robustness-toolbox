@@ -69,8 +69,9 @@ def test_generate(is_tf_version_2, fix_get_mnist_subset, get_image_classifier_li
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(AutoProjectedGradientDescent,
-                                            [BaseEstimator, LossGradientsMixin, ClassifierMixin])
+    backend_test_classifier_type_check_fail(
+        AutoProjectedGradientDescent, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
+    )
 
 
 if __name__ == "__main__":

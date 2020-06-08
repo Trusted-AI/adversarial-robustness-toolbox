@@ -59,9 +59,20 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, KerasClassifier)
 
-    def __init__(self, classifier, target, feature_layer, learning_rate=500 * 255.0, decay_coeff=0.5,
-                 stopping_tol=1e-10, obj_threshold=None, num_old_obj=40, max_iter=120, similarity_coeff=256,
-                 watermark=None):
+    def __init__(
+        self,
+        classifier,
+        target,
+        feature_layer,
+        learning_rate=500 * 255.0,
+        decay_coeff=0.5,
+        stopping_tol=1e-10,
+        obj_threshold=None,
+        num_old_obj=40,
+        max_iter=120,
+        similarity_coeff=256,
+        watermark=None,
+    ):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
 
@@ -101,17 +112,17 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             "num_old_obj": num_old_obj,
             "max_iter": max_iter,
             "similarity_coeff": similarity_coeff,
-            "watermark": watermark
+            "watermark": watermark,
         }
 
         FeatureCollisionAttack.set_params(self, **kwargs)
 
-        self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(self.target,
-                                                                                          self.feature_layer, 1,
-                                                                                          framework=True)
-        self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(self.target,
-                                                                                          self.feature_layer, 1,
-                                                                                          framework=True)
+        self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(
+            self.target, self.feature_layer, 1, framework=True
+        )
+        self.poison_placeholder, self.poison_feature_rep = self.estimator.get_activations(
+            self.target, self.feature_layer, 1, framework=True
+        )
         self.attack_loss = tensor_norm(self.poison_feature_rep - self.target_feature_rep)
 
     def poison(self, x, y=None, **kwargs):
@@ -213,10 +224,12 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :return: poison example closer in feature representation to target space
         :rtype: `np.ndarray`
         """
-        attack_grad, = self.estimator.custom_loss_gradient(self.attack_loss, [self.poison_placeholder,
-                                                                              self.target_placeholder],
-                                                           [poison, self.target],
-                                                           name="feature_collision_" + str(self.feature_layer))
+        (attack_grad,) = self.estimator.custom_loss_gradient(
+            self.attack_loss,
+            [self.poison_placeholder, self.target_placeholder],
+            [poison, self.target],
+            name="feature_collision_" + str(self.feature_layer),
+        )
         poison -= self.learning_rate * attack_grad[0]
 
         return poison
@@ -285,7 +298,7 @@ def get_class_name(obj):
     if module is None or module == str.__class__.__module__:
         return obj.__class__.__name__
     else:
-        return module + '.' + obj.__class__.__name__
+        return module + "." + obj.__class__.__name__
 
 
 def tensor_norm(tensor, norm_type=2):
@@ -297,7 +310,7 @@ def tensor_norm(tensor, norm_type=2):
     :type norm_type: `int` or `string`
     :return: a tensor with the norm applied
     """
-    tf_tensor_types = ('tensorflow.python.framework.ops.Tensor', 'tensorflow.python.framework.ops.EagerTensor')
+    tf_tensor_types = ("tensorflow.python.framework.ops.Tensor", "tensorflow.python.framework.ops.EagerTensor")
     torch_tensor_types = ()
     mxnet_tensor_types = ()
     supported_types = tf_tensor_types + torch_tensor_types + mxnet_tensor_types
@@ -306,10 +319,13 @@ def tensor_norm(tensor, norm_type=2):
         raise TypeError("Tensor type `" + tensor_type + "` is not supported")
     elif tensor_type in tf_tensor_types:
         import tensorflow as tf
+
         return tf.norm(tensor, ord=norm_type)
     elif tensor_type in torch_tensor_types:
         import torch
+
         return torch.norm(tensor, p=norm_type)
     elif tensor_type in mxnet_tensor_types:
         import mxnet
+
         return mxnet.ndarray.norm(tensor, ord=norm_type)
