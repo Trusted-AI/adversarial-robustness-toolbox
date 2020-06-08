@@ -24,6 +24,7 @@ tests_require = [
     "scikit-learn==0.22.1",
     "Pillow==6.0.0",
     "pytest-pep8==1.0.6",
+    "typing_extensions==3.7.4.2",
     "codecov==2.0.22",
     "h5py==2.10.0",
     "requests==2.23.0",

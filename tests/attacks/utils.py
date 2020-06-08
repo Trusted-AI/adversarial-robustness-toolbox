@@ -118,8 +118,6 @@ def backend_check_adverse_frames(attack, mnist_dataset, expected_values):
     x_diff_norm = np.round(np.linalg.norm(x_diff, axis=-1), decimals=4)
     x_diff_norm = np.linalg.norm(x_diff_norm, ord=0, axis=-1)
 
-    print(x_diff_norm)
-
     np.testing.assert_array_equal(x_diff_norm, expected_values["nb_perturbed_frames"].value)
 
 
