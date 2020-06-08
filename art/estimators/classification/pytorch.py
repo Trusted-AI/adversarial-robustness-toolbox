@@ -40,19 +40,19 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
-        self,
-        model,
-        loss,
-        input_shape,
-        nb_classes,
-        optimizer=None,
-        channel_index=Deprecated,
-        channels_first=True,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
-        device_type="gpu",
+            self,
+            model,
+            loss,
+            input_shape,
+            nb_classes,
+            optimizer=None,
+            channel_index=Deprecated,
+            channels_first=True,
+            clip_values=None,
+            preprocessing_defences=None,
+            postprocessing_defences=None,
+            preprocessing=(0, 1),
+            device_type="gpu",
     ):
         """
         Initialization specifically for the PyTorch-based implementation.
@@ -219,8 +219,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]).to(self._device)
+                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]).to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -253,9 +253,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Train directly in PyTorch
         if (
-            isinstance(generator, PyTorchDataGenerator)
-            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
-            and self.preprocessing == (0, 1)
+                isinstance(generator, PyTorchDataGenerator)
+                and (self.preprocessing_defences is None or self.preprocessing_defences == [])
+                and self.preprocessing == (0, 1)
         ):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
@@ -304,14 +304,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch
 
         if not (
-            (label is None)
-            or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
-            or (
-                isinstance(label, np.ndarray)
-                and len(label.shape) == 1
-                and (label < self._nb_classes).all()
-                and label.shape[0] == x.shape[0]
-            )
+                (label is None)
+                or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
+                or (
+                        isinstance(label, np.ndarray)
+                        and len(label.shape) == 1
+                        and (label < self._nb_classes).all()
+                        and label.shape[0] == x.shape[0]
+                )
         ):
             raise ValueError("Label %s is out of range." % label)
 
@@ -561,14 +561,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # pylint: disable=W0212
         # disable pylint because access to _model required
         state = self.__dict__.copy()
-        # state["inner_model"] = copy.copy(state["_model"]._model)
+        state["inner_model"] = copy.copy(state["_model"]._model)
+        # state["inner_model"] = copy.deepcopy(state["_model"]._model)
 
         # Remove the unpicklable entries
         del state["_model_wrapper"]
         del state["_device"]
         del state["_model"]
 
-        model_name = str(time.time())
+        # model_name = str(time.time())
+        model_name = "dummyName"
         state["model_name"] = model_name
         self.save(model_name)
 
@@ -590,8 +592,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Recover model
         full_path = os.path.join(ART_DATA_PATH, state["model_name"])
-        # model = state["inner_model"]
-        model = state["model_name"]
+        model = state["inner_model"]
+        # model = state["model_name"]
         model.load_state_dict(torch.load(str(full_path) + ".model"))
         model.eval()
         self._model = self._make_model_wrapper(model)
@@ -608,22 +610,22 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __repr__(self):
         repr_ = (
-            "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, channels_first=%r, "
-            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self._model,
-                self._loss,
-                self._optimizer,
-                self._input_shape,
-                self.nb_classes,
-                self.channel_index,
-                self.channels_first,
-                self.clip_values,
-                self.preprocessing_defences,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+                "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, channels_first=%r, "
+                "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
+                % (
+                    self.__module__ + "." + self.__class__.__name__,
+                    self._model,
+                    self._loss,
+                    self._optimizer,
+                    self._input_shape,
+                    self.nb_classes,
+                    self.channel_index,
+                    self.channels_first,
+                    self.clip_values,
+                    self.preprocessing_defences,
+                    self.postprocessing_defences,
+                    self.preprocessing,
+                )
         )
 
         return repr_

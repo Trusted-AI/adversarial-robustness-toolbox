@@ -22,6 +22,7 @@ import pytest
 import pickle
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 
 from art.estimators.classification.pytorch import PyTorchClassifier
@@ -36,6 +37,20 @@ from tests.classifiersFrameworks.utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+class Model(nn.Module):
+    def __init__(self):
+        super(Model, self).__init__()
+        self.conv = nn.Conv2d(1, 2, 5)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.fc = nn.Linear(288, 10)
+
+    def forward(self, x):
+        x = self.pool(F.relu(self.conv(x)))
+        x = x.view(-1, 288)
+        logit_output = self.fc(x)
+        return logit_output
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -96,7 +111,41 @@ def test_device():
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_pickle(get_default_mnist_subset, get_image_classifier_list):
+def test_pickle(get_default_mnist_subset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    from art.config import ART_DATA_PATH
+    full_path = os.path.join(ART_DATA_PATH, "my_classifier")
+    folder = os.path.split(full_path)[0]
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+
+    model = Model()
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    myclassifier_2 = PyTorchClassifier(
+        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+    )
+    myclassifier_2.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
+
+    pickle.dump(myclassifier_2, open(full_path, "wb"))
+
+    with open(full_path, "rb") as f:
+        loaded_model = pickle.load(f)
+        np.testing.assert_equal(myclassifier_2._clip_values, loaded_model._clip_values)
+        assert myclassifier_2._channel_index == loaded_model._channel_index
+        assert set(myclassifier_2.__dict__.keys()) == set(loaded_model.__dict__.keys())
+
+    # Test predict
+    predictions_1 = myclassifier_2.predict(x_test_mnist)
+    accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+    predictions_2 = loaded_model.predict(x_test_mnist)
+    accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+    assert accuracy_1 == accuracy_2
+
+
+@pytest.mark.only_with_platform("pytorch")
+def test_pickle1(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier, _ = get_image_classifier_list(one_classifier=True)

@@ -111,122 +111,66 @@ class TestPyTorchClassifier(TestBase):
         super().tearDown()
 
     def test_pickle(self):
-        from art.config import ART_DATA_PATH
         full_path = os.path.join(ART_DATA_PATH, "my_classifier")
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
 
-        import torch.nn.functional as F
+        from tests.utils import get_image_classifier_pt
 
-        # class Model(nn.Module):
-        #     def __init__(self):
-        #         super(Model, self).__init__()
-        #         self.conv = nn.Conv2d(1, 2, 5)
-        #         self.pool = nn.MaxPool2d(2, 2)
-        #         self.fc = nn.Linear(288, 10)
-        #
-        #     def forward(self, x):
-        #         x = self.pool(F.relu(self.conv(x)))
-        #         x = x.view(-1, 288)
-        #         logit_output = self.fc(x)
-        #         return logit_output
+        # classifier_pt = get_image_classifier_pt()
+        # pickle.dump(classifier_pt, open(full_path, "wb"))
 
-        # Define the network
+        class Model1(nn.Module):
+            def __init__(self):
+                super(Model1, self).__init__()
+                self.conv = nn.Conv2d(1, 2, 5)
+                self.pool = nn.MaxPool2d(2, 2)
+                self.fc = nn.Linear(288, 10)
 
-        # model = Model()
-        #         # loss_fn = nn.CrossEntropyLoss()
-        #         # optimizer = optim.Adam(model.parameters(), lr=0.01)
-        #         # classifier_2 = PyTorchClassifier(
-        #         #     model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
-        #         # )
-        #         # classifier_2.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
-        #         # module_classifier = classifier_2
+            def forward(self, x):
+                x = self.pool(F.relu(self.conv(x)))
+                x = x.view(-1, 288)
+                logit_output = self.fc(x)
+                return logit_output
 
-        # Define the network
-        model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
-
-        # Define a loss function and optimizer
+        model = Model1()
         loss_fn = nn.CrossEntropyLoss()
         optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier = PyTorchClassifier(
+        myclassifier_2 = PyTorchClassifier(
             model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
         )
-        classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
-        self.seq_classifier1 = classifier
+        myclassifier_2.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
 
-        from art.config import ART_DATA_PATH
-        full_path = os.path.join(ART_DATA_PATH, "my_classifier")
-        folder = os.path.split(full_path)[0]
-        if not os.path.exists(folder):
-            os.makedirs(folder)
+        # pickle.dump(self.module_classifier, open(full_path, "wb"))
+        pickle.dump(myclassifier_2, open(full_path, "wb"))
 
-        # TODO the error is not coming from the classifier itself created but simply the fact that it's created
-        #  within ghet get_image classifier_pt method
-        pickle.dump(self.seq_classifier1, open(full_path, "wb"))
-        # pickle.dump(model, open(full_path, "wb"))
-
-        model = Model()
-
-        # Define a loss function and optimizer
-        loss_fn = torch.nn.CrossEntropyLoss()
-        optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
-
-        # Get classifier
-        ptc = PyTorchClassifier(
-            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
-        )
-
-        # self.classifier = ptc
-        self.classifier = get_image_classifier_pt(load_init=False)
-
-        self.classifier.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
-
-        # works with tensorflow
-        from tests.utils import get_image_classifier_tf
-        classifier_tf, sess = get_image_classifier_tf()
-
-        # Define the network
-        # model = Model()
-        # loss_fn = nn.CrossEntropyLoss()
-        # optimizer = optim.Adam(model.parameters(), lr=0.01)
-        # classifier_2 = PyTorchClassifier(
-        #     model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
-        # )
-        # classifier_2.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
-        # self.module_classifier = classifier_2
-
-        pickle.dump(self.module_classifier, open(full_path, "wb"))
-
-        # Define the network
-        model = Model()
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier_2 = PyTorchClassifier(
-            model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
-        )
-        classifier_2.fit(self.x_train_mnist, self.y_train_mnist, batch_size=100, nb_epochs=1)
-        import copy
-        deep_classifier_2 = copy.deepcopy(classifier_2)
-        pickle.dump(deep_classifier_2, open(full_path, "wb"))
-
-        # TODO the error is not coming from the classifier itself created but simply the fact that it's
-        #  created within ghet get_image classifier_pt method
-        pickle.dump(self.classifier, open(full_path, "wb"))
-
-        # Unpickle:
         with open(full_path, "rb") as f:
-            loaded = pickle.load(f)
-            np.testing.assert_equal(self.module_classifier._clip_values, loaded._clip_values)
-            self.assertEqual(self.module_classifier._channels_first, loaded._channels_first)
-            self.assertEqual(set(self.module_classifier.__dict__.keys()), set(loaded.__dict__.keys()))
+            loaded_model = pickle.load(f)
+            np.testing.assert_equal(myclassifier_2._clip_values, loaded_model._clip_values)
+            self.assertEqual(myclassifier_2._channel_index, loaded_model._channel_index)
+            self.assertEqual(set(myclassifier_2.__dict__.keys()), set(loaded_model.__dict__.keys()))
 
         # Test predict
-        predictions_1 = self.module_classifier.predict(self.x_test_mnist)
+        predictions_1 = myclassifier_2.predict(self.x_test_mnist)
         accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
-        predictions_2 = loaded.predict(self.x_test_mnist)
+        predictions_2 = loaded_model.predict(self.x_test_mnist)
         accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
         self.assertEqual(accuracy_1, accuracy_2)
+
+        # Unpickle:
+        # with open(full_path, "rb") as f:
+        #     loaded_model = pickle.load(f)
+        #     np.testing.assert_equal(self.module_classifier._clip_values, loaded_model._clip_values)
+        #     self.assertEqual(self.module_classifier._channel_index, loaded_model._channel_index)
+        #     self.assertEqual(set(self.module_classifier.__dict__.keys()), set(loaded_model.__dict__.keys()))
+        #
+        # # Test predict
+        # predictions_1 = self.module_classifier.predict(self.x_test_mnist)
+        # accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
+        # predictions_2 = loaded_model.predict(self.x_test_mnist)
+        # accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.n_test
+        # self.assertEqual(accuracy_1, accuracy_2)
 
 
 if __name__ == "__main__":
