@@ -26,19 +26,26 @@ import random
 import numpy as np
 import six
 
-from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierMixin,
+)
 from art.estimators.pytorch import PyTorchEstimator
 from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
 
-class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):  # lgtm [py/missing-call-to-init]
+class PyTorchClassifier(
+    ClassGradientsMixin, ClassifierMixin, PyTorchEstimator
+):  # lgtm [py/missing-call-to-init]
     """
     This class implements a classifier with the PyTorch framework.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg(
+        "channel_index", end_version="1.5.0", replaced_by="channels_first"
+    )
     def __init__(
             self,
             model,
@@ -130,7 +137,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._layer_idx_gradients = -1
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if isinstance(loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss)):
+        if isinstance(
+                loss,
+                (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),
+        ):
             self._reduce_labels = True
         else:
             self._reduce_labels = False
@@ -172,9 +182,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
 
-            model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
+            model_outputs = self._model(
+                torch.from_numpy(x_preprocessed[begin:end]).to(self._device)
+            )
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 
@@ -219,8 +234,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
             # Train for one epoch
             for m in range(num_batch):
-                i_batch = torch.from_numpy(x_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]).to(self._device)
-                o_batch = torch.from_numpy(y_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]).to(self._device)
+                i_batch = torch.from_numpy(
+                    x_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]
+                ).to(self._device)
+                o_batch = torch.from_numpy(
+                    y_preprocessed[ind[m * batch_size: (m + 1) * batch_size]]
+                ).to(self._device)
 
                 # Zero the parameter gradients
                 self._optimizer.zero_grad()
@@ -254,7 +273,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Train directly in PyTorch
         if (
                 isinstance(generator, PyTorchDataGenerator)
-                and (self.preprocessing_defences is None or self.preprocessing_defences == [])
+                and (
+                self.preprocessing_defences is None or self.preprocessing_defences == []
+        )
                 and self.preprocessing == (0, 1)
         ):
             for _ in range(nb_epochs):
@@ -265,7 +286,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         i_batch = i_batch.to(self._device)
 
                     if isinstance(o_batch, np.ndarray):
-                        o_batch = torch.argmax(torch.from_numpy(o_batch).to(self._device), dim=1)
+                        o_batch = torch.argmax(
+                            torch.from_numpy(o_batch).to(self._device), dim=1
+                        )
                     else:
                         o_batch = torch.argmax(o_batch.to(self._device), dim=1)
 
@@ -305,7 +328,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         if not (
                 (label is None)
-                or (isinstance(label, (int, np.integer)) and label in range(self._nb_classes))
+                or (
+                        isinstance(label, (int, np.integer))
+                        and label in range(self._nb_classes)
+                )
                 or (
                         isinstance(label, np.ndarray)
                         and len(label.shape) == 1
@@ -351,18 +377,24 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if label is None:
             for i in range(self.nb_classes):
                 torch.autograd.backward(
-                    preds[:, i], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
+                    preds[:, i],
+                    torch.Tensor([1.0] * len(preds[:, 0])).to(self._device),
+                    retain_graph=True,
                 )
 
         elif isinstance(label, (int, np.integer)):
             torch.autograd.backward(
-                preds[:, label], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
+                preds[:, label],
+                torch.Tensor([1.0] * len(preds[:, 0])).to(self._device),
+                retain_graph=True,
             )
         else:
             unique_label = list(np.unique(label))
             for i in unique_label:
                 torch.autograd.backward(
-                    preds[:, i], torch.Tensor([1.0] * len(preds[:, 0])).to(self._device), retain_graph=True
+                    preds[:, i],
+                    torch.Tensor([1.0] * len(preds[:, 0])).to(self._device),
+                    retain_graph=True,
                 )
 
             grads = np.swapaxes(np.array(grads), 0, 1)
@@ -496,10 +528,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
+            layer_output = self._model(
+                torch.from_numpy(x_preprocessed[begin:end]).to(self._device)
+            )[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
@@ -679,7 +716,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                             result.append(x)
 
                         else:
-                            raise TypeError("The input model must inherit from `nn.Module`.")
+                            raise TypeError(
+                                "The input model must inherit from `nn.Module`."
+                            )
 
                         return result
 
@@ -711,8 +750,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                             result.append("final_layer")
 
                         else:
-                            raise TypeError("The input model must inherit from `nn.Module`.")
-                        logger.info("Inferred %i hidden layers on PyTorch classifier.", len(result))
+                            raise TypeError(
+                                "The input model must inherit from `nn.Module`."
+                            )
+                        logger.info(
+                            "Inferred %i hidden layers on PyTorch classifier.",
+                            len(result),
+                        )
 
                         return result
 
