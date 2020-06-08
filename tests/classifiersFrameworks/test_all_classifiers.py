@@ -86,3 +86,28 @@ def test_repr(framework, is_tf_version_2, get_image_classifier_list):
 
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
+
+
+def test_set_learning(framework, is_tf_version_2, get_image_classifier_list):
+    try:
+        if framework == "tensorflow" and is_tf_version_2:
+            raise NotImplementedError("test_set_learning not implemented for framework tensorflow2")
+
+        classifier, _ = get_image_classifier_list(one_classifier=True)
+        if classifier is not None:
+            if hasattr(classifier._model, "training"):
+                assert classifier._model.training
+                classifier.set_learning_phase(False)
+                assert classifier._model.training is False
+                classifier.set_learning_phase(True)
+                assert classifier._model.training
+
+            if hasattr(classifier, "_feed_dict"):
+                assert classifier._feed_dict == {}
+                classifier.set_learning_phase(False)
+                assert classifier._feed_dict[classifier._learning] is False
+                classifier.set_learning_phase(True)
+                assert classifier._feed_dict[classifier._learning]
+                assert classifier.learning_phase
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))

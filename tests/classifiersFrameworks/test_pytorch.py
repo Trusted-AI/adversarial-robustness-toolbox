@@ -144,17 +144,6 @@ def test_pickle(get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_set_learning(get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    assert classifier._model.training
-    classifier.set_learning_phase(False)
-    assert classifier._model.training is False
-    classifier.set_learning_phase(True)
-    assert classifier._model.training
-    assert classifier.learning_phase
-
-
-@pytest.mark.only_with_platform("pytorch")
 def test_fit_predict(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, _ = get_image_classifier_list(one_classifier=True)
