@@ -17,12 +17,12 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import keras
 import logging
 import unittest
 
-import numpy as np
 from keras_preprocessing.image import ImageDataGenerator
+
+import numpy as np
 
 from art.data_generators import KerasDataGenerator
 from art.defences.detector.poison import ActivationDefence
@@ -179,7 +179,7 @@ class TestActivationDefence(unittest.TestCase):
 
         kwargs = {"nb_clusters": 2, "nb_dims": 10, "reduce": "PCA"}
         _, _ = self.defence.detect_poison(**kwargs)
-        # _, _ = self.defence_gen.detect_poison(**kwargs)
+        _, _ = self.defence_gen.detect_poison(**kwargs)
         is_clean = np.zeros(len(x_train))
         self.defence.evaluate_defence(is_clean)
         self.defence_gen.evaluate_defence(is_clean)
