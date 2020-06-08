@@ -81,7 +81,7 @@ class ActivationDefence(PoisonFilteringDefence):
             "nb_dims": 10,
             "reduce": "PCA",
             "cluster_analysis": "smaller",
-            "generator": generator
+            "generator": generator,
         }
         self.set_params(**kwargs)
         self.activations_by_class = []
@@ -131,10 +131,12 @@ class ActivationDefence(PoisonFilteringDefence):
             # calculate is_clean_by_class for each batch
             for batch_idx in range(num_samples // batch_size):
                 x_batch, y_batch = self.generator.get_batch()
-                is_clean_batch = is_clean[batch_idx * batch_size:batch_idx * batch_size + batch_size]
+                is_clean_batch = is_clean[batch_idx * batch_size : batch_idx * batch_size + batch_size]
                 clean_by_class_batch = self._segment_by_class(is_clean_batch, y_batch)
-                self.is_clean_by_class = [np.append(self.is_clean_by_class[class_idx], clean_by_class_batch[class_idx])
-                                          for class_idx in range(num_classes)]
+                self.is_clean_by_class = [
+                    np.append(self.is_clean_by_class[class_idx], clean_by_class_batch[class_idx])
+                    for class_idx in range(num_classes)
+                ]
 
         else:
             self.is_clean_by_class = self._segment_by_class(is_clean, self.y_train)
@@ -184,10 +186,7 @@ class ActivationDefence(PoisonFilteringDefence):
             # loop though the generator to generator a report
             for _ in range(num_samples // batch_size):
                 x_batch, y_batch = self.generator.get_batch()
-                indices_by_class = self._segment_by_class(
-                    np.arange(batch_size),
-                    y_batch
-                )
+                indices_by_class = self._segment_by_class(np.arange(batch_size), y_batch)
                 is_clean_lst = [0] * batch_size
                 for class_idx, idxs in enumerate(indices_by_class):
                     for idx_in_class, idx in enumerate(idxs):
@@ -256,12 +255,15 @@ class ActivationDefence(PoisonFilteringDefence):
                 )
 
                 for class_idx in range(num_classes):
-                    self.activations_by_class[class_idx] = np.vstack([self.activations_by_class[class_idx],
-                                                                      activations_by_class[class_idx]])
-                    self.clusters_by_class[class_idx] = np.append(self.clusters_by_class[class_idx],
-                                                                  clusters_by_class[class_idx])
-                    self.red_activations_by_class[class_idx] = np.vstack([self.red_activations_by_class[class_idx],
-                                                                          red_activations_by_class[class_idx]])
+                    self.activations_by_class[class_idx] = np.vstack(
+                        [self.activations_by_class[class_idx], activations_by_class[class_idx]]
+                    )
+                    self.clusters_by_class[class_idx] = np.append(
+                        self.clusters_by_class[class_idx], clusters_by_class[class_idx]
+                    )
+                    self.red_activations_by_class[class_idx] = np.vstack(
+                        [self.red_activations_by_class[class_idx], red_activations_by_class[class_idx]]
+                    )
             return self.clusters_by_class, self.red_activations_by_class
 
         if not self.activations_by_class:
@@ -611,8 +613,9 @@ class ActivationDefence(PoisonFilteringDefence):
         protected_layer = nb_layers - 1
 
         if self.generator:
-            activations = self.classifier.get_activations(x_train, layer=protected_layer,
-                                                          batch_size=self.generator.batch_size)
+            activations = self.classifier.get_activations(
+                x_train, layer=protected_layer, batch_size=self.generator.batch_size
+            )
         else:
             activations = self.classifier.get_activations(self.x_train, layer=protected_layer, batch_size=128)
 
@@ -696,8 +699,15 @@ def train_remove_backdoor(classifier, x_train, y_train, x_test, y_test, tolerabl
     return improve_factor, classifier
 
 
-def cluster_activations(separated_activations, nb_clusters=2, nb_dims=10, reduce="FastICA", clustering_method="KMeans",
-                        generator=False, clusterer_new=None):
+def cluster_activations(
+    separated_activations,
+    nb_clusters=2,
+    nb_dims=10,
+    reduce="FastICA",
+    clustering_method="KMeans",
+    generator=False,
+    clusterer_new=None,
+):
     """
     Clusters activations and returns two arrays.
     1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each datapoint
