@@ -20,6 +20,7 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
+
 def test_predict(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 

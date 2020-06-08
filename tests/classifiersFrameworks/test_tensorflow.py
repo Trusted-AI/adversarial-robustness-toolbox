@@ -24,7 +24,6 @@ import numpy as np
 import pytest
 
 from tests.utils import ExpectedValue
-from tests.classifiersFrameworks.utils import backend_test_layers, backend_test_repr
 from tests.classifiersFrameworks.utils import backend_test_loss_gradient, backend_test_class_gradient
 from tests.classifiersFrameworks.utils import backend_test_fit_generator
 
