@@ -33,7 +33,6 @@ from tests.classifiersFrameworks.utils import (
     backend_test_fit_generator,
     backend_test_class_gradient,
     backend_test_loss_gradient,
-    backend_test_repr,
 )
 
 logger = logging.getLogger(__name__)
@@ -181,7 +180,21 @@ def test_layers(get_image_classifier_list, get_default_mnist_subset):
 
     # TODO this should be using the default fixture get_image_classifier_list but then non of the tests below make sense
     classifier, _ = get_image_classifier_list(one_classifier=True)
-    classifier = create_model()
+    # classifier = create_model()
+
+    # UNIVERSAL TESTS
+    layer_count = 1
+    if layer_count is not None:
+        assert len(classifier.layer_names) == layer_count
+
+    batch_size = 128
+    for i, name in enumerate(classifier.layer_names):
+        activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
+        activation_name = classifier.get_activations(x_test_mnist, name, batch_size=batch_size)
+        np.testing.assert_array_equal(activation_name, activation_i)
+
+
+    # OLD TESTS
     # TODO investigate going though layers for py torch model layers
     layer_names = classifier.layer_names
 
