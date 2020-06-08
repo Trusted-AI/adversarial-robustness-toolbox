@@ -260,6 +260,7 @@ def get_mnist_dataset(load_mnist_dataset, framework):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = load_mnist_dataset
 
     if framework == "pytorch":
+        x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
         x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
     x_train_mnist_original = x_train_mnist.copy()
