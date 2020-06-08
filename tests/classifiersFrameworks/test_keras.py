@@ -303,12 +303,6 @@ def test_functional_model(get_functional_model):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_layers(get_default_mnist_subset, framework, get_image_classifier_list):
-    backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list, batch_size=128,
-                        layer_count=3)
-
-
-@pytest.mark.only_with_platform("keras")
 def test_resnet(create_test_image):
     image_file_path = create_test_image
     keras.backend.set_learning_phase(0)

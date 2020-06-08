@@ -155,62 +155,6 @@ def test_set_learning(get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_layers(get_image_classifier_list, get_default_mnist_subset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    class Flatten(nn.Module):
-        def forward(self, x):
-            n, _, _, _ = x.size()
-            result = x.view(n, -1)
-
-            return result
-
-    def create_model():
-        # Define the network
-        model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
-
-        # Define a loss function and optimizer
-        loss_fn = nn.CrossEntropyLoss()
-        optimizer = optim.Adam(model.parameters(), lr=0.01)
-        classifier = PyTorchClassifier(
-            model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
-        )
-        classifier.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
-        return classifier
-
-    # TODO this should be using the default fixture get_image_classifier_list but then non of the tests below make sense
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    # classifier = create_model()
-
-    # UNIVERSAL TESTS
-    layer_count = 1
-    if layer_count is not None:
-        assert len(classifier.layer_names) == layer_count
-
-    batch_size = 128
-    for i, name in enumerate(classifier.layer_names):
-        activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
-        activation_name = classifier.get_activations(x_test_mnist, name, batch_size=batch_size)
-        np.testing.assert_array_equal(activation_name, activation_i)
-
-
-    # OLD TESTS
-    # TODO investigate going though layers for py torch model layers
-    layer_names = classifier.layer_names
-
-    for i, name in enumerate(layer_names):
-        activation_i = classifier.get_activations(x_test_mnist, i, batch_size=5)
-        activation_name = classifier.get_activations(x_test_mnist, name, batch_size=5)
-        np.testing.assert_array_equal(activation_name, activation_i)
-
-    assert classifier.get_activations(x_test_mnist, 0, batch_size=5).shape == (100, 2, 24, 24)
-    assert classifier.get_activations(x_test_mnist, 1, batch_size=5).shape == (100, 2, 24, 24)
-    assert classifier.get_activations(x_test_mnist, 2, batch_size=5).shape == (100, 2, 12, 12)
-    assert classifier.get_activations(x_test_mnist, 3, batch_size=5).shape == (100, 288)
-    assert classifier.get_activations(x_test_mnist, 4, batch_size=5).shape == (100, 10)
-
-
-@pytest.mark.only_with_platform("pytorch")
 def test_fit_predict(get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, _ = get_image_classifier_list(one_classifier=True)

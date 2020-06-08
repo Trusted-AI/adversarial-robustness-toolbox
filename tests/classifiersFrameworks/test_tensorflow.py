@@ -293,14 +293,6 @@ def test_class_gradient(get_image_classifier_list, get_default_mnist_subset, fra
     backend_test_class_gradient(framework, get_default_mnist_subset, classifier_logits, expected_values, labels)
 
 
-def test_layers(is_tf_version_2, framework, get_default_mnist_subset, get_image_classifier_list):
-    if framework == "tensorflow" and is_tf_version_2:
-        return
-
-    backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list, batch_size=128,
-                        layer_count=3)
-
-
 @pytest.mark.only_with_platform("tensorflow")
 def test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list):
     expected_values = {

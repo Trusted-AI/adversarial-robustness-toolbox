@@ -23,9 +23,8 @@ from art.utils import Deprecated
 logger = logging.getLogger(__name__)
 
 
-def fw_agnostic_backend_test_layers(framework, is_tf_version_2, get_default_mnist_subset, get_image_classifier_list):
+def fw_agnostic_backend_test_layers(framework, is_tf_version_2, get_default_mnist_subset, classifier):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, _ = get_image_classifier_list(one_classifier=True)
 
     if framework == "tensorflow" and is_tf_version_2:
         raise NotImplementedError("fw_agnostic_backend_test_layers not implemented for framework {0}".format(framework))
@@ -33,6 +32,8 @@ def fw_agnostic_backend_test_layers(framework, is_tf_version_2, get_default_mnis
     layer_count = 3
     if framework == "pytorch":
         layer_count = 1
+    if framework == "tensorflow":
+        layer_count = 5
 
     if layer_count is not None:
         assert len(classifier.layer_names) == layer_count
