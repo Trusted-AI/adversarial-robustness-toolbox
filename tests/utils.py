@@ -162,7 +162,9 @@ def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
         def _tf_initializer(_, dtype, partition_info):
             import tensorflow as tf
 
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename))
+            weights = np.load(
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
+            )
             return tf.constant(weights, dtype)
 
     elif tf_version == 2:
@@ -170,7 +172,9 @@ def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
         def _tf_initializer(_, dtype):
             import tensorflow as tf
 
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename))
+            weights = np.load(
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
+            )
             return tf.constant(weights, dtype)
 
     else:
@@ -776,16 +780,24 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
 
             if load_init:
                 w_conv2d = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy"
+                    )
                 )
                 b_conv2d = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy"
+                    )
                 )
                 w_dense = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy"
+                    )
                 )
                 b_dense = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy"
+                    )
                 )
 
                 w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
@@ -917,6 +929,7 @@ def get_gan_inverse_gan_ft():
 
         inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess,)
         return gan, inverse_gan, sess
+
 
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
 
@@ -1235,22 +1248,34 @@ def get_tabular_classifier_pt(load_init=True):
 
             if load_init:
                 w_dense1 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE1_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE1_IRIS.npy"
+                    )
                 )
                 b_dense1 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE1_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE1_IRIS.npy"
+                    )
                 )
                 w_dense2 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE2_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE2_IRIS.npy"
+                    )
                 )
                 b_dense2 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE2_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE2_IRIS.npy"
+                    )
                 )
                 w_dense3 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE3_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE3_IRIS.npy"
+                    )
                 )
                 b_dense3 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE3_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE3_IRIS.npy"
+                    )
                 )
 
                 self.fully_connected1.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
