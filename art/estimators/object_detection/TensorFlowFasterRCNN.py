@@ -16,36 +16,40 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the task specific estimator for Faster R-CNN v3 in PyTorch.
+This module implements the task specific estimator for Faster R-CNN in TensorFlow.
 """
 import logging
 
 import numpy as np
+from object_detection.utils import config_util
+from object_detection.builders import model_builder
 
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.estimators.pytorch import PyTorchEstimator
+from art.estimators.tensorflow import TensorFlowEstimator
 from art.utils import Deprecated, deprecated_keyword_arg
+from art.utils import get_file
+from art.config import ART_DATA_PATH
 
 logger = logging.getLogger(__name__)
 
 
-class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
+class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     """
-    This class implements a model-specific object detector using Faster-RCNN and PyTorch.
+    This class implements a model-specific object detector using Faster-RCNN and TensorFlow.
     """
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         model=None,
+        filename='faster_rcnn_inception_v2_coco_2017_11_08',
+        url='http://download.tensorflow.org/models/object_detection/faster_rcnn_inception_v2_coco_2017_11_08.tar.gz',
         clip_values=None,
         channel_index=Deprecated,
         channels_first=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
         preprocessing=None,
-        attack_losses=("loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"),
-        device_type="gpu",
     ):
         """
         Initialization.
@@ -105,28 +109,20 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         assert postprocessing_defences is None, "This estimator does not support `postprocessing_defences`."
 
         if model is None:
-            import torchvision
+            # Download and extract
+            path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
 
-            self._model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
-                pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
-            )
+            # Load model config
+            pipeline_config = path + '/pipeline.config'
+            configs = config_util.get_configs_from_pipeline_file(pipeline_config)
+            configs['model'].faster_rcnn.second_stage_batch_size = configs[
+                'model'].faster_rcnn.first_stage_max_proposals
+
+            # Load model
+            self._model = model_builder.build(model_config=configs['model'], is_training=True, add_summaries=False)
+
         else:
             self._model = model
-
-        # Set device
-        import torch
-
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
-
-        self._model.to(self._device)
-
-        self._model.eval()
-
-        self.attack_losses = attack_losses
 
     def loss_gradient(self, x, y, **kwargs):
         """
