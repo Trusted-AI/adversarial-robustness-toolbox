@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -25,12 +25,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.classifiers.classifier import Classifier, ClassifierNeuralNetwork, ClassifierGradients
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 logger = logging.getLogger(__name__)
 
 
-class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients, ClassifierNeuralNetwork, Classifier):
+class ExpectationOverTransformations(
+    ClassifierWrapper, ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
+):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).

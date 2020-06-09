@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -42,8 +42,10 @@ class TestBackdoorAttack(TestBase):
 
     def setUp(self):
         master_seed(seed=301)
-        self.backdoor_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-                                          "data", "backdoors", "alert.png")
+        self.backdoor_path = os.path.join(
+            os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "utils", "data", "backdoors",
+            "alert.png"
+        )
         super().setUp()
 
     @staticmethod

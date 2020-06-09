@@ -4,11 +4,10 @@ dataset and creates adversarial examples using the Fast Gradient Sign Method. He
 the model, it would also be possible to provide a pretrained model to the ART classifier.
 The parameters are chosen for reduced computational requirements of the script and not optimised for accuracy.
 """
-import tensorflow as tf
 import numpy as np
 
-from art.attacks import FastGradientMethod
-from art.classifiers import TensorFlowV2Classifier
+from art.attacks.evasion import FastGradientMethod
+from art.estimators.classification import TensorFlowV2Classifier
 from art.utils import load_mnist
 
 # Step 1: Load the MNIST dataset
@@ -29,12 +28,12 @@ class TensorFlowModel(Model):
 
     def __init__(self):
         super(TensorFlowModel, self).__init__()
-        self.conv1 = Conv2D(filters=4, kernel_size=5, activation='relu')
-        self.conv2 = Conv2D(filters=10, kernel_size=5, activation='relu')
-        self.maxpool = MaxPool2D(pool_size=(2, 2), strides=(2, 2), padding='valid', data_format=None)
+        self.conv1 = Conv2D(filters=4, kernel_size=5, activation="relu")
+        self.conv2 = Conv2D(filters=10, kernel_size=5, activation="relu")
+        self.maxpool = MaxPool2D(pool_size=(2, 2), strides=(2, 2), padding="valid", data_format=None)
         self.flatten = Flatten()
-        self.dense1 = Dense(100, activation='relu')
-        self.logits = Dense(10, activation='linear')
+        self.dense1 = Dense(100, activation="relu")
+        self.logits = Dense(10, activation="linear")
 
     def call(self, x):
         """
@@ -56,7 +55,7 @@ class TensorFlowModel(Model):
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 
-def train_step(images, labels):
+def train_step(model, images, labels):
     with tf.GradientTape() as tape:
         predictions = model(images, training=True)
         loss = loss_object(labels, predictions)
@@ -69,8 +68,14 @@ loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
 
 # Step 3: Create the ART classifier
 
-classifier = TensorFlowV2Classifier(model=model, loss_object=loss_object, train_step=train_step, nb_classes=10,
-                                    input_shape=(28, 28, 1), clip_values=(0, 1))
+classifier = TensorFlowV2Classifier(
+    model=model,
+    loss_object=loss_object,
+    train_step=train_step,
+    nb_classes=10,
+    input_shape=(28, 28, 1),
+    clip_values=(0, 1),
+)
 
 # Step 4: Train the ART classifier
 
@@ -83,7 +88,7 @@ accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test, axis=1)) /
 print("Accuracy on benign test examples: {}%".format(accuracy * 100))
 
 # Step 6: Generate adversarial test examples
-attack = FastGradientMethod(classifier=classifier, eps=0.2)
+attack = FastGradientMethod(estimator=classifier, eps=0.2)
 x_test_adv = attack.generate(x=x_test)
 
 # Step 7: Evaluate the ART classifier on adversarial test examples

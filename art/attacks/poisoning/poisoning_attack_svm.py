@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -26,7 +26,7 @@ import numpy as np
 from tqdm import tqdm
 
 from art.attacks.attack import PoisoningAttackWhiteBox
-from art.classifiers.scikitlearn import ScikitlearnSVC
+from art.estimators.classification.scikitlearn import ScikitlearnSVC
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
@@ -49,12 +49,25 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         "y_val",
     ]
 
-    def __init__(self, classifier, step, eps, x_train, y_train, x_val, y_val, max_iter=100, **kwargs):
+    _estimator_requirements = (ScikitlearnSVC,)
+
+    def __init__(
+        self,
+        classifier,
+        step=None,
+        eps=None,
+        x_train=None,
+        y_train=None,
+        x_val=None,
+        y_val=None,
+        max_iter=100,
+        **kwargs
+    ):
         """
         Initialize an SVM poisoning attack
 
         :param classifier: A trained ScikitlearnSVC classifier
-        :type classifier: `art.classifiers.scikitlearn.ScikitlearnSVC`
+        :type classifier: `art.estimators.classification.scikitlearn.ScikitlearnSVC`
         :param step: The step size of the classifier
         :type step: `float`
         :param eps: The minimum difference in loss before convergence of the classifier
@@ -76,15 +89,13 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
         super(PoisoningAttackSVM, self).__init__(classifier)
 
-        if not isinstance(classifier, ScikitlearnSVC):
-            raise TypeError("Classifier must be a SVC")
-        if isinstance(self.classifier._model, LinearSVC):
-            self.classifier = ScikitlearnSVC(
-                model=SVC(C=self.classifier._model.C, kernel="linear"), clip_values=self.classifier.clip_values
+        if isinstance(self.estimator.model, LinearSVC):
+            self._estimator = ScikitlearnSVC(
+                model=SVC(C=self.estimator.model.C, kernel="linear"), clip_values=self.estimator.clip_values
             )
-            self.classifier.fit(x_train, y_train)
-        elif not isinstance(self.classifier._model, SVC):
-            raise NotImplementedError("Model type '{}' not yet supported".format(type(self.classifier._model)))
+            self.estimator.fit(x_train, y_train)
+        elif not isinstance(self.estimator.model, SVC):
+            raise NotImplementedError("Model type '{}' not yet supported".format(type(self.estimator.model)))
 
         self.step = step
         self.eps = eps
@@ -132,7 +143,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
         logger.info(
             "Success rate of poisoning attack SVM attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, targeted=targeted),
+            100 * compute_success(self.estimator, x, y, x_adv, targeted=targeted),
         )
 
         return x_adv, y_attack
@@ -163,12 +174,12 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :param y_attack: the initial attack label
         :type y_attack: `np.ndarray`
         :return: a tuple containing the final attack point and the poisoned model
-        :rtype: (`np.ndarray`, `art.classifiers.ScikitlearnSVC`)
+        :rtype: (`np.ndarray`, `art.estimators.classification.scikitlearn.ScikitlearnSVC`)
         """
         # pylint: disable=W0212
         from sklearn.preprocessing import normalize
 
-        poisoned_model = self.classifier._model
+        poisoned_model = self.estimator.model
         y_t = np.argmax(self.y_train, axis=1)
         poisoned_model.fit(self.x_train, y_t)
         y_a = np.argmax(y_attack)
@@ -187,7 +198,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
             unit_grad = normalize(self.attack_gradient(attack_point))
             attack_point += self.step * unit_grad
-            lower, upper = self.classifier.clip_values
+            lower, upper = self.estimator.clip_values
             new_attack = np.clip(attack_point, lower, upper)
             new_g = poisoned_model.decision_function(self.x_val)
             k_values = np.where(-new_g > 0)
@@ -210,7 +221,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :rtype: `np.ndarray`
         """
         # pylint: disable=W0212
-        preds = self.classifier._model.predict(vec)
+        preds = self.estimator.model.predict(vec)
         return 2 * preds - 1
 
     def attack_gradient(self, attack_point, tol=0.0001):
@@ -226,8 +237,8 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :rtype: `np.ndarray`
         """
         # pylint: disable=W0212
-        art_model = self.classifier
-        model = self.classifier._model
+        art_model = self.estimator
+        model = self.estimator.model
         grad = np.zeros((1, self.x_val.shape[1]))
         support_vectors = model.support_vectors_
         num_support = len(support_vectors)

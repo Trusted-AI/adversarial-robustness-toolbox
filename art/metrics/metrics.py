@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -31,7 +31,8 @@ from scipy.stats import weibull_min
 from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks import FastGradientMethod, HopSkipJump
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,7 @@ def get_crafter(classifier, attack, params=None):
     Create an attack instance to craft adversarial samples.
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.estimators.classification.Classifier`
     :param attack: adversarial attack name
     :type attack: `str`
     :param params: Parameters specific to the adversarial attack
@@ -86,7 +87,7 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     | Paper link: https://arxiv.org/abs/1511.04599
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.estimators.classification.Classifier`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
     :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
@@ -167,7 +168,7 @@ def loss_sensitivity(classifier, x, y):
     | Paper link: https://arxiv.org/abs/1706.05394
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.estimators.classification.ClassifierGradients`
     :param x: Data sample of shape that can be fed into `classifier`
     :type x: `np.ndarray`
     :param y: Labels for sample `x`, one-hot encoded.
@@ -199,7 +200,7 @@ def clever(
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.estimators.classification.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param nb_batches: Number of repetitions of the estimate
@@ -230,9 +231,7 @@ def clever(
         if target_sort:
             target_classes = np.argsort(y_pred)[0][:-1]
         else:
-            target_classes = [
-                i for i in range(classifier.nb_classes()) if i != pred_class
-            ]
+            target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
     elif isinstance(target, (int, np.integer)):
         target_classes = [target]
     else:
@@ -259,7 +258,7 @@ def clever_u(
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.estimators.classification.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param nb_batches: Number of repetitions of the estimate
@@ -280,7 +279,7 @@ def clever_u(
     # Get a list of untargeted classes
     y_pred = classifier.predict(np.array([x]))
     pred_class = np.argmax(y_pred, axis=1)[0]
-    untarget_classes = [i for i in range(classifier.nb_classes()) if i != pred_class]
+    untarget_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
 
     # Compute CLEVER score for each untargeted class
     score_list = []
@@ -310,7 +309,7 @@ def clever_t(
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model
-    :type classifier: :class:`.Classifier`
+    :type classifier: :class:`art.estimators.classification.Classifier`
     :param x: One input sample
     :type x: `np.ndarray`
     :param target_class: Targeted class
@@ -356,12 +355,7 @@ def clever_t(
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)
     if hasattr(classifier, "clip_values") and classifier.clip_values is not None:
-        np.clip(
-            rand_pool,
-            classifier.clip_values[0],
-            classifier.clip_values[1],
-            out=rand_pool,
-        )
+        np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)
     if norm == 1:
@@ -399,3 +393,44 @@ def clever_t(
     score = np.min([-value[0] / loc, radius])
 
     return score
+
+
+def wasserstein_distance(u_values, v_values, u_weights=None, v_weights=None):
+    """
+    Compute the first Wasserstein distance between two 1D distributions.
+
+    :param u_values: Values of first distribution with shape (nb_samples, feature_dim_1, ..., feature_dim_n)
+    :type u_values: `np.ndarray`
+    :param v_values: Values of second distribution with shape (nb_samples, feature_dim_1, ..., feature_dim_n)
+    :type v_values: `np.ndarray`
+    :param u_weights: Weight for each value. If None equal weights will be used.
+    :type u_weights: `np.ndarray`
+    :param v_weights: Weight for each value. If None equal weights will be used.
+    :type v_weights: `np.ndarray`
+    :return: The Wasserstein distance between the two distributions
+    :rtype: `np.ndarray`
+    """
+    from scipy.stats import wasserstein_distance
+
+    assert u_values.shape == v_values.shape
+    if u_weights is not None:
+        assert v_weights is not None
+    if u_weights is None:
+        assert v_weights is None
+    if u_weights is not None and v_weights is not None:
+        assert u_weights.shape == v_weights.shape
+    if u_weights is not None:
+        assert u_values.shape[0] == u_weights.shape[0]
+
+    u_values = u_values.flatten().reshape(u_values.shape[0], -1)
+    v_values = v_values.flatten().reshape(v_values.shape[0], -1)
+
+    wd = np.zeros(u_values.shape[0])
+
+    for i in range(u_values.shape[0]):
+        if u_weights is None and v_weights is None:
+            wd[i] = wasserstein_distance(u_values[i], v_values[i])
+        elif u_weights is not None and v_weights is not None:
+            wd[i] = wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
+
+    return wd

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -23,7 +23,8 @@ import unittest
 import keras.backend as k
 import numpy as np
 
-from art.attacks import SpatialTransformation
+from art.attacks.evasion.spatial_transformation import SpatialTransformation
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 from tests.utils import TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_kr
@@ -160,7 +161,7 @@ class TestSpatialTransformation(TestBase):
         self.assertIn("Feature vectors detected.", str(context.exception))
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(SpatialTransformation)
+        backend_test_classifier_type_check_fail(SpatialTransformation, [BaseEstimator, NeuralNetworkMixin])
 
 
 if __name__ == "__main__":

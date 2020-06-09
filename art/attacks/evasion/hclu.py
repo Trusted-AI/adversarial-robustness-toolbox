@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -30,7 +30,7 @@ from scipy.optimize import minimize
 from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
-from art.classifiers.GPy import GPyGaussianProcessClassifier
+from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
@@ -45,6 +45,8 @@ class HighConfidenceLowUncertainty(EvasionAttack):
 
     attack_params = ["conf", "unc_increase", "min_val", "max_val"]
 
+    _estimator_requirements = (GPyGaussianProcessClassifier,)
+
     def __init__(self, classifier, conf=0.95, unc_increase=100.0, min_val=0.0, max_val=1.0):
         """
         :param classifier: A trained model of type GPYGaussianProcessClassifier.
@@ -58,9 +60,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         :param max_val: maximal value any feature can take, defaults to 1.0
         :type max_val: `float`
         """
-        super(HighConfidenceLowUncertainty, self).__init__(classifier=classifier)
-        if not isinstance(classifier, GPyGaussianProcessClassifier):
-            raise TypeError("Model must be a GPy Gaussian Process classifier.")
+        super(HighConfidenceLowUncertainty, self).__init__(estimator=classifier)
         params = {"conf": conf, "unc_increase": unc_increase, "min_val": min_val, "max_val": max_val}
         self.set_params(**params)
 
@@ -95,12 +95,12 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         # adding bounds, to not go away from original data
         for i in range(np.shape(x)[1]):
             bounds.append((self.min_val, self.max_val))
-        for i in trange(x.shape[0], desc='HCLU'):  # go through data amd craft
+        for i in trange(x.shape[0], desc="HCLU"):  # go through data amd craft
             # get properties for attack
-            max_uncertainty = self.unc_increase * self.classifier.predict_uncertainty(x_adv[i].reshape(1, -1))
-            class_zero = not self.classifier.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
+            max_uncertainty = self.unc_increase * self.estimator.predict_uncertainty(x_adv[i].reshape(1, -1))
+            class_zero = not self.estimator.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
             init_args = {
-                "classifier": self.classifier,
+                "classifier": self.estimator,
                 "class_zero": class_zero,
                 "max_uncertainty": max_uncertainty,
                 "conf": self.conf,
@@ -110,7 +110,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
             args = {"args": init_args, "orig": x[i].reshape(-1)}
             # finally, run optimization
             x_adv[i] = minimize(minfun, x_adv[i], args=args, bounds=bounds, constraints=[constr_conf, constr_unc])["x"]
-        logger.info("Success rate of HCLU attack: %.2f%%", 100 * compute_success(self.classifier, x, y, x_adv))
+        logger.info("Success rate of HCLU attack: %.2f%%", 100 * compute_success(self.estimator, x, y, x_adv))
         return x_adv
 
     def set_params(self, **kwargs):

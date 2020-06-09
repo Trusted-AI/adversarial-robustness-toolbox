@@ -1,6 +1,7 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
+#
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
 # rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
@@ -33,8 +34,11 @@ import logging
 import numpy as np
 from scipy.optimize import least_squares
 
-from art.classifiers import KerasClassifier, BlackBoxClassifier
 from art.attacks.attack import ExtractionAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.blackbox import BlackBoxClassifier
 
 NUMPY_DTYPE = np.float64
 
@@ -49,7 +53,9 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
     | Paper link: https://arxiv.org/abs/1909.01838
     """
 
-    def __init__(self, classifier, num_neurons):
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
+
+    def __init__(self, classifier, num_neurons=None):
         """
         Create a `FunctionallyEquivalentExtraction` instance.
 
@@ -58,9 +64,9 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         :param num_neurons: The number of neurons in the first dense layer.
         :type num_neurons: `int`
         """
-        super().__init__(classifier)
+        super().__init__(classifier=classifier)
         self.num_neurons = num_neurons
-        self.num_classes = classifier.nb_classes()
+        self.num_classes = classifier.nb_classes
         self.num_features = int(np.prod(classifier.input_shape))
 
         self.vector_u = np.random.normal(0, 1, (1, self.num_features)).astype(dtype=NUMPY_DTYPE)
@@ -150,11 +156,11 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         extracted_classifier = BlackBoxClassifier(
             predict,
-            input_shape=self.classifier.input_shape,
-            nb_classes=self.classifier.nb_classes(),
-            clip_values=self.classifier.clip_values,
-            preprocessing_defences=self.classifier.preprocessing_defences,
-            preprocessing=self.classifier.preprocessing,
+            input_shape=self.estimator.input_shape,
+            nb_classes=self.estimator.nb_classes,
+            clip_values=self.estimator.clip_values,
+            preprocessing_defences=self.estimator.preprocessing_defences,
+            preprocessing=self.estimator.preprocessing,
         )
 
         return extracted_classifier
@@ -172,7 +178,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
         """
         if e_j is not None:
             x = x + e_j
-        return self.classifier.predict(x).astype(NUMPY_DTYPE)
+        return self.estimator.predict(x).astype(NUMPY_DTYPE)
 
     def _get_x(self, var_t):
         """
@@ -431,12 +437,13 @@ if __name__ == "__main__":
     import tensorflow as tf
 
     tf.compat.v1.disable_eager_execution()
+    tf.keras.backend.set_floatx("float64")
 
     from tensorflow.keras.datasets import mnist
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense
 
-    np.random.seed(0)
+    np.random.seed(1)
 
     number_neurons = 16
 

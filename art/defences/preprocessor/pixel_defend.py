@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -150,7 +150,7 @@ class PixelDefend(Preprocessor):
         :param pixel_cnn: Pre-trained PixelCNN model.
         :type pixel_cnn: :class:`.Classifier`
         """
-        from art.classifiers import Classifier
+        from art.estimators.classification.classifier import ClassifierMixin
 
         # Save defence-specific parameters
         super(PixelDefend, self).set_params(**kwargs)
@@ -158,7 +158,7 @@ class PixelDefend(Preprocessor):
         if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
-        if hasattr(self, "pixel_cnn") and not isinstance(self.pixel_cnn, Classifier):
+        if hasattr(self, "pixel_cnn") and not isinstance(self.pixel_cnn, ClassifierMixin):
             raise TypeError("PixelCNN model must be of type Classifier.")
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():

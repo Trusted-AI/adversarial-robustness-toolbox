@@ -10,7 +10,7 @@ import shutil
 from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset
-from art.classifiers import KerasClassifier
+from art.estimators.classification import KerasClassifier
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
@@ -24,6 +24,56 @@ def pytest_addoption(parser):
         help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is tensorflow. "
              "Other options available are {0}".format(art_supported_frameworks)
     )
+
+
+@pytest.fixture
+def get_image_classifier_list_defended(framework):
+    def _get_image_classifier_list_defended(one_classifier=False, **kwargs):
+        sess = None
+        classifier_list = None
+        if framework == "keras":
+            classifier = utils.get_image_classifier_kr()
+            # Get the ready-trained Keras model
+            fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+            classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
+
+        if framework == "tensorflow":
+            logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
+
+        if framework == "pytorch":
+            logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
+
+        if framework == "scikitlearn":
+            logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
+
+        if classifier_list is None:
+            return None, None
+
+        if one_classifier:
+            return classifier_list[0], sess
+
+        return classifier_list, sess
+
+    return _get_image_classifier_list_defended
+
+
+@pytest.fixture
+def get_image_classifier_list_for_attack(get_image_classifier_list, get_image_classifier_list_defended):
+    def get_image_classifier_list_for_attack(attack, defended=False, **kwargs):
+        if defended:
+            classifier_list, _ = get_image_classifier_list_defended(kwargs)
+        else:
+            classifier_list, _ = get_image_classifier_list()
+        if classifier_list is None:
+            return None
+
+        return [
+            potential_classifier
+            for potential_classifier in classifier_list
+            if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
+        ]
+
+    return get_image_classifier_list_for_attack
 
 
 @pytest.fixture(autouse=True)
@@ -86,7 +136,7 @@ def get_tabular_classifier_list(framework):
                 classifier_list = [get_tabular_classifier_kr()]
             else:
                 classifier = get_tabular_classifier_kr()
-                classifier_list = [KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)]
+                classifier_list = [KerasClassifier(model=classifier.model, use_logits=False, channels_first=True)]
 
         if framework == "tensorflow":
             if clipped:
@@ -210,6 +260,7 @@ def get_mnist_dataset(load_mnist_dataset, framework):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = load_mnist_dataset
 
     if framework == "pytorch":
+        x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
         x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
     x_train_mnist_original = x_train_mnist.copy()

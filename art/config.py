@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -69,6 +69,12 @@ if not os.path.exists(_config_path):
             f.write(json.dumps(_config, indent=4))
     except IOError:
         logger.warning("Unable to create configuration file", exc_info=True)
+
+if not os.path.exists(_config["ART_DATA_PATH"]):
+    try:
+        os.makedirs(_config["ART_DATA_PATH"])
+    except OSError:
+        logger.warning("Unable to create folder for ART_DATA_PATH dir.", exc_info=True)
 
 if "ART_DATA_PATH" in _config:
     ART_DATA_PATH = _config["ART_DATA_PATH"]

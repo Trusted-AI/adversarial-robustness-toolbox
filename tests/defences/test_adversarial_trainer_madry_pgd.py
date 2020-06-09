@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import AdversarialTrainerMadryPGD
+from art.defences.trainer.adversarial_trainer_madry_pgd import AdversarialTrainerMadryPGD
 from art.utils import load_mnist
 
 from tests.utils import master_seed, get_image_classifier_tf

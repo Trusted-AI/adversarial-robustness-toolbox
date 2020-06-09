@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -28,10 +28,10 @@ import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import check_and_transform_label_format, compute_success
-from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +44,8 @@ class SaliencyMapMethod(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + ["theta", "gamma", "batch_size"]
+
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(self, classifier, theta=0.1, gamma=1.0, batch_size=1):
         """
@@ -58,9 +60,7 @@ class SaliencyMapMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(SaliencyMapMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
+        super(SaliencyMapMethod, self).__init__(estimator=classifier)
 
         kwargs = {"theta": theta, "gamma": gamma, "batch_size": batch_size}
         self.set_params(**kwargs)
@@ -77,33 +77,33 @@ class SaliencyMapMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Initialize variables
         dims = list(x.shape[1:])
         self._nb_features = np.product(dims)
         x_adv = np.reshape(x.astype(ART_NUMPY_DTYPE), (-1, self._nb_features))
-        preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
+        preds = np.argmax(self.estimator.predict(x, batch_size=self.batch_size), axis=1)
 
         # Determine target classes for attack
         if y is None:
             # Randomly choose target from the incorrect classes for each sample
             from art.utils import random_targets
 
-            targets = np.argmax(random_targets(preds, self.classifier.nb_classes()), axis=1)
+            targets = np.argmax(random_targets(preds, self.estimator.nb_classes), axis=1)
         else:
             targets = np.argmax(y, axis=1)
 
         # Compute perturbation with implicit batching
-        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc='JSMA'):
+        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="JSMA"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
 
             # Main algorithm for each batch
             # Initialize the search space; optimize to remove features that can't be changed
             search_space = np.zeros(batch.shape)
-            if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-                clip_min, clip_max = self.classifier.clip_values
+            if self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
                 if self.theta > 0:
                     search_space[batch < clip_max] = 1
                 else:
@@ -128,7 +128,7 @@ class SaliencyMapMethod(EvasionAttack):
                 all_feat[active_indices, feat_ind[:, 1]] = 1
 
                 # Apply attack with clipping
-                if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
+                if self.estimator.clip_values is not None:
                     # Prepare update depending of theta
                     if self.theta > 0:
                         clip_func, clip_value = np.minimum, clip_max
@@ -156,7 +156,7 @@ class SaliencyMapMethod(EvasionAttack):
                     batch[active_indices] = tmp_batch
 
                 # Recompute model prediction
-                current_pred = np.argmax(self.classifier.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1)
+                current_pred = np.argmax(self.estimator.predict(np.reshape(batch, [batch.shape[0]] + dims)), axis=1)
 
                 # Update active_indices
                 active_indices = np.where(
@@ -171,7 +171,7 @@ class SaliencyMapMethod(EvasionAttack):
 
         logger.info(
             "Success rate of JSMA attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, batch_size=self.batch_size),
         )
 
         return x_adv
@@ -212,7 +212,7 @@ class SaliencyMapMethod(EvasionAttack):
         :return: The top 2 coefficients in `search_space` that maximize / minimize the saliency map
         :rtype: `np.ndarray`
         """
-        grads = self.classifier.class_gradient(x, label=target)
+        grads = self.estimator.class_gradient(x, label=target)
         grads = np.reshape(grads, (-1, self._nb_features))
 
         # Remove gradients for already used features

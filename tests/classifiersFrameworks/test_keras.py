@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -15,34 +15,32 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import os
 import logging
+import os
 
-import pytest
-import numpy as np
 import keras
-from keras.layers import Dense, Conv2D, MaxPooling2D, Dropout, Input, Flatten
-from keras.models import Model
-from keras.preprocessing.image import ImageDataGenerator
-from keras.callbacks import LearningRateScheduler
+import numpy as np
+import pytest
 from keras.applications.resnet50 import ResNet50, decode_predictions
-from keras.preprocessing.image import load_img, img_to_array
+from keras.callbacks import LearningRateScheduler
+from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+from keras.models import Model
+from keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
 
-from art.classifiers import KerasClassifier
-from art.classifiers.keras import generator_fit
-from art.defences import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.data_generators import KerasDataGenerator
-
-from tests.utils import ExpectedValue
+from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.estimators.classification.keras import KerasClassifier, generator_fit
+from art.utils import Deprecated
 from tests.classifiersFrameworks.utils import (
-    backend_test_nb_classes,
-    backend_test_input_shape,
-    backend_test_fit_generator,
-    backend_test_loss_gradient,
-    backend_test_layers,
     backend_test_class_gradient,
+    backend_test_fit_generator,
+    backend_test_input_shape,
+    backend_test_layers,
+    backend_test_loss_gradient,
+    backend_test_nb_classes,
     backend_test_repr,
 )
+from tests.utils import ExpectedValue
 
 logger = logging.getLogger(__name__)
 
@@ -155,9 +153,11 @@ def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_i
         cval=0,
     )
     keras_gen.fit(x_train_mnist)
-    data_gen = KerasDataGenerator(iterator=keras_gen.flow(x_train_mnist, y_train_mnist,
-                                                          batch_size=default_batch_size),
-                                  size=x_train_mnist.shape[0], batch_size=default_batch_size)
+    data_gen = KerasDataGenerator(
+        iterator=keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size),
+        size=x_train_mnist.shape[0],
+        batch_size=default_batch_size,
+    )
     classifier.fit_generator(generator=data_gen, nb_epochs=5)
     accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]
     logger.info("Accuracy: %.2f%%", (accuracy_2 * 100))
@@ -194,7 +194,7 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
     predictions = classifier.predict(x_test_mnist)
     assert predictions.shape == y_test_mnist.shape
 
-    assert classifier.nb_classes() == 10
+    assert classifier.nb_classes == 10
 
     class_gradients = classifier.class_gradient(x_test_mnist[:11])
     assert class_gradients.shape == tuple([11, 10] + list(x_test_mnist[1].shape))
@@ -213,7 +213,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
     smooth = SpatialSmoothing()
     classifier_, _ = get_image_classifier_list(one_classifier=True)
     classifier = KerasClassifier(
-        clip_values=clip_values, model=classifier_._model, preprocessing_defences=[fs, jpeg, smooth]
+        clip_values=clip_values, model=classifier_.model, preprocessing_defences=[fs, jpeg, smooth]
     )
     assert len(classifier.preprocessing_defences) == 3
 
@@ -226,7 +226,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
     x_test_defense, _ = smooth(x_test_defense, y_test_mnist)
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
-    predictions_check = classifier._model.predict(x_test_defense)
+    predictions_check = classifier.model.predict(x_test_defense)
 
     # Check that the prediction results match
     np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
@@ -721,11 +721,13 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
 @pytest.mark.only_with_platform("keras")
 def test_repr(get_image_classifier_list):
     backend_test_repr(
-        get_image_classifier_list,
+        get_image_classifier_list(),
         [
-            "art.classifiers.keras.KerasClassifier",
-            "use_logits=False, channel_index=3",
-            "clip_values=(0, 1), preprocessing_defences=None, " "postprocessing_defences=None, preprocessing=(0, 1)",
+            "art.estimators.classification.keras.KerasClassifier",
+            f"use_logits=False, channel_index={Deprecated}, channels_first=False",
+            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, "
+            "postprocessing_defences=None, "
+            "preprocessing=(0, 1)",
             "input_layer=0, output_layer=0",
         ],
     )

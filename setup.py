@@ -1,7 +1,7 @@
 import codecs
 import os
-from setuptools import setup
-from setuptools import find_packages
+
+from setuptools import find_packages, setup
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -13,27 +13,38 @@ install_requires = [
     "six",
     "setuptools",
     "scikit-learn==0.22.1",
-    "Pillow==7.0.0",
+    "Pillow==6.2.2",
     "tqdm",
 ]
 
-# Comment out because of compatibility issues with numpy versions
-# 'catboost',
 tests_require = [
-    "pytest-pep8",
-    "codecov" "h5py",
-    "requests",
-    "keras>=2.2.5",
-    "mxnet",
-    "torch>=1.2.0",
-    "tensorflow>=1.14.0",
+    "matplotlib==3.2.1",
+    "numpy==1.18.1",
+    "scipy==1.4.1",
+    "six==1.13.0",
     "scikit-learn==0.22.1",
-    "xgboost==1.0.0",
-    "lightgbm==2.3.1",
-    "GPy==1.9.9",
-    "numpy==1.18.1" "scipy==1.4.1",
+    "Pillow==6.0.0",
+    "pytest-pep8==1.0.6",
+    "typing_extensions==3.7.4.2",
+    "codecov==2.0.22",
+    "h5py==2.10.0",
+    "requests==2.23.0",
     "statsmodels==0.11.0",
     "cma==2.7.0",
+    "pydub==0.23",
+    "tensorflow==2.1.0",
+    "keras==2.3.1",
+    "tensorflow_addons==0.8.2",
+    "mxnet==1.6.0",
+    "xgboost==1.0.0",
+    "lightgbm==2.3.1",
+    "torch==1.3.1",
+    "torchvision==0.4.2",
+    "catboost==0.22",
+    "GPy==1.9.9",
+    "pytest-mock==3.1.0",
+    "resampy==0.2.2",
+    "ffmpeg-python==0.2.0",
 ]
 
 docs_require = ["sphinx >= 1.4", "sphinx_rtd_theme"]

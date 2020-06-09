@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -24,6 +24,7 @@ import logging
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -61,10 +62,13 @@ class GaussianAugmentation(Preprocessor):
         """
         super(GaussianAugmentation, self).__init__()
         self._is_fitted = True
-        if augmentation and apply_fit and apply_predict:
+        if augmentation and not apply_fit and apply_predict:
             raise ValueError(
                 "If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict` must be `False`."
             )
+        if augmentation and not (apply_fit or apply_predict):
+            raise ValueError("If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`.")
+
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
         self.set_params(sigma=sigma, augmentation=augmentation, ratio=ratio, clip_values=clip_values)
@@ -99,7 +103,7 @@ class GaussianAugmentation(Preprocessor):
             indices = np.random.randint(0, x.shape[0], size=size)
 
             # Generate noisy samples
-            x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x.shape[1:])
+            x_aug = np.random.normal(x[indices], scale=self.sigma, size=(size,) + x.shape[1:]).astype(ART_NUMPY_DTYPE)
             x_aug = np.vstack((x, x_aug))
             if y is not None:
                 y_aug = np.concatenate((y, y[indices]))
@@ -107,7 +111,7 @@ class GaussianAugmentation(Preprocessor):
                 y_aug = y
             logger.info("Augmented dataset size: %d", x_aug.shape[0])
         else:
-            x_aug = np.random.normal(x, scale=self.sigma, size=x.shape)
+            x_aug = np.random.normal(x, scale=self.sigma, size=x.shape).astype(ART_NUMPY_DTYPE)
             y_aug = y
             logger.info("Created %i samples with Gaussian noise.")
 

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -46,7 +46,7 @@ class DefensiveDistillation(Transformer):
         Create an instance of the defensive distillation defence.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :type classifier: :class:`art.estimators.classification.Classifier`
         :param batch_size: Size of batches.
         :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
@@ -71,9 +71,9 @@ class DefensiveDistillation(Transformer):
         :param transformed_classifier: A classifier to be transformed for increased robustness. Note that, the
             objective loss function used for fitting inside the input transformed_classifier must support soft labels,
             i.e. probability labels.
-        :type transformed_classifier: :class:`.Classifier`
+        :type transformed_classifier: :class:`art.estimators.classification.Classifier`
         :return: The transformed classifier.
-        :rtype: :class:`.Classifier`
+        :rtype: :class:`art.estimators.classification.Classifier`
         """
         # Check if the trained classifier produces probability outputs
         preds = self.classifier.predict(x=x, batch_size=self.batch_size)

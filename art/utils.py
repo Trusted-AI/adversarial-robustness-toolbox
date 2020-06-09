@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -20,13 +20,135 @@ Module providing convenience functions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
 import math
+import os
+import warnings
+from functools import wraps
+from inspect import signature
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
+
+
+# ------------------------------------------------------------------------------------------------- DEPRECATION
+
+
+class _Deprecated:
+    """
+    Create Deprecated() singleton object.
+    """
+
+    _instance = None
+
+    def __new__(cls):
+        if _Deprecated._instance is None:
+            _Deprecated._instance = object.__new__(cls)
+        return _Deprecated._instance
+
+
+Deprecated = _Deprecated()
+
+
+def deprecated(end_version, *, reason="", replaced_by=""):
+    """
+    Deprecate a function or method and raise a `DeprecationWarning`.
+
+    The `@deprecated` decorator is used to deprecate functions and methods. Several cases are supported. For example
+    one can use it to deprecate a function that has become redundant or rename a function. The following code examples
+    provide different use cases of how to use decorator.
+
+    .. code-block:: python
+
+      @deprecated("0.1.5", replaced_by="sum")
+      def simple_addition(a, b):
+          return a + b
+
+    :param end_version: Release version of removal.
+    :type end_version: `str`
+    :param reason: Additional deprecation reason.
+    :type reason: `str`
+    :param replaced_by: Function that replaces deprecated function.
+    :type replaced_by: `str`
+    """
+
+    def decorator(function):
+        reason_msg = "\n" + reason if reason else reason
+        replaced_msg = f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
+        deprecated_msg = (
+            f"Function '{function.__name__}' is deprecated and will be removed in future release {end_version}."
+        )
+
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            warnings.simplefilter("always", category=DeprecationWarning)
+            warnings.warn(deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2)
+            warnings.simplefilter("default", category=DeprecationWarning)
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def deprecated_keyword_arg(identifier, end_version, *, reason="", replaced_by=""):
+    """
+    Deprecate a keyword argument and raise a `DeprecationWarning`.
+
+    The `@deprecated_keyword_arg` decorator is used to deprecate keyword arguments. The deprecated keyword argument must
+    default to `Deprecated`. Several use cases are supported. For example one can use it to to rename a keyword
+    identifier. The following code examples provide different use cases of how to use the decorator.
+
+    .. code-block:: python
+
+      @deprecated_keyword_arg("print", "1.1.0", replaced_by="verbose")
+      def simple_addition(a, b, print=Deprecated, verbose=False):
+          if verbose:
+              print(a + b)
+          return a + b
+
+      @deprecated_keyword_arg("verbose", "1.1.0")
+      def simple_addition(a, b, verbose=Deprecated):
+          return a + b
+
+    :param identifier: Keyword identifier.
+    :type identifier: `str`
+    :param end_version: Release version of removal.
+    :type end_version: `str`
+    :param reason: Additional deprecation reason.
+    :type reason: `str`
+    :param replaced_by: Function that replaces deprecated function.
+    :type replaced_by: `str`
+    """
+
+    def decorator(function):
+        reason_msg = "\n" + reason if reason else reason
+        replaced_msg = f" It will be replaced by '{replaced_by}'." if replaced_by else replaced_by
+        deprecated_msg = (
+            f"Keyword argument '{identifier}' in '{function.__name__}' is deprecated and will be removed in"
+            f" future release {end_version}."
+        )
+
+        @wraps(function)
+        def wrapper(*args, **kwargs):
+            params = signature(function).bind(*args, **kwargs)
+            params.apply_defaults()
+
+            if params.signature.parameters[identifier].default is not Deprecated:
+                raise ValueError("Deprecated keyword argument must default to the Decorator singleton.")
+            if replaced_by != "" and replaced_by not in params.arguments:
+                raise ValueError("Deprecated keyword replacement not found in function signature.")
+
+            if params.arguments[identifier] is not Deprecated:
+                warnings.simplefilter("always", category=DeprecationWarning)
+                warnings.warn(deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2)
+                warnings.simplefilter("default", category=DeprecationWarning)
+            return function(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
 
 
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
@@ -126,7 +248,7 @@ def original_to_tanh(x_original, clip_min, clip_max, tanh_smoother=0.999999):
     return x_tanh
 
 
-def tanh_to_original(x_tanh, clip_min, clip_max, tanh_smoother=0.999999):
+def tanh_to_original(x_tanh, clip_min, clip_max):
     """
     Transform input from tanh to original space.
 
@@ -136,13 +258,10 @@ def tanh_to_original(x_tanh, clip_min, clip_max, tanh_smoother=0.999999):
     :type clip_min: `float` or `np.ndarray`
     :param clip_max: Maximum clipping value.
     :type clip_max: `float` or `np.ndarray`
-    :param tanh_smoother: Scalar for dividing arguments of tanh to avoid division by zero.
-    :type tanh_smoother: `float`
     :return: An array holding the transformed input.
     :rtype: `np.ndarray`
     """
-    x_original = (np.tanh(x_tanh) / tanh_smoother + 1) / 2
-    return x_original * (clip_max - clip_min) + clip_min
+    return (np.tanh(x_tanh) + 1.0) / 2.0 * (clip_max - clip_min) + clip_min
 
 
 # --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
@@ -164,6 +283,28 @@ def to_categorical(labels, nb_classes=None):
         nb_classes = np.max(labels) + 1
     categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
     categorical[np.arange(labels.shape[0]), np.squeeze(labels)] = 1
+    return categorical
+
+
+def float_to_categorical(labels, nb_classes=None):
+    """
+    Convert an array of floating point labels to binary class matrix.
+
+    :param labels: An array of integer labels of shape `(nb_samples,)`
+    :type labels: `np.ndarray`
+    :param nb_classes: The number of classes (possible labels)
+    :type nb_classes: `int`
+    :return: A binary matrix representation of `y` in the shape `(nb_samples, nb_classes)`
+    :rtype: `np.ndarray`
+    """
+    labels = np.array(labels)
+    unique = np.unique(labels)
+    unique.sort()
+    indexes = [np.where(unique == value)[0] for value in labels]
+    if nb_classes is None:
+        nb_classes = len(unique) + 1
+    categorical = np.zeros((labels.shape[0], nb_classes), dtype=np.float32)
+    categorical[np.arange(labels.shape[0]), np.squeeze(indexes)] = 1
     return categorical
 
 
@@ -240,7 +381,7 @@ def least_likely_class(x, classifier):
     :return: Least-likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes())
+    return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
 def second_most_likely_class(x, classifier):
@@ -255,7 +396,7 @@ def second_most_likely_class(x, classifier):
     :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
     :rtype: `np.ndarray`
     """
-    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes())
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes)
 
 
 def get_label_conf(y_vec):
@@ -284,7 +425,7 @@ def get_labels_np_array(preds):
     return y
 
 
-def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
+def compute_success_array(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
     """
     Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
 
@@ -306,12 +447,39 @@ def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_si
     """
     adv_preds = np.argmax(classifier.predict(x_adv, batch_size=batch_size), axis=1)
     if targeted:
-        rate = np.sum(adv_preds == np.argmax(labels, axis=1)) / x_adv.shape[0]
+        attack_success = adv_preds == np.argmax(labels, axis=1)
     else:
         preds = np.argmax(classifier.predict(x_clean, batch_size=batch_size), axis=1)
-        rate = np.sum(adv_preds != preds) / x_adv.shape[0]
+        attack_success = adv_preds != preds
 
-    return rate
+    return attack_success
+
+
+def compute_success(classifier, x_clean, labels, x_adv, targeted=False, batch_size=1):
+    """
+    Compute the success rate of an attack based on clean samples, adversarial samples and targets or correct labels.
+
+    :param classifier: Classifier used for prediction.
+    :type classifier: :class:`.Classifier`
+    :param x_clean: Original clean samples.
+    :type x_clean: `np.ndarray`
+    :param labels: Correct labels of `x_clean` if the attack is untargeted, or target labels of the attack otherwise.
+    :type labels: `np.ndarray`
+    :param x_adv: Adversarial samples to be evaluated.
+    :type x_adv: `np.ndarray`
+    :param targeted: `True` if the attack is targeted. In that case, `labels` are treated as target classes instead of
+           correct labels of the clean samples.s
+    :type targeted: `bool`
+    :param batch_size: Batch size
+    :type batch_size: `int`
+    :param rate: `True` in order to return the success rate; `False` in order to return array with information for each
+           individual input.
+    :type rate: `bool`
+    :return: Percentage of successful adversarial samples.
+    :rtype: `float`
+    """
+    attack_success = compute_success_array(classifier, x_clean, labels, x_adv, targeted, batch_size)
+    return np.sum(attack_success) / x_adv.shape[0]
 
 
 def compute_accuracy(preds, labels, abstain=True):
@@ -463,6 +631,7 @@ def load_stl():
     min_, max_ = 0.0, 1.0
 
     # Download and extract data if needed
+
     path = get_file(
         "stl10_binary",
         path=ART_DATA_PATH,
@@ -629,6 +798,7 @@ def get_file(filename, url, path=None, extract=False):
         path_ = os.path.expanduser(path)
     if not os.access(path_, os.W_OK):
         path_ = os.path.join("/tmp", ".art")
+
     if not os.path.exists(path_):
         os.makedirs(path_)
 
@@ -648,6 +818,12 @@ def get_file(filename, url, path=None, extract=False):
             try:
                 from six.moves.urllib.error import HTTPError, URLError
                 from six.moves.urllib.request import urlretrieve
+
+                # The following two lines should prevent occasionally occurring
+                # [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed (_ssl.c:847)
+                import ssl
+
+                ssl._create_default_https_context = ssl._create_unverified_context
 
                 urlretrieve(url, full_path)
             except HTTPError as exception:
@@ -763,9 +939,9 @@ def performance_diff(model1, model2, test_data, test_labels, perf_function="accu
     Note: For multi-label classification, f1 scores will use 'micro' averaging unless otherwise specified.
 
     :param model1: A trained ART classifier
-    :type model1: `art.classifiers.classifier.Classifier`
+    :type model1: `art.estimators.classification.classifier.Classifier`
     :param model2: A trained ART classifier
-    :type model2: `art.classifiers.classifier.Classifier`
+    :type model2: `art.estimators.classification.classifier.Classifier`
     :param test_data: The data to test both model's performance
     :type test_data: `np.ndarray`
     :param test_labels: The labels to the testing data

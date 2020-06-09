@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -23,7 +23,9 @@ import unittest
 import keras.backend as k
 import numpy as np
 
-from art.attacks import ZooAttack
+from art.attacks.evasion.zoo import ZooAttack
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import random_targets
 
 from tests.utils import TestBase, get_image_classifier_kr, get_image_classifier_pt
@@ -86,7 +88,7 @@ class TestZooAttack(TestBase):
 
         # Targeted attack
         zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=30, binary_search_steps=8, batch_size=128)
-        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
         x_test_mnist_adv = zoo.generate(self.x_test_mnist, **params)
         self.assertFalse((self.x_test_mnist == x_test_mnist_adv).all())
         self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
@@ -127,7 +129,7 @@ class TestZooAttack(TestBase):
 
         # Targeted attack
         # zoo = ZooAttack(classifier=krc, targeted=True, batch_size=5)
-        # params = {'y': random_targets(self.y_test, krc.nb_classes())}
+        # params = {'y': random_targets(self.y_test, krc.nb_classes)}
         # x_test_adv = zoo.generate(self.x_test, **params)
         #
         # self.assertFalse((self.x_test == x_test_adv).all())
@@ -143,7 +145,7 @@ class TestZooAttack(TestBase):
         # zoo = ZooAttack(classifier=krc, targeted=False, max_iter=20)
         zoo = ZooAttack(classifier=krc, targeted=False, batch_size=5, max_iter=10, binary_search_steps=3)
         # x_test_adv = zoo.generate(x_test)
-        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes())}
+        params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
         x_test_mnist_adv = zoo.generate(self.x_test_mnist, **params)
 
         # x_test_adv_true = [0.00000000e+00, 2.50167388e-04, 1.50529508e-04, 4.69674182e-04,
@@ -185,7 +187,7 @@ class TestZooAttack(TestBase):
 
         # First attack
         # zoo = ZooAttack(classifier=ptc, targeted=True, max_iter=10, binary_search_steps=10)
-        # params = {'y': random_targets(self.y_test, ptc.nb_classes())}
+        # params = {'y': random_targets(self.y_test, ptc.nb_classes)}
         # x_test_adv = zoo.generate(x_test, **params)
         # self.assertFalse((x_test == x_test_adv).all())
         # self.assertLessEqual(np.amax(x_test_adv), 1.0)
@@ -220,7 +222,7 @@ class TestZooAttack(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ZooAttack)
+        backend_test_classifier_type_check_fail(ZooAttack, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":

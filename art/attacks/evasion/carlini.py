@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -32,11 +32,11 @@ import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import ClassifierGradients
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
 from art.utils import check_and_transform_label_format
-from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +62,8 @@ class CarliniL2Method(EvasionAttack):
         "max_doubling",
         "batch_size",
     ]
+
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
         self,
@@ -107,9 +109,7 @@ class CarliniL2Method(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :type batch_size: `int`
         """
-        super(CarliniL2Method, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
+        super(CarliniL2Method, self).__init__(estimator=classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -149,7 +149,7 @@ class CarliniL2Method(EvasionAttack):
         :rtype: `(float, float, float)`
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
-        z_predicted = self.classifier.predict(
+        z_predicted = self.estimator.predict(
             np.array(x_adv, dtype=ART_NUMPY_DTYPE), logits=True, batch_size=self.batch_size
         )
         z_target = np.sum(z_predicted * target, axis=1)
@@ -200,8 +200,8 @@ class CarliniL2Method(EvasionAttack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
+        loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x.shape)
 
         c_mult = c_weight
@@ -228,11 +228,11 @@ class CarliniL2Method(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            clip_min, clip_max = self.classifier.clip_values
+        if self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
         else:
             clip_min, clip_max = np.amin(x), np.amax(x)
 
@@ -242,7 +242,7 @@ class CarliniL2Method(EvasionAttack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -345,9 +345,7 @@ class CarliniL2Method(EvasionAttack):
 
                         x_adv1 = x_adv_batch_tanh[active_and_do_halving]
                         new_x_adv_batch_tanh = x_adv1 + lr_mult * perturbation_tanh[do_halving]
-                        new_x_adv_batch = tanh_to_original(
-                            new_x_adv_batch_tanh, clip_min, clip_max, self._tanh_smoother
-                        )
+                        new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                         _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
                             x_batch[active_and_do_halving],
                             new_x_adv_batch,
@@ -383,9 +381,7 @@ class CarliniL2Method(EvasionAttack):
 
                         x_adv2 = x_adv_batch_tanh[active_and_do_doubling]
                         new_x_adv_batch_tanh = x_adv2 + lr_mult * perturbation_tanh[do_doubling]
-                        new_x_adv_batch = tanh_to_original(
-                            new_x_adv_batch_tanh, clip_min, clip_max, self._tanh_smoother
-                        )
+                        new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                         _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
                             x_batch[active_and_do_doubling],
                             new_x_adv_batch,
@@ -415,9 +411,7 @@ class CarliniL2Method(EvasionAttack):
                         x_adv_batch_tanh[active_and_update_adv] = x_adv4 + best_lr1
 
                         x_adv6 = x_adv_batch_tanh[active_and_update_adv]
-                        x_adv_batch[active_and_update_adv] = tanh_to_original(
-                            x_adv6, clip_min, clip_max, self._tanh_smoother
-                        )
+                        x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv6, clip_min, clip_max)
                         (
                             z_logits[active_and_update_adv],
                             l2dist[active_and_update_adv],
@@ -453,7 +447,7 @@ class CarliniL2Method(EvasionAttack):
 
         logger.info(
             "Success rate of C&W L_2 attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv
@@ -522,6 +516,8 @@ class CarliniLInfMethod(EvasionAttack):
         "batch_size",
     ]
 
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
+
     def __init__(
         self,
         classifier,
@@ -562,8 +558,6 @@ class CarliniLInfMethod(EvasionAttack):
         :type expectation: :class:`.ExpectationOverTransformations`
         """
         super(CarliniLInfMethod, self).__init__(classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierGradients], classifier)
 
         kwargs = {
             "confidence": confidence,
@@ -592,7 +586,7 @@ class CarliniLInfMethod(EvasionAttack):
         :return: A tuple holding the current predictions and overall loss.
         :rtype: `(float, float)`
         """
-        z_predicted = self.classifier.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
+        z_predicted = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
         z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
@@ -631,8 +625,8 @@ class CarliniLInfMethod(EvasionAttack):
             i_add = np.argmax(target, axis=1)
             i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
 
-        loss_gradient = self.classifier.class_gradient(x_adv, label=i_add)
-        loss_gradient -= self.classifier.class_gradient(x_adv, label=i_sub)
+        loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
+        loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
         loss_gradient = loss_gradient.reshape(x_adv.shape)
 
         loss_gradient *= clip_max - clip_min
@@ -653,11 +647,11 @@ class CarliniLInfMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes())
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            clip_min_per_pixel, clip_max_per_pixel = self.classifier.clip_values
+        if self.estimator.clip_values is not None:
+            clip_min_per_pixel, clip_max_per_pixel = self.estimator.clip_values
         else:
             clip_min_per_pixel, clip_max_per_pixel = np.amin(x), np.amax(x)
 
@@ -667,7 +661,7 @@ class CarliniLInfMethod(EvasionAttack):
 
         # No labels provided, use model prediction as correct class
         if y is None:
-            y = get_labels_np_array(self.classifier.predict(x, batch_size=self.batch_size))
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
@@ -809,7 +803,7 @@ class CarliniLInfMethod(EvasionAttack):
 
         logger.info(
             "Success rate of C&W L_inf attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv

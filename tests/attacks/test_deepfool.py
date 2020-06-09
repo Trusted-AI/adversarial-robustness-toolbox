@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -19,18 +19,24 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
+
 import keras
 import numpy as np
 
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients, Classifier
-from art.attacks import DeepFool
-from art.classifiers import KerasClassifier
+from art.attacks.evasion.deepfool import DeepFool
+from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.keras import KerasClassifier
 from art.utils import get_labels_np_array
-
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import (
+    TestBase,
+    get_image_classifier_kr,
+    get_image_classifier_pt,
+    get_image_classifier_tf,
+    get_tabular_classifier_kr,
+    get_tabular_classifier_pt,
+    get_tabular_classifier_tf,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +191,7 @@ class TestDeepFool(TestBase):
         logger.info("Accuracy on adversarial test examples: %.2f%%", (accuracy * 100))
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(DeepFool, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(DeepFool, [ClassGradientsMixin])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
@@ -205,7 +211,7 @@ class TestDeepFool(TestBase):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         attack = DeepFool(classifier, max_iter=5, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())

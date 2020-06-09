@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -31,6 +31,7 @@ from scipy.ndimage import rotate, shift
 from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +52,8 @@ class SpatialTransformation(EvasionAttack):
         "num_rotations",
     ]
 
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
+
     def __init__(self, classifier, max_translation=0.0, num_translations=1, max_rotation=0.0, num_rotations=1):
         """
         :param classifier: A trained classifier.
@@ -66,7 +69,7 @@ class SpatialTransformation(EvasionAttack):
         :param num_rotations: The number of rotations to search on grid spacing.
         :type num_rotations: `int`
         """
-        super(SpatialTransformation, self).__init__(classifier=classifier)
+        super(SpatialTransformation, self).__init__(estimator=classifier)
         kwargs = {
             "max_translation": max_translation,
             "num_translations": num_translations,
@@ -100,7 +103,7 @@ class SpatialTransformation(EvasionAttack):
 
         if self.attack_trans_x is None or self.attack_trans_y is None or self.attack_rot is None:
 
-            y_pred = self.classifier.predict(x, batch_size=1)
+            y_pred = self.estimator.predict(x, batch_size=1)
             y_pred_max = np.argmax(y_pred, axis=1)
 
             nb_instances = len(x)
@@ -136,7 +139,7 @@ class SpatialTransformation(EvasionAttack):
             rot = 0.0
 
             # Initialize progress bar
-            pbar = tqdm(len(grid_trans_x) * len(grid_trans_y) * len(grid_rot), desc='Spatial transformation')
+            pbar = tqdm(len(grid_trans_x) * len(grid_trans_y) * len(grid_rot), desc="Spatial transformation")
 
             for trans_x_i in grid_trans_x:
                 for trans_y_i in grid_trans_y:
@@ -146,7 +149,7 @@ class SpatialTransformation(EvasionAttack):
                         x_adv_i = self._perturb(x, trans_x_i, trans_y_i, rot_i)
 
                         # Compute the error rate
-                        y_adv_i = np.argmax(self.classifier.predict(x_adv_i, batch_size=1), axis=1)
+                        y_adv_i = np.argmax(self.estimator.predict(x_adv_i, batch_size=1), axis=1)
                         fooling_rate_i = np.sum(y_pred_max != y_adv_i) / nb_instances
 
                         if fooling_rate_i > fooling_rate:
@@ -174,17 +177,17 @@ class SpatialTransformation(EvasionAttack):
         return x_adv
 
     def _perturb(self, x, trans_x, trans_y, rot):
-        if self.classifier.channel_index == 3:
+        if not self.estimator.channels_first:
             x_adv = shift(x, [0, trans_x, trans_y, 0])
             x_adv = rotate(x_adv, angle=rot, axes=(1, 2), reshape=False)
-        elif self.classifier.channel_index == 1:
+        elif self.estimator.channels_first:
             x_adv = shift(x, [0, 0, trans_x, trans_y])
             x_adv = rotate(x_adv, angle=rot, axes=(2, 3), reshape=False)
         else:
-            raise ValueError("Unsupported channel index.")
+            raise ValueError("Unsupported channel_first value.")
 
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            np.clip(x_adv, self.classifier.clip_values[0], self.classifier.clip_values[1], out=x_adv)
+        if self.estimator.clip_values is not None:
+            np.clip(x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1], out=x_adv)
 
         return x_adv
 

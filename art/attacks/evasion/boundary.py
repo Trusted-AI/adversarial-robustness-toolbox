@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -29,7 +29,8 @@ import numpy as np
 from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.classifiers.classifier import Classifier
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
@@ -56,9 +57,11 @@ class BoundaryAttack(EvasionAttack):
         "batch_size",
     ]
 
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+
     def __init__(
         self,
-        classifier,
+        estimator,
         targeted=True,
         delta=0.01,
         epsilon=0.01,
@@ -71,8 +74,8 @@ class BoundaryAttack(EvasionAttack):
         """
         Create a boundary attack instance.
 
-        :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param estimator: A trained classifier.
+        :type estimator: :class:`.ClassifierMixin`
         :param targeted: Should the attack target one specific class.
         :type targeted: `bool`
         :param delta: Initial step size for the orthogonal step.
@@ -90,7 +93,7 @@ class BoundaryAttack(EvasionAttack):
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         :type init_size: `int`
         """
-        super(BoundaryAttack, self).__init__(classifier=classifier)
+        super(BoundaryAttack, self).__init__(estimator=estimator)
 
         params = {
             "targeted": targeted,
@@ -104,15 +107,6 @@ class BoundaryAttack(EvasionAttack):
             "batch_size": 1,
         }
         self.set_params(**params)
-
-    @classmethod
-    def is_valid_classifier_type(cls, classifier):
-        """
-        Checks whether the classifier provided is a classifer which this class can perform an attack on
-        :param classifier:
-        :return:
-        """
-        return True if isinstance(classifier, Classifier) else False
 
     def generate(self, x, y=None, **kwargs):
         """
@@ -128,22 +122,22 @@ class BoundaryAttack(EvasionAttack):
         :return: An array holding the adversarial examples.
         :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes(), return_one_hot=False)
+        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         # Get clip_min and clip_max from the classifier or infer them from data
-        if hasattr(self.classifier, "clip_values") and self.classifier.clip_values is not None:
-            clip_min, clip_max = self.classifier.clip_values
+        if self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
         else:
             clip_min, clip_max = np.min(x), np.max(x)
 
         # Prediction from the original images
-        preds = np.argmax(self.classifier.predict(x, batch_size=self.batch_size), axis=1)
+        preds = np.argmax(self.estimator.predict(x, batch_size=self.batch_size), axis=1)
 
         # Prediction from the initial adversarial examples if not None
         x_adv_init = kwargs.get("x_adv_init")
 
         if x_adv_init is not None:
-            init_preds = np.argmax(self.classifier.predict(x_adv_init, batch_size=self.batch_size), axis=1)
+            init_preds = np.argmax(self.estimator.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
             x_adv_init = [None] * len(x)
@@ -156,7 +150,7 @@ class BoundaryAttack(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Generate the adversarial samples
-        for ind, val in enumerate(tqdm(x_adv, desc='Boundary attack')):
+        for ind, val in enumerate(tqdm(x_adv, desc="Boundary attack")):
             if self.targeted:
                 x_adv[ind] = self._perturb(
                     x=val,
@@ -179,11 +173,11 @@ class BoundaryAttack(EvasionAttack):
                 )
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes())
+            y = to_categorical(y, self.estimator.nb_classes)
 
         logger.info(
             "Success rate of Boundary attack: %.2f%%",
-            100 * compute_success(self.classifier, x, y, x_adv, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, x_adv, self.targeted, batch_size=self.batch_size),
         )
 
         return x_adv
@@ -257,7 +251,7 @@ class BoundaryAttack(EvasionAttack):
                     potential_adv = np.clip(potential_adv, clip_min, clip_max)
                     potential_advs.append(potential_adv)
 
-                preds = np.argmax(self.classifier.predict(np.array(potential_advs), batch_size=self.batch_size), axis=1)
+                preds = np.argmax(self.estimator.predict(np.array(potential_advs), batch_size=self.batch_size), axis=1)
                 satisfied = preds == target
                 delta_ratio = np.mean(satisfied)
 
@@ -279,7 +273,7 @@ class BoundaryAttack(EvasionAttack):
                 perturb *= self.curr_epsilon
                 potential_advs = x_advs + perturb
                 potential_advs = np.clip(potential_advs, clip_min, clip_max)
-                preds = np.argmax(self.classifier.predict(potential_advs, batch_size=self.batch_size), axis=1)
+                preds = np.argmax(self.estimator.predict(potential_advs, batch_size=self.batch_size), axis=1)
                 satisfied = preds == target
                 epsilon_ratio = np.mean(satisfied)
 
@@ -311,7 +305,7 @@ class BoundaryAttack(EvasionAttack):
         :rtype: `np.ndarray`
         """
         # Generate perturbation randomly
-        perturb = np.random.randn(*self.classifier.input_shape).astype(ART_NUMPY_DTYPE)
+        perturb = np.random.randn(*self.estimator.input_shape).astype(ART_NUMPY_DTYPE)
 
         # Rescale the perturbation
         perturb /= np.linalg.norm(perturb)
@@ -320,20 +314,22 @@ class BoundaryAttack(EvasionAttack):
         # Project the perturbation onto sphere
         direction = original_sample - current_sample
 
-        if len(self.classifier.input_shape) == 3:
-            perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
-            direction = np.swapaxes(direction, 0, self.classifier.channel_index - 1)
+        if len(self.estimator.input_shape) == 3:
+            channel_index = 1 if self.estimator.channels_first else 3
+            perturb = np.swapaxes(perturb, 0, channel_index - 1)
+            direction = np.swapaxes(direction, 0, channel_index - 1)
             for i in range(direction.shape[0]):
                 direction[i] /= np.linalg.norm(direction[i])
                 perturb[i] -= np.dot(np.dot(perturb[i], direction[i].T), direction[i])
 
-            perturb = np.swapaxes(perturb, 0, self.classifier.channel_index - 1)
-        elif len(self.classifier.input_shape) == 1:
+            perturb = np.swapaxes(perturb, 0, channel_index - 1)
+        elif len(self.estimator.input_shape) == 1:
             direction /= np.linalg.norm(direction)
             perturb -= np.dot(perturb, direction.T) * direction
         else:
             raise ValueError("Input shape not recognised.")
-
+        hypotenuse = np.sqrt(1 + delta ** 2)
+        perturb = ((1 - hypotenuse) * (current_sample - original_sample) + perturb) / hypotenuse
         return perturb
 
     def _init_sample(self, x, y, y_p, init_pred, adv_init, clip_min, clip_max):
@@ -373,7 +369,7 @@ class BoundaryAttack(EvasionAttack):
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
-                    self.classifier.predict(np.array([random_img]), batch_size=self.batch_size), axis=1
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1
                 )[0]
 
                 if random_class == y:
@@ -393,7 +389,7 @@ class BoundaryAttack(EvasionAttack):
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
-                    self.classifier.predict(np.array([random_img]), batch_size=self.batch_size), axis=1
+                    self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1
                 )[0]
 
                 if random_class != y_p:
