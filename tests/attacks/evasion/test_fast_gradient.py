@@ -41,6 +41,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
+@pytest.mark.framework_agnostic
 def test_classifier_defended_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     classifier_list = get_image_classifier_list_for_attack(FastGradientMethod, defended=True)
@@ -53,7 +54,7 @@ def test_classifier_defended_images(fix_get_mnist_subset, get_image_classifier_l
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         backend_test_defended_images(attack, fix_get_mnist_subset)
 
-
+@pytest.mark.framework_agnostic
 def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
@@ -65,7 +66,7 @@ def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier
         attack = FastGradientMethod(classifier, num_random_init=3)
         backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
 
-
+@pytest.mark.framework_agnostic
 def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
@@ -80,7 +81,7 @@ def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list_for_att
 
         backend_targeted_images(attack, fix_get_mnist_subset)
 
-
+@pytest.mark.framework_agnostic
 def test_masked_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
@@ -92,7 +93,7 @@ def test_masked_images(fix_get_mnist_subset, get_image_classifier_list_for_attac
         attack = FastGradientMethod(classifier, eps=1.0, num_random_init=1)
         backend_masked_images(attack, fix_get_mnist_subset)
 
-
+@pytest.mark.framework_agnostic
 def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
@@ -116,6 +117,7 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier
 
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
 @pytest.mark.skipMlFramework("pytorch")  # temporarily skipping for pytorch until find bug fix in bounded test
+@pytest.mark.framework_agnostic
 def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
@@ -154,6 +156,7 @@ def test_norm_images(norm, fix_get_mnist_subset, get_image_classifier_list_for_a
 
 @pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
+@pytest.mark.framework_agnostic
 def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targeted, clipped):
     classifier_list = get_tabular_classifier_list(FastGradientMethod, clipped=clipped)
 
@@ -168,7 +171,7 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targe
             attack = FastGradientMethod(classifier, eps=0.1)
             backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
 
-
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(FastGradientMethod, [BaseEstimator, LossGradientsMixin])
 

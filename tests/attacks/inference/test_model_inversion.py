@@ -62,6 +62,7 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     np.testing.assert_array_less(diff_noisy, diff_inferred)
 
 
+@pytest.mark.skipMlFramework("pytorch")
 def test_miface(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(MIFace)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
