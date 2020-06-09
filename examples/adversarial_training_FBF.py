@@ -201,7 +201,7 @@ classifier = PyTorchClassifier(
     nb_classes=10,
 )
 
-fgsm = ProjectedGradientDescent(
+attack = ProjectedGradientDescent(
     classifier,
     norm=np.inf,
     eps=8.0 / 255.0,
@@ -211,10 +211,10 @@ fgsm = ProjectedGradientDescent(
     num_random_init=5,
     batch_size=32,
 )
-x_test_attack = fgsm.generate(x_test)
+x_test_attack = attack.generate(x_test)
 x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
 print(
-    "Accuracy on original FGSM adversarial samples: %.2f%%"
+    "Accuracy on original PGD adversarial samples: %.2f%%"
     % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
     / x_test.shape[0]
     * 100
@@ -231,10 +231,10 @@ art_datagen = PyTorchDataGenerator(iterator=dataloader, size=x_train.shape[0], b
 # Step 5: fit the trainer
 trainer.fit_generator(art_datagen, nb_epochs=30)
 
-x_test_attack = fgsm.generate(x_test)
+x_test_attack = attack.generate(x_test)
 x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
 print(
-    "Accuracy on original FGSM adversarial samples after adversarial training: %.2f%%"
+    "Accuracy on original PGD adversarial samples after adversarial training: %.2f%%"
     % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
     / x_test.shape[0]
     * 100
