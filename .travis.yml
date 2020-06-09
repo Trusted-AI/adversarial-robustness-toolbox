@@ -12,6 +12,7 @@ jobs:
       script:
         - ./run_tests.sh
 
+   include:
     - python: 3.8
       env: TENSORFLOW_V=2.2.0 KERAS_V=2.3.1
       script:
