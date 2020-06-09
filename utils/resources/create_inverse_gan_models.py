@@ -1,8 +1,26 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 import logging
 import time
+import os
+
 import numpy as np
 import tensorflow as tf
-import os
 
 from art.utils import load_mnist
 
@@ -126,7 +144,6 @@ def predict(sess, batch_size, generator_tf, z):
 def train_models(
     sess, x_train, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph, z_ph, latent_encoder_loss, encoder_optimizer
 ):
-    # train_epoch = 30
     train_epoch = 3
     latent_encoding_length = z_ph.get_shape()[1]
     batch_size = x_train.shape[0]
@@ -250,7 +267,6 @@ def main():
     if not os.path.isdir(root):
         os.mkdir(root)
 
-    # model_path = os.path.join(root, "model/")
     model_path = root
 
     # STEP 0
@@ -260,20 +276,6 @@ def main():
     batch_size = 100
 
     (x_train, y_train) = (x_train_original[:batch_size], y_train_original[:batch_size])
-
-    # if os.path.exists(model_path):
-    #     with tf.Session() as sess:
-    #         generator_tf, encoder_tf, z_ph, image_to_encode_ph = load_model(
-    #             sess, model_name, model_path)
-    #         tmp_latent_encoding_length = 100
-    #         batch_size = 200
-    #         images_generated = sess.run([generator_tf],
-    #                                     {z_ph: np.random.normal(0, 1, (batch_size, tmp_latent_encoding_length)), })[0]
-    #
-    #         encoding = sess.run([encoder_tf],
-    #                             {image_to_encode_ph: x_train})[0]
-    #
-    #     exit()
 
     lr = 0.0002
     latent_enc_len = 100
@@ -290,10 +292,6 @@ def main():
 
     saver = tf.train.Saver()
     saver.save(sess, os.path.join(model_path, model_name))
-
-    # images_generated = predict(sess, batch_size, gen_tf, z_ph)
-    # img = images_generated[0].reshape((28, 28))
-    # plt.imsave('../tmp/sample_mnist_generated.png', img, cmap="Greys")
 
     sess.close()
 

@@ -909,7 +909,7 @@ def get_classifier_mx():
 
 def get_gan_inverse_gan_ft():
     import tensorflow as tf
-    from models.create_inverse_gan_models import build_gan_graph, build_inverse_gan_graph
+    from utils.resources.create_inverse_gan_models import build_gan_graph, build_inverse_gan_graph
 
     if tf.__version__[0] == "2":
         return None, None, None
