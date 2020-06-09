@@ -16,14 +16,12 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the adversarial patch attack `DPatch` for object detectors.
+This module implements ShapeShifter, a robust physical adversarial attack on Faster R-CNN object detector.
 
-| Paper link: https://arxiv.org/abs/1806.02299v4
+| Paper link: https://arxiv.org/abs/1804.05810
 """
 
 import logging
-import math
-import random
 
 import numpy as np
 
@@ -35,49 +33,39 @@ from art.utils import Deprecated, deprecated_keyword_arg
 logger = logging.getLogger(__name__)
 
 
-class DPatch(EvasionAttack):
+class ShapeShifter(EvasionAttack):
     """
-    Implementation of the DPatch attack.
+    Implementation of the ShapeShifter attack. This is a robust physical adversarial attack on Faster R-CNN object
+    detector and is developed in TensorFlow.
 
-    | Paper link: https://arxiv.org/abs/1806.02299v4
+    | Paper link: https://arxiv.org/abs/1804.05810
     """
 
     attack_params = EvasionAttack.attack_params + [
-        "patch_shape",
         "learning_rate",
-        "max_iter",
         "batch_size",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
 
-    def __init__(
-        self, estimator, patch_shape=(40, 40, 3), learning_rate=5.0, max_iter=500, batch_size=16,
-    ):
+    def __init__(self, estimator, learning_rate=5.0, batch_size=1):
         """
-        Create an instance of the :class:`.DPatch`.
+        Create an instance of the :class:`.ShapeShifter`.
 
         :param estimator: A trained object detector.
         :type estimator: :class:`.ObjectDetectorMixin`
-        :param patch_shape: The shape of the adversarial path as a tuple of shape (height, width, nb_channels).
-        :type patch_shape: (`int`, `int`, `int`)
         :param learning_rate: The learning rate of the optimization.
         :type learning_rate: `float`
-        :param max_iter: The number of optimization steps.
-        :type max_iter: `int`
         :param batch_size: The size of the training batch.
         :type batch_size: `int`
         """
-        super(DPatch, self).__init__(estimator=estimator)
+        super(ShapeShifter, self).__init__(estimator=estimator)
 
         kwargs = {
-            "patch_shape": patch_shape,
             "learning_rate": learning_rate,
-            "max_iter": max_iter,
             "batch_size": batch_size,
         }
         self.set_params(**kwargs)
-        self._patch = np.ones(shape=patch_shape) * self.estimator.clip_values[1] / 2.0
 
     def generate(self, x, y=None, **kwargs):
         """
