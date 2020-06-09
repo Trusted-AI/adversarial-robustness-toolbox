@@ -1,19 +1,21 @@
 dist: xenial
 language: python
 cache: pip
-env:
-  - TENSORFLOW_V=2.2.0 KERAS_V=2.3.1
-python:
-  - "3.8"
+
 jobs:
   include:
-    - python: 3.7
+    - python: 3.6
       env: TENSORFLOW_V=1.15.3 KERAS_V=2.2.5
       script:
         - ./run_tests.sh
 
+    - python: 3.7
+      env: TENSORFLOW_V=2.2.0 KERAS_V=2.3.1
+      script:
+        - ./run_tests.sh
+
    include:
-    - python: 3.8
+    - python: 3.7
       env: TENSORFLOW_V=2.2.0 KERAS_V=2.3.1
       script:
         - (pycodestyle --max-line-length=120 art || exit 0)
