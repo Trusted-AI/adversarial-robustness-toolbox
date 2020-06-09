@@ -48,6 +48,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
     def __init__(self, classifier, x_train, y_train, **kwargs):
         """
         Create an :class:`.SpectralSignatureDefense` object with the provided classifier.
+
         :param classifier: Model evaluated for poison.
         :type classifier: :class:`art.estimators.classification.ClassifierMixin`
         :param x_train: dataset used to train the classifier.
@@ -64,6 +65,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
     def evaluate_defence(self, is_clean, **kwargs):
         """
         If ground truth is known, this function returns a confusion matrix in the form of a JSON object.
+
         :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous.
         :type is_clean: `np.ndarray`
@@ -88,6 +90,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
     def detect_poison(self, **kwargs):
         """
         Returns poison detected and a report.
+
         :return: (report, is_clean_lst):
                 where a report is a dictionary containing the index as keys the outlier score of suspected poisons as
                 values where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i] there is clean and

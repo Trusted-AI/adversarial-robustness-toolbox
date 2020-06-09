@@ -2,6 +2,11 @@
 ===================================
 .. automodule:: art.defences.detector.poison
 
+Base Class
+----------
+.. autoclass:: PoisonFilteringDefence
+   :members:
+
 Activation Defence
 ------------------
 .. autoclass:: ActivationDefence
@@ -12,7 +17,12 @@ Data Provenance Defense
 .. autoclass:: ProvenanceDefense
    :members:
 
-Base Class
-----------
-.. autoclass:: PoisonFilteringDefence
+Reject on Negative Impact (RONI) Defense
+----------------------------------------
+.. autoclass:: RONIDefense
+   :members:
+
+Spectral Signature Defense
+--------------------------
+.. autoclass:: SpectralSignatureDefense
    :members:

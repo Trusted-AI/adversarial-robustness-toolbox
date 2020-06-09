@@ -30,8 +30,6 @@ from scipy.optimize import minimize
 import tensorflow as tf
 
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.estimators.encoding.encoder import EncoderMixin
-from art.estimators.generation.generator import GeneratorMixin
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +48,6 @@ class InverseGAN(Preprocessor):
         """
         super().__init__()
 
-        assert isinstance(gan, GeneratorMixin)
         self.gan = gan
         self.inverse_gan = inverse_gan
         self._sess = sess
@@ -62,7 +59,6 @@ class InverseGAN(Preprocessor):
         self._grad = tf.gradients(self._loss, self.gan.input_ph)
 
         if self.inverse_gan is not None:
-            assert isinstance(inverse_gan, EncoderMixin)
             assert self.gan.encoding_length == self.inverse_gan.encoding_length, (
                 "Both GAN and inverseGAN " "must use the same size encoding"
             )

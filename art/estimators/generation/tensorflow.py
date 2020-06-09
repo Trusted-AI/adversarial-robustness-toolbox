@@ -21,10 +21,11 @@ This module implements the classifier `TensorFlowGenerator` for TensorFlow model
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import tensorflow as tf
 
-from art.estimators.tensorflow import TensorFlowEstimator
 from art.estimators.generation.generator import GeneratorMixin
+from art.estimators.tensorflow import TensorFlowEstimator
 
 logger = logging.getLogger(__name__)
 
@@ -55,31 +56,31 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :param model: tensorflow model, neural network or other.
         :type model: `tf.Tensor`
         :param loss: The loss function for which to compute gradients. This parameter is necessary when training the
-        model and when computing gradients w.r.t. the loss function.
+                     model and when computing gradients w.r.t. the loss function.
         :type loss: `tf.Tensor`
         :param sess: Computation session.
         :type sess: `tf.Session`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-               maximum values allowed for features. If floats are provided, these will be used as the range of all
-               features. If arrays are provided, each value will be considered the bound for a feature, thus
-               the shape of clip values needs to match the total number of features.
+                            maximum values allowed for features. If floats are provided, these will be used as the range
+                            of all features. If arrays are provided, each value will be considered the bound for a
+                            feature, thus the shape of clip values needs to match the total number of features.
         :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be subtracted from the input. The input will then
-               be divided by the second one.
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be used
+                              for data preprocessing. The first value will be subtracted from the input. The input will
+                              then be divided by the second one.
         :type preprocessing: `tuple`
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
         :type feed_dict: `dictionary`
         """
 
-        super(TensorFlowGenerator, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             preprocessing_defences=preprocessing_defences,
@@ -142,6 +143,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     def model(self):
         """
         Returns the generator tensor
+
         :return:
         :rtype: 'float'
         """
@@ -151,6 +153,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     def input_ph(self):
         """
         Returns the encoding seed input of the generator of shape (batch_size, encoding_length)
+
         :return:
         :rtype: 'float'
         """
@@ -160,6 +163,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     def encoding_length(self):
         """
         Returns the length of the encoding expected as an input
+
         :return:
         :rtype: `int`
         """
