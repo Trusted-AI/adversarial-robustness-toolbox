@@ -8,8 +8,13 @@ python:
   - "3.8"
 matrix:
   include:
-    - python: 3.8
+    - python: 3.7
       env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.3 KERAS_V=2.2.5
+      script:
+        - ./run_tests.sh
+
+    - python: 3.8
+      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=2.2.0 KERAS_V=2.3.1
       script:
         - (pycodestyle --max-line-length=120 art || exit 0)
         - (pylint --disable=C0330,C0415,E203,E1136 -rn art || exit 0)
