@@ -57,10 +57,8 @@ class TestFastGradientMethodImages(TestBase):
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
         model = load_model(
-            join(
-                join(join(dirname(dirname(dirname(__file__))), "data"), "test_models"),
-                "model_test_functionally_equivalent_extraction.h5",
-            )
+            join(*[dirname(dirname(dirname(__file__))), "utils", "data", "test_models",
+                "model_test_functionally_equivalent_extraction.h5"])
         )
 
         np.random.seed(0)
