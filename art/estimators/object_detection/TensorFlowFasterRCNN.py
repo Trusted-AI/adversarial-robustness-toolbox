@@ -141,63 +141,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :return: Loss gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        import torch
-        import torchvision
-
-        self._model.train()
-
-        # Apply preprocessing
-        x, _ = self._apply_preprocessing(x, y=None, fit=False)
-
-        if y is not None:
-            for i, y_i in enumerate(y):
-                y[i]["boxes"] = torch.FloatTensor(y_i["boxes"]).to(self._device)
-                y[i]["labels"] = torch.LongTensor(y_i["labels"]).to(self._device)
-                y[i]["scores"] = torch.Tensor(y_i["scores"]).to(self._device)
-
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-
-        image_tensor_list = list()
-
-        for i in range(x.shape[0]):
-            img = transform(x[i] / self.clip_values[1]).to(self._device)
-            img.requires_grad = True
-            image_tensor_list.append(img)
-
-        output = self._model(image_tensor_list, y)
-
-        # Compute the gradient and return
-        loss = None
-        for loss_name in self.attack_losses:
-            if loss is None:
-                loss = output[loss_name]
-            else:
-                loss = loss + output[loss_name]
-
-        # Clean gradients
-        self._model.zero_grad()
-
-        # Compute gradients
-        loss.backward(retain_graph=True)
-
-        grad_list = list()
-        for img in image_tensor_list:
-            gradients = img.grad.cpu().numpy().copy()
-            grad_list.append(gradients)
-
-        grads = np.stack(grad_list, axis=0)
-
-        # BB
-        grads = self._apply_preprocessing_gradient(x, grads)
-
-        grads = np.swapaxes(grads, 1, 3)
-        grads = np.swapaxes(grads, 1, 2)
-
-        assert grads.shape == x.shape
-
-        grads = grads / self.clip_values[1]
-
-        return grads
+        raise NotImplementedError
 
     def predict(self, x, **kwargs):
         """
@@ -216,21 +160,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                  - scores (Tensor[N]): the scores or each prediction.
         :rtype: `np.ndarray`
         """
-        import torchvision
-
-        self._model.eval()
-
-        # Apply preprocessing
-        x, _ = self._apply_preprocessing(x, y=None, fit=False)
-
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-
-        image_tensor_list = list()
-
-        for i in range(x.shape[0]):
-            image_tensor_list.append(transform(x[i] / self.clip_values[1]).to(self._device))
-        predictions = self._model(image_tensor_list)
-        return predictions
+        raise NotImplementedError
 
     def fit(self):
         raise NotImplementedError
