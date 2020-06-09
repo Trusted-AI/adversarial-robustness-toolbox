@@ -67,9 +67,7 @@ class GaussianAugmentation(Preprocessor):
                 "If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict` must be `False`."
             )
         if augmentation and not (apply_fit or apply_predict):
-            raise ValueError(
-                "If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`."
-            )
+            raise ValueError("If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`.")
 
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict

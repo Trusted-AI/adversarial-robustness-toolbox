@@ -31,10 +31,10 @@ from tensorflow.contrib import slim
 inverse_gan_models_dir = "../defence_gan/"
 path_locations = {}
 
-path_locations['GENERATOR_INIT_PATH'] = inverse_gan_models_dir + 'output/gans/mnist'
-path_locations['BPDA_ENCODER_CP_PATH'] = inverse_gan_models_dir + 'output/gans_inv_notrain/mnist'
-path_locations['output_dir'] = inverse_gan_models_dir + 'output'
-path_locations['data'] = inverse_gan_models_dir + '/data/'
+path_locations["GENERATOR_INIT_PATH"] = inverse_gan_models_dir + "output/gans/mnist"
+path_locations["BPDA_ENCODER_CP_PATH"] = inverse_gan_models_dir + "output/gans_inv_notrain/mnist"
+path_locations["output_dir"] = inverse_gan_models_dir + "output"
+path_locations["data"] = inverse_gan_models_dir + "/data/"
 
 # Code to load the original defense_gan paper mnist classifier to reproduce paper results
 # Note: model_a is a cleverhans model
@@ -63,7 +63,7 @@ path_locations['data'] = inverse_gan_models_dir + '/data/'
 #     pred_train = model.get_logits(images_tensor, dropout=True)
 #     pred_eval = model.get_logits(images_tensor)
 #
-#     path = tf.train.latest_checkpoint('./resources/tmpMnistModel/mnist')
+#     path = tf.train.latest_checkpoint('./utils/resources/tmpMnistModel/mnist')
 #     saver = tf.train.Saver(var_list=used_vars)
 #     saver.restore(model_sess, path)
 #     print('[+] BB model loaded successfully ...')
@@ -91,50 +91,49 @@ path_locations['data'] = inverse_gan_models_dir + '/data/'
 ###################
 
 IMSAVE_TRANSFORM_DICT = {
-    'mnist': lambda x: x.reshape((len(x), 28, 28)),
-    'f-mnist': lambda x: x.reshape((len(x), 28, 28)),
-    'cifar-10': lambda x: (x.reshape((len(x), 32, 32, 3)) + 1) / 2.0,
-    'celeba': lambda x: (x.reshape((len(x), 64, 64, 3)) + 1) / 2.0,
+    "mnist": lambda x: x.reshape((len(x), 28, 28)),
+    "f-mnist": lambda x: x.reshape((len(x), 28, 28)),
+    "cifar-10": lambda x: (x.reshape((len(x), 32, 32, 3)) + 1) / 2.0,
+    "celeba": lambda x: (x.reshape((len(x), 64, 64, 3)) + 1) / 2.0,
 }
 
 INPUT_TRANSFORM_DICT = {
-    'mnist': lambda x: tf.cast(x, tf.float32) / 255.,
-    'f-mnist': lambda x: tf.cast(x, tf.float32) / 255.,
-    'cifar-10': lambda x: tf.cast(x, tf.float32) / 255. * 2. - 1.,
-    'celeba': lambda x: tf.cast(x, tf.float32) / 255. * 2. - 1.,
+    "mnist": lambda x: tf.cast(x, tf.float32) / 255.0,
+    "f-mnist": lambda x: tf.cast(x, tf.float32) / 255.0,
+    "cifar-10": lambda x: tf.cast(x, tf.float32) / 255.0 * 2.0 - 1.0,
+    "celeba": lambda x: tf.cast(x, tf.float32) / 255.0 * 2.0 - 1.0,
 }
 
 
-def model_a(nb_filters=64, nb_classes=10,
-            input_shape=(None, 28, 28, 1)):
-    layers = [Conv2D(nb_filters, (5, 5), (1, 1), "SAME", use_bias=True),
-              ReLU(),
-              Conv2D(nb_filters, (5, 5), (2, 2), "VALID", use_bias=True),
-              ReLU(),
-              Flatten(),
-              Dropout(0.25),
-              Linear(128),
-              ReLU(),
-              Dropout(0.5),
-              Linear(nb_classes),
-              Softmax()]
+def model_a(nb_filters=64, nb_classes=10, input_shape=(None, 28, 28, 1)):
+    layers = [
+        Conv2D(nb_filters, (5, 5), (1, 1), "SAME", use_bias=True),
+        ReLU(),
+        Conv2D(nb_filters, (5, 5), (2, 2), "VALID", use_bias=True),
+        ReLU(),
+        Flatten(),
+        Dropout(0.25),
+        Linear(128),
+        ReLU(),
+        Dropout(0.5),
+        Linear(nb_classes),
+        Softmax(),
+    ]
 
-    model = DefenseMLP(layers, input_shape, feature_layer='ReLU7')
+    model = DefenseMLP(layers, input_shape, feature_layer="ReLU7")
     return model
 
 
 def generator_loss(loss_func, fake):
     fake_loss = 0
 
-    if loss_func.__contains__('wgan'):
+    if loss_func.__contains__("wgan"):
         fake_loss = -tf.reduce_mean(fake)
 
-    if loss_func == 'dcgan':
-        fake_loss = tf.losses.sigmoid_cross_entropy(
-            fake, tf.ones_like(fake), reduction=Reduction.MEAN,
-        )
+    if loss_func == "dcgan":
+        fake_loss = tf.losses.sigmoid_cross_entropy(fake, tf.ones_like(fake), reduction=Reduction.MEAN,)
 
-    if loss_func == 'hingegan':
+    if loss_func == "hingegan":
         fake_loss = -tf.reduce_mean(fake)
 
     return fake_loss
@@ -144,23 +143,19 @@ def discriminator_loss(loss_func, real, fake):
     real_loss = 0
     fake_loss = 0
 
-    if loss_func.__contains__('wgan'):
+    if loss_func.__contains__("wgan"):
         real_loss = -tf.reduce_mean(real)
         fake_loss = tf.reduce_mean(fake)
 
-    if loss_func == 'dcgan':
-        real_loss = tf.losses.sigmoid_cross_entropy(
-            tf.ones_like(real), real, reduction=Reduction.MEAN,
-        )
-        fake_loss = tf.losses.sigmoid_cross_entropy(
-            tf.zeros_like(fake), fake, reduction=Reduction.MEAN,
-        )
+    if loss_func == "dcgan":
+        real_loss = tf.losses.sigmoid_cross_entropy(tf.ones_like(real), real, reduction=Reduction.MEAN,)
+        fake_loss = tf.losses.sigmoid_cross_entropy(tf.zeros_like(fake), fake, reduction=Reduction.MEAN,)
 
-    if loss_func == 'hingegan':
+    if loss_func == "hingegan":
         real_loss = tf.reduce_mean(relu(1 - real))
         fake_loss = tf.reduce_mean(relu(1 + fake))
 
-    if loss_func == 'ragan':
+    if loss_func == "ragan":
         real_loss = tf.reduce_mean(tf.nn.softplus(-(real - tf.reduce_mean(fake))))
         fake_loss = tf.reduce_mean(tf.nn.softplus(fake - tf.reduce_mean(real)))
 
@@ -180,7 +175,7 @@ class DummySummaryWriter(object):
 def make_dir(dir_path):
     if not os.path.exists(dir_path):
         os.makedirs(dir_path)
-        print('[+] Created the directory: {}'.format(dir_path))
+        print("[+] Created the directory: {}".format(dir_path))
 
 
 ensure_dir = make_dir
@@ -189,24 +184,24 @@ ensure_dir = make_dir
 def mnist_generator(z, is_training=True):
     net_dim = 64
     use_sn = False
-    with tf.variable_scope('Generator', reuse=tf.AUTO_REUSE):
-        output = linear(z, 4 * 4 * 4 * net_dim, sn=use_sn, name='linear')
-        output = batch_norm(output, is_training=is_training, name='bn_linear')
+    with tf.variable_scope("Generator", reuse=tf.AUTO_REUSE):
+        output = linear(z, 4 * 4 * 4 * net_dim, sn=use_sn, name="linear")
+        output = batch_norm(output, is_training=is_training, name="bn_linear")
         output = tf.nn.relu(output)
         output = tf.reshape(output, [-1, 4, 4, 4 * net_dim])
 
         # deconv-bn-relu
-        output = deconv2d(output, 2 * net_dim, 5, 2, sn=use_sn, name='deconv_0')
-        output = batch_norm(output, is_training=is_training, name='bn_0')
+        output = deconv2d(output, 2 * net_dim, 5, 2, sn=use_sn, name="deconv_0")
+        output = batch_norm(output, is_training=is_training, name="bn_0")
         output = tf.nn.relu(output)
 
         output = output[:, :7, :7, :]
 
-        output = deconv2d(output, net_dim, 5, 2, sn=use_sn, name='deconv_1')
-        output = batch_norm(output, is_training=is_training, name='bn_1')
+        output = deconv2d(output, net_dim, 5, 2, sn=use_sn, name="deconv_1")
+        output = batch_norm(output, is_training=is_training, name="bn_1")
         output = tf.nn.relu(output)
 
-        output = deconv2d(output, 1, 5, 2, sn=use_sn, name='deconv_2')
+        output = deconv2d(output, 1, 5, 2, sn=use_sn, name="deconv_2")
         output = tf.sigmoid(output)
 
         return output
@@ -215,48 +210,48 @@ def mnist_generator(z, is_training=True):
 def mnist_discriminator(x, update_collection=None, is_training=False):
     net_dim = 64
     use_sn = True
-    with tf.variable_scope('Discriminator', reuse=tf.AUTO_REUSE):
+    with tf.variable_scope("Discriminator", reuse=tf.AUTO_REUSE):
         # block 1
-        x = conv2d(x, net_dim, 5, 2, sn=use_sn, update_collection=update_collection, name='conv0')
+        x = conv2d(x, net_dim, 5, 2, sn=use_sn, update_collection=update_collection, name="conv0")
         x = lrelu(x)
         # block 2
-        x = conv2d(x, 2 * net_dim, 5, 2, sn=use_sn, update_collection=update_collection, name='conv1')
+        x = conv2d(x, 2 * net_dim, 5, 2, sn=use_sn, update_collection=update_collection, name="conv1")
         x = lrelu(x)
         # block 3
-        x = conv2d(x, 4 * net_dim, 5, 2, sn=use_sn, update_collection=update_collection, name='conv2')
+        x = conv2d(x, 4 * net_dim, 5, 2, sn=use_sn, update_collection=update_collection, name="conv2")
         x = lrelu(x)
         # output
         x = tf.reshape(x, [-1, 4 * 4 * 4 * net_dim])
-        x = linear(x, 1, sn=use_sn, update_collection=update_collection, name='linear')
+        x = linear(x, 1, sn=use_sn, update_collection=update_collection, name="linear")
         return tf.reshape(x, [-1])
 
 
 def mnist_encoder(x, is_training=False, use_bn=False, net_dim=64, latent_dim=128):
-    with tf.variable_scope('Encoder', reuse=tf.AUTO_REUSE):
-        x = conv2d(x, net_dim, 5, 2, name='conv0')
+    with tf.variable_scope("Encoder", reuse=tf.AUTO_REUSE):
+        x = conv2d(x, net_dim, 5, 2, name="conv0")
         if use_bn:
-            x = batch_norm(x, is_training=is_training, name='bn0')
+            x = batch_norm(x, is_training=is_training, name="bn0")
         x = tf.nn.relu(x)
 
-        x = conv2d(x, 2 * net_dim, 5, 2, name='conv1')
+        x = conv2d(x, 2 * net_dim, 5, 2, name="conv1")
         if use_bn:
-            x = batch_norm(x, is_training=is_training, name='bn1')
+            x = batch_norm(x, is_training=is_training, name="bn1")
         x = tf.nn.relu(x)
 
-        x = conv2d(x, 4 * net_dim, 5, 2, name='conv2')
+        x = conv2d(x, 4 * net_dim, 5, 2, name="conv2")
         if use_bn:
-            x = batch_norm(x, is_training=is_training, name='bn2')
+            x = batch_norm(x, is_training=is_training, name="bn2")
         x = tf.nn.relu(x)
 
         x = tf.reshape(x, [-1, 4 * 4 * 4 * net_dim])
-        x = linear(x, 2 * latent_dim, name='linear')
+        x = linear(x, 2 * latent_dim, name="linear")
 
         return x[:, :latent_dim], x[:, latent_dim:]
 
 
-GENERATOR_DICT = {'mnist': [mnist_generator, mnist_generator]}
-DISCRIMINATOR_DICT = {'mnist': [mnist_discriminator, mnist_discriminator]}
-ENCODER_DICT = {'mnist': [mnist_encoder, mnist_encoder]}
+GENERATOR_DICT = {"mnist": [mnist_generator, mnist_generator]}
+DISCRIMINATOR_DICT = {"mnist": [mnist_discriminator, mnist_discriminator]}
+ENCODER_DICT = {"mnist": [mnist_encoder, mnist_encoder]}
 
 
 class Dataset(object):
@@ -267,7 +262,7 @@ class Dataset(object):
         data_dir: The directory where the dataset resides.
     """
 
-    def __init__(self, name, data_dir=path_locations['data']):
+    def __init__(self, name, data_dir=path_locations["data"]):
         """The datasaet default constructor.
 
             Args:
@@ -311,11 +306,11 @@ class Mnist(Dataset):
     """
 
     def __init__(self):
-        super(Mnist, self).__init__('mnist')
+        super(Mnist, self).__init__("mnist")
         self.y_dim = 10
         self.split_data = {}
 
-    def load(self, split='train', lazy=True, randomize=True):
+    def load(self, split="train", lazy=True, randomize=True):
         """Implements the load function.
 
         Args:
@@ -334,31 +329,31 @@ class Mnist(Dataset):
 
         data_dir = self.data_dir
 
-        fd = open(os.path.join(data_dir, 'train-images-idx3-ubyte'))
+        fd = open(os.path.join(data_dir, "train-images-idx3-ubyte"))
         loaded = np.fromfile(file=fd, dtype=np.uint8)
         train_images = loaded[16:].reshape((60000, 28, 28, 1)).astype(np.float)
 
-        fd = open(os.path.join(data_dir, 'train-labels-idx1-ubyte'))
+        fd = open(os.path.join(data_dir, "train-labels-idx1-ubyte"))
         loaded = np.fromfile(file=fd, dtype=np.uint8)
         train_labels = loaded[8:].reshape((60000)).astype(np.float)
 
-        fd = open(os.path.join(data_dir, 't10k-images-idx3-ubyte'))
+        fd = open(os.path.join(data_dir, "t10k-images-idx3-ubyte"))
         loaded = np.fromfile(file=fd, dtype=np.uint8)
         test_images = loaded[16:].reshape((10000, 28, 28, 1)).astype(np.float)
 
-        fd = open(os.path.join(data_dir, 't10k-labels-idx1-ubyte'))
+        fd = open(os.path.join(data_dir, "t10k-labels-idx1-ubyte"))
         loaded = np.fromfile(file=fd, dtype=np.uint8)
         test_labels = loaded[8:].reshape((10000)).astype(np.float)
 
         train_labels = np.asarray(train_labels)
         test_labels = np.asarray(test_labels)
-        if split == 'train':
+        if split == "train":
             images = train_images[:50000]
             labels = train_labels[:50000]
-        elif split == 'val':
+        elif split == "val":
             images = train_images[50000:60000]
             labels = train_labels[50000:60000]
-        elif split == 'test':
+        elif split == "test":
             images = test_images
             labels = test_labels
 
@@ -375,8 +370,7 @@ class Mnist(Dataset):
         return images, labels
 
 
-def create_generator(dataset_name, split, batch_size, randomize,
-                     attribute=None):
+def create_generator(dataset_name, split, batch_size, randomize, attribute=None):
     """Creates a batch generator for the dataset.
 
     Args:
@@ -392,7 +386,7 @@ def create_generator(dataset_name, split, batch_size, randomize,
         label_batch: A Python generator for the labels.
     """
 
-    if dataset_name.lower() == 'mnist':
+    if dataset_name.lower() == "mnist":
         ds = Mnist()
     else:
         raise ValueError("Dataset {} is not supported.".format(dataset_name))
@@ -401,13 +395,13 @@ def create_generator(dataset_name, split, batch_size, randomize,
 
     def get_gen():
         for i in range(0, len(ds) - batch_size, batch_size):
-            image_batch, label_batch = ds.images[i:i + batch_size], ds.labels[i:i + batch_size]
+            image_batch, label_batch = ds.images[i : i + batch_size], ds.labels[i : i + batch_size]
             yield image_batch, label_batch
 
     return get_gen
 
 
-def get_generators(dataset_name, batch_size, randomize=True, attribute='gender'):
+def get_generators(dataset_name, batch_size, randomize=True, attribute="gender"):
     """Creates batch generators for datasets.
 
     Args:
@@ -421,14 +415,12 @@ def get_generators(dataset_name, batch_size, randomize=True, attribute='gender')
         Training, validation, and test dataset generators which are the
             return values of `create_generator`.
     """
-    splits = ['train', 'val', 'test']
+    splits = ["train", "val", "test"]
     gens = []
     for i in range(3):
         if i > 0:
             randomize = False
-        gens.append(
-            create_generator(dataset_name, splits[i], batch_size, randomize,
-                             attribute=attribute))
+        gens.append(create_generator(dataset_name, splits[i], batch_size, randomize, attribute=attribute))
 
     return gens
 
@@ -455,65 +447,62 @@ def get_generator_fn(dataset_name, use_resblock=False):
 
 
 def gan_from_config(batch_size, test_mode):
-    cfg = {'TYPE': 'inv',
-           'MODE': 'hingegan',
-           'BATCH_SIZE': batch_size,
-           'USE_BN': True,
-           'USE_RESBLOCK': False,
-           'LATENT_DIM': 128,
-           'GRADIENT_PENALTY_LAMBDA': 10.0,
-           'OUTPUT_DIR': 'output',
-           'NET_DIM': 64,
-           'TRAIN_ITERS': 20000,
-           'DISC_LAMBDA': 0.0,
-           'TV_LAMBDA': 0.0,
-           'ATTRIBUTE': None,
-           'TEST_BATCH_SIZE': 20,
-           'NUM_GPUS': 1,
-           'INPUT_TRANSFORM_TYPE': 0,
-           'ENCODER_LR': 0.0002,
-           'GENERATOR_LR': 0.0001,
-           'DISCRIMINATOR_LR': 0.0004,
-           'DISCRIMINATOR_REC_LR': 0.0004,
-           'USE_ENCODER_INIT': True,
-           'ENCODER_LOSS_TYPE': 'margin',
-           'REC_LOSS_SCALE': 100.0,
-           'REC_DISC_LOSS_SCALE': 1.0,
-           'LATENT_REG_LOSS_SCALE': 0.5,
-           'REC_MARGIN': 0.02,
-           'ENC_DISC_TRAIN_ITER': 0,
-           'ENC_TRAIN_ITER': 1,
-           'DISC_TRAIN_ITER': 1,
-           'GENERATOR_INIT_PATH': path_locations['GENERATOR_INIT_PATH'],
-           'ENCODER_INIT_PATH': 'none',
-           'ENC_DISC_LR': 1e-05,
-           'NO_TRAINING_IMAGES': True,
-           'GEN_SAMPLES_DISC_LOSS_SCALE': 1.0,
-           'LATENTS_TO_Z_LOSS_SCALE': 1.0,
-           'REC_CYCLED_LOSS_SCALE': 100.0,
-           'GEN_SAMPLES_FAKING_LOSS_SCALE': 1.0,
-           'DATASET_NAME': 'mnist',
-           'ARCH_TYPE': 'mnist',
-           'REC_ITERS': 200,
-           'REC_LR': 0.01,
-           'REC_RR': 1,
-           'IMAGE_DIM': [28, 28, 1],
-           'INPUR_TRANSFORM_TYPE': 1,
-           'BPDA_ENCODER_CP_PATH': path_locations['BPDA_ENCODER_CP_PATH'],
-           'BPDA_GENERATOR_INIT_PATH': path_locations['GENERATOR_INIT_PATH'],
-           'cfg_path': 'experiments/cfgs/gans_inv_notrain/mnist.yml'
-           }
+    cfg = {
+        "TYPE": "inv",
+        "MODE": "hingegan",
+        "BATCH_SIZE": batch_size,
+        "USE_BN": True,
+        "USE_RESBLOCK": False,
+        "LATENT_DIM": 128,
+        "GRADIENT_PENALTY_LAMBDA": 10.0,
+        "OUTPUT_DIR": "output",
+        "NET_DIM": 64,
+        "TRAIN_ITERS": 20000,
+        "DISC_LAMBDA": 0.0,
+        "TV_LAMBDA": 0.0,
+        "ATTRIBUTE": None,
+        "TEST_BATCH_SIZE": 20,
+        "NUM_GPUS": 1,
+        "INPUT_TRANSFORM_TYPE": 0,
+        "ENCODER_LR": 0.0002,
+        "GENERATOR_LR": 0.0001,
+        "DISCRIMINATOR_LR": 0.0004,
+        "DISCRIMINATOR_REC_LR": 0.0004,
+        "USE_ENCODER_INIT": True,
+        "ENCODER_LOSS_TYPE": "margin",
+        "REC_LOSS_SCALE": 100.0,
+        "REC_DISC_LOSS_SCALE": 1.0,
+        "LATENT_REG_LOSS_SCALE": 0.5,
+        "REC_MARGIN": 0.02,
+        "ENC_DISC_TRAIN_ITER": 0,
+        "ENC_TRAIN_ITER": 1,
+        "DISC_TRAIN_ITER": 1,
+        "GENERATOR_INIT_PATH": path_locations["GENERATOR_INIT_PATH"],
+        "ENCODER_INIT_PATH": "none",
+        "ENC_DISC_LR": 1e-05,
+        "NO_TRAINING_IMAGES": True,
+        "GEN_SAMPLES_DISC_LOSS_SCALE": 1.0,
+        "LATENTS_TO_Z_LOSS_SCALE": 1.0,
+        "REC_CYCLED_LOSS_SCALE": 100.0,
+        "GEN_SAMPLES_FAKING_LOSS_SCALE": 1.0,
+        "DATASET_NAME": "mnist",
+        "ARCH_TYPE": "mnist",
+        "REC_ITERS": 200,
+        "REC_LR": 0.01,
+        "REC_RR": 1,
+        "IMAGE_DIM": [28, 28, 1],
+        "INPUR_TRANSFORM_TYPE": 1,
+        "BPDA_ENCODER_CP_PATH": path_locations["BPDA_ENCODER_CP_PATH"],
+        "BPDA_GENERATOR_INIT_PATH": path_locations["GENERATOR_INIT_PATH"],
+        "cfg_path": "experiments/cfgs/gans_inv_notrain/mnist.yml",
+    }
 
     # from config.py
-    if cfg['TYPE'] == 'v2':
-        gan = DefenseGANv2(
-            get_generator_fn(cfg['DATASET_NAME'], cfg['USE_RESBLOCK']), cfg=cfg,
-            test_mode=test_mode,
-        )
-    elif cfg['TYPE'] == 'inv':
+    if cfg["TYPE"] == "v2":
+        gan = DefenseGANv2(get_generator_fn(cfg["DATASET_NAME"], cfg["USE_RESBLOCK"]), cfg=cfg, test_mode=test_mode,)
+    elif cfg["TYPE"] == "inv":
         gan = InvertorDefenseGAN(
-            get_generator_fn(cfg['DATASET_NAME'], cfg['USE_RESBLOCK']), cfg=cfg,
-            test_mode=test_mode,
+            get_generator_fn(cfg["DATASET_NAME"], cfg["USE_RESBLOCK"]), cfg=cfg, test_mode=test_mode,
         )
 
     return gan
@@ -524,8 +513,7 @@ class AbstractModel(object):
     def default_properties(self):
         return []
 
-    def __init__(self, test_mode=False, verbose=True,
-                 cfg=None, **args):
+    def __init__(self, test_mode=False, verbose=True, cfg=None, **args):
         """The abstract model that the other models_art extend.
 
         Args:
@@ -549,11 +537,10 @@ class AbstractModel(object):
         # Object attributes.
         default_properties = self.default_properties
 
-        default_properties.extend(
-            ['tensorboard_log', 'output_dir', 'num_gpus'])
+        default_properties.extend(["tensorboard_log", "output_dir", "num_gpus"])
         self.initialized = False
         self.verbose = verbose
-        self.output_dir = path_locations['output_dir']
+        self.output_dir = path_locations["output_dir"]
 
         local_vals = locals()
         args.update(local_vals)
@@ -566,8 +553,7 @@ class AbstractModel(object):
         # Runtime attributes.
         self.saver = None
         self.global_step = tf.train.get_or_create_global_step()
-        self.global_step_inc = \
-            tf.assign(self.global_step, tf.add(self.global_step, 1))
+        self.global_step_inc = tf.assign(self.global_step, tf.add(self.global_step, 1))
 
         # Phase: 1 train 0 test.
         self.is_training = tf.placeholder(dtype=tf.bool)
@@ -618,14 +604,13 @@ class AbstractModel(object):
     def _save_cfg_in_ckpt(self):
         """Saves the configuration in the experiment's output directory."""
         final_cfg = {}
-        if hasattr(self, 'cfg'):
+        if hasattr(self, "cfg"):
             for k in self.cfg.keys():
                 if hasattr(self, k.lower()):
                     if getattr(self, k.lower()) is not None:
                         final_cfg[k] = getattr(self, k.lower())
             if not self.test_mode:
-                with open(os.path.join(self.checkpoint_dir, 'cfg.yml'),
-                          'w') as f:
+                with open(os.path.join(self.checkpoint_dir, "cfg.yml"), "w") as f:
                     yaml.dump(final_cfg, f)
 
     def _set_attr(self, attr_name, val):
@@ -644,24 +629,28 @@ class AbstractModel(object):
         if val is None:
             if hasattr(FLAGS, attr_name):
                 val = getattr(FLAGS, attr_name)
-            elif hasattr(self, 'cfg'):
+            elif hasattr(self, "cfg"):
                 if attr_name.upper() in self.cfg.keys():
                     val = self.cfg[attr_name.upper()]
                 elif attr_name.lower() in self.cfg.keys():
                     val = self.cfg[attr_name.lower()]
         if val is None and self.verbose:
-            print(
-                '[-] {}.{} is not set.'.format(type(self).__name__, attr_name))
+            print("[-] {}.{} is not set.".format(type(self).__name__, attr_name))
 
         setattr(self, attr_name, val)
         if self.verbose:
-            print('[#] {}.{} is set to {}.'.format(type(self).__name__,
-                                                   attr_name, val))
+            print("[#] {}.{} is set to {}.".format(type(self).__name__, attr_name, val))
 
-    def get_learning_rate(self, init_lr=None, decay_epoch=None,
-                          decay_mult=None, iters_per_epoch=None,
-                          decay_iter=None,
-                          global_step=None, decay_lr=True):
+    def get_learning_rate(
+        self,
+        init_lr=None,
+        decay_epoch=None,
+        decay_mult=None,
+        iters_per_epoch=None,
+        decay_iter=None,
+        global_step=None,
+        decay_lr=True,
+    ):
         """Prepares the learning rate.
 
         Args:
@@ -693,36 +682,31 @@ class AbstractModel(object):
         if decay_lr:
             if decay_epoch:
                 decay_iter = decay_epoch * iters_per_epoch
-            return tf.train.exponential_decay(init_lr,
-                                              global_step,
-                                              decay_iter,
-                                              decay_mult,
-                                              staircase=True)
+            return tf.train.exponential_decay(init_lr, global_step, decay_iter, decay_mult, staircase=True)
         else:
             return tf.constant(self.learning_rate)
 
     def _set_checkpoint_dir(self):
         """Sets the directory containing snapshots of the model."""
 
-        self.cfg_file = self.cfg['cfg_path']
-        if 'cfg.yml' in self.cfg_file:
+        self.cfg_file = self.cfg["cfg_path"]
+        if "cfg.yml" in self.cfg_file:
             ckpt_dir = os.path.dirname(self.cfg_file)
 
         else:
-            ckpt_dir = os.path.join(path_locations['output_dir'],
-                                    self.cfg_file.replace('experiments/cfgs/',
-                                                          '').replace(
-                                        'cfg.yml', '').replace(
-                                        '.yml', ''))
+            ckpt_dir = os.path.join(
+                path_locations["output_dir"],
+                self.cfg_file.replace("experiments/cfgs/", "").replace("cfg.yml", "").replace(".yml", ""),
+            )
             # ckpt_dir = os.path.join(self.output_dir,
             #                         self.cfg_file.replace('experiments/cfgs/',
             #                                               '').replace(
             #                             'cfg.yml', '').replace(
             #                             '.yml', ''))
             if not self.test_mode:
-                postfix = ''
-                ignore_list = ['dataset', 'cfg_file', 'batch_size']
-                if hasattr(self, 'cfg'):
+                postfix = ""
+                ignore_list = ["dataset", "cfg_file", "batch_size"]
+                if hasattr(self, "cfg"):
                     if self.cfg is not None:
                         for prop in self.default_properties:
                             if prop in ignore_list:
@@ -732,15 +716,15 @@ class AbstractModel(object):
                                 self_val = getattr(self, prop)
                                 if self_val is not None:
                                     if getattr(self, prop) != self.cfg[prop.upper()]:
-                                        postfix += '-{}={}'.format(prop, self_val).replace('.', '_')
+                                        postfix += "-{}={}".format(prop, self_val).replace(".", "_")
 
                 ckpt_dir += postfix
             ensure_dir(ckpt_dir)
 
         self.checkpoint_dir = ckpt_dir
-        self.debug_dir = self.checkpoint_dir.replace('output', 'debug')
-        self.encoder_checkpoint_dir = os.path.join(self.checkpoint_dir, 'encoding')
-        self.encoder_debug_dir = os.path.join(self.debug_dir, 'encoding')
+        self.debug_dir = self.checkpoint_dir.replace("output", "debug")
+        self.encoder_checkpoint_dir = os.path.join(self.checkpoint_dir, "encoding")
+        self.encoder_debug_dir = os.path.join(self.debug_dir, "encoding")
         ensure_dir(self.debug_dir)
         ensure_dir(self.encoder_checkpoint_dir)
         ensure_dir(self.encoder_debug_dir)
@@ -750,7 +734,7 @@ class AbstractModel(object):
         if not self.tensorboard_log:
             self.summary_writer = DummySummaryWriter()
         else:
-            sum_dir = os.path.join(self.checkpoint_dir, 'tb_logs')
+            sum_dir = os.path.join(self.checkpoint_dir, "tb_logs")
             if not os.path.exists(sum_dir):
                 os.makedirs(sum_dir)
 
@@ -768,17 +752,14 @@ class AbstractModel(object):
         if self.saver is not None and not force:
             return
         else:
-            if prefixes is None or not (
-                    type(prefixes) != list or type(prefixes) != tuple):
-                raise ValueError(
-                    'Prefix of variables that needs saving are not defined')
+            if prefixes is None or not (type(prefixes) != list or type(prefixes) != tuple):
+                raise ValueError("Prefix of variables that needs saving are not defined")
 
-            prefixes_str = ''
+            prefixes_str = ""
             for pref in prefixes:
-                prefixes_str = prefixes_str + pref + ' '
+                prefixes_str = prefixes_str + pref + " "
 
-            print('[#] Initializing it with variable prefixes: {}'.format(
-                prefixes_str))
+            print("[#] Initializing it with variable prefixes: {}".format(prefixes_str))
             saved_vars = []
             for pref in prefixes:
                 saved_vars.extend(slim.get_variables(pref))
@@ -814,7 +795,7 @@ class AbstractModel(object):
         if prefixes is None:
             prefixes = self.save_var_prefixes
         if self.saver is None:
-            print('[!] Saver is not initialized')
+            print("[!] Saver is not initialized")
             self._initialize_saver(prefixes=prefixes)
 
         if saver is None:
@@ -827,24 +808,19 @@ class AbstractModel(object):
             try:
                 saver.restore(self.sess, checkpoint_dir)
             except Exception as e:
-                print(" [!] Failed to find a checkpoint at {}".format(
-                    checkpoint_dir))
+                print(" [!] Failed to find a checkpoint at {}".format(checkpoint_dir))
         else:
             print(" [-] Reading checkpoints... {} ".format(checkpoint_dir))
 
             ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
             if ckpt and ckpt.model_checkpoint_path:
                 ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
-                saver.restore(self.sess,
-                              os.path.join(checkpoint_dir, ckpt_name))
+                saver.restore(self.sess, os.path.join(checkpoint_dir, ckpt_name))
             else:
-                print(
-                    " [!] Failed to find a checkpoint "
-                    "within directory {}".format(checkpoint_dir))
+                print(" [!] Failed to find a checkpoint " "within directory {}".format(checkpoint_dir))
                 return False
 
-        print(" [*] Checkpoint is read successfully from {}".format(
-            checkpoint_dir))
+        print(" [*] Checkpoint is read successfully from {}".format(checkpoint_dir))
 
         return True
 
@@ -860,17 +836,17 @@ class AbstractModel(object):
             pre_vars = slim.get_variables(pre)
             self.save_vars.update(pre_vars)
 
-        var_list = ''
+        var_list = ""
         for var in self.save_vars:
-            var_list = var_list + var.name + ' '
+            var_list = var_list + var.name + " "
 
-        print('Saving these variables: {}'.format(var_list))
+        print("Saving these variables: {}".format(var_list))
 
     def input_pl_transform(self):
         self.real_data = self.input_transform(self.real_data_pl)
         self.real_data_test = self.input_transform(self.real_data_test_pl)
 
-    def initialize_uninitialized(self, ):
+    def initialize_uninitialized(self,):
         """Only initializes the variables of a TensorFlow session that were not
         already initialized.
         """
@@ -883,10 +859,9 @@ class AbstractModel(object):
         is_initialized = sess.run(is_var_init)
 
         # List all variables that were not previously initialized.
-        not_initialized_vars = [var for (var, init) in
-                                zip(global_vars, is_initialized) if not init]
+        not_initialized_vars = [var for (var, init) in zip(global_vars, is_initialized) if not init]
         for v in not_initialized_vars:
-            print('[!] not init: {}'.format(v.name))
+            print("[!] not init: {}".format(v.name))
         # Initialize all uninitialized variables found, if any.
         if len(not_initialized_vars):
             sess.run(tf.variables_initializer(not_initialized_vars))
@@ -899,11 +874,8 @@ class AbstractModel(object):
 
         ensure_dir(checkpoint_dir)
         self._initialize_saver(prefixes)
-        self.saver.save(self.sess,
-                        os.path.join(checkpoint_dir, self.model_save_name),
-                        global_step=global_step)
-        print('Saved at iter {} to {}'.format(self.sess.run(global_step),
-                                              checkpoint_dir))
+        self.saver.save(self.sess, os.path.join(checkpoint_dir, self.model_save_name), global_step=global_step)
+        print("Saved at iter {} to {}".format(self.sess.run(global_step), checkpoint_dir))
 
     def initialize(self, dir):
         self.load(dir)
@@ -920,42 +892,60 @@ class DefenseGANv2(AbstractModel):
     @property
     def default_properties(self):
         return [
-            'dataset_name', 'batch_size', 'use_bn', 'use_resblock',
-            'test_batch_size',
-            'train_iters',
-            'latent_dim', 'net_dim',
-            'input_transform_type',
-            'debug', 'rec_iters', 'image_dim', 'rec_rr',
-            'rec_lr', 'test_again', 'loss_type',
-            'attribute', 'encoder_loss_type',
-            'encoder_lr', 'discriminator_lr', 'generator_lr',
-            'discriminator_rec_lr',
-            'rec_margin', 'rec_loss_scale', 'rec_disc_loss_scale',
-            'latent_reg_loss_scale', 'generator_init_path', 'encoder_init_path',
-            'enc_train_iter', 'disc_train_iter', 'enc_disc_lr',
+            "dataset_name",
+            "batch_size",
+            "use_bn",
+            "use_resblock",
+            "test_batch_size",
+            "train_iters",
+            "latent_dim",
+            "net_dim",
+            "input_transform_type",
+            "debug",
+            "rec_iters",
+            "image_dim",
+            "rec_rr",
+            "rec_lr",
+            "test_again",
+            "loss_type",
+            "attribute",
+            "encoder_loss_type",
+            "encoder_lr",
+            "discriminator_lr",
+            "generator_lr",
+            "discriminator_rec_lr",
+            "rec_margin",
+            "rec_loss_scale",
+            "rec_disc_loss_scale",
+            "latent_reg_loss_scale",
+            "generator_init_path",
+            "encoder_init_path",
+            "enc_train_iter",
+            "disc_train_iter",
+            "enc_disc_lr",
         ]
 
     def __init__(
-            self,
-            generator_fn,
-            encoder_fn=None,
-            classifier_fn=None,
-            discriminator_fn=None,
-            generator_var_prefix='Generator',
-            classifier_var_prefix='Classifier',
-            discriminator_var_prefix='Discriminator',
-            encoder_var_prefix='Encoder',
-            cfg=None,
-            test_mode=False,
-            verbose=True,
-            **args
+        self,
+        generator_fn,
+        encoder_fn=None,
+        classifier_fn=None,
+        discriminator_fn=None,
+        generator_var_prefix="Generator",
+        classifier_var_prefix="Classifier",
+        discriminator_var_prefix="Discriminator",
+        encoder_var_prefix="Encoder",
+        cfg=None,
+        test_mode=False,
+        verbose=True,
+        **args
     ):
         self.dataset_name = None  # Name of the datsaet.
         self.batch_size = 32  # Batch size for training the GAN.
         self.use_bn = True  # Use batchnorm in the discriminator and generator.
         self.use_resblock = False  # Use resblocks in DefenseGAN.
         self.test_batch_size = 20  # Batch size for test time.
-        self.mode = 'wgan-gp'  # The mode of training the GAN (default: gp-wgan).
+        self.mode = "wgan-gp"  # The mode of training the GAN (default: gp-wgan).
         self.gradient_penalty_lambda = 10.0  # Gradient penalty scale.
         self.train_iters = 200000  # Number of training iterations.
         self.critic_iters = 5  # Critic iterations per training step.
@@ -964,14 +954,13 @@ class DefenseGANv2(AbstractModel):
         self.input_transform_type = 0  # The normalization used for the inputs.
         self.debug = False  # Debug info will be printed.
         self.rec_iters = 200  # Number of reconstruction iterations.
-        self.image_dim = [None, None,
-                          None]  # [height, width, number of channels] of the output image.
+        self.image_dim = [None, None, None]  # [height, width, number of channels] of the output image.
         self.rec_rr = 10  # Number of random restarts for the reconstruction
-        self.encoder_loss_type = 'margin'  # Loss used for encoding
+        self.encoder_loss_type = "margin"  # Loss used for encoding
 
         self.rec_lr = 10.0  # The reconstruction learning rate.
         self.test_again = False  # If true, do not use the cached info for test phase.
-        self.attribute = 'gender'
+        self.attribute = "gender"
 
         self.rec_loss_scale = 100.0
         self.rec_disc_loss_scale = 1.0
@@ -1004,161 +993,121 @@ class DefenseGANv2(AbstractModel):
         self.gen_samples_disc_loss_scale = 1.0
         self.no_training_images = False
 
-        self.model_save_name = 'GAN.model'
+        self.model_save_name = "GAN.model"
 
         # calls _build() and _loss()
         # generator_vars and encoder_vars are created
-        super(DefenseGANv2, self).__init__(test_mode=test_mode,
-                                           verbose=verbose, cfg=cfg, **args)
-        self.save_var_prefixes = ['Encoder', 'Discriminator']
+        super(DefenseGANv2, self).__init__(test_mode=test_mode, verbose=verbose, cfg=cfg, **args)
+        self.save_var_prefixes = ["Encoder", "Discriminator"]
         self._load_dataset()
 
         # create a method that only loads generator and encoding
         g_saver = tf.train.Saver(var_list=self.generator_vars)
-        self.load_generator = lambda ckpt_path=None: self.load(
-            checkpoint_dir=ckpt_path, saver=g_saver)
+        self.load_generator = lambda ckpt_path=None: self.load(checkpoint_dir=ckpt_path, saver=g_saver)
 
         d_saver = tf.train.Saver(var_list=self.discriminator_vars)
-        self.load_discriminator = lambda ckpt_path=None: self.load(
-            checkpoint_dir=ckpt_path, saver=d_saver)
+        self.load_discriminator = lambda ckpt_path=None: self.load(checkpoint_dir=ckpt_path, saver=d_saver)
 
         e_saver = tf.train.Saver(var_list=self.encoder_vars)
-        self.load_encoder = lambda ckpt_path=None: self.load(
-            checkpoint_dir=ckpt_path, saver=e_saver)
+        self.load_encoder = lambda ckpt_path=None: self.load(checkpoint_dir=ckpt_path, saver=e_saver)
 
     def _load_dataset(self):
         """Loads the dataset."""
-        self.train_data_gen, self.dev_gen, _ = get_generators(
-            self.dataset_name, self.batch_size,
+        self.train_data_gen, self.dev_gen, _ = get_generators(self.dataset_name, self.batch_size,)
+        self.train_gen_test, self.dev_gen_test, self.test_gen_test = get_generators(
+            self.dataset_name, self.test_batch_size, randomize=False,
         )
-        self.train_gen_test, self.dev_gen_test, self.test_gen_test = \
-            get_generators(
-                self.dataset_name, self.test_batch_size, randomize=False,
-            )
 
     def _build(self):
         """Builds the computation graph."""
 
-        assert (self.batch_size % self.rec_rr) == 0, \
-            'Batch size should be divisable by random restart'
+        assert (self.batch_size % self.rec_rr) == 0, "Batch size should be divisable by random restart"
 
         self.discriminator_training = tf.placeholder(tf.bool)
         self.encoder_training = tf.placeholder(tf.bool)
 
         if self.discriminator_fn is None:
-            self.discriminator_fn = get_discriminator_fn(
-                self.dataset_name, use_resblock=True,
-            )
+            self.discriminator_fn = get_discriminator_fn(self.dataset_name, use_resblock=True,)
 
         if self.encoder_fn is None:
-            self.encoder_fn = get_encoder_fn(
-                self.dataset_name, use_resblock=True,
-            )
+            self.encoder_fn = get_encoder_fn(self.dataset_name, use_resblock=True,)
 
         self.test_batch_size = self.batch_size
 
         # Defining batch_size in input placeholders is inevitable at least
         # for now, because the z vectors are Tensorflow variables.
-        self.real_data_pl = tf.placeholder(
-            tf.float32, shape=[self.batch_size] + self.image_dim,
-        )
-        self.real_data_test_pl = tf.placeholder(
-            tf.float32, shape=[self.test_batch_size] + self.image_dim,
-        )
+        self.real_data_pl = tf.placeholder(tf.float32, shape=[self.batch_size] + self.image_dim,)
+        self.real_data_test_pl = tf.placeholder(tf.float32, shape=[self.test_batch_size] + self.image_dim,)
 
-        self.random_z = tf.constant(
-            np.random.randn(self.batch_size, self.latent_dim), tf.float32,
-        )
+        self.random_z = tf.constant(np.random.randn(self.batch_size, self.latent_dim), tf.float32,)
 
         self.input_pl_transform()
 
         self.encoder_latent_before = self.encoder_fn(self.real_data, is_training=self.encoder_training)[0]
         self.encoder_latent = self.encoder_latent_before
 
-        tf.summary.histogram('Encoder latents', self.encoder_latent)
+        tf.summary.histogram("Encoder latents", self.encoder_latent)
 
         self.enc_reconstruction = self.generator_fn(self.encoder_latent, is_training=False)
-        tf.summary.image('Real data', self.real_data, max_outputs=20)
-        tf.summary.image('Encoder reconstruction', self.enc_reconstruction, max_outputs=20)
+        tf.summary.image("Real data", self.real_data, max_outputs=20)
+        tf.summary.image("Encoder reconstruction", self.enc_reconstruction, max_outputs=20)
 
         self.x_hat_sample = self.generator_fn(self.random_z, is_training=False)
 
         if self.discriminator_fn is not None:
-            self.disc_real = self.discriminator_fn(
-                self.real_data, is_training=self.discriminator_training,
-            )
-            tf.summary.histogram('disc/real', tf.nn.sigmoid(self.disc_real))
+            self.disc_real = self.discriminator_fn(self.real_data, is_training=self.discriminator_training,)
+            tf.summary.histogram("disc/real", tf.nn.sigmoid(self.disc_real))
 
-            self.disc_enc_rec = self.discriminator_fn(
-                self.enc_reconstruction,
-                is_training=self.discriminator_training,
-            )
-            tf.summary.histogram('disc/enc_rec', tf.nn.sigmoid(self.disc_enc_rec))
+            self.disc_enc_rec = self.discriminator_fn(self.enc_reconstruction, is_training=self.discriminator_training,)
+            tf.summary.histogram("disc/enc_rec", tf.nn.sigmoid(self.disc_enc_rec))
 
     def _loss(self):
         """Builds the loss part of the graph.."""
         # Loss terms
 
         raw_reconstruction_error = slim.flatten(
-            tf.reduce_mean(
-                tf.abs(self.enc_reconstruction - self.real_data),
-                axis=1,
-            )
+            tf.reduce_mean(tf.abs(self.enc_reconstruction - self.real_data), axis=1,)
         )
-        tf.summary.histogram('raw reconstruction error', raw_reconstruction_error)
+        tf.summary.histogram("raw reconstruction error", raw_reconstruction_error)
 
-        img_rec_loss = self.rec_loss_scale * tf.reduce_mean(
-            tf.nn.relu(
-                raw_reconstruction_error - self.rec_margin
-            )
-        )
-        tf.summary.scalar('losses/margin_rec', img_rec_loss)
+        img_rec_loss = self.rec_loss_scale * tf.reduce_mean(tf.nn.relu(raw_reconstruction_error - self.rec_margin))
+        tf.summary.scalar("losses/margin_rec", img_rec_loss)
 
-        self.enc_rec_faking_loss = generator_loss(
-            'dcgan', self.disc_enc_rec,
-        )
+        self.enc_rec_faking_loss = generator_loss("dcgan", self.disc_enc_rec,)
 
         self.enc_rec_disc_loss = self.rec_disc_loss_scale * discriminator_loss(
-            'dcgan', self.disc_real, self.disc_enc_rec,
+            "dcgan", self.disc_real, self.disc_enc_rec,
         )
 
-        tf.summary.scalar('losses/enc_recon_faking_disc', self.enc_rec_faking_loss)
+        tf.summary.scalar("losses/enc_recon_faking_disc", self.enc_rec_faking_loss)
 
-        self.latent_reg_loss = self.latent_reg_loss_scale * tf.reduce_mean(
-            tf.square(self.encoder_latent_before)
-        )
-        tf.summary.scalar('losses/latent_reg', self.latent_reg_loss)
+        self.latent_reg_loss = self.latent_reg_loss_scale * tf.reduce_mean(tf.square(self.encoder_latent_before))
+        tf.summary.scalar("losses/latent_reg", self.latent_reg_loss)
 
-        self.enc_cost = (img_rec_loss + self.rec_disc_loss_scale * self.enc_rec_faking_loss + self.latent_reg_loss)
+        self.enc_cost = img_rec_loss + self.rec_disc_loss_scale * self.enc_rec_faking_loss + self.latent_reg_loss
         self.discriminator_loss = self.enc_rec_disc_loss
-        tf.summary.scalar('losses/encoder_loss', self.enc_cost)
-        tf.summary.scalar('losses/discriminator_loss', self.enc_rec_disc_loss)
+        tf.summary.scalar("losses/encoder_loss", self.enc_cost)
+        tf.summary.scalar("losses/discriminator_loss", self.enc_rec_disc_loss)
 
     def _gather_variables(self):
         self.generator_vars = slim.get_variables(self.generator_var_prefix)
         self.encoder_vars = slim.get_variables(self.encoder_var_prefix)
 
-        self.discriminator_vars = slim.get_variables(
-            self.discriminator_var_prefix
-        ) if self.discriminator_fn else []
+        self.discriminator_vars = slim.get_variables(self.discriminator_var_prefix) if self.discriminator_fn else []
 
     def _optimizers(self):
         # define optimizer op
-        self.disc_train_op = tf.train.AdamOptimizer(
-            learning_rate=self.discriminator_rec_lr,
-            beta1=0.5
-        ).minimize(self.discriminator_loss, var_list=self.discriminator_vars)
+        self.disc_train_op = tf.train.AdamOptimizer(learning_rate=self.discriminator_rec_lr, beta1=0.5).minimize(
+            self.discriminator_loss, var_list=self.discriminator_vars
+        )
 
-        self.encoder_recon_train_op = tf.train.AdamOptimizer(
-            learning_rate=self.encoder_lr, beta1=0.5,
-        ).minimize(self.enc_cost, var_list=self.encoder_vars)
+        self.encoder_recon_train_op = tf.train.AdamOptimizer(learning_rate=self.encoder_lr, beta1=0.5,).minimize(
+            self.enc_cost, var_list=self.encoder_vars
+        )
         #
         self.encoder_disc_fooling_train_op = tf.train.AdamOptimizer(
             learning_rate=self.enc_disc_lr, beta1=0.5,
-        ).minimize(
-            self.enc_rec_faking_loss + self.latent_reg_loss,
-            var_list=self.encoder_vars,
-        )
+        ).minimize(self.enc_rec_faking_loss + self.latent_reg_loss, var_list=self.encoder_vars,)
 
     def _inf_train_gen(self):
         """A generator function for input training data."""
@@ -1169,16 +1118,16 @@ class DefenseGANv2(AbstractModel):
     def train(self, gan_init_path=None):
         sess = self.sess
         self.initialize_uninitialized()
-        self.save_var_prefixes = ['Encoder', 'Discriminator']
+        self.save_var_prefixes = ["Encoder", "Discriminator"]
 
         data_generator = self._inf_train_gen()
 
         could_load = self.load_generator(self.generator_init_path)
 
         if could_load:
-            print('[*] Generator loaded.')
+            print("[*] Generator loaded.")
         else:
-            raise ValueError('Generator could not be loaded')
+            raise ValueError("Generator could not be loaded")
 
         cur_iter = self.sess.run(self.global_step)
         max_train_iters = self.train_iters
@@ -1190,7 +1139,7 @@ class DefenseGANv2(AbstractModel):
         samples = self.sess.run(
             self.x_hat_sample, feed_dict={self.encoder_training: False, self.discriminator_training: False},
         )
-        self.save_image(samples, 'sanity_check.png')
+        self.save_image(samples, "sanity_check.png")
 
         for iteration in range(cur_iter, max_train_iters):
             _data = data_generator.next()
@@ -1252,8 +1201,8 @@ class DefenseGANv2(AbstractModel):
                         self.discriminator_training: False,
                     },
                 )
-                self.save_image(x_hat, 'x_hat_{}.png'.format(iteration))
-                self.save_image(x, 'x_{}.png'.format(iteration))
+                self.save_image(x_hat, "x_hat_{}.png".format(iteration))
+                self.save_image(x, "x_{}.png".format(iteration))
                 self.save(checkpoint_dir=ckpt_dir, global_step=global_step)
 
         self.save(checkpoint_dir=ckpt_dir, global_step=global_step)
@@ -1277,15 +1226,14 @@ class DefenseGANv2(AbstractModel):
     #     save_images_files(img / 255.0, output_dir=output_dir, labels=target)
 
     def load_model(self):
-        could_load_generator = self.load_generator(
-            ckpt_path=self.generator_init_path)
+        could_load_generator = self.load_generator(ckpt_path=self.generator_init_path)
 
-        if self.encoder_init_path == 'none':
-            print('[*] Loading default encoding')
+        if self.encoder_init_path == "none":
+            print("[*] Loading default encoding")
             could_load_encoder = self.load_encoder(ckpt_path=self.checkpoint_dir)
 
         else:
-            print('[*] Loading encoding from {}'.format(self.encoder_init_path))
+            print("[*] Loading encoding from {}".format(self.encoder_init_path))
             could_load_encoder = self.load_encoder(ckpt_path=self.encoder_init_path)
         assert could_load_generator and could_load_encoder
         self.initialized = True
@@ -1295,23 +1243,19 @@ def discriminator_loss(loss_func, real, fake):
     real_loss = 0
     fake_loss = 0
 
-    if loss_func.__contains__('wgan'):
+    if loss_func.__contains__("wgan"):
         real_loss = -tf.reduce_mean(real)
         fake_loss = tf.reduce_mean(fake)
 
-    if loss_func == 'dcgan':
-        real_loss = tf.losses.sigmoid_cross_entropy(
-            tf.ones_like(real), real, reduction=Reduction.MEAN,
-        )
-        fake_loss = tf.losses.sigmoid_cross_entropy(
-            tf.zeros_like(fake), fake, reduction=Reduction.MEAN,
-        )
+    if loss_func == "dcgan":
+        real_loss = tf.losses.sigmoid_cross_entropy(tf.ones_like(real), real, reduction=Reduction.MEAN,)
+        fake_loss = tf.losses.sigmoid_cross_entropy(tf.zeros_like(fake), fake, reduction=Reduction.MEAN,)
 
-    if loss_func == 'hingegan':
+    if loss_func == "hingegan":
         real_loss = tf.reduce_mean(relu(1 - real))
         fake_loss = tf.reduce_mean(relu(1 + fake))
 
-    if loss_func == 'ragan':
+    if loss_func == "ragan":
         real_loss = tf.reduce_mean(tf.nn.softplus(-(real - tf.reduce_mean(fake))))
         fake_loss = tf.reduce_mean(tf.nn.softplus(fake - tf.reduce_mean(real)))
 
@@ -1326,11 +1270,11 @@ class InvertorDefenseGAN(DefenseGANv2):
         super_properties = super(InvertorDefenseGAN, self).default_properties
         super_properties.extend(
             [
-                'gen_samples_disc_loss_scale',
-                'latents_to_z_loss_scale',
-                'rec_cycled_loss_scale',
-                'no_training_images',
-                'gen_samples_faking_loss_scale',
+                "gen_samples_disc_loss_scale",
+                "latents_to_z_loss_scale",
+                "rec_cycled_loss_scale",
+                "no_training_images",
+                "gen_samples_faking_loss_scale",
             ]
         )
 
@@ -1341,47 +1285,37 @@ class InvertorDefenseGAN(DefenseGANv2):
         super(InvertorDefenseGAN, self)._build()
 
         # Sample random z
-        self.z_samples = tf.random_normal(
-            [self.batch_size // 2, self.latent_dim]
-        )
+        self.z_samples = tf.random_normal([self.batch_size // 2, self.latent_dim])
 
         # Generate the zs
-        self.generator_samples = self.generator_fn(
-            self.z_samples, is_training=False,
-        )
+        self.generator_samples = self.generator_fn(self.z_samples, is_training=False,)
         tf.summary.image(
-            'generator_samples', self.generator_samples, max_outputs=10,
+            "generator_samples", self.generator_samples, max_outputs=10,
         )
 
         # Pass the generated samples through the encoding
-        self.generator_samples_latents = self.encoder_fn(
-            self.generator_samples, is_training=self.encoder_training,
-        )[0]
+        self.generator_samples_latents = self.encoder_fn(self.generator_samples, is_training=self.encoder_training,)[0]
 
         # Cycle the generated images through the encoding
-        self.cycled_back_generator = self.generator_fn(
-            self.generator_samples_latents, is_training=False,
-        )
+        self.cycled_back_generator = self.generator_fn(self.generator_samples_latents, is_training=False,)
         tf.summary.image(
-            'cycled_generator_samples', self.cycled_back_generator, max_outputs=10,
+            "cycled_generator_samples", self.cycled_back_generator, max_outputs=10,
         )
 
         # Pass all the fake examples through the discriminator
-        with tf.variable_scope('Discriminator_gen'):
+        with tf.variable_scope("Discriminator_gen"):
             self.gen_cycled_disc = self.discriminator_fn(
-                self.cycled_back_generator,
-                is_training=self.discriminator_training,
+                self.cycled_back_generator, is_training=self.discriminator_training,
             )
             self.gen_samples_disc = self.discriminator_fn(
-                self.generator_samples,
-                is_training=self.discriminator_training,
+                self.generator_samples, is_training=self.discriminator_training,
             )
 
         tf.summary.histogram(
-            'sample disc', tf.nn.sigmoid(self.gen_samples_disc),
+            "sample disc", tf.nn.sigmoid(self.gen_samples_disc),
         )
         tf.summary.histogram(
-            'cycled disc', tf.nn.sigmoid(self.gen_cycled_disc),
+            "cycled disc", tf.nn.sigmoid(self.gen_cycled_disc),
         )
 
     def _loss(self):
@@ -1394,48 +1328,41 @@ class InvertorDefenseGAN(DefenseGANv2):
 
         # Fake samples should fool the discriminator
         self.gen_samples_faking_loss = self.gen_samples_faking_loss_scale * generator_loss(
-            'dcgan', self.gen_cycled_disc,
+            "dcgan", self.gen_cycled_disc,
         )
 
         # The latents of the encoded samples should be close to the zs
         self.latents_to_sample_zs = self.latents_to_z_loss_scale * tf.losses.mean_squared_error(
-            self.z_samples,
-            self.generator_samples_latents,
-            reduction=Reduction.MEAN,
+            self.z_samples, self.generator_samples_latents, reduction=Reduction.MEAN,
         )
         tf.summary.scalar(
-            'losses/latents to zs loss', self.latents_to_sample_zs,
+            "losses/latents to zs loss", self.latents_to_sample_zs,
         )
 
         # The cycled back reconstructions
         raw_cycled_reconstruction_error = slim.flatten(
-            tf.reduce_mean(
-                tf.abs(self.cycled_back_generator - self.generator_samples),
-                axis=1,
-            )
+            tf.reduce_mean(tf.abs(self.cycled_back_generator - self.generator_samples), axis=1,)
         )
         tf.summary.histogram(
-            'raw cycled reconstruction error', raw_cycled_reconstruction_error,
+            "raw cycled reconstruction error", raw_cycled_reconstruction_error,
         )
 
         self.cycled_reconstruction_loss = self.rec_cycled_loss_scale * tf.reduce_mean(
-            tf.nn.relu(
-                raw_cycled_reconstruction_error - self.rec_margin
-            )
+            tf.nn.relu(raw_cycled_reconstruction_error - self.rec_margin)
         )
-        tf.summary.scalar('losses/cycled_margin_rec', self.cycled_reconstruction_loss)
+        tf.summary.scalar("losses/cycled_margin_rec", self.cycled_reconstruction_loss)
 
-        self.enc_cost += (self.cycled_reconstruction_loss + self.gen_samples_faking_loss + self.latents_to_sample_zs)
+        self.enc_cost += self.cycled_reconstruction_loss + self.gen_samples_faking_loss + self.latents_to_sample_zs
 
         # Discriminator loss
         self.gen_samples_disc_loss = self.gen_samples_disc_loss_scale * discriminator_loss(
-            'dcgan', self.gen_samples_disc, self.gen_cycled_disc,
+            "dcgan", self.gen_samples_disc, self.gen_cycled_disc,
         )
         tf.summary.scalar(
-            'losses/gen_samples_disc_loss', self.gen_samples_disc_loss,
+            "losses/gen_samples_disc_loss", self.gen_samples_disc_loss,
         )
         tf.summary.scalar(
-            'losses/gen_samples_faking_loss', self.gen_samples_faking_loss,
+            "losses/gen_samples_faking_loss", self.gen_samples_faking_loss,
         )
         self.discriminator_loss += self.gen_samples_disc_loss
 
@@ -1443,33 +1370,27 @@ class InvertorDefenseGAN(DefenseGANv2):
         # define optimizer op
         # variables for saving and loading (e.g. batchnorm moving average)
 
-        self.disc_train_op = tf.train.AdamOptimizer(
-            learning_rate=self.discriminator_rec_lr,
-            beta1=0.5
-        ).minimize(self.discriminator_loss, var_list=self.discriminator_vars)
+        self.disc_train_op = tf.train.AdamOptimizer(learning_rate=self.discriminator_rec_lr, beta1=0.5).minimize(
+            self.discriminator_loss, var_list=self.discriminator_vars
+        )
 
-        self.encoder_recon_train_op = tf.train.AdamOptimizer(
-            learning_rate=self.encoder_lr, beta1=0.5,
-        ).minimize(self.enc_cost, var_list=self.encoder_vars)
+        self.encoder_recon_train_op = tf.train.AdamOptimizer(learning_rate=self.encoder_lr, beta1=0.5,).minimize(
+            self.enc_cost, var_list=self.encoder_vars
+        )
 
         if not self.no_training_images:
             self.encoder_disc_fooling_train_op = tf.train.AdamOptimizer(
                 learning_rate=self.enc_disc_lr, beta1=0.5,
-            ).minimize(
-                self.enc_rec_faking_loss + self.latent_reg_loss,
-                var_list=self.encoder_vars,
-            )
+            ).minimize(self.enc_rec_faking_loss + self.latent_reg_loss, var_list=self.encoder_vars,)
 
     def _gather_variables(self):
         self.generator_vars = slim.get_variables(self.generator_var_prefix)
         self.encoder_vars = slim.get_variables(self.encoder_var_prefix)
 
         if self.no_training_images:
-            self.discriminator_vars = slim.get_variables('Discriminator_gen')
+            self.discriminator_vars = slim.get_variables("Discriminator_gen")
         else:
-            self.discriminator_vars = slim.get_variables(
-                self.discriminator_var_prefix
-            ) if self.discriminator_fn else []
+            self.discriminator_vars = slim.get_variables(self.discriminator_var_prefix) if self.discriminator_fn else []
 
 
 class EncoderReconstructor(object):
@@ -1488,27 +1409,28 @@ class EncoderReconstructor(object):
         self.rec_iters = gan.rec_iters
 
         x_shape = [self.batch_size] + image_dim
-        timg = tf.Variable(np.zeros(x_shape), dtype=tf.float32, name='timg')
+        timg = tf.Variable(np.zeros(x_shape), dtype=tf.float32, name="timg")
 
         timg_tiled_rr = tf.reshape(timg, [x_shape[0], np.prod(x_shape[1:])])
         timg_tiled_rr = tf.tile(timg_tiled_rr, [1, rec_rr])
-        timg_tiled_rr = tf.reshape(
-            timg_tiled_rr, [x_shape[0] * rec_rr] + x_shape[1:])
+        timg_tiled_rr = tf.reshape(timg_tiled_rr, [x_shape[0] * rec_rr] + x_shape[1:])
 
         if isinstance(gan, InvertorDefenseGAN):
             # DefenseGAN++
             self.z_init = gan.encoder_fn(timg_tiled_rr, is_training=False)[0]
         else:
             # DefenseGAN
-            self.z_init = tf.Variable(np.random.normal(size=(self.batch_size * rec_rr, self.latent_dim)),
-                                      collections=[tf.GraphKeys.LOCAL_VARIABLES],
-                                      trainable=False,
-                                      dtype=tf.float32,
-                                      name='z_init_rec')
+            self.z_init = tf.Variable(
+                np.random.normal(size=(self.batch_size * rec_rr, self.latent_dim)),
+                collections=[tf.GraphKeys.LOCAL_VARIABLES],
+                trainable=False,
+                dtype=tf.float32,
+                name="z_init_rec",
+            )
 
-        modifier_k = tf.Variable(np.zeros([self.batch_size, self.latent_dim]), dtype=tf.float32, name='modifier_k')
+        modifier_k = tf.Variable(np.zeros([self.batch_size, self.latent_dim]), dtype=tf.float32, name="modifier_k")
 
-        z_init = tf.Variable(np.zeros([self.batch_size, self.latent_dim]), dtype=tf.float32, name='z_init')
+        z_init = tf.Variable(np.zeros([self.batch_size, self.latent_dim]), dtype=tf.float32, name="z_init")
         z_init_reshaped = z_init
 
         self.z_hats_recs = gan.generator_fn(z_init_reshaped + modifier_k, is_training=False)
@@ -1519,11 +1441,13 @@ class EncoderReconstructor(object):
         new_vars = [x for x in end_vars if x.name not in start_vars]
 
         # TODO I don't think we need the assign and timg variables anymore
-        self.assign_timg = tf.placeholder(tf.float32, x_shape, name='assign_timg')
-        self.z_init_input_placeholder = tf.placeholder(tf.float32, shape=[self.batch_size, self.latent_dim],
-                                                       name='z_init_input_placeholder')
-        self.modifier_placeholder = tf.placeholder(tf.float32, shape=[self.batch_size, self.latent_dim],
-                                                   name='z_modifier_placeholder')
+        self.assign_timg = tf.placeholder(tf.float32, x_shape, name="assign_timg")
+        self.z_init_input_placeholder = tf.placeholder(
+            tf.float32, shape=[self.batch_size, self.latent_dim], name="z_init_input_placeholder"
+        )
+        self.modifier_placeholder = tf.placeholder(
+            tf.float32, shape=[self.batch_size, self.latent_dim], name="z_modifier_placeholder"
+        )
 
         self.setup = tf.assign(timg, self.assign_timg)
         self.setup_z_init = tf.assign(z_init, self.z_init_input_placeholder)
@@ -1532,7 +1456,7 @@ class EncoderReconstructor(object):
         # original self.init_opt = tf.variables_initializer(var_list=[modifier] + new_vars)
         self.init_opt = tf.variables_initializer(var_list=[] + new_vars)
 
-        print('Reconstruction module initialzied...\n')
+        print("Reconstruction module initialzied...\n")
 
     def generate_z_extrapolated_k(self):
         # config = tf.ConfigProto()
@@ -1592,11 +1516,13 @@ class GeneratorReconstructor(object):
 
         x_shape = [self.batch_size] + image_dim
 
-        self.image_adverse_placeholder = tf.placeholder(tf.float32, shape=[self.batch_size, 28, 28, 1],
-                                                        name="image_adverse_placeholder_1")
+        self.image_adverse_placeholder = tf.placeholder(
+            tf.float32, shape=[self.batch_size, 28, 28, 1], name="image_adverse_placeholder_1"
+        )
 
-        self.z_general_placeholder = tf.placeholder(tf.float32, shape=[self.batch_size, self.latent_dim],
-                                                    name='z_general_placeholder')
+        self.z_general_placeholder = tf.placeholder(
+            tf.float32, shape=[self.batch_size, self.latent_dim], name="z_general_placeholder"
+        )
 
         # TODO basically this can be removed since we're not using rec_rr
         self.timg_tiled_rr = tf.reshape(self.image_adverse_placeholder, [x_shape[0], np.prod(x_shape[1:])])
@@ -1611,11 +1537,13 @@ class GeneratorReconstructor(object):
             self.z_init = gan.encoder_fn(self.timg_tiled_rr, is_training=False)[0]
         else:
             # DefenseGAN
-            self.z_init = tf.Variable(np.random.normal(size=(self.batch_size * rec_rr, self.latent_dim)),
-                                      collections=[tf.GraphKeys.LOCAL_VARIABLES],
-                                      trainable=False,
-                                      dtype=tf.float32,
-                                      name='z_init_rec')
+            self.z_init = tf.Variable(
+                np.random.normal(size=(self.batch_size * rec_rr, self.latent_dim)),
+                collections=[tf.GraphKeys.LOCAL_VARIABLES],
+                trainable=False,
+                dtype=tf.float32,
+                name="z_init_rec",
+            )
 
         self.z_hats_recs = gan.generator_fn(self.z_general_placeholder, is_training=False)
 
@@ -1638,7 +1566,7 @@ class GeneratorReconstructor(object):
         # original self.init_opt = tf.variables_initializer(var_list=[modifier] + new_vars)
         self.init_opt = tf.variables_initializer(var_list=[] + new_vars)
 
-        print('Reconstruction module initialized...\n')
+        print("Reconstruction module initialized...\n")
 
 
 # tflib.layers.py
@@ -1651,61 +1579,62 @@ weight_init = tf.contrib.layers.xavier_initializer()
 rng = np.random.RandomState([2016, 6, 1])
 
 
-def conv2d(x, out_channels, kernel=3, stride=1, sn=False, update_collection=None, name='conv2d'):
+def conv2d(x, out_channels, kernel=3, stride=1, sn=False, update_collection=None, name="conv2d"):
     with tf.variable_scope(name):
-        w = tf.get_variable('w', [kernel, kernel, x.get_shape()[-1], out_channels], initializer=weight_init)
+        w = tf.get_variable("w", [kernel, kernel, x.get_shape()[-1], out_channels], initializer=weight_init)
 
         if sn:
             w = spectral_norm(w, update_collection=update_collection)
 
-        conv = tf.nn.conv2d(x, w, strides=[1, stride, stride, 1], padding='SAME')
+        conv = tf.nn.conv2d(x, w, strides=[1, stride, stride, 1], padding="SAME")
 
-        bias = tf.get_variable('biases', [out_channels], initializer=tf.zeros_initializer())
+        bias = tf.get_variable("biases", [out_channels], initializer=tf.zeros_initializer())
         conv = tf.nn.bias_add(conv, bias)
 
         return conv
 
 
-def deconv2d(x, out_channels, kernel=4, stride=2, sn=False, update_collection=None, name='deconv2d'):
+def deconv2d(x, out_channels, kernel=4, stride=2, sn=False, update_collection=None, name="deconv2d"):
     with tf.variable_scope(name):
         x_shape = x.get_shape().as_list()
         output_shape = [x_shape[0], x_shape[1] * stride, x_shape[2] * stride, out_channels]
 
-        w = tf.get_variable('w', [kernel, kernel, out_channels, x_shape[-1]], initializer=weight_init)
+        w = tf.get_variable("w", [kernel, kernel, out_channels, x_shape[-1]], initializer=weight_init)
 
         if sn:
             w = spectral_norm(w, update_collection=update_collection)
 
-        deconv = tf.nn.conv2d_transpose(x, w, output_shape=output_shape, strides=[1, stride, stride, 1], padding='SAME')
+        deconv = tf.nn.conv2d_transpose(x, w, output_shape=output_shape, strides=[1, stride, stride, 1], padding="SAME")
 
-        bias = tf.get_variable('biases', [out_channels], initializer=tf.zeros_initializer())
+        bias = tf.get_variable("biases", [out_channels], initializer=tf.zeros_initializer())
         deconv = tf.nn.bias_add(deconv, bias)
         deconv.shape.assert_is_compatible_with(output_shape)
 
         return deconv
 
 
-def linear(x, out_features, sn=False, update_collection=None, name='linear'):
+def linear(x, out_features, sn=False, update_collection=None, name="linear"):
     with tf.variable_scope(name):
         x_shape = x.get_shape().as_list()
-        assert (len(x_shape) == 2)
+        assert len(x_shape) == 2
 
-        matrix = tf.get_variable('W', [x_shape[1], out_features], tf.float32, initializer=weight_init)
+        matrix = tf.get_variable("W", [x_shape[1], out_features], tf.float32, initializer=weight_init)
 
         if sn:
             matrix = spectral_norm(matrix, update_collection=update_collection)
 
-        bias = tf.get_variable('bias', [out_features], initializer=tf.zeros_initializer())
+        bias = tf.get_variable("bias", [out_features], initializer=tf.zeros_initializer())
         out = tf.matmul(x, matrix) + bias
         return out
 
 
-def embedding(labels, number_classes, embedding_size, update_collection=None, name='snembedding'):
+def embedding(labels, number_classes, embedding_size, update_collection=None, name="snembedding"):
     with tf.variable_scope(name):
         embedding_map = tf.get_variable(
-            name='embedding_map',
+            name="embedding_map",
             shape=[number_classes, embedding_size],
-            initializer=tf.contrib.layers.xavier_initializer())
+            initializer=tf.contrib.layers.xavier_initializer(),
+        )
 
         embedding_map_bar_transpose = spectral_norm(tf.transpose(embedding_map), update_collection=update_collection)
         embedding_map_bar = tf.transpose(embedding_map_bar_transpose)
@@ -1716,6 +1645,7 @@ def embedding(labels, number_classes, embedding_size, update_collection=None, na
 ##################################################################################
 # Activation function
 ##################################################################################
+
 
 def lrelu(x, alpha=0.2):
     return tf.nn.leaky_relu(x, alpha)
@@ -1733,6 +1663,7 @@ def tanh(x):
 # Sampling
 ##################################################################################
 
+
 def global_sum_pooling(x):
     gsp = tf.reduce_sum(x, axis=[1, 2])
     return gsp
@@ -1745,7 +1676,7 @@ def up_sample(x):
 
 
 def down_sample(x):
-    x = tf.nn.avg_pool(x, [1, 2, 2, 1], [1, 2, 2, 1], 'VALID')
+    x = tf.nn.avg_pool(x, [1, 2, 2, 1], [1, 2, 2, 1], "VALID")
     return x
 
 
@@ -1753,13 +1684,21 @@ def down_sample(x):
 # Normalization
 ##################################################################################
 
-def batch_norm(x, is_training=True, name='batch_norm'):
-    return tf.contrib.layers.batch_norm(x, decay=0.9, epsilon=1e-05,
-                                        center=True, scale=True,
-                                        is_training=is_training, scope=name, updates_collections=None)
+
+def batch_norm(x, is_training=True, name="batch_norm"):
+    return tf.contrib.layers.batch_norm(
+        x,
+        decay=0.9,
+        epsilon=1e-05,
+        center=True,
+        scale=True,
+        is_training=is_training,
+        scope=name,
+        updates_collections=None,
+    )
 
 
-def condition_batch_norm(x, z, is_training=True, scope='batch_norm'):
+def condition_batch_norm(x, z, is_training=True, scope="batch_norm"):
     """
     Hierarchical Embedding (without class-conditioning).
     Input latent vector z is linearly projected to produce per-sample gain and bias for batchnorm
@@ -1771,13 +1710,15 @@ def condition_batch_norm(x, z, is_training=True, scope='batch_norm'):
         decay = 0.9
         epsilon = 1e-05
 
-        test_mean = tf.get_variable("pop_mean", shape=[c], dtype=tf.float32, initializer=tf.constant_initializer(0.0),
-                                    trainable=False)
-        test_var = tf.get_variable("pop_var", shape=[c], dtype=tf.float32, initializer=tf.constant_initializer(1.0),
-                                   trainable=False)
+        test_mean = tf.get_variable(
+            "pop_mean", shape=[c], dtype=tf.float32, initializer=tf.constant_initializer(0.0), trainable=False
+        )
+        test_var = tf.get_variable(
+            "pop_var", shape=[c], dtype=tf.float32, initializer=tf.constant_initializer(1.0), trainable=False
+        )
 
-        beta = linear(z, c, name='beta')
-        gamma = linear(z, c, name='gamma')
+        beta = linear(z, c, name="beta")
+        gamma = linear(z, c, name="gamma")
 
         beta = tf.reshape(beta, shape=[-1, 1, 1, c])
         gamma = tf.reshape(gamma, shape=[-1, 1, 1, c])
@@ -1800,8 +1741,7 @@ class ConditionalBatchNorm(object):
     Note: Each batch norm has (2 x n_class x n_feature) parameters
     """
 
-    def __init__(self, num_categories, name='conditional_batch_norm', decay_rate=0.999, center=True,
-                 scale=True):
+    def __init__(self, num_categories, name="conditional_batch_norm", decay_rate=0.999, center=True, scale=True):
         with tf.variable_scope(name):
             self.name = name
             self.num_categories = num_categories
@@ -1820,18 +1760,12 @@ class ConditionalBatchNorm(object):
         moving_shape = tf.TensorShape((len(inputs_shape) - 1) * [1]).concatenate(params_shape)
 
         with tf.variable_scope(self.name):
-            self.gamma = tf.get_variable(
-                'gamma', shape,
-                initializer=tf.ones_initializer())
-            self.beta = tf.get_variable(
-                'beta', shape,
-                initializer=tf.zeros_initializer())
-            self.moving_mean = tf.get_variable('mean', moving_shape,
-                                               initializer=tf.zeros_initializer(),
-                                               trainable=False)
-            self.moving_var = tf.get_variable('var', moving_shape,
-                                              initializer=tf.ones_initializer(),
-                                              trainable=False)
+            self.gamma = tf.get_variable("gamma", shape, initializer=tf.ones_initializer())
+            self.beta = tf.get_variable("beta", shape, initializer=tf.zeros_initializer())
+            self.moving_mean = tf.get_variable(
+                "mean", moving_shape, initializer=tf.zeros_initializer(), trainable=False
+            )
+            self.moving_var = tf.get_variable("var", moving_shape, initializer=tf.ones_initializer(), trainable=False)
 
             beta = tf.gather(self.beta, labels)
             gamma = tf.gather(self.gamma, labels)
@@ -1841,7 +1775,7 @@ class ConditionalBatchNorm(object):
                 gamma = tf.expand_dims(gamma, 1)
 
             decay = self.decay_rate
-            variance_epsilon = 1E-5
+            variance_epsilon = 1e-5
             if is_training:
                 mean, variance = tf.nn.moments(inputs, axis, keepdims=True)
                 update_mean = tf.assign(self.moving_mean, self.moving_mean * decay + mean * (1 - decay))
@@ -1852,7 +1786,8 @@ class ConditionalBatchNorm(object):
                     outputs = tf.nn.batch_normalization(inputs, mean, variance, beta, gamma, variance_epsilon)
             else:
                 outputs = tf.nn.batch_normalization(
-                    inputs, self.moving_mean, self.moving_var, beta, gamma, variance_epsilon)
+                    inputs, self.moving_mean, self.moving_var, beta, gamma, variance_epsilon
+                )
             outputs.set_shape(inputs_shape)
             return outputs
 
@@ -1868,7 +1803,7 @@ def spectral_norm(w, num_iters=1, update_collection=None):
     w_shape = w.shape.as_list()
     w = tf.reshape(w, [-1, w_shape[-1]])
 
-    u = tf.get_variable('u', [1, w_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
+    u = tf.get_variable("u", [1, w_shape[-1]], initializer=tf.truncated_normal_initializer(), trainable=False)
 
     u_hat = u
     v_hat = None
@@ -1885,7 +1820,7 @@ def spectral_norm(w, num_iters=1, update_collection=None):
     if update_collection is None:
         with tf.control_dependencies([u.assign(u_hat)]):
             w_norm = tf.reshape(w_norm, w_shape)
-    elif update_collection == 'NO_OPS':
+    elif update_collection == "NO_OPS":
         w_norm = tf.reshape(w_norm, w_shape)
     else:
         raise NotImplementedError
@@ -1897,54 +1832,55 @@ def spectral_norm(w, num_iters=1, update_collection=None):
 # Residual Blockes
 ##################################################################################
 
-def resblock_up(x, out_channels, is_training=True, sn=False, update_collection=None, name='resblock_up'):
+
+def resblock_up(x, out_channels, is_training=True, sn=False, update_collection=None, name="resblock_up"):
     with tf.variable_scope(name):
         x_0 = x
         # block 1
-        x = tf.nn.relu(batch_norm(x, is_training=is_training, name='bn1'))
+        x = tf.nn.relu(batch_norm(x, is_training=is_training, name="bn1"))
         x = up_sample(x)
-        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name='conv1')
+        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name="conv1")
 
         # block 2
-        x = tf.nn.relu(batch_norm(x, is_training=is_training, name='bn2'))
-        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name='conv2')
+        x = tf.nn.relu(batch_norm(x, is_training=is_training, name="bn2"))
+        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name="conv2")
 
         # skip connection
         x_0 = up_sample(x_0)
-        x_0 = conv2d(x_0, out_channels, 1, 1, sn=sn, update_collection=update_collection, name='conv3')
+        x_0 = conv2d(x_0, out_channels, 1, 1, sn=sn, update_collection=update_collection, name="conv3")
 
         return x_0 + x
 
 
-def resblock_down(x, out_channels, sn=False, update_collection=None, downsample=True, name='resblock_down'):
+def resblock_down(x, out_channels, sn=False, update_collection=None, downsample=True, name="resblock_down"):
     with tf.variable_scope(name):
         input_channels = x.shape.as_list()[-1]
         x_0 = x
         x = tf.nn.relu(x)
-        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name='sn_conv1')
+        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name="sn_conv1")
         x = tf.nn.relu(x)
-        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name='sn_conv2')
+        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name="sn_conv2")
 
         if downsample:
             x = down_sample(x)
         if downsample or input_channels != out_channels:
-            x_0 = conv2d(x_0, out_channels, 1, 1, sn=sn, update_collection=update_collection, name='sn_conv3')
+            x_0 = conv2d(x_0, out_channels, 1, 1, sn=sn, update_collection=update_collection, name="sn_conv3")
             if downsample:
                 x_0 = down_sample(x_0)
 
         return x_0 + x
 
 
-def inblock(x, out_channels, sn=False, update_collection=None, name='inblock'):
+def inblock(x, out_channels, sn=False, update_collection=None, name="inblock"):
     with tf.variable_scope(name):
         x_0 = x
-        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name='sn_conv1')
+        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name="sn_conv1")
         x = tf.nn.relu(x)
-        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name='sn_conv2')
+        x = conv2d(x, out_channels, 3, 1, sn=sn, update_collection=update_collection, name="sn_conv2")
 
         x = down_sample(x)
         x_0 = down_sample(x_0)
-        x_0 = conv2d(x_0, out_channels, 1, 1, sn=sn, update_collection=update_collection, name='sn_conv3')
+        x_0 = conv2d(x_0, out_channels, 1, 1, sn=sn, update_collection=update_collection, name="sn_conv3")
 
         return x_0 + x
 
@@ -1957,13 +1893,13 @@ def inblock(x, out_channels, sn=False, update_collection=None, name='inblock'):
 def encoder_gan_loss(loss_func, fake):
     fake_loss = 0
 
-    if loss_func.__contains__('wgan'):
+    if loss_func.__contains__("wgan"):
         fake_loss = -tf.reduce_mean(fake)
 
-    if loss_func == 'dcgan':
+    if loss_func == "dcgan":
         fake_loss = tf.reduce_mean(tf.nn.softplus(-fake))
 
-    if loss_func == 'hingegan':
+    if loss_func == "hingegan":
         fake_loss = -tf.reduce_mean(fake)
 
     return fake_loss

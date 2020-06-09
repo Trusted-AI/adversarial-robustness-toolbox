@@ -44,10 +44,10 @@ class TestWasserstein(TestBase):
 
         cls.n_train = 10
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0: cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0: cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0: cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0: cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def test_keras_mnist(self):
         classifier = get_image_classifier_kr()
@@ -89,9 +89,7 @@ class TestWasserstein(TestBase):
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(self.y_test_mnist, axis=1)) / self.y_test_mnist.shape[0]
         logger.info("[PyTorch, MNIST] Accuracy on test set: %.2f%%", acc * 100)
 
-        self._test_backend_mnist(
-            classifier, x_train_mnist, self.y_train_mnist, x_test_mnist, self.y_test_mnist
-        )
+        self._test_backend_mnist(classifier, x_train_mnist, self.y_train_mnist, x_test_mnist, self.y_test_mnist)
 
     def _test_backend_mnist(self, classifier, x_train, y_train, x_test, y_test):
 
@@ -108,8 +106,8 @@ class TestWasserstein(TestBase):
             max_iter=num_iter,
             conjugate_sinkhorn_max_iter=num_iter,
             projected_sinkhorn_max_iter=num_iter,
-            norm='wasserstein',
-            ball='wasserstein',
+            norm="wasserstein",
+            ball="wasserstein",
             targeted=False,
             p=2,
             eps_iter=2,
@@ -146,8 +144,8 @@ class TestWasserstein(TestBase):
             max_iter=num_iter,
             conjugate_sinkhorn_max_iter=num_iter,
             projected_sinkhorn_max_iter=num_iter,
-            norm='2',
-            ball='wasserstein',
+            norm="2",
+            ball="wasserstein",
             targeted=False,
             p=2,
             eps_iter=2,
@@ -181,8 +179,8 @@ class TestWasserstein(TestBase):
             max_iter=num_iter,
             conjugate_sinkhorn_max_iter=num_iter,
             projected_sinkhorn_max_iter=num_iter,
-            norm='inf',
-            ball='wasserstein',
+            norm="inf",
+            ball="wasserstein",
             targeted=False,
             p=2,
             eps_iter=2,
@@ -216,8 +214,8 @@ class TestWasserstein(TestBase):
             max_iter=num_iter,
             conjugate_sinkhorn_max_iter=num_iter,
             projected_sinkhorn_max_iter=num_iter,
-            norm='1',
-            ball='wasserstein',
+            norm="1",
+            ball="wasserstein",
             targeted=False,
             p=2,
             eps_iter=2,
@@ -251,8 +249,8 @@ class TestWasserstein(TestBase):
             max_iter=num_iter,
             conjugate_sinkhorn_max_iter=num_iter,
             projected_sinkhorn_max_iter=num_iter,
-            norm='wasserstein',
-            ball='2',
+            norm="wasserstein",
+            ball="2",
             targeted=False,
             p=2,
             eps_iter=2,
@@ -286,8 +284,8 @@ class TestWasserstein(TestBase):
             max_iter=num_iter,
             conjugate_sinkhorn_max_iter=num_iter,
             projected_sinkhorn_max_iter=num_iter,
-            norm='wasserstein',
-            ball='1',
+            norm="wasserstein",
+            ball="1",
             targeted=False,
             p=2,
             eps_iter=2,
@@ -321,8 +319,8 @@ class TestWasserstein(TestBase):
             max_iter=num_iter,
             conjugate_sinkhorn_max_iter=num_iter,
             projected_sinkhorn_max_iter=num_iter,
-            norm='wasserstein',
-            ball='inf',
+            norm="wasserstein",
+            ball="inf",
             targeted=False,
             p=2,
             eps_iter=2,
@@ -357,8 +355,8 @@ class TestWasserstein(TestBase):
             max_iter=num_iter,
             conjugate_sinkhorn_max_iter=num_iter,
             projected_sinkhorn_max_iter=num_iter,
-            norm='wasserstein',
-            ball='wasserstein',
+            norm="wasserstein",
+            ball="wasserstein",
             targeted=True,
             p=2,
             eps_iter=2,
@@ -383,9 +381,7 @@ class TestWasserstein(TestBase):
         )
         self.assertTrue(train_success_rate >= base_success_rate)
 
-        test_success_rate = (
-            np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(test_y_rand, axis=1)) / y_test.shape[0]
-        )
+        test_success_rate = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(test_y_rand, axis=1)) / y_test.shape[0]
         self.assertTrue(test_success_rate >= 0)
 
         # Test Wasserstein with p-wasserstein=1 and kernel_size=3
@@ -395,8 +391,8 @@ class TestWasserstein(TestBase):
             max_iter=num_iter,
             conjugate_sinkhorn_max_iter=num_iter,
             projected_sinkhorn_max_iter=num_iter,
-            norm='wasserstein',
-            ball='wasserstein',
+            norm="wasserstein",
+            ball="wasserstein",
             targeted=False,
             p=1,
             eps_iter=2,
@@ -425,8 +421,7 @@ class TestWasserstein(TestBase):
 
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(
-            Wasserstein,
-            (BaseEstimator, LossGradientsMixin, NeuralNetworkMixin, ClassifierMixin)
+            Wasserstein, (BaseEstimator, LossGradientsMixin, NeuralNetworkMixin, ClassifierMixin)
         )
 
 

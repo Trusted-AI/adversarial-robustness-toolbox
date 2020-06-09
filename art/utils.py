@@ -61,9 +61,9 @@ def deprecated(end_version, *, reason="", replaced_by=""):
 
     .. code-block:: python
 
-    @deprecated("0.1.5", replaced_by="sum")
-    def simple_addition(a, b):
-        return a + b
+      @deprecated("0.1.5", replaced_by="sum")
+      def simple_addition(a, b):
+          return a + b
 
     :param end_version: Release version of removal.
     :type end_version: `str`
@@ -102,15 +102,15 @@ def deprecated_keyword_arg(identifier, end_version, *, reason="", replaced_by=""
 
     .. code-block:: python
 
-    @deprecated_keyword_arg("print", "1.1.0", replaced_by="verbose")
-    def simple_addition(a, b, print=Deprecated, verbose=False):
-        if verbose:
-            print(a + b)
-        return a + b
+      @deprecated_keyword_arg("print", "1.1.0", replaced_by="verbose")
+      def simple_addition(a, b, print=Deprecated, verbose=False):
+          if verbose:
+              print(a + b)
+          return a + b
 
-    @deprecated_keyword_arg("verbose", "1.1.0")
-    def simple_addition(a, b, verbose=Deprecated):
-        return a + b
+      @deprecated_keyword_arg("verbose", "1.1.0")
+      def simple_addition(a, b, verbose=Deprecated):
+          return a + b
 
     :param identifier: Keyword identifier.
     :type identifier: `str`

@@ -68,9 +68,7 @@ def test_adversarial_trainer_FBF_Pytorch_fit_and_predict(get_adv_trainer, fix_ge
     accuracy_new = np.sum(predictions_new == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
 
     np.testing.assert_array_almost_equal(
-        float(np.mean(x_test_mnist_original - x_test_mnist)),
-        0.0,
-        decimal=0.0001,
+        float(np.mean(x_test_mnist_original - x_test_mnist)), 0.0, decimal=0.0001,
     )
 
     np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.001)

@@ -82,7 +82,9 @@ def add_pattern_bd(x, distance=2, pixel_value=1):
     return x
 
 
-def insert_image(x, backdoor_path="data/backdoors/post_it.png", random=True, x_shift=0, y_shift=0, size=None, mode="L"):
+def insert_image(
+    x, backdoor_path="utils/data/backdoors/post_it.png", random=True, x_shift=0, y_shift=0, size=None, mode="L"
+):
     """
     Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.

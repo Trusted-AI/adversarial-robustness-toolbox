@@ -70,8 +70,8 @@ class Wasserstein(EvasionAttack):
         p=2,
         kernel_size=5,
         eps_step=0.1,
-        norm='wasserstein',
-        ball='wasserstein',
+        norm="wasserstein",
+        ball="wasserstein",
         eps=0.3,
         eps_iter=10,
         eps_factor=1.1,
@@ -175,8 +175,8 @@ class Wasserstein(EvasionAttack):
             logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            batch = x_adv[batch_index_1: batch_index_2]
-            batch_labels = targets[batch_index_1: batch_index_2]
+            batch = x_adv[batch_index_1:batch_index_2]
+            batch_labels = targets[batch_index_1:batch_index_2]
 
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, cost_matrix)
 
@@ -215,16 +215,14 @@ class Wasserstein(EvasionAttack):
             adv_x = self._compute(adv_x, x, targets, cost_matrix, eps_, err)
 
             if self.targeted:
-                err = np.argmax(
-                    self.estimator.predict(adv_x, batch_size=x.shape[0]),
-                    axis=1
-                ) == np.argmax(targets, axis=1)
+                err = np.argmax(self.estimator.predict(adv_x, batch_size=x.shape[0]), axis=1) == np.argmax(
+                    targets, axis=1
+                )
 
             else:
-                err = np.argmax(
-                    self.estimator.predict(adv_x, batch_size=x.shape[0]),
-                    axis=1
-                ) != np.argmax(targets, axis=1)
+                err = np.argmax(self.estimator.predict(adv_x, batch_size=x.shape[0]), axis=1) != np.argmax(
+                    targets, axis=1
+                )
 
             if np.mean(err) > np.mean(err_best):
                 err_best = err
@@ -296,21 +294,21 @@ class Wasserstein(EvasionAttack):
         grad = self.estimator.loss_gradient(x, y) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
-        if self.norm == 'inf':
+        if self.norm == "inf":
             grad = np.sign(grad)
             x_adv = x + self.eps_step * grad
 
-        elif self.norm == '1':
+        elif self.norm == "1":
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
             x_adv = x + self.eps_step * grad
 
-        elif self.norm == '2':
+        elif self.norm == "2":
             ind = tuple(range(1, len(x.shape)))
             grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
             x_adv = x + self.eps_step * grad
 
-        elif self.norm == 'wasserstein':
+        elif self.norm == "wasserstein":
             x_adv = self._conjugate_sinkhorn(x, grad, cost_matrix)
 
         else:
@@ -338,7 +336,7 @@ class Wasserstein(EvasionAttack):
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
-        if self.ball == '2':
+        if self.ball == "2":
             values = x - x_init
             values_tmp = values.reshape((values.shape[0], -1))
 
@@ -350,7 +348,7 @@ class Wasserstein(EvasionAttack):
 
             x_adv = values + x_init
 
-        elif self.ball == '1':
+        elif self.ball == "1":
             values = x - x_init
             values_tmp = values.reshape((values.shape[0], -1))
 
@@ -361,7 +359,7 @@ class Wasserstein(EvasionAttack):
             values = values_tmp.reshape(values.shape)
             x_adv = values + x_init
 
-        elif self.ball == 'inf':
+        elif self.ball == "inf":
             values = x - x_init
             values_tmp = values.reshape((values.shape[0], -1))
 
@@ -370,7 +368,7 @@ class Wasserstein(EvasionAttack):
             values = values_tmp.reshape(values.shape)
             x_adv = values + x_init
 
-        elif self.ball == 'wasserstein':
+        elif self.ball == "wasserstein":
             x_adv = self._projected_sinkhorn(x, x_init, cost_matrix, eps)
 
         else:
@@ -409,7 +407,7 @@ class Wasserstein(EvasionAttack):
 
         # Check for overflow
         if (exp_beta == np.inf).any():
-            raise ValueError('Overflow error in `_conjugate_sinkhorn` for exponential beta.')
+            raise ValueError("Overflow error in `_conjugate_sinkhorn` for exponential beta.")
 
         cost_matrix_new = cost_matrix.copy() + 1
         cost_matrix_new = np.expand_dims(np.expand_dims(cost_matrix_new, 0), 0)
@@ -432,13 +430,11 @@ class Wasserstein(EvasionAttack):
 
             # Newton step
             g = -self.eps_step + self._batch_dot(
-                exp_alpha,
-                self._local_transport(cost_matrix * K, exp_beta, self.kernel_size)
+                exp_alpha, self._local_transport(cost_matrix * K, exp_beta, self.kernel_size)
             )
 
             h = -self._batch_dot(
-                exp_alpha,
-                self._local_transport(cost_matrix * cost_matrix * K, exp_beta, self.kernel_size)
+                exp_alpha, self._local_transport(cost_matrix * cost_matrix * K, exp_beta, self.kernel_size)
             )
 
             delta = g / h
@@ -510,27 +506,23 @@ class Wasserstein(EvasionAttack):
 
         for _ in range(self.projected_sinkhorn_max_iter):
             # Block coordinate descent iterates
-            alpha = (np.log(self._local_transport(K, exp_beta, self.kernel_size)) - np.log(x_init))
+            alpha = np.log(self._local_transport(K, exp_beta, self.kernel_size)) - np.log(x_init)
             exp_alpha = np.exp(-alpha)
 
-            beta = self.regularization * np.exp(self.regularization * x) * self._local_transport(
-                K,
-                exp_alpha,
-                self.kernel_size
+            beta = (
+                self.regularization
+                * np.exp(self.regularization * x)
+                * self._local_transport(K, exp_alpha, self.kernel_size)
             )
             beta[beta > 1e-10] = np.real(lambertw(beta[beta > 1e-10]))
             beta -= self.regularization * x
             exp_beta = np.exp(-beta)
 
             # Newton step
-            g = -eps + self._batch_dot(
-                exp_alpha,
-                self._local_transport(cost_matrix * K, exp_beta, self.kernel_size)
-            )
+            g = -eps + self._batch_dot(exp_alpha, self._local_transport(cost_matrix * K, exp_beta, self.kernel_size))
 
             h = -self._batch_dot(
-                exp_alpha,
-                self._local_transport(cost_matrix * cost_matrix * K, exp_beta, self.kernel_size)
+                exp_alpha, self._local_transport(cost_matrix * cost_matrix * K, exp_beta, self.kernel_size)
             )
 
             delta = g / h
@@ -551,15 +543,7 @@ class Wasserstein(EvasionAttack):
 
             # Check for convergence
             next_convergence = self._projected_sinkhorn_evaluation(
-                x,
-                x_init,
-                alpha,
-                exp_alpha,
-                beta,
-                exp_beta,
-                psi,
-                K,
-                eps,
+                x, x_init, alpha, exp_alpha, beta, exp_beta, psi, K, eps,
             )
 
             if (np.abs(convergence - next_convergence) <= 1e-4 + 1e-4 * np.abs(next_convergence)).all():
@@ -632,7 +616,7 @@ class Wasserstein(EvasionAttack):
         # Do padding
         shape = tuple(np.array(x.shape[2:]) + padding * 2)
         x_pad = np.zeros(x.shape[:2] + shape)
-        x_pad[:, :, padding:(shape[0] - padding), padding:(shape[0] - padding)] = x
+        x_pad[:, :, padding : (shape[0] - padding), padding : (shape[0] - padding)] = x
 
         # Do unfolding
         res_dim_0 = x.shape[0]
@@ -642,7 +626,7 @@ class Wasserstein(EvasionAttack):
 
         for i in range(shape[0] - kernel_size + 1):
             for j in range(shape[1] - kernel_size + 1):
-                patch = x_pad[:, :, i:(i + kernel_size), j:(j + kernel_size)]
+                patch = x_pad[:, :, i : (i + kernel_size), j : (j + kernel_size)]
                 patch = patch.reshape(x.shape[0], -1)
                 result[:, :, i * (shape[1] - kernel_size + 1) + j] = patch
 
@@ -721,10 +705,13 @@ class Wasserstein(EvasionAttack):
         :return: Evaluation result.
         :rtype: `np.ndarray`
         """
-        return (-0.5 / self.regularization * self._batch_dot(beta, beta) - psi * eps
-                - self._batch_dot(np.minimum(alpha, 1e10), x_init)
-                - self._batch_dot(np.minimum(beta, 1e10), x)
-                - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, self.kernel_size)))
+        return (
+            -0.5 / self.regularization * self._batch_dot(beta, beta)
+            - psi * eps
+            - self._batch_dot(np.minimum(alpha, 1e10), x_init)
+            - self._batch_dot(np.minimum(beta, 1e10), x)
+            - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, self.kernel_size))
+        )
 
     def _conjugated_sinkhorn_evaluation(self, x, alpha, exp_alpha, exp_beta, psi, K):
         """
@@ -749,8 +736,11 @@ class Wasserstein(EvasionAttack):
         :return: Evaluation result.
         :rtype: `np.ndarray`
         """
-        return (-psi * self.eps_step - self._batch_dot(np.minimum(alpha, 1e38), x)
-                - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, self.kernel_size)))
+        return (
+            -psi * self.eps_step
+            - self._batch_dot(np.minimum(alpha, 1e38), x)
+            - self._batch_dot(exp_alpha, self._local_transport(K, exp_beta, self.kernel_size))
+        )
 
     def set_params(self, **kwargs):
         """
@@ -807,11 +797,11 @@ class Wasserstein(EvasionAttack):
             raise ValueError("Need odd kernel size.")
 
         # Check if order of the norm is acceptable given current implementation
-        if self.norm not in ['inf', '1', '2', 'wasserstein']:
+        if self.norm not in ["inf", "1", "2", "wasserstein"]:
             raise ValueError("Norm order must be either `inf`, `1`, `2` or `wasserstein`.")
 
         # Check if order of the ball is acceptable given current implementation
-        if self.ball not in ['inf', '1', '2', 'wasserstein']:
+        if self.ball not in ["inf", "1", "2", "wasserstein"]:
             raise ValueError("Ball order must be either `inf`, `1`, `2` or `wasserstein`.")
 
         if self.eps <= 0:

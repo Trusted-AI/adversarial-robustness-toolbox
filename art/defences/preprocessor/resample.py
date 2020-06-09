@@ -38,8 +38,8 @@ class Resample(Preprocessor):
     """
     Implement the resampling defense approach.
 
-    Resampling implicitly consists of a step that applies a lowpass filter. The underlying filter in this implementation
-    is a Windowed Sinc Interpolation function.
+    Resampling implicitly consists of a step that applies a low-pass filter. The underlying filter in this
+    implementation is a Windowed Sinc Interpolation function.
     """
 
     params = ["sr_original", "sr_new", "channel_index", "channels_first"]
@@ -92,8 +92,7 @@ class Resample(Preprocessor):
         """
         Resample `x` to a new sampling rate.
 
-        :param x: Sample to resample of shape `(batch_size, length, channel)` or `(batch_size,
-        channel, length)`.
+        :param x: Sample to resample of shape `(batch_size, length, channel)` or `(batch_size, channel, length)`.
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`

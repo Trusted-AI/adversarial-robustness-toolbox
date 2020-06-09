@@ -2,6 +2,11 @@
 ===================
 .. automodule:: art.wrappers
 
+Base Class Wrapper
+------------------
+.. autoclass:: ClassifierWrapper
+   :members:
+
 Expectation over Transformations
 --------------------------------
 .. autoclass:: ExpectationOverTransformations
@@ -10,9 +15,4 @@ Expectation over Transformations
 Query-Efficient Black-Box Attack
 --------------------------------
 .. autoclass:: QueryEfficientBBGradientEstimation
-   :members:
-
-Base Wrapper
-------------
-.. autoclass:: ClassifierWrapper
    :members:

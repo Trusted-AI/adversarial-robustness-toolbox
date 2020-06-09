@@ -49,8 +49,7 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
 
         """
         self._eps = eps
-        super().__init__(classifier,
-                         **kwargs)
+        super().__init__(classifier, **kwargs)
 
     @abc.abstractmethod
     def fit(self, x, y, validation_data=None, batch_size=128, nb_epochs=20, **kwargs):

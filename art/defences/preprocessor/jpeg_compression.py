@@ -120,8 +120,8 @@ class JpegCompression(Preprocessor):
         """
         Apply JPEG compression to sample `x`.
 
-        :param x: Sample to compress with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`. `x` values are
-        expected to be in the data range [0, 1] or [0, 255].
+        :param x: Sample to compress with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`. `x` values are expected to be in
+                  the data range [0, 1] or [0, 255].
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`

@@ -2,7 +2,6 @@
 =====================
 .. automodule:: art.estimators
 
-
 Base Class Estimator
 --------------------
 .. autoclass:: BaseEstimator

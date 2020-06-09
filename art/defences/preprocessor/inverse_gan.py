@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the InverseGan defence.
+This module implements the InverseGAN defence.
 
 | Paper link: https://arxiv.org/abs/1911.10291
 
@@ -30,8 +30,6 @@ from scipy.optimize import minimize
 import tensorflow as tf
 
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.estimators.encoding.encoder import EncoderMixin
-from art.estimators.generation.generator import GeneratorMixin
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +48,10 @@ class InverseGAN(Preprocessor):
         """
         super().__init__()
 
-        assert isinstance(gan, GeneratorMixin)
         self.gan = gan
         self.inverse_gan = inverse_gan
         self._sess = sess
-        self._image_adv = tf.placeholder(tf.float32, shape=self.gan.model.get_shape().as_list(),
-                                         name="image_adv_ph")
+        self._image_adv = tf.placeholder(tf.float32, shape=self.gan.model.get_shape().as_list(), name="image_adv_ph")
 
         num_dim = len(self._image_adv.get_shape())
         image_loss = tf.reduce_mean(tf.square(self.gan.model - self._image_adv), axis=list(range(1, num_dim)))
@@ -63,9 +59,9 @@ class InverseGAN(Preprocessor):
         self._grad = tf.gradients(self._loss, self.gan.input_ph)
 
         if self.inverse_gan is not None:
-            assert isinstance(inverse_gan, EncoderMixin)
-            assert self.gan.encoding_length == self.inverse_gan.encoding_length, "Both gan and inverseGan " \
-                                                                                 "must use the same size encoding"
+            assert self.gan.encoding_length == self.inverse_gan.encoding_length, (
+                "Both GAN and inverseGAN " "must use the same size encoding"
+            )
 
     def __call__(self, x, **kwargs):
         """
@@ -93,7 +89,8 @@ class InverseGAN(Preprocessor):
             z_i_reshaped = np.reshape(z_i, [batch_size, self.gan.encoding_length])
             grad = self.estimate_gradient(z_i_reshaped, x)
             grad = np.float64(
-                grad)  # scipy fortran code seems to expect float64 not 32 https://github.com/scipy/scipy/issues/5832
+                grad
+            )  # scipy fortran code seems to expect float64 not 32 https://github.com/scipy/scipy/issues/5832
 
             return grad.flatten()
 
@@ -130,8 +127,9 @@ class InverseGAN(Preprocessor):
 
         options.update(kwargs)
 
-        optimized_z_encoding_flat = minimize(func_loss, initial_z_encoding, jac=func_gen_gradients, method="L-BFGS-B",
-                                             options=options)
+        optimized_z_encoding_flat = minimize(
+            func_loss, initial_z_encoding, jac=func_gen_gradients, method="L-BFGS-B", options=options
+        )
         optimized_z_encoding = np.reshape(optimized_z_encoding_flat.x, [batch_size, self.gan.encoding_length])
 
         y = self.gan.predict(optimized_z_encoding)
@@ -150,8 +148,7 @@ class InverseGAN(Preprocessor):
 
         logging.info("Calculating Loss")
 
-        loss = self._sess.run(self._loss,
-                              feed_dict={self.gan.input_ph: z, self._image_adv: image_adv})
+        loss = self._sess.run(self._loss, feed_dict={self.gan.input_ph: z, self._image_adv: image_adv})
 
         return loss
 
@@ -182,9 +179,7 @@ class InverseGAN(Preprocessor):
         """
         logging.info("Calculating Gradients")
 
-        gradient = self._sess.run(self._grad,
-                                  feed_dict={self._image_adv: y,
-                                             self.gan.input_ph: z_encoding})
+        gradient = self._sess.run(self._grad, feed_dict={self._image_adv: y, self.gan.input_ph: z_encoding})
 
         return gradient
 
@@ -201,8 +196,4 @@ class DefenseGAN(InverseGAN):
           Create an instance of DefenseGAN.
 
           """
-        super().__init__(
-            sess=sess,
-            gan=gan,
-            inverse_gan=None
-        )
+        super().__init__(sess=sess, gan=gan, inverse_gan=None)

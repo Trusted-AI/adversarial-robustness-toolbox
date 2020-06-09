@@ -305,9 +305,7 @@ class AttributeInferenceAttack(InferenceAttack):
         """
         super().__init__(estimator)
 
-        params = {
-            "attack_feature": attack_feature
-        }
+        params = {"attack_feature": attack_feature}
         self.set_params(**params)
 
     @abc.abstractmethod

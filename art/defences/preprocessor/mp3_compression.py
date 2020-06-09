@@ -87,8 +87,8 @@ class Mp3Compression(Preprocessor):
         """
         Apply MP3 compression to sample `x`.
 
-        :param x: Sample to compress with shape `(batch_size, length, channel)`. `x` values are
-        recommended to be of type `np.int16`.
+        :param x: Sample to compress with shape `(batch_size, length, channel)`. `x` values are recommended to be of
+                  type `np.int16`.
         :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :type y: `np.ndarray`

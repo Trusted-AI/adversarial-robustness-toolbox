@@ -6,8 +6,8 @@
 shows how to create an adversarial attack on a video action recognition classification task with ART. Experiments in this notebook show how to modify a video sample by employing a Fast Gradient Method attack so that the modified video sample get mis-classified.
 
 <p align="center">
-  <img src="../data/images/basketball.gif?raw=true" width="200" title="benign_basketball_sample">
-  <img src="../data/images/adversarial_basketball.gif?raw=true" width="200" title="adversarial_basketball_sample">
+  <img src="../utils/data/images/basketball.gif?raw=true" width="200" title="benign_basketball_sample">
+  <img src="../utils/data/images/adversarial_basketball.gif?raw=true" width="200" title="adversarial_basketball_sample">
 </p>
 
 
@@ -17,7 +17,7 @@ shows how to create an adversarial attack on a video action recognition classifi
 shows how to create adversarial examples of audio data with ART. Experiments in this notebook show how the waveform of a spoken digit of the AudioMNIST dataset can be modified with almost imperceptible changes so that the waveform gets mis-classified as different digit.
 
 <p align="center">
-  <img src="../data/images/adversarial_audio_waveform.png?raw=true" width="200" title="adversarial_audio_waveform">
+  <img src="../utils/data/images/adversarial_audio_waveform.png?raw=true" width="200" title="adversarial_audio_waveform">
 </p>
 
 ## Adversarial training
@@ -31,7 +31,7 @@ demonstrates adversarial training of a neural network to harden the model agains
 dataset.
 
 <p align="center">
-  <img src="../data/images/adversarial_training.png?raw=true" width="200" title="adversarial_training">
+  <img src="../utils/data/images/adversarial_training.png?raw=true" width="200" title="adversarial_training">
 </p>
 
 ## TensorFlow v2
@@ -50,7 +50,7 @@ shows how to use ART to create real-world adversarial patches that fool real-wor
 models.
 
 <p align="center">
-  <img src="../data/images/adversarial_patch.png?raw=true" width="200" title="adversarial_patch">
+  <img src="../utils/data/images/adversarial_patch.png?raw=true" width="200" title="adversarial_patch">
 </p>
 
 [attack_decision_based_boundary.ipynb](attack_decision_based_boundary.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/attack_decision_based_boundary.ipynb)]
@@ -81,8 +81,8 @@ demonstrates a black-box attack on Tesseract OCR. It uses BlackBoxClassifier and
 of one word into the image of another word and shows how to apply pre-processing defences.
 
 <p align="center">
-  <img src="../data/tesseract/assent_benign.png?raw=true" width="200" title="assent_benign">
-  <img src="../data/tesseract/assent_adversarial.png?raw=true" width="200" title="assent_adversarial">
+  <img src="../utils/data/tesseract/assent_benign.png?raw=true" width="200" title="assent_benign">
+  <img src="../utils/data/tesseract/assent_adversarial.png?raw=true" width="200" title="assent_adversarial">
 </p>
 
 [classifier_catboost.ipynb](classifier_catboost.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/classifier_catboost.ipynb)]
@@ -96,7 +96,7 @@ targeting Gaussian Process classifiers, and compares it to Projected Gradient De
 ([Madry et al., 2017](https://arxiv.org/abs/1706.06083)).
 
 <p align="center">
-  <img src="../data/images/gaussian_process_hclu.png?raw=true" width="200" title="gaussian_process_hclu">
+  <img src="../utils/data/images/gaussian_process_hclu.png?raw=true" width="200" title="gaussian_process_hclu">
 </p>
 
 [classifier_lightgbm.ipynb](classifier_lightgbm.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/classifier_lightgbm.ipynb)]
@@ -144,7 +144,7 @@ Gradient Descent attacks using the Iris and MNIST dataset for binary and multicl
 radial-basis-function kernels.
 
 <p align="center">
-  <img src="../data/images/svc.png?raw=true" width="200" title="svc">
+  <img src="../utils/data/images/svc.png?raw=true" width="200" title="svc">
 </p>
 
 [classifier_xgboost.ipynb](classifier_xgboost.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/classifier_xgboost.ipynb)]
@@ -163,14 +163,14 @@ architecture in Keras for the CIFAR-10 dataset.
 demonstrates a poisoning attack on a Support Vector Machine.
 
 <p align="center">
-  <img src="../data/images/svm_poly.gif?raw=true" width="200" title="svm_poly">
+  <img src="../utils/data/images/svm_poly.gif?raw=true" width="200" title="svm_poly">
 </p>
 
 [poisoning_dataset_mnist.ipynb](poisoning_dataset_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/master/notebooks/poisoning_dataset_mnist.ipynb)]
 demonstrates the generation and detection of backdoors into neural networks by poisoning the training dataset.
 
 <p align="center">
-  <img src="../data/images/poisoning.png?raw=true" width="200" title="poisoning">
+  <img src="../utils/data/images/poisoning.png?raw=true" width="200" title="poisoning">
 </p>
 
 ## Certification and Verification

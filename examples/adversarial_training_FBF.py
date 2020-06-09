@@ -25,7 +25,8 @@ https://github.com/anonymous-sushi-armadillo/fast_is_better_than_free_CIFAR10/bl
 
 
 class PreActBlock(nn.Module):
-    '''Pre-activation version of the BasicBlock.'''
+    """Pre-activation version of the BasicBlock."""
+
     expansion = 1
 
     def __init__(self, in_planes, planes, stride=1):
@@ -42,7 +43,7 @@ class PreActBlock(nn.Module):
 
     def forward(self, x):
         out = F.relu(self.bn1(x))
-        shortcut = self.shortcut(x) if hasattr(self, 'shortcut') else x
+        shortcut = self.shortcut(x) if hasattr(self, "shortcut") else x
         out = self.conv1(out)
         out = self.conv2(F.relu(self.bn2(out)))
         out += shortcut
@@ -50,7 +51,8 @@ class PreActBlock(nn.Module):
 
 
 class PreActBottleneck(nn.Module):
-    '''Pre-activation version of the original Bottleneck module.'''
+    """Pre-activation version of the original Bottleneck module."""
+
     expansion = 4
 
     def __init__(self, in_planes, planes, stride=1):
@@ -69,7 +71,7 @@ class PreActBottleneck(nn.Module):
 
     def forward(self, x):
         out = F.relu(self.bn1(x))
-        shortcut = self.shortcut(out) if hasattr(self, 'shortcut') else x
+        shortcut = self.shortcut(out) if hasattr(self, "shortcut") else x
         out = self.conv1(out)
         out = self.conv2(F.relu(self.bn2(out)))
         out = self.conv3(F.relu(self.bn3(out)))
@@ -116,7 +118,7 @@ def PreActResNet18():
 def initialize_weights(module):
     if isinstance(module, nn.Conv2d):
         n = module.kernel_size[0] * module.kernel_size[1] * module.out_channels
-        module.weight.data.normal_(0, math.sqrt(2. / n))
+        module.weight.data.normal_(0, math.sqrt(2.0 / n))
         if module.bias is not None:
             module.bias.data.zero_()
     elif isinstance(module, nn.BatchNorm2d):
@@ -157,8 +159,8 @@ cifar_std[0, :, :] = 0.2471
 cifar_std[1, :, :] = 0.2435
 cifar_std[2, :, :] = 0.2616
 
-x_train = x_train.transpose(0, 3, 1, 2).astype('float32')
-x_test = x_test.transpose(0, 3, 1, 2).astype('float32')
+x_train = x_train.transpose(0, 3, 1, 2).astype("float32")
+x_test = x_test.transpose(0, 3, 1, 2).astype("float32")
 
 tensor_x = torch.Tensor(x_train)  # transform to torch tensor
 tensor_y = torch.Tensor(y_train)
@@ -167,9 +169,8 @@ my_dataset = TensorDataset(tensor_x, tensor_y)  # create your datset
 my_dataloader = DataLoader(my_dataset)  # create your dataloader
 
 transform = transforms.Compose(
-    [transforms.RandomCrop(32, padding=4),
-     transforms.RandomHorizontalFlip(),
-     transforms.ToTensor()])
+    [transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(), transforms.ToTensor()]
+)
 
 dataset = CIFAR10_dataset(x_train, y_train, transform=transform)
 dataloader = DataLoader(dataset, batch_size=128)
@@ -200,31 +201,41 @@ classifier = PyTorchClassifier(
     nb_classes=10,
 )
 
-fgsm = ProjectedGradientDescent(classifier, norm=np.inf, eps=8.0 / 255.0,
-                                eps_step=2.0 / 255.0, max_iter=40, targeted=False,
-                                num_random_init=5, batch_size=32)
-x_test_attack = fgsm.generate(x_test)
+attack = ProjectedGradientDescent(
+    classifier,
+    norm=np.inf,
+    eps=8.0 / 255.0,
+    eps_step=2.0 / 255.0,
+    max_iter=40,
+    targeted=False,
+    num_random_init=5,
+    batch_size=32,
+)
+x_test_attack = attack.generate(x_test)
 x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
 print(
-    "Accuracy on original FGSM adversarial samples: %.2f%%"
-    % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1)) / x_test.shape[0] * 100
+    "Accuracy on original PGD adversarial samples: %.2f%%"
+    % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
+    / x_test.shape[0]
+    * 100
 )
 
 # Step 4: Create the trainer object - AdversarialTrainerFBFPyTorch
 # if you have apex installed, change use_amp to True
-epsilon = (8.0 / 255.)
+epsilon = 8.0 / 255.0
 trainer = AdversarialTrainerFBFPyTorch(classifier, eps=epsilon, use_amp=False)
 
 # Build a Keras image augmentation object and wrap it in ART
-art_datagen = PyTorchDataGenerator(iterator=dataloader, size=x_train.shape[0],
-                                   batch_size=128)
+art_datagen = PyTorchDataGenerator(iterator=dataloader, size=x_train.shape[0], batch_size=128)
 
 # Step 5: fit the trainer
 trainer.fit_generator(art_datagen, nb_epochs=30)
 
-x_test_attack = fgsm.generate(x_test)
+x_test_attack = attack.generate(x_test)
 x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
 print(
-    "Accuracy on original FGSM adversarial samples after adversarial training: %.2f%%"
-    % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1)) / x_test.shape[0] * 100
+    "Accuracy on original PGD adversarial samples after adversarial training: %.2f%%"
+    % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
+    / x_test.shape[0]
+    * 100
 )

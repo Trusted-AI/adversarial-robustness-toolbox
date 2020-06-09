@@ -78,7 +78,7 @@ class ShadowAttack(EvasionAttack):
         :param sigma: Standard deviation random Gaussian Noise.
         :type sigma: `float`
         :param nb_steps: Number of SGD steps.
-        :type nb_steps: `int
+        :type nb_steps: `int`
         :param learning_rate: Learning rate for SGD.
         :type learning_rate: `float`
         :param lambda_tv: Scalar penalty weight for total variation of the perturbation.
@@ -140,9 +140,7 @@ class ShadowAttack(EvasionAttack):
             self.targeted = True
 
         if x.ndim != 4:
-            raise ValueError(
-                "Unrecognized input dimension. Shadow Attack can only be applied to image data."
-            )
+            raise ValueError("Unrecognized input dimension. Shadow Attack can only be applied to image data.")
 
         x = x.astype(ART_NUMPY_DTYPE)
 

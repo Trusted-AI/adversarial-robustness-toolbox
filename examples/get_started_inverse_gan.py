@@ -1,9 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
+from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 import numpy as np
 import tensorflow as tf
 
@@ -13,6 +11,7 @@ from art.estimators.encoding.tensorflow import TensorFlowEncoder
 from art.estimators.generation.tensorflow import TensorFlowGenerator
 from art.utils import load_mnist
 from art.attacks.evasion import FastGradientMethod
+
 from examples.inverse_gan_author_utils import EncoderReconstructor, GeneratorReconstructor
 
 logging.root.setLevel(logging.NOTSET)
@@ -53,7 +52,7 @@ def create_ts1_art_mnist_classifier(min_pixel_value, max_pixel_value):
         loss=loss,
         learning=None,
         sess=sess,
-        preprocessing_defences=[]
+        preprocessing_defences=[],
     )
 
     return classifier
@@ -64,11 +63,7 @@ def create_ts1_encoder_model(batch_size):
 
     unmodified_z_tensor, images_tensor = encoder_reconstructor.generate_z_extrapolated_k()
 
-    encoder = TensorFlowEncoder(
-        input_ph=images_tensor,
-        model=unmodified_z_tensor,
-        sess=sess,
-    )
+    encoder = TensorFlowEncoder(input_ph=images_tensor, model=unmodified_z_tensor, sess=sess,)
 
     return encoder
 
@@ -79,9 +74,7 @@ def create_ts1_generator_model(batch_size):
     generator.sess.run(generator.init_opt)
 
     generator = TensorFlowGenerator(
-        input_ph=generator.z_general_placeholder,
-        model=generator.z_hats_recs,
-        sess=generator.sess,
+        input_ph=generator.z_general_placeholder, model=generator.z_hats_recs, sess=generator.sess,
     )
 
     return generator
@@ -134,14 +127,12 @@ def main():
     accuracy_adv = get_accuracy(predictions, y_test)
 
     # STEP 5
-    logging.info("Create DefenceGan")
+    logging.info("Create DefenceGAN")
     encoder = create_ts1_encoder_model(batch_size)
     generator = create_ts1_generator_model(batch_size)
 
-    inverse_gan = InverseGAN(sess=generator._sess,
-                             gan=generator,
-                             inverse_gan=encoder)
-    # defense_gan = DefenseGan(sess=generator.sess,
+    inverse_gan = InverseGAN(sess=generator._sess, gan=generator, inverse_gan=encoder)
+    # defense_gan = DefenseGAN(sess=generator.sess,
     #                          generator=generator)
 
     logging.info("Generating Defended Samples")
