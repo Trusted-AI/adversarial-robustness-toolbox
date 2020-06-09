@@ -27,6 +27,7 @@ import logging
 import math
 
 import numpy as np
+from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -277,7 +278,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         i_iter = 0
 
-        for images, target in ds:
+        for images, target in tqdm(ds):
 
             if i_iter >= self.max_iter:
                 break

@@ -26,6 +26,7 @@ import logging
 
 import numpy as np
 from scipy.special import lambertw
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
@@ -171,7 +172,7 @@ class Wasserstein(EvasionAttack):
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
-        for batch_id in range(nb_batches):
+        for batch_id in trange(nb_batches, desc="Wasserstein"):
             logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
