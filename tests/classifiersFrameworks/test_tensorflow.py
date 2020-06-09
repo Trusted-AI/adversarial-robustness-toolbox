@@ -21,84 +21,29 @@ import logging
 
 import numpy as np
 import pytest
-import tensorflow as tf
 
-from art.data_generators import TensorFlowDataGenerator
-from art.utils import Deprecated
-from tests.classifiersFrameworks.utils import (
-    backend_test_class_gradient,
-    backend_test_fit_generator,
-    backend_test_input_shape,
-    backend_test_layers,
-    backend_test_loss_gradient,
-    backend_test_nb_classes,
-    backend_test_repr,
-)
 from tests.utils import ExpectedValue
+from tests.classifiersFrameworks.utils import backend_test_loss_gradient, backend_test_class_gradient
+from tests.classifiersFrameworks.utils import backend_test_fit_generator
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_predict(get_image_classifier_list, get_default_mnist_subset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-
-    y_predicted = classifier.predict(x_test_mnist[0:1])
-    y_expected = np.asarray(
-        [
-            [
-                0.12109935,
-                0.0498215,
-                0.0993958,
-                0.06410097,
-                0.11366927,
-                0.04645343,
-                0.06419806,
-                0.30685693,
-                0.07616713,
-                0.05823758,
-            ]
-        ]
-    )
-    np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
+def test_fit_image_generator(is_tf_version_2, get_default_mnist_subset, get_image_classifier_list,
+                             image_data_generator):
     if not is_tf_version_2:
         classifier, sess = get_image_classifier_list(one_classifier=True)
 
-        # Create TensorFlow data generator
-        x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
-        y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
-        dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+        data_gen = image_data_generator(sess=sess)
 
-        iterator = dataset.make_initializable_iterator()
-        data_gen = TensorFlowDataGenerator(
-            sess=sess, iterator=iterator, iterator_type="initializable", iterator_arg={}, size=1000, batch_size=100
-        )
+        expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 6), "post_fit_accuracy": ExpectedValue(0.79, 6)}
 
-        expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
-
-        backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=2)
+        backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=3)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_nb_classes(get_image_classifier_list):
-    backend_test_nb_classes(get_image_classifier_list)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_input_shape(get_image_classifier_list):
-    backend_test_input_shape(get_image_classifier_list)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
+def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier_logits, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
@@ -317,11 +262,11 @@ def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
     }
 
     labels = np.random.randint(5, size=x_test_mnist.shape[0])
-    backend_test_class_gradient(get_default_mnist_subset, classifier_logits, expected_values, labels)
+    backend_test_class_gradient(framework, get_default_mnist_subset, classifier_logits, expected_values, labels)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
+def test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list):
     expected_values = {
         "expected_gradients_1": ExpectedValue(
             np.asarray(
@@ -395,13 +340,7 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
         ),
     }
 
-    backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_layers(is_tf_version_2, framework, get_default_mnist_subset, get_image_classifier_list):
-    if not is_tf_version_2:
-        backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list, batch_size=5)
+    backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list, expected_values)
 
 
 @pytest.mark.only_with_platform("tensorflow")
@@ -414,45 +353,6 @@ def test_set_learning(is_tf_version_2, get_image_classifier_list):
         classifier.set_learning_phase(True)
         assert classifier._feed_dict[classifier._learning]
         assert classifier.learning_phase
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_repr(is_tf_version_2, get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    if is_tf_version_2:
-        backend_test_repr(
-            classifier,
-            [
-                "TensorFlowV2Classifier",
-                "model=",
-                "nb_classes=10",
-                "input_shape=(28, 28, 1)",
-                "loss_object=<tensorflow.python.keras.losses." "SparseCategoricalCrossentropy",
-                "train_step=<function get_image_classifier_tf_v2." "<locals>.train_step",
-                f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
-                "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))",
-            ],
-        )
-
-    else:
-
-        backend_test_repr(
-            classifier,
-            [
-                "TensorFlowClassifier",
-                "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
-                "output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>",
-                "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
-                "train=<tf.Operation 'Adam' type=NoOp>",
-                "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
-                "learning=None",
-                "sess=<tensorflow.python.client.session.Session object",
-                "TensorFlowClassifier",
-                f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
-                "preprocessing_defences=None, postprocessing_defences=None, "
-                "preprocessing=(0, 1))",
-            ],
-        )
 
 
 if __name__ == "__main__":

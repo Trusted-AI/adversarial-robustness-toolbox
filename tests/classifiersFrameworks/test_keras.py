@@ -15,30 +15,24 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import logging
-import os
 
 import keras
-import numpy as np
-import pytest
 from keras.applications.resnet50 import ResNet50, decode_predictions
 from keras.callbacks import LearningRateScheduler
 from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
 from keras.models import Model
-from keras.preprocessing.image import ImageDataGenerator, img_to_array, load_img
+from keras.preprocessing.image import img_to_array, load_img
+import logging
+import numpy as np
+import pytest
 
-from art.data_generators import KerasDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
-from art.estimators.classification.keras import KerasClassifier, generator_fit
-from art.utils import Deprecated
+from art.estimators.classification.keras import KerasClassifier
+
 from tests.classifiersFrameworks.utils import (
-    backend_test_class_gradient,
     backend_test_fit_generator,
-    backend_test_input_shape,
-    backend_test_layers,
     backend_test_loss_gradient,
-    backend_test_nb_classes,
-    backend_test_repr,
+    backend_test_class_gradient,
 )
 from tests.utils import ExpectedValue
 
@@ -94,13 +88,29 @@ def get_functional_model(get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_nb_classes(get_image_classifier_list):
-    backend_test_nb_classes(get_image_classifier_list)
+def test_predict(get_image_classifier_list, get_default_mnist_subset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
+    classifier, _ = get_image_classifier_list(one_classifier=True)
 
-@pytest.mark.only_with_platform("keras")
-def test_input_shape(get_image_classifier_list):
-    backend_test_input_shape(get_image_classifier_list)
+    y_predicted = classifier.predict(x_test_mnist[0:1])
+    y_expected = np.asarray(
+        [
+            [
+                0.12109935,
+                0.0498215,
+                0.0993958,
+                0.06410097,
+                0.11366927,
+                0.04645343,
+                0.06419806,
+                0.30685693,
+                0.07616713,
+                0.05823758,
+            ]
+        ]
+    )
+    np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -121,49 +131,15 @@ def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_
 
 
 @pytest.mark.only_with_platform("keras")
-def test_fit_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    gen = generator_fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
-    data_gen = KerasDataGenerator(iterator=gen, size=x_train_mnist.shape[0], batch_size=default_batch_size)
-
+def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list,
+                             image_data_generator):
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
-    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.36, 0.06)}
+    data_gen = image_data_generator()
+
+    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 6), "post_fit_accuracy": ExpectedValue(0.69, 6)}
 
     backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=3)
-
-
-@pytest.mark.only_with_platform("keras")
-def test_fit_image_generator(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    labels_test = np.argmax(y_test_mnist, axis=1)
-    accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]
-    logger.info("Accuracy: %.2f%%", (accuracy * 100))
-
-    keras_gen = ImageDataGenerator(
-        width_shift_range=0.075,
-        height_shift_range=0.075,
-        rotation_range=12,
-        shear_range=0.075,
-        zoom_range=0.05,
-        fill_mode="constant",
-        cval=0,
-    )
-    keras_gen.fit(x_train_mnist)
-    data_gen = KerasDataGenerator(
-        iterator=keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size),
-        size=x_train_mnist.shape[0],
-        batch_size=default_batch_size,
-    )
-    classifier.fit_generator(generator=data_gen, nb_epochs=5)
-    accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels_test) / x_test_mnist.shape[0]
-    logger.info("Accuracy: %.2f%%", (accuracy_2 * 100))
-
-    assert accuracy == 0.32
-    np.testing.assert_array_almost_equal(accuracy_2, 0.35, decimal=0.06)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -233,7 +209,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
+def test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list):
     expected_values = {
         "expected_gradients_1": ExpectedValue(
             np.asarray(
@@ -307,7 +283,7 @@ def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
         ),
     }
 
-    backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
+    backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list, expected_values)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -320,11 +296,6 @@ def test_functional_model(get_functional_model):
     keras_model = KerasClassifier(functional_model, clip_values=(0, 1), input_layer=0, output_layer=0)
     assert keras_model._input.name == "input0:0"
     assert keras_model._output.name == "output0/Softmax:0"
-
-
-@pytest.mark.only_with_platform("keras")
-def test_layers(get_default_mnist_subset, framework, get_image_classifier_list):
-    backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list, batch_size=128, layer_count=3)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -355,17 +326,6 @@ def test_learning_phase(get_image_classifier_list):
     assert hasattr(classifier, "_learning_phase")
 
 
-@pytest.mark.only_with_platform("keras")
-def test_save(get_image_classifier_list):
-    path = "tmp"
-    filename = "model.h5"
-
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    classifier.save(filename, path=path)
-    assert os.path.isfile(os.path.join(path, filename))
-    os.remove(os.path.join(path, filename))
-
-
 # def test_pickle(self):
 #     filename = 'my_classifier.p'
 #     full_path = os.path.join(ART_DATA_PATH, filename)
@@ -392,9 +352,19 @@ def test_save(get_image_classifier_list):
 #
 #     os.remove(full_path)
 
+@pytest.mark.only_with_platform("keras")
+def test_learning_phase(get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+    assert hasattr(classifier, "_learning_phase") is False
+    classifier.set_learning_phase(False)
+    assert classifier.learning_phase is False
+    classifier.set_learning_phase(True)
+    assert classifier.learning_phase
+    assert hasattr(classifier, "_learning_phase")
+
 
 @pytest.mark.only_with_platform("keras")
-def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
+def test_class_gradient(get_default_mnist_subset, get_image_classifier_list, framework):
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
     expected_values = {
@@ -715,22 +685,7 @@ def test_class_gradient(get_default_mnist_subset, get_image_classifier_list):
         ]
     )
 
-    backend_test_class_gradient(get_default_mnist_subset, classifier, expected_values, labels)
-
-
-@pytest.mark.only_with_platform("keras")
-def test_repr(get_image_classifier_list):
-    backend_test_repr(
-        get_image_classifier_list(),
-        [
-            "art.estimators.classification.keras.KerasClassifier",
-            f"use_logits=False, channel_index={Deprecated}, channels_first=False",
-            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, "
-            "postprocessing_defences=None, "
-            "preprocessing=(0, 1)",
-            "input_layer=0, output_layer=0",
-        ],
-    )
+    backend_test_class_gradient(framework, get_default_mnist_subset, classifier, expected_values, labels)
 
 
 @pytest.mark.only_with_platform("keras")
@@ -911,12 +866,12 @@ def test_loss_functions(get_default_mnist_subset, get_image_classifier_list):
     )
 
     def _run_tests(
-        _loss_name,
-        _loss_type,
-        _y_test_pred_expected,
-        _class_gradient_probabilities_expected,
-        _loss_gradient_expected,
-        _from_logits,
+            _loss_name,
+            _loss_type,
+            _y_test_pred_expected,
+            _class_gradient_probabilities_expected,
+            _loss_gradient_expected,
+            _from_logits,
     ):
 
         classifier, _ = get_image_classifier_list(
