@@ -22,6 +22,7 @@ This module implements abstract base and mixin classes for estimators in ART.
 from abc import ABC, abstractmethod
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.postprocessor.postprocessor import Postprocessor
@@ -482,8 +483,8 @@ class NeuralNetworkMixin(ABC):
                 "Expected instance of `DataGenerator` for `fit_generator`, got %s instead." % str(type(generator))
             )
 
-        for _ in range(nb_epochs):
-            for _ in range(int(generator.size / generator.batch_size)):
+        for i in range(nb_epochs):
+            for _ in trange(int(generator.size / generator.batch_size), desc="Epoch %i/%i" % (i + 1, nb_epochs)):
                 x, y = generator.get_batch()
 
                 # Apply preprocessing and defences

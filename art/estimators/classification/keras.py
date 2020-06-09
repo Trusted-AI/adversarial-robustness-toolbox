@@ -451,8 +451,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
             except ValueError:
                 logger.info("Unable to use data generator as Keras generator. Now treating as framework-independent.")
+                if "verbose" not in kwargs.keys():
+                    kwargs["verbose"] = 0
                 super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:
+            if "verbose" not in kwargs.keys():
+                kwargs["verbose"] = 0
             super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def get_activations(self, x, layer, batch_size, framework=False):
