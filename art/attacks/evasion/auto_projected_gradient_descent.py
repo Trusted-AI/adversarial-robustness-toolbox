@@ -22,6 +22,7 @@ This module implements the `Auto Projected Gradient Descent` attack.
 """
 import logging
 import math
+from typing import Optional, Union
 
 import numpy as np
 
@@ -45,48 +46,37 @@ class AutoProjectedGradientDescent(EvasionAttack):
         "batch_size",
         "loss_type",
     ]
-
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
-
     _predefined_losses = [None, "cross_entropy", "difference_logits_ratio"]
 
     def __init__(
         self,
-        estimator,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        max_iter=100,
-        targeted=False,
-        nb_random_init=5,
-        batch_size=32,
-        loss_type=None,
+        estimator: BaseEstimator,
+        norm: Union[float, int] = np.inf,
+        eps: float = 0.3,
+        eps_step: float = 0.1,
+        max_iter: int = 100,
+        targeted: bool = False,
+        nb_random_init: int = 5,
+        batch_size: int = 32,
+        loss_type: Optional[str] = None,
     ):
         """
         Create a :class:`.AutoProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
-        :type estimator: :class:`.BaseEstimator`
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
-        :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type targeted: `bool`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
+        :param nb_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
-        :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
         from art.estimators.classification import TensorFlowClassifier, TensorFlowV2Classifier, PyTorchClassifier
 
         if isinstance(estimator, TensorFlowClassifier):
-
             import tensorflow as tf
 
             if loss_type == "cross_entropy":
@@ -116,11 +106,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 else:
 
                     def difference_logits_ratio(y_true, y_pred):
-
                         i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
-
                         i_y_pred_arg = tf.argsort(y_pred, axis=1)
-
                         i_z_i = tf.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -2], i_y_pred_arg[:, -1])
 
                         z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
@@ -138,11 +125,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         return tf.reduce_mean(dlr)
 
                     def loss_fn(y_true, y_pred):
-
                         i_y_true = np.argmax(y_true, axis=1)
-
                         i_y_pred_arg = np.argsort(y_pred, axis=1)
-
                         i_z_i = np.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -1], i_y_pred_arg[:, -2])
 
                         z_1 = y_pred[:, i_y_pred_arg[:, -1]]
@@ -186,7 +170,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
             )
 
         elif isinstance(estimator, TensorFlowV2Classifier):
-
             import tensorflow as tf
 
             if loss_type == "cross_entropy":
@@ -205,11 +188,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 else:
 
                     def difference_logits_ratio(y_true, y_pred):
-
                         i_y_true = tf.cast(tf.math.argmax(tf.cast(y_true, tf.int32), axis=1), tf.int32)
-
                         i_y_pred_arg = tf.argsort(y_pred, axis=1)
-
                         i_z_i_list = list()
 
                         for i in range(y_true.shape[0]):
@@ -257,7 +237,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 preprocessing=estimator.preprocessing,
             )
         elif isinstance(estimator, PyTorchClassifier):
-
             import torch
 
             if loss_type == "cross_entropy":
@@ -285,7 +264,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                     # def difference_logits_ratio(y_true, y_pred):
                     def difference_logits_ratio(y_pred, y_true):
-
                         if isinstance(y_true, np.ndarray):
                             y_true = torch.from_numpy(y_true)
                         if isinstance(y_pred, np.ndarray):
@@ -295,9 +273,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         # return loss
 
                         i_y_true = torch.argmax(y_true, axis=1)
-
                         i_y_pred_arg = torch.argsort(y_pred, axis=1)
-
                         i_z_i_list = list()
 
                         for i in range(y_true.shape[0]):
@@ -343,36 +319,30 @@ class AutoProjectedGradientDescent(EvasionAttack):
             estimator_apgd = None
 
         super().__init__(estimator=estimator_apgd)
+        self.norm = norm
+        self.eps = eps
+        self.eps_step = eps_step
+        self.max_iter = max_iter
+        self.targeted = targeted
+        self.nb_random_init = nb_random_init
+        self.batch_size = batch_size
+        self.loss_type = loss_type
+        self._check_params()
 
-        kwargs = {
-            "norm": norm,
-            "eps": eps,
-            "eps_step": eps_step,
-            "max_iter": max_iter,
-            "targeted": targeted,
-            "nb_random_init": nb_random_init,
-            "batch_size": batch_size,
-            "loss_type": loss_type,
-        }
-        self.set_params(**kwargs)
-
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `np.ndarray`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
@@ -384,7 +354,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         for i_restart in range(max(1, self.nb_random_init)):
-
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
             sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
@@ -394,7 +363,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             x_robust = x_adv[sample_is_robust]
             y_robust = y[sample_is_robust]
-
             x_init = x[sample_is_robust]
 
             n = x_robust.shape[0]
@@ -414,14 +382,10 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             # Compute perturbation with implicit batching
             for batch_id in range(int(np.ceil(x_robust.shape[0] / float(self.batch_size)))):
-
                 self.eta = 2 * self.eps_step
-
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-
                 x_k = x_robust[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
                 x_init_batch = x_init[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
-
                 y_batch = y_robust[batch_index_1:batch_index_2]
 
                 p_0 = 0
@@ -547,9 +511,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs):
-        super().set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf]:
             raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
 

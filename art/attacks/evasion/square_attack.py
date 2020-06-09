@@ -24,13 +24,14 @@ import bisect
 import logging
 import math
 import random
+from typing import Union
 
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin, Classifier
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -48,19 +49,25 @@ class SquareAttack(EvasionAttack):
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
-    def __init__(self, estimator, norm=np.inf, max_iter=100, eps=0.3, p_init=0.8, nb_restarts=1):
+    def __init__(
+        self,
+        estimator: Classifier,
+        norm: Union[float, int] = np.inf,
+        max_iter: int = 100,
+        eps: float = 0.3,
+        p_init: float = 0.8,
+        nb_restarts: int = 1,
+    ):
         super().__init__(estimator=estimator)
 
-        kwargs = {
-            "norm": norm,
-            "max_iter": max_iter,
-            "eps": eps,
-            "p_init": p_init,
-            "nb_restarts": nb_restarts,
-        }
-        self.set_params(**kwargs)
+        self.norm = norm
+        self.max_iter = max_iter
+        self.eps = eps
+        self.p_init = p_init
+        self.nb_restarts = nb_restarts
+        self._check_params()
 
-    def _get_logits_diff(self, x, y):
+    def _get_logits_diff(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         y_pred = self.estimator.predict(x)
 
         logit_correct = np.take_along_axis(y_pred, np.expand_dims(np.argmax(y, axis=1), axis=1), axis=1)
@@ -70,13 +77,10 @@ class SquareAttack(EvasionAttack):
 
         return (logit_correct - logit_highest_incorrect)[:, 0]
 
-    def _get_percentage_of_elements(self, i_iter):
-
+    def _get_percentage_of_elements(self, i_iter: int) -> float:
         i_p = i_iter / self.max_iter
-
         intervals = [0.001, 0.005, 0.02, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8]
         p_ratio = [1, 1 / 2, 1 / 4, 1 / 8, 1 / 16, 1 / 32, 1 / 64, 1 / 128, 1 / 256, 1 / 512]
-
         i_ratio = bisect.bisect_left(intervals, i_p)
 
         return self.p_init * p_ratio[i_ratio]
@@ -434,9 +438,7 @@ class SquareAttack(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs):
-        super().set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf]:
             raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
 

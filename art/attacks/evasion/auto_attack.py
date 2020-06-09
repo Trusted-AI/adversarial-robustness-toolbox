@@ -21,6 +21,7 @@ This module implements the `AutoAttack` attack.
 | Paper link: https://arxiv.org/abs/2003.01690
 """
 import logging
+from typing import List, Optional, Union
 
 import numpy as np
 
@@ -49,26 +50,26 @@ class AutoAttack(EvasionAttack):
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
-        self, estimator, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, batch_size=32, estimator_orig=None,
+        self,
+        estimator: BaseEstimator,
+        norm: Union[int, float] = np.inf,
+        eps: float = 0.3,
+        eps_step: float = 0.1,
+        attacks: Optional[List[EvasionAttack]] = None,
+        batch_size: int = 32,
+        estimator_orig: Optional[BaseEstimator] = None,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
-        :type estimator: :class:`.BaseEstimator`
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
-        :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :param attacks: The list of `art.attacks.EvasionAttack` attacks to be used for AutoAttack. If it is `None` the
                         original AutoAttack (PGD, APGD-ce, APGD-dlr, FAB, Square) will be used.
-        :type attacks: `[.art.attacks.EvasionAttack]`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         :param estimator_orig: Original estimator to be attacked by adversarial examples.
-        :type estimator_orig: :class:`.BaseEstimator`
         """
         super().__init__(estimator=estimator)
 
@@ -110,37 +111,29 @@ class AutoAttack(EvasionAttack):
                 SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5)
             )
 
-        kwargs = {
-            "norm": norm,
-            "eps": eps,
-            "eps_step": eps_step,
-            "attacks": attacks,
-            "batch_size": batch_size,
-            "estimator_orig": estimator_orig,
-        }
-        self.set_params(**kwargs)
+        self.norm = norm
+        self.eps = eps
+        self.eps_step = eps_step
+        self.attacks = attacks
+        self.batch_size = batch_size
+        self.estimator_orig = estimator_orig
+        self._check_params()
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
-
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
-            if self.targeted:
-                raise ValueError("Target labels `y` need to be provided for a targeted attack.")
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Determine correctly predicted samples
@@ -148,7 +141,6 @@ class AutoAttack(EvasionAttack):
         sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
         for attack in self.attacks:
-
             if np.sum(sample_is_robust) == 0:
                 break
 
@@ -175,9 +167,7 @@ class AutoAttack(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs):
-        super().set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf]:
             raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
 

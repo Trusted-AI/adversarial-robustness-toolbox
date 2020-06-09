@@ -247,17 +247,14 @@ class InferenceAttack(Attack):
         super().__init__(estimator)
 
     @abc.abstractmethod
-    def infer(self, x, y=None, **kwargs):
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.
 
         :param x: An array with reference inputs to be used in the attack.
-        :type x: `np.ndarray`
         :param y: Labels for `x`. This parameter is only used by some of the attacks.
-        :type y: `np.ndarray`
         :return: An array holding the inferred properties.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
@@ -269,45 +266,35 @@ class AttributeInferenceAttack(InferenceAttack):
 
     attack_params = InferenceAttack.attack_params + ["attack_feature"]
 
-    def __init__(self, estimator, attack_feature=0):
+    def __init__(self, estimator, attack_feature: int = 0):
         """
         :param estimator: A trained estimator targeted for inference attack.
         :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
         :param attack_feature: The index of the feature to be attacked.
-        :type attack_feature: `int`
         """
         super().__init__(estimator)
-
-        params = {"attack_feature": attack_feature}
-        self.set_params(**params)
+        self.attack_feature = attack_feature
 
     @abc.abstractmethod
-    def infer(self, x, y=None, **kwargs):
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
         should be overridden by all concrete inference attack implementations.
 
         :param x: An array with reference inputs to be used in the attack.
-        :type x: `np.ndarray`
         :param y: Labels for `x`. This parameter is only used by some of the attacks.
-        :type y: `np.ndarray`
         :return: An array holding the inferred properties.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> None:
         """
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param attack_feature: The index of the feature to be attacked.
-        :type attack_feature: `int`
         """
-
         # Save attack-specific parameters
         super(AttributeInferenceAttack, self).set_params(**kwargs)
+        self._check_params()
 
+    def _check_params(self) -> None:
         if self.attack_feature < 0:
             raise ValueError("Attack feature must be positive.")
-
-        return True

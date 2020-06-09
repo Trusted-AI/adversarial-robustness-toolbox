@@ -26,6 +26,7 @@ from typing import Optional
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
+from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 logger = logging.getLogger(__name__)
@@ -47,7 +48,11 @@ class FeatureAdversaries(EvasionAttack):
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
 
     def __init__(
-        self, classifier, delta=None, layer=None, batch_size=32,
+        self,
+        classifier: ClassifierNeuralNetwork,
+        delta: Optional[float] = None,
+        layer: Optional[int] = None,
+        batch_size: int = 32,
     ):
         """
         Create a :class:`.FeatureAdversaries` instance.
@@ -55,11 +60,8 @@ class FeatureAdversaries(EvasionAttack):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param delta: The maximum deviation between source and guide images.
-        :type delta: `float`
         :param layer: Index of the representation layer.
-        :type layer: `int`
         :param batch_size: Batch size.
-        :type batch_size: `int`
         """
         super(FeatureAdversaries, self).__init__(classifier)
 
@@ -185,7 +187,7 @@ class FeatureAdversaries(EvasionAttack):
         return x_adv.reshape(-1, *self.estimator.input_shape)
 
     def _check_params(self) -> None:
-        if self.delta <= 0:
+        if self.delta is not None and self.delta <= 0:
             raise ValueError("The maximum deviation `delta` has to be positive.")
 
         if not isinstance(self.layer, int):

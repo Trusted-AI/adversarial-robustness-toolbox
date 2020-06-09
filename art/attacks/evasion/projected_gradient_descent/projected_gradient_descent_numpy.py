@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 from scipy.stats import truncnorm
@@ -63,7 +63,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
     def __init__(
         self,
         estimator: ClassifierGradients,
-        norm: int = np.inf,
+        norm: Union[float, int] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
