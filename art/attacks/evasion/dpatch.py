@@ -77,7 +77,7 @@ class DPatch(EvasionAttack):
             "batch_size": batch_size,
         }
         self.set_params(**kwargs)
-        self._patch = np.ones(shape=patch_shape) * self.estimator.clip_values[1] / 2.0
+        self._patch = np.ones(shape=patch_shape) * (self.estimator.clip_values[1] + self.estimator.clip_values[0]) / 2.0
 
     def generate(self, x, y=None, **kwargs):
         """

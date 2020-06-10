@@ -24,7 +24,6 @@ import logging
 import abc
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator
 from art.exceptions import EstimatorError
 
 logger = logging.getLogger(__name__)
