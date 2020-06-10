@@ -492,7 +492,6 @@ class Wasserstein(EvasionAttack):
 
         # Initialize
         alpha = np.log(np.ones(x.shape) / m)
-        exp_alpha = np.exp(-alpha)
 
         beta = np.log(np.ones(x.shape) / m)
         exp_beta = np.exp(-beta)
