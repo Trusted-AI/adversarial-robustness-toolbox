@@ -132,6 +132,21 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         """
         RandomizedSmoothingMixin.fit(x, y, batch_size=128, nb_epochs=10, **kwargs)
 
+    def predict(self, x, batch_size=128, **kwargs):
+        """
+        Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
+
+        :param x: Test set.
+        :type x: `np.ndarray`
+        :param batch_size: Batch size.
+        :type batch_size: `int`
+        :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
+        :type is_abstain: `boolean`
+        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
+        :rtype: `np.ndarray`
+        """
+        return RandomizedSmoothingMixin.predict(self, x, batch_size=128, **kwargs)
+
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
