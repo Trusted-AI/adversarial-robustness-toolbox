@@ -144,13 +144,14 @@ def test_pickle(get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_set_learning(self):
-    ptc = self.module_classifier
-    ptc.set_learning_phase(False)
-    self.assertFalse(ptc._model.training)
-    ptc.set_learning_phase(True)
-    self.assertTrue(ptc._model.training)
-    self.assertTrue(ptc.learning_phase)
+def test_set_learning(get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+    assert classifier._model.training
+    classifier.set_learning_phase(False)
+    assert classifier._model.training is False
+    classifier.set_learning_phase(True)
+    assert classifier._model.training
+    assert classifier.learning_phase
 
 
 @pytest.mark.only_with_platform("pytorch")
