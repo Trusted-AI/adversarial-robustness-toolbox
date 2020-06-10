@@ -304,9 +304,13 @@ def default_dataset_subset_sizes():
 
 
 @pytest.fixture()
-def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes):
+def get_default_mnist_subset(framework, get_mnist_dataset, default_dataset_subset_sizes):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train, n_test = default_dataset_subset_sizes
+
+    if framework == "pytorch":
+        x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
 
