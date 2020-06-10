@@ -220,4 +220,4 @@ class QueryEfficientBBGradientEstimation(
         :type kwargs: `dict`
         :return: `True` when parsing was successful.
         """
-        ClassifierWrapper.set_params(**kwargs)
+        ClassifierWrapper.set_params(self, **kwargs)

@@ -140,7 +140,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :type kwargs: `dict`
         :return: `None`
         """
-        RandomizedSmoothingMixin.fit(x, y, batch_size=128, nb_epochs=10, **kwargs)
+        RandomizedSmoothingMixin.fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs)
 
     def predict(self, x, batch_size=128, **kwargs):
         """

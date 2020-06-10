@@ -130,7 +130,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :type kwargs: `dict`
         :return: `None`
         """
-        RandomizedSmoothingMixin.fit(x, y, batch_size=128, nb_epochs=10, **kwargs)
+        RandomizedSmoothingMixin.fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs)
 
     def predict(self, x, batch_size=128, **kwargs):
         """
