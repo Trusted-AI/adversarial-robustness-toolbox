@@ -19,7 +19,6 @@ from __future__ import print_function
 
 import yaml
 import os
-import time
 
 import numpy as np
 import tensorflow as tf
