@@ -1,4 +1,3 @@
 queries:
   - exclude: py/import-own-module
   - exclude: py/similar-function
-  - exclude: py/conflicting-attributes
