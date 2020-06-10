@@ -211,3 +211,13 @@ class QueryEfficientBBGradientEstimation(
         :return: None
         """
         raise NotImplementedError
+
+    def set_params(self, **kwargs):
+        """
+        Take in a dictionary of parameters and pass them down to the underlying wrapped classifier instance.
+
+        :param kwargs: A dictionary of attack-specific parameters.
+        :type kwargs: `dict`
+        :return: `True` when parsing was successful.
+        """
+        ClassifierWrapper.set_params(**kwargs)
