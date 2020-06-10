@@ -154,7 +154,7 @@ class BaseEstimator(ABC):
         return params
 
     @abstractmethod
-    def predict(self, x, **kwargs):
+    def predict(self, x, *args, **kwargs):
         """
         Perform prediction of the estimator for input `x`.
 
