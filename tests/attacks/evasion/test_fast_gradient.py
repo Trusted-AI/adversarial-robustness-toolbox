@@ -54,6 +54,7 @@ def test_classifier_defended_images(fix_get_mnist_subset, get_image_classifier_l
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         backend_test_defended_images(attack, fix_get_mnist_subset)
 
+
 @pytest.mark.framework_agnostic
 def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
@@ -65,6 +66,7 @@ def test_random_initialisation_images(fix_get_mnist_subset, get_image_classifier
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, num_random_init=3)
         backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
+
 
 @pytest.mark.framework_agnostic
 def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
@@ -81,6 +83,7 @@ def test_targeted_images(fix_get_mnist_subset, get_image_classifier_list_for_att
 
         backend_targeted_images(attack, fix_get_mnist_subset)
 
+
 @pytest.mark.framework_agnostic
 def test_masked_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
@@ -92,6 +95,7 @@ def test_masked_images(fix_get_mnist_subset, get_image_classifier_list_for_attac
     for classifier in classifier_list:
         attack = FastGradientMethod(classifier, eps=1.0, num_random_init=1)
         backend_masked_images(attack, fix_get_mnist_subset)
+
 
 @pytest.mark.framework_agnostic
 def test_minimal_perturbations_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
@@ -170,6 +174,7 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targe
         else:
             attack = FastGradientMethod(classifier, eps=0.1)
             backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
+
 
 @pytest.mark.framework_agnostic
 def test_classifier_type_check_fail():
