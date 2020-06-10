@@ -8,6 +8,14 @@ Adversarial Robustness Toolbox so that others may evaluate it fairly in their ow
 Bug fixes can be initiated through GitHub pull requests. When making code contributions to the Adversarial Robustness 
 Toolbox, we ask that you follow the `PEP 8` coding standard and that you provide unit tests for the new features.
 
+## Development install
+
+We provide a specific set of dependencies that we test and develop against, namely `requirements.txt`. In a virtual
+environment install ART for development in the following way:
+```bash
+pip install -r requirements.txt
+```
+
 ## Validating Git Commits
 This project uses [DCO](https://developercertificate.org/). Be sure to sign off your commits using the `-s` flag or 
 adding `Signed-off-By: Name<Email>` in the commit message. Example:
