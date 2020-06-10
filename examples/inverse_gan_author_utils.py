@@ -563,12 +563,12 @@ class AbstractModel(object):
         self.test_mode = test_mode
 
         self._set_checkpoint_dir()
-        self._build()
-        self._gather_variables()
+        self._build()  # lgtm [py/init-calls-subclass]
+        self._gather_variables()  # lgtm [py/init-calls-subclass]
         if not test_mode:
             self._save_cfg_in_ckpt()
-            self._loss()
-            self._optimizers()
+            self._loss()  # lgtm [py/init-calls-subclass]
+            self._optimizers()  # lgtm [py/init-calls-subclass]
 
         # summary writer
         self.merged_summary_op = tf.summary.merge_all()
@@ -1462,7 +1462,7 @@ class EncoderReconstructor(object):
         # config.gpu_options.allow_growth = True
 
         x_shape = [28, 28, 1]
-        classes = 10
+        classes = 10  # lgtm [py/unused-local-variable]
 
         # TODO use as TS1Encoder Input
         images_tensor = tf.placeholder(tf.float32, shape=[None] + x_shape)
