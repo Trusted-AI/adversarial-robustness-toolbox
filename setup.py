@@ -33,7 +33,7 @@ tests_require = [
     "pydub==0.23",
     "tensorflow==2.1.0",
     "keras==2.3.1",
-    "tensorflow_addons==0.8.2",
+    "tensorflow_addons==0.10.0",
     "mxnet==1.6.0",
     "xgboost==1.0.0",
     "lightgbm==2.3.1",
