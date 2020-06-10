@@ -18,7 +18,6 @@
 """
 This module implements the abstract estimator `PyTorchEstimator` for PyTorch models.
 """
-from abc import abstractmethod
 import logging
 
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
@@ -51,7 +50,6 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         return NeuralNetworkMixin.predict(self, x, batch_size=128, **kwargs)
 
-    @abstractmethod
     def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
         """
         Fit the model of the estimator on the training data `x` and `y`.
