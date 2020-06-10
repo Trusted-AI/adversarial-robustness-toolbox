@@ -41,7 +41,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         model,
         loss=None,
         sess=None,
-        channel_index=3,
+        channels_first=False,
         clip_values=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
@@ -60,8 +60,8 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :type loss: `tf.Tensor`
         :param sess: Computation session.
         :type sess: `tf.Session`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
+        :param channels_first: Set channels first or last.
+        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                             maximum values allowed for features. If floats are provided, these will be used as the range
                             of all features. If arrays are provided, each value will be considered the bound for a
@@ -82,7 +82,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
 
         super().__init__(
             clip_values=clip_values,
-            channel_index=channel_index,
+            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
