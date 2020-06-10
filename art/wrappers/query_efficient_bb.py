@@ -62,7 +62,9 @@ class QueryEfficientBBGradientEstimation(
         # self.predict refers to predict of classifier
         # pylint: disable=E0203
         self._predict = self.classifier.predict
-        self.set_params(num_basis=num_basis, sigma=sigma, round_samples=round_samples)
+        self.num_basis = num_basis
+        self.sigma = sigma
+        self.round_samples = round_samples
         self._nb_classes = self.classifier.nb_classes
 
     def predict(self, x, **kwargs):
@@ -211,13 +213,3 @@ class QueryEfficientBBGradientEstimation(
         :return: None
         """
         raise NotImplementedError
-
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and pass them down to the underlying wrapped classifier instance.
-
-        :param kwargs: A dictionary of attack-specific parameters.
-        :type kwargs: `dict`
-        :return: `True` when parsing was successful.
-        """
-        ClassifierWrapper.set_params(self, **kwargs)
