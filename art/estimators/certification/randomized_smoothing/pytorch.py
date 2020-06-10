@@ -122,6 +122,26 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
+    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+        """
+        Fit the classifier on the training set `(x, y)`.
+
+        :param x: Training data.
+        :type x: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,).
+        :type y: `np.ndarray`
+        :param batch_size: Batch size.
+        :type batch_size: `int`
+        :key nb_epochs: Number of epochs to use for training
+        :type nb_epochs: `int`
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        :type kwargs: `dict`
+        :return: `None`
+        """
+        RandomizedSmoothingMixin.fit(x, y, batch_size=128, nb_epochs=10, **kwargs)
+
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
