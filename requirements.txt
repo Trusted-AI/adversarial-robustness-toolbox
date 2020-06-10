@@ -19,8 +19,9 @@ tensorflow
 keras
 tensorflow-addons==0.10.0
 mxnet==1.6.0
-torch==1.5.0
-torchvision==0.6.0
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==1.5.0+cpu
+torchvision==0.6.0+cpu
 catboost==0.23.2
 GPy==1.9.9
 lightgbm==2.3.1
