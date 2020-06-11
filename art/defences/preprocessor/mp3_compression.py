@@ -91,8 +91,8 @@ class Mp3Compression(Preprocessor):
         """
         Apply MP3 compression to sample `x`.
 
-        :param x: Sample to compress with shape `(batch_size, length, channel)`. `x` values are
-            recommended to be of type `np.int16`.
+        :param x: Sample to compress with shape `(batch_size, length, channel)`. `x` values are recommended to be of
+                  type `np.int16`.
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Compressed sample.
         """
@@ -148,10 +148,5 @@ class Mp3Compression(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 2]):
-            raise ValueError(
-                "Data channel must be an integer equal to 1 or 2. The batch dimension is not a valid channel."
-            )
-
         if not (isinstance(self.sample_rate, (int, np.int)) and self.sample_rate > 0):
             raise ValueError("Sample rate be must a positive integer.")

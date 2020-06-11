@@ -24,6 +24,8 @@ import numpy as np
 from art.defences.preprocessor.inverse_gan import InverseGAN
 from art.attacks.evasion import FastGradientMethod
 
+from tests.utils import get_gan_inverse_gan_ft
+
 
 @pytest.fixture()
 def fix_get_mnist_subset(get_mnist_dataset):
@@ -33,10 +35,11 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
 
 
-def test_inverse_gan(fix_get_mnist_subset, get_image_classifier_list_for_attack, get_image_gan_and_inverse):
+@pytest.mark.only_with_platform("tensorflow")
+def test_inverse_gan(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    gan, inverse_gan, sess = get_image_gan_and_inverse()
+    gan, inverse_gan, sess = get_gan_inverse_gan_ft()
     if gan is None:
         logging.warning("Couldn't perform  this test because no gan is defined for this framework configuration")
         return
@@ -59,3 +62,7 @@ def test_inverse_gan(fix_get_mnist_subset, get_image_classifier_list_for_attack,
     np.testing.assert_array_almost_equal(
         float(np.mean(x_test_defended - x_test_adv)), 0.08818667382001877, decimal=0.01,
     )
+
+
+if __name__ == "__main__":
+    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

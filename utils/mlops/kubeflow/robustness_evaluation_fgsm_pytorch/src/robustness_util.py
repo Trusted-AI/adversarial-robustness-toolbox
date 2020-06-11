@@ -35,16 +35,17 @@ def get_metrics(model, x_original, x_adv_samples, y):
         "model accuracy on test data": float(model_accuracy_on_non_adversarial_samples),
         "model accuracy on adversarial samples": float(model_accuracy_on_adversarial_samples),
         "confidence reduced on correctly classified adv_samples": float(conf_metric),
-        "average perturbation on misclassified adv_samples": float(pert_metric)
+        "average perturbation on misclassified adv_samples": float(pert_metric),
     }
     return data, y_pred, y_pred_adv
 
 
 # Compute the accuaracy and predicted label using the given test dataset
 def evaluate(model, X_test, y_test):
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    test = torch.utils.data.TensorDataset(Variable(torch.FloatTensor(X_test.astype('float32'))),
-                                          Variable(torch.LongTensor(y_test.astype('float32'))))
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    test = torch.utils.data.TensorDataset(
+        Variable(torch.FloatTensor(X_test.astype("float32"))), Variable(torch.LongTensor(y_test.astype("float32")))
+    )
     test_loader = torch.utils.data.DataLoader(test, batch_size=64, shuffle=False)
     model.eval()
     correct = 0
@@ -59,13 +60,13 @@ def evaluate(model, X_test, y_test):
             predictions = torch.softmax(outputs.data, dim=1).detach().numpy()
             correct += predicted.eq(labels.data.view_as(predicted)).sum().item()
             y_pred += predictions.tolist()
-        accuracy = 1. * correct / len(test_loader.dataset)
+        accuracy = 1.0 * correct / len(test_loader.dataset)
     y_pred = np.array(y_pred)
     return accuracy, y_pred
 
 
 def get_perturbation_metric(x_original, x_adv, y_pred, y_pred_adv, ord=2):
-    idxs = (np.argmax(y_pred_adv, axis=1) != np.argmax(y_pred, axis=1))
+    idxs = np.argmax(y_pred_adv, axis=1) != np.argmax(y_pred, axis=1)
 
     if np.sum(idxs) == 0.0:
         return 0
@@ -84,7 +85,7 @@ def get_confidence_metric(y_pred, y_pred_adv):
     y_adv_classidx = np.argmax(y_pred_adv, axis=1)
     y_adv_classconf = y_pred_adv[np.arange(y_pred_adv.shape[0]), y_adv_classidx]
 
-    idxs = (y_classidx == y_adv_classidx)
+    idxs = y_classidx == y_adv_classidx
 
     if np.sum(idxs) == 0.0:
         return 0

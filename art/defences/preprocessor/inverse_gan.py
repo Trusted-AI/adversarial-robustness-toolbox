@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the InverseGan defence.
+This module implements the InverseGAN defence.
 
 | Paper link: https://arxiv.org/abs/1911.10291
 """
@@ -29,11 +29,12 @@ import numpy as np
 from scipy.optimize import minimize
 
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.estimators.encoding.encoder import EncoderMixin
-from art.estimators.generation.generator import GeneratorMixin
 
 if TYPE_CHECKING:
     import tensorflow as tf
+
+    from art.estimators.encoding.encoder import EncoderMixin
+    from art.estimators.generation.generator import GeneratorMixin
 
 logger = logging.getLogger(__name__)
 
@@ -50,8 +51,8 @@ class InverseGAN(Preprocessor):
     def __init__(
         self,
         sess: "tf.compat.v1.Session",
-        gan: GeneratorMixin,
-        inverse_gan: EncoderMixin,
+        gan: "GeneratorMixin",
+        inverse_gan: "EncoderMixin",
         apply_fit: bool = False,
         apply_predict: bool = False,
     ):
@@ -75,6 +76,7 @@ class InverseGAN(Preprocessor):
         self.inverse_gan = inverse_gan
         self.sess = sess
         self._image_adv = tf.placeholder(tf.float32, shape=self.gan.model.get_shape().as_list(), name="image_adv_ph")
+
         num_dim = len(self._image_adv.get_shape())
         image_loss = tf.reduce_mean(tf.square(self.gan.model - self._image_adv), axis=list(range(1, num_dim)))
         self._loss = tf.reduce_sum(image_loss)
@@ -88,6 +90,7 @@ class InverseGAN(Preprocessor):
         Applies the :class:`.InverseGAN` defence upon the sample input.
 
         :param x: Sample input.
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Defended input.
         """
         batch_size = x.shape[0]
@@ -147,13 +150,12 @@ class InverseGAN(Preprocessor):
 
         return y
 
-    def loss(self, z, image_adv):
+    def loss(self, z: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
         """
-        Given a encoding z, computes the loss between the projected sample and the original sample
+        Given a encoding z, computes the loss between the projected sample and the original sample.
+
         :param z: encoding z
-        :type z: `np.ndarray`
         :param image_adv:
-        :type image_adv: `np.ndarray`
         :return: The loss value
         """
         logging.info("Calculating Loss")
@@ -190,14 +192,8 @@ class InverseGAN(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        if not isinstance(self.gan, GeneratorMixin):
-            raise TypeError("The GAN needs to be an instance of `GeneratorMixin`.")
-
-        if self.inverse_gan is not None:
-            if not isinstance(self.inverse_gan, EncoderMixin):
-                raise TypeError("The inverse GAN needs to be an instance of `EncoderMixin`.")
-            if self.gan.encoding_length != self.inverse_gan.encoding_length:
-                raise ValueError("Both gan and inverseGan must use the same size encoding.")
+        if self.inverse_gan is not None and self.gan.encoding_length != self.inverse_gan.encoding_length:
+            raise ValueError("Both GAN and inverseGan must use the same size encoding.")
 
 
 class DefenseGAN(InverseGAN):

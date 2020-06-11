@@ -38,8 +38,8 @@ class Resample(Preprocessor):
     """
     Implement the resampling defense approach.
 
-    Resampling implicitly consists of a step that applies a lowpass filter. The underlying filter in this implementation
-    is a Windowed Sinc Interpolation function.
+    Resampling implicitly consists of a step that applies a low-pass filter. The underlying filter in this
+    implementation is a Windowed Sinc Interpolation function.
     """
 
     params = ["sr_original", "sr_new", "channel_index", "channels_first"]
@@ -94,8 +94,7 @@ class Resample(Preprocessor):
         """
         Resample `x` to a new sampling rate.
 
-        :param x: Sample to resample of shape `(batch_size, length, channel)` or `(batch_size,
-            channel, length)`.
+        :param x: Sample to resample of shape `(batch_size, length, channel)` or `(batch_size, channel, length)`.
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Resampled audio sample.
         """
@@ -118,11 +117,6 @@ class Resample(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 2]):
-            raise ValueError(
-                "Data channel must be an integer equal to 1 or 2. The batch dimension is not a valid channel."
-            )
-
         if not (isinstance(self.sr_original, (int, np.int)) and self.sr_original > 0):
             raise ValueError("Original sampling rate be must a positive integer.")
 

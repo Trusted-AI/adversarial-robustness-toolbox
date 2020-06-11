@@ -23,3 +23,9 @@ Base Class Extraction Attacks
 -----------------------------
 .. autoclass:: ExtractionAttack
    :members:
+
+Base Class Inference Attacks
+----------------------------
+.. autoclass:: InferenceAttack
+.. autoclass:: AttributeInferenceAttack
+   :members:

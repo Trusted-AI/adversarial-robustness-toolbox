@@ -111,7 +111,9 @@ class ProjectedGradientDescent(EvasionAttack):
         self.random_eps = random_eps
         ProjectedGradientDescent._check_params(self)
 
-        no_preprocessing = self.estimator.preprocessing is None or self.estimator.preprocessing == (0, 1)
+        no_preprocessing = self.estimator.preprocessing is None or (
+            np.all(self.estimator.preprocessing[0] == 0) and np.all(self.estimator.preprocessing[1] == 0)
+        )
         no_defences = not self.estimator.preprocessing_defences and not self.estimator.postprocessing_defences
 
         if isinstance(self.estimator, PyTorchClassifier) and no_preprocessing and no_defences:

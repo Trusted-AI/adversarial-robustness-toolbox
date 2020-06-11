@@ -1,16 +1,21 @@
 dist: xenial
 language: python
 cache: pip
-env:
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.2 KERAS_V=2.2.5
-  - KERAS_BACKEND=tensorflow TENSORFLOW_V=2.1.0 KERAS_V=2.3.1
-python:
-  - "3.6"
-  - "3.7"
-matrix:
+
+jobs:
   include:
     - python: 3.6
-      env: KERAS_BACKEND=tensorflow TENSORFLOW_V=1.15.2 KERAS_V=2.2.5
+      env: TENSORFLOW_V=1.15.3 KERAS_V=2.2.5
+      script:
+        - ./run_tests.sh
+
+    - python: 3.7
+      env: TENSORFLOW_V=2.2.0 KERAS_V=2.3.1
+      script:
+        - ./run_tests.sh
+
+    - python: 3.7
+      env: TENSORFLOW_V=2.2.0 KERAS_V=2.3.1
       script:
         - (pycodestyle --max-line-length=120 art || exit 0)
         - (pylint --disable=C0330,C0415,E203,E1136 -rn art || exit 0)
@@ -19,15 +24,13 @@ matrix:
 
 before_install:
   - sudo apt-get -y -q install ffmpeg libavcodec-extra
-  - sed -i "s/^tensorflow$/tensorflow==${TENSORFLOW_V}/" test_requirements.txt
-  - sed -i "s/^keras$/keras==${KERAS_V}/" test_requirements.txt
+  - sed -i "s/^tensorflow$/tensorflow==${TENSORFLOW_V}/" requirements.txt
+  - sed -i "s/^keras$/keras==${KERAS_V}/" requirements.txt
 
 install:
-  - python -m pip install --upgrade pip==19.3.1 setuptools wheel
-  - pip install -q -r test_requirements.txt
-  - pip install --upgrade --force-reinstall mxnet
+  - python -m pip install --upgrade pip==20.1.1 setuptools wheel
   - pip install -q pylint pycodestyle
-  - pip install -q torch==1.3.1+cpu torchvision==0.4.2+cpu -f https://download.pytorch.org/whl/torch_stable.html
+  - pip install -q -r requirements.txt
   - pip list
 
 script:

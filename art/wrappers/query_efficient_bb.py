@@ -64,6 +64,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         self.num_basis = num_basis
         self.sigma = sigma
         self.round_samples = round_samples
+        self._nb_classes = self.classifier.nb_classes
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """

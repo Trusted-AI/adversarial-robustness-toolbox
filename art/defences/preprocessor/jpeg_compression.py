@@ -117,8 +117,8 @@ class JpegCompression(Preprocessor):
         """
         Apply JPEG compression to sample `x`.
 
-        :param x: Sample to compress with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`. `x` values are
-        expected to be in the data range [0, 1] or [0, 255].
+        :param x: Sample to compress with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`. `x` values are expected to be in
+                  the data range [0, 1] or [0, 255].
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: compressed sample.
         """
@@ -201,11 +201,6 @@ class JpegCompression(Preprocessor):
     def _check_params(self) -> None:
         if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
             raise ValueError("Image quality must be a positive integer <= 100.")
-
-        if not (isinstance(self.channel_index, (int, np.int)) and self.channel_index in [1, 3, 4]):
-            raise ValueError(
-                "Data channel must be an integer equal to 1, 3 or 4. The batch dimension is not a valid channel."
-            )
 
         if len(self.clip_values) != 2:
             raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")

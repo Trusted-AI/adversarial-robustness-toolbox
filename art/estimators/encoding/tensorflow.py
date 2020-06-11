@@ -23,8 +23,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 
-from art.estimators.tensorflow import TensorFlowEstimator
 from art.estimators.encoding.encoder import EncoderMixin
+from art.estimators.tensorflow import TensorFlowEstimator
 
 if TYPE_CHECKING:
     import numpy as np
@@ -48,7 +48,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         model: "tf.Tensor",
         loss: Optional["tf.Tensor"] = None,
         sess: Optional["tf.compat.v1.Session"] = None,
-        channel_index: int = 3,
+        channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -61,9 +61,9 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         :param input_ph: The input placeholder.
         :param model: tensorflow model, neural network or other.
         :param loss: The loss function for which to compute gradients. This parameter is necessary when training the
-        model and when computing gradients w.r.t. the loss function.
+            model and when computing gradients w.r.t. the loss function.
         :param sess: Computation session.
-        :param channel_index: Index of the axis in data containing the color channels or features.
+        :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -71,16 +71,16 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be subtracted from the input. The input will then
-               be divided by the second one.
+            used for data preprocessing. The first value will be subtracted from the input. The input will then
+            be divided by the second one.
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
         """
         import tensorflow as tf
 
-        super(TensorFlowEncoder, self).__init__(
+        super().__init__(
             clip_values=clip_values,
-            channel_index=channel_index,
+            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,

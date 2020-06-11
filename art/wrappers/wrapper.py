@@ -50,13 +50,3 @@ class ClassifierWrapper:
             object.__setattr__(self, attr, value)
         else:
             setattr(self.classifier, attr, value)
-
-    def set_params(self, **kwargs) -> None:
-        """
-        Take in a dictionary of parameters and pass them down to the underlying wrapped classifier instance.
-
-        :param kwargs: A dictionary of attack-specific parameters.
-        """
-        for key, value in kwargs.items():
-            if key in self.attack_params:
-                setattr(self, key, value)

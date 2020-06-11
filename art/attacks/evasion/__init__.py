@@ -1,7 +1,11 @@
 """
 Module providing evasion attacks under a common interface.
 """
-from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch
+from art.attacks.evasion.adversarial_patch.adversarial_patch import (
+    AdversarialPatch,
+    AdversarialPatchNumpy,
+    AdversarialPatchTensorFlowV2,
+)
 from art.attacks.evasion.boundary import BoundaryAttack
 from art.attacks.evasion.carlini import CarliniL2Method, CarliniLInfMethod
 from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack
@@ -12,7 +16,12 @@ from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
 from art.attacks.evasion.newtonfool import NewtonFool
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import (
+    ProjectedGradientDescent,
+    ProjectedGradientDescentNumpy,
+    ProjectedGradientDescentPyTorch,
+    ProjectedGradientDescentTensorFlowV2,
+)
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
