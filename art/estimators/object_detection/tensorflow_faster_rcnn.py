@@ -47,6 +47,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         filename='faster_rcnn_inception_v2_coco_2017_11_08',
         url='http://download.tensorflow.org/models/object_detection/faster_rcnn_inception_v2_coco_2017_11_08.tar.gz',
         images=None,
+        sess=None,
         is_training=False,
         clip_values=None,
         channel_index=Deprecated,
@@ -80,6 +81,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :type url: `str`
         :param images: Input samples of shape (nb_samples, height, width, nb_channels).
         :type images: `tensorflow.Tensor`
+        :param sess: Computation session.
+        :type sess: `tf.Session`
         :param is_training: A boolean indicating whether the training version of the computation graph should be
         constructed.
         :type is_training: `bool`
@@ -174,9 +177,14 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         else:
             self._predictions, self._losses, self._detections = model[0], model[1], model[2]
 
-        self.is_training = is_training
-        self.images = images
-        self.attack_losses = attack_losses
+        self._is_training = is_training
+        self._images = images
+        self._attack_losses = attack_losses
+
+        # Assign session
+        if sess is None:
+            raise ValueError("A session cannot be None.")
+        self._sess = sess
 
     @staticmethod
     def _load_model(
@@ -258,6 +266,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             )
 
         # Create model pipeline
+        images *= 255.0
         preprocessed_images, true_image_shapes = obj_detection_model.preprocess(images)
         predictions = obj_detection_model.predict(preprocessed_images, true_image_shapes)
         losses = obj_detection_model.loss(predictions, true_image_shapes)
@@ -307,7 +316,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         """
         raise NotImplementedError
 
-    def predict(self, x, **kwargs):
+    def predict(self, x, batch_size=128, **kwargs):
         """
         Perform prediction for a batch of inputs.
 
@@ -327,7 +336,55 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     - raw_detection_scores: `[batch, total_detections, num_classes + 1]`
         :rtype: `dict`
         """
-        raise NotImplementedError
+        # Only do prediction if is_training is False
+        if self._is_training:
+            raise NotImplementedError(
+                "This object detector was loaded in training mode and therefore not support prediction."
+            )
+
+        # Apply preprocessing
+        x, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        # Run prediction with batch processing
+        num_samples = x.shape[0]
+        results = {
+            'detection_boxes': np.zeros((
+                num_samples,
+                self._detections['detection_boxes'].shape[1].value,
+                self._detections['detection_boxes'].shape[2].value
+            ), dtype=np.float32),
+            'detection_scores': np.zeros((
+                num_samples,
+                self._detections['detection_scores'].shape[1].value
+            ), dtype=np.float32),
+            'detection_classes': np.zeros((
+                num_samples,
+                self._detections['detection_classes'].shape[1].value
+            ), dtype=np.float32),
+            'detection_multiclass_scores': np.zeros((
+                num_samples,
+                self._detections['detection_multiclass_scores'].shape[1].value,
+                self._detections['detection_multiclass_scores'].shape[2].value
+            ), dtype=np.float32),
+            'detection_anchor_indices': np.zeros((
+                num_samples,
+                self._detections['detection_anchor_indices'].shape[1].value
+            ), dtype=np.float32),
+            'num_detections': np.zeros((
+                num_samples,
+            ), dtype=np.float32),
+            'raw_detection_boxes': np.zeros((
+                num_samples,
+                self._detections['raw_detection_boxes'].shape[1].value,
+                self._detections['raw_detection_boxes'].shape[2].value
+            ), dtype=np.float32),
+            'raw_detection_scores': np.zeros((
+                num_samples,
+                self._detections['raw_detection_scores'].shape[1].value,
+                self._detections['raw_detection_scores'].shape[2].value
+            ), dtype=np.float32)
+        }
+
 
     def fit(self):
         raise NotImplementedError
