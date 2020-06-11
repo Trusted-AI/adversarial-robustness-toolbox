@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import trange
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +81,8 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         num_samples = x.shape[0]
 
         # pylint: disable=R1702
-        for i_sample in range(num_samples):
+        pbar = trange(num_samples, desc='Decision tree verification')
+        for i_sample in pbar:
 
             eps = eps_init
             robust_log = list()

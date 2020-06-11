@@ -28,6 +28,7 @@ import numpy as np
 import numpy.linalg as la
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.fast_gradient import FastGradientMethod
@@ -41,7 +42,15 @@ SUPPORTED_METHODS = {
         "class": FastGradientMethod,
         "params": {"eps_step": 0.1, "eps_max": 1.0, "clip_min": 0.0, "clip_max": 1.0},
     },
-    "hsj": {"class": HopSkipJump, "params": {"max_iter": 50, "max_eval": 10000, "init_eval": 100, "init_size": 100}},
+    "hsj": {
+        "class": HopSkipJump,
+        "params": {
+            "max_iter": 50,
+            "max_eval": 10000,
+            "init_eval": 100,
+            "init_size": 100,
+        },
+    },
 }
 
 
@@ -109,7 +118,9 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
     perts_norm = la.norm((adv_x - x).reshape(x.shape[0], -1), ord=norm_type, axis=1)
     perts_norm = perts_norm[idxs]
 
-    return np.mean(perts_norm / la.norm(x[idxs].reshape(np.sum(idxs), -1), ord=norm_type, axis=1))
+    return np.mean(
+        perts_norm / la.norm(x[idxs].reshape(np.sum(idxs), -1), ord=norm_type, axis=1)
+    )
 
 
 # def nearest_neighbour_dist(classifier, x, x_ref, attack_name, attack_params=None):
@@ -172,7 +183,16 @@ def loss_sensitivity(classifier, x, y):
 
 
 def clever(
-    classifier, x, nb_batches, batch_size, radius, norm, target=None, target_sort=False, c_init=1, pool_factor=10
+    classifier,
+    x,
+    nb_batches,
+    batch_size,
+    radius,
+    norm,
+    target=None,
+    target_sort=False,
+    c_init=1,
+    pool_factor=10,
 ):
     """
     Compute CLEVER score for an untargeted attack.
@@ -218,16 +238,20 @@ def clever(
         # Assume it's iterable
         target_classes = target
     score_list = []
-    for j in target_classes:
+    for j in tqdm(target_classes, desc="CLEVER untargeted"):
         if j == pred_class:
             score_list.append(None)
             continue
-        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
+        score = clever_t(
+            classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor
+        )
         score_list.append(score)
     return np.array(score_list)
 
 
-def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
+def clever_u(
+    classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10
+):
     """
     Compute CLEVER score for an untargeted attack.
 
@@ -259,14 +283,26 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
 
     # Compute CLEVER score for each untargeted class
     score_list = []
-    for j in untarget_classes:
-        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
+    for j in tqdm(untarget_classes, desc="CLEVER untargeted"):
+        score = clever_t(
+            classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor
+        )
         score_list.append(score)
 
     return np.min(score_list)
 
 
-def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
+def clever_t(
+    classifier,
+    x,
+    target_class,
+    nb_batches,
+    batch_size,
+    radius,
+    norm,
+    c_init=1,
+    pool_factor=10,
+):
     """
     Compute CLEVER score for a targeted attack.
 
@@ -311,11 +347,14 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
 
     # Generate a pool of samples
     rand_pool = np.reshape(
-        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape
+        random_sphere(
+            nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm
+        ),
+        shape,
     )
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)
-    if classifier.clip_values is not None:
+    if hasattr(classifier, "clip_values") and classifier.clip_values is not None:
         np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)
@@ -342,7 +381,9 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
         grad_norm_set.append(grad_norm)
 
     # Maximum likelihood estimation for max gradient norms
-    [_, loc, _] = weibull_min.fit(-np.array(grad_norm_set), c_init, optimizer=scipy_optimizer)
+    [_, loc, _] = weibull_min.fit(
+        -np.array(grad_norm_set), c_init, optimizer=scipy_optimizer
+    )
 
     # Compute function value
     values = classifier.predict(np.array([x]))

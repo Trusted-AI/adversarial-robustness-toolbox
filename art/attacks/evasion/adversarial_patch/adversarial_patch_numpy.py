@@ -28,6 +28,7 @@ import logging
 import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
+from tqdm import trange
 
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
@@ -123,10 +124,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
-        for i_step in range(self.max_iter):
-            if i_step == 0 or (i_step + 1) % 100 == 0:
-                logger.info("Training Step: %i", i_step + 1)
-
+        for _ in trange(self.max_iter, desc="Adversarial patch"):
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
 
             num_batches = int(x.shape[0] / self.batch_size)

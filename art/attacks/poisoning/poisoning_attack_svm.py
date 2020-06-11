@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import tqdm
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators.classification.scikitlearn import ScikitlearnSVC
@@ -107,11 +108,11 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
     def poison(self, x, y=None, **kwargs):
         """
-        Iteratively finds optimal attack points starting at values at x
+        Iteratively finds optimal attack points starting at values at `x`.
 
         :param x: An array with the points that initialize attack points.
         :type x: `np.ndarray`
-        :param y: The target labels for
+        :param y: The target labels for the attack.
         :return: An tuple holding the (poisoning examples, poisoning labels).
         :rtype: `(np.ndarray, np.ndarray)`
         """
@@ -131,7 +132,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         train_labels = np.copy(self.y_train)
         all_poison = []
 
-        for attack_point, attack_label in zip(x, y_attack):
+        for attack_point, attack_label in tqdm(zip(x, y_attack), desc='SVM poisoning'):
             poison = self.generate_attack_point(attack_point, attack_label)
             all_poison.append(poison)
             train_data = np.vstack([train_data, poison])

@@ -26,6 +26,7 @@ import logging
 
 import numpy as np
 import six
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassGradientsMixin
@@ -216,9 +217,7 @@ class ElasticNet(EvasionAttack):
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
-        for batch_id in range(nb_batches):
-            logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
-
+        for batch_id in trange(nb_batches, desc="EAD"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_batch = x_adv[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]

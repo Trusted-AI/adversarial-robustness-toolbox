@@ -76,7 +76,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
         self.w_0 = None  # Weight matrix of first dense layer
         self.b_0 = None  # Bias vector of first dense layer
-        self.w_1 = None  # weight matrix of second dense layer
+        self.w_1 = None  # Weight matrix of second dense layer
         self.b_1 = None  # Bias vector of second dense layer
 
     def extract(

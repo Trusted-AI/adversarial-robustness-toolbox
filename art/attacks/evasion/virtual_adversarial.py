@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the virtual adversarial attack. It was originally was used for virtual adversarial training.
+This module implements the virtual adversarial attack. It was originally used for virtual adversarial training.
 
 | Paper link: https://arxiv.org/abs/1507.00677
 """
@@ -25,6 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -88,7 +89,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         preds_rescaled = preds
 
         # Compute perturbation with implicit batching
-        for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
+        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="VAT"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
             batch = batch.reshape((batch.shape[0], -1))

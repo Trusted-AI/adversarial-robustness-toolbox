@@ -26,6 +26,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -133,7 +134,7 @@ class FrameSaliencyAttack(EvasionAttack):
         x_adv_new = self.attacker.generate(x, targets, mask=mask)
 
         # Here starts the main iteration:
-        for i in range(nb_frames):
+        for i in trange(nb_frames, desc="Frame saliency"):
             # Check if attack has already succeeded for all inputs:
             if sum(attack_failure) == 0:
                 break

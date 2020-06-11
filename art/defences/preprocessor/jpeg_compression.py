@@ -30,6 +30,7 @@ import logging
 from io import BytesIO
 
 import numpy as np
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
@@ -128,7 +129,6 @@ class JpegCompression(Preprocessor):
         :return: compressed sample.
         :rtype: `np.ndarray`
         """
-
         x_ndim = x.ndim
         if x_ndim not in [4, 5]:
             raise ValueError(
@@ -171,7 +171,7 @@ class JpegCompression(Preprocessor):
 
         # Compress one image at a time
         x_jpeg = x.copy()
-        for idx in np.ndindex(x.shape[:2]):
+        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression"):
             x_jpeg[idx] = self._compress(x[idx], image_mode)
 
         # Undo preparation grayscale images for "L" mode

@@ -25,6 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
@@ -156,7 +157,7 @@ class KnockoffNets(ExtractionAttack):
 
         # Train the thieved classifier
         thieved_classifier.fit(
-            x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs, verbose=0
+            x=selected_x, y=fake_labels, batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs, verbose=0,
         )
 
         return thieved_classifier
@@ -229,7 +230,7 @@ class KnockoffNets(ExtractionAttack):
         queried_labels = []
 
         avg_reward = 0
-        for it in range(1, self.nb_stolen + 1):
+        for it in trange(1, self.nb_stolen + 1, desc="Knock-off nets"):
             # Sample an action
             action = np.random.choice(np.arange(0, nb_actions), p=probs)
 
@@ -245,7 +246,7 @@ class KnockoffNets(ExtractionAttack):
 
             # Train the thieved classifier
             thieved_classifier.fit(
-                x=np.array([sampled_x]), y=fake_label, batch_size=self.batch_size_fit, nb_epochs=1, verbose=0
+                x=np.array([sampled_x]), y=fake_label, batch_size=self.batch_size_fit, nb_epochs=1, verbose=0,
             )
 
             # Test new labels
@@ -271,7 +272,10 @@ class KnockoffNets(ExtractionAttack):
 
         # Train the thieved classifier the final time
         thieved_classifier.fit(
-            x=np.array(selected_x), y=np.array(queried_labels), batch_size=self.batch_size_fit, nb_epochs=self.nb_epochs
+            x=np.array(selected_x),
+            y=np.array(queried_labels),
+            batch_size=self.batch_size_fit,
+            nb_epochs=self.nb_epochs,
         )
 
         return thieved_classifier

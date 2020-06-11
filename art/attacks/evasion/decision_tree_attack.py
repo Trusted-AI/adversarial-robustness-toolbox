@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
@@ -114,7 +115,7 @@ class DecisionTreeAttack(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
         x_adv = x.copy()
 
-        for index in range(np.shape(x_adv)[0]):
+        for index in trange(x_adv.shape[0], desc="Decision tree attack"):
             path = self.estimator.get_decision_path(x_adv[index])
             legitimate_class = np.argmax(self.estimator.predict(x_adv[index].reshape(1, -1)))
             position = -2

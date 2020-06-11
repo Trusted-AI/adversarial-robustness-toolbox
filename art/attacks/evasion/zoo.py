@@ -28,6 +28,7 @@ import logging
 
 import numpy as np
 from scipy.ndimage import zoom
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
@@ -228,9 +229,7 @@ class ZooAttack(EvasionAttack):
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
         x_adv = []
-        for batch_id in range(nb_batches):
-            logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
-
+        for batch_id in trange(nb_batches, desc="ZOO"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_batch = x[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]

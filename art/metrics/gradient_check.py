@@ -20,6 +20,7 @@ This module implements gradient check functions for estimators
 """
 
 import numpy as np
+from tqdm import trange
 
 
 def loss_gradient_check(estimator, x, y):
@@ -40,7 +41,7 @@ def loss_gradient_check(estimator, x, y):
     assert len(x) == len(y), "x and y must be the same length"
 
     is_bad = []
-    for i in range(len(x)):
+    for i in trange(len(x), desc="Gradient check"):
         grad = estimator.loss_gradient([x[i]], [y[i]])
         is_bad.append([(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)), np.any(np.isinf(grad))])
 

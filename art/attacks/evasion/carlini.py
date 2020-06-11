@@ -29,6 +29,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
@@ -245,9 +246,7 @@ class CarliniL2Method(EvasionAttack):
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
-        for batch_id in range(nb_batches):
-            logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
-
+        for batch_id in trange(nb_batches, desc="C&W L_2"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_batch = x_adv[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]
@@ -666,9 +665,7 @@ class CarliniLInfMethod(EvasionAttack):
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
-        for batch_id in range(nb_batches):
-            logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
-
+        for batch_id in trange(nb_batches, desc="C&W L_inf"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_batch = x_adv[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]

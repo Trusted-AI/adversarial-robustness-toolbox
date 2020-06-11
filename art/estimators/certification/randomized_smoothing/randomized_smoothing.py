@@ -27,6 +27,7 @@ from abc import ABC
 import logging
 
 import numpy as np
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
@@ -96,9 +97,7 @@ class RandomizedSmoothingMixin(ABC):
         logger.info("Applying randomized smoothing.")
         n_abstained = 0
         prediction = []
-
-        for x_i in x:
-
+        for x_i in tqdm(x, desc="Randomized smoothing"):
             # get class counts
             counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]
@@ -107,7 +106,9 @@ class RandomizedSmoothingMixin(ABC):
 
             # predict or abstain
             smooth_prediction = np.zeros(counts_pred.shape)
-            if (not is_abstain) or (binom_test(count1, count1 + count2, p=0.5) <= self.alpha):
+            if (not is_abstain) or (
+                binom_test(count1, count1 + count2, p=0.5) <= self.alpha
+            ):
                 smooth_prediction[np.argmax(counts_pred)] = 1
             elif is_abstain:
                 n_abstained += 1

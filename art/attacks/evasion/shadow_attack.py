@@ -23,6 +23,7 @@ This module implements the evasion attack `ShadowAttack`.
 import logging
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -157,7 +158,7 @@ class ShadowAttack(EvasionAttack):
             - (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2
         )
 
-        for _ in range(self.nb_steps):
+        for _ in trange(self.nb_steps, desc="Shadow attack"):
 
             gradients_ce = np.mean(
                 self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch, sampling=False)

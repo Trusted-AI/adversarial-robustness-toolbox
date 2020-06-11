@@ -28,6 +28,7 @@ import os
 from tempfile import TemporaryDirectory
 
 import numpy as np
+from tqdm import tqdm
 
 from art.config import ART_DATA_PATH
 from art.defences.preprocessor.preprocessor import Preprocessor
@@ -127,7 +128,7 @@ class VideoCompression(Preprocessor):
         # apply video compression per video item
         x_compressed = x.copy()
         with TemporaryDirectory(dir=ART_DATA_PATH) as tmp_dir:
-            for i, x_i in enumerate(x):
+            for i, x_i in enumerate(tqdm(x, desc="Video compression")):
                 x_compressed[i] = compress_video(x_i, self.video_format, self.constant_rate_factor, dir_=tmp_dir)
 
         if self.channels_first:

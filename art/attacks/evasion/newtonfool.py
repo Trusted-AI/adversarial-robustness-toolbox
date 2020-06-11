@@ -25,6 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
@@ -82,7 +83,7 @@ class NewtonFool(EvasionAttack):
         pred_class = np.argmax(y_pred, axis=1)
 
         # Compute perturbation with implicit batching
-        for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
+        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="NewtonFool"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
 

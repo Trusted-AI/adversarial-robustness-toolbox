@@ -27,6 +27,7 @@ import copy
 
 import numpy as np
 from scipy.optimize import minimize
+from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.classification.GPy import GPyGaussianProcessClassifier
@@ -60,14 +61,12 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         :type max_val: `float`
         """
         super(HighConfidenceLowUncertainty, self).__init__(estimator=classifier)
-
         params = {"conf": conf, "unc_increase": unc_increase, "min_val": min_val, "max_val": max_val}
         self.set_params(**params)
 
     def generate(self, x, y=None, **kwargs):
         """
-        Generate adversarial examples and return them as an array. This method should be overridden by all concrete
-        attack implementations.
+        Generate adversarial examples and return them as an array.
 
         :param x: An array with the original inputs to be attacked.
         :type x: `np.ndarray`
@@ -96,7 +95,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         # adding bounds, to not go away from original data
         for i in range(np.shape(x)[1]):
             bounds.append((self.min_val, self.max_val))
-        for i in range(np.shape(x)[0]):  # go though data amd craft
+        for i in trange(x.shape[0], desc="HCLU"):  # go through data amd craft
             # get properties for attack
             max_uncertainty = self.unc_increase * self.estimator.predict_uncertainty(x_adv[i].reshape(1, -1))
             class_zero = not self.estimator.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5

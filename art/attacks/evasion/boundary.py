@@ -26,6 +26,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
@@ -149,7 +150,7 @@ class BoundaryAttack(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Generate the adversarial samples
-        for ind, val in enumerate(x_adv):
+        for ind, val in enumerate(tqdm(x_adv, desc="Boundary attack")):
             if self.targeted:
                 x_adv[ind] = self._perturb(
                     x=val,
