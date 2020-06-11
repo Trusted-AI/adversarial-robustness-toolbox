@@ -46,24 +46,43 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         model=None,
         filename='faster_rcnn_inception_v2_coco_2017_11_08',
         url='http://download.tensorflow.org/models/object_detection/faster_rcnn_inception_v2_coco_2017_11_08.tar.gz',
+        images=None,
+        is_training=False,
         clip_values=None,
         channel_index=Deprecated,
         channels_first=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
-        preprocessing=None
+        preprocessing=None,
+        attack_losses=(
+            'first_stage_localization_loss',
+            'first_stage_objectness_loss',
+            'second_stage_localization_loss',
+            'second_stage_classification_loss'
+        )
     ):
         """
-        Initialization.
+        Initialization of an instance TensorFlowFasterRCNN.
 
-        :param model: Faster-RCNN model. The output of the model is `List[Dict[Tensor]]`, one for each input image. The
-                      fields of the Dict are as follows:
+        :param model: A representative TensorFlow Faster-RCNN model, which is a tuple of
+        (predictions, losses, detections):
 
-                      - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
-                        between 0 and H and 0 and W
-                      - labels (Int64Tensor[N]): the predicted labels for each image
-                      - scores (Tensor[N]): the scores or each prediction
-        :type model: `torchvision.models.detection.fasterrcnn_resnet50_fpn`
+                    - predictions: a dictionary holding "raw" prediction tensors.
+                    - losses: a dictionary mapping loss keys (`first_stage_localization_loss`,
+                    `first_stage_objectness_loss`, `second_stage_localization_loss`,
+                    `second_stage_classification_loss`) to scalar tensors representing
+                    corresponding loss values.
+                    - detections: a dictionary containing final detection results.
+        :type model: `tuple`
+        :param filename: Name of the file.
+        :type filename: `str`
+        :param url: Download URL.
+        :type url: `str`
+        :param images: Input samples of shape (nb_samples, height, width, nb_channels).
+        :type images: `tensorflow.Tensor`
+        :param is_training: A boolean indicating whether the training version of the computation graph should be
+        constructed.
+        :type is_training: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -81,12 +100,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :type preprocessing: `tuple`
-        :param attack_losses: Tuple of any combination of strings of loss components: 'loss_classifier', 'loss_box_reg',
-                              'loss_objectness', and 'loss_rpn_box_reg'.
+        :param attack_losses: Tuple of any combination of strings of loss components: `first_stage_localization_loss`,
+                    `first_stage_objectness_loss`, `second_stage_localization_loss`, `second_stage_classification_loss`.
         :type attack_losses: `Tuple[str]`
-        :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
-                            if available otherwise run on CPU.
-        :type device_type: `string`
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -105,15 +121,62 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             preprocessing=preprocessing,
         )
 
-        assert clip_values[0] == 0, "This classifier requires un-normalized input images with clip_vales=(0, max_value)"
-        assert clip_values[1] > 0, "This classifier requires un-normalized input images with clip_vales=(0, max_value)"
+        assert clip_values[0] == 0, "This classifier requires normalized input images with clip_vales=(0, 1)."
+        assert clip_values[1] == 1, "This classifier requires normalized input images with clip_vales=(0, 1)."
         assert preprocessing is None, "This estimator does not support `preprocessing`."
         assert postprocessing_defences is None, "This estimator does not support `postprocessing_defences`."
 
+        # Load model
         if model is None:
+            if is_training:
+                groundtruth_boxes_list = [
+                    tf.placeholder(
+                        dtype=tf.float32,
+                        shape=(None, 4),
+                        name="groundtruth_boxes_{}".format(i)
+                    ) for i in range(images.shape[0])
+                ]
+
+                groundtruth_classes_list = [
+                    tf.placeholder(
+                        dtype=tf.int32,
+                        shape=(None,),
+                        name="groundtruth_classes_{}".format(i)
+                    ) for i in range(images.shape[0])
+                ]
+
+                groundtruth_weights_list = [
+                    tf.placeholder(
+                        dtype=tf.float32,
+                        shape=(None,),
+                        name="groundtruth_weights_{}".format(i)
+                    ) for i in range(images.shape[0])
+                ]
+
+                self._predictions, self._losses, self._detections = self._load_model(
+                    filename=filename,
+                    url=url,
+                    images=images,
+                    is_training=is_training,
+                    groundtruth_boxes_list=groundtruth_boxes_list,
+                    groundtruth_classes_list=groundtruth_classes_list,
+                    groundtruth_weights_list=groundtruth_weights_list
+                )
+
+            else:
+                self._predictions, self._losses, self._detections = self._load_model(
+                    filename=filename,
+                    url=url,
+                    images=images,
+                    is_training=is_training
+                )
 
         else:
-            self._model = model
+            self._predictions, self._losses, self._detections = model[0], model[1], model[2]
+
+        self.is_training = is_training
+        self.images = images
+        self.attack_losses = attack_losses
 
     @staticmethod
     def _load_model(
@@ -156,8 +219,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
                     - predictions: a dictionary holding "raw" prediction tensors.
                     - losses: a dictionary mapping loss keys (`first_stage_localization_loss`,
-                    `first_stage_objectness_loss`, 'second_stage_localization_loss',
-                    'second_stage_classification_loss') to scalar tensors representing
+                    `first_stage_objectness_loss`, `second_stage_localization_loss`,
+                    `second_stage_classification_loss`) to scalar tensors representing
                     corresponding loss values.
                     - detections: a dictionary containing final detection results.
         :rtype: `tuple`
@@ -169,7 +232,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         pipeline_config = path + '/pipeline.config'
         configs = config_util.get_configs_from_pipeline_file(pipeline_config)
         configs['model'].faster_rcnn.second_stage_batch_size = configs[
-            'model'].faster_rcnn.first_stage_max_proposals
+            'model'
+        ].faster_rcnn.first_stage_max_proposals
 
         # Load model
         obj_detection_model = model_builder.build(
@@ -180,6 +244,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Provide groundtruth
         if is_training:
+            groundtruth_classes_list = [
+                tf.one_hot(
+                    groundtrue_class,
+                    obj_detection_model.num_classes
+                ) for groundtrue_class in groundtruth_classes_list
+            ]
+
             obj_detection_model.provide_groundtruth(
                 groundtruth_boxes_list=groundtruth_boxes_list,
                 groundtruth_classes_list=groundtruth_classes_list,
@@ -246,15 +317,15 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :type batch_size: `int`
         :return: A dictionary containing the following fields:
 
-                    - detection_boxes: [batch, max_detection, 4]
-                    - detection_scores: [batch, max_detections]
-                    - detection_classes: [batch, max_detections]
-                    - detection_multiclass_scores: [batch, max_detections, 2]
-                    - detection_anchor_indices: [batch, max_detections]
-                    - num_detections: [batch]
-                    - raw_detection_boxes: [batch, total_detections, 4]
-                    - raw_detection_scores: [batch, total_detections, num_classes + 1]
-        :rtype: `np.ndarray`
+                    - detection_boxes: `[batch, max_detection, 4]`
+                    - detection_scores: `[batch, max_detections]`
+                    - detection_classes: `[batch, max_detections]`
+                    - detection_multiclass_scores: `[batch, max_detections, 2]`
+                    - detection_anchor_indices: `[batch, max_detections]`
+                    - num_detections: `[batch]`
+                    - raw_detection_boxes: `[batch, total_detections, 4]`
+                    - raw_detection_scores: `[batch, total_detections, num_classes + 1]`
+        :rtype: `dict`
         """
         raise NotImplementedError
 
