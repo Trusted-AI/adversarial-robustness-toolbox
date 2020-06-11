@@ -385,6 +385,29 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             ), dtype=np.float32)
         }
 
+        num_batch = int(np.ceil(num_samples / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = m * batch_size, min((m + 1) * batch_size, num_samples)
+
+            # Create feed_dict
+            feed_dict = {self._images: x[begin:end]}
+
+            # Run prediction
+            batch_results = self._sess.run(self._detections, feed_dict=feed_dict)
+
+            # Update final results
+            results['detection_boxes'][begin:end] = batch_results['detection_boxes']
+            results['detection_scores'][begin:end] = batch_results['detection_scores']
+            results['detection_classes'][begin:end] = batch_results['detection_classes']
+            results['detection_multiclass_scores'][begin:end] = batch_results['detection_multiclass_scores']
+            results['detection_anchor_indices'][begin:end] = batch_results['detection_anchor_indices']
+            results['num_detections'][begin:end] = batch_results['num_detections']
+            results['raw_detection_boxes'][begin:end] = batch_results['raw_detection_boxes']
+            results['raw_detection_scores'][begin:end] = batch_results['raw_detection_scores']
+
+        return results
+
 
     def fit(self):
         raise NotImplementedError
