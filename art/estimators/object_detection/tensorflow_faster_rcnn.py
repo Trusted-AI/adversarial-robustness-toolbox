@@ -408,6 +408,37 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return results
 
+    @property
+    def predictions(self):
+        """
+        Get the `_predictions` attribute.
+
+        :return: A dictionary holding "raw" prediction tensors.
+        :rtype: `dict`
+        """
+        return self._predictions
+
+    @property
+    def losses(self):
+        """
+        Get the `_losses` attribute.
+
+        :return: A dictionary mapping loss keys (`first_stage_localization_loss`, `first_stage_objectness_loss`,
+        `second_stage_localization_loss`, `second_stage_classification_loss`) to scalar tensors representing
+        corresponding loss values.
+        :rtype: `dict`
+        """
+        return self._losses
+
+    @property
+    def detections(self):
+        """
+        Get the `_detections` attribute.
+
+        :return: A dictionary containing final detection results.
+        :rtype: `dict`
+        """
+        return self._detections
 
     def fit(self):
         raise NotImplementedError
