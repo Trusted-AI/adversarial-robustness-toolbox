@@ -154,7 +154,7 @@ class BaseEstimator(ABC):
         return params
 
     @abstractmethod
-    def predict(self, x, *args, **kwargs):
+    def predict(self, x, *args, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Perform prediction of the estimator for input `x`.
 
@@ -166,7 +166,7 @@ class BaseEstimator(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def fit(self, x, y, **kwargs):
+    def fit(self, x, y, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Fit the estimator using the training data `(x, y)`.
 
