@@ -21,8 +21,10 @@ This module implements the task specific estimator for Faster R-CNN in TensorFlo
 import logging
 
 import numpy as np
+import tensorflow as tf
 from object_detection.utils import config_util
 from object_detection.builders import model_builder
+from object_detection.utils import variables_helper
 
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.tensorflow import TensorFlowEstimator
@@ -126,7 +128,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         """
         Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
         is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
-        formats will also be extracted. Then the model is loaded and returned.
+        formats will also be extracted. Then the model is loaded, pipelined and its outputs are returned as a tuple
+        of (predictions, losses, detections).
 
         :param filename: Name of the file.
         :type filename: `str`
@@ -149,8 +152,15 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :param groundtruth_weights_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing weights for
         groundtruth boxes. Only used when is_training is True.
         :type groundtruth_weights_list: `list`
-        :return: A pretrained Faster RCNN model.
-        :rtype: `object_detection.meta_architectures.faster_rcnn_meta_arch.FasterRCNNMetaArch`
+        :return: A tuple of (predictions, losses, detections):
+
+                    - predictions: a dictionary holding "raw" prediction tensors.
+                    - losses: a dictionary mapping loss keys (`first_stage_localization_loss`,
+                    `first_stage_objectness_loss`, 'second_stage_localization_loss',
+                    'second_stage_classification_loss') to scalar tensors representing
+                    corresponding loss values.
+                    - detections: a dictionary containing final detection results.
+        :rtype: `tuple`
         """
         # Download and extract
         path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
@@ -183,15 +193,24 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         detections = obj_detection_model.postprocess(predictions, true_image_shapes)
 
         # Initialize variables from checkpoint
+        # Get variables to restore
         variables_to_restore = obj_detection_model.restore_map(
             fine_tune_checkpoint_type='detection',
             load_all_detection_checkpoint_vars=True
         )
+
+        # Get variables from checkpoint
         fine_tune_checkpoint_path = path + '/model.ckpt'
-        available_var_map = variables_helper.get_variables_available_in_checkpoint(variables_to_restore, fine_tune_checkpoint_path, include_global_step=False)
+        vars_in_ckpt = variables_helper.get_variables_available_in_checkpoint(
+            variables_to_restore,
+            fine_tune_checkpoint_path,
+            include_global_step=False
+        )
 
-        tf.train.init_from_checkpoint(fine_tune_checkpoint, available_var_map)
+        # Initialize from checkpoint
+        tf.train.init_from_checkpoint(fine_tune_checkpoint_path, vars_in_ckpt)
 
+        return predictions, losses, detections
 
 
 
