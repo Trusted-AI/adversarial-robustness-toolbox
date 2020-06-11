@@ -24,9 +24,12 @@ This module implements ShapeShifter, a robust physical adversarial attack on Fas
 import logging
 
 import numpy as np
+import tensorflow as tf
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.tensorflow import TensorFlowEstimator
+from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.utils import Deprecated, deprecated_keyword_arg
 
@@ -42,18 +45,28 @@ class ShapeShifter(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
+        "random_transform",
         "learning_rate",
         "batch_size",
     ]
 
-    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
+    _estimator_requirements = (
+        BaseEstimator,
+        LossGradientsMixin,
+        NeuralNetworkMixin,
+        ObjectDetectorMixin,
+        TensorFlowEstimator,
+        TensorFlowFasterRCNN
+    )
 
-    def __init__(self, estimator, learning_rate=5.0, batch_size=1):
+    def __init__(self, estimator, random_transform=tf.identity, learning_rate=5.0, batch_size=1):
         """
         Create an instance of the :class:`.ShapeShifter`.
 
         :param estimator: A trained object detector.
-        :type estimator: :class:`.ObjectDetectorMixin`
+        :type estimator: :class:`.TensorFlowFasterRCNN`
+        :param random_transform: A TensorFlow function applies random transformations to images.
+        :type random_transform: `tensorflow function`
         :param learning_rate: The learning rate of the optimization.
         :type learning_rate: `float`
         :param batch_size: The size of the training batch.
@@ -62,6 +75,7 @@ class ShapeShifter(EvasionAttack):
         super(ShapeShifter, self).__init__(estimator=estimator)
 
         kwargs = {
+            "random_transform": random_transform,
             "learning_rate": learning_rate,
             "batch_size": batch_size,
         }
@@ -87,6 +101,12 @@ class ShapeShifter(EvasionAttack):
         assert y is None, "The DPatch attack does not use target labels."
 
         assert x.ndim == 4, "The adversarial patch can only be applied to images."
+
+
+
+
+
+
 
 
         return self._patch
