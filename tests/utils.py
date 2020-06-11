@@ -750,6 +750,60 @@ def get_image_classifier_kr_tf_binary():
     return krc
 
 
+def get_image_classifier_kr_tf_with_wildcard():
+    """
+    Standard Tensorflow-Keras binary classifier for unit testing
+
+    :return: KerasClassifier
+    """
+    # pylint: disable=E0401
+    import tensorflow as tf
+
+    if tf.__version__[0] == "2":
+        tf.compat.v1.disable_eager_execution()
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense, Conv1D, LSTM
+
+    from art.estimators.classification.keras import KerasClassifier
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Conv1D(1, 3, activation="relu", input_shape=(None, 1)))
+    model.add(LSTM(4))
+    model.add(Dense(2, activation="softmax"))
+    model.compile(loss="categorical_crossentropy", optimizer="adam")
+
+    # Get classifier
+    krc = KerasClassifier(model)
+
+    return krc
+
+
+def get_image_classifier_kr_with_wildcard():
+    """
+    Standard Tensorflow-Keras binary classifier for unit testing
+
+    :return: KerasClassifier
+    """
+    # pylint: disable=E0401
+    from keras.models import Sequential
+    from keras.layers import Dense, Conv1D, LSTM
+
+    from art.estimators.classification.keras import KerasClassifier
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Conv1D(1, 3, activation="relu", input_shape=(None, 1)))
+    model.add(LSTM(4))
+    model.add(Dense(2, activation="softmax"))
+    model.compile(loss="categorical_crossentropy", optimizer="adam")
+
+    # Get classifier
+    krc = KerasClassifier(model)
+
+    return krc
+
+
 def get_image_classifier_pt(from_logits=False, load_init=True):
     """
     Standard PyTorch classifier for unit testing.

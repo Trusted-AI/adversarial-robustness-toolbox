@@ -284,7 +284,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :rtype: `np.ndarray`
         """
         # Check shape of `x` because of custom function for `_loss_gradients`
-        if self._input_shape != x.shape[1:]:
+        shape_match = (np.array(self._input_shape) == np.array(x.shape[1:])) + (np.array(self._input_shape) == None)
+        if not shape_match.all():
             raise ValueError(
                 "Error when checking x: expected x to have shape {} but got array with shape {}".format(
                     self._input_shape, x.shape[1:]
