@@ -49,7 +49,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         channels_first=None,
         preprocessing_defences=None,
         postprocessing_defences=None,
-        preprocessing=None,
+        preprocessing=None
     ):
         """
         Initialization.
@@ -109,20 +109,94 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         assert postprocessing_defences is None, "This estimator does not support `postprocessing_defences`."
 
         if model is None:
-            # Download and extract
-            path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
-
-            # Load model config
-            pipeline_config = path + '/pipeline.config'
-            configs = config_util.get_configs_from_pipeline_file(pipeline_config)
-            configs['model'].faster_rcnn.second_stage_batch_size = configs[
-                'model'].faster_rcnn.first_stage_max_proposals
-
-            # Load model
-            self._model = model_builder.build(model_config=configs['model'], is_training=True, add_summaries=False)
 
         else:
             self._model = model
+
+    @staticmethod
+    def _load_model(
+        filename,
+        url,
+        images,
+        is_training=False,
+        groundtruth_boxes_list=None,
+        groundtruth_classes_list=None,
+        groundtruth_weights_list=None
+    ):
+        """
+        Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
+        is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
+        formats will also be extracted. Then the model is loaded and returned.
+
+        :param filename: Name of the file.
+        :type filename: `str`
+        :param url: Download URL.
+        :type url: `str`
+        :param images: Input samples of shape (nb_samples, height, width, nb_channels).
+        :type images: `tensorflow.Tensor`
+        :param is_training: A boolean indicating whether the training version of the computation graph should be
+        constructed.
+        :type is_training: `bool`
+        :param groundtruth_boxes_list: a list of 2-D tf.float32 tensors of shape [num_boxes, 4] containing coordinates
+        of the groundtruth boxes. Groundtruth boxes are provided in [y_min, x_min, y_max, x_max] format and assumed to
+        be normalized and clipped relative to the image window with y_min <= y_max and x_min <= x_max. Only used when
+        is_training is True.
+        :type groundtruth_boxes_list: `list`
+        :param groundtruth_classes_list: a list of 2-D tf.float32 one-hot (or k-hot) tensors of shape
+        [num_boxes, num_classes] containing the class targets with the 0th index assumed to map to the first
+        non-background class. Only used when is_training is True.
+        :type groundtruth_classes_list: `list`
+        :param groundtruth_weights_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing weights for
+        groundtruth boxes. Only used when is_training is True.
+        :type groundtruth_weights_list: `list`
+        :return: A pretrained Faster RCNN model.
+        :rtype: `object_detection.meta_architectures.faster_rcnn_meta_arch.FasterRCNNMetaArch`
+        """
+        # Download and extract
+        path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
+
+        # Load model config
+        pipeline_config = path + '/pipeline.config'
+        configs = config_util.get_configs_from_pipeline_file(pipeline_config)
+        configs['model'].faster_rcnn.second_stage_batch_size = configs[
+            'model'].faster_rcnn.first_stage_max_proposals
+
+        # Load model
+        obj_detection_model = model_builder.build(
+            model_config=configs['model'],
+            is_training=is_training,
+            add_summaries=False
+        )
+
+        # Provide groundtruth
+        if is_training:
+            obj_detection_model.provide_groundtruth(
+                groundtruth_boxes_list=groundtruth_boxes_list,
+                groundtruth_classes_list=groundtruth_classes_list,
+                groundtruth_weights_list=groundtruth_weights_list
+            )
+
+        # Create model pipeline
+        preprocessed_images, true_image_shapes = obj_detection_model.preprocess(images)
+        predictions = obj_detection_model.predict(preprocessed_images, true_image_shapes)
+        losses = obj_detection_model.loss(predictions, true_image_shapes)
+        detections = obj_detection_model.postprocess(predictions, true_image_shapes)
+
+        # Initialize variables from checkpoint
+        variables_to_restore = obj_detection_model.restore_map(
+            fine_tune_checkpoint_type='detection',
+            load_all_detection_checkpoint_vars=True
+        )
+        fine_tune_checkpoint_path = path + '/model.ckpt'
+        available_var_map = variables_helper.get_variables_available_in_checkpoint(variables_to_restore, fine_tune_checkpoint_path, include_global_step=False)
+
+        tf.train.init_from_checkpoint(fine_tune_checkpoint, available_var_map)
+
+
+
+
+
+
 
     def loss_gradient(self, x, y, **kwargs):
         """
@@ -151,13 +225,16 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :type x: `np.ndarray`
         :param batch_size: Batch size.
         :type batch_size: `int`
-        :return: Predictions of format `List[Dict[Tensor]]`, one for each input image. The
-                 fields of the Dict are as follows:
+        :return: A dictionary containing the following fields:
 
-                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
-                   between 0 and H and 0 and W
-                 - labels (Int64Tensor[N]): the predicted labels for each image
-                 - scores (Tensor[N]): the scores or each prediction.
+                    - detection_boxes: [batch, max_detection, 4]
+                    - detection_scores: [batch, max_detections]
+                    - detection_classes: [batch, max_detections]
+                    - detection_multiclass_scores: [batch, max_detections, 2]
+                    - detection_anchor_indices: [batch, max_detections]
+                    - num_detections: [batch]
+                    - raw_detection_boxes: [batch, total_detections, 4]
+                    - raw_detection_scores: [batch, total_detections, num_classes + 1]
         :rtype: `np.ndarray`
         """
         raise NotImplementedError
