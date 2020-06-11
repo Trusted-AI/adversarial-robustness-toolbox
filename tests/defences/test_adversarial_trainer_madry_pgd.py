@@ -58,7 +58,7 @@ class TestAdversarialTrainerMadryPGD(unittest.TestCase):
         adv_trainer = AdversarialTrainerMadryPGD(self.classifier, nb_epochs=1, batch_size=128)
         adv_trainer.fit(x_train, y_train)
 
-        predictions_new = np.argmax(adv_trainer.trainer.classifier.predict(x_test), axis=1)
+        predictions_new = np.argmax(adv_trainer.trainer._classifier.predict(x_test), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
         self.assertEqual(accuracy_new, 0.38)

@@ -59,7 +59,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         adv_trainer = AdversarialTrainer(self.classifier, attack)
 
         self.assertEqual(len(adv_trainer.attacks), 1)
-        self.assertEqual(adv_trainer.attacks[0].estimator, adv_trainer.classifier)
+        self.assertEqual(adv_trainer.attacks[0].estimator, adv_trainer._classifier)
 
     def test_fit_predict(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
