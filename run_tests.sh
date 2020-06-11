@@ -15,6 +15,8 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 done
 
+#TODO for inference, they only have scikitlearn so need to be run AT LEAST with scikitlearn
+
 pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
@@ -69,7 +71,6 @@ declare -a classifiers=("tests/estimators/certification/test_randomized_smoothin
                         "tests/estimators/classification/test_keras_tf.py" \
                         "tests/estimators/classification/test_lightgbm.py" \
                         "tests/estimators/classification/test_mxnet.py" \
-                        "tests/estimators/classification/test_pytorch.py" \
                         "tests/estimators/classification/test_scikitlearn.py" \
                         "tests/estimators/classification/test_xgboost.py" )
 
