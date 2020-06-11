@@ -510,8 +510,11 @@ class TestKerasClassifierTensorFlow(TestBase):
         shapes = [(1, 10, 1), (1, 20, 1)]
         for shape in shapes:
             x = np.random.normal(size=shape)
-            gradients = classifier.loss_gradient(x, y=[1])
-            self.assertEqual(gradients.shape, shape)
+            loss_gradient = classifier.loss_gradient(x, y=[1])
+            self.assertEqual(loss_gradient.shape, shape)
+
+            class_gradient = classifier.class_gradient(x, 0)
+            self.assertEqual(class_gradient[0].shape, shape)
 
     def test_functional_model(self):
         # Need to update the functional_model code to produce a model with more than one input and output layers...
