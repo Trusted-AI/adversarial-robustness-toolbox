@@ -174,7 +174,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             # Batch indexes
             begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
 
-            model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
+            with torch.no_grad():
+                model_outputs = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))
             output = model_outputs[-1]
             results[begin:end] = output.detach().cpu().numpy()
 

@@ -130,12 +130,12 @@ class TestWasserstein(TestBase):
         train_success_rate = (
             np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
         )
-        self.assertTrue(train_success_rate >= base_success_rate)
+        self.assertGreaterEqual(train_success_rate, base_success_rate)
 
         test_success_rate = (
             np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[0]
         )
-        self.assertTrue(test_success_rate >= base_success_rate)
+        self.assertGreaterEqual(test_success_rate, base_success_rate)
 
         # Test Wasserstein with wasserstein ball and l2 norm
         attack = Wasserstein(
@@ -165,12 +165,12 @@ class TestWasserstein(TestBase):
         train_success_rate = (
             np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
         )
-        self.assertTrue(train_success_rate >= base_success_rate)
+        self.assertGreaterEqual(train_success_rate, base_success_rate)
 
         test_success_rate = (
             np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[0]
         )
-        self.assertTrue(test_success_rate >= 0)
+        self.assertGreaterEqual(test_success_rate, 0)
 
         # Test Wasserstein with wasserstein ball and inf norm
         attack = Wasserstein(
@@ -200,12 +200,12 @@ class TestWasserstein(TestBase):
         train_success_rate = (
             np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
         )
-        self.assertTrue(train_success_rate >= base_success_rate)
+        self.assertGreaterEqual(train_success_rate, base_success_rate)
 
         test_success_rate = (
             np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[0]
         )
-        self.assertTrue(test_success_rate >= 0)
+        self.assertGreaterEqual(test_success_rate, 0)
 
         # Test Wasserstein with wasserstein ball and l1 norm
         attack = Wasserstein(
@@ -235,12 +235,12 @@ class TestWasserstein(TestBase):
         train_success_rate = (
             np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
         )
-        self.assertTrue(train_success_rate >= base_success_rate)
+        self.assertGreaterEqual(train_success_rate, base_success_rate)
 
         test_success_rate = (
             np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[0]
         )
-        self.assertTrue(test_success_rate >= 0)
+        self.assertGreaterEqual(test_success_rate, 0)
 
         # Test Wasserstein with l2 ball and wasserstein norm
         attack = Wasserstein(
@@ -270,12 +270,12 @@ class TestWasserstein(TestBase):
         train_success_rate = (
             np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
         )
-        self.assertTrue(train_success_rate >= 0)
+        self.assertGreaterEqual(train_success_rate, 0)
 
         test_success_rate = (
             np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[0]
         )
-        self.assertTrue(test_success_rate >= 0)
+        self.assertGreaterEqual(test_success_rate, 0)
 
         # Test Wasserstein with l1 ball and wasserstein norm
         attack = Wasserstein(
@@ -305,14 +305,14 @@ class TestWasserstein(TestBase):
         train_success_rate = (
             np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
         )
-        self.assertTrue(train_success_rate >= 0)
+        self.assertGreaterEqual(train_success_rate, 0)
 
         test_success_rate = (
             np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[0]
         )
-        self.assertTrue(test_success_rate >= 0)
+        self.assertGreaterEqual(test_success_rate, 0)
 
-        # Test Wasserstein with inf ball and wasserstein norm
+        # Test Wasserstein with inf ball and Wasserstein norm
         attack = Wasserstein(
             classifier,
             regularization=regularization,
@@ -340,12 +340,12 @@ class TestWasserstein(TestBase):
         train_success_rate = (
             np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
         )
-        self.assertTrue(train_success_rate >= base_success_rate)
+        self.assertGreaterEqual(train_success_rate, base_success_rate)
 
         test_success_rate = (
             np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[0]
         )
-        self.assertTrue(test_success_rate >= base_success_rate)
+        self.assertGreaterEqual(test_success_rate, base_success_rate)
 
         # Test Wasserstein with targeted attack
         master_seed(1234)
@@ -379,10 +379,10 @@ class TestWasserstein(TestBase):
         train_success_rate = (
             np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(train_y_rand, axis=1)) / y_train.shape[0]
         )
-        self.assertTrue(train_success_rate >= base_success_rate)
+        self.assertGreaterEqual(train_success_rate, base_success_rate)
 
         test_success_rate = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(test_y_rand, axis=1)) / y_test.shape[0]
-        self.assertTrue(test_success_rate >= 0)
+        self.assertGreaterEqual(test_success_rate, 0)
 
         # Test Wasserstein with p-wasserstein=1 and kernel_size=3
         attack = Wasserstein(

@@ -87,9 +87,9 @@ class TestGaussianAugmentation(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             _ = GaussianAugmentation(augmentation=True, apply_fit=False, apply_predict=False)
 
-        self.assertTrue(
-            "If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`."
-            in str(context.exception)
+        self.assertIn(
+            "If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`.",
+            str(context.exception)
         )
 
 
