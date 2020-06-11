@@ -216,9 +216,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         be normalized and clipped relative to the image window with y_min <= y_max and x_min <= x_max. Only used when
         is_training is True.
         :type groundtruth_boxes_list: `list`
-        :param groundtruth_classes_list: a list of 2-D tf.float32 one-hot (or k-hot) tensors of shape
-        [num_boxes, num_classes] containing the class targets with the 0th index assumed to map to the first
-        non-background class. Only used when is_training is True.
+        :param groundtruth_classes_list: a list of 1-D tf.float32 tensors of shape [num_boxes] containing the class
+        targets with the zero index assumed to map to the first non-background class. Only used when is_training
+        is True.
         :type groundtruth_classes_list: `list`
         :param groundtruth_weights_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing weights for
         groundtruth boxes. Only used when is_training is True.
@@ -292,29 +292,37 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return predictions, losses, detections
 
-
-
-
-
-
     def loss_gradient(self, x, y, **kwargs):
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :type x: `np.ndarray`
-        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
-                  fields of the Dict are as follows:
+        :param y: A dictionary of target values. The fields of the dictionary are as follows:
 
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
-                    between 0 and H and 0 and W
-                  - labels (Int64Tensor[N]): the predicted labels for each image
-                  - scores (Tensor[N]): the scores or each prediction.
-        :type y: `np.ndarray`
+                    - `groundtruth_boxes_list`: a list of `nb_samples` size of 2-D tf.float32 tensors of shape
+                    [num_boxes, 4] containing coordinates of the groundtruth boxes. Groundtruth boxes are provided in
+                    [y_min, x_min, y_max, x_max] format and assumed to be normalized and clipped relative to the image
+                    window with y_min <= y_max and x_min <= x_max.
+                    - `groundtruth_classes_list`: a list of `nb_samples` size of 1-D tf.float32 tensors of shape
+                    [num_boxes] containing the class targets with the zero index assumed to map to the first
+                    non-background class.
+                    - `groundtruth_weights_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
+                    [num_boxes] containing weights for groundtruth boxes.
+        :type y: `dict`
         :return: Loss gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        raise NotImplementedError
+        # Only do loss_gradient if is_training is False
+        if self._is_training:
+            raise NotImplementedError(
+                "This object detector was loaded in training mode and therefore not support loss_gradient."
+            )
+
+        # Apply preprocessing
+        x, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+
 
     def predict(self, x, batch_size=128, **kwargs):
         """
