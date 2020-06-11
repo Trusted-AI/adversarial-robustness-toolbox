@@ -34,8 +34,7 @@ from art.data_generators import KerasDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.estimators.classification.keras import KerasClassifier, generator_fit
 from art.utils import Deprecated
-from tests.utils import TestBase, get_image_classifier_kr_tf, get_image_classifier_kr_tf_with_wildcard, master_seed, \
-    get_image_classifier_kr_with_wildcard
+from tests.utils import TestBase, get_image_classifier_kr_tf, get_image_classifier_kr_tf_with_wildcard, master_seed
 
 if tf.__version__[0] == "2":
     tf.compat.v1.disable_eager_execution()
@@ -505,7 +504,7 @@ class TestKerasClassifierTensorFlow(TestBase):
         np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_gradients_2, decimal=4)
 
     def test_loss_gradient_with_wildcard(self):
-        classifier = get_image_classifier_kr_with_wildcard()
+        classifier = get_image_classifier_kr_tf_with_wildcard()
 
         # Test gradient
         shapes = [(1, 10, 1), (1, 20, 1)]
