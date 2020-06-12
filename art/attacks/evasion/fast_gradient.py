@@ -74,7 +74,7 @@ class FastGradientMethod(EvasionAttack):
         eps_step: float = 0.1,
         targeted: bool = False,
         num_random_init: int = 0,
-        batch_size: int = 1,
+        batch_size: int = 32,
         minimal: bool = False,
     ) -> None:
         """

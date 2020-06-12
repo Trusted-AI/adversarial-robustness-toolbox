@@ -52,7 +52,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         eps_step: float = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
-        batch_size: int = 1,
+        batch_size: int = 32,
     ) -> None:
         """
         Create a :class:`.ProjectedGradientDescent` instance.
