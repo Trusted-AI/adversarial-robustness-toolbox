@@ -283,17 +283,15 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :return: Array of gradients of the same shape as `x`.
         :rtype: `np.ndarray`
         """
-        # Check shape of `x` because of custom function for `_loss_gradients`
-        # shape_match = [i is None or i == j for i,j in zip(self._input_shape, x.shape[1:])]
-        # if not all(shape_match):
-        #    raise ValueError(
-        #        "Error when checking x: expected x to have shape {} but got array with shape {}".format(
-        #            self._input_shape, x.shape[1:]
-        #        )
-        #    )
-
-        # Apply preprocessing
+        # Check shape of preprocessed `x` because of custom function for `_loss_gradients`
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
+        if not all(shape_match):
+            raise ValueError(
+                "Error when checking x: expected preprocessed x to have shape {} but got array with shape {}".format(
+                    self._input_shape, x_preprocessed.shape[1:]
+                )
+            )
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
         if self._reduce_labels:
@@ -301,8 +299,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         # Compute gradients
         gradients = self._loss_gradients([x_preprocessed, y_preprocessed])[0]
+        assert gradients.shape == x_preprocessed.shape
         gradients = self._apply_preprocessing_gradient(x, gradients)
-        # assert gradients.shape == x_preprocessed.shape
+        assert gradients.shape == x.shape
 
         return gradients
 
@@ -335,19 +334,17 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         ):
             raise ValueError("Label %s is out of range." % str(label))
 
-        # Check shape of `x` because of custom function for `_loss_gradients`
-        # shape_match = [i is None or i == j for i,j in zip(self._input_shape, x.shape[1:])]
-        # if not all(shape_match):
-        #    raise ValueError(
-        #        "Error when checking x: expected x to have shape {} but got array with shape {}".format(
-        #            self._input_shape, x.shape[1:]
-        #        )
-        #    )
+        # Check shape of preprocessed `x` because of custom function for `_class_gradients`
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
+        if not all(shape_match):
+            raise ValueError(
+                "Error when checking x: expected preprocessed x to have shape {} but got array with shape {}".format(
+                    self._input_shape, x_preprocessed.shape[1:]
+                )
+            )
 
         self._init_class_gradients(label=label)
-
-        # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         if label is None:
             # Compute the gradients w.r.t. all classes
@@ -356,7 +353,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
             gradients = np.swapaxes(np.array(self._class_gradients_idx[label]([x_preprocessed])), 0, 1)
-            # assert gradients.shape == (x_preprocessed.shape[0], 1) + x_preprocessed.shape[1:]
+            assert gradients.shape == (x_preprocessed.shape[0], 1) + x_preprocessed.shape[1:]
 
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
