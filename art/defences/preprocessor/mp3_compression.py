@@ -49,7 +49,7 @@ class Mp3Compression(Preprocessor):
     def __init__(
         self,
         sample_rate: int,
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -59,6 +59,7 @@ class Mp3Compression(Preprocessor):
 
         :param sample_rate: Specifies the sampling rate of sample.
         :param channel_index: Index of the axis containing the audio channels.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.

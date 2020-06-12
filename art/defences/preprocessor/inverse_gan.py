@@ -33,8 +33,8 @@ from art.defences.preprocessor.preprocessor import Preprocessor
 if TYPE_CHECKING:
     import tensorflow as tf
 
-    from art.estimators.encoding.encoder import EncoderMixin
-    from art.estimators.generation.generator import GeneratorMixin
+    from art.estimators.encoding.tensorflow import TensorFlowEncoder
+    from art.estimators.generation.tensorflow import TensorFlowGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +51,8 @@ class InverseGAN(Preprocessor):
     def __init__(
         self,
         sess: "tf.compat.v1.Session",
-        gan: "GeneratorMixin",
-        inverse_gan: "EncoderMixin",
+        gan: "TensorFlowGenerator",
+        inverse_gan: "TensorFlowEncoder",
         apply_fit: bool = False,
         apply_predict: bool = False,
     ):

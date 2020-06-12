@@ -47,7 +47,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         self,
         model: Optional["torchvision.models.detection.fasterrcnn_resnet50_fpn"] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channel_index: Optional[int] = Deprecated,
+        channel_index=Deprecated,
         channels_first: Optional[bool] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -70,6 +70,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.

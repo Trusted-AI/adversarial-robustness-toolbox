@@ -69,7 +69,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         self,
         model: KERAS_MODEL_TYPE,
         use_logits: bool = False,
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -85,6 +85,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :param use_logits: True if the output of the model are logits; false for probabilities or any other type of
                outputs. Logits output should be favored when possible to ensure attack efficiency.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all

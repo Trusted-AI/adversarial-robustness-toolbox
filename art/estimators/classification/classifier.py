@@ -99,7 +99,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
 
         :return: Number of classes in the data.
         """
-        return self._nb_classes
+        return self._nb_classes  # type: ignore
 
 
 class ClassGradientsMixin(ABC):

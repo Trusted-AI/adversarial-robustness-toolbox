@@ -59,7 +59,7 @@ class JpegCompression(Preprocessor):
         self,
         clip_values: CLIP_VALUES_TYPE,
         quality: int = 50,
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = False,
         apply_fit: bool = True,
         apply_predict: bool = True,
@@ -71,6 +71,7 @@ class JpegCompression(Preprocessor):
                for features.
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.

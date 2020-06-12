@@ -57,7 +57,7 @@ class SpatialSmoothing(Preprocessor):
     def __init__(
         self,
         window_size: int = 3,
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         apply_fit: bool = False,
@@ -67,6 +67,7 @@ class SpatialSmoothing(Preprocessor):
         Create an instance of local spatial smoothing.
 
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param window_size: The size of the sliding window.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed

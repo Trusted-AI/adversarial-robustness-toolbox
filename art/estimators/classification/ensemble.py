@@ -49,7 +49,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         self,
         classifiers: List[ClassifierNeuralNetwork],
         classifier_weights: Union[list, np.ndarray, None] = None,
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -64,6 +64,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param classifier_weights: List of weights, one scalar per classifier, to assign to their prediction when
                aggregating results. If `None`, all classifiers are assigned the same weight.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -203,7 +204,9 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128) -> np.ndarray:
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -212,6 +215,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param x: Input for computing the activations.
         :param layer: Layer for computing the activations.
         :param batch_size: Size of batches.
+        :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         :raises `NotImplementedException`: This method is not supported for ensembles.
         """

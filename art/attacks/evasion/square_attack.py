@@ -31,7 +31,7 @@ import numpy as np
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, Classifier
+from art.estimators.classification.classifier import ClassifierMixin, ClassifierGradients
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class SquareAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: Classifier,
+        estimator: ClassifierGradients,
         norm: Union[float, int] = np.inf,
         max_iter: int = 100,
         eps: float = 0.3,

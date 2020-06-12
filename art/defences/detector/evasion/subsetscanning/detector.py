@@ -214,7 +214,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
-    @property
+    @property  # type: ignore
     @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index

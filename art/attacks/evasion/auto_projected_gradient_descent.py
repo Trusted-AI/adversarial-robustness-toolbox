@@ -263,7 +263,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 else:
 
                     # def difference_logits_ratio(y_true, y_pred):
-                    def difference_logits_ratio(y_pred, y_true):
+                    def difference_logits_ratio(y_pred, y_true):  # type: ignore
                         if isinstance(y_true, np.ndarray):
                             y_true = torch.from_numpy(y_true)
                         if isinstance(y_pred, np.ndarray):

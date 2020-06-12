@@ -53,7 +53,7 @@ class RandomizedSmoothingMixin(ABC):
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)  # type: ignore
         self.sample_size = sample_size
         self.scale = scale
         self.alpha = alpha

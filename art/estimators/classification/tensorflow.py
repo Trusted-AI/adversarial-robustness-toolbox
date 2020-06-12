@@ -63,7 +63,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         loss: Optional["tf.Tensor"] = None,
         learning: Optional["tf.Placeholder"] = None,
         sess: Optional["tf.Session"] = None,
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -86,6 +86,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :param learning: The placeholder to indicate if the model is training.
         :param sess: Computation session.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -656,7 +657,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         input_shape: Tuple[int, ...],
         loss_object: Optional["tf.keras.losses.Loss"] = None,
         train_step: Optional[Callable] = None,
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = False,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -675,6 +676,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param train_step: A function that applies a gradient update to the trainable variables with signature
                            train_step(model, images, labels).
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -909,6 +911,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :return: Gradients of the same shape as `x`.
         """
         import tensorflow as tf
+
+        if self._loss_object is None:
+            raise ValueError("Loss object is necessary for computing the loss gradient.")
 
         if tf.executing_eagerly():
             with tf.GradientTape() as tape:

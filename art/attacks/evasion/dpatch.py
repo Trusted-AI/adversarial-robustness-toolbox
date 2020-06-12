@@ -152,7 +152,7 @@ class DPatch(EvasionAttack):
     @staticmethod
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def _augment_images_with_patch(
-        x: np.ndarray, patch: np.ndarray, random_location: bool, channels_first: bool, channel_index: int = Deprecated
+        x: np.ndarray, patch: np.ndarray, random_location: bool, channels_first: bool, channel_index=Deprecated
     ) -> Tuple[np.ndarray, List[Dict[str, int]]]:
         """
         Augment images with patch.
@@ -163,6 +163,7 @@ class DPatch(EvasionAttack):
                                 (top-left corner).
         :param channels_first: Set channels first or last.
         :param channel_index: Index of the color channel.
+        :type channel_index: `int`
         """
         # Remove in 1.5.0
         if channel_index == 3:

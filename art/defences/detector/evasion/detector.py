@@ -100,13 +100,13 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
-    @property
+    @property  # type: ignore
     @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 
     @property
-    def channels_first(self) -> bool:
+    def channels_first(self) -> Optional[bool]:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """
@@ -223,13 +223,13 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
-    @property
+    @property  # type: ignore
     @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 
     @property
-    def channels_first(self) -> bool:
+    def channels_first(self) -> Optional[bool]:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """

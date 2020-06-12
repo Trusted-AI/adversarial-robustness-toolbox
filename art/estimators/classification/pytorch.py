@@ -61,7 +61,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         input_shape: Tuple[int, ...],
         nb_classes: int,
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = True,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -81,6 +81,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param nb_classes: The number of classes of the model.
         :param optimizer: The optimizer used to train the classifier.
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -442,9 +443,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Compute gradients
         loss.backward()
         grads = x.grad
-        assert grads.shape == x.shape
+        assert grads.shape == x.shape  # type: ignore
 
-        return grads
+        return grads  # type: ignore
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False

@@ -31,7 +31,7 @@ from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGra
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassifierGradients
 from art.utils import get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -51,7 +51,7 @@ class AutoAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: BaseEstimator,
+        estimator: ClassifierGradients,
         norm: Union[int, float] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,

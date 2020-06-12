@@ -56,7 +56,7 @@ class ThermometerEncoding(Preprocessor):
         self,
         clip_values: CLIP_VALUES_TYPE,
         num_space: int = 10,
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = False,
         apply_fit: bool = True,
         apply_predict: bool = True,
@@ -68,6 +68,7 @@ class ThermometerEncoding(Preprocessor):
                for features.
         :param num_space: Number of evenly spaced levels within [0, 1].
         :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.

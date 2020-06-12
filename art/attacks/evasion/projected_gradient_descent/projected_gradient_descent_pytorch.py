@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 import torch
@@ -55,7 +55,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
     def __init__(
         self,
         estimator,
-        norm: Union[float, int] = np.inf,
+        norm: int = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -212,7 +212,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             mask = mask.to(self.estimator.device)
 
         for i_max_iter in range(self.max_iter):
-            adv_x = self._compute(
+            adv_x = self._compute_torch(
                 adv_x, inputs, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
@@ -244,11 +244,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         elif self.norm == 1:
             ind = tuple(range(1, len(x.shape)))
-            grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)
+            grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)  # type: ignore
 
         elif self.norm == 2:
             ind = tuple(range(1, len(x.shape)))
-            grad = grad / (torch.sqrt(torch.sum(grad * grad, axis=ind, keepdims=True)) + tol)
+            grad = grad / (torch.sqrt(torch.sum(grad * grad, axis=ind, keepdims=True)) + tol)  # type: ignore
 
         assert x.shape == grad.shape
 
@@ -274,7 +274,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x
 
-    def _compute(
+    def _compute_torch(
         self,
         x: "torch.Tensor",
         x_init: "torch.Tensor",
@@ -335,7 +335,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x_adv
 
-    def _projection(self, values: "torch.Tensor", eps: float, norm_p: Union[float, int]) -> "torch.Tensor":
+    def _projection(self, values: "torch.Tensor", eps: float, norm_p: int) -> "torch.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
@@ -350,17 +350,19 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         if norm_p == 2:
             values_tmp = values_tmp * torch.min(
-                torch.FloatTensor([1.0]).to(self.estimator.device), eps / (torch.norm(values_tmp, p=2, dim=1) + tol)
+                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
             ).unsqueeze_(-1)
 
         elif norm_p == 1:
             values_tmp = values_tmp * torch.min(
-                torch.FloatTensor([1.0]).to(self.estimator.device), eps / (torch.norm(values_tmp, p=1, dim=1) + tol)
+                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
             ).unsqueeze_(-1)
 
         elif norm_p == np.inf:
             values_tmp = values_tmp.sign() * torch.min(
-                values_tmp.abs(), torch.FloatTensor([eps]).to(self.estimator.device)
+                values_tmp.abs(), torch.tensor([eps], dtype=torch.float32).to(self.estimator.device)
             )
 
         else:

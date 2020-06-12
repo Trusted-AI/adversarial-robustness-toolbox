@@ -132,7 +132,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.is_clean_by_class = [np.empty(0, dtype=int) for _ in range(num_classes)]
 
             # calculate is_clean_by_class for each batch
-            for batch_idx in range(num_samples // batch_size):
+            for batch_idx in range(num_samples // batch_size):  # type: ignore
                 x_batch, y_batch = self.generator.get_batch()
                 is_clean_batch = is_clean[batch_idx * batch_size : batch_idx * batch_size + batch_size]
                 clean_by_class_batch = self._segment_by_class(is_clean_batch, y_batch)
@@ -186,7 +186,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.is_clean_lst = []
 
             # loop though the generator to generator a report
-            for _ in range(num_samples // batch_size):
+            for _ in range(num_samples // batch_size):  # type: ignore
                 x_batch, y_batch = self.generator.get_batch()
                 indices_by_class = self._segment_by_class(np.arange(batch_size), y_batch)
                 is_clean_lst = [0] * batch_size
@@ -231,7 +231,7 @@ class ActivationDefence(PoisonFilteringDefence):
             batch_size = self.generator.batch_size
             num_samples = self.generator.size
             num_classes = self.classifier.nb_classes
-            for batch_idx in range(num_samples // batch_size):
+            for batch_idx in range(num_samples // batch_size):  # type: ignore
                 x_batch, y_batch = self.generator.get_batch()
 
                 batch_activations = self._get_activations(x_batch)
@@ -701,7 +701,7 @@ def cluster_activations(
         separated_reduced_activations.append(reduced_activations)
 
         # Get cluster assignments
-        if generator is not None:
+        if generator is not None and clusterer_new is not None:
             clusterer_new = clusterer_new.partial_fit(reduced_activations)
             # NOTE: this may cause earlier predictions to be less accurate
             clusters = clusterer_new.predict(reduced_activations)

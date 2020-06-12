@@ -412,13 +412,12 @@ class NeuralNetworkMixin(ABC):
     """
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
-    def __init__(
-        self, channel_index: Optional[int] = Deprecated, channels_first: Optional[bool] = None, **kwargs
-    ) -> None:
+    def __init__(self, channel_index=Deprecated, channels_first: Optional[bool] = None, **kwargs) -> None:
         """
         Initialize a neural network attributes.
 
         :param channel_index: Index of the axis in samples `x` representing the color channels.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         """
         # Remove in 1.5.0
@@ -430,8 +429,8 @@ class NeuralNetworkMixin(ABC):
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
         self._channel_index = channel_index
-        self._channels_first: bool = channels_first
-        super().__init__(**kwargs)
+        self._channels_first: Optional[bool] = channels_first
+        super().__init__()
 
     @abstractmethod
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
@@ -477,7 +476,7 @@ class NeuralNetworkMixin(ABC):
 
         for i in range(nb_epochs):
             for _ in trange(
-                int(generator.size / generator.batch_size), desc="Epoch %i/%i" % (i + 1, nb_epochs)
+                int(generator.size / generator.batch_size), desc="Epoch %i/%i" % (i + 1, nb_epochs)  # type: ignore
             ):  # type: ignore
                 x, y = generator.get_batch()
 
@@ -513,7 +512,7 @@ class NeuralNetworkMixin(ABC):
         """
         raise NotImplementedError
 
-    @property
+    @property  # type: ignore
     @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         """
@@ -522,7 +521,7 @@ class NeuralNetworkMixin(ABC):
         return self._channel_index
 
     @property
-    def channels_first(self) -> bool:
+    def channels_first(self) -> Optional[bool]:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
         """

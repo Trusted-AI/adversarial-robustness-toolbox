@@ -73,7 +73,7 @@ class ProjectedGradientDescent(EvasionAttack):
     def __init__(
         self,
         estimator,
-        norm: Union[float, int] = np.inf,
+        norm: int = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -116,6 +116,9 @@ class ProjectedGradientDescent(EvasionAttack):
         )
         no_defences = not self.estimator.preprocessing_defences and not self.estimator.postprocessing_defences
 
+        self._attack: Union[
+            ProjectedGradientDescentPyTorch, ProjectedGradientDescentTensorFlowV2, ProjectedGradientDescentNumpy
+        ]
         if isinstance(self.estimator, PyTorchClassifier) and no_preprocessing and no_defences:
             self._attack = ProjectedGradientDescentPyTorch(
                 estimator=estimator,

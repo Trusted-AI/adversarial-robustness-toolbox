@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
@@ -55,7 +55,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     def __init__(
         self,
         estimator,
-        norm: Union[float, int] = np.inf,
+        norm: int = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -202,7 +202,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         adv_x = x
         for i_max_iter in range(self.max_iter):
-            adv_x = self._compute(
+            adv_x = self._compute_tf(
                 adv_x, x, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
@@ -264,7 +264,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return x
 
-    def _compute(
+    def _compute_tf(
         self,
         x: "tf.Tensor",
         x_init: "tf.Tensor",

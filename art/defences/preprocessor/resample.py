@@ -49,7 +49,7 @@ class Resample(Preprocessor):
         self,
         sr_original: int,
         sr_new: int,
-        channel_index: int = Deprecated,
+        channel_index=Deprecated,
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -60,6 +60,7 @@ class Resample(Preprocessor):
         :param sr_original: Original sampling rate of sample.
         :param sr_new: New sampling rate of sample.
         :param channel_index: Index of the axis containing the audio channels.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
