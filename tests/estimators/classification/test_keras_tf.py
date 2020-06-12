@@ -567,7 +567,6 @@ class TestKerasClassifierTensorFlow(TestBase):
         keras_model = KerasClassifier(
             self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1, preprocessing_defences=fs
         )
-        print(keras_model.preprocessing_defences)
         with open(full_path, "wb") as save_file:
             pickle.dump(keras_model, save_file)
 
