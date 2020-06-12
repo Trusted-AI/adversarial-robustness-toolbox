@@ -334,7 +334,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     adv_x,
                     x,
                     targets,
-                    kwargs["mask"],
+                    mask,
                     self.eps,
                     self.eps_step,
                     self._project,

@@ -32,7 +32,6 @@ from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import (
-    Classifier,
     ClassifierGradients,
     ClassifierMixin,
 )

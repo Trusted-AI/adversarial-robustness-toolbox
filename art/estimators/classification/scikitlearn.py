@@ -30,9 +30,7 @@ import numpy as np
 
 from art.estimators.estimator import DecisionTreeMixin, LossGradientsMixin
 from art.estimators.classification.classifier import (
-    ClassifierGradients,
     ClassGradientsMixin,
-    ClassifierDecisionTree,
     ClassifierMixin,
 )
 from art.estimators.scikitlearn import ScikitlearnEstimator
@@ -227,7 +225,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.tree.DecisionTreeClassifier) and model is not None:
             raise TypeError("Model must be of type sklearn.tree.DecisionTreeClassifier.")
@@ -375,7 +373,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
                be divided by the second one.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.tree.DecisionTreeRegressor):
             raise TypeError("Model must be of type sklearn.tree.DecisionTreeRegressor.")
@@ -464,7 +462,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.tree.ExtraTreeClassifier):
             raise TypeError("Model must be of type sklearn.tree.ExtraTreeClassifier.")
@@ -504,7 +502,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.ensemble.AdaBoostClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.AdaBoostClassifier.")
@@ -545,7 +543,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
                be divided by the second one.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.ensemble.BaggingClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.BaggingClassifier.")
@@ -586,7 +584,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
                be divided by the second one.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.ensemble.ExtraTreesClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.ExtraTreesClassifier.")
@@ -660,7 +658,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
                be divided by the second one.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.ensemble.GradientBoostingClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.GradientBoostingClassifier.")
@@ -735,7 +733,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
                be divided by the second one.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.ensemble.RandomForestClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.RandomForestClassifier.")
@@ -996,7 +994,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                be divided by the second one.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.svm.SVC) and not isinstance(model, sklearn.svm.LinearSVC):
             raise TypeError(
@@ -1027,7 +1025,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -1228,7 +1226,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         :return: Array of gradients of the same shape as `x`.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -1302,7 +1300,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         :return: A callable kernel function.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
         from sklearn.metrics.pairwise import (
             polynomial_kernel,
             linear_kernel,
@@ -1357,7 +1355,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         # pylint: disable=E0001
-        import sklearn
+        import sklearn  # lgtm [py/repeated-import]
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)

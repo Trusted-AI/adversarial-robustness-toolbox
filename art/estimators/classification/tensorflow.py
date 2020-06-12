@@ -564,10 +564,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         # Load and update all functionality related to TensorFlow
         # pylint: disable=E0611, E0401
-        import os
         import tensorflow as tf
         from tensorflow.python.saved_model import tag_constants
-        from art.config import ART_DATA_PATH
 
         full_path = os.path.join(ART_DATA_PATH, state["model_name"])
 

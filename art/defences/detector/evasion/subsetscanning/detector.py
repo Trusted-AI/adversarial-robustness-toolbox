@@ -26,7 +26,6 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 # pylint: disable=E0001
 import numpy as np
-import six
 from sklearn import metrics
 from tqdm import trange, tqdm
 
