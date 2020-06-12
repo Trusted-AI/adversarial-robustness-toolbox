@@ -132,8 +132,8 @@ class ThermometerEncoding(Preprocessor):
 
         onehot_rep = to_categorical(pos.reshape(-1), self.num_space)
 
-        for i in reversed(range(1, self.num_space)):
-            onehot_rep[:, i] += np.sum(onehot_rep[:, :i], axis=1)
+        for i in range(self.num_space - 1):
+            onehot_rep[:, i] += np.sum(onehot_rep[:, i + 1:], axis=1)
 
         return onehot_rep.flatten()
 
@@ -157,7 +157,10 @@ class ThermometerEncoding(Preprocessor):
         mask = mask.reshape(thermometer_grad.shape)
         thermometer_grad[mask] = 1
 
-        return grad * thermometer_grad
+        grad = grad * thermometer_grad
+        grad = np.reshape(grad, grad.shape[:-1] + (grad.shape[-1] // self.num_space, self.num_space))
+        grad = np.sum(grad, -1)
+        return grad
 
     def fit(self, x, y=None, **kwargs):
         """
