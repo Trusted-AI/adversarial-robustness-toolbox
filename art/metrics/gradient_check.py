@@ -21,6 +21,7 @@ This module implements gradient check functions for estimators
 from typing import TYPE_CHECKING
 
 import numpy as np
+from tqdm import trange
 
 if TYPE_CHECKING:
     from art.estimators.estimator import LossGradientsMixin
@@ -42,7 +43,7 @@ def loss_gradient_check(
     assert len(x) == len(y), "x and y must be the same length"
 
     is_bad = []
-    for i in range(len(x)):
+    for i in trange(len(x), desc="Gradient check"):
         grad = estimator.loss_gradient([x[i]], [y[i]])
         is_bad.append(
             [

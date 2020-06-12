@@ -26,6 +26,7 @@ import logging
 from typing import Optional
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassGradientsMixin, Classifier
@@ -106,7 +107,7 @@ class MIFace(InferenceAttack):
         x_infer = x.astype(ART_NUMPY_DTYPE)
 
         # Compute inversions with implicit batching
-        for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
+        for batch_id in trange(int(np.ceil(x.shape[0] / float(self.batch_size))), desc="Model inversion"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_infer[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]

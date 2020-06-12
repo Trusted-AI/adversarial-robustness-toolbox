@@ -30,6 +30,7 @@ from io import BytesIO
 from typing import Optional, Tuple
 
 import numpy as np
+from tqdm import tqdm
 
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg
@@ -130,7 +131,7 @@ class Mp3Compression(Preprocessor):
 
         # apply mp3 compression per audio item
         x_mp3 = x.copy()
-        for i, x_i in enumerate(x):
+        for i, x_i in enumerate(tqdm(x, desc="MP3 compression")):
             x_mp3[i] = wav_to_mp3(x_i, self.sample_rate)
 
         if self.channels_first:

@@ -31,6 +31,7 @@ import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
@@ -112,7 +113,7 @@ class PixelDefend(Preprocessor):
         x = x.reshape((x.shape[0], -1))
 
         # Start defence one image at a time
-        for i, x_i in enumerate(x):
+        for i, x_i in enumerate(tqdm(x, desc='PixelDefend')):
             for feat_index in range(x.shape[1]):
                 # Setup the search space
                 f_probs = probs[i, feat_index, :]

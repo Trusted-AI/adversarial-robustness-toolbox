@@ -26,6 +26,7 @@ import logging
 from typing import Optional
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import (
@@ -103,11 +104,8 @@ class DeepFool(EvasionAttack):
         tol = 10e-8
 
         # Compute perturbation with implicit batching
-        for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
-            batch_index_1, batch_index_2 = (
-                batch_id * self.batch_size,
-                (batch_id + 1) * self.batch_size,
-            )
+        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="DeepFool"):
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
 
             # Get predictions and gradients for batch

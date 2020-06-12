@@ -29,6 +29,7 @@ from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from scipy.ndimage import rotate, shift
+from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -137,6 +138,9 @@ class SpatialTransformation(EvasionAttack):
             trans_y = 0
             rot = 0.0
 
+            # Initialize progress bar
+            pbar = tqdm(len(grid_trans_x) * len(grid_trans_y) * len(grid_rot), desc="Spatial transformation")
+
             for trans_x_i in grid_trans_x:
                 for trans_y_i in grid_trans_y:
                     for rot_i in grid_rot:
@@ -154,6 +158,8 @@ class SpatialTransformation(EvasionAttack):
                             trans_y = trans_y_i
                             rot = rot_i
                             x_adv = np.copy(x_adv_i)
+                        pbar.update(1)
+            pbar.close()
 
             self.fooling_rate = fooling_rate
             self.attack_trans_x = trans_x

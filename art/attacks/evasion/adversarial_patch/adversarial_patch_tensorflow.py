@@ -28,6 +28,7 @@ import math
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -112,35 +113,28 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 raise ValueError("Color channel need to be in last dimension.")
             if self.patch_shape[0] != self.patch_shape[1]:
                 raise ValueError("Patch height and width need to be the same.")
-        if (
-            self.estimator.postprocessing_defences is not None
-            or self.estimator.postprocessing_defences != []
-        ):
+        if self.estimator.postprocessing_defences is not None or self.estimator.postprocessing_defences != []:
             raise ValueError(
                 "Framework-specific implementation of Adversarial Patch attack does not yet support"
                 + "postprocessing defences."
             )
 
-        mean_value = (
-            self.estimator.clip_values[1] - self.estimator.clip_values[0]
-        ) / 2.0 + self.estimator.clip_values[0]
+        mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
+            0
+        ]
         initial_value = np.ones(self.patch_shape) * mean_value
         self._patch = tf.Variable(
             initial_value=initial_value,
             shape=self.patch_shape,
             dtype=tf.float32,
-            constraint=lambda x: tf.clip_by_value(
-                x, self.estimator.clip_values[0], self.estimator.clip_values[1]
-            ),
+            constraint=lambda x: tf.clip_by_value(x, self.estimator.clip_values[0], self.estimator.clip_values[1]),
         )
 
         self._train_op = tf.keras.optimizers.SGD(
             learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
         )
 
-    def _train_step(
-        self, images: Optional[np.ndarray] = None, target: Optional[np.ndarray] = None
-    ) -> "tf.Tensor":
+    def _train_step(self, images: Optional[np.ndarray] = None, target: Optional[np.ndarray] = None) -> "tf.Tensor":
         import tensorflow as tf
 
         if target is None:
@@ -168,9 +162,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         patched_input = self._random_overlay(images, self._patch)
 
         patched_input = tf.clip_by_value(
-            patched_input,
-            clip_value_min=self.estimator.clip_values[0],
-            clip_value_max=self.estimator.clip_values[1],
+            patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1],
         )
 
         probabilities = self.estimator._predict_framework(patched_input)
@@ -190,9 +182,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _get_circular_patch_mask(
-        self, nb_images: int, sharpness: int = 40
-    ) -> "tf.Tensor":
+    def _get_circular_patch_mask(self, nb_images: int, sharpness: int = 40) -> "tf.Tensor":
         """
         Return a circular patch mask.
         """
@@ -211,9 +201,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         image_mask = tf.stack([image_mask] * nb_images)
         return image_mask
 
-    def _random_overlay(
-        self, images: np.ndarray, patch: np.ndarray, scale: Optional[float] = None
-    ) -> "tf.Tensor":
+    def _random_overlay(self, images: np.ndarray, patch: np.ndarray, scale: Optional[float] = None) -> "tf.Tensor":
         import tensorflow as tf
         import tensorflow_addons as tfa
 
@@ -232,18 +220,11 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             padding_after_scaling = (1 - im_scale) * self.image_shape[0]
             x_shift = np.random.uniform(-padding_after_scaling, padding_after_scaling)
             y_shift = np.random.uniform(-padding_after_scaling, padding_after_scaling)
-            phi_rotate = (
-                float(np.random.uniform(-self.rotation_max, self.rotation_max))
-                / 90.0
-                * (math.pi / 2.0)
-            )
+            phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max)) / 90.0 * (math.pi / 2.0)
 
             # Rotation
             rotation_matrix = np.array(
-                [
-                    [math.cos(-phi_rotate), -math.sin(-phi_rotate)],
-                    [math.sin(-phi_rotate), math.cos(-phi_rotate)],
-                ]
+                [[math.cos(-phi_rotate), -math.sin(-phi_rotate)], [math.sin(-phi_rotate), math.cos(-phi_rotate)],]
             )
 
             # Scale
@@ -254,9 +235,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             x_origin = float(self.image_shape[0]) / 2
             y_origin = float(self.image_shape[1]) / 2
 
-            x_origin_shifted, y_origin_shifted = np.matmul(
-                xform_matrix, np.array([x_origin, y_origin])
-            )
+            x_origin_shifted, y_origin_shifted = np.matmul(xform_matrix, np.array([x_origin, y_origin]))
 
             x_origin_delta = x_origin - x_origin_shifted
             y_origin_delta = y_origin - y_origin_shifted
@@ -264,9 +243,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             a2 = x_origin_delta - (x_shift / (2 * im_scale))
             b2 = y_origin_delta - (y_shift / (2 * im_scale))
 
-            transform_vectors.append(
-                np.array([a0, a1, a2, b0, b1, b2, 0, 0]).astype(np.float32)
-            )
+            transform_vectors.append(np.array([a0, a1, a2, b0, b1, b2, 0, 0]).astype(np.float32))
 
         image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR")
         padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR")
@@ -274,14 +251,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return images * inverted_mask + padded_patch * image_mask
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         import tensorflow as tf
 
-        y = check_and_transform_label_format(
-            labels=y, nb_classes=self.estimator.nb_classes
-        )
+        y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
         shuffle = kwargs.get("shuffle", True)
         if shuffle:
@@ -299,7 +272,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             )
 
         i_iter = 0
-        for images, target in ds:
+        for images, target in tqdm(ds):
 
             if i_iter >= self.max_iter:
                 break
@@ -316,9 +289,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._get_circular_patch_mask(nb_images=1).numpy()[0],
         )
 
-    def apply_patch(
-        self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None
-    ) -> np.ndarray:
+    def apply_patch(self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images.
 

@@ -43,6 +43,7 @@ from scipy._lib.six import xrange, string_types
 from scipy._lib._util import check_random_state
 from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
+from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -138,7 +139,7 @@ class PixelThreshold(EvasionAttack):
             x = x * 255.0
 
         adv_x_best = []
-        for image, target_class in zip(x, y):
+        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold"):
             if self.th is None:
                 self.min_th = 127
                 start, end = 1, 127

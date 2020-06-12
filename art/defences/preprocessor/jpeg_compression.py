@@ -31,6 +31,7 @@ import logging
 from typing import Optional, Tuple
 
 import numpy as np
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
@@ -164,7 +165,7 @@ class JpegCompression(Preprocessor):
 
         # Compress one image at a time
         x_jpeg = x.copy()
-        for idx in np.ndindex(x.shape[:2]):
+        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression"):
             x_jpeg[idx] = self._compress(x[idx], image_mode)
 
         # Undo preparation grayscale images for "L" mode

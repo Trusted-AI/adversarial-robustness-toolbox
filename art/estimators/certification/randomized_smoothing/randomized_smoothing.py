@@ -29,6 +29,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 from scipy.stats import norm
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
@@ -89,8 +90,7 @@ class RandomizedSmoothingMixin(ABC):
         logger.info("Applying randomized smoothing.")
         n_abstained = 0
         prediction = []
-
-        for x_i in x:
+        for x_i in tqdm(x, desc="Randomized smoothing"):
             # get class counts
             counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]

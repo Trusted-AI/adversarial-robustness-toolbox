@@ -34,7 +34,7 @@ from art.data_generators import KerasDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.estimators.classification.keras import KerasClassifier, generator_fit
 from art.utils import Deprecated
-from tests.utils import TestBase, get_image_classifier_kr_tf, master_seed
+from tests.utils import TestBase, get_image_classifier_kr_tf, get_image_classifier_kr_tf_with_wildcard, master_seed
 
 if tf.__version__[0] == "2":
     tf.compat.v1.disable_eager_execution()
@@ -502,6 +502,19 @@ class TestKerasClassifierTensorFlow(TestBase):
             ]
         )
         np.testing.assert_array_almost_equal(gradients[0, :, 14, 0], expected_gradients_2, decimal=4)
+
+    def test_loss_gradient_with_wildcard(self):
+        classifier = get_image_classifier_kr_tf_with_wildcard()
+
+        # Test gradient
+        shapes = [(1, 10, 1), (1, 20, 1)]
+        for shape in shapes:
+            x = np.random.normal(size=shape)
+            loss_gradient = classifier.loss_gradient(x, y=[1])
+            self.assertEqual(loss_gradient.shape, shape)
+
+            class_gradient = classifier.class_gradient(x, 0)
+            self.assertEqual(class_gradient[0].shape, shape)
 
     def test_functional_model(self):
         # Need to update the functional_model code to produce a model with more than one input and output layers...

@@ -26,7 +26,9 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 # pylint: disable=E0001
 import numpy as np
+import six
 from sklearn import metrics
+from tqdm import trange, tqdm
 
 from art.defences.detector.evasion import Scanner
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
@@ -47,18 +49,13 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
-    def __init__(
-        self,
-        classifier: ClassifierNeuralNetwork,
-        bgd_data: np.ndarray,
-        layer: Union[int, str],
-    ) -> None:
+    def __init__(self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str],) -> None:
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
         :param classifier: The model being evaluated for its robustness to anomalies (e.g. adversarial samples).
         :param bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
-        :param layer: The layer from which to extract activations to perform scan
+        :param layer: The layer from which to extract activations to perform scan.
         """
         super(SubsetScanningDetector, self).__init__(
             clip_values=classifier.clip_values,
@@ -74,8 +71,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(
-                    "Layer index %d is outside of range (0 to %d included)."
-                    % (layer, len(classifier.layer_names) - 1)
+                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(classifier.layer_names) - 1)
                 )
             self._layer_name = classifier.layer_names[layer]
         else:
@@ -83,18 +79,10 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             self._layer_name = layer
 
-        bgd_activations = classifier.get_activations(
-            bgd_data, self._layer_name, batch_size=128
-        )
+        bgd_activations = classifier.get_activations(bgd_data, self._layer_name, batch_size=128)
         if len(bgd_activations.shape) == 4:
-            dim2 = (
-                bgd_activations.shape[1]
-                * bgd_activations.shape[2]
-                * bgd_activations.shape[3]
-            )
-            bgd_activations = np.reshape(
-                bgd_activations, (bgd_activations.shape[0], dim2)
-            )
+            dim2 = bgd_activations.shape[1] * bgd_activations.shape[2] * bgd_activations.shape[3]
+            bgd_activations = np.reshape(bgd_activations, (bgd_activations.shape[0], dim2))
 
         self.sorted_bgd_activations = np.sort(bgd_activations, axis=0)
 
@@ -106,19 +94,11 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         :return: P-value ranges.
         """
         bgd_activations = self.sorted_bgd_activations
-        eval_activations = self.detector.get_activations(
-            eval_x, self._layer_name, batch_size=128
-        )
+        eval_activations = self.detector.get_activations(eval_x, self._layer_name, batch_size=128)
 
         if len(eval_activations.shape) == 4:
-            dim2 = (
-                eval_activations.shape[1]
-                * eval_activations.shape[2]
-                * eval_activations.shape[3]
-            )
-            eval_activations = np.reshape(
-                eval_activations, (eval_activations.shape[0], dim2)
-            )
+            dim2 = eval_activations.shape[1] * eval_activations.shape[2] * eval_activations.shape[3]
+            eval_activations = np.reshape(eval_activations, (eval_activations.shape[0], dim2))
 
         bgrecords_n = bgd_activations.shape[0]
         records_n = eval_activations.shape[0]
@@ -127,12 +107,8 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         pvalue_ranges = np.empty((records_n, atrr_n, 2))
 
         for j in range(atrr_n):
-            pvalue_ranges[:, j, 0] = np.searchsorted(
-                bgd_activations[:, j], eval_activations[:, j], side="right"
-            )
-            pvalue_ranges[:, j, 1] = np.searchsorted(
-                bgd_activations[:, j], eval_activations[:, j], side="left"
-            )
+            pvalue_ranges[:, j, 0] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side="right")
+            pvalue_ranges[:, j, 1] = np.searchsorted(bgd_activations[:, j], eval_activations[:, j], side="left")
 
         pvalue_ranges = bgrecords_n - pvalue_ranges
 
@@ -167,31 +143,29 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
 
         if clean_size is None and advs_size is None:
             # Individual scan
-            for j, _ in enumerate(clean_pvalranges):
-                best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
-                clean_scores.append(best_score)
-            for j, _ in enumerate(adv_pvalranges):
-                best_score, _, _, _ = Scanner.fgss_individ_for_nets(adv_pvalranges[j])
-                adv_scores.append(best_score)
+            with tqdm(len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning") as pbar:
+                for j in range(len(clean_pvalranges)):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
+                    clean_scores.append(best_score)
+                    pbar.update(1)
+                for j in range(len(adv_pvalranges)):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(adv_pvalranges[j])
+                    adv_scores.append(best_score)
+                    pbar.update(1)
+
         else:
             len_adv_x = len(adv_x)
             len_clean_x = len(clean_x)
 
-            for _ in range(run):
+            for _ in trange(run, desc="Subset scanning"):
                 np.random.seed()
 
                 advchoice = np.random.choice(range(len_adv_x), advs_size, replace=False)
-                cleanchoice = np.random.choice(
-                    range(len_clean_x), clean_size, replace=False
-                )
+                cleanchoice = np.random.choice(range(len_clean_x), clean_size, replace=False)
 
-                combined_pvals = np.concatenate(
-                    (clean_pvalranges[cleanchoice], adv_pvalranges[advchoice]), axis=0
-                )
+                combined_pvals = np.concatenate((clean_pvalranges[cleanchoice], adv_pvalranges[advchoice]), axis=0)
 
-                best_score, _, _, _ = Scanner.fgss_for_nets(
-                    clean_pvalranges[cleanchoice]
-                )
+                best_score, _, _, _ = Scanner.fgss_for_nets(clean_pvalranges[cleanchoice])
                 clean_scores.append(best_score)
                 best_score, _, _, _ = Scanner.fgss_for_nets(combined_pvals)
                 adv_scores.append(best_score)
@@ -205,14 +179,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
 
         return clean_scores, adv_scores, detectionpower
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 20,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the detector using training data. Assumes that the classifier is already trained.
 
@@ -228,9 +195,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def fit_generator(
-        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
@@ -266,9 +231,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     def learning_phase(self) -> Optional[bool]:
         return self.detector.learning_phase
 
-    def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
-    ) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         return self.detector.class_gradient(x, label=label)
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:

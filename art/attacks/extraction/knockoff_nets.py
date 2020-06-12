@@ -26,6 +26,7 @@ import logging
 from typing import Optional
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
@@ -207,7 +208,7 @@ class KnockoffNets(ExtractionAttack):
         queried_labels = []
 
         avg_reward = 0.0
-        for it in range(1, self.nb_stolen + 1):
+        for it in trange(1, self.nb_stolen + 1, desc="Knock-off nets"):
             # Sample an action
             action = np.random.choice(np.arange(0, nb_actions), p=probs)
 

@@ -24,6 +24,7 @@ import logging
 from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import trange
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import ClassifierDecisionTree
@@ -207,7 +208,8 @@ class RobustnessVerificationTreeModelsCliqueMethod:
         num_samples: int = x.shape[0]
 
         # pylint: disable=R1702
-        for i_sample in range(num_samples):
+        pbar = trange(num_samples, desc='Decision tree verification')
+        for i_sample in pbar:
 
             eps: float = eps_init
             robust_log: List[bool] = list()

@@ -37,6 +37,7 @@ import logging
 from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import trange, tqdm
 
 from art.defences.trainer.trainer import Trainer
 
@@ -116,10 +117,9 @@ class AdversarialTrainer(Trainer):
         # Precompute adversarial samples for transferred attacks
         logged = False
         self._precomputed_adv_samples = []
-        for attack in self.attacks:
-            if hasattr(attack, "targeted"):
-                if attack.targeted:  # type: ignore
-                    raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
+        for attack in tqdm(self.attacks, desc="Precompute adv samples"):
+            if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
+                raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
             if attack.estimator != self._classifier:
                 if not logged:
@@ -139,9 +139,7 @@ class AdversarialTrainer(Trainer):
             else:
                 self._precomputed_adv_samples.append(None)
 
-        for i_epoch in range(nb_epochs):
-            logger.info("Adversarial training epoch %i/%i", i_epoch, nb_epochs)
-
+        for _ in trange(nb_epochs, desc="Adversarial training epochs"):
             # Shuffle the indices of precomputed examples
             np.random.shuffle(ind)
 
@@ -170,7 +168,7 @@ class AdversarialTrainer(Trainer):
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
-                self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], **kwargs)
+                self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 
     def fit(
@@ -201,10 +199,9 @@ class AdversarialTrainer(Trainer):
         # Precompute adversarial samples for transferred attacks
         logged = False
         self._precomputed_adv_samples = []
-        for attack in self.attacks:
-            if hasattr(attack, "targeted"):
-                if attack.targeted:  # type: ignore
-                    raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
+        for attack in tqdm(self.attacks, desc="Precompute adv samples"):
+            if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
+                raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
             if attack.estimator != self._classifier:
                 if not logged:
@@ -214,9 +211,7 @@ class AdversarialTrainer(Trainer):
             else:
                 self._precomputed_adv_samples.append(None)
 
-        for i_epoch in range(nb_epochs):
-            logger.info("Adversarial training epoch %i/%i", i_epoch, nb_epochs)
-
+        for _ in trange(nb_epochs, desc="Adversarial training epochs"):
             # Shuffle the examples
             np.random.shuffle(ind)
 
@@ -245,7 +240,7 @@ class AdversarialTrainer(Trainer):
                     x_batch[adv_ids] = x_adv
 
                 # Fit batch
-                self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], **kwargs)
+                self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 
     def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:

@@ -29,6 +29,7 @@ import types
 from typing import Any, Dict, Optional, Union
 
 import numpy as np
+from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -122,8 +123,9 @@ class UniversalPerturbation(EvasionAttack):
         pred_y = self.estimator.predict(x, batch_size=1)
         pred_y_max = np.argmax(pred_y, axis=1)
 
-        # Start to generate the adversarial examples
+        # Generate the adversarial examples
         nb_iter = 0
+        pbar = tqdm(self.max_iter, desc="Universal perturbation")
         while fooling_rate < 1.0 - self.delta and nb_iter < self.max_iter:
             # Go through all the examples randomly
             rnd_idx = random.sample(range(nb_instances), nb_instances)
@@ -147,6 +149,7 @@ class UniversalPerturbation(EvasionAttack):
                         # Project on L_p ball
                         noise = projection(noise, self.eps, self.norm)
             nb_iter += 1
+            pbar.update(1)
 
             # Apply attack and clip
             x_adv = x + noise
@@ -158,6 +161,7 @@ class UniversalPerturbation(EvasionAttack):
             y_adv = np.argmax(self.estimator.predict(x_adv, batch_size=1), axis=1)
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
 
+        pbar.close()
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise

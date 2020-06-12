@@ -29,6 +29,7 @@ import numpy as np
 import numpy.linalg as la
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.fast_gradient import FastGradientMethod
@@ -46,21 +47,11 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
         "class": FastGradientMethod,
         "params": {"eps_step": 0.1, "eps_max": 1.0, "clip_min": 0.0, "clip_max": 1.0},
     },
-    "hsj": {
-        "class": HopSkipJump,
-        "params": {
-            "max_iter": 50,
-            "max_eval": 10000,
-            "init_eval": 100,
-            "init_size": 100,
-        },
-    },
+    "hsj": {"class": HopSkipJump, "params": {"max_iter": 50, "max_eval": 10000, "init_eval": 100, "init_size": 100,},},
 }
 
 
-def get_crafter(
-    classifier: "Classifier", attack: str, params: Optional[Dict[str, Any]] = None
-) -> "EvasionAttack":
+def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
     """
     Create an attack instance to craft adversarial samples.
 
@@ -81,10 +72,7 @@ def get_crafter(
 
 
 def empirical_robustness(
-    classifier: "Classifier",
-    x: np.ndarray,
-    attack_name: str,
-    attack_params: Optional[Dict[str, Any]] = None,
+    classifier: "Classifier", x: np.ndarray, attack_name: str, attack_params: Optional[Dict[str, Any]] = None,
 ) -> Union[float, np.ndarray]:
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
@@ -120,9 +108,7 @@ def empirical_robustness(
     perts_norm = la.norm((adv_x - x).reshape(x.shape[0], -1), ord=norm_type, axis=1)
     perts_norm = perts_norm[idxs]
 
-    return np.mean(
-        perts_norm / la.norm(x[idxs].reshape(np.sum(idxs), -1), ord=norm_type, axis=1)
-    )
+    return np.mean(perts_norm / la.norm(x[idxs].reshape(np.sum(idxs), -1), ord=norm_type, axis=1))
 
 
 # def nearest_neighbour_dist(classifier, x, x_ref, attack_name, attack_params=None):
@@ -163,9 +149,7 @@ def empirical_robustness(
 #     return avg_nn_dist
 
 
-def loss_sensitivity(
-    classifier: "ClassifierGradients", x: np.ndarray, y: np.ndarray
-) -> np.ndarray:
+def loss_sensitivity(classifier: "ClassifierGradients", x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
 
@@ -220,22 +204,18 @@ def clever(
         if target_sort:
             target_classes = np.argsort(y_pred)[0][:-1]
         else:
-            target_classes = [
-                i for i in range(classifier.nb_classes) if i != pred_class
-            ]
+            target_classes = [i for i in range(classifier.nb_classes) if i != pred_class]
     elif isinstance(target, (int, np.integer)):
         target_classes = [target]
     else:
         # Assume it's iterable
         target_classes = target
     score_list: List[Optional[float]] = []
-    for j in target_classes:
+    for j in tqdm(target_classes, desc="CLEVER untargeted"):
         if j == pred_class:
             score_list.append(None)
             continue
-        score = clever_t(
-            classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor
-        )
+        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
         score_list.append(score)
     return np.array(score_list)
 
@@ -272,10 +252,8 @@ def clever_u(
 
     # Compute CLEVER score for each untargeted class
     score_list = []
-    for j in untarget_classes:
-        score = clever_t(
-            classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor
-        )
+    for j in tqdm(untarget_classes, desc="CLEVER untargeted"):
+        score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
         score_list.append(score)
 
     return np.min(score_list)
@@ -326,20 +304,12 @@ def clever_t(
 
     # Generate a pool of samples
     rand_pool = np.reshape(
-        random_sphere(
-            nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm
-        ),
-        shape,
+        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape,
     )
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)
     if hasattr(classifier, "clip_values") and classifier.clip_values is not None:
-        np.clip(
-            rand_pool,
-            classifier.clip_values[0],
-            classifier.clip_values[1],
-            out=rand_pool,
-        )
+        np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)
     if norm == 1:
@@ -365,9 +335,7 @@ def clever_t(
         grad_norm_set.append(grad_norm)
 
     # Maximum likelihood estimation for max gradient norms
-    [_, loc, _] = weibull_min.fit(
-        -np.array(grad_norm_set), c_init, optimizer=scipy_optimizer
-    )
+    [_, loc, _] = weibull_min.fit(-np.array(grad_norm_set), c_init, optimizer=scipy_optimizer)
 
     # Compute function value
     values = classifier.predict(np.array([x]))
@@ -415,8 +383,6 @@ def wasserstein_distance(
         if u_weights is None and v_weights is None:
             wd[i] = wasserstein_distance(u_values[i], v_values[i])
         elif u_weights is not None and v_weights is not None:
-            wd[i] = wasserstein_distance(
-                u_values[i], v_values[i], u_weights[i], v_weights[i]
-            )
+            wd[i] = wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
 
     return wd

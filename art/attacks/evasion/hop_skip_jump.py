@@ -27,6 +27,7 @@ import logging
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
@@ -150,9 +151,8 @@ class HopSkipJump(EvasionAttack):
             y = np.argmax(y, axis=1)
 
         # Generate the adversarial samples
-        for ind, val in enumerate(x_adv):
+        for ind, val in enumerate(tqdm(x_adv, desc="HopSkipJump")):
             self.curr_iter = start
-
             if self.targeted:
                 x_adv[ind] = self._perturb(
                     x=val,

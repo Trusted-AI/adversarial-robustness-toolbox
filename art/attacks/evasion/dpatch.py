@@ -26,6 +26,7 @@ import random
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -93,7 +94,7 @@ class DPatch(EvasionAttack):
         if x.ndim != 4:
             raise ValueError("The adversarial patch can only be applied to images.")
 
-        for i_step in range(self.max_iter):
+        for i_step in trange(self.max_iter, desc="DPatch iteration"):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
 
