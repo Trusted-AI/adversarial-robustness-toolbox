@@ -241,7 +241,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         raise NotImplementedError
 
-    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False) -> np.ndarray:
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         raise NotImplementedError
 
     def set_learning_phase(self, train: bool) -> None:

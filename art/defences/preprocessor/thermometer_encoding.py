@@ -125,7 +125,7 @@ class ThermometerEncoding(Preprocessor):
         onehot_rep = to_categorical(pos.reshape(-1), self.num_space)
 
         for i in range(self.num_space - 1):
-            onehot_rep[:, i] += np.sum(onehot_rep[:, i + 1:], axis=1)
+            onehot_rep[:, i] += np.sum(onehot_rep[:, i + 1 :], axis=1)
 
         return onehot_rep.flatten()
 

@@ -78,13 +78,9 @@ class TestRONI(unittest.TestCase):
         x_test = x_test[NB_VALID:]
         y_test = y_test[NB_VALID:]
 
-        no_defense = ScikitlearnSVC(
-            model=SVC(kernel=kernel, gamma="auto"), clip_values=(min_, max_)
-        )
+        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel, gamma="auto"), clip_values=(min_, max_))
         no_defense.fit(x=x_train, y=y_train)
-        poison_points = np.random.randint(
-            no_defense._model.support_vectors_.shape[0], size=NB_POISON
-        )
+        poison_points = np.random.randint(no_defense._model.support_vectors_.shape[0], size=NB_POISON)
         all_poison_init = np.copy(no_defense._model.support_vectors_[poison_points])
         poison_labels = np.array([1, 1]) - no_defense.predict(all_poison_init)
 
@@ -117,22 +113,10 @@ class TestRONI(unittest.TestCase):
 
         cls.classifier.fit(all_data, all_labels)
         cls.defense_cal = RONIDefense(
-            cls.classifier,
-            all_data,
-            all_labels,
-            trusted_data,
-            trusted_labels,
-            eps=0.1,
-            calibrated=True,
+            cls.classifier, all_data, all_labels, trusted_data, trusted_labels, eps=0.1, calibrated=True,
         )
         cls.defence_no_cal = RONIDefense(
-            cls.classifier,
-            all_data,
-            all_labels,
-            trusted_data,
-            trusted_labels,
-            eps=0.1,
-            calibrated=False,
+            cls.classifier, all_data, all_labels, trusted_data, trusted_labels, eps=0.1, calibrated=False,
         )
 
     def setUp(self):
@@ -145,21 +129,14 @@ class TestRONI(unittest.TestCase):
     def test_wrong_parameters_2(self):
         (all_data, _), (_, y_test), (_, _), (_, _), (_, _) = self.mnist
         self.assertRaises(
-            ValueError,
-            self.defence_no_cal.set_params,
-            x_train=-all_data,
-            y_train=y_test,
+            ValueError, self.defence_no_cal.set_params, x_train=-all_data, y_train=y_test,
         )
-        self.assertRaises(
-            ValueError, self.defense_cal.set_params, x_train=-all_data, y_train=y_test
-        )
+        self.assertRaises(ValueError, self.defense_cal.set_params, x_train=-all_data, y_train=y_test)
 
     def test_detect_poison(self):
         _, clean_trust = self.defense_cal.detect_poison()
         _, clean_no_trust = self.defence_no_cal.detect_poison()
-        real_clean = np.array(
-            [1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)]
-        )
+        real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
         pc_tp_cal = np.average(real_clean[:NB_TRAIN] == clean_trust[:NB_TRAIN])
         pc_tn_cal = np.average(real_clean[NB_TRAIN:] == clean_trust[NB_TRAIN:])
         self.assertGreaterEqual(pc_tn_cal, 0)
@@ -171,9 +148,7 @@ class TestRONI(unittest.TestCase):
         self.assertGreaterEqual(pc_tp_no_cal, 0.7)
 
     def test_evaluate_defense(self):
-        real_clean = np.array(
-            [1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)]
-        )
+        real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
         self.defence_no_cal.detect_poison()
         self.defense_cal.detect_poison()
         logger.info(self.defense_cal.evaluate_defence(real_clean))

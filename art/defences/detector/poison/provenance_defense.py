@@ -109,17 +109,13 @@ class ProvenanceDefense(PoisonFilteringDefence):
         :return: JSON object with confusion matrix.
         """
         if is_clean is None or is_clean.size == 0:
-            raise ValueError(
-                "is_clean was not provided while invoking evaluate_defence."
-            )
+            raise ValueError("is_clean was not provided while invoking evaluate_defence.")
         self.set_params(**kwargs)
 
         if not self.assigned_clean_by_device:
             self.detect_poison()
 
-        self.is_clean_by_device = segment_by_class(
-            is_clean, self.p_train, self.num_devices
-        )
+        self.is_clean_by_device = segment_by_class(is_clean, self.p_train, self.num_devices)
         self.errors_by_device, conf_matrix_json = self.evaluator.analyze_correctness(
             self.assigned_clean_by_device, self.is_clean_by_device
         )
@@ -144,16 +140,12 @@ class ProvenanceDefense(PoisonFilteringDefence):
             report = self.detect_poison_partially_trusted()
 
         n_train = len(self.x_train)
-        indices_by_provenance = segment_by_class(
-            np.arange(n_train), self.p_train, self.num_devices
-        )
+        indices_by_provenance = segment_by_class(np.arange(n_train), self.p_train, self.num_devices)
         self.is_clean_lst = np.array([1] * n_train)
 
         for device in report:
             self.is_clean_lst[indices_by_provenance[device]] = 0
-        self.assigned_clean_by_device = segment_by_class(
-            np.array(self.is_clean_lst), self.p_train, self.num_devices
-        )
+        self.assigned_clean_by_device = segment_by_class(np.array(self.is_clean_lst), self.p_train, self.num_devices)
 
         return report, self.is_clean_lst
 
@@ -174,9 +166,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         segments = segment_by_class(self.x_train, self.p_train, self.num_devices)
         for device_idx, segment in enumerate(segments):
-            filtered_data, filtered_labels = self.filter_input(
-                unfiltered_data, unfiltered_labels, segment
-            )
+            filtered_data, filtered_labels = self.filter_input(unfiltered_data, unfiltered_labels, segment)
 
             unfiltered_model = deepcopy(self.classifier)
             filtered_model = deepcopy(self.classifier)
@@ -185,11 +175,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
             filtered_model.fit(filtered_data, filtered_labels)
 
             var_w = performance_diff(
-                filtered_model,
-                unfiltered_model,
-                self.x_val,
-                self.y_val,
-                perf_function=self.perf_func,
+                filtered_model, unfiltered_model, self.x_val, self.y_val, perf_function=self.perf_func,
             )
             if self.eps < var_w:
                 suspected[device_idx] = var_w
@@ -207,26 +193,15 @@ class ProvenanceDefense(PoisonFilteringDefence):
         self.set_params(**kwargs)
 
         suspected = {}
-        (
-            train_data,
-            valid_data,
-            train_labels,
-            valid_labels,
-            train_prov,
-            valid_prov,
-        ) = train_test_split(
+        (train_data, valid_data, train_labels, valid_labels, train_prov, valid_prov,) = train_test_split(
             self.x_train, self.y_train, self.p_train, test_size=self.pp_valid
         )
 
         train_segments = segment_by_class(train_data, train_prov, self.num_devices)
         valid_segments = segment_by_class(valid_data, valid_prov, self.num_devices)
 
-        for device_idx, (train_segment, valid_segment) in enumerate(
-            zip(train_segments, valid_segments)
-        ):
-            filtered_data, filtered_labels = self.filter_input(
-                train_data, train_labels, train_segment
-            )
+        for device_idx, (train_segment, valid_segment) in enumerate(zip(train_segments, valid_segments)):
+            filtered_data, filtered_labels = self.filter_input(train_data, train_labels, train_segment)
 
             unfiltered_model = deepcopy(self.classifier)
             filtered_model = deepcopy(self.classifier)
@@ -234,9 +209,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
             unfiltered_model.fit(train_data, train_labels)
             filtered_model.fit(filtered_data, filtered_labels)
 
-            valid_non_device_data, valid_non_device_labels = self.filter_input(
-                valid_data, valid_labels, valid_segment
-            )
+            valid_non_device_data, valid_non_device_labels = self.filter_input(valid_data, valid_labels, valid_segment)
             var_w = performance_diff(
                 filtered_model,
                 unfiltered_model,
@@ -255,9 +228,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         return suspected
 
     @staticmethod
-    def filter_input(
-        data: np.ndarray, labels: np.ndarray, segment: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def filter_input(data: np.ndarray, labels: np.ndarray, segment: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Return the data and labels that are not part of a specified segment
 
@@ -266,12 +237,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         :param segment:
         :return: Tuple of (filtered_data, filtered_labels).
         """
-        filter_mask = np.array(
-            [
-                np.isin(data[i, :], segment, invert=True).any()
-                for i in range(data.shape[0])
-            ]
-        )
+        filter_mask = np.array([np.isin(data[i, :], segment, invert=True).any() for i in range(data.shape[0])])
         filtered_data = data[filter_mask]
         filtered_labels = labels[filter_mask]
 

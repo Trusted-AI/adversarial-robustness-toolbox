@@ -27,9 +27,7 @@ if TYPE_CHECKING:
     from art.estimators.estimator import LossGradientsMixin
 
 
-def loss_gradient_check(
-    estimator: "LossGradientsMixin", x: np.ndarray, y: np.ndarray
-) -> np.ndarray:
+def loss_gradient_check(estimator: "LossGradientsMixin", x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
         Compute the gradient of the loss function w.r.t. `x` and identify points where the gradient is zero, nan, or inf
 
@@ -46,11 +44,7 @@ def loss_gradient_check(
     for i in trange(len(x), desc="Gradient check"):
         grad = estimator.loss_gradient([x[i]], [y[i]])
         is_bad.append(
-            [
-                (np.min(grad) == 0 and np.max(grad) == 0),
-                np.any(np.isnan(grad)),
-                np.any(np.isinf(grad)),
-            ]
+            [(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)), np.any(np.isinf(grad)),]
         )
 
     return np.array(is_bad, dtype=bool)

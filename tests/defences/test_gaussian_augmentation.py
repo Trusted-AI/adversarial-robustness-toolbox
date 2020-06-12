@@ -89,7 +89,7 @@ class TestGaussianAugmentation(unittest.TestCase):
 
         self.assertIn(
             "If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`.",
-            str(context.exception)
+            str(context.exception),
         )
 
 

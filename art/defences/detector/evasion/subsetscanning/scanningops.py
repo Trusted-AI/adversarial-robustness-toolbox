@@ -63,15 +63,11 @@ class ScanningOps:
         if image_to_node:
             number_of_elements = pvalues.shape[1]  # searching over j columns
             size_of_given = pvalues.shape[0]  # for fixed this many images
-            unsort_priority = np.zeros(
-                (pvalues.shape[1], alpha_thresholds.shape[0])
-            )  # number of columns
+            unsort_priority = np.zeros((pvalues.shape[1], alpha_thresholds.shape[0]))  # number of columns
         else:
             number_of_elements = pvalues.shape[0]  # searching over i rows
             size_of_given = pvalues.shape[1]  # for this many fixed nodes
-            unsort_priority = np.zeros(
-                (pvalues.shape[0], alpha_thresholds.shape[0])
-            )  # number of rows
+            unsort_priority = np.zeros((pvalues.shape[0], alpha_thresholds.shape[0]))  # number of rows
 
         for elem_indx in range(0, number_of_elements):
             # sort all the range maxes
@@ -80,9 +76,7 @@ class ScanningOps:
                 arg_sort_max = np.argsort(pvalues[:, elem_indx, 1])
                 # arg_sort_min = np.argsort(pvalues[:,e,0]) #collect ranges over images(rows)
                 completely_included = np.searchsorted(
-                    pvalues[:, elem_indx, 1][arg_sort_max],
-                    alpha_thresholds,
-                    side="right",
+                    pvalues[:, elem_indx, 1][arg_sort_max], alpha_thresholds, side="right",
                 )
             else:
                 # collect ranges over nodes(columns)
@@ -90,9 +84,7 @@ class ScanningOps:
                 # arg_sort_min = np.argsort(pvalues[elem_indx,:,0])
 
                 completely_included = np.searchsorted(
-                    pvalues[elem_indx, :, 1][arg_sort_max],
-                    alpha_thresholds,
-                    side="right",
+                    pvalues[elem_indx, :, 1][arg_sort_max], alpha_thresholds, side="right",
                 )
 
             # should be num elements by num thresh
@@ -111,9 +103,7 @@ class ScanningOps:
             # cumulating count, alpha stays same.
             alpha_v = np.ones(number_of_elements) * alpha_threshold
 
-            n_alpha_v = np.cumsum(
-                unsort_priority[:, alpha_count][arg_sort_priority][:, alpha_count]
-            )
+            n_alpha_v = np.cumsum(unsort_priority[:, alpha_count][arg_sort_priority][:, alpha_count])
             count_increments_this = np.ones(number_of_elements) * size_of_given
             n_v = np.cumsum(count_increments_this)
 
@@ -163,32 +153,20 @@ class ScanningOps:
 
         while True:
             # These can be moved outside the while loop as only executed first time through??
-            if (
-                count == 0
-            ):  # first time through, we need something initialized depending on direction.
+            if count == 0:  # first time through, we need something initialized depending on direction.
                 if image_to_node:
                     sub_of_images = indices_of_seeds
                 else:
                     sub_of_nodes = indices_of_seeds
 
-            if (
-                image_to_node
-            ):  # passed pvalues are only those belonging to fixed images, update nodes in return
+            if image_to_node:  # passed pvalues are only those belonging to fixed images, update nodes in return
                 # only sending sub of images
-                (
-                    score_from_optimization,
-                    sub_of_nodes,
-                    optimal_alpha,
-                ) = ScanningOps.optimize_in_single_dimension(
+                (score_from_optimization, sub_of_nodes, optimal_alpha,) = ScanningOps.optimize_in_single_dimension(
                     pvalues[sub_of_images, :, :], a_max, image_to_node, score_function
                 )
             else:  # passed pvalues are only those belonging to fixed nodes, update images in return
                 # only sending sub of nodes
-                (
-                    score_from_optimization,
-                    sub_of_images,
-                    optimal_alpha,
-                ) = ScanningOps.optimize_in_single_dimension(
+                (score_from_optimization, sub_of_images, optimal_alpha,) = ScanningOps.optimize_in_single_dimension(
                     pvalues[:, sub_of_nodes, :], a_max, image_to_node, score_function
                 )
 

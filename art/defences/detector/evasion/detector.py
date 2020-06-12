@@ -57,14 +57,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         )
         self.detector = detector
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 20,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the detector using clean and adversarial samples.
 
@@ -87,9 +80,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         """
         return self.detector.predict(x, batch_size=batch_size)
 
-    def fit_generator(
-        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
@@ -125,9 +116,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
     def learning_phase(self) -> Optional[bool]:
         return self.detector.learning_phase
 
-    def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
-    ) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         return self.detector.class_gradient(x, label=label)
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -159,10 +148,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
     """
 
     def __init__(
-        self,
-        classifier: ClassifierNeuralNetwork,
-        detector: ClassifierNeuralNetwork,
-        layer: Union[int, str],
+        self, classifier: ClassifierNeuralNetwork, detector: ClassifierNeuralNetwork, layer: Union[int, str],
     ) -> None:  # lgtm [py/similar-function]
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
@@ -185,8 +171,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(
-                    "Layer index %d is outside of range (0 to %d included)."
-                    % (layer, len(classifier.layer_names) - 1)
+                    "Layer index %d is outside of range (0 to %d included)." % (layer, len(classifier.layer_names) - 1)
                 )
             self._layer_name = classifier.layer_names[layer]
         else:
@@ -194,14 +179,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
                 raise ValueError("Layer name %s is not part of the graph." % layer)
             self._layer_name = layer
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 20,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the detector using training data.
 
@@ -212,9 +190,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         :param kwargs: Other parameters.
         """
         x_activations = self.classifier.get_activations(x, self._layer_name, batch_size)
-        self.detector.fit(
-            x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs
-        )
+        self.detector.fit(x_activations, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -225,13 +201,9 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         :return: Per-sample prediction whether data is adversarial or not, where `0` means non-adversarial.
                  Return variable has the same `batch_size` (first dimension) as `x`.
         """
-        return self.detector.predict(
-            self.classifier.get_activations(x, self._layer_name, batch_size)
-        )
+        return self.detector.predict(self.classifier.get_activations(x, self._layer_name, batch_size))
 
-    def fit_generator(
-        self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs
-    ) -> None:
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
@@ -271,9 +243,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
     def layer_names(self) -> List[str]:
         raise NotImplementedError
 
-    def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
-    ) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         return self.detector.class_gradient(x, label=label)
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:

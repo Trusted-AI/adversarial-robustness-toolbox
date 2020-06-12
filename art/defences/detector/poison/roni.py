@@ -93,9 +93,7 @@ class RONIDefense(PoisonFilteringDefence):
         self.x_quiz = np.copy(self.x_train[quiz_idx])
         self.y_quiz = np.copy(self.y_train[quiz_idx])
         if self.calibrated:
-            _, self.x_cal, _, self.y_cal = train_test_split(
-                self.x_train, self.y_train, test_size=pp_cal, shuffle=True
-            )
+            _, self.x_cal, _, self.y_cal = train_test_split(self.x_train, self.y_train, test_size=pp_cal, shuffle=True)
         self.eps = eps
         self.evaluator = GroundTruthEvaluator()
         self.x_val = x_val
@@ -120,9 +118,7 @@ class RONIDefense(PoisonFilteringDefence):
         if is_clean is None or len(is_clean) != len(self.is_clean_lst):
             raise ValueError("Invalid value for is_clean.")
 
-        _, conf_matrix = self.evaluator.analyze_correctness(
-            [self.is_clean_lst], [is_clean]
-        )
+        _, conf_matrix = self.evaluator.analyze_correctness([self.is_clean_lst], [is_clean])
         return conf_matrix
 
     def detect_poison(self, **kwargs) -> Tuple[dict, List[int]]:
@@ -153,15 +149,9 @@ class RONIDefense(PoisonFilteringDefence):
             y_i = y_suspect[idx]
 
             after_classifier = deepcopy(before_classifier)
-            after_classifier.fit(
-                x=np.vstack([x_trusted, x_i]), y=np.vstack([y_trusted, y_i])
-            )
+            after_classifier.fit(x=np.vstack([x_trusted, x_i]), y=np.vstack([y_trusted, y_i]))
             acc_shift = performance_diff(
-                before_classifier,
-                after_classifier,
-                self.x_quiz,
-                self.y_quiz,
-                perf_function=self.perf_func,
+                before_classifier, after_classifier, self.x_quiz, self.y_quiz, perf_function=self.perf_func,
             )
             # print(acc_shift, median, std_dev)
             if self.is_suspicious(before_classifier, acc_shift):
@@ -188,9 +178,7 @@ class RONIDefense(PoisonFilteringDefence):
 
         return perf_shift < -self.eps
 
-    def get_calibration_info(
-        self, before_classifier: "Classifier"
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def get_calibration_info(self, before_classifier: "Classifier") -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculate the median and standard deviation of the accuracy shifts caused
         by the calibration set.
@@ -202,16 +190,10 @@ class RONIDefense(PoisonFilteringDefence):
 
         for x_c, y_c in zip(self.x_cal, self.y_cal):
             after_classifier = deepcopy(before_classifier)
-            after_classifier.fit(
-                x=np.vstack([self.x_val, x_c]), y=np.vstack([self.y_val, y_c])
-            )
+            after_classifier.fit(x=np.vstack([self.x_val, x_c]), y=np.vstack([self.y_val, y_c]))
             accs.append(
                 performance_diff(
-                    before_classifier,
-                    after_classifier,
-                    self.x_quiz,
-                    self.y_quiz,
-                    perf_function=self.perf_func,
+                    before_classifier, after_classifier, self.x_quiz, self.y_quiz, perf_function=self.perf_func,
                 )
             )
 

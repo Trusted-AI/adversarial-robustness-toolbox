@@ -50,9 +50,7 @@ class DataGenerator(abc.ABC):
         :param batch_size: Size of the minibatches.
         """
         if size is not None and (not isinstance(size, int) or size < 1):
-            raise ValueError(
-                "The total size of the dataset must be an integer greater than zero."
-            )
+            raise ValueError("The total size of the dataset must be an integer greater than zero.")
         self._size = size
 
         if not isinstance(batch_size, int) or batch_size < 1:
@@ -145,9 +143,7 @@ class PyTorchDataGenerator(DataGenerator):
     Wrapper class on top of the PyTorch native data loader :class:`torch.utils.data.DataLoader`.
     """
 
-    def __init__(
-        self, iterator: "torch.utils.data.DataLoader", size: int, batch_size: int
-    ) -> None:
+    def __init__(self, iterator: "torch.utils.data.DataLoader", size: int, batch_size: int) -> None:
         """
         Create a data generator wrapper on top of a PyTorch :class:`DataLoader`.
 
@@ -159,10 +155,7 @@ class PyTorchDataGenerator(DataGenerator):
 
         super(PyTorchDataGenerator, self).__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, DataLoader):
-            raise TypeError(
-                "Expected instance of PyTorch `DataLoader, received %s instead.`"
-                % str(type(iterator))
-            )
+            raise TypeError("Expected instance of PyTorch `DataLoader, received %s instead.`" % str(type(iterator)))
 
         self._iterator: DataLoader = iterator
 
@@ -188,9 +181,7 @@ class MXDataGenerator(DataGenerator):
     Wrapper class on top of the MXNet/Gluon native data loader :class:`mxnet.gluon.data.DataLoader`.
     """
 
-    def __init__(
-        self, iterator: "mxnet.gluon.data.DataLoader", size: int, batch_size: int
-    ) -> None:
+    def __init__(self, iterator: "mxnet.gluon.data.DataLoader", size: int, batch_size: int) -> None:
         """
         Create a data generator wrapper on top of an MXNet :class:`DataLoader`.
 
@@ -202,10 +193,7 @@ class MXDataGenerator(DataGenerator):
 
         super(MXDataGenerator, self).__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, mxnet.gluon.data.DataLoader):
-            raise TypeError(
-                "Expected instance of Gluon `DataLoader, received %s instead.`"
-                % str(type(iterator))
-            )
+            raise TypeError("Expected instance of Gluon `DataLoader, received %s instead.`" % str(type(iterator)))
 
         self._iterator = iterator
 
@@ -265,20 +253,13 @@ class TensorFlowDataGenerator(DataGenerator):
 
         if iterator_type == "initializable":
             if not isinstance(iterator_arg, dict):
-                raise TypeError(
-                    "Need to pass a dictionary for iterator type %s" % iterator_type
-                )
+                raise TypeError("Need to pass a dictionary for iterator type %s" % iterator_type)
         elif iterator_type == "reinitializable":
             if not isinstance(iterator_arg, tf.Operation):
-                raise TypeError(
-                    "Need to pass a TensorFlow operation for iterator type %s"
-                    % iterator_type
-                )
+                raise TypeError("Need to pass a TensorFlow operation for iterator type %s" % iterator_type)
         elif iterator_type == "feedable":
             if not isinstance(iterator_arg, tuple):
-                raise TypeError(
-                    "Need to pass a tuple for iterator type %s" % iterator_type
-                )
+                raise TypeError("Need to pass a tuple for iterator type %s" % iterator_type)
         else:
             raise TypeError("Iterator type %s not supported" % iterator_type)
 
@@ -330,9 +311,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
         # pylint: disable=E0401
         import tensorflow as tf
 
-        super(TensorFlowV2DataGenerator, self).__init__(
-            size=size, batch_size=batch_size
-        )
+        super(TensorFlowV2DataGenerator, self).__init__(size=size, batch_size=batch_size)
         self._iterator = iterator
         self._iterator_iter = iter(iterator)
 

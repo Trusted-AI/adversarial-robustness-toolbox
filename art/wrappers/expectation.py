@@ -41,9 +41,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
     | Paper link: https://arxiv.org/abs/1707.07397
     """
 
-    def __init__(
-        self, classifier: ClassifierGradients, sample_size: int, transformation
-    ) -> None:
+    def __init__(self, classifier: ClassifierGradients, sample_size: int, transformation) -> None:
         """
         Create an expectation over transformations wrapper.
 
@@ -66,23 +64,12 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         logger.info("Applying expectation over transformations.")
-        prediction = self._predict(
-            next(self.transformation())(x), **{"batch_size": batch_size}
-        )
+        prediction = self._predict(next(self.transformation())(x), **{"batch_size": batch_size})
         for _ in range(self.sample_size - 1):
-            prediction += self._predict(
-                next(self.transformation())(x), **{"batch_size": batch_size}
-            )
+            prediction += self._predict(next(self.transformation())(x), **{"batch_size": batch_size})
         return prediction / self.sample_size
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 20,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the training data `(x, y)`.
 
@@ -108,14 +95,10 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
         logger.info("Applying expectation over transformations.")
         loss_gradient = self.classifier.loss_gradient(next(self.transformation())(x), y)
         for _ in range(self.sample_size - 1):
-            loss_gradient += self.classifier.loss_gradient(
-                next(self.transformation())(x), y
-            )
+            loss_gradient += self.classifier.loss_gradient(next(self.transformation())(x), y)
         return loss_gradient / self.sample_size
 
-    def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
-    ) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x`, taking an expectation over transformations.
 
@@ -129,14 +112,10 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
         logger.info("Apply Expectation over Transformations.")
-        class_gradient = self.classifier.class_gradient(
-            next(self.transformation())(x), label
-        )
+        class_gradient = self.classifier.class_gradient(next(self.transformation())(x), label)
 
         for _ in range(self.sample_size - 1):
-            class_gradient += self.classifier.class_gradient(
-                next(self.transformation())(x), label
-            )
+            class_gradient += self.classifier.class_gradient(next(self.transformation())(x), label)
 
         return class_gradient / self.sample_size
 
@@ -155,9 +134,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
         """
         raise NotImplementedError
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by

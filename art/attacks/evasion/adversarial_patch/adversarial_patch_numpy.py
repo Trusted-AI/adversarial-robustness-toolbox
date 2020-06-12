@@ -100,17 +100,13 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.max_iter = max_iter
         self.batch_size = batch_size
         self.clip_patch = clip_patch
-        mean_value = (
-            self.estimator.clip_values[1] - self.estimator.clip_values[0]
-        ) / 2.0 + self.estimator.clip_values[0]
-        self.patch = (
-            np.ones(shape=self.estimator.input_shape).astype(np.float32) * mean_value
-        )
+        mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
+            0
+        ]
+        self.patch = np.ones(shape=self.estimator.input_shape).astype(np.float32) * mean_value
         self._check_params()
 
-    def generate(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -126,9 +122,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "dimensions."
             )
 
-        y_target = check_and_transform_label_format(
-            labels=y, nb_classes=self.estimator.nb_classes
-        )
+        y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
         for _ in trange(self.max_iter, desc="Adversarial patch"):
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
@@ -141,31 +135,22 @@ class AdversarialPatchNumpy(EvasionAttack):
                 i_batch_end = (i_batch + 1) * self.batch_size
 
                 gradients = self.estimator.loss_gradient(
-                    patched_images[i_batch_start:i_batch_end],
-                    y_target[i_batch_start:i_batch_end],
+                    patched_images[i_batch_start:i_batch_end], y_target[i_batch_start:i_batch_end],
                 )
 
                 for i_image in range(self.batch_size):
                     patch_gradients_i = self._reverse_transformation(
-                        gradients[i_image, :, :, :],
-                        patch_mask_transformed[i_image, :, :, :],
-                        transforms[i_image],
+                        gradients[i_image, :, :, :], patch_mask_transformed[i_image, :, :, :], transforms[i_image],
                     )
                     patch_gradients += patch_gradients_i
 
             # patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
-            self.patch = np.clip(
-                self.patch,
-                a_min=self.estimator.clip_values[0],
-                a_max=self.estimator.clip_values[1],
-            )
+            self.patch = np.clip(self.patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],)
 
         return self.patch, self._get_circular_patch_mask()
 
-    def apply_patch(
-        self, x: np.ndarray, scale: float, patch_external: np.ndarray = None
-    ) -> np.ndarray:
+    def apply_patch(self, x: np.ndarray, scale: float, patch_external: np.ndarray = None) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images.
 
@@ -180,31 +165,21 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _check_params(self) -> None:
         if not isinstance(self.rotation_max, (float, int)):
-            raise ValueError(
-                "The maximum rotation of the random patches must be of type float."
-            )
+            raise ValueError("The maximum rotation of the random patches must be of type float.")
         if self.rotation_max < 0 or self.rotation_max > 180.0:
-            raise ValueError(
-                "The maximum rotation of the random patches must be between 0 and 180 degrees."
-            )
+            raise ValueError("The maximum rotation of the random patches must be between 0 and 180 degrees.")
 
         if not isinstance(self.scale_min, float):
-            raise ValueError(
-                "The minimum scale of the random patched must be of type float."
-            )
+            raise ValueError("The minimum scale of the random patched must be of type float.")
         if self.scale_min < 0 or self.scale_min > self.scale_max:
             raise ValueError(
                 "The minimum scale of the random patched must be greater than 0 and less than the maximum scaling."
             )
 
         if not isinstance(self.scale_max, float):
-            raise ValueError(
-                "The maximum scale of the random patched must be of type float."
-            )
+            raise ValueError("The maximum scale of the random patched must be of type float.")
         if self.scale_max > 1:
-            raise ValueError(
-                "The maximum scale of the random patched must not be greater than 1."
-            )
+            raise ValueError("The maximum scale of the random patched must not be greater than 1.")
 
         if not isinstance(self.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
@@ -235,9 +210,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         pad_1 = int((self.estimator.input_shape[1] - mask.shape[1]) / 2)
         pad_2 = int(self.estimator.input_shape[1] - pad_1 - mask.shape[1])
-        mask = np.pad(
-            mask, pad_width=(pad_1, pad_2), mode="constant", constant_values=(0, 0)
-        )
+        mask = np.pad(mask, pad_width=(pad_1, pad_2), mode="constant", constant_values=(0, 0))
 
         channel_index = 1 if self.estimator.channels_first else 3
         axis = channel_index - 1
@@ -254,17 +227,12 @@ class AdversarialPatchNumpy(EvasionAttack):
         patch_mask_transformed_list = list()
 
         for i_image in range(images.shape[0]):
-            (
-                patch_transformed,
-                patch_mask_transformed,
-                transformation,
-            ) = self._random_transformation(patch, scale)
+            (patch_transformed, patch_mask_transformed, transformation,) = self._random_transformation(patch, scale)
 
             inverted_patch_mask_transformed = 1 - patch_mask_transformed
 
             patched_image = (
-                images[i_image, :, :, :] * inverted_patch_mask_transformed
-                + patch_transformed * patch_mask_transformed
+                images[i_image, :, :, :] * inverted_patch_mask_transformed + patch_transformed * patch_mask_transformed
             )
             patched_image = np.expand_dims(patched_image, axis=0)
             patched_images.append(patched_image)
@@ -358,9 +326,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         return patch, patch_mask, transformation
 
-    def _reverse_transformation(
-        self, gradients: np.ndarray, patch_mask_transformed, transformation
-    ) -> np.ndarray:
+    def _reverse_transformation(self, gradients: np.ndarray, patch_mask_transformed, transformation) -> np.ndarray:
         shape = gradients.shape[1]
         gradients = gradients * patch_mask_transformed
 

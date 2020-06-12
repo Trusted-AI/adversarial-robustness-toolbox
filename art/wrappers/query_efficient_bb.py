@@ -44,11 +44,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
     attack_params = ["num_basis", "sigma", "round_samples"]
 
     def __init__(
-        self,
-        classifier: ClassifierGradients,
-        num_basis: int,
-        sigma: float,
-        round_samples: float = 0.0,
+        self, classifier: ClassifierGradients, num_basis: int, sigma: float, round_samples: float = 0.0,
     ) -> None:
         """
         :param classifier: An instance of a `Classifier` whose loss_gradient is being approximated.
@@ -89,9 +85,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         """
         raise NotImplementedError
 
-    def _generate_samples(
-        self, x: np.ndarray, epsilon_map: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray]:
+    def _generate_samples(self, x: np.ndarray, epsilon_map: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate samples around the current image.
 
@@ -100,20 +94,12 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         :return: Two arrays of new input samples to approximate gradient.
         """
         minus = clip_and_round(
-            np.repeat(x, self.num_basis, axis=0) - epsilon_map,
-            self.clip_values,
-            self.round_samples,
+            np.repeat(x, self.num_basis, axis=0) - epsilon_map, self.clip_values, self.round_samples,
         )
-        plus = clip_and_round(
-            np.repeat(x, self.num_basis, axis=0) + epsilon_map,
-            self.clip_values,
-            self.round_samples,
-        )
+        plus = clip_and_round(np.repeat(x, self.num_basis, axis=0) + epsilon_map, self.clip_values, self.round_samples,)
         return minus, plus
 
-    def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs
-    ) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -136,9 +122,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         :param y: Correct labels, one-vs-rest encoding.
         :return: Array of gradients of the same shape as `x`.
         """
-        epsilon_map = self.sigma * np.random.normal(
-            size=([self.num_basis] + list(self.input_shape))
-        )
+        epsilon_map = self.sigma * np.random.normal(size=([self.num_basis] + list(self.input_shape)))
         grads = []
         for i in range(len(x)):
             minus, plus = self._generate_samples(x[i : i + 1], epsilon_map)
@@ -153,8 +137,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
             query_efficient_grad = 2 * np.mean(
                 np.multiply(
                     epsilon_map.reshape(self.num_basis, -1),
-                    (new_y_plus - new_y_minus).reshape(self.num_basis, -1)
-                    / (2 * self.sigma),
+                    (new_y_plus - new_y_minus).reshape(self.num_basis, -1) / (2 * self.sigma),
                 ).reshape([-1] + list(self.input_shape)),
                 axis=0,
             )
@@ -170,14 +153,9 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return self._predict(
-            clip_and_round(x, self.clip_values, self.round_samples),
-            **{"batch_size": batch_size}
-        )
+        return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{"batch_size": batch_size})
 
-    def get_activations(
-        self, x: np.ndarray, layer: Union[int, str], batch_size: int
-    ) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by

@@ -47,9 +47,7 @@ def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.
     return x
 
 
-def add_pattern_bd(
-    x: np.ndarray, distance: int = 2, pixel_value: int = 1
-) -> np.ndarray:
+def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
     """
     Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
@@ -102,12 +100,7 @@ def insert_image(
     :return: Backdoored image.
     """
     if len(x.shape) == 3:
-        return np.array(
-            [
-                insert_image(single_img, backdoor_path, random, x_shift, y_shift, size)
-                for single_img in x
-            ]
-        )
+        return np.array([insert_image(single_img, backdoor_path, random, x_shift, y_shift, size) for single_img in x])
     elif len(x.shape) != 2:
         raise ValueError("Invalid array shape " + str(x.shape))
 

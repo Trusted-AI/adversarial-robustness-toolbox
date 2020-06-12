@@ -85,13 +85,9 @@ class TestProvenanceDefence(unittest.TestCase):
         clean_prov = np.random.randint(NB_DEVICES - 1, size=x_train.shape[0])
         p_train = np.eye(NB_DEVICES)[clean_prov]
 
-        no_defense = ScikitlearnSVC(
-            model=SVC(kernel=kernel, gamma="auto"), clip_values=(min_, max_)
-        )
+        no_defense = ScikitlearnSVC(model=SVC(kernel=kernel, gamma="auto"), clip_values=(min_, max_))
         no_defense.fit(x=x_train, y=y_train)
-        poison_points = np.random.randint(
-            no_defense._model.support_vectors_.shape[0], size=NB_POISON
-        )
+        poison_points = np.random.randint(no_defense._model.support_vectors_.shape[0], size=NB_POISON)
         all_poison_init = np.copy(no_defense._model.support_vectors_[poison_points])
         poison_labels = np.array([1, 1]) - no_defense.predict(all_poison_init)
 
@@ -127,17 +123,9 @@ class TestProvenanceDefence(unittest.TestCase):
 
         cls.classifier.fit(all_data, all_labels)
         cls.defence_trust = ProvenanceDefense(
-            cls.classifier,
-            all_data,
-            all_labels,
-            all_p,
-            x_val=trusted_data,
-            y_val=trusted_labels,
-            eps=0.1,
+            cls.classifier, all_data, all_labels, all_p, x_val=trusted_data, y_val=trusted_labels, eps=0.1,
         )
-        cls.defence_no_trust = ProvenanceDefense(
-            cls.classifier, all_data, all_labels, all_p, eps=0.1
-        )
+        cls.defence_no_trust = ProvenanceDefense(cls.classifier, all_data, all_labels, all_p, eps=0.1)
 
     def setUp(self):
         master_seed(seed=301)
@@ -153,38 +141,23 @@ class TestProvenanceDefence(unittest.TestCase):
     def test_wrong_parameters_3(self):
         (all_data, _, _), (_, y_test), (_, _), (_, _), (_, _) = self.mnist
         self.assertRaises(
-            ValueError,
-            self.defence_no_trust.set_params,
-            x_train=-all_data,
-            y_train=y_test,
+            ValueError, self.defence_no_trust.set_params, x_train=-all_data, y_train=y_test,
         )
-        self.assertRaises(
-            ValueError, self.defence_trust.set_params, x_train=-all_data, y_train=y_test
-        )
+        self.assertRaises(ValueError, self.defence_trust.set_params, x_train=-all_data, y_train=y_test)
 
     def test_wrong_parameters_4(self):
         (_, _, p_train), (x_test, y_test), (_, _), (_, _), (_, _) = self.mnist
         self.assertRaises(
-            ValueError,
-            self.defence_no_trust.set_params,
-            x_train=-x_test,
-            y_train=y_test,
-            p_train=p_train,
+            ValueError, self.defence_no_trust.set_params, x_train=-x_test, y_train=y_test, p_train=p_train,
         )
         self.assertRaises(
-            ValueError,
-            self.defence_trust.set_params,
-            x_train=-x_test,
-            y_train=y_test,
-            p_train=p_train,
+            ValueError, self.defence_trust.set_params, x_train=-x_test, y_train=y_test, p_train=p_train,
         )
 
     def test_detect_poison(self):
         _, clean_trust = self.defence_trust.detect_poison()
         _, clean_no_trust = self.defence_no_trust.detect_poison()
-        real_clean = np.array(
-            [1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)]
-        )
+        real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
         pc_tp_trust = np.average(real_clean[:NB_TRAIN] == clean_trust[:NB_TRAIN])
         pc_tn_trust = np.average(real_clean[NB_TRAIN:] == clean_trust[NB_TRAIN:])
         self.assertGreaterEqual(pc_tn_trust, 0.7)
@@ -196,9 +169,7 @@ class TestProvenanceDefence(unittest.TestCase):
         self.assertGreaterEqual(pc_tp_no_trust, 0.7)
 
     def test_evaluate_defense(self):
-        real_clean = np.array(
-            [1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)]
-        )
+        real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
         self.defence_no_trust.detect_poison()
         self.defence_trust.detect_poison()
         logger.info(self.defence_trust.evaluate_defence(real_clean))

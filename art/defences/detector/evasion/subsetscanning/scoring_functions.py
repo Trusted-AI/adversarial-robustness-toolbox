@@ -27,9 +27,7 @@ class ScoringFunctions:
     """
 
     @staticmethod
-    def get_score_bj_fast(
-        n_alpha: list, no_records: list, alpha: np.ndarray
-    ) -> np.ndarray:
+    def get_score_bj_fast(n_alpha: list, no_records: list, alpha: np.ndarray) -> np.ndarray:
         """
         BerkJones
 
@@ -43,15 +41,10 @@ class ScoringFunctions:
         inds_not_tie = np.logical_not(inds_tie)
         inds_pos = n_alpha > no_records * alpha
         inds_pos_not_tie = np.logical_and(inds_pos, inds_not_tie)
-        score[inds_tie] = no_records[inds_tie] * np.log(
-            np.true_divide(1, alpha[inds_tie])
-        )
+        score[inds_tie] = no_records[inds_tie] * np.log(np.true_divide(1, alpha[inds_tie]))
 
         factor1 = n_alpha[inds_pos_not_tie] * np.log(
-            np.true_divide(
-                n_alpha[inds_pos_not_tie],
-                no_records[inds_pos_not_tie] * alpha[inds_pos_not_tie],
-            )
+            np.true_divide(n_alpha[inds_pos_not_tie], no_records[inds_pos_not_tie] * alpha[inds_pos_not_tie],)
         )
 
         factor2 = no_records[inds_pos_not_tie] - n_alpha[inds_pos_not_tie]
@@ -67,9 +60,7 @@ class ScoringFunctions:
         return score
 
     @staticmethod
-    def get_score_hc_fast(
-        n_alpha: list, no_records: list, alpha: np.ndarray
-    ) -> np.ndarray:
+    def get_score_hc_fast(n_alpha: list, no_records: list, alpha: np.ndarray) -> np.ndarray:
         """
         Higher criticism
         Similar to a traditional wald test statistic: (Observed - expected) / standard deviation.
@@ -89,9 +80,7 @@ class ScoringFunctions:
         return score
 
     @staticmethod
-    def get_score_ks_fast(
-        n_alpha: list, no_records: list, alpha: np.ndarray
-    ) -> np.ndarray:
+    def get_score_ks_fast(n_alpha: list, no_records: list, alpha: np.ndarray) -> np.ndarray:
         """
         KolmarovSmirnov
 
@@ -102,7 +91,5 @@ class ScoringFunctions:
         """
         score = np.zeros(alpha.shape[0])
         inds = n_alpha > no_records * alpha
-        score[inds] = np.true_divide(
-            n_alpha[inds] - no_records[inds] * alpha[inds], np.sqrt(no_records[inds])
-        )
+        score[inds] = np.true_divide(n_alpha[inds] - no_records[inds] * alpha[inds], np.sqrt(no_records[inds]))
         return score
