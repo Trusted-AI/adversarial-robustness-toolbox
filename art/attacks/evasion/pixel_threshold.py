@@ -110,7 +110,7 @@ class PixelThreshold(EvasionAttack):
         if not isinstance(self.verbose, bool):
             raise ValueError("The flag `verbose` has to be of type bool.")
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, maxiter: int = 100, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -119,7 +119,7 @@ class PixelThreshold(EvasionAttack):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param maxiter: Maximum number of optimisation iterations.
+        :param max_iter: Maximum number of optimisation iterations.
         :return: An array holding the adversarial examples.
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
@@ -146,7 +146,7 @@ class PixelThreshold(EvasionAttack):
                 while True:
                     image_result: Union[List[np.ndarray], np.ndarray] = []
                     threshold = (start + end) // 2
-                    success, trial_image_result = self._attack(image, target_class, threshold)
+                    success, trial_image_result = self._attack(image, target_class, threshold, max_iter)
                     if image_result or success:
                         image_result = trial_image_result
                     if success:
@@ -161,7 +161,7 @@ class PixelThreshold(EvasionAttack):
                             image_result = image
                         break
             else:
-                success, image_result = self._attack(image, target_class, self.th)
+                success, image_result = self._attack(image, target_class, self.th, max_iter)
             adv_x_best += [image_result]
 
         adv_x_best = np.array(adv_x_best)
@@ -217,7 +217,9 @@ class PixelThreshold(EvasionAttack):
             or (not self.targeted and predicted_class != target_class)
         )
 
-    def _attack(self, image: np.ndarray, target_class: np.ndarray, limit: int) -> Tuple[bool, np.ndarray]:
+    def _attack(
+        self, image: np.ndarray, target_class: np.ndarray, limit: int, max_iter: int
+    ) -> Tuple[bool, np.ndarray]:
         """
         Attack the given image `image` with the threshold `limit` for the `target_class` which is true label for
         untargeted attack and targeted label for targeted attack.
@@ -273,7 +275,7 @@ class PixelThreshold(EvasionAttack):
                 predict_fn,
                 bounds,
                 disp=self.verbose,
-                maxiter=1,
+                maxiter=max_iter,
                 popsize=max(1, 400 // len(bounds)),
                 recombination=1,
                 atol=-1,
