@@ -25,7 +25,7 @@ import logging
 from typing import Optional, Tuple, Union
 
 import numpy as np
-from tqdm import tqdm
+from tqdm import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
@@ -131,7 +131,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             old_objective = self.objective(poison_features, target_features, init_attack, old_attack)
             last_m_objectives = [old_objective]
 
-            for i in tqdm(range(self.max_iter)):
+            for i in trange(self.max_iter, desc="Feature collision"):
                 # forward step
                 new_attack = self.forward_step(old_attack)
 
