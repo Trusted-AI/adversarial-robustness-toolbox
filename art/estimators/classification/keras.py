@@ -284,13 +284,13 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :rtype: `np.ndarray`
         """
         # Check shape of `x` because of custom function for `_loss_gradients`
-        shape_match = [i is None or i == j for i,j in zip(self._input_shape, x.shape[1:])]
-        if not all(shape_match):
-            raise ValueError(
-                "Error when checking x: expected x to have shape {} but got array with shape {}".format(
-                    self._input_shape, x.shape[1:]
-                )
-            )
+        #shape_match = [i is None or i == j for i,j in zip(self._input_shape, x.shape[1:])]
+        #if not all(shape_match):
+        #    raise ValueError(
+        #        "Error when checking x: expected x to have shape {} but got array with shape {}".format(
+        #            self._input_shape, x.shape[1:]
+        #        )
+        #    )
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -302,7 +302,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Compute gradients
         gradients = self._loss_gradients([x_preprocessed, y_preprocessed])[0]
         gradients = self._apply_preprocessing_gradient(x, gradients)
-        assert gradients.shape == x_preprocessed.shape
+        #assert gradients.shape == x_preprocessed.shape
 
         return gradients
 
