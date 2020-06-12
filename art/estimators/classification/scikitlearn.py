@@ -58,19 +58,15 @@ def SklearnClassifier(
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that
     instantiates the correct wrapper class for the given scikit-learn model.
+
     :param model: scikit-learn Classifier model.
-    :type model: `sklearn.base.BaseEstimator`
     :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
             for features.
-    :type clip_values: `tuple`
     :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-    :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
     :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-    :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
     :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
             used for data preprocessing. The first value will be subtracted from the input. The input will then
             be divided by the second one.
-    :type preprocessing: `tuple`
     """
     if model.__class__.__module__.split(".")[0] != "sklearn":
         raise TypeError("Model is not an sklearn model. Received '%s'" % model.__class__)
