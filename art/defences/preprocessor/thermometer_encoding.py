@@ -64,9 +64,9 @@ class ThermometerEncoding(Preprocessor):
         Create an instance of thermometer encoding.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
+               for input features.
         :type clip_values: `tuple`
-        :param num_space: Number of evenly spaced levels within [0, 1].
+        :param num_space: Number of evenly spaced levels within the interval of minimum and maximum clip values.
         :type num_space: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
@@ -112,9 +112,14 @@ class ThermometerEncoding(Preprocessor):
         :return: Encoded sample with shape `(batch_size, width, height, depth x num_space)`.
         :rtype: `np.ndarray`
         """
+        # First normalize the input to be in [0, 1]:
+        np.clip(x, self.clip_values[0], self.clip_values[1], out=x)
+        x = (x - self.clip_values[0]) / (self.clip_values[1] - self.clip_values[0])
+
+        # Now apply the encoding:
         channel_index = 1 if self.channels_first else x.ndim - 1
         result = np.apply_along_axis(self._perchannel, channel_index, x)
-        np.clip(result, self.clip_values[0], self.clip_values[1], out=result)
+        np.clip(result, 0, 1, out=result)
         return result.astype(ART_NUMPY_DTYPE), y
 
     def _perchannel(self, x):
@@ -160,7 +165,7 @@ class ThermometerEncoding(Preprocessor):
         grad = grad * thermometer_grad
         grad = np.reshape(grad, grad.shape[:-1] + (grad.shape[-1] // self.num_space, self.num_space))
         grad = np.sum(grad, -1)
-        return grad
+        return grad / (self.clip_values[1] - self.clip_values[0])
 
     def fit(self, x, y=None, **kwargs):
         """
@@ -173,9 +178,9 @@ class ThermometerEncoding(Preprocessor):
         Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
+               for input features.
         :type clip_values: `tuple`
-        :param num_space: Number of evenly spaced levels within [0, 1].
+        :param num_space: Number of evenly spaced levels within the interval of minimum and maximum clip values.
         :type num_space: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
@@ -192,10 +197,7 @@ class ThermometerEncoding(Preprocessor):
         if len(self.clip_values) != 2:
             raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
 
-        if self.clip_values[0] != 0:
-            raise ValueError("`clip_values` min value must be 0.")
-
-        if self.clip_values[1] != 1:
-            raise ValueError("`clip_values` max value must be 1.")
+        if self.clip_values[0] >= self.clip_values[1]:
+            raise ValueError("first entry of `clip_values` should be strictly smaller than the second one.")
 
         return True

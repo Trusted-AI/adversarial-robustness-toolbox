@@ -88,6 +88,11 @@ class TestThermometerEncoding(unittest.TestCase):
         )
         self.assertTrue((x_preproc == true_value).all())
 
+        # Create an instance of ThermometerEncoding
+        th_encoder_scaled = ThermometerEncoding(clip_values=(-10, 10), num_space=4)
+        x_preproc_scaled, _ = th_encoder_scaled(20 * x - 10)
+        self.assertTrue((x_preproc_scaled == true_value).all())
+
     def test_channel_first(self):
         x = np.random.rand(5, 2, 28, 28)
         x_copy = x.copy()
