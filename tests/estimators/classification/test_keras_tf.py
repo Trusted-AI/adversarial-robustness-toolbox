@@ -590,7 +590,8 @@ class TestKerasClassifierTensorFlow(TestBase):
         self.assertIn("art.estimators.classification.keras.KerasClassifier", repr_)
         self.assertIn(f"use_logits=False, channel_index={Deprecated}, channels_first=False", repr_)
         self.assertIn(
-            "clip_values=None, preprocessing_defences=None, postprocessing_defences=None, " "preprocessing=(0, 1)",
+            "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, postprocessing_defences=None, "
+            "preprocessing=(0, 1)",
             repr_,
         )
         self.assertIn("input_layer=0, output_layer=0", repr_)
