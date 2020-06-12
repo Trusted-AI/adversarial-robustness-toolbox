@@ -521,6 +521,7 @@ class NeuralNetworkMixin(ABC):
         """
         return self._channel_index
 
+    @property
     def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
