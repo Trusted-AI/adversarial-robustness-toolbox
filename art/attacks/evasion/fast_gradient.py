@@ -300,7 +300,7 @@ class FastGradientMethod(EvasionAttack):
     def _apply_perturbation(self, batch: np.ndarray, perturbation: np.ndarray, eps_step: float) -> np.ndarray:
         batch = batch + eps_step * perturbation
 
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             batch = np.clip(batch, clip_min, clip_max)
 

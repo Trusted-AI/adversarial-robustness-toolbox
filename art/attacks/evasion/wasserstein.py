@@ -243,7 +243,7 @@ class Wasserstein(EvasionAttack):
         x_adv[~err] = self._apply_projection(x_adv, x_init, cost_matrix, eps)[~err]
 
         # Clip x_adv
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             x_adv = np.clip(x_adv, clip_min, clip_max)
 

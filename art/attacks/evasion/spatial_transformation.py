@@ -188,7 +188,7 @@ class SpatialTransformation(EvasionAttack):
         else:
             raise ValueError("Unsupported channel_first value.")
 
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             np.clip(
                 x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1], out=x_adv,
             )

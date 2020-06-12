@@ -224,7 +224,7 @@ class ZooAttack(EvasionAttack):
         x_adv = np.vstack(x_adv)
 
         # Apply clip
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             np.clip(x_adv, clip_min, clip_max, out=x_adv)
 

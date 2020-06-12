@@ -268,7 +268,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         x = x + eps_step * perturbation
 
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             x = torch.clamp(x, clip_min, clip_max)
 
@@ -314,7 +314,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
             x_adv = x + random_perturbation
 
-            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            if self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = torch.clamp(x_adv, clip_min, clip_max)
 

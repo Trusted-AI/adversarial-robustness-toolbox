@@ -207,7 +207,7 @@ class ElasticNet(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = self._generate_batch(x_batch, y_batch)
 
         # Apply clip
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             x_adv = np.clip(x_adv, self.estimator.clip_values[0], self.estimator.clip_values[1])
 
         # Compute success rate of the EAD attack
