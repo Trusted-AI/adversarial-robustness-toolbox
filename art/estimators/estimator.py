@@ -430,7 +430,7 @@ class NeuralNetworkMixin(ABC):
 
         self._channel_index = channel_index
         self._channels_first: Optional[bool] = channels_first
-        super().__init__()
+        super().__init__(**kwargs)
 
     @abstractmethod
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):

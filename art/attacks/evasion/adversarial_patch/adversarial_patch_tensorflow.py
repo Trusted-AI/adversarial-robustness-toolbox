@@ -113,9 +113,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 raise ValueError("Color channel need to be in last dimension.")
             if self.patch_shape[0] != self.patch_shape[1]:
                 raise ValueError("Patch height and width need to be the same.")
-        if self.estimator.postprocessing_defences is not None or self.estimator.postprocessing_defences != []:
+        if not (self.estimator.postprocessing_defences is None or self.estimator.postprocessing_defences == []):
             raise ValueError(
-                "Framework-specific implementation of Adversarial Patch attack does not yet support"
+                "Framework-specific implementation of Adversarial Patch attack does not yet support "
                 + "postprocessing defences."
             )
 
