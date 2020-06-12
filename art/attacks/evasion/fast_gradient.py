@@ -320,22 +320,20 @@ class FastGradientMethod(EvasionAttack):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
-            x_adv = x.astype(ART_NUMPY_DTYPE) + (
-                random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
-            )
+            random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            if mask is not None:
+                random_perturbation = random_perturbation * (mask.astype(ART_NUMPY_DTYPE))
+            x_adv = x.astype(ART_NUMPY_DTYPE) + random_perturbation
 
-            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            if self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
             x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        # Compute perturbation with implicit batching
+            # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
-            batch_index_1, batch_index_2 = (
-                batch_id * self.batch_size,
-                (batch_id + 1) * self.batch_size,
-            )
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
@@ -354,7 +352,7 @@ class FastGradientMethod(EvasionAttack):
 
             if project:
                 perturbation = projection(
-                    x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2], eps, self.norm,
+                    x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2], eps, self.norm
                 )
                 x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
 
