@@ -131,9 +131,9 @@ class Classifier(ClassifierMixin, BaseEstimator, ABC):
     pass
 
 
-class ClassifierNeuralNetwork(
+class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
     ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator, ABC
-):  # lgtm [py/conflicting-attributes]
+):
     @abstractmethod
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
