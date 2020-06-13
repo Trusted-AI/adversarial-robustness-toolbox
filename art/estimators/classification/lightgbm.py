@@ -20,47 +20,51 @@ This module implements the classifier `LightGBMClassifier` for LightGBM models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from copy import deepcopy
 import logging
+from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator, DecisionTreeMixin
-from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierDecisionTree
+
+if TYPE_CHECKING:
+    import lightgbm
+
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
+    from art.metrics.verification_decisions_trees import LeafNode
 
 logger = logging.getLogger(__name__)
 
 
-class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
+class LightGBMClassifier(ClassifierDecisionTree):
     """
     Wrapper class for importing LightGBM models.
     """
 
     def __init__(
         self,
-        model=None,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=None,
-    ):
+        model: Optional["lightgbm.Booster"] = None,  # type: ignore
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+    ) -> None:
         """
         Create a `Classifier` instance from a LightGBM model.
 
         :param model: LightGBM model.
-        :type model: `lightgbm.Booster`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         """
-        from lightgbm import Booster
+        from lightgbm import Booster  # type: ignore
 
         if not isinstance(model, Booster):
             raise TypeError("Model must be of type lightgbm.Booster")
@@ -76,30 +80,24 @@ class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
         self._input_shape = (self._model.num_feature(),)
         self._nb_classes = self._get_nb_classes()
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
-        :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit` function in `lightgbm.Booster` and will be passed to this function as such.
-        :type kwargs: `dict`
-        :raises: `NotImplementedException`
-        :return: `None`
+        :raises `NotImplementedException`: This method is not supported for LightGBM classifiers.
         """
         raise NotImplementedError
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -112,28 +110,26 @@ class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
 
         return predictions
 
-    def _get_nb_classes(self):
+    def _get_nb_classes(self) -> int:
         """
         Return the number of output classes.
 
         :return: Number of classes in the data.
-        :rtype: `int`
         """
         # pylint: disable=W0212
         return self._model._Booster__num_class
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         import pickle
 
         with open(filename + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
-    def get_trees(self):
+    def get_trees(self) -> list:
         """
         Get the decision trees.
 
         :return: A list of decision trees.
-        :rtype: `[Tree]`
         """
         from art.metrics.verification_decisions_trees import Box, Tree
 
@@ -158,11 +154,10 @@ class LightGBMClassifier(ClassifierMixin, DecisionTreeMixin, BaseEstimator):
 
         return trees
 
-    def _get_leaf_nodes(self, node, i_tree, class_label, box):
-        from copy import deepcopy
-        from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
+    def _get_leaf_nodes(self, node, i_tree, class_label, box) -> List["LeafNode"]:
+        from art.metrics.verification_decisions_trees import Box, Interval, LeafNode
 
-        leaf_nodes = list()
+        leaf_nodes: List[LeafNode] = list()
 
         if "split_index" in node:
             node_left = node["left_child"]

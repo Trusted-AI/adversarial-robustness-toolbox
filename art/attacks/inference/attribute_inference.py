@@ -22,12 +22,13 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin, Classifier
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 from art.attacks import AttributeInferenceAttack
 from art.utils import check_and_transform_label_format, float_to_categorical
@@ -48,22 +49,19 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
     _estimator_requirements = [BaseEstimator]
 
-    def __init__(self, classifier, attack_model=None, attack_feature=0):
+    def __init__(self, classifier: Classifier, attack_model: Optional[Classifier] = None, attack_feature: int = 0):
         """
         Create an AttributeInferenceBlackBox attack instance.
 
         :param classifier: Target classifier.
-        :type classifier: :class:`.Classifier`
-        :param attack_model: The attack model to train, optional. If none is provided, a default model will be created
-        :type attack_model: :class:`.Classifier`
+        :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked.
-        :type attack_feature: `int`
         """
         super(AttributeInferenceBlackBox, self).__init__(estimator=classifier, attack_feature=attack_feature)
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
-                raise ValueError("Attack model must be of type classifier")
+                raise ValueError("Attack model must be of type Classifier.")
             self.attack_model = attack_model
         else:
             self.attack_model = MLPClassifier(
@@ -91,14 +89,13 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
                 n_iter_no_change=10,
                 max_fun=15000,
             )
+        self._check_params()
 
-    def fit(self, x, **kwargs):
+    def fit(self, x: np.ndarray) -> None:
         """
         Train the attack model.
 
         :param x: Input to training process. Includes all features used to train the original model.
-        :type x: `np.ndarray`
-        :return: None
         """
 
         # Checks:
@@ -121,27 +118,24 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # train attack model
         self.attack_model.fit(x_train, y_ready)
 
-    def infer(self, x, y, **kwargs):
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
         :param x: Input to attack. Includes all features except the attacked feature.
-        :type x: `np.ndarray`
         :param y: Original model's predictions for x.
-        :type y: `np.ndarray`
         :param values: Possible values for attacked feature.
         :type values: `np.ndarray`
         :return: The inferred feature values.
-        :rtype: `np.ndarray`
         """
-
-        # Checks:
-        if y.shape[0] != x.shape[0]:
+        if y is not None and y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape[0] != x.shape[1] + 1:
             raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
 
-        values = kwargs.get("values")
+        if "values" not in kwargs.keys():
+            raise ValueError("Missing parameter `values`.")
+        values: np.ndarray = kwargs.get("values")
 
         x_test = np.concatenate((x, y), axis=1).astype(np.float32)
         return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
@@ -159,14 +153,12 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
 
     _estimator_requirements = (BaseEstimator, ScikitlearnDecisionTreeClassifier)
 
-    def __init__(self, classifier, attack_feature=0):
+    def __init__(self, classifier: Classifier, attack_feature: int = 0):
         """
         Create an AttributeInferenceWhiteBoxLifestyle attack instance.
 
         :param classifier: Target classifier.
-        :type classifier: :class:`.Classifier`
         :param attack_feature: The index of the feature to be attacked.
-        :type attack_feature: `int`
         """
         super(AttributeInferenceWhiteBoxLifestyleDecisionTree, self).__init__(
             estimator=classifier, attack_feature=attack_feature
@@ -185,6 +177,10 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         :return: The inferred feature values.
         :rtype: `np.ndarray`
         """
+        if "priors" not in kwargs.keys():
+            raise ValueError("Missing parameter `priors`.")
+        if "values" not in kwargs.keys():
+            raise ValueError("Missing parameter `values`.")
         priors = kwargs.get("priors")
         values = kwargs.get("values")
 
@@ -272,7 +268,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
             estimator=classifier, attack_feature=attack_feature
         )
 
-    def infer(self, x, y=None, **kwargs):
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
@@ -280,26 +276,25 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         predicted value. If not, fall back to the Fredrikson method (without phi)
 
         :param x: Input to attack. Includes all features except the attacked feature.
-        :type x: `np.ndarray`
         :param y: Original model's predictions for x.
-        :type y: `np.ndarray`
         :param values: Possible values for attacked feature.
         :type values: `np.ndarray`
-        :param priors: Prior distributions of attacked feature values. Same size array
-            as `values`.
+        :param priors: Prior distributions of attacked feature values. Same size array as `values`.
         :type priors: `np.ndarray`
         :return: The inferred feature values.
-        :rtype: `np.ndarray`
         """
-        priors = kwargs.get("priors")
-        values = kwargs.get("values")
+        if "priors" not in kwargs.keys():
+            raise ValueError("Missing parameter `priors`.")
+        if "values" not in kwargs.keys():
+            raise ValueError("Missing parameter `values`.")
+        priors: np.ndarray = kwargs.get("priors")
+        values: np.ndarray = kwargs.get("values")
 
-        # Checks:
         if self.estimator.input_shape[0] != x.shape[1] + 1:
             raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
         if len(priors) != len(values):
             raise ValueError("Number of priors does not match number of values")
-        if y.shape[0] != x.shape[0]:
+        if y is not None and y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
         if self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")

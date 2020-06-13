@@ -20,9 +20,15 @@ install_requires = [
     "resampy",
     "ffmpeg-python",
     "cma",
+    "mypy",
 ]
 
-docs_require = ["sphinx >= 1.4", "sphinx_rtd_theme"]
+docs_require = [
+    "sphinx >= 1.4",
+    "sphinx_rtd_theme",
+    "sphinx.ext.autodoc",
+    "sphinx-autodoc-typehints",
+]
 
 
 def read(rel_path):

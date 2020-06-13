@@ -29,5 +29,10 @@ class EncoderMixin(abc.ABC):
 
     @property
     @abc.abstractmethod
-    def encoding_length(self):
+    def encoding_length(self) -> int:
+        """
+        Returns the length of the encoding size output.
+
+        :return: The length of the encoding size output.
+        """
         raise NotImplementedError

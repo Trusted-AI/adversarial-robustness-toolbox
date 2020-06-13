@@ -19,17 +19,22 @@
 This module implements the InverseGAN defence.
 
 | Paper link: https://arxiv.org/abs/1911.10291
-
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from scipy.optimize import minimize
-import tensorflow as tf
 
 from art.defences.preprocessor.preprocessor import Preprocessor
+
+if TYPE_CHECKING:
+    import tensorflow as tf
+
+    from art.estimators.encoding.tensorflow import TensorFlowEncoder
+    from art.estimators.generation.tensorflow import TensorFlowGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -37,53 +42,66 @@ logger = logging.getLogger(__name__)
 class InverseGAN(Preprocessor):
     """
     Given a latent variable generating a given adversarial sample, either inferred by an inverse GAN or randomly
-    generated, the InverseGAN, optimizes that latent variable to project a sample as close as possible to
-    the adversarial sample without the adversarial noise
+    generated, the InverseGAN optimizes that latent variable to project a sample as close as possible to
+    the adversarial sample without the adversarial noise.
     """
 
-    def __init__(self, sess, gan, inverse_gan):
+    params = ["sess", "gan", "inverse_gan"]
+
+    def __init__(
+        self,
+        sess: "tf.compat.v1.Session",
+        gan: "TensorFlowGenerator",
+        inverse_gan: "TensorFlowEncoder",
+        apply_fit: bool = False,
+        apply_predict: bool = False,
+    ):
         """
         Create an instance of an InverseGAN.
 
+        :param sess: TF session for computations.
+        :param gan: GAN model.
+        :param inverse_gan: Inverse GAN model.
+        :param apply_fit: True if applied during fitting/training.
+        :param apply_predict: True if applied during predicting.
         """
-        super().__init__()
+        import tensorflow as tf
 
+        super(InverseGAN, self).__init__()
+
+        self._is_fitted = True
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
         self.gan = gan
         self.inverse_gan = inverse_gan
-        self._sess = sess
+        self.sess = sess
         self._image_adv = tf.placeholder(tf.float32, shape=self.gan.model.get_shape().as_list(), name="image_adv_ph")
 
         num_dim = len(self._image_adv.get_shape())
         image_loss = tf.reduce_mean(tf.square(self.gan.model - self._image_adv), axis=list(range(1, num_dim)))
         self._loss = tf.reduce_sum(image_loss)
         self._grad = tf.gradients(self._loss, self.gan.input_ph)
+        self._check_params()
 
-        if self.inverse_gan is not None:
-            assert self.gan.encoding_length == self.inverse_gan.encoding_length, (
-                "Both GAN and inverseGAN " "must use the same size encoding"
-            )
-
-    def __call__(self, x, **kwargs):
+    def __call__(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
+    ) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Applies the InverseGAN defence upon the sample input
-        :param x: sample input
-        :type x: `np.ndarray`
-        :param kwargs:
-        :return: Defended input
-        :rtype: `np.ndarray`
-        """
+        Applies the :class:`.InverseGAN` defence upon the sample input.
 
+        :param x: Sample input.
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
+        :return: Defended input.
+        """
         batch_size = x.shape[0]
+        iteration_count = 0
 
         if self.inverse_gan is not None:
             logger.info("Encoding x_adv into starting z encoding")
             initial_z_encoding = self.inverse_gan.predict(x)
-
         else:
             logger.info("Choosing a random starting z encoding")
             initial_z_encoding = np.random.rand(batch_size, self.gan.encoding_length)
-
-        iteration_count = 0
 
         def func_gen_gradients(z_i):
             z_i_reshaped = np.reshape(z_i, [batch_size, self.gan.encoding_length])
@@ -102,8 +120,6 @@ class InverseGAN(Preprocessor):
             loss = self.loss(z_i_reshaped, x)
 
             return loss
-
-        options = {}
 
         options_allowed_keys = [
             "disp",
@@ -125,62 +141,48 @@ class InverseGAN(Preprocessor):
                     '`method="L-BFGS-B".`'.format(key)
                 )
 
-        options.update(kwargs)
-
+        options = kwargs.copy()
         optimized_z_encoding_flat = minimize(
             func_loss, initial_z_encoding, jac=func_gen_gradients, method="L-BFGS-B", options=options
         )
         optimized_z_encoding = np.reshape(optimized_z_encoding_flat.x, [batch_size, self.gan.encoding_length])
-
         y = self.gan.predict(optimized_z_encoding)
 
         return y
 
-    def loss(self, z, image_adv):
+    def loss(self, z: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
         """
-        Given a encoding z, computes the loss between the projected sample and the original sample
+        Given a encoding z, computes the loss between the projected sample and the original sample.
+
         :param z: encoding z
-        :type z: `np.ndarray`
         :param image_adv:
-        :type image_adv: `np.ndarray`
         :return: The loss value
         """
-
         logging.info("Calculating Loss")
 
-        loss = self._sess.run(self._loss, feed_dict={self.gan.input_ph: z, self._image_adv: image_adv})
-
+        loss = self.sess.run(self._loss, feed_dict={self.gan.input_ph: z, self._image_adv: image_adv})
         return loss
 
     @property
-    def apply_fit(self):
-        """
-        do nothing.
-        """
-        pass
+    def apply_fit(self) -> bool:
+        return self._apply_fit
 
     @property
-    def apply_predict(self):
-        """
-        do nothing.
-        """
-        pass
+    def apply_predict(self) -> bool:
+        return self._apply_predict
 
-    def estimate_gradient(self, z_encoding, y):
+    def estimate_gradient(self, z_encoding: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. a `z_encoding` input within a GAN against a
-        corresponding adversarial sample
+        corresponding adversarial sample.
+
         :param z_encoding:
-        :type z_encoding: `np.ndarray`
-        :param y: Target values of shape (nb_samples, nb_classes)
-        :type y: `np.ndarray`
+        :param y: Target values of shape `(nb_samples, nb_classes)`.
         :return: Array of gradients of the same shape as `z_encoding`.
-        :rtype: `np.ndarray`
         """
         logging.info("Calculating Gradients")
 
-        gradient = self._sess.run(self._grad, feed_dict={self._image_adv: y, self.gan.input_ph: z_encoding})
-
+        gradient = self.sess.run(self._grad, feed_dict={self._image_adv: y, self.gan.input_ph: z_encoding})
         return gradient
 
     def fit(self, x, y=None, **kwargs):
@@ -189,11 +191,14 @@ class InverseGAN(Preprocessor):
         """
         pass
 
+    def _check_params(self) -> None:
+        if self.inverse_gan is not None and self.gan.encoding_length != self.inverse_gan.encoding_length:
+            raise ValueError("Both GAN and inverseGan must use the same size encoding.")
+
 
 class DefenseGAN(InverseGAN):
     def __init__(self, sess, gan):
         """
-          Create an instance of DefenseGAN.
-
-          """
+        Create an instance of DefenseGAN.
+        """
         super().__init__(sess=sess, gan=gan, inverse_gan=None)

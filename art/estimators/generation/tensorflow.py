@@ -21,11 +21,18 @@ This module implements the classifier `TensorFlowGenerator` for TensorFlow model
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-
-import tensorflow as tf
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 
 from art.estimators.generation.generator import GeneratorMixin
 from art.estimators.tensorflow import TensorFlowEstimator
+
+if TYPE_CHECKING:
+    import numpy as np
+    import tensorflow as tf
+
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -37,48 +44,39 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
 
     def __init__(
         self,
-        input_ph,
-        model,
-        loss=None,
-        sess=None,
+        input_ph: "tf.Placeholder",
+        model: "tf.Tensor",
+        loss: Optional["tf.Tensor"] = None,
+        sess: Optional["tf.compat.v1.Session"] = None,
         channels_first=False,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
-        feed_dict={},
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        feed_dict: Dict[Any, Any] = {},
     ):
         """
         Initialization specific to TensorFlow generator implementations.
 
         :param input_ph: The input placeholder.
-        :type input_ph: `tf.Placeholder`
         :param model: tensorflow model, neural network or other.
-        :type model: `tf.Tensor`
         :param loss: The loss function for which to compute gradients. This parameter is necessary when training the
-                     model and when computing gradients w.r.t. the loss function.
-        :type loss: `tf.Tensor`
+            model and when computing gradients w.r.t. the loss function.
         :param sess: Computation session.
-        :type sess: `tf.Session`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-                            maximum values allowed for features. If floats are provided, these will be used as the range
-                            of all features. If arrays are provided, each value will be considered the bound for a
-                            feature, thus the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
+            maximum values allowed for features. If floats are provided, these will be used as the range of all
+            features. If arrays are provided, each value will be considered the bound for a feature, thus
+            the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be used
-                              for data preprocessing. The first value will be subtracted from the input. The input will
-                              then be divided by the second one.
-        :type preprocessing: `tuple`
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+            used for data preprocessing. The first value will be subtracted from the input. The input will then
+            be divided by the second one.
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
-        :type feed_dict: `dictionary`
         """
+        import tensorflow as tf
 
         super().__init__(
             clip_values=clip_values,
@@ -105,66 +103,64 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     def loss(self, z, image_adv):
         pass
 
-    def predict(self, x):
+    def predict(self, x: "np.ndarray", batch_size: int = 128, **kwargs) -> "np.ndarray":
         """
         Perform projections over a batch of encodings.
 
         :param x: Encodings.
-        :type x: `np.ndarray`
+        :param batch_size: Batch size.
         :return: Array of prediction projections of shape `(num_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         logging.info("Projecting new sample from z value")
         y = self._sess.run(self._model, feed_dict={self._input_ph: x})
         return y
 
-    def loss_gradient(self):
+    def loss_gradient(self, x, y, **kwargs) -> "np.ndarray":
         raise NotImplementedError
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
-        do nothing.
+        Do nothing.
         """
         raise NotImplementedError
 
-    def get_activations(self, x, layer, batch_size=128):
+    def get_activations(
+        self, x: "np.ndarray", layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> "np.ndarray":
         """
-        do nothing.
+        Do nothing.
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         """
         do nothing.
         """
         raise NotImplementedError
 
     @property
-    def model(self):
+    def model(self) -> "tf.Tensor":
         """
-        Returns the generator tensor
+        Returns the generator tensor.
 
-        :return:
-        :rtype: 'float'
+        :return: The generator tensor.
         """
         return self._model
 
     @property
-    def input_ph(self):
+    def input_ph(self) -> "tf.Placeholder":
         """
-        Returns the encoding seed input of the generator of shape (batch_size, encoding_length)
+        Returns the encoding seed input of the generator of shape `(batch_size, encoding_length)`.
 
-        :return:
-        :rtype: 'float'
+        :return: The encoding seed input of the generator.
         """
         return self._input_ph
 
     @property
-    def encoding_length(self):
+    def encoding_length(self) -> int:
         """
-        Returns the length of the encoding expected as an input
+        Returns the length of the encoding size output.
 
-        :return:
-        :rtype: `int`
+        :return: The length of the encoding size output.
         """
         return self._encoding_length

@@ -23,8 +23,8 @@ This module implements the resampling defence `Resample`.
 | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
     see https://arxiv.org/abs/1902.06705.
 """
-
 import logging
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -46,23 +46,24 @@ class Resample(Preprocessor):
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
-        self, sr_original, sr_new, channel_index=Deprecated, channels_first=False, apply_fit=False, apply_predict=True
+        self,
+        sr_original: int,
+        sr_new: int,
+        channel_index=Deprecated,
+        channels_first: bool = False,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
     ):
         """
         Create an instance of the resample preprocessor.
 
         :param sr_original: Original sampling rate of sample.
-        :type sr_original: `int`
         :param sr_new: New sampling rate of sample.
-        :type sr_new: `int`
         :param channel_index: Index of the axis containing the audio channels.
         :type channel_index: `int`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         # Remove in 1.5.0
         if channel_index == 2:
@@ -76,28 +77,27 @@ class Resample(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(
-            sr_original=sr_original, sr_new=sr_new, channel_index=channel_index, channels_first=channels_first
-        )
+        self.sr_original = sr_original
+        self.sr_new = sr_new
+        self.channel_index = channel_index
+        self.channels_first = channels_first
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, x, y=None):
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Resample `x` to a new sampling rate.
 
         :param x: Sample to resample of shape `(batch_size, length, channel)` or `(batch_size, channel, length)`.
-        :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :type y: `np.ndarray`
         :return: Resampled audio sample.
-        :rtype: `np.ndarray`
         """
         import resampy
 
@@ -111,21 +111,15 @@ class Resample(Preprocessor):
     def estimate_gradient(self, x, grad):
         return grad
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and apply defence-specific checks before saving them as attributes.
-        """
-        super().set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not (isinstance(self.sr_original, (int, np.int)) and self.sr_original > 0):
             raise ValueError("Original sampling rate be must a positive integer.")
 
         if not (isinstance(self.sr_new, (int, np.int)) and self.sr_new > 0):
             raise ValueError("New sampling rate be must a positive integer.")
-        return True

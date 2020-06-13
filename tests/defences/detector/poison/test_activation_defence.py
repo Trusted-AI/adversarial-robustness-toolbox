@@ -21,7 +21,6 @@ import logging
 import unittest
 
 from keras_preprocessing.image import ImageDataGenerator
-
 import numpy as np
 
 from art.data_generators import KerasDataGenerator

@@ -21,6 +21,7 @@ This module implements poisoning attacks on Support Vector Machines.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, Tuple
 
 import numpy as np
 from tqdm import tqdm
@@ -28,6 +29,7 @@ from tqdm import tqdm
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators.classification.scikitlearn import ScikitlearnSVC
 from art.utils import compute_success
+
 
 logger = logging.getLogger(__name__)
 
@@ -48,41 +50,31 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         "x_val",
         "y_val",
     ]
-
     _estimator_requirements = (ScikitlearnSVC,)
 
     def __init__(
         self,
-        classifier,
-        step=None,
-        eps=None,
-        x_train=None,
-        y_train=None,
-        x_val=None,
-        y_val=None,
-        max_iter=100,
-        **kwargs
-    ):
+        classifier: "ScikitlearnSVC",
+        step: Optional[float] = None,
+        eps: Optional[float] = None,
+        x_train: Optional[np.ndarray] = None,
+        y_train: Optional[np.ndarray] = None,
+        x_val: Optional[np.ndarray] = None,
+        y_val: Optional[np.ndarray] = None,
+        max_iter: int = 100,
+    ) -> None:
         """
-        Initialize an SVM poisoning attack
+        Initialize an SVM poisoning attack.
 
-        :param classifier: A trained ScikitlearnSVC classifier
-        :type classifier: `art.estimators.classification.scikitlearn.ScikitlearnSVC`
-        :param step: The step size of the classifier
-        :type step: `float`
-        :param eps: The minimum difference in loss before convergence of the classifier
-        :type eps: `float`
-        :param x_train: The training data used for classification
-        :type x_train: `np.ndarray`
-        :param y_train: The training labels used for classification
-        :type y_train: `np.ndarray`
-        :param x_val: The validation data used to test the attack
-        :type x_val: `np.ndarray`
-        :param y_val: The validation labels used to test the attack
-        :type y_val: `np.ndarray`
-        :param max_iter: The maximum number of iterations for the attack
-        :type max_iter: `int`
-        :param kwargs: Extra optional keyword arguments
+        :param classifier: A trained :class:`.ScikitlearnSVC` classifier.
+        :param step: The step size of the classifier.
+        :param eps: The minimum difference in loss before convergence of the classifier.
+        :param x_train: The training data used for classification.
+        :param y_train: The training labels used for classification.
+        :param x_val: The validation data used to test the attack.
+        :param y_val: The validation labels used to test the attack.
+        :param max_iter: The maximum number of iterations for the attack.
+        :raises `NotImplementedError`, `TypeError`: If the argument classifier has the wrong type.
         """
         # pylint: disable=W0212
         from sklearn.svm import LinearSVC, SVC
@@ -91,7 +83,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
         if isinstance(self.estimator.model, LinearSVC):
             self._estimator = ScikitlearnSVC(
-                model=SVC(C=self.estimator.model.C, kernel="linear"), clip_values=self.estimator.clip_values
+                model=SVC(C=self.estimator.model.C, kernel="linear"), clip_values=self.estimator.clip_values,
             )
             self.estimator.fit(x_train, y_train)
         elif not isinstance(self.estimator.model, SVC):
@@ -104,26 +96,22 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         self.x_val = x_val
         self.y_val = y_val
         self.max_iter = max_iter
-        self.set_params(**kwargs)
+        self._check_params()
 
-    def poison(self, x, y=None, **kwargs):
+    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Iteratively finds optimal attack points starting at values at `x`.
 
         :param x: An array with the points that initialize attack points.
-        :type x: `np.ndarray`
         :param y: The target labels for the attack.
-        :return: An tuple holding the (poisoning examples, poisoning labels).
-        :rtype: `(np.ndarray, np.ndarray)`
+        :return: A tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
-
         if y is None:
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
         else:
             y_attack = np.copy(y)
 
         num_poison = len(x)
-
         if num_poison == 0:
             raise ValueError("Must input at least one poison point")
 
@@ -132,7 +120,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         train_labels = np.copy(self.y_train)
         all_poison = []
 
-        for attack_point, attack_label in tqdm(zip(x, y_attack), desc='SVM poisoning'):
+        for attack_point, attack_label in tqdm(zip(x, y_attack), desc="SVM poisoning"):
             poison = self.generate_attack_point(attack_point, attack_label)
             all_poison.append(poison)
             train_data = np.vstack([train_data, poison])
@@ -148,33 +136,23 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
         return x_adv, y_attack
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
-
-        :param kwargs: a dictionary of attack-specific parameters
-        :type kwargs: `dict`
-        :return: `True` when parsing was successful
-        """
-        super(PoisoningAttackSVM, self).set_params(**kwargs)
-        if self.step <= 0:
-            raise ValueError("Step size must be strictly positive")
-        if self.eps <= 0:
-            raise ValueError("Value of eps must be strictly positive")
+    def _check_params(self) -> None:
+        if self.step is not None and self.step <= 0:
+            raise ValueError("Step size must be strictly positive.")
+        if self.eps is not None and self.eps <= 0:
+            raise ValueError("Value of eps must be strictly positive.")
         if self.max_iter <= 1:
-            raise ValueError("Value of max_iter must be strictly positive")
+            raise ValueError("Value of max_iter must be strictly positive.")
 
-    def generate_attack_point(self, x_attack, y_attack):
+    def generate_attack_point(self, x_attack: np.ndarray, y_attack: np.ndarray) -> np.ndarray:
         """
         Generate a single poison attack the model, using `x_val` and `y_val` as validation points.
         The attack begins at the point init_attack. The attack class will be the opposite of the model's
         classification for `init_attack`.
-        :param x_attack: the initial attack point
-        :type x_attack: `np.ndarray`
-        :param y_attack: the initial attack label
-        :type y_attack: `np.ndarray`
-        :return: a tuple containing the final attack point and the poisoned model
-        :rtype: (`np.ndarray`, `art.estimators.classification.scikitlearn.ScikitlearnSVC`)
+
+        :param x_attack: The initial attack point.
+        :param y_attack: The initial attack label.
+        :return: A tuple containing the final attack point and the poisoned model.
         """
         # pylint: disable=W0212
         from sklearn.preprocessing import normalize
@@ -211,32 +189,30 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         poisoned_model.fit(poisoned_input, poisoned_labels)
         return attack_point
 
-    def predict_sign(self, vec):
+    def predict_sign(self, vec: np.ndarray) -> np.ndarray:
         """
-        Predicts the inputs by binary classifier and outputs -1 and 1 instead of 0 and 1
+        Predicts the inputs by binary classifier and outputs -1 and 1 instead of 0 and 1.
 
-        :param vec: an input array
-        :type vec: `np.ndarray`
-        :return: an array of -1/1 predictions
-        :rtype: `np.ndarray`
+        :param vec: An input array.
+        :return: An array of -1/1 predictions.
         """
         # pylint: disable=W0212
         preds = self.estimator.model.predict(vec)
         return 2 * preds - 1
 
-    def attack_gradient(self, attack_point, tol=0.0001):
+    def attack_gradient(self, attack_point: np.ndarray, tol: float = 0.0001) -> np.ndarray:
         """
-        Calculates the attack gradient, or ∂P for this attack.
+        Calculates the attack gradient, or dP for this attack.
         See equation 8 in Biggio et al. Ch. 14
 
-        :param attack_point: the current attack point
-        :type attack_point: `np.ndarray`
-        :param tol: tolerance level
-        :type tol: `float`
-        :return: The attack gradient
-        :rtype: `np.ndarray`
+        :param attack_point: The current attack point.
+        :param tol: Tolerance level.
+        :return: The attack gradient.
         """
         # pylint: disable=W0212
+        if self.x_val is None or self.y_val is None:
+            raise ValueError("The values of `x_val` and `y_val` are required for computing the gradients.")
+
         art_model = self.estimator
         model = self.estimator.model
         grad = np.zeros((1, self.x_val.shape[1]))
@@ -263,7 +239,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
             q_ks = art_model.q_submatrix(np.array([x_k]), support_vectors)
             m_k = (1.0 / zeta) * np.matmul(q_ks, zeta * qss_inv - np.matmul(nu_k, nu_k.T)) + np.matmul(y_k, nu_k.T)
             d_q_sc = np.fromfunction(
-                lambda i: art_model._get_kernel_gradient_sv(i, attack_point), (len(support_vectors),), dtype=int
+                lambda i: art_model._get_kernel_gradient_sv(i, attack_point), (len(support_vectors),), dtype=int,
             )
             d_q_kc = art_model._kernel_grad(x_k, attack_point)
             grad += (np.matmul(m_k, d_q_sc) + d_q_kc) * alpha_c

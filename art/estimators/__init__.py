@@ -1,4 +1,9 @@
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin, DecisionTreeMixin
+from art.estimators.estimator import (
+    BaseEstimator,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
+    DecisionTreeMixin,
+)
 
 from art.estimators.keras import KerasEstimator
 from art.estimators.mxnet import MXEstimator

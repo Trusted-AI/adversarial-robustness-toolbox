@@ -26,13 +26,14 @@ This module implements the JPEG compression defence `JpegCompression`.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 from io import BytesIO
+import logging
+from typing import Optional, Tuple
 
 import numpy as np
 from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg
 
@@ -56,29 +57,24 @@ class JpegCompression(Preprocessor):
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        clip_values,
-        quality=50,
+        clip_values: CLIP_VALUES_TYPE,
+        quality: int = 50,
         channel_index=Deprecated,
-        channels_first=False,
-        apply_fit=True,
-        apply_predict=True,
+        channels_first: bool = False,
+        apply_fit: bool = True,
+        apply_predict: bool = True,
     ):
         """
         Create an instance of JPEG compression.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
         :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
-        :type quality: `int`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -92,19 +88,21 @@ class JpegCompression(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(
-            quality=quality, channel_index=channel_index, channels_first=channels_first, clip_values=clip_values
-        )
+        self.quality = quality
+        self.channel_index = channel_index
+        self.channels_first = channels_first
+        self.clip_values = clip_values
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def _compress(self, x, mode):
+    def _compress(self, x: np.ndarray, mode: str) -> np.ndarray:
         """
         Apply JPEG compression to image input.
         """
@@ -117,17 +115,14 @@ class JpegCompression(Preprocessor):
         tmp_jpeg.close()
         return x_jpeg
 
-    def __call__(self, x, y=None):
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply JPEG compression to sample `x`.
 
         :param x: Sample to compress with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`. `x` values are expected to be in
                   the data range [0, 1] or [0, 255].
-        :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :type y: `np.ndarray`
         :return: compressed sample.
-        :rtype: `np.ndarray`
         """
         x_ndim = x.ndim
         if x_ndim not in [4, 5]:
@@ -196,32 +191,16 @@ class JpegCompression(Preprocessor):
             x_jpeg = np.transpose(x_jpeg, (0, 4, 1, 2, 3))
         return x_jpeg, y
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param quality: The image quality, on a scale from 1 (worst) to 95 (best). Values above 95 should be avoided.
-        :type quality: `int`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
-        :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
-        """
-        # Save defense-specific parameters
-        super(JpegCompression, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
             raise ValueError("Image quality must be a positive integer <= 100.")
 
@@ -236,5 +215,3 @@ class JpegCompression(Preprocessor):
 
         if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
             raise ValueError("'clip_values' max value must be either 1 or 255.")
-
-        return True

@@ -99,7 +99,6 @@ class TestProvenanceDefence(unittest.TestCase):
             eps=1.0,
             x_val=valid_data,
             y_val=valid_labels,
-            max_iters=200,
         )
 
         poisoned_data, _ = svm_attack.poison(all_poison_init, y=poison_labels)
@@ -123,7 +122,7 @@ class TestProvenanceDefence(unittest.TestCase):
 
         cls.classifier.fit(all_data, all_labels)
         cls.defence_trust = ProvenanceDefense(
-            cls.classifier, all_data, all_labels, all_p, x_val=trusted_data, y_val=trusted_labels, eps=0.1
+            cls.classifier, all_data, all_labels, all_p, x_val=trusted_data, y_val=trusted_labels, eps=0.1,
         )
         cls.defence_no_trust = ProvenanceDefense(cls.classifier, all_data, all_labels, all_p, eps=0.1)
 
@@ -140,15 +139,19 @@ class TestProvenanceDefence(unittest.TestCase):
 
     def test_wrong_parameters_3(self):
         (all_data, _, _), (_, y_test), (_, _), (_, _), (_, _) = self.mnist
-        self.assertRaises(ValueError, self.defence_no_trust.set_params, x_train=-all_data, y_train=y_test)
+        self.assertRaises(
+            ValueError, self.defence_no_trust.set_params, x_train=-all_data, y_train=y_test,
+        )
         self.assertRaises(ValueError, self.defence_trust.set_params, x_train=-all_data, y_train=y_test)
 
     def test_wrong_parameters_4(self):
         (_, _, p_train), (x_test, y_test), (_, _), (_, _), (_, _) = self.mnist
         self.assertRaises(
-            ValueError, self.defence_no_trust.set_params, x_train=-x_test, y_train=y_test, p_train=p_train
+            ValueError, self.defence_no_trust.set_params, x_train=-x_test, y_train=y_test, p_train=p_train,
         )
-        self.assertRaises(ValueError, self.defence_trust.set_params, x_train=-x_test, y_train=y_test, p_train=p_train)
+        self.assertRaises(
+            ValueError, self.defence_trust.set_params, x_train=-x_test, y_train=y_test, p_train=p_train,
+        )
 
     def test_detect_poison(self):
         _, clean_trust = self.defence_trust.detect_poison()

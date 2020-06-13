@@ -19,6 +19,7 @@ jobs:
       script:
         - (pycodestyle --max-line-length=120 art || exit 0)
         - (pylint --disable=C0330,C0415,E203,E1136 -rn art || exit 0)
+        - (mypy art || exit 0)
         - py.test --pep8 -m pep8
 
 before_install:

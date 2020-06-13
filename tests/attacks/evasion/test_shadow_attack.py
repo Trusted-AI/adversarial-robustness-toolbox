@@ -61,7 +61,7 @@ def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        if attack.frame_work == "pytorch":
+        if attack.framework == "pytorch":
             x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
@@ -90,7 +90,7 @@ def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_class
 
         (x_train_mnist, _, _, _) = fix_get_mnist_subset
 
-        if attack.frame_work == "pytorch":
+        if attack.framework == "pytorch":
             x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
 
         gradients = attack._get_regularisation_loss_gradients(x_train_mnist[0:1])
@@ -128,7 +128,7 @@ def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_class
             ]
         )
 
-        if attack.frame_work == "pytorch":
+        if attack.framework == "pytorch":
             np.testing.assert_array_almost_equal(gradients[0, 0, 14, :], gradients_expected, decimal=3)
         else:
             np.testing.assert_array_almost_equal(gradients[0, 14, :, 0], gradients_expected, decimal=3)

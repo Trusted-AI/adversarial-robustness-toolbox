@@ -22,6 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import json
 import logging
+from typing import Tuple
 
 import numpy as np
 
@@ -38,14 +39,14 @@ class GroundTruthEvaluator:
         Evaluates ground truth constructor
         """
 
-    def analyze_correctness(self, assigned_clean_by_class, is_clean_by_class):
+    def analyze_correctness(
+        self, assigned_clean_by_class: np.ndarray, is_clean_by_class: list
+    ) -> Tuple[np.ndarray, str]:
         """
         For each training sample, determine whether the activation clustering method was correct.
 
-        :param assigned_clean_by_class: Result of clustering
-        :type assigned_clean_by_class `list`
-        :param is_clean_by_class: is clean separated by class
-        :type is_clean_by_class `list`
+        :param assigned_clean_by_class: Result of clustering.
+        :param is_clean_by_class: is clean separated by class.
         :return: Two variables are returned:
                  1) all_errors_by_class[i]: an array indicating the correctness of each assignment
                  in the ith class. Such that:
@@ -53,9 +54,8 @@ class GroundTruthEvaluator:
                  all_errors_by_class[i] = 1 if marked clean, is clean
                  all_errors_by_class[i] = 2 if marked poison, is clean
                  all_errors_by_class[i] = 3 marked clean, is poison
-                 2) Json object with confusion matrix per-class
+                 2) Json object with confusion matrix per-class.
         """
-
         all_errors_by_class = []
         poison = 0
         clean = 1
@@ -100,13 +100,12 @@ class GroundTruthEvaluator:
 
         return all_errors_by_class, conf_matrix_json
 
-    def get_confusion_matrix(self, values):
+    def get_confusion_matrix(self, values: np.ndarray) -> dict:
         """
         Computes and returns a json object that contains the confusion matrix for each class.
 
-        :param values: Array indicating the correctness of each assignment in the ith class
-        :type values `array`
-        :return: Json object with confusion matrix per-class
+        :param values: Array indicating the correctness of each assignment in the ith class.
+        :return: Json object with confusion matrix per-class.
         """
         dic_class = {}
         true_positive = np.where(values == 0)[0].shape[0]
@@ -119,21 +118,21 @@ class GroundTruthEvaluator:
         fp_rate = self.calculate_and_print(false_positive, false_positive + true_negative, "false-positive rate")
         fn_rate = self.calculate_and_print(false_negative, true_positive + false_negative, "false-negative rate")
 
-        dic_tp = dict(rate=round(tp_rate, 2), numerator=true_positive, denominator=(true_positive + false_negative))
+        dic_tp = dict(rate=round(tp_rate, 2), numerator=true_positive, denominator=(true_positive + false_negative),)
         if (true_positive + false_negative) == 0:
-            dic_tp = dict(rate="N/A", numerator=true_positive, denominator=(true_positive + false_negative))
+            dic_tp = dict(rate="N/A", numerator=true_positive, denominator=(true_positive + false_negative),)
 
-        dic_tn = dict(rate=round(tn_rate, 2), numerator=true_negative, denominator=(false_positive + true_negative))
+        dic_tn = dict(rate=round(tn_rate, 2), numerator=true_negative, denominator=(false_positive + true_negative),)
         if (false_positive + true_negative) == 0:
-            dic_tn = dict(rate="N/A", numerator=true_negative, denominator=(false_positive + true_negative))
+            dic_tn = dict(rate="N/A", numerator=true_negative, denominator=(false_positive + true_negative),)
 
-        dic_fp = dict(rate=round(fp_rate, 2), numerator=false_positive, denominator=(false_positive + true_negative))
+        dic_fp = dict(rate=round(fp_rate, 2), numerator=false_positive, denominator=(false_positive + true_negative),)
         if (false_positive + true_negative) == 0:
-            dic_fp = dict(rate="N/A", numerator=false_positive, denominator=(false_positive + true_negative))
+            dic_fp = dict(rate="N/A", numerator=false_positive, denominator=(false_positive + true_negative),)
 
-        dic_fn = dict(rate=round(fn_rate, 2), numerator=false_negative, denominator=(true_positive + false_negative))
+        dic_fn = dict(rate=round(fn_rate, 2), numerator=false_negative, denominator=(true_positive + false_negative),)
         if (true_positive + false_negative) == 0:
-            dic_fn = dict(rate="N/A", numerator=false_negative, denominator=(true_positive + false_negative))
+            dic_fn = dict(rate="N/A", numerator=false_negative, denominator=(true_positive + false_negative),)
 
         dic_class.update(dict(TruePositive=dic_tp))
         dic_class.update(dict(TrueNegative=dic_tn))
@@ -143,16 +142,13 @@ class GroundTruthEvaluator:
         return dic_class
 
     @staticmethod
-    def calculate_and_print(numerator, denominator, name):
+    def calculate_and_print(numerator: int, denominator: int, name: str) -> float:
         """
         Computes and prints the rates based on the denominator provided.
 
-        :param numerator: number used to compute the rate
-        :type numerator `int`
-        :param denominator: number used to compute the rate
-        :type denominator `int`
-        :param name: Rate name being computed e.g., false-positive rate
-        :type name `str`
+        :param numerator: number used to compute the rate.
+        :param denominator: number used to compute the rate.
+        :param name: Rate name being computed e.g., false-positive rate.
         :return: Computed rate
         """
         try:
@@ -161,4 +157,4 @@ class GroundTruthEvaluator:
             return res
         except ZeroDivisionError:
             logger.debug("%s: couldn't calculate %d/%d", name, numerator, denominator)
-            return 0
+            return 0.0

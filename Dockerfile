@@ -5,7 +5,7 @@ RUN pip3 install keras==2.3.1
 #RUN pip3 install keras==2.2.5
 
 RUN pip3 install numpy==1.18.1 scipy==1.4.1 matplotlib==3.2.1 scikit-learn==0.22.1 six==1.13.0 Pillow==6.2.2 
-RUN pip3 install tqdm==4.45.0 statsmodels==0.11.0  pydub==0.24.1 resampy==0.2.2 ffmpeg-python==0.2.0 cma==2.7.0
+RUN pip3 install tqdm==4.45.0 statsmodels==0.11.0 pydub==0.24.1 resampy==0.2.2 ffmpeg-python==0.2.0 cma==2.7.0 mypy==0.770
 
 #TODO check if jupyter notebook works
 RUN pip3 install jupyter==1.0.0 && pip3 install jupyterlab==2.1.0

@@ -21,10 +21,12 @@ This module implements the Feature Adversaries attack.
 | Paper link: https://arxiv.org/abs/1511.05122
 """
 import logging
+from typing import Optional
 
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
+from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 logger = logging.getLogger(__name__)
@@ -46,7 +48,11 @@ class FeatureAdversaries(EvasionAttack):
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
 
     def __init__(
-        self, classifier, delta=None, layer=None, batch_size=32,
+        self,
+        classifier: ClassifierNeuralNetwork,
+        delta: Optional[float] = None,
+        layer: Optional[int] = None,
+        batch_size: int = 32,
     ):
         """
         Create a :class:`.FeatureAdversaries` instance.
@@ -54,32 +60,23 @@ class FeatureAdversaries(EvasionAttack):
         :param classifier: A trained classifier.
         :type classifier: :class:`.Classifier`
         :param delta: The maximum deviation between source and guide images.
-        :type delta: `float`
         :param layer: Index of the representation layer.
-        :type layer: `int`
         :param batch_size: Batch size.
-        :type batch_size: `int`
         """
         super(FeatureAdversaries, self).__init__(classifier)
 
-        kwargs = {
-            "delta": delta,
-            "layer": layer,
-            "batch_size": batch_size,
-        }
-
-        FeatureAdversaries.set_params(self, **kwargs)
-
+        self.delta = delta
+        self.layer = layer
+        self.batch_size = batch_size
         self.norm = np.inf
+        self._check_params()
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: Source samples.
-        :type x: `np.ndarray`
         :param y: Guide samples.
-        :type y: `np.ndarray`
         :param kwargs: The kwargs are used as `options` for the minimisation with `scipy.optimize.minimize` using
                        `method="L-BFGS-B"`. Valid options are based on the output of
                        `scipy.optimize.show_options(solver='minimize', method='L-BFGS-B')`:
@@ -129,9 +126,7 @@ class FeatureAdversaries(EvasionAttack):
                        relationship between the two is ``ftol = factr * numpy.finfo(float).eps``.
                        I.e., `factr` multiplies the default machine floating-point precision to
                        arrive at `ftol`.
-        :type kwargs: `dict`
         :return: Adversarial examples.
-        :rtype: `np.ndarray`
         :raises KeyError: The argument {} in kwargs is not allowed as option for `scipy.optimize.minimize` using
                           `method="L-BFGS-B".`
         """
@@ -147,15 +142,17 @@ class FeatureAdversaries(EvasionAttack):
         bound = Bounds(lb=lb, ub=ub, keep_feasible=False)
 
         guide_representation = self.estimator.get_activations(
-            x=y.reshape(-1, *self.estimator.input_shape), layer=self.layer, batch_size=self.batch_size
+            x=y.reshape(-1, *self.estimator.input_shape),  # type: ignore
+            layer=self.layer,
+            batch_size=self.batch_size,
         )
 
         def func(x_i):
             source_representation = self.estimator.get_activations(
-                x=x_i.reshape(-1, *self.estimator.input_shape), layer=self.layer, batch_size=self.batch_size
+                x=x_i.reshape(-1, *self.estimator.input_shape), layer=self.layer, batch_size=self.batch_size,
             )
 
-            n = norm(source_representation.flatten() - guide_representation.flatten(), ord=2) ** 2
+            n = norm(source_representation.flatten() - guide_representation.flatten(), ord=2,) ** 2
 
             return n
 
@@ -181,31 +178,16 @@ class FeatureAdversaries(EvasionAttack):
                     "The argument `{}` in kwargs is not allowed as option for `scipy.optimize.minimize` using "
                     '`method="L-BFGS-B".`'.format(key)
                 )
-
         options.update(kwargs)
 
         res = minimize(func, x_0, method="L-BFGS-B", bounds=bound, options=options)
-        logger.info(res)
-
         x_adv = res.x
+        logger.info(res)
 
         return x_adv.reshape(-1, *self.estimator.input_shape)
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param delta: The maximum deviation between source and guide images.
-        :type delta: `float`
-        :param layer: Index of the representation layer.
-        :type layer: `int`
-        :param batch_size: Batch size.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(FeatureAdversaries, self).set_params(**kwargs)
-
-        if self.delta <= 0:
+    def _check_params(self) -> None:
+        if self.delta is not None and self.delta <= 0:
             raise ValueError("The maximum deviation `delta` has to be positive.")
 
         if not isinstance(self.layer, int):

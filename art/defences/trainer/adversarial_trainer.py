@@ -34,12 +34,17 @@ with their adversarial counterpart.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange, tqdm
 
-from art.attacks import EvasionAttack
 from art.defences.trainer.trainer import Trainer
+
+if TYPE_CHECKING:
+    from art.attacks.attack import EvasionAttack
+    from art.estimators.classification.classifier import Classifier
+    from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -63,18 +68,19 @@ class AdversarialTrainer(Trainer):
         evaluations are required to assess its effectiveness case by case (see https://arxiv.org/abs/1902.06705).
     """
 
-    def __init__(self, classifier, attacks, ratio=0.5):
+    def __init__(
+        self, classifier: "Classifier", attacks: Union["EvasionAttack", List["EvasionAttack"]], ratio: float = 0.5,
+    ) -> None:
         """
         Create an :class:`.AdversarialTrainer` instance.
 
         :param classifier: Model to train adversarially.
-        :type classifier: :class:`art.estimators.classification.Classifier`
         :param attacks: attacks to use for data augmentation in adversarial training
-        :type attacks: :class:`.EvasionAttack` or `list(EvasionAttack)`
         :param ratio: The proportion of samples in each batch to be replaced with their adversarial counterparts.
                       Setting this value to 1 allows to train only on adversarial samples.
-        :type ratio: `float`
         """
+        from art.attacks.attack import EvasionAttack
+
         super(AdversarialTrainer, self).__init__(classifier=classifier)
         if isinstance(attacks, EvasionAttack):
             self.attacks = [attacks]
@@ -87,27 +93,24 @@ class AdversarialTrainer(Trainer):
             raise ValueError("The `ratio` of adversarial samples in each batch has to be between 0 and 1.")
         self.ratio = ratio
 
-        self._precomputed_adv_samples = []
-        self.x_augmented, self.y_augmented = None, None
+        self._precomputed_adv_samples: List[np.ndarray] = []
+        self.x_augmented: Optional[np.ndarray] = None
+        self.y_augmented: Optional[np.ndarray] = None
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Train a model adversarially using a data generator.
         See class documentation for more information on the exact procedure.
 
         :param generator: Data generator.
-        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for trainings.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                the target classifier.
-        :type kwargs: `dict`
-        :return: `None`
         """
         logger.info("Performing adversarial training using %i attacks.", len(self.attacks))
         size = generator.size
         batch_size = generator.batch_size
-        nb_batches = int(np.ceil(size / batch_size))
+        nb_batches = int(np.ceil(size / batch_size))  # type: ignore
         ind = np.arange(generator.size)
         attack_id = 0
 
@@ -115,16 +118,15 @@ class AdversarialTrainer(Trainer):
         logged = False
         self._precomputed_adv_samples = []
         for attack in tqdm(self.attacks, desc="Precompute adv samples"):
-            if "targeted" in attack.attack_params:
-                if attack.targeted:
-                    raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
+            if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
+                raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
             if attack.estimator != self._classifier:
                 if not logged:
                     logger.info("Precomputing transferred adversarial samples.")
                     logged = True
 
-                next_precomputed_adv_samples = None
+                next_precomputed_adv_samples: Optional[np.ndarray] = None
                 for batch_id in range(nb_batches):
                     # Create batch data
                     x_batch, y_batch = generator.get_batch()
@@ -169,22 +171,25 @@ class AdversarialTrainer(Trainer):
                 self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 
-    def fit(self, x, y, validation_data=None, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        validation_data: Optional[np.ndarray] = None,
+        batch_size: int = 128,
+        nb_epochs: int = 20,
+        **kwargs
+    ) -> None:
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
 
         :param x: Training set.
-        :type x: `np.ndarray`
         :param y: Labels for the training set.
-        :type y: `np.ndarray`
+        :param validation_data: Validation data, not used.
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for trainings.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                the target classifier.
-        :type kwargs: `dict`
-        :return: `None`
         """
         logger.info("Performing adversarial training using %i attacks.", len(self.attacks))
         nb_batches = int(np.ceil(len(x) / batch_size))
@@ -195,9 +200,8 @@ class AdversarialTrainer(Trainer):
         logged = False
         self._precomputed_adv_samples = []
         for attack in tqdm(self.attacks, desc="Precompute adv samples"):
-            if "targeted" in attack.attack_params:
-                if attack.targeted:
-                    raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
+            if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
+                raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
             if attack.estimator != self._classifier:
                 if not logged:
@@ -239,15 +243,12 @@ class AdversarialTrainer(Trainer):
                 self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
         Perform prediction using the adversarially trained classifier.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
-        :type kwargs: `dict`
         :return: Predictions for test set.
-        :rtype: `np.ndarray`
         """
         return self._classifier.predict(x, **kwargs)

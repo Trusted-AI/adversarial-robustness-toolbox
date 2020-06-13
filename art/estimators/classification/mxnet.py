@@ -21,14 +21,31 @@ This module implements the classifier `MXClassifier` for MXNet Gluon models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import os
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import six
 
-from art.config import ART_NUMPY_DTYPE
-from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
+from art.config import (
+    ART_NUMPY_DTYPE,
+    ART_DATA_PATH,
+    CLIP_VALUES_TYPE,
+    PREPROCESSING_TYPE,
+)
 from art.estimators.mxnet import MXEstimator
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierMixin,
+)
 from art.utils import Deprecated, deprecated_keyword_arg
+
+if TYPE_CHECKING:
+    import mxnet as mx
+
+    from art.data_generators import DataGenerator
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -41,53 +58,42 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        model,
-        loss,
-        input_shape,
-        nb_classes,
-        optimizer=None,
-        ctx=None,
+        model: "mx.gluon.Block",
+        loss: Union["mx.nd.loss", "mx.gluon.loss"],
+        input_shape: Tuple[int, ...],
+        nb_classes: int,
+        optimizer: Optional["mx.gluon.Trainer"] = None,
+        ctx: Optional["mx.context.Context"] = None,
         channel_index=Deprecated,
-        channels_first=True,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
-    ):
+        channels_first: bool = True,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: PREPROCESSING_TYPE = (0, 1),
+    ) -> None:
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model.
 
         :param model: The Gluon model. The output of the model can be logits, probabilities or anything else. Logits
                output should be preferred where possible to ensure attack efficiency.
-        :type model: `mxnet.gluon.Block`
         :param loss: The loss function for which to compute gradients for training.
-        :type loss: `mxnet.nd.loss` or `mxnet.gluon.Loss`
         :param input_shape: The shape of one input instance.
-        :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
-        :type nb_classes: `int`
         :param optimizer: The optimizer used to train the classifier. This parameter is only required if fitting will
                           be done with method fit.
-        :type optimizer: `mxnet.gluon.Trainer`
         :param ctx: The device on which the model runs (CPU or GPU). If not provided, CPU is assumed.
-        :type ctx: `mxnet.context.Context`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         """
         import mxnet as mx
 
@@ -123,35 +129,26 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         # Get the internal layer
         self._layer_names = self._get_layers()
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier on the training set `(inputs, outputs)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
-        :type y: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
-        :type kwargs: `dict`
-        :return: `None`
         """
-        if self._optimizer is None:
-            raise ValueError("An MXNet optimizer is required for fitting the model.")
-
         import mxnet as mx
 
+        if self._optimizer is None:
+            raise ValueError("An MXNet optimizer is required for fitting the model.")
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
-
         y_preprocessed = np.argmax(y_preprocessed, axis=1)
-
         nb_batch = int(np.ceil(len(x_preprocessed) / batch_size))
         ind = np.arange(len(x_preprocessed))
 
@@ -183,22 +180,20 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 # Update parameters
                 self._optimizer.step(batch_size)
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch.
-        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
-        :type kwargs: `dict`
-        :return: `None`
         """
         import mxnet as mx
         from art.data_generators import MXDataGenerator
 
+        if self._optimizer is None:
+            raise ValueError("An MXNet optimizer is required for fitting the model.")
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
 
         if (
@@ -228,16 +223,13 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             # Fit a generic data generator through the API
             super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         import mxnet as mx
 
@@ -251,7 +243,10 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
 
             # Predict
             x_batch = mx.nd.array(x_preprocessed[begin:end].astype(ART_NUMPY_DTYPE), ctx=self._ctx)
@@ -266,21 +261,18 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         return predictions
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
         """
         import mxnet as mx
 
@@ -301,7 +293,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-
         x_preprocessed = mx.nd.array(x_preprocessed.astype(ART_NUMPY_DTYPE), ctx=self._ctx)
         x_preprocessed.attach_grad()
 
@@ -345,17 +336,14 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         return grads
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         import mxnet as mx
 
@@ -363,7 +351,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
-
         y_preprocessed = mx.nd.array([np.argmax(y_preprocessed, axis=1)], ctx=self._ctx).T
         x_preprocessed = mx.nd.array(x_preprocessed.astype(ART_NUMPY_DTYPE), ctx=self._ctx)
         x_preprocessed.attach_grad()
@@ -382,12 +369,11 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         return grads
 
     @property
-    def layer_names(self):
+    def layer_names(self) -> List[str]:
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
 
         .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
@@ -396,20 +382,19 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         """
         return self._layer_names
 
-    def get_activations(self, x, layer, batch_size=128, framework=False):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`.
 
         :param x: Input for computing the activations.
-        :type x: `np.ndarray`
         :param layer: Layer for computing the activations
-        :type layer: `int` or `str`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
+        :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
         """
         import mxnet as mx
 
@@ -444,7 +429,10 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         nb_batches = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for batch_index in range(nb_batches):
             # Batch indexes
-            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                batch_index * batch_size,
+                min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
+            )
 
             # Predict
             x_batch = mx.nd.array(x_preprocessed[begin:end].astype(ART_NUMPY_DTYPE), ctx=self._ctx)
@@ -457,34 +445,26 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         activations = np.vstack(activations)
         return activations
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         """
         Set the learning phase for the backend framework.
 
         :param train: True to set the learning phase to training, False to set it to prediction.
-        :type train: `bool`
         """
         if isinstance(train, bool):
             self._learning_phase = train
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         """
         Save a model to file in the format specific to the backend framework. For Gluon, only parameters are saved in
         file with name `<filename>.params` at the specified path. To load the saved model, the original model code needs
         to be run before calling `load_parameters` on the generated Gluon model.
 
         :param filename: Name of the file where to store the model.
-        :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
-        :type path: `str`
-        :return: None
         """
-        import os
-
         if path is None:
-            from art.config import ART_DATA_PATH
-
             full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
@@ -519,12 +499,11 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         return repr_
 
-    def _get_layers(self):
+    def _get_layers(self) -> list:
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
         """
         layer_names = [layer.name for layer in self._model[:-1]]
         logger.info("Inferred %i hidden layers on MXNet classifier.", len(layer_names))
