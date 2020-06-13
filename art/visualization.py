@@ -128,7 +128,7 @@ def plot_3d(
         # Disable warnings of unused import because all imports in this block are required
         # pylint: disable=W0611
         import matplotlib  # lgtm [py/repeated-import]
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # lgtm [py/repeated-import]
         from mpl_toolkits import mplot3d
 
         if colors is None:
