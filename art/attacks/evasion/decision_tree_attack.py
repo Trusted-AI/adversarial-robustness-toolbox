@@ -21,6 +21,7 @@ This module implements attacks on Decision Trees.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import List, Optional, Union
 
 import numpy as np
 from tqdm import trange
@@ -41,34 +42,28 @@ class DecisionTreeAttack(EvasionAttack):
     """
 
     attack_params = ["classifier", "offset"]
-
     _estimator_requirements = (ScikitlearnDecisionTreeClassifier,)
 
-    def __init__(self, classifier, offset=0.001):
+    def __init__(self, classifier: ScikitlearnDecisionTreeClassifier, offset: float = 0.001) -> None:
         """
         :param classifier: A trained model of type scikit decision tree.
-        :type classifier: :class:`.Classifier.ScikitlearnDecisionTreeClassifier`
-        :param offset: How much the value is pushed away from tree's threshold. default 0.001
-        :type classifier: :float:
+        :param offset: How much the value is pushed away from tree's threshold.
         """
         super(DecisionTreeAttack, self).__init__(estimator=classifier)
+        self.offset = offset
+        self._check_params()
 
-        params = {"offset": offset}
-        self.set_params(**params)
-
-    def _df_subtree(self, position, original_class, target=None):
+    def _df_subtree(
+        self, position: int, original_class: Union[int, np.ndarray], target: Optional[int] = None,
+    ) -> List[int]:
         """
         Search a decision tree for a mis-classifying instance.
 
         :param position: An array with the original inputs to be attacked.
-        :type position: `int`
         :param original_class: original label for the instances we are searching mis-classification for.
-        :type original_class: `int` or `np.ndarray`
         :param target: If the provided, specifies which output the leaf has to have to be accepted.
-        :type target: `int`
         :return: An array specifying the path to the leaf where the classification is either != original class or
                  ==target class if provided.
-        :rtype: `list`
         """
         # base case, we're at a leaf
         if self.estimator.get_left_child(position) == self.estimator.get_right_child(position):
@@ -100,17 +95,14 @@ class DecisionTreeAttack(EvasionAttack):
 
         return path
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
         x_adv = x.copy()
@@ -130,13 +122,15 @@ class DecisionTreeAttack(EvasionAttack):
                         adv_path = self._df_subtree(self.estimator.get_right_child(ancestor), legitimate_class)
                     else:
                         adv_path = self._df_subtree(
-                            self.estimator.get_right_child(ancestor), legitimate_class, y[index]
+                            self.estimator.get_right_child(ancestor), legitimate_class, y[index],
                         )
                 else:  # search in left subtree
                     if y is None:
                         adv_path = self._df_subtree(self.estimator.get_left_child(ancestor), legitimate_class)
                     else:
-                        adv_path = self._df_subtree(self.estimator.get_left_child(ancestor), legitimate_class, y[index])
+                        adv_path = self._df_subtree(
+                            self.estimator.get_left_child(ancestor), legitimate_class, y[index],
+                        )
                 position = position - 1  # we are going the decision path upwards
             adv_path.append(ancestor)
             # we figured out which is the way to the target, now perturb
@@ -151,18 +145,14 @@ class DecisionTreeAttack(EvasionAttack):
                 elif x_adv[index][feature] <= threshold and go_for == self.estimator.get_right_child(adv_path[i]):
                     x_adv[index][feature] = threshold + self.offset
 
-        logger.info("Success rate of decision tree attack: %.2f%%", 100 * compute_success(self.estimator, x, y, x_adv))
+        logger.info(
+            "Success rate of decision tree attack: %.2f%%", 100 * compute_success(self.estimator, x, y, x_adv),
+        )
         return x_adv
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
-
-        :param kwargs: a dictionary of attack-specific parameters
-        :type kwargs: `dict`
-        :return: `True` when parsing was successful
-        """
-        super(DecisionTreeAttack, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        if not isinstance(self.estimator, ScikitlearnDecisionTreeClassifier):
+            raise TypeError("Model must be a decision tree model.")
 
         if self.offset <= 0:
             raise ValueError("The offset parameter must be strictly positive.")

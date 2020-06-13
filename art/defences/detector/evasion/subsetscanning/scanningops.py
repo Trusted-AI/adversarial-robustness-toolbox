@@ -18,6 +18,8 @@
 """
 Scanning operations
 """
+from typing import Callable, Tuple
+
 import numpy as np
 
 
@@ -27,23 +29,22 @@ class ScanningOps:
     """
 
     @staticmethod
-    def optimize_in_single_dimension(pvalues, a_max, image_to_node, score_function):
+    def optimize_in_single_dimension(
+        pvalues: np.ndarray,
+        a_max: float,
+        image_to_node: bool,
+        score_function: Callable[[list, list, np.ndarray], np.ndarray],
+    ) -> Tuple[float, np.ndarray, float]:
         """
         Optimizes over all subsets of nodes for a given subset of images or over all subsets of images for a given
         subset of nodes.
 
-        :param pvalues: pvalue ranges
-        :type pvalues: `ndarray`
-        :param a_max: alpha max. determines the significance level threshold
-        :type a_max: `float`
-        :param image_to_node: informs what direction to optimize in
-        :type image_to_node: `bool`
-        :param score_function: scoring function
-        :type score_function: `.ScoringFunction`
-        :return: (best_score_so_far, subset, best_alpha)
-        :rtype: `float`, `np.array`, `float`
+        :param pvalues: pvalue ranges.
+        :param a_max: Ddetermines the significance level threshold.
+        :param image_to_node: Informs the direction for optimization.
+        :param score_function: Scoring function.
+        :return: (best_score_so_far, subset, best_alpha).
         """
-
         alpha_thresholds = np.unique(pvalues[:, :, 1])
 
         # alpha_thresholds = alpha_thresholds[0::5] #take every 5th for speed purposes
@@ -75,7 +76,7 @@ class ScanningOps:
                 arg_sort_max = np.argsort(pvalues[:, elem_indx, 1])
                 # arg_sort_min = np.argsort(pvalues[:,e,0]) #collect ranges over images(rows)
                 completely_included = np.searchsorted(
-                    pvalues[:, elem_indx, 1][arg_sort_max], alpha_thresholds, side="right"
+                    pvalues[:, elem_indx, 1][arg_sort_max], alpha_thresholds, side="right",
                 )
             else:
                 # collect ranges over nodes(columns)
@@ -83,7 +84,7 @@ class ScanningOps:
                 # arg_sort_min = np.argsort(pvalues[elem_indx,:,0])
 
                 completely_included = np.searchsorted(
-                    pvalues[elem_indx, :, 1][arg_sort_max], alpha_thresholds, side="right"
+                    pvalues[elem_indx, :, 1][arg_sort_max], alpha_thresholds, side="right",
                 )
 
             # should be num elements by num thresh
@@ -120,7 +121,6 @@ class ScanningOps:
 
         # after the alpha for loop we now have best score, best alpha, size of best subset,
         # and alpha counter use these with the priority argsort to reconstruct the best subset
-
         unsort = arg_sort_priority[:, best_alpha_count]
 
         subset = np.zeros(best_size).astype(int)
@@ -130,25 +130,25 @@ class ScanningOps:
         return best_score_so_far, subset, best_alpha
 
     @staticmethod
-    def single_restart(pvalues, a_max, indices_of_seeds, image_to_node, score_function):
+    def single_restart(
+        pvalues: np.ndarray,
+        a_max: float,
+        indices_of_seeds: np.ndarray,
+        image_to_node: bool,
+        score_function: Callable[[list, list, np.ndarray], np.ndarray],
+    ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Here we control the iteration between images->nodes and nodes->images. It starts with a fixed subset of nodes by
         default.
 
-        :param pvalues: pvalue ranges
-        :type pvalues: `ndarray`
-        :param a_max: alpha max. determines the significance level threshold
-        :type a_max: `float`
-        :param indices_of_seeds: indices of initial sets of images or nodes to perform optimization
-        :type indices_of_seeds: `np.array`
-        :param image_to_node: informs what direction to optimize in
-        :type image_to_node: `bool`
-        :param score_function: scoring function
-        :type score_function: `.ScoringFunction`
-        :return: (best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha)
-        :rtype: `float`, `np.array`, `np.array`, `float`
+        :param pvalues: pvalue ranges.
+        :param a_max: Ddetermines the significance level threshold.
+        :param indices_of_seeds: Indices of initial sets of images or nodes to perform optimization.
+        :param image_to_node: Informs the direction for optimization.
+        :param score_function: Scoring function.
+        :return: (best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha).
         """
-        best_score_so_far = -100000
+        best_score_so_far = -100000.0
         count = 0
 
         while True:
@@ -161,12 +161,12 @@ class ScanningOps:
 
             if image_to_node:  # passed pvalues are only those belonging to fixed images, update nodes in return
                 # only sending sub of images
-                score_from_optimization, sub_of_nodes, optimal_alpha = ScanningOps.optimize_in_single_dimension(
+                (score_from_optimization, sub_of_nodes, optimal_alpha,) = ScanningOps.optimize_in_single_dimension(
                     pvalues[sub_of_images, :, :], a_max, image_to_node, score_function
                 )
             else:  # passed pvalues are only those belonging to fixed nodes, update images in return
                 # only sending sub of nodes
-                score_from_optimization, sub_of_images, optimal_alpha = ScanningOps.optimize_in_single_dimension(
+                (score_from_optimization, sub_of_images, optimal_alpha,) = ScanningOps.optimize_in_single_dimension(
                     pvalues[:, sub_of_nodes, :], a_max, image_to_node, score_function
                 )
 
@@ -180,4 +180,9 @@ class ScanningOps:
                 image_to_node = not image_to_node  # switch direction!
                 count = count + 1  # for printing and
             else:  # converged!  Don't update from most recent optimization, return current best
-                return best_score_so_far, best_sub_of_images, best_sub_of_nodes, best_alpha
+                return (
+                    best_score_so_far,
+                    best_sub_of_images,
+                    best_sub_of_nodes,
+                    best_alpha,
+                )

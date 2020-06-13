@@ -21,14 +21,29 @@ This module implements the classifier `TensorFlowClassifier` for TensorFlow mode
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import os
 import random
+import shutil
+import time
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import six
 
-from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
+from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierMixin,
+)
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
 from art.utils import Deprecated, deprecated_keyword_arg
+
+if TYPE_CHECKING:
+    import tensorflow as tf
+
+    from art.data_generators import DataGenerator
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -41,62 +56,49 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        input_ph,
-        output,
-        labels_ph=None,
-        train=None,
-        loss=None,
-        learning=None,
-        sess=None,
+        input_ph: "tf.Placeholder",
+        output: "tf.Tensor",
+        labels_ph: Optional["tf.Placeholder"] = None,
+        train: Optional["tf.Tensor"] = None,
+        loss: Optional["tf.Tensor"] = None,
+        learning: Optional["tf.Placeholder"] = None,
+        sess: Optional["tf.Session"] = None,
         channel_index=Deprecated,
-        channels_first=False,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
-        feed_dict={},
-    ):
+        channels_first: bool = False,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        feed_dict: Dict[Any, Any] = {},
+    ) -> None:
         """
         Initialization specific to TensorFlow models implementation.
 
         :param input_ph: The input placeholder.
-        :type input_ph: `tf.Placeholder`
         :param output: The output layer of the model. This can be logits, probabilities or anything else. Logits
                output should be preferred where possible to ensure attack efficiency.
-        :type output: `tf.Tensor`
         :param labels_ph: The labels placeholder of the model. This parameter is necessary when training the model and
                when computing gradients w.r.t. the loss function.
-        :type labels_ph: `tf.Tensor`
         :param train: The train tensor for fitting, including an optimizer. Use this parameter only when training the
                model.
-        :type train: `tf.Tensor`
         :param loss: The loss function for which to compute gradients. This parameter is necessary when training the
                model and when computing gradients w.r.t. the loss function.
-        :type loss: `tf.Tensor`
         :param learning: The placeholder to indicate if the model is training.
-        :type learning: `tf.Placeholder` of type bool.
         :param sess: Computation session.
-        :type sess: `tf.Session`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
-        :type feed_dict: `dictionary`
         """
         # pylint: disable=E0401
         import tensorflow as tf
@@ -141,21 +143,18 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if len(self._labels_ph.shape) == 1:
+        if self._labels_ph is not None and len(self._labels_ph.shape) == 1:
             self._reduce_labels = True
         else:
             self._reduce_labels = False
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(num_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -165,7 +164,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
 
             # Create feed_dict
             feed_dict = {self._input_ph: x_preprocessed[begin:end]}
@@ -179,22 +181,16 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return predictions
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
-        :type y: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
-        :type kwargs: `dict`
-        :return: `None`
         """
         # Check if train and output_ph available
         if self._train is None or self._labels_ph is None:
@@ -227,19 +223,15 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 # Run train step
                 self._sess.run(self._train, feed_dict=feed_dict)
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
-        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
-        :type kwargs: `dict`
-        :return: `None`
         """
         from art.data_generators import TensorFlowDataGenerator
 
@@ -250,7 +242,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             and self.preprocessing == (0, 1)
         ):
             for _ in range(nb_epochs):
-                for _ in range(int(generator.size / generator.batch_size)):
+                for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
                     i_batch, o_batch = generator.get_batch()
 
                     if self._reduce_labels:
@@ -265,21 +257,18 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         else:
             super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
         """
         # Check value of label for computing gradients
         if not (
@@ -327,17 +316,14 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return grads
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :type y: `np.ndarray`
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
+                  `(nb_samples,)`.
         :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -384,12 +370,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                 if self._class_grads[unique_label] is None:
                     self._class_grads[unique_label] = tf.gradients(self._output[:, unique_label], self._input_ph)[0]
 
-    def _get_layers(self):
+    def _get_layers(self) -> List[str]:
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
         """
         # pylint: disable=E0401
         import tensorflow as tf
@@ -427,20 +412,19 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return result
 
-    def get_activations(self, x, layer, batch_size=128, framework=False):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`.
 
         :param x: Input for computing the activations.
-        :type x: `np.ndarray`
         :param layer: Layer for computing the activations.
-        :type layer: `int` or `str`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
+        :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
         """
         # pylint: disable=E0401
         import tensorflow as tf
@@ -471,7 +455,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
 
             # Create feed_dict
             feed_dict = {self._input_ph: x_preprocessed[begin:end]}
@@ -485,37 +472,30 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return results
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         """
         Set the learning phase for the backend framework.
 
         :param train: True to set the learning phase to training, False to set it to prediction.
-        :type train: `bool`
         """
         if isinstance(train, bool):
             self._learning_phase = train
             self._feed_dict[self._learning] = train
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         """
         Save a model to file in the format specific to the backend framework. For TensorFlow, .ckpt is used.
 
         :param filename: Name of the file where to store the model.
-        :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
-        :type path: `str`
         """
         # pylint: disable=E0611
-        import os
-        import shutil
         from tensorflow.python import saved_model
         from tensorflow.python.saved_model import tag_constants
         from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
 
         if path is None:
-            from art.config import ART_DATA_PATH
-
             full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
@@ -525,24 +505,21 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         builder = saved_model.builder.SavedModelBuilder(full_path)
         signature = predict_signature_def(
-            inputs={"SavedInputPhD": self._input_ph}, outputs={"SavedOutput": self._output}
+            inputs={"SavedInputPhD": self._input_ph}, outputs={"SavedOutput": self._output},
         )
         builder.add_meta_graph_and_variables(
-            sess=self._sess, tags=[tag_constants.SERVING], signature_def_map={"predict": signature}
+            sess=self._sess, tags=[tag_constants.SERVING], signature_def_map={"predict": signature},
         )
         builder.save()
 
         logger.info("Model saved in path: %s.", full_path)
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         """
         Use to ensure `TensorFlowClassifier` can be pickled.
 
         :return: State dictionary with instance parameters.
-        :rtype: `dict`
         """
-        import time
-
         state = self.__dict__.copy()
 
         # Remove the unpicklable entries
@@ -578,21 +555,18 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return state
 
-    def __setstate__(self, state):
+    def __setstate__(self, state: Dict[str, Any]) -> None:
         """
         Use to ensure `TensorFlowClassifier` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
-        :type state: `dict`
         """
         self.__dict__.update(state)
 
         # Load and update all functionality related to TensorFlow
         # pylint: disable=E0611, E0401
-        import os
         import tensorflow as tf
         from tensorflow.python.saved_model import tag_constants
-        from art.config import ART_DATA_PATH
 
         full_path = os.path.join(ART_DATA_PATH, state["model_name"])
 
@@ -678,50 +652,41 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        model,
-        nb_classes,
-        input_shape,
-        loss_object=None,
-        train_step=None,
+        model: Callable,
+        nb_classes: int,
+        input_shape: Tuple[int, ...],
+        loss_object: Optional["tf.keras.losses.Loss"] = None,
+        train_step: Optional[Callable] = None,
         channel_index=Deprecated,
-        channels_first=False,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
-    ):
+        channels_first: bool = False,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: PREPROCESSING_TYPE = (0, 1),
+    ) -> None:
         """
         Initialization specific to TensorFlow v2 models.
 
         :param model: a python functions or callable class defining the model and providing it prediction as output.
-        :type model: `function` or `callable class`
         :param nb_classes: the number of classes in the classification task.
-        :type nb_classes: `int`
         :param input_shape: shape of one input for the classifier, e.g. for MNIST input_shape=(28, 28, 1).
-        :type input_shape: `tuple`
         :param loss_object: The loss function for which to compute gradients. This parameter is applied for training
             the model and computing gradients of the loss w.r.t. the input.
         :type loss_object: `tf.keras.losses`
         :param train_step: A function that applies a gradient update to the trainable variables with signature
                            train_step(model, images, labels).
-        :type train_step: `function`
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         """
         import tensorflow as tf
 
@@ -754,16 +719,13 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         else:
             self._reduce_labels = False
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -773,14 +735,16 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         for m in range(num_batch):
             # Batch indexes
-            begin, end = m * batch_size, min((m + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
 
             # Run prediction
             results[begin:end] = self._model(x_preprocessed[begin:end])
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=results, fit=False)
-
         return predictions
 
     def _predict_framework(self, x, **kwargs):
@@ -799,21 +763,16 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return self._model(x_preprocessed)
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
         :param y: Labels, one-hot-encoded of shape (nb_samples, nb_classes).
-        :type y: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
-        :type kwargs: `dict`
         """
         import tensorflow as tf
 
@@ -835,21 +794,23 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             for images, labels in train_ds:
                 self._train_step(self.model, images, labels)
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator that yields batches as specified.
 
         :param generator: Batch generator providing `(x, y)` for each epoch. If the generator can be used for native
                           training in TensorFlow, it will.
-        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
-        :type kwargs: `dict`
         """
         import tensorflow as tf
         from art.data_generators import TensorFlowV2DataGenerator
+
+        if self._train_step is None:
+            raise TypeError(
+                "The training function `train_step` is required for fitting a model but it has not been " "defined."
+            )
 
         # Train directly in TensorFlow
         if (
@@ -866,21 +827,18 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
         """
         import tensorflow as tf
 
@@ -943,19 +901,19 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return gradients
 
-    def loss_gradient_framework(self, x, y, **kwargs):
+    def loss_gradient_framework(self, x: "tf.Tensor", y: "tf.Tensor", **kwargs) -> "tf.Tensor":
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Input with shape as expected by the model.
-        :type x: `tensorflow.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `tensorflow.Tensor`
         :return: Gradients of the same shape as `x`.
-        :rtype: `tensorflow.Tensor`
         """
         import tensorflow as tf
+
+        if self._loss_object is None:
+            raise ValueError("Loss object is necessary for computing the loss gradient.")
 
         if tf.executing_eagerly():
             with tf.GradientTape() as tape:
@@ -974,18 +932,21 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return loss_grads
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         import tensorflow as tf
+
+        if self._loss_object is None:
+            raise TypeError(
+                "The loss function `loss_object` is required for computing loss gradients, but it has not been "
+                "defined."
+            )
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
@@ -1007,25 +968,22 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         # Apply preprocessing gradients
         gradients = self._apply_preprocessing_gradient(x, gradients)
-
         return gradients
 
-    def _get_layers(self):
+    def _get_layers(self) -> list:
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
         """
         raise NotImplementedError
 
     @property
-    def layer_names(self):
+    def layer_names(self) -> List[str]:
         """
         Return the hidden layers in the model, if applicable.
 
         :return: The hidden layers in the model, input and output layers excluded.
-        :rtype: `list`
 
         .. warning:: `layer_names` tries to infer the internal structure of the model.
                      This feature comes with no guarantees on the correctness of the result.
@@ -1037,22 +995,20 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         if isinstance(self._model, tf.keras.Model) or isinstance(self._model, tf.keras.model.Sequential):
             return self._model.layers
         else:
-            return None
+            return None  # type: ignore
 
-    def get_activations(self, x, layer, batch_size=128, framework=False):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`.
 
         :param x: Input for computing the activations.
-        :type x: `np.ndarray`
         :param layer: Layer for computing the activations.
-        :type layer: `int` or `str`
         :param batch_size: Batch size.
-        :type batch_size: `int`
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
-        :rtype: `np.ndarray`
         """
         import tensorflow as tf
         from art.config import ART_NUMPY_DTYPE
@@ -1086,31 +1042,31 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
             # Get activations with batching
             for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
-                begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
+                begin, end = (
+                    batch_index * batch_size,
+                    min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
+                )
                 activations[begin:end] = activation_model([x_preprocessed[begin:end]]).numpy()
 
             return activations
         else:
             return None
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         """
         Set the learning phase for the backend framework.
 
         :param train: True to set the learning phase to training, False to set it to prediction.
-        :type train: `bool`
         """
         raise NotImplementedError
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         """
         Save a model to file in the format specific to the backend framework. For TensorFlow, .ckpt is used.
 
         :param filename: Name of the file where to store the model.
-        :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
-        :type path: `str`
         """
         raise NotImplementedError
 

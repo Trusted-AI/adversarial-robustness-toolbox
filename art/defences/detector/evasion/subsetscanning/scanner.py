@@ -18,6 +18,7 @@
 """
 Subset scanning based on FGSS
 """
+from typing import Callable, Tuple
 
 import numpy as np
 
@@ -33,7 +34,11 @@ class Scanner:
     """
 
     @staticmethod
-    def fgss_individ_for_nets(pvalues, a_max=0.5, score_function=ScoringFunctions.get_score_bj_fast):
+    def fgss_individ_for_nets(
+        pvalues: np.ndarray,
+        a_max: float = 0.5,
+        score_function: Callable[[list, list, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
+    ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
         maximizes the score.
@@ -47,16 +52,11 @@ class Scanner:
         the next largest pmax. There are at most O(N) of these subsets to consider. Sorting requires O(N ln N). There is
         no iterative ascent required and no special choice of alpha thresholds for speed improvements.
 
-        :param pvalues: pvalue ranges
-        :type pvalues `np.ndarray`
+        :param pvalues: pvalue ranges.
         :param a_max: alpha max. determines the significance level threshold
-        :type a_max `float`
         :param score_function: scoring function
-        :type score_function `.ScoringFunctions`
         :return: (best_score, image_sub, node_sub, optimal_alpha)
-        :rtype: `float`, `list`, `list`, `float`
         """
-
         pmaxes = np.reshape(pvalues[:, 1], pvalues.shape[0])  # should be number of columns/nodes
         # we can ignore any pmax that is greater than a_max; this makes sorting faster
         # all the pvalues less than equal a_max are kept by nonzero result of the comparison
@@ -86,26 +86,24 @@ class Scanner:
 
     @staticmethod
     def fgss_for_nets(
-        pvalues, a_max=0.5, restarts=10, image_to_node_init=False, score_function=ScoringFunctions.get_score_bj_fast
-    ):
+        pvalues: np.ndarray,
+        a_max: float = 0.5,
+        restarts: int = 10,
+        image_to_node_init: bool = False,
+        score_function: Callable[[list, list, np.ndarray], np.ndarray] = ScoringFunctions.get_score_bj_fast,
+    ) -> Tuple[float, np.ndarray, np.ndarray, float]:
         """
         Finds the highest scoring subset of records and attribute. Return the subsets, the score, and the alpha that
         maximizes the score iterates between images and nodes, each time performing NPSS efficient maximization.
 
-        :param pvalues: pvalue ranges
-        :type pvalues `np.ndarray`
+        :param pvalues: pvalue ranges.
         :param a_max: alpha threshold
-        :type a_max `float`
         :param restarts: number of iterative restarts
-        :type restarts `int`
         :param image_to_node_init: intializes what direction to begin the search: image to node or vice-versa
-        :type image_to_node_init `bool`
         :param score_function: scoring function
-        :type score_function `.ScoringFunctions`
         :return: (best_score, image_sub, node_sub, optimal_alpha)
-        :rtype: `float`, `list`, `list`, `float`
         """
-        best_score = -100000
+        best_score = -100000.0
 
         if len(pvalues) < restarts:
             restarts = len(pvalues)
@@ -140,22 +138,22 @@ class Scanner:
                 prob = np.random.uniform(0, 1)
                 if image_to_node:
                     indices_of_seeds = np.random.choice(
-                        np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False
+                        np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False,
                     )
                 else:
                     indices_of_seeds = np.random.choice(
-                        np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False
+                        np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False,
                     )
                 while indices_of_seeds.size == 0:
                     # eventually will make non zero
                     prob = np.random.uniform(0, 1)
                     if image_to_node:
                         indices_of_seeds = np.random.choice(
-                            np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False
+                            np.arange(pvalues.shape[0]), int(pvalues.shape[0] * prob), replace=False,
                         )
                     else:
                         indices_of_seeds = np.random.choice(
-                            np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False
+                            np.arange(pvalues.shape[1]), int(pvalues.shape[1] * prob), replace=False,
                         )
 
                 indices_of_seeds.astype(int)

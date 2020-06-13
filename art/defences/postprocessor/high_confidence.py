@@ -20,6 +20,8 @@ This module implements confidence added to the classifier output.
 """
 import logging
 
+import numpy as np
+
 from art.defences.postprocessor.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
@@ -32,63 +34,47 @@ class HighConfidence(Postprocessor):
 
     params = ["cutoff"]
 
-    def __init__(self, cutoff=0.25, apply_fit=False, apply_predict=True):
+    def __init__(self, cutoff: float = 0.25, apply_fit: bool = False, apply_predict: bool = True) -> None:
         """
         Create a HighConfidence postprocessor.
 
         :param cutoff: Minimal value for returned prediction output.
-        :type cutoff: `float`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         super(HighConfidence, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(cutoff=cutoff)
+        self.cutoff = cutoff
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, preds):
+    def __call__(self, preds: np.ndarray) -> np.ndarray:
         """
         Perform model postprocessing and return postprocessed output.
 
         :param preds: model output to be postprocessed.
-        :type preds: `np.ndarray`
         :return: Postprocessed model output.
-        :rtype: `np.ndarray`
         """
         post_preds = preds.copy()
         post_preds[post_preds < self.cutoff] = 0.0
 
         return post_preds
 
-    def fit(self, preds, **kwargs):
+    def fit(self, preds: np.ndarray, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :param cutoff: Minimal value for returned prediction output.
-        :type cutoff: `float`
-        :return: `True` when parsing was successful
-        """
-        # Save defence-specific parameters
-        super(HighConfidence, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.cutoff <= 0:
             raise ValueError("Minimal value must be positive.")
-
-        return True

@@ -21,6 +21,12 @@ This module implements the abstract base class for defences that adversarially t
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
+from typing import TYPE_CHECKING
+
+import numpy as np
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import Classifier
 
 
 class Trainer(abc.ABC):
@@ -28,37 +34,29 @@ class Trainer(abc.ABC):
     Abstract base class for training defences.
     """
 
-    def __init__(self, classifier, **kwargs):
+    def __init__(self, classifier: "Classifier", **kwargs) -> None:
         """
         Create a adversarial training object
         """
         self._classifier = classifier
 
     @abc.abstractmethod
-    def fit(self, x, y, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def fit(
+        self, x: np.ndarray, y: np.ndarray, **kwargs
+    ) -> None:  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Train the model.
 
         :param x: Training data.
-        :type x: `np.ndarray`
         :param y: Labels for the training data.
-        :type y: `np.ndarray`
         :param kwargs: Other parameters.
-        :type kwargs: `dict`
-        :return: None
         """
         raise NotImplementedError
 
-    def get_classifier(self):
+    def get_classifier(self) -> "Classifier":
         """
-        Train the model.
+        Return the classifier trained via adversarial training.
 
-        :param x: Training data.
-        :type x: `np.ndarray`
-        :param y: Labels for the training data.
-        :type y: `np.ndarray`
-        :param kwargs: Other parameters.
-        :type kwargs: `dict`
-        :return: None
+        :return: The classifier.
         """
         return self._classifier

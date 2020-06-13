@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from copy import deepcopy
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -31,6 +32,9 @@ from sklearn.model_selection import train_test_split
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import segment_by_class, performance_diff
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -42,42 +46,43 @@ class ProvenanceDefense(PoisonFilteringDefence):
     | Paper link: https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=8473440
     """
 
-    defence_params = ["classifier", "x_train", "y_train", "p_train", "x_val", "y_val", "eps", "perf_func", "pp_valid"]
+    defence_params = [
+        "classifier",
+        "x_train",
+        "y_train",
+        "p_train",
+        "x_val",
+        "y_val",
+        "eps",
+        "perf_func",
+        "pp_valid",
+    ]
 
     def __init__(
         self,
-        classifier,
-        x_train,
-        y_train,
-        p_train,
-        x_val=None,
-        y_val=None,
-        eps=0.2,
-        perf_func="accuracy",
-        pp_valid=0.2,
+        classifier: "Classifier",
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        p_train: np.ndarray,
+        x_val: Optional[np.ndarray] = None,
+        y_val: Optional[np.ndarray] = None,
+        eps: float = 0.2,
+        perf_func: str = "accuracy",
+        pp_valid: float = 0.2,
         **kwargs
-    ):
+    ) -> None:
         """
         Create an :class:`.ProvenanceDefense` object with the provided classifier.
 
         :param classifier: Model evaluated for poison.
-        :type classifier: :class:`art.estimators.classification.classifier.ClassifierMixin`
         :param x_train: dataset used to train the classifier.
-        :type x_train: `np.ndarray`
         :param y_train: labels used to train the classifier.
-        :type y_train: `np.ndarray`
-        :param p_train: provenance features for each training data point as one hot vectors
-        :type p_train: `np.ndarray`
-        :param x_val: validation data for defense (optional)
-        :type x_val: `np.ndarray`
-        :param y_val: validation labels for defense (optional)
-        :type y_val: `np.ndarray`
-        :param eps: threshold for performance shift in suspicious data
-        :type eps: `float`
-        :param perf_func: performance function used to evaluate effectiveness of defense
-        :type eps: `str` or `callable`
-        :param pp_valid: The percent of training data to use as validation data (for defense without validation data)
-        :type eps: `str` or `callable`
+        :param p_train: provenance features for each training data point as one hot vectors.
+        :param x_val: Validation data for defense.
+        :param y_val: Validation labels for defense.
+        :param eps: Threshold for performance shift in suspicious data.
+        :param perf_func: performance function used to evaluate effectiveness of defense.
+        :param pp_valid: The percent of training data to use as validation data (for defense without validation data).
         """
         super(ProvenanceDefense, self).__init__(classifier, x_train, y_train)
         self.p_train = p_train
@@ -87,24 +92,21 @@ class ProvenanceDefense(PoisonFilteringDefence):
         self.eps = eps
         self.perf_func = perf_func
         self.pp_valid = pp_valid
-        self.assigned_clean_by_device = []
-        self.is_clean_by_device = []
-        self.errors_by_device = []
+        self.assigned_clean_by_device: List[np.ndarray] = []
+        self.is_clean_by_device: List[np.ndarray] = []
+        self.errors_by_device: Optional[np.ndarray] = None
         self.evaluator = GroundTruthEvaluator()
-        self.is_clean_lst = []
-        self.set_params(**kwargs)
+        self.is_clean_lst: Optional[np.ndarray] = None
+        self._check_params()
 
-    def evaluate_defence(self, is_clean, **kwargs):
+    def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         """
         Returns confusion matrix.
 
         :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous.
-        :type is_clean: :class `np.ndarray`
         :param kwargs: A dictionary of defence-specific parameters.
-        :type kwargs: `dict`
         :return: JSON object with confusion matrix.
-        :rtype: `jsonObject`
         """
         if is_clean is None or is_clean.size == 0:
             raise ValueError("is_clean was not provided while invoking evaluate_defence.")
@@ -119,12 +121,11 @@ class ProvenanceDefense(PoisonFilteringDefence):
         )
         return conf_matrix_json
 
-    def detect_poison(self, **kwargs):
+    def detect_poison(self, **kwargs) -> Tuple[dict, np.ndarray]:
         """
         Returns poison detected and a report.
 
         :param kwargs: A dictionary of detection-specific parameters.
-        :type kwargs: `dict`
         :return: (report, is_clean_lst):
                 where a report is a dict object that contains information specified by the provenance detection method
                 where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
@@ -148,20 +149,18 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         return report, self.is_clean_lst
 
-    def detect_poison_partially_trusted(self, **kwargs):
+    def detect_poison_partially_trusted(self, **kwargs) -> Dict[int, float]:
         """
         Detect poison given trusted validation data
 
         :return: dictionary where keys are suspected poisonous device indices and values are performance differences
-        :rtype: `dict`
         """
         self.set_params(**kwargs)
 
         if self.x_val is None or self.y_val is None:
-            raise ValueError("Trusted data unavailable")
+            raise ValueError("Trusted data unavailable.")
 
         suspected = {}
-
         unfiltered_data = np.copy(self.x_train)
         unfiltered_labels = np.copy(self.y_train)
 
@@ -176,7 +175,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
             filtered_model.fit(filtered_data, filtered_labels)
 
             var_w = performance_diff(
-                filtered_model, unfiltered_model, self.x_val, self.y_val, perf_function=self.perf_func
+                filtered_model, unfiltered_model, self.x_val, self.y_val, perf_function=self.perf_func,
             )
             if self.eps < var_w:
                 suspected[device_idx] = var_w
@@ -185,18 +184,16 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         return suspected
 
-    def detect_poison_untrusted(self, **kwargs):
+    def detect_poison_untrusted(self, **kwargs) -> Dict[int, float]:
         """
         Detect poison given no trusted validation data
 
         :return: dictionary where keys are suspected poisonous device indices and values are performance differences
-        :rtype: `dict`
         """
         self.set_params(**kwargs)
 
         suspected = {}
-
-        train_data, valid_data, train_labels, valid_labels, train_prov, valid_prov = train_test_split(
+        (train_data, valid_data, train_labels, valid_labels, train_prov, valid_prov,) = train_test_split(
             self.x_train, self.y_train, self.p_train, test_size=self.pp_valid
         )
 
@@ -231,17 +228,14 @@ class ProvenanceDefense(PoisonFilteringDefence):
         return suspected
 
     @staticmethod
-    def filter_input(data, labels, segment):
+    def filter_input(data: np.ndarray, labels: np.ndarray, segment: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Return the data and labels that are not part of a specified segment
 
-        :param data: The data to segment
-        :type data: `np.ndarray`
+        :param data: The data to segment.
         :param labels: The corresponding labels to segment
-        :type labels: `np.ndarray`
         :param segment:
-        :return: tuple of (filtered_data, filtered_labels)
-        :rtype: (`np.ndarray`, `np.ndarray`)
+        :return: Tuple of (filtered_data, filtered_labels).
         """
         filter_mask = np.array([np.isin(data[i, :], segment, invert=True).any() for i in range(data.shape[0])])
         filtered_data = data[filter_mask]
@@ -249,24 +243,15 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
         return filtered_data, filtered_labels
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-        If a parameter is not provided, it takes its default value.
-        """
-        # Save defence-specific parameters
-        super(ProvenanceDefense, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.eps < 0:
-            raise ValueError("Value of epsilon must be at least 0")
+            raise ValueError("Value of epsilon must be at least 0.")
 
         if self.pp_valid < 0:
-            raise ValueError("Value of pp_valid must be at least 0")
+            raise ValueError("Value of pp_valid must be at least 0.")
 
         if len(self.x_train) != len(self.y_train):
-            raise ValueError("x_train and y_train do not match in shape")
+            raise ValueError("x_train and y_train do not match in shape.")
 
         if len(self.x_train) != len(self.p_train):
-            raise ValueError("Provenance features do not match data")
-
-        return True
+            raise ValueError("Provenance features do not match data.")

@@ -26,6 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
@@ -35,6 +36,9 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_n
     ProjectedGradientDescentCommon,
 )
 from art.utils import compute_success, random_sphere
+
+if TYPE_CHECKING:
+    import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
@@ -51,40 +55,31 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     def __init__(
         self,
         estimator,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        max_iter=100,
-        targeted=False,
-        num_random_init=0,
-        batch_size=32,
-        random_eps=False,
+        norm: int = np.inf,
+        eps: float = 0.3,
+        eps_step: float = 0.1,
+        max_iter: int = 100,
+        targeted: bool = False,
+        num_random_init: int = 0,
+        batch_size: int = 32,
+        random_eps: bool = False,
     ):
         """
         Create a :class:`.ProjectedGradientDescentTensorFlowV2` instance.
 
         :param estimator: An trained estimator.
-        :type estimator: :class:`.BaseEstimator`
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
-        :type norm: `int`
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
                            suggests this for FGSM based training to generalize across different epsilons. eps_step is
                            modified to preserve the ratio of eps / eps_step. The effectiveness of this method with PGD
                            is untested (https://arxiv.org/pdf/1611.01236.pdf).
-        :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type targeted: `bool`
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
-        :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
         if (
             hasattr(estimator, "preprocessing")
@@ -110,23 +105,20 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             random_eps=random_eps,
         )
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `np.ndarray`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         # Check whether random eps is enabled
         self._random_eps()
@@ -197,46 +189,38 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return adv_x_best
 
-    def _generate_batch(self, x, targets, mask):
+    def _generate_batch(self, x: "tf.Tensor", targets: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
         """
         Generate a batch of adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `tensorflow.Tensor`
         :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-        :type targets: `tensorflow.Tensor`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :type mask: `tensorflow.Tensor`
         :return: Adversarial examples.
-        :rtype: `tensorflow.Tensor`
         """
         adv_x = x
         for i_max_iter in range(self.max_iter):
-            adv_x = self._compute(
+            adv_x = self._compute_tf(
                 adv_x, x, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x
 
-    def _compute_perturbation(self, x, y, mask):
+    def _compute_perturbation(self, x: "tf.Tensor", y: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
         """
         Compute perturbations.
 
         :param x: Current adversarial examples.
-        :type x: `tensorflow.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `tensorflow.Tensor`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :type mask: `tensorflow.Tensor`
         :return: Perturbations.
-        :rtype: `tensorflow.Tensor`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -263,53 +247,50 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         else:
             return grad * mask
 
-    def _apply_perturbation(self, x, perturbation, eps_step):
+    def _apply_perturbation(self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: float) -> "tf.Tensor":
         """
         Apply perturbation on examples.
 
         :param x: Current adversarial examples.
-        :type x: `tensorflow.Tensor`
         :param perturbation: Current perturbations.
-        :type perturbation: `tensorflow.Tensor`
         :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :return: Adversarial examples.
-        :rtype: `tensorflow.Tensor`
         """
         x = x + eps_step * perturbation
 
-        if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+        if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
             x = tf.clip_by_value(x, clip_min, clip_max)
 
         return x
 
-    def _compute(self, x, x_init, y, mask, eps, eps_step, random_init):
+    def _compute_tf(
+        self,
+        x: "tf.Tensor",
+        x_init: "tf.Tensor",
+        y: "tf.Tensor",
+        mask: "tf.Tensor",
+        eps: float,
+        eps_step: float,
+        random_init: bool,
+    ) -> "tf.Tensor":
         """
         Compute adversarial examples for one iteration.
 
         :param x: Current adversarial examples.
-        :type x: `tensorflow.Tensor`
         :param x_init: An array with the original inputs.
-        :type x_init: `tensorflow.Tensor`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `tensorflow.Tensor`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
-        :type mask: `tensorflow.Tensor`
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :param random_init: Random initialisation within the epsilon ball. For random_init=False starting at the
                             original input.
-        :type random_init: `bool`
         :return: Adversarial examples.
-        :rtype: `tensorflow.Tensor`
         """
         if random_init:
             n = x.shape[0]
@@ -322,7 +303,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
             x_adv = x + random_perturbation
 
-            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
+            if self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = tf.clip_by_value(x_adv, clip_min, clip_max)
 
@@ -344,18 +325,14 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         return x_adv
 
     @staticmethod
-    def _projection(values, eps, norm_p):
+    def _projection(values: "tf.Tensor", eps: float, norm_p: int) -> "tf.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
         :param values: Values to clip.
-        :type values: `tensorflow.Tensor`
         :param eps: Maximum norm allowed.
-        :type eps: `float`
         :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
-        :type norm_p: `int`
         :return: Values of `values` after projection.
-        :rtype: `tensorflow.Tensor`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8

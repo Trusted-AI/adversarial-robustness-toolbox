@@ -23,12 +23,19 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
-from art.config import ART_NUMPY_DTYPE
+
+if TYPE_CHECKING:
+    import torch
+
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
@@ -43,59 +50,45 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
     def __init__(
         self,
-        model,
-        loss,
-        input_shape,
-        nb_classes,
-        optimizer=None,
-        channels_first=True,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
-        device_type="gpu",
-        sample_size=32,
-        scale=0.1,
-        alpha=0.001,
+        model: "torch.nn.Module",
+        loss: "torch.nn.modules.loss._Loss",
+        input_shape: Tuple[int, ...],
+        nb_classes: int,
+        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        channels_first: bool = True,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        device_type: str = "gpu",
+        sample_size: int = 32,
+        scale: float = 0.1,
+        alpha: float = 0.001,
     ):
         """
         Create a randomized smoothing classifier.
 
         :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
                output should be preferred where possible to ensure attack efficiency.
-        :type model: `torch.nn.Module`
         :param loss: The loss function for which to compute gradients for training. The target label must be raw
                categorical, i.e. not converted to one-hot encoding.
-        :type loss: `torch.nn.modules.loss._Loss`
         :param input_shape: The shape of one input instance.
-        :type input_shape: `tuple`
         :param nb_classes: The number of classes of the model.
-        :type nb_classes: `int`
         :param optimizer: The optimizer used to train the classifier.
-        :type optimizer: `torch.optim.Optimizer`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
-        :type device_type: `string`
-        :param sample_size: Number of samples for smoothing
-        :type sample_size: `int`
+        :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
-        :type scale: `float`
-        :param alpha: The failure probability of smoothing
-        :type alpha: `float`
+        :param alpha: The failure probability of smoothing.
         """
         super().__init__(
             model=model,
@@ -114,11 +107,11 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
             alpha=alpha,
         )
 
-    def _predict_classifier(self, x, batch_size):
+    def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.predict(self, x=x, batch_size=batch_size)
 
-    def _fit_classifier(self, x, y, batch_size, nb_epochs, **kwargs):
+    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         x = x.astype(ART_NUMPY_DTYPE)
         return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
@@ -157,19 +150,16 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         """
         return RandomizedSmoothingMixin.predict(self, x, batch_size=128, **kwargs)
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
         :param sampling: True if loss gradients should be determined with Monte Carlo sampling.
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         import torch
 
@@ -189,25 +179,19 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
             # Convert the labels to Tensors
             labels_t = torch.from_numpy(y_preprocessed).to(self._device)
-
             inputs_repeat_t = inputs_t.repeat_interleave(self.sample_size, 0)
 
             noise = torch.randn_like(inputs_repeat_t, device=self._device) * self.scale
-
             inputs_noise_t = inputs_repeat_t + noise
-
-            inputs_noise_t.clamp(self.clip_values[0], self.clip_values[1])
+            if self.clip_values is not None:
+                inputs_noise_t.clamp(self.clip_values[0], self.clip_values[1])
 
             model_outputs = self._model(inputs_noise_t)[-1]
-
             softmax = torch.nn.functional.softmax(model_outputs, dim=1)
-
             average_softmax = (
                 softmax.reshape(-1, self.sample_size, model_outputs.shape[-1]).mean(1, keepdim=True).squeeze(1)
             )
-
             log_softmax = torch.log(average_softmax.clamp(min=1e-20))
-
             loss = torch.nn.functional.nll_loss(log_softmax, labels_t)
 
             # Clean gradients
@@ -215,7 +199,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
             # Compute gradients
             loss.backward()
-            gradients = inputs_t.grad.cpu().numpy().copy()
+            gradients = inputs_t.grad.cpu().numpy().copy()  # type: ignore
             gradients = self._apply_preprocessing_gradient(x, gradients)
             assert gradients.shape == x.shape
 
@@ -224,20 +208,17 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
         return gradients
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `list`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError

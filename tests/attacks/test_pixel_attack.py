@@ -137,7 +137,7 @@ class TestPixelAttack(TestBase):
 
         for es in [0, 1]:
             df = PixelAttack(classifier, th=64, es=es, targeted=targeted)
-            x_test_adv = df.generate(x_test_original, targets, maxiter=1)
+            x_test_adv = df.generate(x_test_original, targets, max_iter=1)
 
             self.assertFalse((x_test == x_test_adv).all())
             self.assertFalse((0.0 == x_test_adv).all())

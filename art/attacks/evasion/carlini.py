@@ -27,15 +27,24 @@ attack objective.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, Tuple
 
 import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierGradients,
+)
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, tanh_to_original, original_to_tanh
+from art.utils import (
+    compute_success,
+    get_labels_np_array,
+    tanh_to_original,
+    original_to_tanh,
+)
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -62,67 +71,54 @@ class CarliniL2Method(EvasionAttack):
         "max_doubling",
         "batch_size",
     ]
-
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
         self,
-        classifier,
-        confidence=0.0,
-        targeted=False,
-        learning_rate=0.01,
-        binary_search_steps=10,
-        max_iter=10,
-        initial_const=0.01,
-        max_halving=5,
-        max_doubling=5,
-        batch_size=1,
-    ):
+        classifier: ClassifierGradients,
+        confidence: float = 0.0,
+        targeted: bool = False,
+        learning_rate: float = 0.01,
+        binary_search_steps: int = 10,
+        max_iter: int = 10,
+        initial_const: float = 0.01,
+        max_halving: int = 5,
+        max_doubling: int = 5,
+        batch_size: int = 1,
+    ) -> None:
         """
         Create a Carlini L_2 attack instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
-                from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
+               from the original input, but classified with higher confidence as the target class.
         :param targeted: Should the attack target one specific class.
-        :type targeted: `bool`
         :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better results
-                but are slower to converge.
-        :type learning_rate: `float`
+               but are slower to converge.
         :param binary_search_steps: Number of times to adjust constant with binary search (positive value). If
                                     `binary_search_steps` is large, then the algorithm is not very sensitive to the
                                     value of `initial_const`. Note that the values gamma=0.999999 and c_upper=10e10 are
                                     hardcoded with the same values used by the authors of the method.
-        :type binary_search_steps: `int`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param initial_const: The initial trade-off constant `c` to use to tune the relative importance of distance and
                 confidence. If `binary_search_steps` is large, the initial constant is not important, as discussed in
                 Carlini and Wagner (2016).
-        :type initial_const: `float`
         :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
         super(CarliniL2Method, self).__init__(estimator=classifier)
 
-        kwargs = {
-            "confidence": confidence,
-            "targeted": targeted,
-            "learning_rate": learning_rate,
-            "binary_search_steps": binary_search_steps,
-            "max_iter": max_iter,
-            "initial_const": initial_const,
-            "max_halving": max_halving,
-            "max_doubling": max_doubling,
-            "batch_size": batch_size,
-        }
-        assert self.set_params(**kwargs)
+        self.confidence = confidence
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.binary_search_steps = binary_search_steps
+        self.max_iter = max_iter
+        self.initial_const = initial_const
+        self.max_halving = max_halving
+        self.max_doubling = max_doubling
+        self.batch_size = batch_size
+        self._check_params()
 
         # There are internal hyperparameters:
         # Abort binary search for c if it exceeds this threshold (suggested in Carlini and Wagner (2016)):
@@ -133,27 +129,26 @@ class CarliniL2Method(EvasionAttack):
         # clear how their proposed trick ("instead of scaling by 1/2 we scale by 1/2 + eps") works in detail.
         self._tanh_smoother = 0.999999
 
-    def _loss(self, x, x_adv, target, c_weight):
+    def _loss(
+        self, x: np.ndarray, x_adv: np.ndarray, target: np.ndarray, c_weight: float
+    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the objective function value.
 
         :param x: An array with the original input.
-        :type x: `np.ndarray`
         :param x_adv: An array with the adversarial input.
-        :type x_adv: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
-        :type target: `np.ndarray`
         :param c_weight: Weight of the loss term aiming for classification as target.
-        :type c_weight: `float`
         :return: A tuple holding the current logits, l2 distance and overall loss.
-        :rtype: `(float, float, float)`
         """
         l2dist = np.sum(np.square(x - x_adv).reshape(x.shape[0], -1), axis=1)
         z_predicted = self.estimator.predict(
-            np.array(x_adv, dtype=ART_NUMPY_DTYPE), logits=True, batch_size=self.batch_size
+            np.array(x_adv, dtype=ART_NUMPY_DTYPE), logits=True, batch_size=self.batch_size,
         )
         z_target = np.sum(z_predicted * target, axis=1)
-        z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+        z_other = np.max(
+            z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1,
+        )
 
         # The following differs from the exact definition given in Carlini and Wagner (2016). There (page 9, left
         # column, last equation), the maximum is taken over Z_other - Z_target (or Z_target - Z_other respectively)
@@ -170,35 +165,36 @@ class CarliniL2Method(EvasionAttack):
 
         return z_predicted, l2dist, c_weight * loss + l2dist
 
-    def _loss_gradient(self, z_logits, target, x, x_adv, x_adv_tanh, c_weight, clip_min, clip_max):
+    def _loss_gradient(
+        self,
+        z_logits: np.ndarray,
+        target: np.ndarray,
+        x: np.ndarray,
+        x_adv: np.ndarray,
+        x_adv_tanh: np.ndarray,
+        c_weight: np.ndarray,
+        clip_min: float,
+        clip_max: float,
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function.
 
         :param z_logits: An array with the current logits.
-        :type z_logits: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
-        :type target: `np.ndarray`
         :param x: An array with the original input.
-        :type x: `np.ndarray`
         :param x_adv: An array with the adversarial input.
-        :type x_adv: `np.ndarray`
         :param x_adv_tanh: An array with the adversarial input in tanh space.
-        :type x_adv_tanh: `np.ndarray`
         :param c_weight: Weight of the loss term aiming for classification as target.
-        :type c_weight: `float`
         :param clip_min: Minimum clipping value.
-        :type clip_min: `float`
         :param clip_max: Maximum clipping value.
-        :type clip_max: `float`
         :return: An array with the gradient of the loss function.
-        :type target: `np.ndarray`
         """
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
-            i_add = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_add = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
         else:
             i_add = np.argmax(target, axis=1)
-            i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
 
         loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
         loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
@@ -215,18 +211,16 @@ class CarliniL2Method(EvasionAttack):
 
         return loss_gradient
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,). If `self.targeted` is true, then `y` represents the target labels. If `self.targeted`
                   is true, then `y_val` represents the target labels. Otherwise, the targets are the original class
                   labels.
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -265,11 +259,11 @@ class CarliniL2Method(EvasionAttack):
 
             for bss in range(self.binary_search_steps):
                 logger.debug(
-                    "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current)
+                    "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current),
                 )
                 nb_active = int(np.sum(c_current < self._c_upper_bound))
                 logger.debug(
-                    "Number of samples with c_current < _c_upper_bound: %i out of %i", nb_active, x_batch.shape[0]
+                    "Number of samples with c_current < _c_upper_bound: %i out of %i", nb_active, x_batch.shape[0],
                 )
                 if nb_active == 0:
                     break
@@ -331,9 +325,13 @@ class CarliniL2Method(EvasionAttack):
                     halving = np.zeros(x_batch.shape[0])
 
                     for i_halve in range(self.max_halving):
-                        logger.debug("Perform halving iteration %i out of %i", i_halve, self.max_halving)
+                        logger.debug(
+                            "Perform halving iteration %i out of %i", i_halve, self.max_halving,
+                        )
                         do_halving = loss[active] >= prev_loss[active]
-                        logger.debug("Halving to be performed on %i samples", int(np.sum(do_halving)))
+                        logger.debug(
+                            "Halving to be performed on %i samples", int(np.sum(do_halving)),
+                        )
                         if np.sum(do_halving) == 0:
                             break
                         active_and_do_halving = active.copy()
@@ -366,9 +364,13 @@ class CarliniL2Method(EvasionAttack):
                     # if no halving was actually required, double the learning rate as long as this
                     # decreases the loss:
                     for i_double in range(self.max_doubling):
-                        logger.debug("Perform doubling iteration %i out of %i", i_double, self.max_doubling)
+                        logger.debug(
+                            "Perform doubling iteration %i out of %i", i_double, self.max_doubling,
+                        )
                         do_doubling = (halving[active] == 1) & (loss[active] <= best_loss[active])
-                        logger.debug("Doubling to be performed on %i samples", int(np.sum(do_doubling)))
+                        logger.debug(
+                            "Doubling to be performed on %i samples", int(np.sum(do_doubling)),
+                        )
                         if np.sum(do_doubling) == 0:
                             break
                         active_and_do_doubling = active.copy()
@@ -397,7 +399,9 @@ class CarliniL2Method(EvasionAttack):
                     learning_rate[halving == 1] /= 2
 
                     update_adv = best_lr[active] > 0
-                    logger.debug("Number of adversarial samples to be finally updated: %i", int(np.sum(update_adv)))
+                    logger.debug(
+                        "Number of adversarial samples to be finally updated: %i", int(np.sum(update_adv)),
+                    )
 
                     if np.sum(update_adv) > 0:
                         active_and_update_adv = active.copy()
@@ -452,35 +456,7 @@ class CarliniL2Method(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
-               from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
-        :param targeted: Should the attack target one specific class
-        :type targeted: `bool`
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
-               slower to converge.
-        :type learning_rate: `float`
-        :param binary_search_steps: number of times to adjust constant with binary search (positive value)
-        :type binary_search_steps: `int`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param initial_const: (optional float, positive) The initial trade-off constant c to use to tune the relative
-               importance of distance and confidence. If binary_search_steps is large,
-               the initial constant is not important. The default value 1e-4 is suggested in Carlini and Wagner (2016).
-        :type initial_const: `float`
-        :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
-        :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(CarliniL2Method, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.binary_search_steps, (int, np.int)) or self.binary_search_steps < 0:
             raise ValueError("The number of binary search steps must be a non-negative integer.")
 
@@ -495,8 +471,6 @@ class CarliniL2Method(EvasionAttack):
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
-
-        return True
 
 
 class CarliniLInfMethod(EvasionAttack):
@@ -515,80 +489,64 @@ class CarliniLInfMethod(EvasionAttack):
         "eps",
         "batch_size",
     ]
-
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
         self,
-        classifier,
-        confidence=0.0,
-        targeted=False,
-        learning_rate=0.01,
-        max_iter=10,
-        max_halving=5,
-        max_doubling=5,
-        eps=0.3,
-        batch_size=128,
-    ):
+        classifier: ClassifierGradients,
+        confidence: float = 0.0,
+        targeted: bool = False,
+        learning_rate: float = 0.01,
+        max_iter: int = 10,
+        max_halving: int = 5,
+        max_doubling: int = 5,
+        eps: float = 0.3,
+        batch_size: int = 128,
+    ) -> None:
         """
         Create a Carlini L_Inf attack instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
                 from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
         :param targeted: Should the attack target one specific class.
-        :type targeted: `bool`
         :param learning_rate: The initial learning rate for the attack algorithm. Smaller values produce better
                 results but are slower to converge.
-        :type learning_rate: `float`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
         :param eps: An upper bound for the L_0 norm of the adversarial perturbation.
-        :type eps: `float`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
-        :param expectation: An expectation over transformations to be applied when computing
-                            classifier gradients and predictions.
-        :type expectation: :class:`.ExpectationOverTransformations`
         """
-        super(CarliniLInfMethod, self).__init__(classifier)
+        super(CarliniLInfMethod, self).__init__(estimator=classifier)
 
-        kwargs = {
-            "confidence": confidence,
-            "targeted": targeted,
-            "learning_rate": learning_rate,
-            "max_iter": max_iter,
-            "max_halving": max_halving,
-            "max_doubling": max_doubling,
-            "eps": eps,
-            "batch_size": batch_size,
-        }
-        assert self.set_params(**kwargs)
+        self.confidence = confidence
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.max_iter = max_iter
+        self.max_halving = max_halving
+        self.max_doubling = max_doubling
+        self.eps = eps
+        self.batch_size = batch_size
+        self._check_params()
 
         # There is one internal hyperparameter:
         # Smooth arguments of arctanh by multiplying with this constant to avoid division by zero:
         self._tanh_smoother = 0.999999
 
-    def _loss(self, x_adv, target):
+    def _loss(self, x_adv: np.ndarray, target: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute the objective function value.
 
         :param x_adv: An array with the adversarial input.
-        :type x_adv: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
-        :type target: `np.ndarray`
         :return: A tuple holding the current predictions and overall loss.
-        :rtype: `(float, float)`
         """
         z_predicted = self.estimator.predict(np.array(x_adv, dtype=ART_NUMPY_DTYPE), batch_size=self.batch_size)
         z_target = np.sum(z_predicted * target, axis=1)
-        z_other = np.max(z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+        z_other = np.max(
+            z_predicted * (1 - target) + (np.min(z_predicted, axis=1) - 1)[:, np.newaxis] * target, axis=1,
+        )
 
         if self.targeted:
             # if targeted, optimize for making the target class most likely
@@ -599,31 +557,32 @@ class CarliniLInfMethod(EvasionAttack):
 
         return z_predicted, loss
 
-    def _loss_gradient(self, z_logits, target, x_adv, x_adv_tanh, clip_min, clip_max):  # lgtm [py/similar-function]
+    def _loss_gradient(
+        self,
+        z_logits: np.ndarray,
+        target: np.ndarray,
+        x_adv: np.ndarray,
+        x_adv_tanh: np.ndarray,
+        clip_min: np.ndarray,
+        clip_max: np.ndarray,
+    ) -> np.ndarray:  # lgtm [py/similar-function]
         """
         Compute the gradient of the loss function.
 
         :param z_logits: An array with the current predictions.
-        :type z_logits: `np.ndarray`
         :param target: An array with the target class (one-hot encoded).
-        :type target: `np.ndarray`
         :param x_adv: An array with the adversarial input.
-        :type x_adv: `np.ndarray`
         :param x_adv_tanh: An array with the adversarial input in tanh space.
-        :type x_adv_tanh: `np.ndarray`
         :param clip_min: Minimum clipping values.
-        :type clip_min: `np.ndarray`
         :param clip_max: Maximum clipping values.
-        :type clip_max: `np.ndarray`
         :return: An array with the gradient of the loss function.
-        :type target: `np.ndarray`
         """
         if self.targeted:
             i_sub = np.argmax(target, axis=1)
-            i_add = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_add = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
         else:
             i_add = np.argmax(target, axis=1)
-            i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1)
+            i_sub = np.argmax(z_logits * (1 - target) + (np.min(z_logits, axis=1) - 1)[:, np.newaxis] * target, axis=1,)
 
         loss_gradient = self.estimator.class_gradient(x_adv, label=i_add)
         loss_gradient -= self.estimator.class_gradient(x_adv, label=i_sub)
@@ -634,18 +593,15 @@ class CarliniLInfMethod(EvasionAttack):
 
         return loss_gradient
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,). If `self.targeted` is true, then `y_val` represents the target labels. Otherwise, the
                   targets are the original class labels.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
         x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -691,7 +647,9 @@ class CarliniLInfMethod(EvasionAttack):
                 logger.debug("Iteration step %i out of %i", i_iter, self.max_iter)
                 logger.debug("Average Loss: %f", np.mean(loss))
 
-                logger.debug("Successful attack samples: %i out of %i", int(np.sum(attack_success)), x_batch.shape[0])
+                logger.debug(
+                    "Successful attack samples: %i out of %i", int(np.sum(attack_success)), x_batch.shape[0],
+                )
 
                 # only continue optimization for those samples where attack hasn't succeeded yet:
                 active = ~attack_success
@@ -717,7 +675,9 @@ class CarliniLInfMethod(EvasionAttack):
                 halving = np.zeros(x_batch.shape[0])
 
                 for i_halve in range(self.max_halving):
-                    logger.debug("Perform halving iteration %i out of %i", i_halve, self.max_halving)
+                    logger.debug(
+                        "Perform halving iteration %i out of %i", i_halve, self.max_halving,
+                    )
                     do_halving = loss[active] >= prev_loss[active]
                     logger.debug("Halving to be performed on %i samples", int(np.sum(do_halving)))
                     if np.sum(do_halving) == 0:
@@ -733,7 +693,7 @@ class CarliniLInfMethod(EvasionAttack):
                     new_x_adv_batch_tanh = adv_10 + lr_mult * perturbation_tanh[do_halving]
 
                     new_x_adv_batch = tanh_to_original(
-                        new_x_adv_batch_tanh, clip_min[active_and_do_halving], clip_max[active_and_do_halving]
+                        new_x_adv_batch_tanh, clip_min[active_and_do_halving], clip_max[active_and_do_halving],
                     )
                     _, loss[active_and_do_halving] = self._loss(new_x_adv_batch, y_batch[active_and_do_halving])
                     logger.debug("New Average Loss: %f", np.mean(loss))
@@ -750,9 +710,13 @@ class CarliniLInfMethod(EvasionAttack):
                 # if no halving was actually required, double the learning rate as long as this
                 # decreases the loss:
                 for i_double in range(self.max_doubling):
-                    logger.debug("Perform doubling iteration %i out of %i", i_double, self.max_doubling)
+                    logger.debug(
+                        "Perform doubling iteration %i out of %i", i_double, self.max_doubling,
+                    )
                     do_doubling = (halving[active] == 1) & (loss[active] <= best_loss[active])
-                    logger.debug("Doubling to be performed on %i samples", int(np.sum(do_doubling)))
+                    logger.debug(
+                        "Doubling to be performed on %i samples", int(np.sum(do_doubling)),
+                    )
                     if np.sum(do_doubling) == 0:
                         break
                     active_and_do_doubling = active.copy()
@@ -766,7 +730,7 @@ class CarliniLInfMethod(EvasionAttack):
                     x_adv15 = x_adv_batch_tanh[active_and_do_doubling]
                     new_x_adv_batch_tanh = x_adv15 + lr_mult * perturbation_tanh[do_doubling]
                     new_x_adv_batch = tanh_to_original(
-                        new_x_adv_batch_tanh, clip_min[active_and_do_doubling], clip_max[active_and_do_doubling]
+                        new_x_adv_batch_tanh, clip_min[active_and_do_doubling], clip_max[active_and_do_doubling],
                     )
                     _, loss[active_and_do_doubling] = self._loss(new_x_adv_batch, y_batch[active_and_do_doubling])
                     logger.debug("New Average Loss: %f", np.mean(loss))
@@ -776,7 +740,9 @@ class CarliniLInfMethod(EvasionAttack):
                 learning_rate[halving == 1] /= 2
 
                 update_adv = best_lr[active] > 0
-                logger.debug("Number of adversarial samples to be finally updated: %i", int(np.sum(update_adv)))
+                logger.debug(
+                    "Number of adversarial samples to be finally updated: %i", int(np.sum(update_adv)),
+                )
 
                 if np.sum(update_adv) > 0:
                     active_and_update_adv = active.copy()
@@ -792,8 +758,8 @@ class CarliniLInfMethod(EvasionAttack):
                         clip_min[active_and_update_adv],
                         clip_max[active_and_update_adv],
                     )
-                    z_logits[active_and_update_adv], loss[active_and_update_adv] = self._loss(
-                        x_adv_batch[active_and_update_adv], y_batch[active_and_update_adv]
+                    (z_logits[active_and_update_adv], loss[active_and_update_adv],) = self._loss(
+                        x_adv_batch[active_and_update_adv], y_batch[active_and_update_adv],
                     )
                     attack_success = loss <= 0
 
@@ -808,31 +774,7 @@ class CarliniLInfMethod(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs):
-        """Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param confidence: Confidence of adversarial examples: a higher value produces examples that are farther away,
-               from the original input, but classified with higher confidence as the target class.
-        :type confidence: `float`
-        :param targeted: Should the attack target one specific class
-        :type targeted: `bool`
-        :param learning_rate: The learning rate for the attack algorithm. Smaller values produce better results but are
-               slower to converge.
-        :type learning_rate: `float`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param max_halving: Maximum number of halving steps in the line search optimization.
-        :type max_halving: `int`
-        :param max_doubling: Maximum number of doubling steps in the line search optimization.
-        :type max_doubling: `int`
-        :param eps: An upper bound for the L_0 norm of the adversarial perturbation.
-        :type eps: `float`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(CarliniLInfMethod, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.eps <= 0:
             raise ValueError("The eps parameter must be strictly positive.")
 
@@ -847,5 +789,3 @@ class CarliniLInfMethod(EvasionAttack):
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
-
-        return True

@@ -23,12 +23,13 @@ This module implements model inversion attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassGradientsMixin, Classifier
 from art.estimators.estimator import BaseEstimator
 from art.attacks import InferenceAttack
 from art.utils import get_labels_np_array, check_and_transform_label_format
@@ -56,51 +57,47 @@ class MIFace(InferenceAttack):
 
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
-    def __init__(self, classifier, max_iter=10000, window_length=100, threshold=0.99, learning_rate=0.1, batch_size=1):
+    def __init__(
+        self,
+        classifier: Classifier,
+        max_iter: int = 10000,
+        window_length: int = 100,
+        threshold: float = 0.99,
+        learning_rate: float = 0.1,
+        batch_size: int = 1,
+    ):
         """
         Create an MIFace attack instance.
 
         :param classifier: Target classifier.
-        :type classifier: :class:`.Classifier`
         :param max_iter: Maximum number of gradient descent iterations for the model inversion.
-        :type max_iter: `int`
         :param window_length: Length of window for checking whether descent should be aborted.
-        :type window_length: `int`
         :param threshold: Threshold for descent stopping criterion.
-        :type threshold: `float`
         :param batch_size: Size of internal batches.
-        :type batch_size: `int`
         """
         super().__init__(estimator=classifier)
 
-        params = {
-            "max_iter": max_iter,
-            "window_length": window_length,
-            "threshold": threshold,
-            "learning_rate": learning_rate,
-            "batch_size": batch_size,
-        }
-        self.set_params(**params)
+        self.max_iter = max_iter
+        self.window_length = window_length
+        self.threshold = threshold
+        self.learning_rate = learning_rate
+        self.batch_size = batch_size
+        self._check_params()
 
-    def infer(self, x, y=None, **kwargs):
+    def infer(self, x: Optional[np.ndarray], y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Extract a thieved classifier.
 
         :param x: An array with the initial input to the victim classifier. If `None`, then initial input will be
                   initialized as zero array.
-        :type x: `np.ndarray` or `None`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray` or `None`
         :return: The inferred training samples.
-        :rtype: `np.ndarray`
         """
-
         if x is None and y is None:
-            return None
+            raise ValueError("Either `x` or `y` should be provided.")
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
-
         if x is None:
             x = np.zeros((len(y),) + self.estimator.input_shape)
 

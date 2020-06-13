@@ -25,6 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 from copy import deepcopy
+from typing import Callable, List, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.model_selection import train_test_split
@@ -32,6 +33,9 @@ from sklearn.model_selection import train_test_split
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import performance_diff
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -44,45 +48,43 @@ class RONIDefense(PoisonFilteringDefence):
     | Textbook link: https://people.eecs.berkeley.edu/~adj/publications/paper-files/EECS-2010-140.pdf
     """
 
-    defence_params = ["classifier", "x_train", "y_train", "x_val", "y_val", "perf_func", "calibrated", "eps"]
+    defence_params = [
+        "classifier",
+        "x_train",
+        "y_train",
+        "x_val",
+        "y_val",
+        "perf_func",
+        "calibrated",
+        "eps",
+    ]
 
     def __init__(
         self,
-        classifier,
-        x_train,
-        y_train,
-        x_val,
-        y_val,
-        perf_func="accuracy",
-        pp_cal=0.2,
-        pp_quiz=0.2,
-        calibrated=True,
-        eps=0.1,
-        **kwargs
+        classifier: "Classifier",
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_val: np.ndarray,
+        y_val: np.ndarray,
+        perf_func: Union[str, Callable] = "accuracy",
+        pp_cal: float = 0.2,
+        pp_quiz: float = 0.2,
+        calibrated: bool = True,
+        eps: float = 0.1,
     ):
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
 
         :param classifier: Model evaluated for poison.
-        :type classifier: :class:`art.estimators.classification.Classifier`
-        :param x_train: dataset used to train the classifier.
-        :type x_train: `np.ndarray`
-        :param y_train: labels used to train the classifier.
-        :type y_train: `np.ndarray`
-        :param x_val: trusted data points
-        :type x_val: `np.ndarray`
-        :param y_train: trusted data labels
-        :type y_train: `np.ndarray`
-        :param perf_func: performance function to use
-        :type perf_func: `str` or `callable`
-        :param pp_cal: percent of training data used for calibration
-        :type pp_cal: `float`
-        :param pp_quiz: percent of training data used for quiz set
-        :type pp_quiz: `float`
-        :param calibrated: True if using the calibrated form of RONI
-        :type calibrated: `bool`
-        :param eps: performance threshold if using uncalibrated RONI
-        :type eps: `float`
+        :param x_train: Dataset used to train the classifier.
+        :param y_train: Labels used to train the classifier.
+        :param x_val: Trusted data points.
+        :param y_train: Trusted data labels.
+        :param perf_func: Performance function to use.
+        :param pp_cal: Percent of training data used for calibration.
+        :param pp_quiz: Percent of training data used for quiz set.
+        :param calibrated: True if using the calibrated form of RONI.
+        :param eps: performance threshold if using uncalibrated RONI.
         """
         super(RONIDefense, self).__init__(classifier, x_train, y_train)
         n_points = len(x_train)
@@ -97,20 +99,17 @@ class RONIDefense(PoisonFilteringDefence):
         self.x_val = x_val
         self.y_val = y_val
         self.perf_func = perf_func
-        self.is_clean_lst = list()
-        self.set_params(**kwargs)
+        self.is_clean_lst: List[int] = list()
+        self._check_params()
 
-    def evaluate_defence(self, is_clean, **kwargs):
+    def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         """
         Returns confusion matrix.
 
         :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous.
-        :type is_clean: :class `np.ndarray`
         :param kwargs: A dictionary of defence-specific parameters.
-        :type kwargs: `dict`
         :return: JSON object with confusion matrix.
-        :rtype: `jsonObject`
         """
         self.set_params(**kwargs)
         if len(self.is_clean_lst) == 0:
@@ -122,17 +121,15 @@ class RONIDefense(PoisonFilteringDefence):
         _, conf_matrix = self.evaluator.analyze_correctness([self.is_clean_lst], [is_clean])
         return conf_matrix
 
-    def detect_poison(self, **kwargs):
+    def detect_poison(self, **kwargs) -> Tuple[dict, List[int]]:
         """
         Returns poison detected and a report.
 
         :param kwargs: A dictionary of detection-specific parameters.
-        :type kwargs: `dict`
         :return: (report, is_clean_lst):
                 where a report is a dict object that contains information specified by the provenance detection method
                 where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i]
                 there is clean and is_clean_lst[i]=0, means that x_train[i] was classified as poison.
-        :rtype: `tuple`
         """
         self.set_params(**kwargs)
 
@@ -154,7 +151,7 @@ class RONIDefense(PoisonFilteringDefence):
             after_classifier = deepcopy(before_classifier)
             after_classifier.fit(x=np.vstack([x_trusted, x_i]), y=np.vstack([y_trusted, y_i]))
             acc_shift = performance_diff(
-                before_classifier, after_classifier, self.x_quiz, self.y_quiz, perf_function=self.perf_func
+                before_classifier, after_classifier, self.x_quiz, self.y_quiz, perf_function=self.perf_func,
             )
             # print(acc_shift, median, std_dev)
             if self.is_suspicious(before_classifier, acc_shift):
@@ -167,16 +164,13 @@ class RONIDefense(PoisonFilteringDefence):
 
         return report, self.is_clean_lst
 
-    def is_suspicious(self, before_classifier, perf_shift):
+    def is_suspicious(self, before_classifier: "Classifier", perf_shift: float) -> bool:
         """
         Returns True if a given performance shift is suspicious
 
-        :param before_classifier: The classifier without untrusted data
-        :type before_classifier: `art.estimators.classification.classifier.ClassifierMixin`
-        :param perf_shift: a shift in performance
-        :type perf_shift: `float`
-        :return: True if a given performance shift is suspicious. False otherwise.
-        :rtype: `bool`
+        :param before_classifier: The classifier without untrusted data.
+        :param perf_shift: A shift in performance.
+        :return: True if a given performance shift is suspicious, false otherwise.
         """
         if self.calibrated:
             median, std_dev = self.get_calibration_info(before_classifier)
@@ -184,15 +178,13 @@ class RONIDefense(PoisonFilteringDefence):
 
         return perf_shift < -self.eps
 
-    def get_calibration_info(self, before_classifier):
+    def get_calibration_info(self, before_classifier: "Classifier") -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculate the median and standard deviation of the accuracy shifts caused
         by the calibration set.
 
-        :param before_classifier: The classifier trained without suspicious point
-        :type before_classifier: `art.estimators.classification.classifier.ClassifierMixin`
-        :return: a tuple consisting of (`median`, `std_dev`)
-        :rtype: (`float`, `float`)
+        :param before_classifier: The classifier trained without suspicious point.
+        :return: A tuple consisting of `(median, std_dev)`.
         """
         accs = []
 
@@ -201,23 +193,15 @@ class RONIDefense(PoisonFilteringDefence):
             after_classifier.fit(x=np.vstack([self.x_val, x_c]), y=np.vstack([self.y_val, y_c]))
             accs.append(
                 performance_diff(
-                    before_classifier, after_classifier, self.x_quiz, self.y_quiz, perf_function=self.perf_func
+                    before_classifier, after_classifier, self.x_quiz, self.y_quiz, perf_function=self.perf_func,
                 )
             )
 
         return np.median(accs), np.std(accs)
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-        If a parameter is not provided, it takes its default value.
-        """
-        super(RONIDefense, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if len(self.x_train) != len(self.y_train):
-            raise ValueError("x_train and y_train do not match shape")
+            raise ValueError("`x_train` and `y_train` do not match shape.")
 
         if self.eps < 0:
-            raise ValueError("Value of epsilon must be at least 0")
-
-        return True
+            raise ValueError("Value of `eps` must be at least 0.")
