@@ -28,6 +28,12 @@ docs_require = [
     "sphinx_rtd_theme",
     "sphinx-autodoc-annotation",
     "sphinx-autodoc-typehints",
+    "matplotlib",
+    "numpy",
+    "scipy",
+    "six==1.13.0",
+    "scikit-learn==0.22.1",
+    "Pillow>=6.0.0",
 ]
 
 

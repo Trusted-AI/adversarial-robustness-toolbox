@@ -29,7 +29,6 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import numpy as np
-import tensorflow as tf
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -120,6 +119,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        import tensorflow as tf
+
         # Check whether random eps is enabled
         self._random_eps()
 
@@ -222,6 +223,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                      perturbed.
         :return: Perturbations.
         """
+        import tensorflow as tf
+
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
@@ -256,6 +259,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
+        import tensorflow as tf
+
         x = x + eps_step * perturbation
 
         if self.estimator.clip_values is not None:
@@ -292,6 +297,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                             original input.
         :return: Adversarial examples.
         """
+        import tensorflow as tf
+
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
@@ -334,6 +341,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
         :return: Values of `values` after projection.
         """
+        import tensorflow as tf
+
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
         values_tmp = tf.reshape(values, (values.shape[0], -1))
