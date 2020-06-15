@@ -26,6 +26,8 @@ install_requires = [
 docs_require = [
     "sphinx >= 1.4",
     "sphinx_rtd_theme",
+    "sphinx-autodoc-annotation",
+    "sphinx-autodoc-typehints",
 ]
 
 
