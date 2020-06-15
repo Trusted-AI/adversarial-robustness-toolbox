@@ -131,48 +131,39 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Load model
         if model is None:
-            if is_training:
-                groundtruth_boxes_list = [
-                    tf.placeholder(
-                        dtype=tf.float32,
-                        shape=(None, 4),
-                        name="groundtruth_boxes_{}".format(i)
-                    ) for i in range(images.shape[0])
-                ]
+            self._groundtruth_boxes_list = [
+                tf.placeholder(
+                    dtype=tf.float32,
+                    shape=(None, 4),
+                    name="groundtruth_boxes_{}".format(i)
+                ) for i in range(images.shape[0])
+            ]
 
-                groundtruth_classes_list = [
-                    tf.placeholder(
-                        dtype=tf.int32,
-                        shape=(None,),
-                        name="groundtruth_classes_{}".format(i)
-                    ) for i in range(images.shape[0])
-                ]
+            self._groundtruth_classes_list = [
+                tf.placeholder(
+                    dtype=tf.int32,
+                    shape=(None,),
+                    name="groundtruth_classes_{}".format(i)
+                ) for i in range(images.shape[0])
+            ]
 
-                groundtruth_weights_list = [
-                    tf.placeholder(
-                        dtype=tf.float32,
-                        shape=(None,),
-                        name="groundtruth_weights_{}".format(i)
-                    ) for i in range(images.shape[0])
-                ]
+            self._groundtruth_weights_list = [
+                tf.placeholder(
+                    dtype=tf.float32,
+                    shape=(None,),
+                    name="groundtruth_weights_{}".format(i)
+                ) for i in range(images.shape[0])
+            ]
 
-                self._predictions, self._losses, self._detections = self._load_model(
-                    filename=filename,
-                    url=url,
-                    images=images,
-                    is_training=is_training,
-                    groundtruth_boxes_list=groundtruth_boxes_list,
-                    groundtruth_classes_list=groundtruth_classes_list,
-                    groundtruth_weights_list=groundtruth_weights_list
-                )
-
-            else:
-                self._predictions, self._losses, self._detections = self._load_model(
-                    filename=filename,
-                    url=url,
-                    images=images,
-                    is_training=is_training
-                )
+            self._predictions, self._losses, self._detections = self._load_model(
+                filename=filename,
+                url=url,
+                images=images,
+                is_training=is_training,
+                groundtruth_boxes_list=self._groundtruth_boxes_list,
+                groundtruth_classes_list=self._groundtruth_classes_list,
+                groundtruth_weights_list=self._groundtruth_weights_list
+            )
 
         else:
             self._predictions, self._losses, self._detections = model[0], model[1], model[2]
@@ -319,10 +310,48 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 "This object detector was loaded in training mode and therefore not support loss_gradient."
             )
 
+        # Only do loss_gradient if model is internally loaded
+        if not (
+            hasattr(self, '_groundtruth_boxes_list') and
+            hasattr(self, '_groundtruth_classes_list') and
+            hasattr(self, '_groundtruth_weights_list')
+        ):
+            raise NotImplementedError(
+                "This object detector was loaded externally and therefore not support loss_gradient."
+            )
+
         # Apply preprocessing
-        x, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
+        # Get the loss gradients graph
+        if not hasattr(self, '_loss_grads'):
+            loss = None
+            for loss_name in self._attack_losses:
+                if loss is None:
+                    loss = self._losses[loss_name]
+                else:
+                    loss = loss + self._losses[loss_name]
 
+            self._loss_grads = tf.gradients(loss, self._images)[0]
+
+        # Create feed_dict
+        feed_dict = {self._images: x_preprocessed}
+
+        for (placeholder, value) in zip(self._groundtruth_boxes_list, y['groundtruth_boxes_list']):
+            feed_dict[placeholder] = value
+
+        for (placeholder, value) in zip(self._groundtruth_classes_list, y['groundtruth_classes_list']):
+            feed_dict[placeholder] = value
+
+        for (placeholder, value) in zip(self._groundtruth_weights_list, y['groundtruth_weights_list']):
+            feed_dict[placeholder] = value
+
+        # Compute gradients
+        grads = self._sess.run(self._loss_grads, feed_dict=feed_dict)
+        grads = self._apply_preprocessing_gradient(x, grads)
+        assert grads.shape == x.shape
+
+        return grads
 
     def predict(self, x, batch_size=128, **kwargs):
         """
