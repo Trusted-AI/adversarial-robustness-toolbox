@@ -7,7 +7,19 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evation tests"; fi
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
+
+mlFrameworkList=("tensorflow" "scikitlearn")
+for mlFramework in "${mlFrameworkList[@]}"; do
+  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
+done
+
+pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
+
+pytest -q tests/utils --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
 #Only classifier tests need to be run for each frameworks
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
@@ -25,6 +37,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_decision_tree_attack.py" \
                     "tests/attacks/test_deepfool.py" \
                     "tests/attacks/test_elastic_net.py" \
+                    "tests/attacks/test_feature_collision.py" \
                     "tests/attacks/test_functionally_equivalent_extraction.py" \
                     "tests/attacks/test_hclu.py" \
                     "tests/attacks/test_input_filter.py" \
@@ -40,21 +53,23 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_virtual_adversarial.py" \
                     "tests/attacks/test_zoo.py" \
                     "tests/attacks/test_pixel_attack.py" \
-                    "tests/attacks/test_threshold_attack.py" )
+                    "tests/attacks/test_threshold_attack.py" \
+                    "tests/attacks/test_wasserstein.py" )
 
-declare -a classifiers=("tests/classifiers/test_blackbox.py" \
-                        "tests/classifiers/test_catboost.py" \
-                        "tests/classifiers/test_classifier.py" \
-                        "tests/classifiers/test_detector_classifier.py" \
-                        "tests/classifiers/test_ensemble.py" \
-                        "tests/classifiers/test_GPy.py" \
-                        "tests/classifiers/test_input_filter.py" \
-                        "tests/classifiers/test_keras_tf.py" \
-                        "tests/classifiers/test_lightgbm.py" \
-                        "tests/classifiers/test_mxnet.py" \
-                        "tests/classifiers/test_pytorch.py" \
-                        "tests/classifiers/test_scikitlearn.py" \
-                        "tests/classifiers/test_xgboost.py" )
+declare -a classifiers=("tests/estimators/certification/test_randomized_smoothing.py" \
+                        "tests/estimators/classification/test_blackbox.py" \
+                        "tests/estimators/classification/test_catboost.py" \
+                        "tests/estimators/classification/test_classifier.py" \
+                        "tests/estimators/classification/test_detector_classifier.py" \
+                        "tests/estimators/classification/test_ensemble.py" \
+                        "tests/estimators/classification/test_GPy.py" \
+                        "tests/estimators/classification/test_input_filter.py" \
+                        "tests/estimators/classification/test_keras_tf.py" \
+                        "tests/estimators/classification/test_lightgbm.py" \
+                        "tests/estimators/classification/test_mxnet.py" \
+                        "tests/estimators/classification/test_pytorch.py" \
+                        "tests/estimators/classification/test_scikitlearn.py" \
+                        "tests/estimators/classification/test_xgboost.py" )
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_adversarial_trainer_madry_pgd.py" \
@@ -64,30 +79,27 @@ declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_gaussian_augmentation.py" \
                      "tests/defences/test_gaussian_noise.py" \
                      "tests/defences/test_high_confidence.py" \
-                     "tests/defences/test_jpeg_compression.py" \
                      "tests/defences/test_label_smoothing.py" \
                      "tests/defences/test_pixel_defend.py" \
                      "tests/defences/test_reverse_sigmoid.py" \
                      "tests/defences/test_rounded.py" \
-                     "tests/defences/test_spatial_smoothing.py" \
                      "tests/defences/test_thermometer_encoding.py" \
-                     "tests/defences/test_variance_minimization.py" )
+                     "tests/defences/test_variance_minimization.py" \
+                     "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
+                     "tests/defences/detector/evasion/test_detector.py" \
+                     "tests/defences/detector/poison/test_activation_defence.py" \
+                     "tests/defences/detector/poison/test_clustering_analyzer.py" \
+                     "tests/defences/detector/poison/test_ground_truth_evaluator.py" \
+                     "tests/defences/detector/poison/test_provenance_defence.py" \
+                     "tests/defences/detector/poison/test_roni.py" \
+                     "tests/defences/detector/poison/test_spectral_signature_defense.py" )
 
-declare -a detection=("tests/detection/subsetscanning/test_detector.py" \
-                      "tests/detection/test_detector.py" )
-
-declare -a metrics=("tests/metrics/test_metrics.py" \
+declare -a metrics=("tests/metrics/test_gradient_check.py" \
+                    "tests/metrics/test_metrics.py" \
                     "tests/metrics/test_verification_decision_trees.py" )
-
-declare -a poison_detection=("tests/poison_detection/test_activation_defence.py" \
-                             "tests/poison_detection/test_clustering_analyzer.py" \
-                             "tests/poison_detection/test_ground_truth_evaluator.py" \
-                             "tests/poison_detection/test_provenance_defence.py" \
-                             "tests/poison_detection/test_roni.py" )
 
 declare -a wrappers=("tests/wrappers/test_expectation.py" \
                      "tests/wrappers/test_query_efficient_bb.py" \
-                     "tests/wrappers/test_randomized_smoothing.py" \
                      "tests/wrappers/test_wrapper.py" )
 
 declare -a art=("tests/test_data_generators.py" \
@@ -97,9 +109,7 @@ declare -a art=("tests/test_data_generators.py" \
 tests_modules=("attacks" \
                "classifiers" \
                "defences" \
-               "detection" \
                "metrics" \
-               "poison_detection" \
                "wrappers" \
                "art" )
 

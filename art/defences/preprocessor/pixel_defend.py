@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -28,11 +28,16 @@ manifold.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
+from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import ClassifierNeuralNetwork
 
 logger = logging.getLogger(__name__)
 
@@ -50,60 +55,69 @@ class PixelDefend(Preprocessor):
 
     params = ["clip_values", "eps", "pixel_cnn"]
 
-    def __init__(self, clip_values=(0, 1), eps=16, pixel_cnn=None, apply_fit=False, apply_predict=True):
+    def __init__(
+        self,
+        clip_values: CLIP_VALUES_TYPE = (0.0, 1.0),
+        eps: int = 16,
+        pixel_cnn: Optional["ClassifierNeuralNetwork"] = None,
+        batch_size: int = 128,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
+    ) -> None:
         """
         Create an instance of pixel defence.
 
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
         :param eps: Defense parameter 0-255.
-        :type eps: `int`
         :param pixel_cnn: Pre-trained PixelCNN model.
-        :type pixel_cnn: :class:`.Classifier`
         """
         super(PixelDefend, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        if pixel_cnn is not None:
-            self.set_params(clip_values=clip_values, eps=eps, pixel_cnn=pixel_cnn)
-        else:
-            self.set_params(clip_values=clip_values, eps=eps)
+        self.clip_values = clip_values
+        self.eps = eps
+        self.batch_size = batch_size
+        self.pixel_cnn = pixel_cnn
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, x, y=None):
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply pixel defence to sample `x`.
 
         :param x: Sample to defense with shape `(batch_size, width, height, depth)`. `x` values are expected to be in
                 the data range [0, 1].
-        :type x: `np.ndarrray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :type y: `np.ndarray`
         :return: Purified sample.
-        :rtype: `np.ndarray`
         """
         # Convert into `uint8`
         original_shape = x.shape
-        probs = self.pixel_cnn.get_activations(x, layer=-1).reshape((x.shape[0], -1, 256))
+        if self.pixel_cnn is not None:
+            probs = self.pixel_cnn.get_activations(x, layer=-1, batch_size=self.batch_size).reshape(
+                (x.shape[0], -1, 256)
+            )
+        else:
+            raise ValueError("No model received for `pixel_cnn`.")
+
         x = x * 255
         x = x.astype("uint8")
         x = x.reshape((x.shape[0], -1))
 
         # Start defence one image at a time
-        for i, x_i in enumerate(x):
+        for i, x_i in enumerate(tqdm(x, desc="PixelDefend")):
             for feat_index in range(x.shape[1]):
                 # Setup the search space
                 f_probs = probs[i, feat_index, :]
-                f_range = range(int(max(x_i[feat_index] - self.eps, 0)), int(min(x_i[feat_index] + self.eps, 255) + 1))
+                f_range = range(int(max(x_i[feat_index] - self.eps, 0)), int(min(x_i[feat_index] + self.eps, 255) + 1),)
 
                 # Look in the search space
                 best_prob = -1
@@ -128,36 +142,22 @@ class PixelDefend(Preprocessor):
 
         return x, y
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         raise grad
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        :param eps: Defense parameter 0-255.
-        :type eps: `int`
-        :param pixel_cnn: Pre-trained PixelCNN model.
-        :type pixel_cnn: :class:`.Classifier`
-        """
-        from art.classifiers import Classifier
-
-        # Save defence-specific parameters
-        super(PixelDefend, self).set_params(**kwargs)
+    def _check_params(self) -> None:
+        from art.estimators.classification.classifier import ClassifierMixin
 
         if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
-        if hasattr(self, "pixel_cnn") and not isinstance(self.pixel_cnn, Classifier):
+        if hasattr(self, "pixel_cnn") and not isinstance(self.pixel_cnn, ClassifierMixin):
             raise TypeError("PixelCNN model must be of type Classifier.")
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():
@@ -169,4 +169,5 @@ class PixelDefend(Preprocessor):
         if self.clip_values[1] != 1:
             raise ValueError("`clip_values` max value must be 1.")
 
-        return True
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")

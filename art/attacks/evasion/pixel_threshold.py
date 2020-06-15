@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -26,8 +26,10 @@ The Pixel Attack is a generalisation of One Pixel Attack.
     https://arxiv.org/abs/1906.06026
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+
 import logging
 from itertools import product
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -41,9 +43,15 @@ from scipy._lib.six import xrange, string_types
 from scipy._lib._util import check_random_state
 from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
+from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -60,42 +68,38 @@ class PixelThreshold(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + ["th", "es", "targeted", "verbose"]
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
-    def __init__(self, classifier, th, es, targeted, verbose):
+    def __init__(self, classifier: "Classifier", th: Optional[int], es: int, targeted: bool, verbose: bool,) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
+
         :param classifier: A trained classifier.
-        :type  classifier: :class:`.Classifier`
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
-        :type  th: `int` or `none`
-        :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy
-        :type  es: `int`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type  targeted: `bool`
-        :param verbose: Indicates whether to print verbose messages of ES used
-        :type  verbose: `bool`
+        :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
+        :param verbose: Indicates whether to print verbose messages of ES used.
         """
-        super(PixelThreshold, self).__init__(classifier)
+        super(PixelThreshold, self).__init__(estimator=classifier)
+
         self._project = True
-        kwargs = {"th": th, "es": es, "targeted": targeted, "verbose": verbose}
-        PixelThreshold.set_params(self, **kwargs)
         self.type_attack = -1
+        self.th = th
+        self.es = es
+        self.targeted = targeted
+        self.verbose = verbose
+        PixelThreshold._check_params(self)
 
-        if self.classifier.channel_index == 1:
-            self.img_rows = self.classifier.input_shape[-2]
-            self.img_cols = self.classifier.input_shape[-1]
-            self.img_channels = self.classifier.input_shape[-3]
+        if self.estimator.channels_first:
+            self.img_rows = self.estimator.input_shape[-2]
+            self.img_cols = self.estimator.input_shape[-1]
+            self.img_channels = self.estimator.input_shape[-3]
         else:
-            self.img_rows = self.classifier.input_shape[-3]
-            self.img_cols = self.classifier.input_shape[-2]
-            self.img_channels = self.classifier.input_shape[-1]
+            self.img_rows = self.estimator.input_shape[-3]
+            self.img_cols = self.estimator.input_shape[-2]
+            self.img_channels = self.estimator.input_shape[-1]
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-        """
-        super(PixelThreshold, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.th is not None:
             if self.th <= 0:
                 raise ValueError("The perturbation size `eps` has to be positive.")
@@ -106,30 +110,24 @@ class PixelThreshold(EvasionAttack):
         if not isinstance(self.verbose, bool):
             raise ValueError("The flag `verbose` has to be of type bool.")
 
-        return True
-
-    def generate(self, x, y=None, maxiter=100, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `np.ndarray`
-        :param maxiter: Maximum number of optimisation iterations.
-        :param maxiter: `int`
+        :param max_iter: Maximum number of optimisation iterations.
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
-        y = check_and_transform_label_format(y, self.classifier.nb_classes(), return_one_hot=False)
+        y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
 
         if y is None:
             if self.targeted:
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
-            y = np.argmax(self.classifier.predict(x), axis=1)
+            y = np.argmax(self.estimator.predict(x), axis=1)
         else:
             if len(y.shape) > 1:
                 y = np.argmax(y, axis=1)
@@ -141,14 +139,14 @@ class PixelThreshold(EvasionAttack):
             x = x * 255.0
 
         adv_x_best = []
-        for image, target_class in zip(x, y):
+        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold"):
             if self.th is None:
                 self.min_th = 127
                 start, end = 1, 127
                 while True:
-                    image_result = []
+                    image_result: Union[List[np.ndarray], np.ndarray] = []
                     threshold = (start + end) // 2
-                    success, trial_image_result = self._attack(image, target_class, threshold, maxiter)
+                    success, trial_image_result = self._attack(image, target_class, threshold, max_iter)
                     if image_result or success:
                         image_result = trial_image_result
                     if success:
@@ -158,9 +156,12 @@ class PixelThreshold(EvasionAttack):
                     if success:
                         self.min_th = threshold
                     if end < start:
+                        if isinstance(image_result, list) and not image_result:
+                            success = False
+                            image_result = image
                         break
             else:
-                success, image_result = self._attack(image, target_class, self.th, maxiter)
+                success, image_result = self._attack(image, target_class, self.th, max_iter)
             adv_x_best += [image_result]
 
         adv_x_best = np.array(adv_x_best)
@@ -169,24 +170,56 @@ class PixelThreshold(EvasionAttack):
             x = x / 255.0
 
         if y is not None:
-            y = to_categorical(y, self.classifier.nb_classes())
+            y = to_categorical(y, self.estimator.nb_classes)
 
         logger.info(
-            "Success rate of Attack: %.2f%%", 100 * compute_success(self.classifier, x, y, adv_x_best, self.targeted, 1)
+            "Success rate of Attack: %.2f%%", 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, 1),
         )
         return adv_x_best
+
+    def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
+        """
+        Define the bounds for the image `img` within the limits `limit`.
+        """
+
+        def bound_limit(value):
+            return np.clip(value - limit, 0, 255), np.clip(value + limit, 0, 255)
+
+        minbounds, maxbounds, bounds, initial = [], [], [], []
+
+        for i, j, k in product(range(img.shape[-3]), range(img.shape[-2]), range(img.shape[-1])):
+            temp = img[i, j, k]
+            initial += [temp]
+            bound = bound_limit(temp)
+            if self.es == 0:
+                minbounds += [bound[0]]
+                maxbounds += [bound[1]]
+            else:
+                bounds += [bound]
+        if self.es == 0:
+            bounds = [minbounds, maxbounds]
+
+        return bounds, initial
+
+    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
+        """
+        Perturbs the given image `img` with the given perturbation `x`.
+        """
+        return img
 
     def _attack_success(self, adv_x, x, target_class):
         """
         Checks whether the given perturbation `adv_x` for the image `img` is successful.
         """
-        predicted_class = np.argmax(self.classifier.predict(self._perturb_image(adv_x, x))[0])
+        predicted_class = np.argmax(self.estimator.predict(self._perturb_image(adv_x, x))[0])
         return bool(
             (self.targeted and predicted_class == target_class)
             or (not self.targeted and predicted_class != target_class)
         )
 
-    def _attack(self, image, target_class, limit, maxiter=100):
+    def _attack(
+        self, image: np.ndarray, target_class: np.ndarray, limit: int, max_iter: int
+    ) -> Tuple[bool, np.ndarray]:
         """
         Attack the given image `image` with the threshold `limit` for the `target_class` which is true label for
         untargeted attack and targeted label for targeted attack.
@@ -194,11 +227,10 @@ class PixelThreshold(EvasionAttack):
         bounds, initial = self._get_bounds(image, limit)
 
         def predict_fn(x):
-            predictions = self.classifier.predict(self._perturb_image(x, image))[:, target_class]
+            predictions = self.estimator.predict(self._perturb_image(x, image))[:, target_class]
             return predictions if not self.targeted else 1 - predictions
 
         def callback_fn(x, convergence=None):
-
             if self.es == 0:
                 if self._attack_success(x.result[0], image, target_class):
                     raise Exception("Attack Completed :) Earlier than expected")
@@ -206,10 +238,9 @@ class PixelThreshold(EvasionAttack):
                 return self._attack_success(x, image, target_class)
 
         if self.es == 0:
-
             from cma import CMAOptions
-            opts = CMAOptions()
 
+            opts = CMAOptions()
             if not self.verbose:
                 opts.set("verbose", -9)
                 opts.set("verb_disp", 40000)
@@ -224,6 +255,7 @@ class PixelThreshold(EvasionAttack):
                 std = limit
 
             from cma import CMAEvolutionStrategy
+
             strategy = CMAEvolutionStrategy(initial, std / 4, opts)
 
             try:
@@ -238,14 +270,12 @@ class PixelThreshold(EvasionAttack):
                     print(exception)
 
             adv_x = strategy.result[0]
-
         else:
-
             strategy = differential_evolution(
                 predict_fn,
                 bounds,
                 disp=self.verbose,
-                maxiter=1,
+                maxiter=max_iter,
                 popsize=max(1, 400 // len(bounds)),
                 recombination=1,
                 atol=-1,
@@ -272,25 +302,27 @@ class PixelAttack(PixelThreshold):
         https://arxiv.org/abs/1906.06026
     """
 
-    def __init__(self, classifier, th=None, es=0, targeted=False, verbose=False):
+    def __init__(
+        self,
+        classifier: "Classifier",
+        th: Optional[int] = None,
+        es: int = 0,
+        targeted: bool = False,
+        verbose: bool = False,
+    ) -> None:
         """
         Create a :class:`.PixelAttack` instance.
 
         :param classifier: A trained classifier.
-        :type  classifier: :class:`.Classifier`
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
-        :type  th: `int` or `none`
-        :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy
-        :type  es: `int`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type  targeted: `bool`
-        :param verbose: Indicates whether to print verbose messages of ES used
-        :type  verbose: `bool`
+        :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
+        :param verbose: Indicates whether to print verbose messages of ES used.
         """
         super(PixelAttack, self).__init__(classifier, th, es, targeted, verbose)
         self.type_attack = 0
 
-    def _perturb_image(self, x, img):
+    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
         """
         Perturbs the given image `img` with the given perturbation `x`.
         """
@@ -301,22 +333,23 @@ class PixelAttack(PixelThreshold):
         for adv, image in zip(x, imgs):
             for pixel in np.split(adv, len(adv) // (2 + self.img_channels)):
                 x_pos, y_pos, *rgb = pixel
-                if self.classifier.channel_index == 3:
+                if not self.estimator.channels_first:
                     image[x_pos % self.img_rows, y_pos % self.img_cols] = rgb
                 else:
                     image[:, x_pos % self.img_rows, y_pos % self.img_cols] = rgb
         return imgs
 
-    def _get_bounds(self, img, limit):
+    def _get_bounds(self, img: np.ndarray, limit) -> Tuple[List[list], list]:
         """
         Define the bounds for the image `img` within the limits `limit`.
         """
-        initial = []
+        initial: List[np.ndarray] = []
+        bounds: List[List[int]]
         if self.es == 0:
             for count, (i, j) in enumerate(product(range(self.img_rows), range(self.img_cols))):
                 initial += [i, j]
                 for k in range(self.img_channels):
-                    if self.classifier.channel_index == 3:
+                    if not self.estimator.channels_first:
                         initial += [img[i, j, k]]
                     else:
                         initial += [img[k, i, j]]
@@ -335,9 +368,9 @@ class PixelAttack(PixelThreshold):
             max_bounds = max_bounds * limit
             bounds = [min_bounds, max_bounds]
         else:
-            bounds = [(0, self.img_rows), (0, self.img_cols)]
+            bounds = [[0, self.img_rows], [0, self.img_cols]]
             for _ in range(self.img_channels):
-                bounds += [(0, 255)]
+                bounds += [[0, 255]]
             bounds = bounds * limit
         return bounds, initial
 
@@ -350,62 +383,40 @@ class ThresholdAttack(PixelThreshold):
         https://arxiv.org/abs/1906.06026
     """
 
-    def __init__(self, classifier, th=None, es=0, targeted=False, verbose=False):
+    def __init__(
+        self,
+        classifier: "Classifier",
+        th: Optional[int] = None,
+        es: int = 0,
+        targeted: bool = False,
+        verbose: bool = False,
+    ) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
 
         :param classifier: A trained classifier.
-        :type  classifier: :class:`.Classifier`
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
-        :type  th: `int` or `none`
-        :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy
-        :type  es: `int`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type  targeted: `bool`
-        :param verbose: Indicates whether to print verbose messages of ES used
-        :type  verbose: `bool`
+        :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
+        :param verbose: Indicates whether to print verbose messages of ES used.
         """
         super(ThresholdAttack, self).__init__(classifier, th, es, targeted, verbose)
         self.type_attack = 1
 
-    def _perturb_image(self, x, img):
+    def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
         """
         Perturbs the given image `img` with the given perturbation `x`.
         """
         if x.ndim < 2:
-            x = np.array([x])
+            x = x[None, ...]
         imgs = np.tile(img, [len(x)] + [1] * (x.ndim + 1))
         x = x.astype(int)
         for adv, image in zip(x, imgs):
             for count, (i, j, k) in enumerate(
-                product(range(image.shape[-3]), range(image.shape[-2]), range(image.shape[-1]))
+                product(range(image.shape[-3]), range(image.shape[-2]), range(image.shape[-1]),)
             ):
                 image[i, j, k] = adv[count]
         return imgs
-
-    def _get_bounds(self, img, limit):
-        """
-        Define the bounds for the image `img` within the limits `limit`.
-        """
-
-        def bound_limit(value):
-            return np.clip(value - limit, 0, 255), np.clip(value + limit, 0, 255)
-
-        minbounds, maxbounds, bounds, initial = [], [], [], []
-
-        for i, j, k in product(range(img.shape[-3]), range(img.shape[-2]), range(img.shape[-1])):
-            temp = img[i, j, k]
-            initial += [temp]
-            bound = bound_limit(temp)
-            if self.es == 0:
-                minbounds += [bound[0]]
-                maxbounds += [bound[1]]
-            else:
-                bounds += [bound]
-        if self.es == 0:
-            bounds = [minbounds, maxbounds]
-
-        return bounds, initial
 
 
 # TODO: Make the attack compatible with current version of SciPy Optimize
@@ -1133,7 +1144,7 @@ class DifferentialEvolutionSolver:
 
             if (
                 self.callback
-                and self.callback(self._scale_parameters(self.population[0]), convergence=self.tol / convergence)
+                and self.callback(self._scale_parameters(self.population[0]), convergence=self.tol / convergence,)
                 is True
             ):
                 warning_flag = True
@@ -1158,7 +1169,7 @@ class DifferentialEvolutionSolver:
         )
 
         if self.polish:
-            result = minimize(self.func, np.copy(de_result.x), method="L-BFGS-B", bounds=self.limits.T, args=self.args)
+            result = minimize(self.func, np.copy(de_result.x), method="L-BFGS-B", bounds=self.limits.T, args=self.args,)
 
             self._nfev += result.nfev
             de_result.nfev = self._nfev

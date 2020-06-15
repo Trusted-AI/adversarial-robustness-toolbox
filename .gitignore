@@ -34,7 +34,7 @@ var/
 pip-log.txt
 pip-delete-this-directory.txt
 
-# Unit test / coverage reports
+# Unit test / coverage reports / type hints
 htmlcov/
 .tox/
 .coverage
@@ -44,6 +44,7 @@ nosetests.xml
 coverage.xml
 *,cover
 .hypothesis/
+.mypy_cache
 
 # Translations
 *.mo
@@ -111,3 +112,4 @@ demo/pics/*
 # Exceptions for notebooks/
 !notebooks/*.ipynb
 !notebooks/adaptive_defence_evaluations/*.ipynb
+!notebooks/adversarial_patch/*.ipynb

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -19,8 +19,11 @@
 This module implements the abstract base class for defences that post-process classifier output.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from typing import List
 
 import abc
+
+import numpy as np
 
 
 class Postprocessor(abc.ABC):
@@ -29,79 +32,71 @@ class Postprocessor(abc.ABC):
     evaluation for loss gradients or the calculation of class gradients.
     """
 
-    params = []
+    params: List[str] = []
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Create a postprocessing object.
         """
         self._is_fitted = False
 
     @property
-    def is_fitted(self):
+    def is_fitted(self) -> bool:
         """
         Return the state of the postprocessing object.
 
         :return: `True` if the postprocessing model has been fitted (if this applies).
-        :rtype: `bool`
         """
         return self._is_fitted
 
     @property
     @abc.abstractmethod
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         """
         Property of the defence indicating if it should be applied at training time.
 
         :return: `True` if the defence should be applied when fitting a model, `False` otherwise.
-        :rtype: `bool`
         """
         raise NotImplementedError
 
     @property
     @abc.abstractmethod
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         """
         Property of the defence indicating if it should be applied at test time.
 
         :return: `True` if the defence should be applied at prediction time, `False` otherwise.
-        :rtype: `bool`
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __call__(self, preds):
+    def __call__(self, preds: np.ndarray) -> np.ndarray:
         """
         Perform model postprocessing and return postprocessed output.
 
         :param preds: model output to be postprocessed.
-        :type preds: `np.ndarray`
         :return: Postprocessed model output.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, preds, **kwargs):
+    def fit(self, preds: np.ndarray, **kwargs) -> None:
         """
         Fit the parameters of the postprocessor if it has any.
 
         :param preds: Training set to fit the postprocessor.
-        :type preds: `np.ndarray`
         :param kwargs: Other parameters.
-        :type kwargs: `dict`
-        :return: None.
         """
         raise NotImplementedError
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> None:
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :return: `True` when parsing was successful.
         """
         for key, value in kwargs.items():
             if key in self.params:
                 setattr(self, key, value)
+        self._check_params()
 
-        return True
+    def _check_params(self) -> None:
+        pass

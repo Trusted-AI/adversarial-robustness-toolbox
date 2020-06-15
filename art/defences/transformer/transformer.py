@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,6 +21,12 @@ This module implements the abstract base class for defences that transform a cla
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
+from typing import List, Optional, TYPE_CHECKING
+
+import numpy as np
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import Classifier
 
 
 class Transformer(abc.ABC):
@@ -28,73 +34,64 @@ class Transformer(abc.ABC):
     Abstract base class for transformation defences.
     """
 
-    params = list()
+    params: List[str] = list()
 
-    def __init__(self, classifier):
+    def __init__(self, classifier: "Classifier") -> None:
         """
         Create a transformation object.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         """
         self.classifier = classifier
         self._is_fitted = False
 
     @property
-    def is_fitted(self):
+    def is_fitted(self) -> bool:
         """
         Return the state of the transformation object.
 
         :return: `True` if the transformation model has been fitted (if this applies).
-        :rtype: `bool`
         """
         return self._is_fitted
 
-    def get_classifier(self):
+    def get_classifier(self) -> "Classifier":
         """
         Get the internal classifier.
 
         :return: The internal classifier.
-        :rtype: :class:`.Classifier`
         """
         return self.classifier
 
     @abc.abstractmethod
-    def __call__(self, x, transformed_classifier):
+    def __call__(self, x: np.ndarray, transformed_classifier: "Classifier") -> "Classifier":
         """
         Perform the transformation defence and return a robuster classifier.
 
         :param x: Dataset for training the transformed classifier.
-        :type x: `np.ndarray`
         :param transformed_classifier: A classifier to be transformed for increased robustness.
-        :type transformed_classifier: :class:`.Classifier`
         :return: The transformed classifier.
-        :rtype: :class:`.Classifier`
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         Fit the parameters of the transformer if it has any.
 
         :param x: Training set to fit the transformer.
-        :type x: `np.ndarray`
         :param y: Labels for the training set.
-        :type y: `np.ndarray`
         :param kwargs: Other parameters.
-        :type kwargs: `dict`
-        :return: None.
         """
         raise NotImplementedError
 
-    def set_params(self, **kwargs):
+    def set_params(self, **kwargs) -> None:
         """
         Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :return: `True` when parsing was successful.
         """
         for key, value in kwargs.items():
             if key in self.params:
                 setattr(self, key, value)
-        return True
+        self._check_params()
+
+    def _check_params(self) -> None:
+        pass

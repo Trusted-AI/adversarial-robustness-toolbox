@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -32,14 +32,12 @@ class ClassLabels(Postprocessor):
     Implementation of a postprocessor based on adding class labels to classifier output.
     """
 
-    def __init__(self, apply_fit=False, apply_predict=True):
+    def __init__(self, apply_fit: bool = False, apply_predict: bool = True) -> None:
         """
         Create a ClassLabels postprocessor.
 
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         super(ClassLabels, self).__init__()
         self._is_fitted = True
@@ -47,21 +45,19 @@ class ClassLabels(Postprocessor):
         self._apply_predict = apply_predict
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, preds):
+    def __call__(self, preds: np.ndarray) -> np.ndarray:
         """
         Perform model postprocessing and return postprocessed output.
 
         :param preds: model output to be postprocessed.
-        :type preds: `np.ndarray`
         :return: Postprocessed model output.
-        :rtype: `np.ndarray`
         """
         class_labels = np.zeros_like(preds)
         if preds.shape[1] > 1:
@@ -72,7 +68,7 @@ class ClassLabels(Postprocessor):
 
         return class_labels
 
-    def fit(self, preds, **kwargs):
+    def fit(self, preds: np.ndarray, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """

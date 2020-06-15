@@ -2,8 +2,8 @@
 ================================
 .. automodule:: art.defences.preprocessor
 
-Preprocessor
-------------
+Base Class Preprocessor
+-----------------------
 .. autoclass:: Preprocessor
    :members:
    :special-members:
@@ -20,6 +20,18 @@ Gaussian Data Augmentation
    :members:
    :special-members:
 
+InverseGAN
+----------
+.. autoclass:: InverseGAN
+   :members:
+   :special-members:
+
+DefenseGAN
+----------
+.. autoclass:: DefenseGAN
+   :members:
+   :special-members:
+
 JPEG Compression
 ----------------
 .. autoclass:: JpegCompression
@@ -32,9 +44,21 @@ Label Smoothing
    :members:
    :special-members:
 
+Mp3 Compression
+---------------
+.. autoclass:: Mp3Compression
+   :members:
+   :special-members:
+
 PixelDefend
 -----------
 .. autoclass:: PixelDefend
+   :members:
+   :special-members:
+
+Resample
+--------
+.. autoclass:: Resample
    :members:
    :special-members:
 
@@ -53,5 +77,11 @@ Thermometer Encoding
 Total Variance Minimization
 ---------------------------
 .. autoclass:: TotalVarMin
+   :members:
+   :special-members:
+
+Video Compression
+-----------------
+.. autoclass:: VideoCompression
    :members:
    :special-members:

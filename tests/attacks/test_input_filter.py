@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,9 +22,9 @@ import unittest
 import numpy as np
 import pandas as pd
 
-from art.classifiers.classifier import ClassifierGradients
-from art.attacks import ProjectedGradientDescent
-from art.classifiers import KerasClassifier
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import load_dataset, get_labels_np_array
 
 from tests.utils import get_image_classifier_tf, get_image_classifier_pt
@@ -143,7 +143,7 @@ class TestInputFilter(unittest.TestCase):
         self.assertAlmostEqual(float(np.max(np.abs(np.array(x_test_original) - np.array(x_test)))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [ClassifierGradients])
+        backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
     def test_keras_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
@@ -166,7 +166,7 @@ class TestInputFilter(unittest.TestCase):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         attack = ProjectedGradientDescent(classifier, eps=1, eps_step=0.2, max_iter=5)
         x_test_adv = attack.generate(x_test)
         self.assertFalse((np.array(x_test) == x_test_adv).all())
@@ -214,7 +214,7 @@ class TestInputFilter(unittest.TestCase):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
-        from art.classifiers.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
+        from art.estimators.classification.scikitlearn import ScikitlearnLogisticRegression, ScikitlearnSVC
 
         scikitlearn_test_cases = {
             LogisticRegression: ScikitlearnLogisticRegression,

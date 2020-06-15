@@ -10,10 +10,8 @@ exclude_lines =
     if __name__ == .__main__.:
 ignore_errors = True
 omit =
-    data/*
     docs/*
     examples/*
-    mlops/*
-    models/*
     notebooks/*
     tests/*
+    utils/*

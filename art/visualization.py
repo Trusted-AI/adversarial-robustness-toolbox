@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,24 +22,26 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import os.path
+from typing import List, Optional, TYPE_CHECKING
 
 import numpy as np
+from PIL import Image
 
 from art.config import ART_DATA_PATH
+
+if TYPE_CHECKING:
+    import matplotlib
 
 logger = logging.getLogger(__name__)
 
 
-def create_sprite(images):
+def create_sprite(images: np.ndarray) -> np.ndarray:
     """
     Creates a sprite of provided images.
 
     :param images: Images to construct the sprite.
-    :type images: `np.array`
     :return: An image array containing the sprite.
-    :rtype: `np.ndarray`
     """
-
     shape = np.shape(images)
 
     if len(shape) < 3 or len(shape) > 4:
@@ -66,15 +68,13 @@ def create_sprite(images):
     return sprite
 
 
-def convert_to_rgb(images):
+def convert_to_rgb(images: np.ndarray) -> np.ndarray:
     """
     Converts grayscale images to RGB. It changes NxHxWx1 to a NxHxWx3 array, where N is the number of figures,
     H is the high and W the width.
 
     :param images: Grayscale images of shape (NxHxWx1).
-    :type images: `np.ndarray`
     :return: Images in RGB format of shape (NxHxWx3).
-    :rtype: `np.ndarray`
     """
     dims = np.shape(images)
     if not ((len(dims) == 4 and dims[-1] == 1) or len(dims) == 3):
@@ -90,54 +90,45 @@ def convert_to_rgb(images):
     return rgb_images
 
 
-def save_image(image_array, f_name):
+def save_image(image_array: np.ndarray, f_name: str) -> None:
     """
     Saves image into a file inside `ART_DATA_PATH` with the name `f_name`.
 
-    :param image_array: Image to be saved
-    :type image_array: `np.ndarray`
-    :param f_name: File name containing extension e.g., my_img.jpg, my_img.png, my_images/my_img.png
-    :type f_name: `str`
-    :return: `None`
+    :param image_array: Image to be saved.
+    :param f_name: File name containing extension e.g., my_img.jpg, my_img.png, my_images/my_img.png.
     """
     file_name = os.path.join(ART_DATA_PATH, f_name)
     folder = os.path.split(file_name)[0]
     if not os.path.exists(folder):
         os.makedirs(folder)
 
-    from PIL import Image
-
     image = Image.fromarray(image_array)
     image.save(file_name)
     logger.info("Image saved to %s.", file_name)
 
 
-def plot_3d(points, labels, colors=None, save=True, f_name=""):
+def plot_3d(
+    points: np.ndarray, labels: List[int], colors: Optional[List[str]] = None, save: bool = True, f_name: str = "",
+) -> "matplotlib.figure.Figure":
     """
     Generates a 3-D plot in of the provided points where the labels define the color that will be used to color each
     data point. Concretely, the color of points[i] is defined by colors(labels[i]). Thus, there should be as many labels
      as colors.
 
-    :param points: arrays with 3-D coordinates of the plots to be plotted
-    :type points: `np.ndarray`
+    :param points: arrays with 3-D coordinates of the plots to be plotted.
     :param labels: array of integers that determines the color used in the plot for the data point.
         Need to start from 0 and be sequential from there on.
-    :type labels: `lst`
     :param colors: Optional argument to specify colors to be used in the plot. If provided, this array should contain
     as many colors as labels.
-    :type `lst`
     :param save:  When set to True, saves image into a file inside `ART_DATA_PATH` with the name `f_name`.
-    :type save: `bool`
-    :param f_name: Name used to save the file when save is set to True
-    :type f_name: `str`
-    :return: fig
-    :rtype: `matplotlib.figure.Figure`
+    :param f_name: Name used to save the file when save is set to True.
+    :return: A figure object.
     """
     try:
         # Disable warnings of unused import because all imports in this block are required
         # pylint: disable=W0611
-        import matplotlib
-        import matplotlib.pyplot as plt
+        import matplotlib  # lgtm [py/repeated-import]
+        import matplotlib.pyplot as plt  # lgtm [py/repeated-import]
         from mpl_toolkits import mplot3d
 
         if colors is None:

@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -24,8 +24,8 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.classifiers import KerasClassifier
-from art.defences import FeatureSqueezing
+from art.estimators.classification.keras import KerasClassifier
+from art.defences.preprocessor import FeatureSqueezing
 from art.utils import load_dataset, get_labels_np_array
 from art.wrappers.query_efficient_bb import QueryEfficientBBGradientEstimation
 
@@ -153,7 +153,7 @@ class TestQueryEfficientVectors(unittest.TestCase):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         classifier = QueryEfficientBBGradientEstimation(classifier, 20, 1 / 64.0, round_samples=1 / 255.0)
         attack = FastGradientMethod(classifier, eps=1)
         x_test_adv = attack.generate(x_test)

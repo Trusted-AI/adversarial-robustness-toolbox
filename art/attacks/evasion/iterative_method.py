@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -24,10 +24,14 @@ FGSM. This is a white-box attack.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import TYPE_CHECKING
 
 import numpy as np
 
-from art.attacks.evasion.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import ClassifierGradients
 
 logger = logging.getLogger(__name__)
 
@@ -41,25 +45,27 @@ class BasicIterativeMethod(ProjectedGradientDescent):
 
     attack_params = ProjectedGradientDescent.attack_params
 
-    def __init__(self, classifier, eps=0.3, eps_step=0.1, max_iter=100, targeted=False, batch_size=1):
+    def __init__(
+        self,
+        estimator: "ClassifierGradients",
+        eps: float = 0.3,
+        eps_step: float = 0.1,
+        max_iter: int = 100,
+        targeted: bool = False,
+        batch_size: int = 32,
+    ) -> None:
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
-        :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param estimator: A trained classifier.
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type targeted: `bool`
+        :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
         super(BasicIterativeMethod, self).__init__(
-            classifier,
+            estimator=estimator,
             norm=np.inf,
             eps=eps,
             eps_step=eps_step,

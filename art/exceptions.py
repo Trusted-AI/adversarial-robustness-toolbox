@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -18,14 +18,15 @@
 """
 Module containing ART's exceptions.
 """
+from typing import List
 
 
-class ClassifierError(TypeError):
+class EstimatorError(TypeError):
     """
-    Basic exception for errors raised by unexpected classifier types.
+    Basic exception for errors raised by unexpected estimator types.
     """
 
-    def __init__(self, this_class, class_expected_list, classifier_given):
+    def __init__(self, this_class, class_expected_list: List[str], classifier_given) -> None:
         self.this_class = this_class
         self.class_expected_list = class_expected_list
         self.classifier_given = classifier_given
@@ -38,8 +39,14 @@ class ClassifierError(TypeError):
                 classes_expected_message += " and {0}".format(class_expected)
 
         self.message = (
-            "For {0} classifier must be an instance of {1}, "
-            "the provided classifier is instance of {2}.".format(
-                this_class.__name__, classes_expected_message, classifier_given
+            "{0} requires an estimator derived from {1}, "
+            "the provided classifier is an instance of {2} and is derived from {3}.".format(
+                this_class.__name__,
+                classes_expected_message,
+                type(classifier_given),
+                classifier_given.__class__.__bases__,
             )
         )
+
+    def __str__(self) -> str:
+        return self.message

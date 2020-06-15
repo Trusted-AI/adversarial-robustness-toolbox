@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -20,8 +20,9 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import unittest
 import numpy as np
-from art.attacks import FastGradientMethod
-from art.classifiers import KerasClassifier
+
+from art.attacks.evasion.fast_gradient import FastGradientMethod
+from art.estimators.classification.keras import KerasClassifier
 from art.utils import load_dataset, random_targets
 from art.wrappers.expectation import ExpectationOverTransformations
 from tests.utils import master_seed, get_image_classifier_kr, get_tabular_classifier_kr
@@ -60,8 +61,8 @@ class TestExpectationOverTransformations(unittest.TestCase):
         (_, _), (x_test, y_test) = self.mnist
 
         # First attack (without EoT):
-        fgsm = FastGradientMethod(classifier=krc, targeted=True)
-        params = {"y": random_targets(y_test, krc.nb_classes())}
+        fgsm = FastGradientMethod(estimator=krc, targeted=True)
+        params = {"y": random_targets(y_test, krc.nb_classes)}
         x_test_adv = fgsm.generate(x_test, **params)
 
         # Second attack (with EoT):
@@ -73,7 +74,7 @@ class TestExpectationOverTransformations(unittest.TestCase):
                 yield t
 
         eot = ExpectationOverTransformations(classifier=krc, sample_size=1, transformation=transformation)
-        fgsm_with_eot = FastGradientMethod(classifier=eot, targeted=True)
+        fgsm_with_eot = FastGradientMethod(estimator=eot, targeted=True)
         x_test_adv_with_eot = fgsm_with_eot.generate(x_test, **params)
 
         self.assertTrue((np.abs(x_test_adv - x_test_adv_with_eot) < 0.001).all())
@@ -126,7 +127,7 @@ class TestExpectationVectors(unittest.TestCase):
                 yield t
 
         # Recreate a classifier without clip values
-        classifier = KerasClassifier(model=classifier._model, use_logits=False, channel_index=1)
+        classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
         classifier = ExpectationOverTransformations(classifier, sample_size=1, transformation=transformation)
         attack = FastGradientMethod(classifier, eps=1)
         x_test_adv = attack.generate(x_test)
