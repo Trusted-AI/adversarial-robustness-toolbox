@@ -19,7 +19,7 @@
 This module implements the task specific estimator for Faster R-CNN in TensorFlow.
 """
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
@@ -34,7 +34,7 @@ from art.utils import get_file
 from art.config import ART_DATA_PATH
 
 if TYPE_CHECKING:
-    import object_detection
+    from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
     from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.client.session import Session
 
@@ -53,7 +53,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        model: Optional["object_detection.meta_architectures.faster_rcnn_meta_arch.FasterRCNNMetaArch"] = None,
+        model: Optional["FasterRCNNMetaArch"] = None,
         filename: Optional[str] = None,
         url: Optional[str] = None,
         images: Optional["Tensor"] = None,
@@ -76,7 +76,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         Initialization of an instance TensorFlowFasterRCNN.
 
         :param model: A TensorFlow Faster-RCNN model. The output that can be computed from the model includes a tuple
-        of (predictions, losses, detections):
+               of (predictions, losses, detections):
 
                     - predictions: a dictionary holding "raw" prediction tensors.
                     - losses: a dictionary mapping loss keys (`first_stage_localization_loss`,
@@ -200,6 +200,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 groundtruth_weights_list=self._groundtruth_weights_list
             )
 
+        # Save new attributes
         self._is_training: bool = is_training
         self._images: Optional["Tensor"] = images
         self._attack_losses: Tuple[str, ...] = attack_losses
@@ -211,15 +212,15 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
     @staticmethod
     def _load_model(
-        filename,
-        url,
-        obj_detection_model,
-        images,
-        is_training=False,
-        groundtruth_boxes_list=None,
-        groundtruth_classes_list=None,
-        groundtruth_weights_list=None
-    ):
+        filename: Optional[str] = None,
+        url: Optional[str] = None,
+        obj_detection_model: Optional["FasterRCNNMetaArch"] = None,
+        images: Optional["Tensor"] = None,
+        is_training: bool = False,
+        groundtruth_boxes_list: Optional[List["Tensor"]] = None,
+        groundtruth_classes_list: Optional[List["Tensor"]] = None,
+        groundtruth_weights_list: Optional[List["Tensor"]] = None
+    ) -> Tuple[Dict["Tensor"], Dict["Tensor"], Dict["Tensor"]]:
         """
         Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
         is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
@@ -227,26 +228,18 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         of (predictions, losses, detections).
 
         :param filename: Name of the file.
-        :type filename: `str`
         :param url: Download URL.
-        :type url: `str`
         :param images: Input samples of shape (nb_samples, height, width, nb_channels).
-        :type images: `tensorflow.Tensor`
         :param is_training: A boolean indicating whether the training version of the computation graph should be
-        constructed.
-        :type is_training: `bool`
-        :param groundtruth_boxes_list: a list of 2-D tf.float32 tensors of shape [num_boxes, 4] containing coordinates
-        of the groundtruth boxes. Groundtruth boxes are provided in [y_min, x_min, y_max, x_max] format and assumed to
-        be normalized and clipped relative to the image window with y_min <= y_max and x_min <= x_max. Only used when
-        is_training is True.
-        :type groundtruth_boxes_list: `list`
+               constructed.
+        :param groundtruth_boxes_list: a list of 2-D tf.float32 tensors of shape [num_boxes, 4] containing
+               coordinates of the groundtruth boxes. Groundtruth boxes are provided in [y_min, x_min, y_max, x_max]
+               format and assumed to be normalized and clipped relative to the image window with y_min <= y_max and
+               x_min <= x_max.
         :param groundtruth_classes_list: a list of 1-D tf.float32 tensors of shape [num_boxes] containing the class
-        targets with the zero index assumed to map to the first non-background class. Only used when is_training
-        is True.
-        :type groundtruth_classes_list: `list`
+               targets with the zero index assumed to map to the first non-background class.
         :param groundtruth_weights_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing weights for
-        groundtruth boxes. Only used when is_training is True.
-        :type groundtruth_weights_list: `list`
+               groundtruth boxes.
         :return: A tuple of (predictions, losses, detections):
 
                     - predictions: a dictionary holding "raw" prediction tensors.
@@ -255,9 +248,10 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     `second_stage_classification_loss`) to scalar tensors representing
                     corresponding loss values.
                     - detections: a dictionary containing final detection results.
-        :rtype: `tuple`
         """
         if obj_detection_model is None:
+            # If obj_detection_model is None, then we need to have parameters filename and url to download, extract
+            # and load the object detection model
             if filename is None or url is None:
                 raise ValueError(
                     "Need input parameters `filename` and `url` to download, "
