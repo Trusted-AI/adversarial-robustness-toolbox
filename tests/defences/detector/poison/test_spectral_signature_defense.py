@@ -40,6 +40,7 @@ class TestSpectralSignatureDefense(unittest.TestCase):
         x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
         cls.mnist = (x_train, y_train), (x_test, y_test), (min_, max_)
         from tests.utils import get_image_classifier_kr
+
         cls.classifier = get_image_classifier_kr()
         cls.defence = SpectralSignatureDefense(
             cls.classifier,

@@ -20,51 +20,57 @@ This module implements the classifier `XGBoostClassifier` for XGBoost models.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from copy import deepcopy
+import json
 import logging
+import pickle
+from typing import List, Optional, Union, TYPE_CHECKING
+
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator, DecisionTreeMixin
-from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.classifier import ClassifierDecisionTree
+from art.utils import to_categorical
+
+if TYPE_CHECKING:
+    import xgboost
+
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
+    from art.metrics.verification_decisions_trees import LeafNode, Tree
 
 logger = logging.getLogger(__name__)
 
 
-class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
+class XGBoostClassifier(ClassifierDecisionTree):
     """
     Wrapper class for importing XGBoost models.
     """
 
     def __init__(
         self,
-        model=None,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=None,
-        nb_features=None,
-        nb_classes=None,
-    ):
+        model: Union["xgboost.Booster", "xgboost.XGBClassifier", None] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        nb_features: Optional[int] = None,
+        nb_classes: Optional[int] = None,
+    ) -> None:
         """
         Create a `Classifier` instance from a XGBoost model.
 
         :param model: XGBoost model.
-        :type model: `xgboost.Booster` or `xgboost.XGBClassifier`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         :param nb_features: The number of features in the training data. Only used if it cannot be extracted from
                              model.
-        :type nb_features: `int` or `None`
         :param nb_classes: The number of classes in the training data. Only used if it cannot be extracted from model.
-        :type nb_classes: `int` or `None`
         """
         from xgboost import Booster, XGBClassifier
 
@@ -81,46 +87,38 @@ class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
         self._input_shape = (nb_features,)
         self._nb_classes = self._get_nb_classes(nb_classes)
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
-        :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                        `fit` function in `xgboost.Booster` or `xgboost.XGBClassifier` and will be passed to this
                        function as such.
-        :type kwargs: `dict`
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for XGBoost classifiers.
         """
         raise NotImplementedError
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
-        from xgboost import Booster, XGBClassifier
-        from art.utils import to_categorical
+        import xgboost
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        if isinstance(self._model, Booster):
-            from xgboost import DMatrix
-
-            train_data = DMatrix(x_preprocessed, label=None)
+        if isinstance(self._model, xgboost.Booster):
+            train_data = xgboost.DMatrix(x_preprocessed, label=None)
             predictions = self._model.predict(train_data)
             y_prediction = np.asarray([line for line in predictions])
             if len(y_prediction.shape) == 1:
                 y_prediction = to_categorical(labels=y_prediction, nb_classes=self.nb_classes)
-        elif isinstance(self._model, XGBClassifier):
+        elif isinstance(self._model, xgboost.XGBClassifier):
             y_prediction = self._model.predict_proba(x_preprocessed)
 
         # Apply postprocessing
@@ -128,12 +126,11 @@ class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
 
         return y_prediction
 
-    def _get_nb_classes(self, nb_classes):
+    def _get_nb_classes(self, nb_classes) -> Optional[int]:
         """
         Return the number of output classes.
 
         :return: Number of classes in the data.
-        :rtype: `int`
         """
         from xgboost import Booster, XGBClassifier
 
@@ -153,21 +150,16 @@ class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
 
         return None
 
-    def save(self, filename, path=None):
-        import pickle
-
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         with open(filename + ".pickle", "wb") as file_pickle:
-            pickle.dump(self.model, file=file_pickle)
+            pickle.dump(self._model, file=file_pickle)
 
-    def get_trees(self):
+    def get_trees(self) -> List["Tree"]:
         """
         Get the decision trees.
 
         :return: A list of decision trees.
-        :rtype: `[Tree]`
         """
-
-        import json
         from art.metrics.verification_decisions_trees import Box, Tree
 
         booster_dump = self._model.get_booster().get_dump(dump_format="json")
@@ -183,16 +175,15 @@ class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
 
             tree_json = json.loads(tree_dump)
             trees.append(
-                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box))
+                Tree(class_id=class_label, leaf_nodes=self._get_leaf_nodes(tree_json, i_tree, class_label, box),)
             )
 
         return trees
 
-    def _get_leaf_nodes(self, node, i_tree, class_label, box):
-        from copy import deepcopy
+    def _get_leaf_nodes(self, node, i_tree, class_label, box) -> List["LeafNode"]:
         from art.metrics.verification_decisions_trees import LeafNode, Box, Interval
 
-        leaf_nodes = list()
+        leaf_nodes: List[LeafNode] = list()
 
         if "children" in node:
             if node["children"][0]["nodeid"] == node["yes"] and node["children"][1]["nodeid"] == node["no"]:
@@ -223,7 +214,7 @@ class XGBoostClassifier(DecisionTreeMixin, ClassifierMixin, BaseEstimator):
 
         if "leaf" in node:
             leaf_nodes.append(
-                LeafNode(tree_id=i_tree, class_label=class_label, node_id=node["nodeid"], box=box, value=node["leaf"])
+                LeafNode(tree_id=i_tree, class_label=class_label, node_id=node["nodeid"], box=box, value=node["leaf"],)
             )
 
         return leaf_nodes

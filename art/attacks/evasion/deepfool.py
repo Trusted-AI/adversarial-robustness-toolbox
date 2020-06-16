@@ -23,11 +23,16 @@ This module implements the white-box attack `DeepFool`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierGradients,
+)
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success
 
@@ -41,41 +46,46 @@ class DeepFool(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1511.04599
     """
 
-    attack_params = EvasionAttack.attack_params + ["max_iter", "epsilon", "nb_grads", "batch_size"]
-
+    attack_params = EvasionAttack.attack_params + [
+        "max_iter",
+        "epsilon",
+        "nb_grads",
+        "batch_size",
+    ]
     _estimator_requirements = (ClassGradientsMixin,)
 
-    def __init__(self, classifier, max_iter=100, epsilon=1e-6, nb_grads=10, batch_size=1):
+    def __init__(
+        self,
+        classifier: ClassifierGradients,
+        max_iter: int = 100,
+        epsilon: float = 1e-6,
+        nb_grads: int = 10,
+        batch_size: int = 1,
+    ) -> None:
         """
         Create a DeepFool attack instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param epsilon: Overshoot parameter.
-        :type epsilon: `float`
         :param nb_grads: The number of class gradients (top nb_grads w.r.t. prediction) to compute. This way only the
                          most likely classes are considered, speeding up the computation.
-        :type nb_grads: `int`
         :param batch_size: Batch size
-        :type batch_size: `int`
         """
         super(DeepFool, self).__init__(estimator=classifier)
+        self.max_iter = max_iter
+        self.epsilon = epsilon
+        self.nb_grads = nb_grads
+        self.batch_size = batch_size
+        self._check_params()
 
-        params = {"max_iter": max_iter, "epsilon": epsilon, "nb_grads": nb_grads, "batch_size": batch_size}
-        self.set_params(**params)
-
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y: An array with the original labels to be predicted.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.estimator.predict(x, batch_size=self.batch_size)
@@ -94,7 +104,7 @@ class DeepFool(EvasionAttack):
         tol = 10e-8
 
         # Compute perturbation with implicit batching
-        for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
+        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="DeepFool"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
 
@@ -176,23 +186,7 @@ class DeepFool(EvasionAttack):
         )
         return x_adv
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param epsilon: Overshoot parameter.
-        :type epsilon: `float`
-        :param nb_grads: The number of class gradients (top nb_grads w.r.t. prediction) to compute. This way only the
-                         most likely classes are considered, speeding up the computation.
-        :type nb_grads: `int`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(DeepFool, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
@@ -204,5 +198,3 @@ class DeepFool(EvasionAttack):
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
-
-        return True

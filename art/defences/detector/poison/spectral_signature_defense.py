@@ -26,9 +26,13 @@ This module implements methods performing backdoor poisoning detection based on 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import numpy as np
+from typing import List, Tuple, TYPE_CHECKING
 
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import Classifier
 
 
 class SpectralSignatureDefense(PoisonFilteringDefence):
@@ -45,66 +49,69 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         "nb_classes",
     ]
 
-    def __init__(self, classifier, x_train, y_train, **kwargs):
+    def __init__(
+        self,
+        classifier: "Classifier",
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        batch_size: int,
+        eps_multiplier: float,
+        ub_pct_poison,
+        nb_classes: int,
+    ) -> None:
         """
         Create an :class:`.SpectralSignatureDefense` object with the provided classifier.
+
         :param classifier: Model evaluated for poison.
-        :type classifier: :class:`art.estimators.classification.ClassifierMixin`
-        :param x_train: dataset used to train the classifier.
-        :type x_train: `np.ndarray`
-        :param y_train: labels used to train the classifier.
-        :type y_train: `np.ndarray`
+        :param x_train: Dataset used to train the classifier.
+        :param y_train: Labels used to train the classifier.
+        :param batch_size: Size of batches.
+        :param eps_multiplier:
+        :param ub_pct_poison:
+        :param nb_classes: Number of classes.
         """
         super().__init__(classifier, x_train, y_train)
-        self.set_params(**kwargs)
+        self.batch_size = batch_size
+        self.eps_multiplier = eps_multiplier
+        self.ub_pct_poison = ub_pct_poison
+        self.nb_classes = nb_classes
         self.y_train_sparse = np.argmax(y_train, axis=1)
-
         self.evaluator = GroundTruthEvaluator()
+        self._check_params()
 
-    def evaluate_defence(self, is_clean, **kwargs):
+    def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
         """
         If ground truth is known, this function returns a confusion matrix in the form of a JSON object.
+
         :param is_clean: Ground truth, where is_clean[i]=1 means that x_train[i] is clean and is_clean[i]=0 means
                          x_train[i] is poisonous.
-        :type is_clean: `np.ndarray`
         :param kwargs: A dictionary of defence-specific parameters.
-        :type kwargs: `dict`
         :return: JSON object with confusion matrix.
-        :rtype: `jsonObject`
         """
-
         if is_clean is None or is_clean.size == 0:
-            raise ValueError(
-                "is_clean was not provided while invoking evaluate_defence."
-            )
-        is_clean_by_class = SpectralSignatureDefense.split_by_class(
-            is_clean, self.y_train_sparse, self.nb_classes
-        )
+            raise ValueError("is_clean was not provided while invoking evaluate_defence.")
+        is_clean_by_class = SpectralSignatureDefense.split_by_class(is_clean, self.y_train_sparse, self.nb_classes)
         _, predicted_clean = self.detect_poison()
         predicted_clean_by_class = SpectralSignatureDefense.split_by_class(
             predicted_clean, self.y_train_sparse, self.nb_classes
         )
 
-        _, conf_matrix_json = self.evaluator.analyze_correctness(
-            predicted_clean_by_class, is_clean_by_class
-        )
+        _, conf_matrix_json = self.evaluator.analyze_correctness(predicted_clean_by_class, is_clean_by_class)
 
         return conf_matrix_json
 
-    def detect_poison(self, **kwargs):
+    def detect_poison(self, **kwargs) -> Tuple[dict, List[int]]:
         """
         Returns poison detected and a report.
+
         :return: (report, is_clean_lst):
                 where a report is a dictionary containing the index as keys the outlier score of suspected poisons as
                 values where is_clean is a list, where is_clean_lst[i]=1 means that x_train[i] there is clean and
                 is_clean_lst[i]=0, means that x_train[i] was classified as poison.
-        :rtype: `tuple`
         """
-
         self.set_params(**kwargs)
 
         nb_layers = len(self.classifier.layer_names)
-
         features_x_poisoned = self.classifier.get_activations(
             self.x_train, layer=nb_layers - 1, batch_size=self.batch_size
         )
@@ -115,23 +122,17 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         score_by_class, keep_by_class = [], []
         for idx, feature in enumerate(features_split):
             score = SpectralSignatureDefense.spectral_signature_scores(feature)
-            score_cutoff = np.quantile(
-                score, max(1 - self.eps_multiplier * self.ub_pct_poison, 0.0)
-            )
+            score_cutoff = np.quantile(score, max(1 - self.eps_multiplier * self.ub_pct_poison, 0.0))
             score_by_class.append(score)
             keep_by_class.append(score < score_cutoff)
 
         base_indices_by_class = SpectralSignatureDefense.split_by_class(
-            np.arange(self.y_train_sparse.shape[0]),
-            self.y_train_sparse,
-            self.nb_classes,
+            np.arange(self.y_train_sparse.shape[0]), self.y_train_sparse, self.nb_classes,
         )
         is_clean_lst = np.zeros_like(self.y_train_sparse, dtype=np.int)
         report = {}
 
-        for keep_booleans, all_scores, indices in zip(
-                keep_by_class, score_by_class, base_indices_by_class
-        ):
+        for keep_booleans, all_scores, indices in zip(keep_by_class, score_by_class, base_indices_by_class):
             for keep_boolean, all_score, idx in zip(keep_booleans, all_scores, indices):
                 if keep_boolean:
                     is_clean_lst[idx] = 1
@@ -140,12 +141,10 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         return report, is_clean_lst
 
     @staticmethod
-    def spectral_signature_scores(matrix_r):
+    def spectral_signature_scores(matrix_r: np.ndarray) -> np.ndarray:
         """
-        :param matrix_r: Matrix of feature representations
-        :type matrix_r: `np.ndarray`
-        :return: Outlier scores for each observation based on spectral signature
-        :rtype: `np.ndarray`
+        :param matrix_r: Matrix of feature representations.
+        :return: Outlier scores for each observation based on spectral signature.
         """
         matrix_m = matrix_r - np.mean(matrix_r, axis=0)
         # Following Algorithm #1 in paper, use SVD of centered features, not of covariance
@@ -155,44 +154,22 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         return score
 
     @staticmethod
-    def split_by_class(data, labels, num_classes):
+    def split_by_class(data: np.ndarray, labels: np.ndarray, num_classes: int) -> List[np.ndarray]:
         """
-        :param data: Features
-        :type data: `np.ndarray`
-        :param labels: Labels, not in one-hot representations
-        :type labels: `np.ndarray`
-        :param num_classes: Number of classes of labels
-        :type num_classes: int
-        :return: List of numpy arrays of features split by labels
-        :rtype: list
+        :param data: Features.
+        :param labels: Labels, not in one-hot representations.
+        :param num_classes: Number of classes of labels.
+        :return: List of numpy arrays of features split by labels.
         """
-        split = [[] for _ in range(num_classes)]
+        split: List[List[int]] = [[] for _ in range(num_classes)]
         for idx, label in enumerate(labels):
             split[int(label)].append(data[idx])
         return [np.asarray(dat) for dat in split]
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defense-specific checks before saving them as attributes.
-        If a parameter is not provided, it takes its default value.
-        """
-        # Save defence-specific parameters
-        super().set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.batch_size < 0:
-            raise ValueError(
-                "Batch size must be positive integer. Unsupported batch size: "
-                + str(self.batch_size)
-            )
+            raise ValueError("Batch size must be positive integer. Unsupported batch size: " + str(self.batch_size))
         if self.eps_multiplier < 0:
-            raise ValueError(
-                "eps_multiplier must be positive. Unsupported value: "
-                + str(self.eps_multiplier)
-            )
+            raise ValueError("eps_multiplier must be positive. Unsupported value: " + str(self.eps_multiplier))
         if self.ub_pct_poison < 0 or self.ub_pct_poison > 1:
-            raise ValueError(
-                "ub_pct_poison must be between 0 and 1. Unsupported value: "
-                + str(self.ub_pct_poison)
-            )
-
-        return True
+            raise ValueError("ub_pct_poison must be between 0 and 1. Unsupported value: " + str(self.ub_pct_poison))

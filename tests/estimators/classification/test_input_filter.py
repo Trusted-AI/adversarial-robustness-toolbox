@@ -284,8 +284,6 @@ class TestInputFilter(TestBase):
         classifier = get_image_classifier_kr_tf()
 
         # Test gradient
-        gradients = classifier.loss_gradient(self.x_test_mnist, self.y_test_mnist)
-        gradients = classifier.loss_gradient(self.x_test_mnist, y=self.y_test_mnist)
         gradients = classifier.loss_gradient(x=self.x_test_mnist, y=self.y_test_mnist)
 
         self.assertTrue(gradients.shape == (NB_TEST, 28, 28, 1))

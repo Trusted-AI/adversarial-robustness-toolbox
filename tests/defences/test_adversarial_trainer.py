@@ -46,7 +46,12 @@ class TestAdversarialTrainer(unittest.TestCase):
     def setUpClass(cls):
         # MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        x_train, y_train, x_test, y_test = (
+            x_train[:NB_TRAIN],
+            y_train[:NB_TRAIN],
+            x_test[:NB_TEST],
+            y_test[:NB_TEST],
+        )
         cls.mnist = ((x_train, y_train), (x_test, y_test))
 
         cls.classifier, _ = get_image_classifier_tf()
@@ -59,7 +64,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         adv_trainer = AdversarialTrainer(self.classifier, attack)
 
         self.assertEqual(len(adv_trainer.attacks), 1)
-        self.assertEqual(adv_trainer.attacks[0].estimator, adv_trainer.classifier)
+        self.assertEqual(adv_trainer.attacks[0].estimator, adv_trainer.get_classifier())
 
     def test_fit_predict(self):
         (x_train, y_train), (x_test, y_test) = self.mnist

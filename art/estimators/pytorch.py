@@ -20,7 +20,13 @@ This module implements the abstract estimator `PyTorchEstimator` for PyTorch mod
 """
 import logging
 
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+import numpy as np
+
+from art.estimators.estimator import (
+    BaseEstimator,
+    LossGradientsMixin,
+    NeuralNetworkMixin,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -29,3 +35,34 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
     Estimator class for PyTorch models.
     """
+
+    def __init__(self, **kwargs) -> None:
+        """
+        Estimator class for PyTorch models.
+        """
+        super().__init__(**kwargs)
+
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
+        """
+        Perform prediction of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param batch_size: Batch size.
+        :return: Predictions.
+        :rtype: Format as expected by the `model`
+        """
+        return NeuralNetworkMixin.predict(self, x, batch_size=128, **kwargs)
+
+    def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
+        """
+        Fit the model of the estimator on the training data `x` and `y`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values.
+        :type y: Format as expected by the `model`
+        :param batch_size: Batch size.
+        :param nb_epochs: Number of training epochs.
+        """
+        NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)

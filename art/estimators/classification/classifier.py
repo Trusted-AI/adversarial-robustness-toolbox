@@ -18,10 +18,17 @@
 """
 This module implements mixin abstract base classes defining properties for all classifiers in ART.
 """
-
 from abc import ABC, ABCMeta, abstractmethod
+from typing import List, Optional, Union
 
 import numpy as np
+
+from art.estimators.estimator import (
+    BaseEstimator,
+    NeuralNetworkMixin,
+    LossGradientsMixin,
+    DecisionTreeMixin,
+)
 
 
 class InputFilter(ABCMeta):
@@ -86,14 +93,13 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     """
 
     @property
-    def nb_classes(self):
+    def nb_classes(self) -> int:
         """
         Return the number of output classes.
 
         :return: Number of classes in the data.
-        :rtype: `int`
         """
-        return self._nb_classes
+        return self._nb_classes  # type: ignore
 
 
 class ClassGradientsMixin(ABC):
@@ -104,20 +110,46 @@ class ClassGradientsMixin(ABC):
     """
 
     @abstractmethod
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Samples.
-        :type x: `np.ndarray` or 1pandas.DataFrame1
+        :type x: `np.ndarray` or `pandas.DataFrame`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
         :return: Gradients of input features w.r.t. each class in the form `(batch_size, nb_classes, input_shape)` when
                  computing for all classes, otherwise shape becomes `(batch_size, 1, input_shape)` when `label`
                  parameter is specified.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError
+
+
+class Classifier(ClassifierMixin, BaseEstimator, ABC):
+    pass
+
+
+class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
+    ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator, ABC
+):
+    @abstractmethod
+    def save(self, filename: str, path: Optional[str] = None) -> None:
+        """
+        Save a model to file in the format specific to the backend framework. This function is not supported for
+        ensembles.
+
+        :param filename: Name of the file where to store the model.
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `ART_DATA_PATH`.
+        """
+        raise NotImplementedError
+
+
+class ClassifierGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
+    pass
+
+
+class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, ABC):
+    pass

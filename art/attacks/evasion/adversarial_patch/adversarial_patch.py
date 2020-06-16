@@ -24,11 +24,18 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, Tuple, Union
+
+import numpy as np
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.classifier import (
+    ClassifierMixin,
+    ClassifierNeuralNetwork,
+    ClassifierGradients,
+)
 from art.estimators.classification import TensorFlowV2Classifier
 from art.attacks.attack import EvasionAttack
 
@@ -55,46 +62,37 @@ class AdversarialPatch(EvasionAttack):
 
     def __init__(
         self,
-        classifier,
-        rotation_max=22.5,
-        scale_min=0.1,
-        scale_max=1.0,
-        learning_rate=5.0,
-        max_iter=500,
-        batch_size=16,
-        patch_shape=None,
+        classifier: Union[ClassifierNeuralNetwork, ClassifierGradients],
+        rotation_max: float = 22.5,
+        scale_min: float = 0.1,
+        scale_max: float = 1.0,
+        learning_rate: float = 5.0,
+        max_iter: int = 500,
+        batch_size: int = 16,
+        patch_shape: Optional[Tuple[int, int, int]] = None,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
                range `[0, 180]`.
-        :type rotation_max: `float`
         :param scale_min: The minimum scaling applied to random patches. The value should be in the range `[0, 1]`,
                but less than `scale_max`.
-        :type scale_min: `float`
         :param scale_max: The maximum scaling applied to random patches. The value should be in the range `[0, 1]`, but
                larger than `scale_min.`
-        :type scale_max: `float`
         :param learning_rate: The learning rate of the optimization.
-        :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
-        :type max_iter: `int`
         :param batch_size: The size of the training batch.
-        :type batch_size: `int`
         :param patch_shape: The shape of the adversarial patch as a tuple of shape (width, height, nb_channels).
                             Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
                             the `patch_shape` is set to the shape of the image samples.
-        :type patch_shape: (`int`, `int`, `int`)
         """
         super(AdversarialPatch, self).__init__(estimator=classifier)
+        if self.estimator.clip_values is None:
+            raise ValueError("Adversarial Patch attack requires a classifier with clip_values.")
 
-        assert (
-            self.estimator.clip_values is not None
-        ), "Adversarial Patch attack requires a classifier with clip_values."
-
+        self._attack: Union[AdversarialPatchTensorFlowV2, AdversarialPatchNumpy]
         if isinstance(self.estimator, TensorFlowV2Classifier):
             self._attack = AdversarialPatchTensorFlowV2(
                 classifier=classifier,
@@ -116,21 +114,20 @@ class AdversarialPatch(EvasionAttack):
                 max_iter=max_iter,
                 batch_size=batch_size,
             )
+        self._check_params()
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs. `x` is expected to have spatial dimensions.
-        :type x: `np.ndarray`
         :param y: An array with the original labels to be predicted.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial patch.
-        :rtype: `np.ndarray`
         """
         logger.info("Creating adversarial patch.")
 
-        assert y is not None, "Adversarial Patch attack requires target values `y`."
+        if y is None:
+            raise ValueError("Adversarial Patch attack requires target values `y`.")
 
         if len(x.shape) == 2:
             raise ValueError(
@@ -140,43 +137,18 @@ class AdversarialPatch(EvasionAttack):
 
         return self._attack.generate(x=x, y=y, **kwargs)
 
-    def apply_patch(self, x, scale, patch_external=None):
+    def apply_patch(self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images.
 
         :param x: Instances to apply randomly transformed patch.
-        :type x: `np.ndarray`
         :param scale: Scale of the applied patch in relation to the classifier input shape.
-        :type scale: `float`
         :param patch_external: External patch to apply to images `x`.
-        :type patch_external: `np.ndarray`
         :return: The patched instances.
-        :rtype: `np.ndarray`
         """
         return self._attack.apply_patch(x, scale, patch_external=patch_external)
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
-
-        :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
-               range `[0, 180]`.
-        :type rotation_max: `float`
-        :param scale_min: The minimum scaling applied to random patches. The value should be in the range `[0, 1]`,
-               but less than `scale_max`.
-        :type scale_min: `float`
-        :param scale_max: The maximum scaling applied to random patches. The value should be in the range `[0, 1]`,
-               but greater than `scale_min`.
-        :type scale_max: `float`
-        :param learning_rate: The learning rate of the optimization.
-        :type learning_rate: `float`
-        :param max_iter: The number of optimization steps.
-        :type max_iter: `int`
-        :param batch_size: The size of the training batch.
-        :type batch_size: `int`
-        """
-        super(AdversarialPatch, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self._attack.rotation_max, (float, int)):
             raise ValueError("The maximum rotation of the random patches must be of type float.")
         if self._attack.rotation_max < 0 or self._attack.rotation_max > 180.0:
@@ -208,5 +180,3 @@ class AdversarialPatch(EvasionAttack):
             raise ValueError("The batch size must be of type int.")
         if not self._attack.batch_size > 0:
             raise ValueError("The batch size must be greater than 0.")
-
-        return True

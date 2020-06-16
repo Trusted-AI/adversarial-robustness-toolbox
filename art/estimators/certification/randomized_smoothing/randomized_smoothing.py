@@ -25,8 +25,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from abc import ABC
 
 import logging
+from typing import Optional, Tuple
 
 import numpy as np
+from scipy.stats import norm
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
@@ -42,48 +45,39 @@ class RandomizedSmoothingMixin(ABC):
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
-    def __init__(self, sample_size, *args, scale=0.1, alpha=0.001, **kwargs):
+    def __init__(self, sample_size: int, *args, scale: float = 0.1, alpha: float = 0.001, **kwargs,) -> None:
         """
         Create a randomized smoothing wrapper.
 
-        :param sample_size: Number of samples for smoothing
-        :type sample_size: `int`
+        :param sample_size: Number of samples for smoothing.
         :param scale: Standard deviation of Gaussian noise added.
-        :type scale: `float`
-        :param alpha: The failure probability of smoothing
-        :type alpha: `float`
+        :param alpha: The failure probability of smoothing.
         """
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)  # type: ignore
         self.sample_size = sample_size
         self.scale = scale
         self.alpha = alpha
 
-    def _predict_classifier(self, x, batch_size):
+    def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
     # pylint: disable=W0221
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param batch_size: Batch size.
-        :type batch_size: `int`
         :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
         :type is_abstain: `boolean`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         from scipy.stats import binom_test
 
@@ -96,9 +90,7 @@ class RandomizedSmoothingMixin(ABC):
         logger.info("Applying randomized smoothing.")
         n_abstained = 0
         prediction = []
-
-        for x_i in x:
-
+        for x_i in tqdm(x, desc="Randomized smoothing"):
             # get class counts
             counts_pred = self._prediction_counts(x_i, batch_size=batch_size)
             top = counts_pred.argsort()[::-1]
@@ -117,63 +109,45 @@ class RandomizedSmoothingMixin(ABC):
             logger.info("%s prediction(s) abstained." % n_abstained)
         return np.array(prediction)
 
-    def _fit_classifier(self, x, y, batch_size, nb_epochs, **kwargs):
+    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         """
          Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
         :param batch_size: Batche size.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for training.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
-        :type kwargs: `dict`
-        :return: `None`
         """
         raise NotImplementedError
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
         :param batch_size: Batch size.
-        :type batch_size: `int`
-        :key nb_epochs: Number of epochs to use for training
-        :type nb_epochs: `int`
+        :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
-        :type kwargs: `dict`
-        :return: `None`
         """
         ga = GaussianAugmentation(sigma=self.scale, augmentation=False)
         x_rs, _ = ga(x)
         self._fit_classifier(x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def certify(self, x, n, batch_size=32):
+    def certify(self, x: np.ndarray, n: int, batch_size: int = 32) -> Tuple[np.ndarray, np.ndarray]:
         """
         Computes certifiable radius around input `x` and returns radius `r` and prediction.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param n: Number of samples for estimate certifiable radius
-        :type n: `int`
+        :param n: Number of samples for estimate certifiable radius.
         :param batch_size: Batch size.
-        :type batch_size: `int`
-        :return: Tuple of length 2 of the selected class and certified radius
-        :rtype: `tuple`
+        :return: Tuple of length 2 of the selected class and certified radius.
         """
-        from scipy.stats import norm
-
         prediction = []
         radius = []
 
@@ -198,16 +172,13 @@ class RandomizedSmoothingMixin(ABC):
 
         return np.array(prediction), np.array(radius)
 
-    def _noisy_samples(self, x, n=None):
+    def _noisy_samples(self, x: np.ndarray, n: Optional[int] = None) -> np.ndarray:
         """
         Adds Gaussian noise to `x` to generate samples. Optionally augments `y` similarly.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param n: Number of noisy samples to create
-        :type n: `int`
+        :param n: Number of noisy samples to create.
         :return: Array of samples of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         # set default value to sample_size
         if n is None:
@@ -220,14 +191,14 @@ class RandomizedSmoothingMixin(ABC):
 
         return x
 
-    def _prediction_counts(self, x, n=None, batch_size=128):
+    def _prediction_counts(self, x: np.ndarray, n: Optional[int] = None, batch_size: int = 128) -> np.ndarray:
         """
-        Makes predictions and then converts probability distribution to counts
+        Makes predictions and then converts probability distribution to counts.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
+        :param n: Number of noisy samples to create.
+        :param batch_size: Size of batches.
         :return: Array of counts with length equal to number of columns of `x`.
-        :rtype: `np.ndarray`
         """
         # sample and predict
         x_new = self._noisy_samples(x, n=n)
@@ -243,16 +214,13 @@ class RandomizedSmoothingMixin(ABC):
 
         return counts
 
-    def _lower_confidence_bound(self, n_class_samples, n_total_samples):
+    def _lower_confidence_bound(self, n_class_samples: int, n_total_samples: int) -> float:
         """
         Uses Clopper-Pearson method to return a (1-alpha) lower confidence bound on bernoulli proportion
 
         :param n_class_samples: Number of samples of a specific class.
-        :type n_class_samples: `int`
         :param n_total_samples: Number of samples for certification.
-        :type n_total_samples: `int`
-        :return: Lower bound on the binomial proportion w.p. (1-alpha) over samples
-        :rtype: `float`
+        :return: Lower bound on the binomial proportion w.p. (1-alpha) over samples.
         """
         from statsmodels.stats.proportion import proportion_confint
 

@@ -24,15 +24,25 @@ prioritize which parts of a sequential input should be perturbed based on salien
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassGradientsMixin, Classifier
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion import ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod
-from art.utils import compute_success_array, get_labels_np_array, check_and_transform_label_format
+from art.attacks.evasion import (
+    ProjectedGradientDescent,
+    BasicIterativeMethod,
+    FastGradientMethod,
+)
+from art.utils import (
+    compute_success_array,
+    get_labels_np_array,
+    check_and_transform_label_format,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -46,44 +56,49 @@ class FrameSaliencyAttack(EvasionAttack):
     """
 
     method_list = ["iterative_saliency", "iterative_saliency_refresh", "one_shot"]
-    attack_params = EvasionAttack.attack_params + ["attacker", "method", "frame_index", "batch_size"]
-
+    attack_params = EvasionAttack.attack_params + [
+        "attacker",
+        "method",
+        "frame_index",
+        "batch_size",
+    ]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
 
-    def __init__(self, classifier, attacker, method="iterative_saliency", frame_index=1, batch_size=1):
+    def __init__(
+        self,
+        classifier: Classifier,
+        attacker: EvasionAttack,
+        method: str = "iterative_saliency",
+        frame_index: int = 1,
+        batch_size: int = 1,
+    ):
         """
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param attacker: An adversarial evasion attacker which supports masking. Currently supported:
-                         ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod
-        :type attacker: :class:`.EvasionAttack`
+                         ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod.
         :param method: Specifies which method to use: "iterative_saliency" (adds perturbation iteratively to frame
                        with highest saliency score until attack is successful), "iterative_saliency_refresh" (updates
                        perturbation after each iteration), "one_shot" (adds all perturbations at once, i.e. defaults to
                        original attack).
-        :type method: `str`
         :param frame_index: Index of the axis in input (feature) array `x` representing the frame dimension.
-        :type frame_index: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
         super(FrameSaliencyAttack, self).__init__(classifier)
 
-        kwargs = {"attacker": attacker, "method": method, "frame_index": frame_index, "batch_size": batch_size}
-        self.set_params(**kwargs)
+        self.attacker = attacker
+        self.method = method
+        self.frame_index = frame_index
+        self.batch_size = batch_size
+        self._check_params()
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: An array with the original labels to be predicted.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
-
         if len(x.shape) < 3:
             raise ValueError("Frame saliency attack works only on inputs of dimension greater than 2.")
 
@@ -100,7 +115,7 @@ class FrameSaliencyAttack(EvasionAttack):
 
         if y is None:
             # Throw error if attack is targeted, but no targets are provided
-            if self.attacker.targeted:
+            if hasattr(self.attacker, "targeted") and self.attacker.targeted:  # type: ignore
                 raise ValueError("Target labels `y` need to be provided for a targeted attack.")
 
             # Use model predictions as correct outputs
@@ -133,7 +148,7 @@ class FrameSaliencyAttack(EvasionAttack):
         x_adv_new = self.attacker.generate(x, targets, mask=mask)
 
         # Here starts the main iteration:
-        for i in range(nb_frames):
+        for i in trange(nb_frames, desc="Frame saliency"):
             # Check if attack has already succeeded for all inputs:
             if sum(attack_failure) == 0:
                 break
@@ -163,11 +178,15 @@ class FrameSaliencyAttack(EvasionAttack):
 
         return x_adv
 
-    def _compute_attack_failure_array(self, x, targets, x_adv):
-        attack_success = compute_success_array(self.attacker.estimator, x, targets, x_adv, self.attacker.targeted)
+    def _compute_attack_failure_array(self, x: np.ndarray, targets: np.ndarray, x_adv: np.ndarray) -> np.ndarray:
+        attack_success = compute_success_array(
+            self.attacker.estimator, x, targets, x_adv, self.attacker.targeted  # type: ignore
+        )
         return np.invert(attack_success)
 
-    def _compute_frames_to_perturb(self, x_adv, targets, disregard=None):
+    def _compute_frames_to_perturb(
+        self, x_adv: np.ndarray, targets: np.ndarray, disregard: Optional[float] = None
+    ) -> np.ndarray:
         saliency_score = self.estimator.loss_gradient(x_adv, targets)
         saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)
         saliency_score = saliency_score.reshape((saliency_score.shape[:2] + (np.prod(saliency_score.shape[2:]),)))
@@ -178,19 +197,7 @@ class FrameSaliencyAttack(EvasionAttack):
 
         return np.argsort(-saliency_score, axis=1)
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param attacker: An adversarial evasion attacker which supports masking. Currently supported:
-                         ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod
-        :type attacker: :class:`.EvasionAttack`
-        :param method: Specifies which method to use. Must be either "iterative_saliency", "iterative_saliency_refresh"
-                       or "one_shot".
-        :type method: `str`
-        """
-        super(FrameSaliencyAttack, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if (
             not isinstance(self.attacker, ProjectedGradientDescent)
             and not isinstance(self.attacker, BasicIterativeMethod)
@@ -212,5 +219,3 @@ class FrameSaliencyAttack(EvasionAttack):
 
         if not self.estimator == self.attacker.estimator:
             raise Warning("Different classifiers given for computation of saliency scores and adversarial noise.")
-
-        return True

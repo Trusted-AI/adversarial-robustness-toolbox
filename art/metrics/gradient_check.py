@@ -18,30 +18,33 @@
 """
 This module implements gradient check functions for estimators
 """
+from typing import TYPE_CHECKING
 
 import numpy as np
+from tqdm import trange
+
+if TYPE_CHECKING:
+    from art.estimators.estimator import LossGradientsMixin
 
 
-def loss_gradient_check(estimator, x, y):
+def loss_gradient_check(estimator: "LossGradientsMixin", x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
         Compute the gradient of the loss function w.r.t. `x` and identify points where the gradient is zero, nan, or inf
 
         :param estimator: The classifier to be analyzed.
-        :type estimator: `art.estimators.estimator.BaseEstimator`
         :param x: Input with shape as expected by the classifier's model.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :type y: `np.ndarray`
         :return: Array of booleans with the shape (len(x), 3). If true means the gradient of the loss w.r.t. the
-                 particular `x` was bad (zero, nan, inf)
-        :rtype: `np.ndarray, np.ndarray`
+                 particular `x` was bad (zero, nan, inf).
         """
     assert len(x) == len(y), "x and y must be the same length"
 
     is_bad = []
-    for i in range(len(x)):
+    for i in trange(len(x), desc="Gradient check"):
         grad = estimator.loss_gradient([x[i]], [y[i]])
-        is_bad.append([(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)), np.any(np.isinf(grad))])
+        is_bad.append(
+            [(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)), np.any(np.isinf(grad)),]
+        )
 
     return np.array(is_bad, dtype=bool)

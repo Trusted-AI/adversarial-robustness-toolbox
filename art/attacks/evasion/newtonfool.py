@@ -23,13 +23,18 @@ This module implements the white-box attack `NewtonFool`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
+from tqdm import trange
 
+from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassGradientsMixin
-from art.attacks.attack import EvasionAttack
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierGradients,
+)
 from art.utils import to_categorical, compute_success
 
 logger = logging.getLogger(__name__)
@@ -43,37 +48,32 @@ class NewtonFool(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + ["max_iter", "eta", "batch_size"]
-
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
-    def __init__(self, classifier, max_iter=100, eta=0.01, batch_size=1):
+    def __init__(
+        self, classifier: ClassifierGradients, max_iter: int = 100, eta: float = 0.01, batch_size: int = 1,
+    ) -> None:
         """
         Create a NewtonFool attack instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param eta: The eta coefficient.
-        :type eta: `float`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
         super(NewtonFool, self).__init__(estimator=classifier)
+        self.max_iter = max_iter
+        self.eta = eta
+        self.batch_size = batch_size
+        self._check_params()
 
-        params = {"max_iter": max_iter, "eta": eta, "batch_size": batch_size}
-        self.set_params(**params)
-
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in a Numpy array.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y: An array with the original labels to be predicted.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
@@ -82,7 +82,7 @@ class NewtonFool(EvasionAttack):
         pred_class = np.argmax(y_pred, axis=1)
 
         # Compute perturbation with implicit batching
-        for batch_id in range(int(np.ceil(x_adv.shape[0] / float(self.batch_size)))):
+        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="NewtonFool"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
 
@@ -124,20 +124,7 @@ class NewtonFool(EvasionAttack):
         )
         return x_adv
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param eta: The eta coefficient.
-        :type eta: `float`
-        :param batch_size: Internal size of batches on which adversarial samples are generated.
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(NewtonFool, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
 
@@ -147,20 +134,14 @@ class NewtonFool(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-        return True
-
-    def _compute_theta(self, norm_batch, score, norm_grad):
+    def _compute_theta(self, norm_batch: np.ndarray, score: np.ndarray, norm_grad: np.ndarray) -> np.ndarray:
         """
         Function to compute the theta at each step.
 
         :param norm_batch: Norm of a batch.
-        :type norm_batch: `np.ndarray`
         :param score: Softmax value at the attacked class.
-        :type score: `np.ndarray`
         :param norm_grad: Norm of gradient values at the attacked class.
-        :type norm_grad: `np.ndarray`
         :return: Theta value.
-        :rtype: `np.ndarray`
         """
         equ1 = self.eta * norm_batch * norm_grad
         equ2 = score - 1.0 / self.estimator.nb_classes
@@ -169,18 +150,14 @@ class NewtonFool(EvasionAttack):
         return result
 
     @staticmethod
-    def _compute_pert(theta, grads, norm_grad):
+    def _compute_pert(theta: np.ndarray, grads: np.ndarray, norm_grad: np.ndarray) -> np.ndarray:
         """
         Function to compute the perturbation at each step.
 
         :param theta: Theta value at the current step.
-        :type theta: `np.ndarray`
         :param grads: Gradient values at the attacked class.
-        :type grads: `np.ndarray`
         :param norm_grad: Norm of gradient values at the attacked class.
-        :type norm_grad: `np.ndarray`
         :return: Computed perturbation.
-        :rtype: `np.ndarray`
         """
         # Pick a small scalar to avoid division by 0
         tol = 10e-8

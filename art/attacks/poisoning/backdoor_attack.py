@@ -21,6 +21,8 @@ This module implements Backdoor Attacks to poison data used in ML models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Callable, List, Optional, Tuple, Union
+
 import numpy as np
 
 from art.attacks.attack import PoisoningAttackBlackBox
@@ -39,45 +41,34 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
     """
 
     attack_params = PoisoningAttackBlackBox.attack_params + ["perturbation"]
-
     _estimator_requirements = ()
 
-    def __init__(self, perturbation, **kwargs):
+    def __init__(self, perturbation: Union[Callable, List[Callable]]) -> None:
         """
-        Initialize a backdoor poisoning attack
+        Initialize a backdoor poisoning attack.
 
-        :param perturbation: a single perturbation function or list of perturbation functions that modify input
-        :type perturbation: a `function` that takes an np.array and returns an np.array or
-                            a list of functions of this type
-        :param kwargs: Extra optional keyword arguments
+        :param perturbation: A single perturbation function or list of perturbation functions that modify input.
         """
-
         super().__init__()
-
         self.perturbation = perturbation
-        self.set_params(**kwargs)
+        self._check_params()
 
-    def poison(self, x, y=None, **kwargs):
+    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Iteratively finds optimal attack points starting at values at x
+        Iteratively finds optimal attack points starting at values at x.
 
         :param x: An array with the points that initialize attack points.
-        :type x: `np.ndarray`
-        :param y: The target labels for
-        :return: An tuple holding the (poisoning examples, poisoning labels).
-        :rtype: `(np.ndarray, np.ndarray)`
+        :param y: The target labels for the attack.
+        :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
-
         if y is None:
             raise ValueError("Target labels `y` need to be provided for a targeted attack.")
         else:
             y_attack = np.copy(y)
 
         num_poison = len(x)
-
         if num_poison == 0:
-            raise ValueError("Must input at least one poison point")
-
+            raise ValueError("Must input at least one poison point.")
         poisoned = np.copy(x)
 
         if callable(self.perturbation):
@@ -88,14 +79,6 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
 
         return poisoned, y_attack
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and apply attack-specific checks before saving them as attributes.
-
-        :param kwargs: a dictionary of attack-specific parameters
-        :type kwargs: `dict`
-        :return: `True` when parsing was successful
-        """
-        super().set_params(**kwargs)
+    def _check_params(self) -> None:
         if not (callable(self.perturbation) or all((callable(perturb) for perturb in self.perturbation))):
-            raise ValueError("Perturbation must be a function or a list of functions")
+            raise ValueError("Perturbation must be a function or a list of functions.")

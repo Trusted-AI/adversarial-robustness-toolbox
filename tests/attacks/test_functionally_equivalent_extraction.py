@@ -58,8 +58,13 @@ class TestFastGradientMethodImages(TestBase):
 
         model = load_model(
             join(
-                join(join(dirname(dirname(dirname(__file__))), "data"), "test_models"),
-                "model_test_functionally_equivalent_extraction.h5",
+                *[
+                    dirname(dirname(dirname(__file__))),
+                    "utils",
+                    "data",
+                    "test_models",
+                    "model_test_functionally_equivalent_extraction.h5",
+                ]
             )
         )
 

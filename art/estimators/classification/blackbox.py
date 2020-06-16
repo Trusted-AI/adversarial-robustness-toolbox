@@ -21,52 +21,50 @@ This module implements the classifier `BlackBoxClassifier` for black-box classif
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.classifier import Classifier
+
+if TYPE_CHECKING:
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.preprocessor import Preprocessor
+    from art.defences.postprocessor import Postprocessor
 
 logger = logging.getLogger(__name__)
 
 
-class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
+class BlackBoxClassifier(Classifier):
     """
     Wrapper class for black-box classifiers.
     """
 
     def __init__(
         self,
-        predict,
-        input_shape,
-        nb_classes,
-        clip_values=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
+        predict: Callable,
+        input_shape: Tuple[int, ...],
+        nb_classes: int,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ):
         """
         Create a `Classifier` instance for a black-box model.
 
         :param predict: Function that takes in one input of the data and returns the one-hot encoded predicted class.
-        :type predict: `function`
         :param input_shape: Size of input.
-        :type input_shape: `tuple`
         :param nb_classes: Number of prediction classes.
-        :type nb_classes: `int`
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
         """
         super(BlackBoxClassifier, self).__init__(
             clip_values=clip_values,
@@ -80,16 +78,13 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         self._nb_classes = nb_classes
 
     # pylint: disable=W0221
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         from art.config import ART_NUMPY_DTYPE
 
@@ -99,7 +94,10 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         # Run predictions with batching
         predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=ART_NUMPY_DTYPE)
         for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
-            begin, end = batch_index * batch_size, min((batch_index + 1) * batch_size, x_preprocessed.shape[0])
+            begin, end = (
+                batch_index * batch_size,
+                min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
+            )
             predictions[begin:end] = self._predictions(x_preprocessed[begin:end])
 
         # Apply postprocessing
@@ -107,31 +105,26 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
 
         return predictions
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :type x: `np.ndarray`
         :param y: Labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
-        :type kwargs: `dict`
-        :return: `None`
+        :raises `NotImplementedException`: This method is not supported for blackbox classifiers.
         """
         raise NotImplementedError
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         """
         Save a model to file in the format specific to the backend framework. For Keras, .h5 format is used.
 
         :param filename: Name of the file where to store the model.
-        :type filename: `str`
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
-        :type path: `str`
-        :return: None
+        :raises `NotImplementedException`: This method is not supported for blackbox classifiers.
         """
         raise NotImplementedError

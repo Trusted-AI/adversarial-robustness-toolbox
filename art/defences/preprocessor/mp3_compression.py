@@ -21,14 +21,16 @@ This module implements the MP3 compression defence `Mp3Compression`.
 | Paper link: https://arxiv.org/abs/1801.01944
 
 | Please keep in mind the limitations of defences. For details on how to evaluate classifier security in general,
-    see https://arxiv.org/abs/1902.06705  .
+    see https://arxiv.org/abs/1902.06705.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 from io import BytesIO
+from typing import Optional, Tuple
 
 import numpy as np
+from tqdm import tqdm
 
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg
@@ -45,21 +47,22 @@ class Mp3Compression(Preprocessor):
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
-        self, sample_rate, channel_index=Deprecated, channels_first=False, apply_fit=True, apply_predict=False
-    ):
+        self,
+        sample_rate: int,
+        channel_index=Deprecated,
+        channels_first: bool = False,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
+    ) -> None:
         """
         Create an instance of MP3 compression.
 
+        :param sample_rate: Specifies the sampling rate of sample.
         :param channel_index: Index of the axis containing the audio channels.
         :type channel_index: `int`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
-        :param sample_rate: Specifies the sampling rate of sample.
-        :type sample_rate: `int`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -73,27 +76,27 @@ class Mp3Compression(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(channel_index=channel_index, channels_first=channels_first, sample_rate=sample_rate)
+        self.channel_index = channel_index
+        self.channels_first = channels_first
+        self.sample_rate = sample_rate
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, x, y=None):
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply MP3 compression to sample `x`.
 
-        :param x: Sample to compress with shape `(batch_size, length, channel)`. `x` values are
-        recommended to be of type `np.int16`.
-        :type x: `np.ndarray`
+        :param x: Sample to compress with shape `(batch_size, length, channel)`. `x` values are recommended to be of
+                  type `np.int16`.
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :type y: `np.ndarray`
         :return: Compressed sample.
-        :rtype: `np.ndarray`
         """
 
         def wav_to_mp3(x, sample_rate):
@@ -129,7 +132,7 @@ class Mp3Compression(Preprocessor):
 
         # apply mp3 compression per audio item
         x_mp3 = x.copy()
-        for i, x_i in enumerate(x):
+        for i, x_i in enumerate(tqdm(x, desc="MP3 compression")):
             x_mp3[i] = wav_to_mp3(x_i, self.sample_rate)
 
         if self.channels_first:
@@ -137,21 +140,15 @@ class Mp3Compression(Preprocessor):
 
         return x_mp3, y
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-        """
-        super().set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not (isinstance(self.sample_rate, (int, np.int)) and self.sample_rate > 0):
             raise ValueError("Sample rate be must a positive integer.")
-        return True

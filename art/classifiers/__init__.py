@@ -12,5 +12,9 @@ from art.estimators.classification.lightgbm import LightGBMClassifier
 from art.estimators.classification.mxnet import MXClassifier
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.scikitlearn import SklearnClassifier
-from art.estimators.classification.tensorflow import TFClassifier, TensorFlowClassifier, TensorFlowV2Classifier
+from art.estimators.classification.tensorflow import (
+    TFClassifier,
+    TensorFlowClassifier,
+    TensorFlowV2Classifier,
+)
 from art.estimators.classification.xgboost import XGBoostClassifier

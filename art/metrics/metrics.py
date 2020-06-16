@@ -21,42 +21,44 @@ attack-dependent and attack-independent.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import logging
 from functools import reduce
+import logging
+from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 import numpy.linalg as la
 from scipy.optimize import fmin as scipy_optimizer
 from scipy.stats import weibull_min
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
 from art.utils import random_sphere
 
+if TYPE_CHECKING:
+    from art.attacks import EvasionAttack
+    from art.estimators.classification.classifier import Classifier, ClassifierGradients
+
 logger = logging.getLogger(__name__)
 
-SUPPORTED_METHODS = {
+SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
     "fgsm": {
         "class": FastGradientMethod,
         "params": {"eps_step": 0.1, "eps_max": 1.0, "clip_min": 0.0, "clip_max": 1.0},
     },
-    "hsj": {"class": HopSkipJump, "params": {"max_iter": 50, "max_eval": 10000, "init_eval": 100, "init_size": 100}},
+    "hsj": {"class": HopSkipJump, "params": {"max_iter": 50, "max_eval": 10000, "init_eval": 100, "init_size": 100,},},
 }
 
 
-def get_crafter(classifier, attack, params=None):
+def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
     """
     Create an attack instance to craft adversarial samples.
 
-    :param classifier: A trained model
-    :type classifier: :class:`art.estimators.classification.Classifier`
-    :param attack: adversarial attack name
-    :type attack: `str`
-    :param params: Parameters specific to the adversarial attack
-    :type params: `dict`
-    :return: A crafter
-    :rtype: `Attack`
+    :param classifier: A trained model.
+    :param attack: adversarial attack name.
+    :param params: Parameters specific to the adversarial attack.
+    :return: An attack instance.
     """
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
@@ -69,7 +71,9 @@ def get_crafter(classifier, attack, params=None):
     return crafter
 
 
-def empirical_robustness(classifier, x, attack_name, attack_params=None):
+def empirical_robustness(
+    classifier: "Classifier", x: np.ndarray, attack_name: str, attack_params: Optional[Dict[str, Any]] = None,
+) -> Union[float, np.ndarray]:
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
     method `attack`. This is equivalent to computing the minimal perturbation that the attacker must introduce for a
@@ -77,19 +81,14 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
 
     | Paper link: https://arxiv.org/abs/1511.04599
 
-    :param classifier: A trained model
-    :type classifier: :class:`art.estimators.classification.Classifier`
-    :param x: Data sample of shape that can be fed into `classifier`
-    :type x: `np.ndarray`
+    :param classifier: A trained model.
+    :param x: Data sample of shape that can be fed into `classifier`.
     :param attack_name: A string specifying the attack to be used. Currently supported attacks are {`fgsm', `hsj`}
-                        (Fast Gradient Sign Method, Hop Skip Jump)
-    :type attack_name: `str`
+                        (Fast Gradient Sign Method, Hop Skip Jump).
     :param attack_params: A dictionary with attack-specific parameters. If the attack has a norm attribute, then it will
                           be used as the norm for calculating the robustness; otherwise the standard Euclidean distance
                           is used (norm=2).
-    :type attack_params: `dict`
-    :return: The average empirical robustness computed on `x`
-    :rtype: `float`
+    :return: The average empirical robustness computed on `x`.
     """
     crafter = get_crafter(classifier, attack_name, attack_params)
     crafter.set_params(**{"minimal": True})
@@ -101,11 +100,11 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
 
     idxs = np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)
     if np.sum(idxs) == 0.0:
-        return 0
+        return 0.0
 
     norm_type = 2
     if hasattr(crafter, "norm"):
-        norm_type = crafter.norm
+        norm_type = crafter.norm  # type: ignore
     perts_norm = la.norm((adv_x - x).reshape(x.shape[0], -1), ord=norm_type, axis=1)
     perts_norm = perts_norm[idxs]
 
@@ -150,20 +149,16 @@ def empirical_robustness(classifier, x, attack_name, attack_params=None):
 #     return avg_nn_dist
 
 
-def loss_sensitivity(classifier, x, y):
+def loss_sensitivity(classifier: "ClassifierGradients", x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
 
     | Paper link: https://arxiv.org/abs/1706.05394
 
-    :param classifier: A trained model
-    :type classifier: :class:`art.estimators.classification.ClassifierGradients`
-    :param x: Data sample of shape that can be fed into `classifier`
-    :type x: `np.ndarray`
+    :param classifier: A trained model.
+    :param x: Data sample of shape that can be fed into `classifier`.
     :param y: Labels for sample `x`, one-hot encoded.
-    :type y: `np.ndarray`
-    :return: The average loss sensitivity of the model
-    :rtype: `float`
+    :return: The average loss sensitivity of the model.
     """
     grads = classifier.loss_gradient(x, y)
     norm = la.norm(grads.reshape(grads.shape[0], -1), ord=2, axis=1)
@@ -172,36 +167,34 @@ def loss_sensitivity(classifier, x, y):
 
 
 def clever(
-    classifier, x, nb_batches, batch_size, radius, norm, target=None, target_sort=False, c_init=1, pool_factor=10
-):
+    classifier: "ClassifierGradients",
+    x: np.ndarray,
+    nb_batches: int,
+    batch_size: int,
+    radius: float,
+    norm: int,
+    target: Union[int, List[int], None] = None,
+    target_sort: bool = False,
+    c_init: float = 1.0,
+    pool_factor: int = 10,
+) -> Optional[np.ndarray]:
     """
     Compute CLEVER score for an untargeted attack.
 
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`art.estimators.classification.Classifier`
-    :param x: One input sample
-    :type x: `np.ndarray`
-    :param nb_batches: Number of repetitions of the estimate
-    :type nb_batches: `int`
-    :param batch_size: Number of random examples to sample per batch
-    :type batch_size: `int`
-    :param radius: Radius of the maximum perturbation
-    :type radius: `float`
-    :param norm: Current support: 1, 2, np.inf
-    :type norm: `int`
-    :param target: Class or classes to target. If `None`, targets all classes
-    :type target: `int` or iterable of `int`
+    :param x: One input sample.
+    :param nb_batches: Number of repetitions of the estimate.
+    :param batch_size: Number of random examples to sample per batch.
+    :param radius: Radius of the maximum perturbation.
+    :param norm: Current support: 1, 2, np.inf.
+    :param target: Class or classes to target. If `None`, targets all classes.
     :param target_sort: Should the target classes be sorted in prediction order. When `True` and `target` is `None`,
            sort results.
-    :type target_sort: `bool`
-    :param c_init: initialization of Weibull distribution
-    :type c_init: `float`
-    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
-    :type pool_factor: `int`
-    :return: CLEVER score
-    :rtype: array of `float`. None if target classes is predicted
+    :param c_init: initialization of Weibull distribution.
+    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s.
+    :return: CLEVER score.
     """
     # Find the predicted class first
     y_pred = classifier.predict(np.array([x]))
@@ -217,8 +210,8 @@ def clever(
     else:
         # Assume it's iterable
         target_classes = target
-    score_list = []
-    for j in target_classes:
+    score_list: List[Optional[float]] = []
+    for j in tqdm(target_classes, desc="CLEVER untargeted"):
         if j == pred_class:
             score_list.append(None)
             continue
@@ -227,30 +220,30 @@ def clever(
     return np.array(score_list)
 
 
-def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
+def clever_u(
+    classifier: "ClassifierGradients",
+    x: np.ndarray,
+    nb_batches: int,
+    batch_size: int,
+    radius: float,
+    norm: int,
+    c_init: float = 1.0,
+    pool_factor: int = 10,
+) -> float:
     """
     Compute CLEVER score for an untargeted attack.
 
     | Paper link: https://arxiv.org/abs/1801.10578
 
     :param classifier: A trained model.
-    :type classifier: :class:`art.estimators.classification.Classifier`
-    :param x: One input sample
-    :type x: `np.ndarray`
-    :param nb_batches: Number of repetitions of the estimate
-    :type nb_batches: `int`
-    :param batch_size: Number of random examples to sample per batch
-    :type batch_size: `int`
-    :param radius: Radius of the maximum perturbation
-    :type radius: `float`
-    :param norm: Current support: 1, 2, np.inf
-    :type norm: `int`
-    :param c_init: initialization of Weibull distribution
-    :type c_init: `float`
-    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
-    :type pool_factor: `int`
-    :return: CLEVER score
-    :rtype: `float`
+    :param x: One input sample.
+    :param nb_batches: Number of repetitions of the estimate.
+    :param batch_size: Number of random examples to sample per batch.
+    :param radius: Radius of the maximum perturbation.
+    :param norm: Current support: 1, 2, np.inf.
+    :param c_init: initialization of Weibull distribution.
+    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s.
+    :return: CLEVER score.
     """
     # Get a list of untargeted classes
     y_pred = classifier.predict(np.array([x]))
@@ -259,39 +252,39 @@ def clever_u(classifier, x, nb_batches, batch_size, radius, norm, c_init=1, pool
 
     # Compute CLEVER score for each untargeted class
     score_list = []
-    for j in untarget_classes:
+    for j in tqdm(untarget_classes, desc="CLEVER untargeted"):
         score = clever_t(classifier, x, j, nb_batches, batch_size, radius, norm, c_init, pool_factor)
         score_list.append(score)
 
     return np.min(score_list)
 
 
-def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, c_init=1, pool_factor=10):
+def clever_t(
+    classifier: "ClassifierGradients",
+    x: np.ndarray,
+    target_class: int,
+    nb_batches: int,
+    batch_size: int,
+    radius: float,
+    norm: int,
+    c_init: float = 1.0,
+    pool_factor: int = 10,
+) -> float:
     """
     Compute CLEVER score for a targeted attack.
 
     | Paper link: https://arxiv.org/abs/1801.10578
 
-    :param classifier: A trained model
-    :type classifier: :class:`art.estimators.classification.Classifier`
-    :param x: One input sample
-    :type x: `np.ndarray`
-    :param target_class: Targeted class
-    :type target_class: `int`
-    :param nb_batches: Number of repetitions of the estimate
-    :type nb_batches: `int`
-    :param batch_size: Number of random examples to sample per batch
-    :type batch_size: `int`
-    :param radius: Radius of the maximum perturbation
-    :type radius: `float`
-    :param norm: Current support: 1, 2, np.inf
-    :type norm: `int`
-    :param c_init: Initialization of Weibull distribution
-    :type c_init: `float`
-    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s
-    :type pool_factor: `int`
-    :return: CLEVER score
-    :rtype: `float`
+    :param classifier: A trained model.
+    :param x: One input sample.
+    :param target_class: Targeted class.
+    :param nb_batches: Number of repetitions of the estimate.
+    :param batch_size: Number of random examples to sample per batch.
+    :param radius: Radius of the maximum perturbation.
+    :param norm: Current support: 1, 2, np.inf.
+    :param c_init: Initialization of Weibull distribution.
+    :param pool_factor: The factor to create a pool of random samples with size pool_factor x n_s.
+    :return: CLEVER score.
     """
     # Check if the targeted class is different from the predicted class
     y_pred = classifier.predict(np.array([x]))
@@ -311,11 +304,11 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
 
     # Generate a pool of samples
     rand_pool = np.reshape(
-        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape
+        random_sphere(nb_points=pool_factor * batch_size, nb_dims=dim, radius=radius, norm=norm), shape,
     )
     rand_pool += np.repeat(np.array([x]), pool_factor * batch_size, 0)
     rand_pool = rand_pool.astype(ART_NUMPY_DTYPE)
-    if classifier.clip_values is not None:
+    if hasattr(classifier, "clip_values") and classifier.clip_values is not None:
         np.clip(rand_pool, classifier.clip_values[0], classifier.clip_values[1], out=rand_pool)
 
     # Change norm since q = p / (p-1)
@@ -354,20 +347,20 @@ def clever_t(classifier, x, target_class, nb_batches, batch_size, radius, norm, 
     return score
 
 
-def wasserstein_distance(u_values, v_values, u_weights=None, v_weights=None):
+def wasserstein_distance(
+    u_values: np.ndarray,
+    v_values: np.ndarray,
+    u_weights: Optional[np.ndarray] = None,
+    v_weights: Optional[np.ndarray] = None,
+) -> np.ndarray:
     """
     Compute the first Wasserstein distance between two 1D distributions.
 
-    :param u_values: Values of first distribution with shape (nb_samples, feature_dim_1, ..., feature_dim_n)
-    :type u_values: `np.ndarray`
-    :param v_values: Values of second distribution with shape (nb_samples, feature_dim_1, ..., feature_dim_n)
-    :type v_values: `np.ndarray`
-    :param u_weights: Weight for each value. If None equal weights will be used.
-    :type u_weights: `np.ndarray`
-    :param v_weights: Weight for each value. If None equal weights will be used.
-    :type v_weights: `np.ndarray`
-    :return: The Wasserstein distance between the two distributions
-    :rtype: `np.ndarray`
+    :param u_values: Values of first distribution with shape (nb_samples, feature_dim_1, ..., feature_dim_n).
+    :param v_values: Values of second distribution with shape (nb_samples, feature_dim_1, ..., feature_dim_n).
+    :param u_weights: Weight for each value. If None, equal weights will be used.
+    :param v_weights: Weight for each value. If None, equal weights will be used.
+    :return: The Wasserstein distance between the two distributions.
     """
     from scipy.stats import wasserstein_distance
 

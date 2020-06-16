@@ -27,11 +27,13 @@ This module implements the total variance minimization defence `TotalVarMin`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, Tuple
 
 import numpy as np
 from scipy.optimize import minimize
+from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -52,70 +54,64 @@ class TotalVarMin(Preprocessor):
 
     def __init__(
         self,
-        prob=0.3,
-        norm=2,
-        lamb=0.5,
-        solver="L-BFGS-B",
-        max_iter=10,
-        clip_values=None,
-        apply_fit=False,
-        apply_predict=True,
+        prob: float = 0.3,
+        norm: int = 2,
+        lamb: float = 0.5,
+        solver: str = "L-BFGS-B",
+        max_iter: int = 10,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
     ):
         """
         Create an instance of total variance minimization.
 
         :param prob: Probability of the Bernoulli distribution.
-        :type prob: `float`
         :param norm: The norm (positive integer).
-        :type norm: `int`
         :param lamb: The lambda parameter in the objective function.
-        :type lamb: `float`
         :param solver: Current support: `L-BFGS-B`, `CG`, `Newton-CG`.
-        :type solver: `str`
         :param max_iter: Maximum number of iterations when performing optimization.
-        :type max_iter: `int`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         super(TotalVarMin, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(prob=prob, norm=norm, lamb=lamb, solver=solver, max_iter=max_iter, clip_values=clip_values)
+        self.prob = prob
+        self.norm = norm
+        self.lamb = lamb
+        self.solver = solver
+        self.max_iter = max_iter
+        self.clip_values = clip_values
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, x, y=None):
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply total variance minimization to sample `x`.
 
         :param x: Sample to compress with shape `(batch_size, width, height, depth)`.
-        :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :type y: `np.ndarray`
         :return: Similar samples.
-        :rtype: `np.ndarray`
         """
         if len(x.shape) == 2:
             raise ValueError(
-                "Feature vectors detected. Variance minimization can only be applied to data with spatial" "dimensions."
+                "Feature vectors detected. Variance minimization can only be applied to data with spatial dimensions."
             )
-
         x_preproc = x.copy()
 
         # Minimize one input at a time
-        for i, x_i in enumerate(x_preproc):
+        for i, x_i in enumerate(tqdm(x_preproc, desc="Variance minimization")):
             mask = (np.random.rand(*x_i.shape) < self.prob).astype("int")
             x_preproc[i] = self._minimize(x_i, mask)
 
@@ -124,19 +120,16 @@ class TotalVarMin(Preprocessor):
 
         return x_preproc.astype(ART_NUMPY_DTYPE), y
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
 
-    def _minimize(self, x, mask):
+    def _minimize(self, x: np.ndarray, mask: np.ndarray) -> np.ndarray:
         """
         Minimize the total variance objective function.
 
         :param x: Original image.
-        :type x: `np.ndarray`
         :param mask: A matrix that decides which points are kept.
-        :type mask: `np.ndarray`
         :return: A new image.
-        :rtype: `np.ndarray`
         """
         z_min = x.copy()
 
@@ -154,22 +147,16 @@ class TotalVarMin(Preprocessor):
         return z_min
 
     @staticmethod
-    def _loss_func(z_init, x, mask, norm, lamb):
+    def _loss_func(z_init: np.ndarray, x: np.ndarray, mask: np.ndarray, norm: int, lamb: float) -> float:
         """
         Loss function to be minimized.
 
         :param z_init: Initial guess.
-        :type z_init: `np.ndarray`
         :param x: Original image.
-        :type x: `np.ndarray`
         :param mask: A matrix that decides which points are kept.
-        :type mask: `np.ndarray`
         :param norm: The norm (positive integer).
-        :type norm: `int`
         :param lamb: The lambda parameter in the objective function.
-        :type lamb: `float`
         :return: Loss value.
-        :rtype: `float`
         """
         res = np.sqrt(np.power(z_init - x.flatten(), 2).dot(mask.flatten()))
         z_init = np.reshape(z_init, x.shape)
@@ -179,22 +166,16 @@ class TotalVarMin(Preprocessor):
         return res
 
     @staticmethod
-    def _deri_loss_func(z_init, x, mask, norm, lamb):
+    def _deri_loss_func(z_init: np.ndarray, x: np.ndarray, mask: np.ndarray, norm: int, lamb: float) -> float:
         """
         Derivative of loss function to be minimized.
 
         :param z_init: Initial guess.
-        :type z_init: `np.ndarray`
         :param x: Original image.
-        :type x: `np.ndarray`
         :param mask: A matrix that decides which points are kept.
-        :type mask: `np.ndarray`
         :param norm: The norm (positive integer).
-        :type norm: `int`
         :param lamb: The lambda parameter in the objective function.
-        :type lamb: `float`
         :return: Derivative value.
-        :rtype: `float`
         """
         # First compute the derivative of the first component of the loss function
         nor1 = np.sqrt(np.power(z_init - x.flatten(), 2).dot(mask.flatten()))
@@ -228,33 +209,13 @@ class TotalVarMin(Preprocessor):
         # Total derivative
         return der1 + der2
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param prob: Probability of the Bernoulli distribution.
-        :type prob: `float`
-        :param norm: The norm (positive integer).
-        :type norm: `int`
-        :param lamb: The lambda parameter in the objective function.
-        :type lamb: `float`
-        :param solver: Current support: `L-BFGS-B`, `CG`, `Newton-CG`.
-        :type solver: `str`
-        :param max_iter: Maximum number of iterations when performing optimization.
-        :type max_iter: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        """
-        # Save defence-specific parameters
-        super(TotalVarMin, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.prob, (float, int)) or self.prob < 0.0 or self.prob > 1.0:
             logger.error("Probability must be between 0 and 1.")
             raise ValueError("Probability must be between 0 and 1.")
@@ -278,5 +239,3 @@ class TotalVarMin(Preprocessor):
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
-
-        return True

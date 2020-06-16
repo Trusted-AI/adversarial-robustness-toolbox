@@ -28,10 +28,12 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, Tuple
 
 import numpy as np
 from scipy.ndimage.filters import median_filter
 
+from art.config import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg
 
@@ -54,29 +56,24 @@ class SpatialSmoothing(Preprocessor):
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        window_size=3,
+        window_size: int = 3,
         channel_index=Deprecated,
-        channels_first=False,
-        clip_values=None,
-        apply_fit=False,
-        apply_predict=True,
-    ):
+        channels_first: bool = False,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
+    ) -> None:
         """
         Create an instance of local spatial smoothing.
 
         :param channel_index: Index of the axis in data containing the color channels or features.
         :type channel_index: `int`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param window_size: The size of the sliding window.
-        :type window_size: `int`
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
-        :type clip_values: `tuple`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -90,30 +87,28 @@ class SpatialSmoothing(Preprocessor):
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(
-            channel_index=channel_index, channels_first=channels_first, window_size=window_size, clip_values=clip_values
-        )
+        self.channel_index = channel_index
+        self.channels_first = channels_first
+        self.window_size = window_size
+        self.clip_values = clip_values
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, x, y=None):
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply local spatial smoothing to sample `x`.
 
         :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
-        :type x: `np.ndarray`
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :type y: `np.ndarray`
-        :return: Smoothed sample
-        :rtype: `np.ndarray`
+        :return: Smoothed sample.
         """
-
         x_ndim = x.ndim
         if x_ndim not in [4, 5]:
             raise ValueError(
@@ -142,30 +137,16 @@ class SpatialSmoothing(Preprocessor):
 
         return result, y
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        :param window_size: The size of the sliding window.
-        :type window_size: `int`
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
-        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
-               for features.
-        :type clip_values: `tuple`
-        """
-        # Save defence-specific parameters
-        super(SpatialSmoothing, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
             raise ValueError("Sliding window size must be a positive integer.")
 
@@ -174,5 +155,3 @@ class SpatialSmoothing(Preprocessor):
 
         if self.clip_values is not None and np.array(self.clip_values[0] >= self.clip_values[1]).any():
             raise ValueError("Invalid 'clip_values': min >= max.")
-
-        return True

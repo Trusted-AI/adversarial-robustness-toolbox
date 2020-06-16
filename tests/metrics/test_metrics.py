@@ -147,13 +147,6 @@ class TestClever(unittest.TestCase):
         To create a simple TensorFlowClassifier for testing.
         :return:
         """
-        import tensorflow as tf
-
-        if tf.__version__[0] == "2":
-            import tensorflow.compat.v1 as tf
-
-            tf.disable_eager_execution()
-
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         labels_ph = tf.placeholder(tf.int32, shape=[None, 10])

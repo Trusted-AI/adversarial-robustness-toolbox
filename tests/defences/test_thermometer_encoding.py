@@ -62,31 +62,36 @@ class TestThermometerEncoding(unittest.TestCase):
             [
                 [
                     [
-                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                        [1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+                        [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                     ],
                     [
-                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                        [1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+                        [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                     ],
                 ],
                 [
                     [
-                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                        [1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+                        [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                     ],
                     [
-                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                        [1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+                        [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                     ],
                 ],
             ]
         )
         self.assertTrue((x_preproc == true_value).all())
+
+        # Create an instance of ThermometerEncoding
+        th_encoder_scaled = ThermometerEncoding(clip_values=(-10, 10), num_space=4)
+        x_preproc_scaled, _ = th_encoder_scaled(20 * x - 10)
+        self.assertTrue((x_preproc_scaled == true_value).all())
 
     def test_channel_first(self):
         x = np.random.rand(5, 2, 28, 28)
@@ -103,7 +108,7 @@ class TestThermometerEncoding(unittest.TestCase):
         x = np.random.rand(5, 28, 28, 1)
         grad = np.ones((5, 28, 28, num_space))
         estimated_grads = encoder.estimate_gradient(grad=grad, x=x)
-        self.assertTrue(np.isin(estimated_grads, [0, 1]).all())
+        self.assertEqual(estimated_grads.shape, x.shape)
 
     def test_feature_vectors(self):
         x = np.random.rand(10, 4)

@@ -24,14 +24,24 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional
 
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success, get_labels_np_array, random_sphere, projection, check_and_transform_label_format
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.classification.classifier import (
+    ClassifierGradients,
+    ClassifierMixin,
+)
+from art.utils import (
+    compute_success,
+    get_labels_np_array,
+    random_sphere,
+    projection,
+    check_and_transform_label_format,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -54,78 +64,61 @@ class FastGradientMethod(EvasionAttack):
         "batch_size",
         "minimal",
     ]
-
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
         self,
-        estimator,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        targeted=False,
-        num_random_init=0,
-        batch_size=128,
-        minimal=False,
-    ):
+        estimator: ClassifierGradients,
+        norm: int = np.inf,
+        eps: float = 0.3,
+        eps_step: float = 0.1,
+        targeted: bool = False,
+        num_random_init: int = 0,
+        batch_size: int = 32,
+        minimal: bool = False,
+    ) -> None:
         """
         Create a :class:`.FastGradientMethod` instance.
 
-        :param estimator: A trained estimator.
-        :type estimator: :class:`.BaseEstimator`
+        :param estimator: A trained classifier.
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
-        :type norm: `int`
-        :param eps: Attack step size (input variation)
-        :type eps: `float`
-        :param eps_step: Step size of input variation for minimal perturbation computation
-        :type eps_step: `float`
+        :param eps: Attack step size (input variation).
+        :param eps_step: Step size of input variation for minimal perturbation computation.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
             the original input.
-        :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
                         the step size and eps for the maximum perturbation.
-        :type minimal: `bool`
         """
         super(FastGradientMethod, self).__init__(estimator=estimator)
-
-        kwargs = {
-            "norm": norm,
-            "eps": eps,
-            "eps_step": eps_step,
-            "targeted": targeted,
-            "num_random_init": num_random_init,
-            "batch_size": batch_size,
-            "minimal": minimal,
-        }
-
-        FastGradientMethod.set_params(self, **kwargs)
-
+        self.norm = norm
+        self.eps = eps
+        self.eps_step = eps_step
+        self.targeted = targeted
+        self.num_random_init = num_random_init
+        self.batch_size = batch_size
+        self.minimal = minimal
         self._project = True
+        FastGradientMethod._check_params(self)
 
-    def _minimal_perturbation(self, x, y, mask):
-        """Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
+    def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray, mask: np.ndarray) -> np.ndarray:
+        """
+        Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
         first adversarial example was found.
 
-        :param x: An array with the original inputs
-        :type x: `np.ndarray`
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes)
-        :type y: `np.ndarray`
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :type mask: `np.ndarray`
-        :return: An array holding the adversarial examples
-        :rtype: `np.ndarray`
+        :param x: An array with the original inputs.
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :return: An array holding the adversarial examples.
         """
         adv_x = x.copy()
 
         # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(adv_x.shape[0] / float(self.batch_size)))):
-            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            batch_index_1, batch_index_2 = (
+                batch_id * self.batch_size,
+                (batch_id + 1) * self.batch_size,
+            )
             batch = adv_x[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
@@ -160,22 +153,19 @@ class FastGradientMethod(EvasionAttack):
 
         return adv_x
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
-        :param y: Target values in the format and shape expected by the loss function of the estimator. Only provide
-                  this parameter if you'd like to use true labels when crafting adversarial samples. Otherwise, model
-                  predictions are used as labels to avoid the "label leaking" effect (explained in this paper:
-                  https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: As defined by the loss function of the estimator
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
+                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
+                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
+                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         if isinstance(self.estimator, ClassifierMixin):
             y = check_and_transform_label_format(y, self.estimator.nb_classes)
@@ -187,7 +177,9 @@ class FastGradientMethod(EvasionAttack):
 
                 # Use model predictions as correct outputs
                 logger.info("Using model predictions as correct labels for FGM.")
-                y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+                y = get_labels_np_array(
+                    self.estimator.predict(x, batch_size=self.batch_size)  # type: ignore
+                )
             y = y / np.sum(y, axis=1, keepdims=True)
 
             mask = kwargs.get("mask")
@@ -197,22 +189,23 @@ class FastGradientMethod(EvasionAttack):
                     raise ValueError("mask shape must be broadcastable to input shape")
 
             # Return adversarial examples computed with minimal perturbation if option is active
+            rate_best: Optional[float]
             if self.minimal:
                 logger.info("Performing minimal perturbation FGM.")
                 adv_x_best = self._minimal_perturbation(x, y, mask)
                 rate_best = 100 * compute_success(
-                    self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size
+                    self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size,  # type: ignore
                 )
             else:
                 adv_x_best = None
                 rate_best = None
 
                 for _ in range(max(1, self.num_random_init)):
-                    adv_x = self._compute(x, x, y, mask, self.eps, self.eps, self._project, self.num_random_init > 0)
+                    adv_x = self._compute(x, x, y, mask, self.eps, self.eps, self._project, self.num_random_init > 0,)
 
                     if self.num_random_init > 1:
                         rate = 100 * compute_success(
-                            self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size
+                            self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size,  # type: ignore
                         )
                         if rate_best is None or rate > rate_best or adv_x_best is None:
                             rate_best = rate
@@ -224,7 +217,15 @@ class FastGradientMethod(EvasionAttack):
                 "Success rate of FGM attack: %.2f%%",
                 rate_best
                 if rate_best is not None
-                else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+                else 100
+                * compute_success(
+                    self.estimator,  # type: ignore
+                    x,
+                    y,
+                    adv_x_best,
+                    self.targeted,
+                    batch_size=self.batch_size,
+                ),
             )
 
         else:
@@ -243,33 +244,11 @@ class FastGradientMethod(EvasionAttack):
                 logger.info("Using model predictions as correct labels for FGM.")
                 y = self.estimator.predict(x, batch_size=self.batch_size)
 
-            adv_x_best = self._compute(x, x, y, None, self.eps, self.eps, self._project, self.num_random_init > 0)
+            adv_x_best = self._compute(x, x, y, None, self.eps, self.eps, self._project, self.num_random_init > 0,)
 
         return adv_x_best
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param norm: Order of the norm. Possible values: np.inf, 1 or 2.
-        :type norm: `int` or `float`
-        :param eps: Attack step size (input variation)
-        :type eps: `float`
-        :param eps_step: Step size of input variation for minimal perturbation computation
-        :type eps_step: `float`
-        :param targeted: Should the attack target one specific class
-        :type targeted: `bool`
-        :param num_random_init: Number of random initialisations within the epsilon ball. For random_init=0 starting at
-                                the original input.
-        :type num_random_init: `int`
-        :param batch_size: Batch size
-        :type batch_size: `int`
-        :param minimal: Flag to compute the minimal perturbation.
-        :type minimal: `bool`
-        """
-        # Save attack-specific parameters
-        super(FastGradientMethod, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [np.inf, int(1), int(2)]:
             raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
@@ -295,9 +274,7 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
 
-        return True
-
-    def _compute_perturbation(self, batch, batch_labels, mask):
+    def _compute_perturbation(self, batch: np.ndarray, batch_labels: np.ndarray, mask: np.ndarray) -> np.ndarray:
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
@@ -320,7 +297,7 @@ class FastGradientMethod(EvasionAttack):
         else:
             return grad * (mask.astype(ART_NUMPY_DTYPE))
 
-    def _apply_perturbation(self, batch, perturbation, eps_step):
+    def _apply_perturbation(self, batch: np.ndarray, perturbation: np.ndarray, eps_step: float) -> np.ndarray:
         batch = batch + eps_step * perturbation
 
         if self.estimator.clip_values is not None:
@@ -329,7 +306,17 @@ class FastGradientMethod(EvasionAttack):
 
         return batch
 
-    def _compute(self, x, x_init, y, mask, eps, eps_step, project, random_init):
+    def _compute(
+        self,
+        x: np.ndarray,
+        x_init: np.ndarray,
+        y: np.ndarray,
+        mask: np.ndarray,
+        eps: float,
+        eps_step: float,
+        project: bool,
+        random_init: bool,
+    ) -> np.ndarray:
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
@@ -344,7 +331,7 @@ class FastGradientMethod(EvasionAttack):
         else:
             x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        # Compute perturbation with implicit batching
+            # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]

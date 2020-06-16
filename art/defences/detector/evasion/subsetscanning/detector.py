@@ -22,39 +22,39 @@ This module implements the fast generalized subset scan based detector.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 # pylint: disable=E0001
 import numpy as np
-import six
-
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
-from art.utils import deprecated
+from sklearn import metrics
+from tqdm import trange, tqdm
 
 from art.defences.detector.evasion import Scanner
+from art.estimators.classification.classifier import ClassifierNeuralNetwork
+from art.utils import deprecated
+
+
+if TYPE_CHECKING:
+    from art.config import CLIP_VALUES_TYPE
+    from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
 
 
-class SubsetScanningDetector(
-    ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
-):
+class SubsetScanningDetector(ClassifierNeuralNetwork):
     """
     Fast generalized subset scan based detector by McFowland, E., Speakman, S., and Neill, D. B. (2013).
 
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
-    def __init__(self, classifier, bgd_data, layer):
+    def __init__(self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str],) -> None:
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
-        :param classifier: The model being evaluated for its robustness to anomalies (eg. adversarial samples)
-        :type classifier: :class:`art.estimators.classification.Classifier`
-        :bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
-        :type bgd_data: `np.ndarray`
-        :layer: The layer from which to extract activations to perform scan
-        :type layer: `int` or `str`
+        :param classifier: The model being evaluated for its robustness to anomalies (e.g. adversarial samples).
+        :param bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
+        :param layer: The layer from which to extract activations to perform scan.
         """
         super(SubsetScanningDetector, self).__init__(
             clip_values=classifier.clip_values,
@@ -63,22 +63,20 @@ class SubsetScanningDetector(
             preprocessing_defences=classifier.preprocessing_defences,
             preprocessing=classifier.preprocessing,
         )
-        self.classifier = classifier
+        self.detector = classifier
         self.bgd_data = bgd_data
 
-        # Ensure that layer is well-defined:
-        if isinstance(layer, six.string_types):
-            if layer not in classifier.layer_names:
-                raise ValueError("Layer name %s is not part of the graph." % layer)
-            self._layer_name = layer
-        elif isinstance(layer, int):
+        # Ensure that layer is well-defined
+        if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(
                     "Layer index %d is outside of range (0 to %d included)." % (layer, len(classifier.layer_names) - 1)
                 )
             self._layer_name = classifier.layer_names[layer]
         else:
-            raise TypeError("Layer must be of type `str` or `int`.")
+            if layer not in classifier.layer_names:
+                raise ValueError("Layer name %s is not part of the graph." % layer)
+            self._layer_name = layer
 
         bgd_activations = classifier.get_activations(bgd_data, self._layer_name, batch_size=128)
         if len(bgd_activations.shape) == 4:
@@ -87,18 +85,15 @@ class SubsetScanningDetector(
 
         self.sorted_bgd_activations = np.sort(bgd_activations, axis=0)
 
-    def calculate_pvalue_ranges(self, eval_x):
+    def calculate_pvalue_ranges(self, eval_x: np.ndarray) -> np.ndarray:
         """
         Returns computed p-value ranges.
 
         :param eval_x: Data being evaluated for anomalies.
-        :type eval_x: `np.ndarray`
         :return: P-value ranges.
-        :rtype: `np.ndarray`
         """
-
         bgd_activations = self.sorted_bgd_activations
-        eval_activations = self.classifier.get_activations(eval_x, self._layer_name, batch_size=128)
+        eval_activations = self.detector.get_activations(eval_x, self._layer_name, batch_size=128)
 
         if len(eval_activations.shape) == 4:
             dim2 = eval_activations.shape[1] * eval_activations.shape[2] * eval_activations.shape[3]
@@ -121,23 +116,24 @@ class SubsetScanningDetector(
 
         return pvalue_ranges
 
-    def scan(self, clean_x, adv_x, clean_size=None, advs_size=None, run=10):
+    def scan(
+        self,
+        clean_x: np.ndarray,
+        adv_x: np.ndarray,
+        clean_size: Optional[int] = None,
+        advs_size: Optional[int] = None,
+        run: int = 10,
+    ) -> Tuple[list, list, float]:
         """
         Returns scores of highest scoring subsets.
 
         :param clean_x: Data presumably without anomalies.
-        :type clean_x: `np.ndarray`
         :param adv_x: Data presumably with anomalies (adversarial samples).
-        :type adv_x: `np.ndarray`
         :param clean_size:
-        :type clean_size: `int`
         :param advs_size:
-        :param advs_size: `int`
-        :return: (clean_scores, adv_scores, detectionpower)
-        :rtype: `list`, `list`, `float`
+        :param run:
+        :return: (clean_scores, adv_scores, detectionpower).
         """
-        from sklearn import metrics
-
         clean_pvalranges = self.calculate_pvalue_ranges(clean_x)
         adv_pvalranges = self.calculate_pvalue_ranges(adv_x)
 
@@ -145,21 +141,22 @@ class SubsetScanningDetector(
         adv_scores = []
 
         if clean_size is None and advs_size is None:
-
             # Individual scan
-            for j, _ in enumerate(clean_pvalranges):
-                best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
-                clean_scores.append(best_score)
-            for j, _ in enumerate(adv_pvalranges):
-                best_score, _, _, _ = Scanner.fgss_individ_for_nets(adv_pvalranges[j])
-                adv_scores.append(best_score)
+            with tqdm(len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning") as pbar:
+                for j in range(len(clean_pvalranges)):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
+                    clean_scores.append(best_score)
+                    pbar.update(1)
+                for j in range(len(adv_pvalranges)):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(adv_pvalranges[j])
+                    adv_scores.append(best_score)
+                    pbar.update(1)
 
         else:
-
             len_adv_x = len(adv_x)
             len_clean_x = len(clean_x)
 
-            for _ in range(run):
+            for _ in trange(run, desc="Subset scanning"):
                 np.random.seed()
 
                 advchoice = np.random.choice(range(len_adv_x), advs_size, replace=False)
@@ -181,78 +178,78 @@ class SubsetScanningDetector(
 
         return clean_scores, adv_scores, detectionpower
 
-    def fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
-        Fit the detector using training data.
-        Assume that the classifier is already trained
+        Fit the detector using training data. Assumes that the classifier is already trained.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform detection of adversarial data and return prediction as tuple.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
         """
         Fit the classifier using the generator gen that yields batches as specified. This function is not supported
         for this detector.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
-    def nb_classes(self):
+    def nb_classes(self) -> int:
         return self.detector.nb_classes
 
     @property
-    def input_shape(self):
+    def input_shape(self) -> Tuple[int, ...]:
         return self.detector.input_shape
 
     @property
-    def clip_values(self):
+    def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         return self.detector.clip_values
 
-    @property
+    @property  # type: ignore
     @deprecated(end_version="1.5.0", replaced_by="channels_first")
-    def channel_index(self):
+    def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 
     @property
-    def channels_first(self):
+    def channels_first(self) -> bool:
         """
         :return: Boolean to indicate index of the color channels in the sample `x`.
-        :type: `bool`
         """
         return self.channels_first
 
     @property
-    def learning_phase(self):
-        return self.detector._learning_phase
+    def learning_phase(self) -> Optional[bool]:
+        return self.detector.learning_phase
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         return self.detector.class_gradient(x, label=label)
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         return self.detector.loss_gradient(x, y)
 
-    def get_activations(self, x, layer, batch_size):
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
         calling `layer_names`. This function is not supported for this detector.
 
-        :raises: `NotImplementedException`
+        :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train):
+    def set_learning_phase(self, train: bool) -> None:
         self.detector.set_learning_phase(train)
 
-    def save(self, filename, path=None):
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         self.detector.save(filename, path)
