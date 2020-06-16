@@ -19,6 +19,7 @@
 This module implements the task specific estimator for Faster R-CNN in TensorFlow.
 """
 import logging
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
@@ -32,6 +33,15 @@ from art.utils import Deprecated, deprecated_keyword_arg
 from art.utils import get_file
 from art.config import ART_DATA_PATH
 
+if TYPE_CHECKING:
+    import object_detection
+    from tensorflow.python.framework.ops import Tensor
+    from tensorflow.python.client.session import Session
+
+    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.defences.preprocessor.preprocessor import Preprocessor
+    from art.defences.postprocessor.postprocessor import Postprocessor
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,19 +53,19 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        model=None,
-        filename='faster_rcnn_inception_v2_coco_2017_11_08',
-        url='http://download.tensorflow.org/models/object_detection/faster_rcnn_inception_v2_coco_2017_11_08.tar.gz',
-        images=None,
-        sess=None,
-        is_training=False,
-        clip_values=None,
+        model: Optional["object_detection.meta_architectures.faster_rcnn_meta_arch.FasterRCNNMetaArch"] = None,
+        filename: Optional[str] = None,
+        url: Optional[str] = None,
+        images: Optional["Tensor"] = None,
+        sess: Optional["Session"] = None,
+        is_training: bool = False,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         channel_index=Deprecated,
-        channels_first=None,
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=None,
-        attack_losses=(
+        channels_first: Optional[bool] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        attack_losses: Tuple[str, ...] = (
             'first_stage_localization_loss',
             'first_stage_objectness_loss',
             'second_stage_localization_loss',
@@ -65,8 +75,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         """
         Initialization of an instance TensorFlowFasterRCNN.
 
-        :param model: A representative TensorFlow Faster-RCNN model, which is a tuple of
-        (predictions, losses, detections):
+        :param model: A TensorFlow Faster-RCNN model. The output that can be computed from the model includes a tuple
+        of (predictions, losses, detections):
 
                     - predictions: a dictionary holding "raw" prediction tensors.
                     - losses: a dictionary mapping loss keys (`first_stage_localization_loss`,
@@ -74,38 +84,26 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     `second_stage_classification_loss`) to scalar tensors representing
                     corresponding loss values.
                     - detections: a dictionary containing final detection results.
-        :type model: `tuple`
         :param filename: Name of the file.
-        :type filename: `str`
         :param url: Download URL.
-        :type url: `str`
         :param images: Input samples of shape (nb_samples, height, width, nb_channels).
-        :type images: `tensorflow.Tensor`
         :param sess: Computation session.
-        :type sess: `tf.Session`
         :param is_training: A boolean indicating whether the training version of the computation graph should be
-        constructed.
-        :type is_training: `bool`
+               constructed.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
                the shape of clip values needs to match the total number of features.
-        :type clip_values: `tuple`
         :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
-        :type channels_first: `bool`
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
-        :type preprocessing_defences: :class:`.Preprocessor` or `list(Preprocessor)` instances
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :type postprocessing_defences: :class:`.Postprocessor` or `list(Postprocessor)` instances
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :type preprocessing: `tuple`
-        :param attack_losses: Tuple of any combination of strings of loss components: `first_stage_localization_loss`,
-                    `first_stage_objectness_loss`, `second_stage_localization_loss`, `second_stage_classification_loss`.
-        :type attack_losses: `Tuple[str]`
+        :param attack_losses: Tuple of any combination of strings of the following loss components:
+               `first_stage_localization_loss`, `first_stage_objectness_loss`, `second_stage_localization_loss`,
+               `second_stage_classification_loss`.
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -115,6 +113,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
+        # Super initialization
         super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
@@ -124,40 +123,64 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             preprocessing=preprocessing,
         )
 
-        assert clip_values[0] == 0, "This classifier requires normalized input images with clip_vales=(0, 1)."
-        assert clip_values[1] == 1, "This classifier requires normalized input images with clip_vales=(0, 1)."
-        assert preprocessing is None, "This estimator does not support `preprocessing`."
-        assert postprocessing_defences is None, "This estimator does not support `postprocessing_defences`."
+        # Check clip values
+        if self.clip_values is not None:
+            if self.clip_values[0] != 0:
+                raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
+            if self.clip_values[1] != 1:
+                raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
+
+        # Check preprocessing and postprocessing_defences
+        if self.preprocessing is not None:
+            raise ValueError("This estimator does not support `preprocessing`.")
+        if self.postprocessing_defences is not None:
+            raise ValueError("This estimator does not support `postprocessing_defences`.")
+
+        # Create placeholders for groundtruth boxes
+        self._groundtruth_boxes_list: List["Tensor"]
+        self._groundtruth_boxes_list = [
+            tf.placeholder(
+                dtype=tf.float32,
+                shape=(None, 4),
+                name="groundtruth_boxes_{}".format(i)
+            ) for i in range(images.shape[0])
+        ]
+
+        # Create placeholders for groundtruth classes
+        self._groundtruth_classes_list: List["Tensor"]
+        self._groundtruth_classes_list = [
+            tf.placeholder(
+                dtype=tf.int32,
+                shape=(None,),
+                name="groundtruth_classes_{}".format(i)
+            ) for i in range(images.shape[0])
+        ]
+
+        # Create placeholders for groundtruth weights
+        self._groundtruth_weights_list: List["Tensor"]
+        self._groundtruth_weights_list = [
+            tf.placeholder(
+                dtype=tf.float32,
+                shape=(None,),
+                name="groundtruth_weights_{}".format(i)
+            ) for i in range(images.shape[0])
+        ]
 
         # Load model
         if model is None:
-            self._groundtruth_boxes_list = [
-                tf.placeholder(
-                    dtype=tf.float32,
-                    shape=(None, 4),
-                    name="groundtruth_boxes_{}".format(i)
-                ) for i in range(images.shape[0])
-            ]
-
-            self._groundtruth_classes_list = [
-                tf.placeholder(
-                    dtype=tf.int32,
-                    shape=(None,),
-                    name="groundtruth_classes_{}".format(i)
-                ) for i in range(images.shape[0])
-            ]
-
-            self._groundtruth_weights_list = [
-                tf.placeholder(
-                    dtype=tf.float32,
-                    shape=(None,),
-                    name="groundtruth_weights_{}".format(i)
-                ) for i in range(images.shape[0])
-            ]
+            # If model is None, then we need to have parameters filename and url to download, extract and load the
+            # object detection model
+            if filename is None or url is None:
+                filename, url = (
+                    'faster_rcnn_inception_v2_coco_2017_11_08',
+                    'http://download.tensorflow.org/models/object_detection/'
+                    'faster_rcnn_inception_v2_coco_2017_11_08.tar.gz'
+                )
 
             self._predictions, self._losses, self._detections = self._load_model(
                 filename=filename,
                 url=url,
+                obj_detection_model=None,
                 images=images,
                 is_training=is_training,
                 groundtruth_boxes_list=self._groundtruth_boxes_list,
@@ -166,21 +189,31 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             )
 
         else:
-            self._predictions, self._losses, self._detections = model[0], model[1], model[2]
+            self._predictions, self._losses, self._detections = self._load_model(
+                filename=None,
+                url=None,
+                obj_detection_model=model,
+                images=images,
+                is_training=is_training,
+                groundtruth_boxes_list=self._groundtruth_boxes_list,
+                groundtruth_classes_list=self._groundtruth_classes_list,
+                groundtruth_weights_list=self._groundtruth_weights_list
+            )
 
-        self._is_training = is_training
-        self._images = images
-        self._attack_losses = attack_losses
+        self._is_training: bool = is_training
+        self._images: Optional["Tensor"] = images
+        self._attack_losses: Tuple[str, ...] = attack_losses
 
         # Assign session
         if sess is None:
             raise ValueError("A session cannot be None.")
-        self._sess = sess
+        self._sess: Optional["Session"] = sess
 
     @staticmethod
     def _load_model(
         filename,
         url,
+        obj_detection_model,
         images,
         is_training=False,
         groundtruth_boxes_list=None,
@@ -224,37 +257,43 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     - detections: a dictionary containing final detection results.
         :rtype: `tuple`
         """
-        # Download and extract
-        path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
+        if obj_detection_model is None:
+            if filename is None or url is None:
+                raise ValueError(
+                    "Need input parameters `filename` and `url` to download, "
+                    "extract and load the object detection model."
+                )
 
-        # Load model config
-        pipeline_config = path + '/pipeline.config'
-        configs = config_util.get_configs_from_pipeline_file(pipeline_config)
-        configs['model'].faster_rcnn.second_stage_batch_size = configs[
-            'model'
-        ].faster_rcnn.first_stage_max_proposals
+            # Download and extract
+            path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
 
-        # Load model
-        obj_detection_model = model_builder.build(
-            model_config=configs['model'],
-            is_training=is_training,
-            add_summaries=False
-        )
+            # Load model config
+            pipeline_config = path + '/pipeline.config'
+            configs = config_util.get_configs_from_pipeline_file(pipeline_config)
+            configs['model'].faster_rcnn.second_stage_batch_size = configs[
+                'model'
+            ].faster_rcnn.first_stage_max_proposals
+
+            # Load model
+            obj_detection_model = model_builder.build(
+                model_config=configs['model'],
+                is_training=is_training,
+                add_summaries=False
+            )
 
         # Provide groundtruth
-        if is_training:
-            groundtruth_classes_list = [
-                tf.one_hot(
-                    groundtrue_class,
-                    obj_detection_model.num_classes
-                ) for groundtrue_class in groundtruth_classes_list
-            ]
+        groundtruth_classes_list = [
+            tf.one_hot(
+                groundtrue_class,
+                obj_detection_model.num_classes
+            ) for groundtrue_class in groundtruth_classes_list
+        ]
 
-            obj_detection_model.provide_groundtruth(
-                groundtruth_boxes_list=groundtruth_boxes_list,
-                groundtruth_classes_list=groundtruth_classes_list,
-                groundtruth_weights_list=groundtruth_weights_list
-            )
+        obj_detection_model.provide_groundtruth(
+            groundtruth_boxes_list=groundtruth_boxes_list,
+            groundtruth_classes_list=groundtruth_classes_list,
+            groundtruth_weights_list=groundtruth_weights_list
+        )
 
         # Create model pipeline
         images *= 255.0
