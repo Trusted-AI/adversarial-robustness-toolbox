@@ -131,57 +131,34 @@ def test_repr(framework, is_tf_version_2, get_image_classifier_list):
             elif framework == "tensorflow":
                 if is_tf_version_2:
                     message_list = [
-                            "TensorFlowV2Classifier",
-                            "model=",
-                            "nb_classes=10",
-                            "input_shape=(28, 28, 1)",
-                            "loss_object=<tensorflow.python.keras.losses." "SparseCategoricalCrossentropy",
-                            "train_step=<function get_image_classifier_tf_v2." "<locals>.train_step",
-                            f"channel_index={Deprecated}, channels_first=False, ",
-                            "clip_values=array([0., 1.], dtype=float32), "    
-                            "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))",
-                        ]
+                        "TensorFlowV2Classifier",
+                        "model=",
+                        "nb_classes=10",
+                        "input_shape=(28, 28, 1)",
+                        "loss_object=<tensorflow.python.keras.losses." "SparseCategoricalCrossentropy",
+                        "train_step=<function get_image_classifier_tf_v2." "<locals>.train_step",
+                        f"channel_index={Deprecated}, channels_first=False, ",
+                        "clip_values=array([0., 1.], dtype=float32), ",
+                        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))",
+                    ]
 
                 else:
 
                     message_list = [
-                            "TensorFlowClassifier",
-                            "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
-                            "output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>",
-                            "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
-                            "train=<tf.Operation 'Adam' type=NoOp>",
-                            "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
-                            "learning=None",
-                            "sess=<tensorflow.python.client.session.Session object",
-                            "TensorFlowClassifier",
-                            f"channel_index={Deprecated}, channels_first=False, "
-                            "clip_values=array([0., 1.], dtype=float32), "
-                            "preprocessing_defences=None, postprocessing_defences=None, "
-                            "preprocessing=(0, 1))",
-                        ]
-
-            #     if is_tf_version_2:
-            #         message_list = [
-            #             "TensorFlowV2Classifier",
-            #             "model=",
-            #             "nb_classes=10",
-            #             "input_shape=(28, 28, 1)",
-            #             "loss_object=<tensorflow.python.keras.losses." "SparseCategoricalCrossentropy",
-            #             "train_step=<function get_image_classifier_tf_v2." "<locals>.train_step",
-            #             "channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32),"
-            #             "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))",
-            #         ]
-            # else:
-            #     message_list = ["TensorFlowV2Classifier",
-            #                     "model=",
-            #                     "nb_classes=10",
-            #                     "input_shape=(28, 28, 1)",
-            #                     "loss_object=<tensorflow.python.keras.losses." "SparseCategoricalCrossentropy",
-            #                     "train_step=<function get_image_classifier_tf_v2." "<locals>.train_step",
-            #                     "channel_index={Deprecated}, channels_first=False, ",
-            #                     "clip_values=array([0., 1.], dtype=float32), "
-            #                     "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))",
-            #                     ],
+                        "TensorFlowClassifier",
+                        "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
+                        "output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>",
+                        "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
+                        "train=<tf.Operation 'Adam' type=NoOp>",
+                        "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
+                        "learning=None",
+                        "sess=<tensorflow.python.client.session.Session object",
+                        "TensorFlowClassifier",
+                        f"channel_index={Deprecated}, channels_first=False, ",
+                        "clip_values=array([0., 1.], dtype=float32), ",
+                        "preprocessing_defences=None, postprocessing_defences=None, ",
+                        "preprocessing=(0, 1))",
+                    ]
 
             if message_list is None:
                 raise NotImplementedError(
