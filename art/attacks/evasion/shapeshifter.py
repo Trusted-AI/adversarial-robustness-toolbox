@@ -20,7 +20,6 @@ This module implements ShapeShifter, a robust physical adversarial attack on Fas
 
 | Paper link: https://arxiv.org/abs/1804.05810
 """
-
 import logging
 
 import numpy as np
@@ -48,6 +47,8 @@ class ShapeShifter(EvasionAttack):
         "random_transform",
         "learning_rate",
         "batch_size",
+
+        "box_classifier_weight",
     ]
 
     _estimator_requirements = (
@@ -59,7 +60,14 @@ class ShapeShifter(EvasionAttack):
         TensorFlowFasterRCNN
     )
 
-    def __init__(self, estimator, random_transform=tf.identity, learning_rate=5.0, batch_size=1):
+    def __init__(
+        self,
+        estimator,
+        random_transform=tf.identity,
+        learning_rate=5.0,
+        batch_size=1,
+        box_classifier_weight=1.0,
+    ):
         """
         Create an instance of the :class:`.ShapeShifter`.
 
@@ -92,14 +100,6 @@ class ShapeShifter(EvasionAttack):
         :return: Adversarial patch.
         :rtype: `np.ndarray`
         """
-
-        channel_index = 1 if self.estimator.channels_first else x.ndim - 1
-        assert (
-            x.shape[channel_index] == self.patch_shape[channel_index - 1]
-        ), "The channels_first boolean of the estimator and the patch have to be identical."
-
-        assert y is None, "The DPatch attack does not use target labels."
-
         assert x.ndim == 4, "The adversarial patch can only be applied to images."
 
 
