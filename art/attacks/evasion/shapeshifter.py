@@ -21,6 +21,7 @@ This module implements ShapeShifter, a robust physical adversarial attack on Fas
 | Paper link: https://arxiv.org/abs/1804.05810
 """
 import logging
+from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
@@ -31,6 +32,11 @@ from art.estimators.tensorflow import TensorFlowEstimator
 from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.utils import Deprecated, deprecated_keyword_arg
+
+if TYPE_CHECKING:
+    from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
+    from tensorflow.python.framework.ops import Tensor
+    from tensorflow.python.client.session import Session
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +51,6 @@ class ShapeShifter(EvasionAttack):
 
     attack_params = EvasionAttack.attack_params + [
         "random_transform",
-        "learning_rate",
-        "batch_size",
-
         "box_classifier_weight",
     ]
 
@@ -62,32 +65,23 @@ class ShapeShifter(EvasionAttack):
 
     def __init__(
         self,
-        estimator,
-        random_transform=tf.identity,
-        learning_rate=5.0,
-        batch_size=1,
-        box_classifier_weight=1.0,
+        estimator: TensorFlowFasterRCNN,
+        random_transform: Tensor = tf.identity,
+        box_classifier_weight: float = 1.0,
     ):
         """
         Create an instance of the :class:`.ShapeShifter`.
 
         :param estimator: A trained object detector.
-        :type estimator: :class:`.TensorFlowFasterRCNN`
         :param random_transform: A TensorFlow function applies random transformations to images.
-        :type random_transform: `tensorflow function`
-        :param learning_rate: The learning rate of the optimization.
-        :type learning_rate: `float`
-        :param batch_size: The size of the training batch.
-        :type batch_size: `int`
+        :param box_classifier_weight:
         """
         super(ShapeShifter, self).__init__(estimator=estimator)
 
-        kwargs = {
-            "random_transform": random_transform,
-            "learning_rate": learning_rate,
-            "batch_size": batch_size,
-        }
-        self.set_params(**kwargs)
+        self.random_transform = random_transform,
+        self.box_classifier_weight = box_classifier_weight
+
+        self._check_params()
 
     def generate(self, x, y=None, **kwargs):
         """
