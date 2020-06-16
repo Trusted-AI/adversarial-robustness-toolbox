@@ -65,7 +65,7 @@ class InverseGAN(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         super(InverseGAN, self).__init__()
 

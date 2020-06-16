@@ -101,7 +101,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                           additionally required placeholders except the placeholders defined in this class.
         """
         # pylint: disable=E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Remove in 1.5.0
         if channel_index == 3:
@@ -349,7 +349,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if not hasattr(self, "_class_grads"):
             self._class_grads = [None for _ in range(self.nb_classes)]
@@ -377,7 +377,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :return: The hidden layers in the model, input and output layers excluded.
         """
         # pylint: disable=E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -427,7 +427,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         # pylint: disable=E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -565,7 +565,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         # Load and update all functionality related to TensorFlow
         # pylint: disable=E0611, E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
         from tensorflow.python.saved_model import tag_constants
 
         full_path = os.path.join(ART_DATA_PATH, state["model_name"])
@@ -688,7 +688,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                used for data preprocessing. The first value will be substracted from the input. The input will then
                be divided by the second one.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Remove in 1.5.0
         if channel_index == 3:
@@ -774,7 +774,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if self._train_step is None:
             raise TypeError(
@@ -804,7 +804,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
         from art.data_generators import TensorFlowV2DataGenerator
 
         if self._train_step is None:
@@ -840,7 +840,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -910,7 +910,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                   (nb_samples,).
         :return: Gradients of the same shape as `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if self._loss_object is None:
             raise ValueError("Loss object is necessary for computing the loss gradient.")
@@ -940,7 +940,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param y: Correct labels, one-vs-rest encoding.
         :return: Array of gradients of the same shape as `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if self._loss_object is None:
             raise TypeError(
@@ -990,7 +990,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if isinstance(self._model, tf.keras.Model) or isinstance(self._model, tf.keras.model.Sequential):
             return self._model.layers
@@ -1010,7 +1010,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param batch_size: Batch size.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
         from art.config import ART_NUMPY_DTYPE
 
         if isinstance(self._model, tf.keras.models.Sequential):

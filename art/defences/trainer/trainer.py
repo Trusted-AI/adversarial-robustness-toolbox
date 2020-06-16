@@ -41,9 +41,9 @@ class Trainer(abc.ABC):
         self._classifier = classifier
 
     @abc.abstractmethod
-    def fit(
+    def fit(  # lgtm [py/inheritance/incorrect-overridden-signature]
         self, x: np.ndarray, y: np.ndarray, **kwargs
-    ) -> None:  # lgtm [py/inheritance/incorrect-overridden-signature]
+    ) -> None:
         """
         Train the model.
 
