@@ -316,12 +316,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return predictions, losses, detections
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: Dict[List["Tensor"]], **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :type x: `np.ndarray`
         :param y: A dictionary of target values. The fields of the dictionary are as follows:
 
                     - `groundtruth_boxes_list`: a list of `nb_samples` size of 2-D tf.float32 tensors of shape
@@ -333,24 +332,12 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     non-background class.
                     - `groundtruth_weights_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
                     [num_boxes] containing weights for groundtruth boxes.
-        :type y: `dict`
         :return: Loss gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         # Only do loss_gradient if is_training is False
         if self._is_training:
             raise NotImplementedError(
                 "This object detector was loaded in training mode and therefore not support loss_gradient."
-            )
-
-        # Only do loss_gradient if model is internally loaded
-        if not (
-            hasattr(self, '_groundtruth_boxes_list') and
-            hasattr(self, '_groundtruth_classes_list') and
-            hasattr(self, '_groundtruth_weights_list')
-        ):
-            raise NotImplementedError(
-                "This object detector was loaded externally and therefore not support loss_gradient."
             )
 
         # Apply preprocessing
@@ -365,7 +352,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 else:
                     loss = loss + self._losses[loss_name]
 
-            self._loss_grads = tf.gradients(loss, self._images)[0]
+            self._loss_grads: "Tensor" = tf.gradients(loss, self._images)[0]
 
         # Create feed_dict
         feed_dict = {self._images: x_preprocessed}
@@ -386,14 +373,12 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return grads
 
-    def predict(self, x, batch_size=128, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Dict[np.ndarray]:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :type x: `np.ndarray`
         :param batch_size: Batch size.
-        :type batch_size: `int`
         :return: A dictionary containing the following fields:
 
                     - detection_boxes: `[batch, max_detection, 4]`
@@ -404,7 +389,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     - num_detections: `[batch]`
                     - raw_detection_boxes: `[batch, total_detections, 4]`
                     - raw_detection_scores: `[batch, total_detections, num_classes + 1]`
-        :rtype: `dict`
         """
         # Only do prediction if is_training is False
         if self._is_training:
@@ -479,34 +463,31 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return results
 
     @property
-    def predictions(self):
+    def predictions(self) -> Dict["Tensor"]:
         """
         Get the `_predictions` attribute.
 
         :return: A dictionary holding "raw" prediction tensors.
-        :rtype: `dict`
         """
         return self._predictions
 
     @property
-    def losses(self):
+    def losses(self) -> Dict["Tensor"]:
         """
         Get the `_losses` attribute.
 
         :return: A dictionary mapping loss keys (`first_stage_localization_loss`, `first_stage_objectness_loss`,
-        `second_stage_localization_loss`, `second_stage_classification_loss`) to scalar tensors representing
-        corresponding loss values.
-        :rtype: `dict`
+                 `second_stage_localization_loss`, `second_stage_classification_loss`) to scalar tensors representing
+                 corresponding loss values.
         """
         return self._losses
 
     @property
-    def detections(self):
+    def detections(self) -> Dict["Tensor"]:
         """
         Get the `_detections` attribute.
 
         :return: A dictionary containing final detection results.
-        :rtype: `dict`
         """
         return self._detections
 
