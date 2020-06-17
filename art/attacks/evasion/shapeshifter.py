@@ -52,6 +52,29 @@ class ShapeShifter(EvasionAttack):
     attack_params = EvasionAttack.attack_params + [
         "random_transform",
         "box_classifier_weight",
+        "box_localizer_weight",
+        "rpn_classifier_weight",
+        "rpn_localizer_weight",
+        "box_iou_threshold",
+        "box_victim_weight",
+        "box_target_weight",
+        "box_victim_cw_weight",
+        "box_victim_cw_confidence",
+        "box_target_cw_weight",
+        "box_target_cw_confidence",
+        "rpn_iou_threshold",
+        "rpn_background_weight",
+        "rpn_foreground_weight",
+        "rpn_cw_weight",
+        "rpn_cw_confidence",
+        "similarity_weight",
+        "learning_rate",
+        "optimizer",
+        "momentum",
+        "decay",
+        "sign_gradients",
+        "random_size",
+        "batch_random_size"
     ]
 
     _estimator_requirements = (
@@ -84,8 +107,13 @@ class ShapeShifter(EvasionAttack):
         rpn_cw_weight: float = 0.0,
         rpn_cw_confidence: float = 0.0,
         similarity_weight: float = 0.0,
-
-
+        learning_rate: float = 1.0,
+        optimizer: str = 'GradientDescentOptimizer',
+        momentum: float = 0.0,
+        decay: float = 0.0,
+        sign_gradients: bool = False,
+        random_size: int = 1,
+        batch_random_size: int = 1
     ):
         """
         Create an instance of the :class:`.ShapeShifter`.
@@ -115,9 +143,13 @@ class ShapeShifter(EvasionAttack):
         self.rpn_cw_weight = rpn_cw_weight
         self.rpn_cw_confidence = rpn_cw_confidence
         self.similarity_weight = similarity_weight
-
-
-
+        self.learning_rate = learning_rate
+        self.optimizer = optimizer
+        self.momentum = momentum
+        self.decay = decay
+        self.sign_gradients = sign_gradients
+        self.random_size = random_size
+        self.batch_random_size = batch_random_size
 
         self._check_params()
 
