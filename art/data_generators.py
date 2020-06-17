@@ -306,7 +306,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
         :param iterator: TensorFlow Dataset.
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
-        :raises `TypeError`, `ValueError`: If input paramaters are not valid.
+        :raises `TypeError`, `ValueError`: If input parameters are not valid.
         """
         # pylint: disable=E0401
         import tensorflow as tf

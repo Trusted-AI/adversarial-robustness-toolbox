@@ -60,7 +60,7 @@ class VideoCompression(Preprocessor):
         Create an instance of VideoCompression.
 
         :param video_format: Specify one of supported video file extensions, e.g. `avi`, `mp4` or `mkv`.
-        :param constant_rate_factor: Specifiy constant rate factor (range 0 to 51, where 0 is lossless).
+        :param constant_rate_factor: Specify constant rate factor (range 0 to 51, where 0 is lossless).
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
