@@ -80,6 +80,11 @@ class ShapeShifter(EvasionAttack):
         box_target_cw_confidence: float = 0.0,
         rpn_iou_threshold: float = 0.5,
         rpn_background_weight: float = 0.0,
+        rpn_foreground_weight: float = 0.0,
+        rpn_cw_weight: float = 0.0,
+        rpn_cw_confidence: float = 0.0,
+        similarity_weight: float = 0.0,
+
 
     ):
         """
@@ -105,6 +110,11 @@ class ShapeShifter(EvasionAttack):
         self.box_target_cw_weight = box_target_cw_weight
         self.box_target_cw_confidence = box_target_cw_confidence
         self.rpn_iou_threshold = rpn_iou_threshold
+        self.rpn_background_weight = rpn_background_weight
+        self.rpn_foreground_weight = rpn_foreground_weight
+        self.rpn_cw_weight = rpn_cw_weight
+        self.rpn_cw_confidence = rpn_cw_confidence
+        self.similarity_weight = similarity_weight
 
 
 
