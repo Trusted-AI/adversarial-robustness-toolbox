@@ -120,7 +120,31 @@ class ShapeShifter(EvasionAttack):
 
         :param estimator: A trained object detector.
         :param random_transform: A TensorFlow function applies random transformations to images.
-        :param box_classifier_weight:
+        :param box_classifier_weight: Weight of box classifier loss.
+        :param box_localizer_weight: Weight of box localizer loss.
+        :param rpn_classifier_weight: Weight of RPN classifier loss.
+        :param rpn_localizer_weight: Weight of RPN localizer loss.
+        :param box_iou_threshold: Box intersection over union threshold.
+        :param box_victim_weight: Weight of box victim loss.
+        :param box_target_weight: Weight of box target loss.
+        :param box_victim_cw_weight: Weight of box victim CW loss.
+        :param box_victim_cw_confidence: Confidence of box victim CW loss.
+        :param box_target_cw_weight: Weight of box target CW loss.
+        :param box_target_cw_confidence: Confidence of box target CW loss.
+        :param rpn_iou_threshold: RPN intersection over union threshold.
+        :param rpn_background_weight: Weight of RPN background loss.
+        :param rpn_foreground_weight: Weight of RPN foreground loss.
+        :param rpn_cw_weight: Weight of RPN CW loss.
+        :param rpn_cw_confidence: Confidence of RPN CW loss.
+        :param similarity_weight: Weight of similarity loss.
+        :param learning_rate: Learning rate.
+        :param optimizer: Optimizer including one of the following choices: `GradientDescentOptimizer`,
+               `MomentumOptimizer`, `RMSPropOptimizer`, `AdamOptimizer`.
+        :param momentum: Momentum for `RMSPropOptimizer`, `MomentumOptimizer`.
+        :param decay: Learning rate decay for `RMSPropOptimizer`.
+        :param sign_gradients: Whether to use the sign of gradients for optimization.
+        :param random_size: Random sample size.
+        :param batch_random_size: Batch size of random samples.
         """
         super(ShapeShifter, self).__init__(estimator=estimator)
 
@@ -151,7 +175,72 @@ class ShapeShifter(EvasionAttack):
         self.random_size = random_size
         self.batch_random_size = batch_random_size
 
+        # Check validity of attack attributes
         self._check_params()
+
+
+
+
+    def _check_params(self) -> None:
+        """
+        Apply attack-specific checks.
+        """
+
+        if not isinstance(self.rpn_cw_confidence, float):
+            raise ValueError("The confidence of RPN CW loss must be of type float.")
+        if not self.rpn_cw_confidence >= 0.0:
+            raise ValueError("The confidence of RPN CW loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.similarity_weight, float):
+            raise ValueError("The weight of similarity loss must be of type float.")
+        if not self.similarity_weight >= 0.0:
+            raise ValueError("The weight of similarity loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.learning_rate, float):
+            raise ValueError("The learning rate must be of type float.")
+        if not self.learning_rate > 0.0:
+            raise ValueError("The learning rate must be greater than 0.0.")
+
+        if self.optimizer not in ['RMSPropOptimizer', 'MomentumOptimizer', 'GradientDescentOptimizer', 'AdamOptimizer']:
+            raise ValueError(
+                "Optimizer only includes one of the following choices: `GradientDescentOptimizer`, "
+                "`MomentumOptimizer`, `RMSPropOptimizer`, `AdamOptimizer`."
+            )
+
+        if self.optimizer in ['RMSPropOptimizer', 'MomentumOptimizer']:
+            if not isinstance(self.momentum, float):
+                raise ValueError("The momentum must be of type float.")
+            if not self.momentum > 0.0:
+                raise ValueError("The momentum must be greater than 0.0.")
+
+        if self.optimizer == 'RMSPropOptimizer':
+            if not isinstance(self.decay, float):
+                raise ValueError("The learning rate decay must be of type float.")
+            if not self.decay > 0.0:
+                raise ValueError("The learning rate decay must be greater than 0.0.")
+            if not self.decay < 1.0:
+                raise ValueError("The learning rate decay must be smaller than 1.0.")
+
+        if not isinstance(self.sign_gradients, bool):
+            raise ValueError(
+                "The choice of whether to use the sign of gradients for the optimization must be of type bool."
+            )
+
+        if not isinstance(self.random_size, int):
+            raise ValueError("The random sample size must be of type int.")
+        if not self.random_size > 0:
+            raise ValueError("The random sample size must be greater than 0.")
+
+        if not isinstance(self.batch_random_size, int):
+            raise ValueError("The batch size of random samples must be of type int.")
+        if not self.batch_size > 0:
+            raise ValueError("The batch size of random samples must be greater than 0.")
+
+
+
+
+
+
 
     def generate(self, x, y=None, **kwargs):
         """
@@ -175,23 +264,4 @@ class ShapeShifter(EvasionAttack):
 
         return self._patch
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
 
-        :param learning_rate: The learning rate of the optimization.
-        :type learning_rate: `float`
-        :param batch_size: The size of the training batch.
-        :type batch_size: `int`
-        """
-        super(ShapeShifter, self).set_params(**kwargs)
-
-        if not isinstance(self.learning_rate, float):
-            raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate > 0.0:
-            raise ValueError("The learning rate must be greater than 0.0.")
-
-        if not isinstance(self.batch_size, int):
-            raise ValueError("The batch size must be of type int.")
-        if not self.batch_size > 0:
-            raise ValueError("The batch size must be greater than 0.")
