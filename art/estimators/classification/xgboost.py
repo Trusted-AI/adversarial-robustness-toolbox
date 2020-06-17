@@ -107,7 +107,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         :param x: Test set.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        import xgboost  # lgtm [py/repeated-import]
+        import xgboost  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
