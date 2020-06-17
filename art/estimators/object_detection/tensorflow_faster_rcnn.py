@@ -66,10 +66,10 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         postprocessing_defences: Union[Postprocessor, List[Postprocessor], None] = None,
         preprocessing: PREPROCESSING_TYPE = (0, 1),
         attack_losses: Tuple[str, ...] = (
-            'first_stage_localization_loss',
-            'first_stage_objectness_loss',
-            'second_stage_localization_loss',
-            'second_stage_classification_loss'
+            'Loss/RPNLoss/localization_loss',
+            'Loss/RPNLoss/objectness_loss',
+            'Loss/BoxClassifierLoss/localization_loss',
+            'Loss/BoxClassifierLoss/classification_loss'
         )
     ):
         """
@@ -79,9 +79,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                of (predictions, losses, detections):
 
                     - predictions: a dictionary holding "raw" prediction tensors.
-                    - losses: a dictionary mapping loss keys (`first_stage_localization_loss`,
-                    `first_stage_objectness_loss`, `second_stage_localization_loss`,
-                    `second_stage_classification_loss`) to scalar tensors representing
+                    - losses: a dictionary mapping loss keys (`Loss/RPNLoss/localization_loss`,
+                    `Loss/RPNLoss/objectness_loss`, `Loss/BoxClassifierLoss/localization_loss`,
+                    `Loss/BoxClassifierLoss/classification_loss`) to scalar tensors representing
                     corresponding loss values.
                     - detections: a dictionary containing final detection results.
         :param filename: Name of the file.
@@ -243,9 +243,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :return: A tuple of (predictions, losses, detections):
 
                     - predictions: a dictionary holding "raw" prediction tensors.
-                    - losses: a dictionary mapping loss keys (`first_stage_localization_loss`,
-                    `first_stage_objectness_loss`, `second_stage_localization_loss`,
-                    `second_stage_classification_loss`) to scalar tensors representing
+                    - losses: a dictionary mapping loss keys (`Loss/RPNLoss/localization_loss`,
+                    `Loss/RPNLoss/objectness_loss`, `Loss/BoxClassifierLoss/localization_loss`,
+                    `Loss/BoxClassifierLoss/classification_loss`) to scalar tensors representing
                     corresponding loss values.
                     - detections: a dictionary containing final detection results.
         """
@@ -476,9 +476,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         """
         Get the `_losses` attribute.
 
-        :return: A dictionary mapping loss keys (`first_stage_localization_loss`, `first_stage_objectness_loss`,
-                 `second_stage_localization_loss`, `second_stage_classification_loss`) to scalar tensors representing
-                 corresponding loss values.
+        :return: A dictionary mapping loss keys (`Loss/RPNLoss/localization_loss`, `Loss/RPNLoss/objectness_loss`,
+                `Loss/BoxClassifierLoss/localization_loss`, `Loss/BoxClassifierLoss/classification_loss`) to scalar
+                tensors representing corresponding loss values.
         """
         return self._losses
 
