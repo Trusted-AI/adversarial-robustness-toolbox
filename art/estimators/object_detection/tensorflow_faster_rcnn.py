@@ -220,7 +220,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         groundtruth_boxes_list: Optional[List[Tensor]] = None,
         groundtruth_classes_list: Optional[List[Tensor]] = None,
         groundtruth_weights_list: Optional[List[Tensor]] = None
-    ) -> Tuple[Dict[Tensor], Dict[Tensor], Dict[Tensor]]:
+    ) -> Tuple[Dict[str, Tensor], Dict[str, Tensor], Dict[str, Tensor]]:
         """
         Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
         is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
@@ -316,7 +316,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return predictions, losses, detections
 
-    def loss_gradient(self, x: np.ndarray, y: Dict[List[Tensor]], **kwargs) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: Dict[str, List[Tensor]], **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -373,7 +373,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return grads
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Dict[np.ndarray]:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Dict[str, np.ndarray]:
         """
         Perform prediction for a batch of inputs.
 
@@ -463,7 +463,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return results
 
     @property
-    def predictions(self) -> Dict[Tensor]:
+    def predictions(self) -> Dict[str, Tensor]:
         """
         Get the `_predictions` attribute.
 
@@ -472,7 +472,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return self._predictions
 
     @property
-    def losses(self) -> Dict[Tensor]:
+    def losses(self) -> Dict[str, Tensor]:
         """
         Get the `_losses` attribute.
 
@@ -483,7 +483,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return self._losses
 
     @property
-    def detections(self) -> Dict[Tensor]:
+    def detections(self) -> Dict[str, Tensor]:
         """
         Get the `_detections` attribute.
 
