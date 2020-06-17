@@ -68,6 +68,19 @@ class ShapeShifter(EvasionAttack):
         estimator: TensorFlowFasterRCNN,
         random_transform: Tensor = tf.identity,
         box_classifier_weight: float = 1.0,
+        box_localizer_weight: float = 2.0,
+        rpn_classifier_weight: float = 1.0,
+        rpn_localizer_weight: float = 2.0,
+        box_iou_threshold: float = 0.5,
+        box_victim_weight: float = 0.0,
+        box_target_weight: float = 0.0,
+        box_victim_cw_weight: float = 0.0,
+        box_victim_cw_confidence: float = 0.0,
+        box_target_cw_weight: float = 0.0,
+        box_target_cw_confidence: float = 0.0,
+        rpn_iou_threshold: float = 0.5,
+        rpn_background_weight: float = 0.0,
+
     ):
         """
         Create an instance of the :class:`.ShapeShifter`.
@@ -78,8 +91,23 @@ class ShapeShifter(EvasionAttack):
         """
         super(ShapeShifter, self).__init__(estimator=estimator)
 
-        self.random_transform = random_transform,
+        # Set attack attributes
+        self.random_transform = random_transform
         self.box_classifier_weight = box_classifier_weight
+        self.box_localizer_weight = box_localizer_weight
+        self.rpn_classifier_weight = rpn_classifier_weight
+        self.rpn_localizer_weight = rpn_localizer_weight
+        self.box_iou_threshold = box_iou_threshold
+        self.box_victim_weight = box_victim_weight
+        self.box_target_weight = box_target_weight
+        self.box_victim_cw_weight = box_victim_cw_weight
+        self.box_victim_cw_confidence = box_victim_cw_confidence
+        self.box_target_cw_weight = box_target_cw_weight
+        self.box_target_cw_confidence = box_target_cw_confidence
+        self.rpn_iou_threshold = rpn_iou_threshold
+
+
+
 
         self._check_params()
 
