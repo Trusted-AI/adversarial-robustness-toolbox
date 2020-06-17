@@ -1,7 +1,7 @@
-FROM  tensorflow/tensorflow:2.2.0-py3
+FROM  tensorflow/tensorflow:2.2.0
 RUN pip3 install keras==2.3.1
 #### NOTE: comment these two lines if you wish to use the tensorflow 1 version of ART instead ####
-#FROM tensorflow/tensorflow:1.15.3-py3
+#FROM tensorflow/tensorflow:1.15.2
 #RUN pip3 install keras==2.2.5
 
 RUN pip3 install numpy==1.18.1 scipy==1.4.1 matplotlib==3.2.1 scikit-learn==0.22.1 six==1.13.0 Pillow==6.2.2 
