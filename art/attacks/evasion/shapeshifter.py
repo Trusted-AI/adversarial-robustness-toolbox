@@ -178,13 +178,100 @@ class ShapeShifter(EvasionAttack):
         # Check validity of attack attributes
         self._check_params()
 
+    def generate(self, x, y=None, **kwargs):
+        """
+        Generate adversarial samples and return them in an array.
 
-
+        :param x: Sample images.
+        :type x: `np.ndarray`
+        :param y: Target labels for object detector.
+        :type y: `np.ndarray`
+        :return: Adversarial patch.
+        :rtype: `np.ndarray`
+        """
+        assert x.ndim == 4, "The adversarial patch can only be applied to images."
 
     def _check_params(self) -> None:
         """
         Apply attack-specific checks.
         """
+        if not isinstance(self.random_transform, Tensor):
+            raise ValueError("The applied random transformation function must be of type Tensor.")
+
+        if not isinstance(self.box_classifier_weight, float):
+            raise ValueError("The weight of box classifier loss must be of type float.")
+        if not self.box_classifier_weight >= 0.0:
+            raise ValueError("The weight of box classifier loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.box_localizer_weight, float):
+            raise ValueError("The weight of box localizer loss must be of type float.")
+        if not self.box_localizer_weight >= 0.0:
+            raise ValueError("The weight of box localizer loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.rpn_classifier_weight, float):
+            raise ValueError("The weight of RPN classifier loss must be of type float.")
+        if not self.rpn_classifier_weight >= 0.0:
+            raise ValueError("The weight of RPN classifier loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.rpn_localizer_weight, float):
+            raise ValueError("The weight of RPN localizer loss must be of type float.")
+        if not self.rpn_localizer_weight >= 0.0:
+            raise ValueError("The weight of RPN localizer loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.box_iou_threshold, float):
+            raise ValueError("The box intersection over union threshold must be of type float.")
+        if not self.box_iou_threshold >= 0.0:
+            raise ValueError("The box intersection over union threshold must be greater than or equal to 0.0.")
+
+        if not isinstance(self.box_victim_weight, float):
+            raise ValueError("The weight of box victim loss must be of type float.")
+        if not self.box_victim_weight >= 0.0:
+            raise ValueError("The weight of box victim loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.box_target_weight, float):
+            raise ValueError("The weight of box target loss must be of type float.")
+        if not self.box_target_weight >= 0.0:
+            raise ValueError("The weight of box target loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.box_victim_cw_weight, float):
+            raise ValueError("The weight of box victim CW loss must be of type float.")
+        if not self.box_victim_cw_weight >= 0.0:
+            raise ValueError("The weight of box victim CW loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.box_victim_cw_confidence, float):
+            raise ValueError("The confidence of box victim CW loss must be of type float.")
+        if not self.box_victim_cw_confidence >= 0.0:
+            raise ValueError("The confidence of box victim CW loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.box_target_cw_weight, float):
+            raise ValueError("The weight of box target CW loss must be of type float.")
+        if not self.box_target_cw_weight >= 0.0:
+            raise ValueError("The weight of box target CW loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.box_target_cw_confidence, float):
+            raise ValueError("The confidence of box target CW loss must be of type float.")
+        if not self.box_target_cw_confidence >= 0.0:
+            raise ValueError("The confidence of box target CW loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.rpn_iou_threshold, float):
+            raise ValueError("The RPN intersection over union threshold must be of type float.")
+        if not self.rpn_iou_threshold >= 0.0:
+            raise ValueError("The RPN intersection over union threshold must be greater than or equal to 0.0.")
+
+        if not isinstance(self.rpn_background_weight, float):
+            raise ValueError("The weight of RPN background loss must be of type float.")
+        if not self.rpn_background_weight >= 0.0:
+            raise ValueError("The weight of RPN background loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.rpn_foreground_weight, float):
+            raise ValueError("The weight of RPN foreground loss must be of type float.")
+        if not self.rpn_foreground_weight >= 0.0:
+            raise ValueError("The weight of RPN foreground loss must be greater than or equal to 0.0.")
+
+        if not isinstance(self.rpn_cw_weight, float):
+            raise ValueError("The weight of RPN CW loss must be of type float.")
+        if not self.rpn_cw_weight >= 0.0:
+            raise ValueError("The weight of RPN CW loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.rpn_cw_confidence, float):
             raise ValueError("The confidence of RPN CW loss must be of type float.")
@@ -235,33 +322,3 @@ class ShapeShifter(EvasionAttack):
             raise ValueError("The batch size of random samples must be of type int.")
         if not self.batch_size > 0:
             raise ValueError("The batch size of random samples must be greater than 0.")
-
-
-
-
-
-
-
-    def generate(self, x, y=None, **kwargs):
-        """
-        Generate adversarial samples and return them in an array.
-
-        :param x: Sample images.
-        :type x: `np.ndarray`
-        :param y: Target labels for object detector.
-        :type y: `np.ndarray`
-        :return: Adversarial patch.
-        :rtype: `np.ndarray`
-        """
-        assert x.ndim == 4, "The adversarial patch can only be applied to images."
-
-
-
-
-
-
-
-
-        return self._patch
-
-
