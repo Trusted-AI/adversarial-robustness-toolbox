@@ -191,20 +191,41 @@ class ShapeShifter(EvasionAttack):
         """
         assert x.ndim == 4, "The adversarial patch can only be applied to images."
 
+
+        #initial_image = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_image')
+        #current_image = tf.Variable(
+        #    initial_value=np.zeros(initial_image.shape.as_list()), dtype=tf.float32, name='current_image'
+        #)
+        #current_image = (tf.tanh(current_image) + 1) / 2
+
+
     def _build_graph(self):
         """
         Build the TensorFlow graph for the attack.
 
         """
 
-    def _create_attack_loss(self) -> Tensor:
+    def _create_faster_rcnn_loss(self) -> Tensor:
         """
-        Create the loss tensor of this attack.
+        Create the partial loss tensor of this attack from losses of the object detector.
 
-        :return: Attack loss tensor.
+        :return: Attack partial loss tensor.
         """
-        # Get default graph
-        default_graph = tf.get_default_graph()
+        # Compute RPN classifier loss
+        rpn_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_classifier_weight')
+
+        rpn_classifier_loss = self.estimator.losses['Loss/RPNLoss/objectness_loss']
+        weight_rpn_classifier_loss = tf.multiply(
+            x=rpn_classifier_loss, y=rpn_classifier_weight, name='weight_rpn_classifier_loss'
+        )
+
+        # Compute RPN localizer loss
+        rpn_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_localizer_weight')
+
+        rpn_localizer_loss = self.estimator.losses['Loss/RPNLoss/localization_loss']
+        weight_rpn_localizer_loss = tf.multiply(
+            x=rpn_localizer_loss, y=rpn_localizer_weight, name='weight_rpn_localizer_loss'
+        )
 
         # Compute box classifier loss
         box_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_classifier_weight')
@@ -222,21 +243,27 @@ class ShapeShifter(EvasionAttack):
             x=box_localizer_loss, y=box_localizer_weight, name='weight_box_localizer_loss'
         )
 
-        # Compute RPN classifier loss
-        rpn_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_classifier_weight')
-
-        rpn_classifier_loss = self.estimator.losses['Loss/RPNLoss/objectness_loss']
-        weight_rpn_classifier_loss = tf.multiply(
-            x=rpn_classifier_loss, y=rpn_classifier_weight, name='weight_rpn_classifier_loss'
+        # Compute partial loss
+        partial_loss = tf.add_n(
+            [
+                weight_rpn_classifier_loss,
+                weight_rpn_localizer_loss,
+                weight_box_classifier_loss,
+                weight_box_localizer_loss
+            ],
+            name='partial_faster_rcnn_loss'
         )
 
-        # Compute RPN localizer loss
-        rpn_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_localizer_weight')
+        return partial_loss
 
-        rpn_localizer_loss = self.estimator.losses['Loss/RPNLoss/localization_loss']
-        weight_rpn_localizer_loss = tf.multiply(
-            x=rpn_localizer_loss, y=rpn_localizer_weight, name='weight_rpn_localizer_loss'
-        )
+    def _create_box_loss(self) -> Tensor:
+        """
+        Create the partial loss tensor of this attack from box losses.
+
+        :return: Attack partial loss tensor.
+        """
+        # Get default graph
+        default_graph = tf.get_default_graph()
 
         # Compute box losses
         target_class_phd = tf.placeholder(dtype=tf.int32, shape=[], name='target_class_phd')
@@ -303,6 +330,31 @@ class ShapeShifter(EvasionAttack):
             x=box_victim_cw_loss, y=box_victim_cw_weight, name='weight_box_victim_cw_loss'
         )
 
+        # Compute partial loss
+        partial_loss = tf.add_n(
+            [
+                weight_rpn_classifier_loss,
+                weight_rpn_localizer_loss,
+                weight_box_classifier_loss,
+                weight_box_localizer_loss
+            ],
+            name='partial_box_loss'
+        )
+
+        return partial_loss
+
+    def _create_attack_loss(self) -> Tensor:
+        """
+        Create the loss tensor of this attack.
+
+        :return: Attack loss tensor.
+        """
+        # Compute faster rcnn loss
+        faster_rcnn_loss = self._create_faster_rcnn_loss()
+
+
+
+
         # Compute RPN losses
         rpn_iou_threshold = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_iou_threshold')
 
@@ -317,38 +369,48 @@ class ShapeShifter(EvasionAttack):
         rpn_iou_tensor = tf.reshape(rpn_iou_tensor, (-1,))
         rpn_target = tf.cast(rpn_iou_tensor >= rpn_iou_threshold, dtype=tf.float32)
 
-        # RPN background loss
-        rpn_background_weight = tf.placeholder_with_default(0.0, [], name='rpn_background_weight')
+        # Compute RPN background loss
+        rpn_background_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_background_weight')
 
-        rpn_background_logits_ = rpn_logits_[:, 0]
-        rpn_background_loss_ = rpn_background_logits_ * rpn_targets_
-        rpn_background_loss_ = -1 * tf.reduce_sum(rpn_background_loss_)  # Maximize!
-        weighted_rpn_background_loss_ = tf.multiply(rpn_background_loss_, rpn_background_weight_,
-                                                    name='rpn_background_loss')
+        rpn_background_logit = rpn_objectness_predictions_with_background[:, 0]
+        rpn_background_loss = rpn_background_logit * rpn_target
+        rpn_background_loss = -1 * tf.reduce_sum(rpn_background_loss)
+        weight_rpn_background_loss = tf.multiply(
+            x=rpn_background_loss, y=rpn_background_weight, name='weight_rpn_background_loss'
+        )
 
-        # RPN Foreground Loss
-        rpn_foreground_weight_ = tf.placeholder_with_default(0.0, [], name='rpn_foreground_weight')
+        # Compute RPN foreground loss
+        rpn_foreground_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_foreground_weight')
 
-        rpn_foreground_logits_ = rpn_logits_[:, 1]
-        rpn_foreground_loss_ = rpn_foreground_logits_ * rpn_targets_
-        rpn_foreground_loss_ = tf.reduce_sum(rpn_foreground_loss_)
-        weighted_rpn_foreground_loss_ = tf.multiply(rpn_foreground_loss_, rpn_foreground_weight_,
-                                                    name='rpn_foreground_loss')
+        rpn_foreground_logit = rpn_objectness_predictions_with_background[:, 1]
+        rpn_foreground_loss = rpn_foreground_logit * rpn_target
+        rpn_foreground_loss = tf.reduce_sum(rpn_foreground_loss)
+        weight_rpn_foreground_loss = tf.multiply(
+            x=rpn_foreground_loss, y=rpn_foreground_weight, name='weight_rpn_foreground_loss'
+        )
 
-        # RPN CW Loss (un/targeted foreground -> background)
-        rpn_cw_weight_ = tf.placeholder_with_default(0.0, [], name='rpn_cw_weight')
-        rpn_cw_conf_ = tf.placeholder_with_default(0.0, [], name='rpn_cw_conf')
+        # Compute RPN CW loss
+        rpn_cw_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_cw_weight')
+        rpn_cw_confidence = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_cw_confidence')
 
-        rpn_cw_loss_ = tf.nn.relu(rpn_foreground_logits_ - rpn_background_logits_ + rpn_cw_conf_)
-        rpn_cw_loss_ = rpn_cw_loss_ * rpn_targets_
-        rpn_cw_loss_ = tf.reduce_sum(rpn_cw_loss_)
-        weighted_rpn_cw_loss_ = tf.multiply(rpn_cw_loss_, rpn_cw_weight_, name='rpn_cw_loss')
+        rpn_cw_loss = tf.nn.relu(rpn_foreground_logit - rpn_background_logit + rpn_cw_confidence)
+        rpn_cw_loss = rpn_cw_loss * rpn_target
+        rpn_cw_loss = tf.reduce_sum(rpn_cw_loss)
+        weight_rpn_cw_loss = tf.multiply(
+            x=rpn_cw_loss, y=rpn_cw_weight, name='weight_rpn_cw_loss'
+        )
 
-        # Similiary Loss
-        sim_weight_ = tf.placeholder_with_default(0.0, [], name='sim_weight')
-        initial_textures_ = tf.get_default_graph().get_tensor_by_name('initial_textures:0')
-        sim_loss_ = tf.nn.l2_loss(initial_textures_ - textures)
-        weighted_sim_loss_ = tf.multiply(sim_loss_, sim_weight_, name='sim_loss')
+        # Compute similarity loss
+        similarity_weight = tf.placeholder(dtype=tf.float32, shape=[], name='similarity_weight')
+
+        initial_image = default_graph.get_tensor_by_name('initial_image:0')
+        current_image = default_graph.get_tensor_by_name('current_image:0')
+        similarity_loss = tf.nn.l2_loss(initial_image - current_image)
+        weight_similarity_loss = tf.multiply(
+            x=similarity_loss, y=similarity_weight, name='weight_similarity_loss'
+        )
+
+
 
         loss_ = tf.add_n([weighted_box_cls_loss_, weighted_box_loc_loss_,
                           weighted_rpn_cls_loss_, weighted_rpn_loc_loss_,
