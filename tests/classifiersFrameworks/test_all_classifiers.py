@@ -40,26 +40,26 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
 def test_predict(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = get_image_classifier_list(one_classifier=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
     if classifier is not None:
         y_predicted = classifier.predict(x_test_mnist[0:1])
+
         y_expected = np.asarray(
             [
-                [
-                    0.12109935,
-                    0.0498215,
-                    0.0993958,
-                    0.06410097,
-                    0.11366927,
-                    0.04645343,
-                    0.06419806,
-                    0.30685693,
-                    0.07616713,
-                    0.05823758,
-                ]
+                [0.15710345,
+                 - 0.73106134,
+                 - 0.04039804,
+                 - 0.47904843,
+                 0.09378531,
+                 - 0.80105764,
+                 - 0.47753483,
+                 1.0868737,
+                 - 0.3065778,
+                 - 0.57497704]
             ]
         )
+
         np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
 
 
