@@ -191,6 +191,8 @@ class ShapeShifter(EvasionAttack):
         """
         assert x.ndim == 4, "The adversarial patch can only be applied to images."
 
+        
+
 
 
 
@@ -208,13 +210,40 @@ class ShapeShifter(EvasionAttack):
             initial_value=np.zeros(initial_image.shape.as_list()), dtype=tf.float32, name='raw_current_image'
         )
         current_image = (tf.tanh(current_image) + 1) / 2
-        current_image = tf.identity(current_image, name=current_image)
+        current_image = tf.identity(current_image, name='current_image')
 
         # Generate random transformed images
-        
+        # Define the stop condition
+        def stop_condition(i, _):
+            return tf.less(i, self.batch_random_size)
 
+        # Random transformation of the image
+        def main_body_loop(i, batch):
+            transformed_image = self.random_transform(current_image)
+            batch = tf.cond(
+                tf.equal(i, 0),
+                lambda: tf.concat([[transformed_image]], axis=0),
+                lambda: tf.concat([batch, [transformed_image]], axis=0)
+            )
+            return i + 1, batch
 
+        _, batch = tf.while_loop(
+            cond=stop_condition,
+            body=main_body_loop,
+            loop_vars=[tf.zeros([]), None],
+            back_prop=True,
+            name='generate_random_transformed_images'
+        )
 
+        # Assign batch to the input of the object detector
+        batch_assign_to_input_images = tf.assign(
+            ref=self.estimator.input_images, value=batch, name='batch_assign_to_input_images'
+        )
+
+        # Create attack loss
+        total_loss = self._create_attack_loss()
+
+        return batch_assign_to_input_images, total_loss
 
     def _create_attack_loss(self) -> Tensor:
         """
