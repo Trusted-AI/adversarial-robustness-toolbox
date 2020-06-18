@@ -122,12 +122,13 @@ def test_repr(framework, is_tf_version_2, get_image_classifier_list):
             elif framework == "keras":
                 message_list = [
                     "art.estimators.classification.keras.KerasClassifier",
-                    f"use_logits=False, channel_index={Deprecated}, channels_first=False",
+                    f"use_logits=True, channel_index={Deprecated}, channels_first=False",
                     "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, "
                     "postprocessing_defences=None, "
                     "preprocessing=(0, 1)",
                     "input_layer=0, output_layer=0",
                 ]
+
             elif framework == "tensorflow":
                 if is_tf_version_2:
                     message_list = [
