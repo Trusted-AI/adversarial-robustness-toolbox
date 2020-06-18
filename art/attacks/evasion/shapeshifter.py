@@ -192,18 +192,29 @@ class ShapeShifter(EvasionAttack):
         assert x.ndim == 4, "The adversarial patch can only be applied to images."
 
 
-        #initial_image = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_image')
-        #current_image = tf.Variable(
-        #    initial_value=np.zeros(initial_image.shape.as_list()), dtype=tf.float32, name='current_image'
-        #)
-        #current_image = (tf.tanh(current_image) + 1) / 2
 
 
-    def _build_graph(self):
+    def _build_graph(self, initial_shape: List):
         """
         Build the TensorFlow graph for the attack.
 
+        :param initial_shape: Image shape.
         """
+        # Create a placeholder to pass input image
+        initial_image = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_image')
+
+        # Adversarial image
+        current_image = tf.Variable(
+            initial_value=np.zeros(initial_image.shape.as_list()), dtype=tf.float32, name='raw_current_image'
+        )
+        current_image = (tf.tanh(current_image) + 1) / 2
+        current_image = tf.identity(current_image, name=current_image)
+
+        # Generate random transformed images
+        
+
+
+
 
     def _create_attack_loss(self) -> Tensor:
         """
