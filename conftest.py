@@ -182,7 +182,7 @@ def get_image_classifier_list(framework):
             classifier, sess = get_image_classifier_tf(**kwargs)
             classifier_list = [classifier]
         if framework == "pytorch":
-            classifier_list = [get_image_classifier_pt()]
+            classifier_list = [get_image_classifier_pt(**kwargs)]
         if framework == "scikitlearn":
             logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
             classifier_list = None

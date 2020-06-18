@@ -395,7 +395,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
 
 def get_image_classifier_kr(
-    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
+    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=True, load_init=True
 ):
     """
     Standard Keras classifier for unit testing
