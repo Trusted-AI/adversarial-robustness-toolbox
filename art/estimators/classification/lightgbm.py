@@ -29,7 +29,7 @@ import numpy as np
 from art.estimators.classification.classifier import ClassifierDecisionTree
 
 if TYPE_CHECKING:
-    import lightgbm
+    import lightgbm  # lgtm [py/import-and-import-from]
 
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor

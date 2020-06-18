@@ -119,7 +119,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Check whether random eps is enabled
         self._random_eps()
@@ -223,7 +223,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                      perturbed.
         :return: Perturbations.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -259,7 +259,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         x = x + eps_step * perturbation
 
@@ -297,7 +297,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                             original input.
         :return: Adversarial examples.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if random_init:
             n = x.shape[0]
@@ -341,7 +341,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
         :return: Values of `values` after projection.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8

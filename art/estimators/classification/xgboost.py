@@ -32,7 +32,7 @@ from art.estimators.classification.classifier import ClassifierDecisionTree
 from art.utils import to_categorical
 
 if TYPE_CHECKING:
-    import xgboost
+    import xgboost  # lgtm [py/import-and-import-from]
 
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -107,7 +107,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         :param x: Test set.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        import xgboost
+        import xgboost  # lgtm [py/repeated-import] lgtm [py/import-and-import-from]
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)

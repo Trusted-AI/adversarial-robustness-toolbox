@@ -155,7 +155,7 @@ class TensorFlowV2RandomizedSmoothing(RandomizedSmoothingMixin, TensorFlowV2Clas
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         sampling = kwargs.get("sampling")
 

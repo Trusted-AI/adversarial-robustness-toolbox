@@ -161,7 +161,7 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
         :type sampling: `bool`
         :return: Array of gradients of the same shape as `x`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         sampling = kwargs.get("sampling")
 
