@@ -505,7 +505,12 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         :return: The hidden layers in the model, input and output layers excluded.
         """
-        layer_names = [layer.name for layer in self._model[:-1]]
-        logger.info("Inferred %i hidden layers on MXNet classifier.", len(layer_names))
+        import mxnet
+
+        if isinstance(self._model, mxnet.gluon.nn.Sequential):
+            layer_names = [layer.name for layer in self._model[:-1]]
+            logger.info("Inferred %i hidden layers on MXNet classifier.", len(layer_names))
+        else:
+            layer_names = []
 
         return layer_names
