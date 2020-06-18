@@ -208,6 +208,7 @@ class ShapeShifter(EvasionAttack):
 
         # Compute box classifier loss
         box_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_classifier_weight')
+
         box_classifier_loss = self.estimator.losses['Loss/BoxClassifierLoss/classification_loss']
         weight_box_classifier_loss = tf.multiply(
             x=box_classifier_loss, y=box_classifier_weight, name='weight_box_classifier_loss'
@@ -215,6 +216,7 @@ class ShapeShifter(EvasionAttack):
 
         # Compute box localizer loss
         box_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_localizer_weight')
+
         box_localizer_loss = self.estimator.losses['Loss/BoxClassifierLoss/localization_loss']
         weight_box_localizer_loss = tf.multiply(
             x=box_localizer_loss, y=box_localizer_weight, name='weight_box_localizer_loss'
@@ -222,6 +224,7 @@ class ShapeShifter(EvasionAttack):
 
         # Compute RPN classifier loss
         rpn_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_classifier_weight')
+
         rpn_classifier_loss = self.estimator.losses['Loss/RPNLoss/objectness_loss']
         weight_rpn_classifier_loss = tf.multiply(
             x=rpn_classifier_loss, y=rpn_classifier_weight, name='weight_rpn_classifier_loss'
@@ -229,6 +232,7 @@ class ShapeShifter(EvasionAttack):
 
         # Compute RPN localizer loss
         rpn_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_localizer_weight')
+
         rpn_localizer_loss = self.estimator.losses['Loss/RPNLoss/localization_loss']
         weight_rpn_localizer_loss = tf.multiply(
             x=rpn_localizer_loss, y=rpn_localizer_weight, name='weight_rpn_localizer_loss'
@@ -243,6 +247,7 @@ class ShapeShifter(EvasionAttack):
         class_predictions_with_background = self.estimator.predictions['class_predictions_with_background']
         class_predictions_with_background = class_predictions_with_background[:, 1:]
 
+        # Convert to 1-hot
         target_class_one_hot = tf.one_hot([target_class_phd - 1], class_predictions_with_background.shape[-1])
         victim_class_one_hot = tf.one_hot([victim_class_phd - 1], class_predictions_with_background.shape[-1])
 
@@ -250,54 +255,70 @@ class ShapeShifter(EvasionAttack):
         box_iou_tensor = tf.reshape(box_iou_tensor, (-1,))
         box_target = tf.cast(box_iou_tensor >= box_iou_threshold, dtype=tf.float32)
 
+        # Compute box target loss
+        box_target_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_target_weight')
+
+        box_target_logit = class_predictions_with_background[:, target_class_phd - 1]
+        box_target_loss = box_target_logit * box_target
+        box_target_loss = -1 * tf.reduce_sum(box_target_loss)
+        weight_box_target_loss = tf.multiply(
+            x=box_target_loss, y=box_target_weight, name='weight_box_target_loss'
+        )
+
         # Compute box victim loss
         box_victim_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_victim_weight')
 
-        box_victim_logits_ = box_logits_[:, victim_class_ - 1]
-        box_victim_loss_ = box_victim_logits_ * box_targets_
-        box_victim_loss_ = tf.reduce_sum(box_victim_loss_)
-        weighted_box_victim_loss_ = tf.multiply(box_victim_loss_, box_victim_weight_, name='box_victim_loss')
+        box_victim_logit = class_predictions_with_background[:, victim_class_phd - 1]
+        box_victim_loss = box_victim_logit * box_target
+        box_victim_loss = tf.reduce_sum(box_victim_loss)
+        weight_box_victim_loss = tf.multiply(
+            x=box_victim_loss, y=box_victim_weight, name='weight_box_victim_loss'
+        )
 
-        # Compute box target loss
-        box_victim_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_victim_weight')
+        # Compute box target CW loss
+        box_target_cw_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_target_cw_weight')
+        box_target_cw_confidence = tf.placeholder(dtype=tf.float32, shape=[], name='box_target_cw_confidence')
 
-        box_target_logits_ = box_logits_[:, target_class_ - 1]
-        box_target_loss_ = box_target_logits_ * box_targets_
-        box_target_loss_ = -1 * tf.reduce_sum(box_target_loss_)  # Maximize!
-        weighted_box_target_loss_ = tf.multiply(box_target_loss_, box_target_weight_, name='box_target_loss')
+        box_nontarget_logit = tf.reduce_max(
+            class_predictions_with_background * (1 - target_class_one_hot) - 10000 * target_class_one_hot, axis=-1
+        )
+        box_target_cw_loss = tf.nn.relu(box_nontarget_logit - box_target_logit + box_target_cw_confidence)
+        box_target_cw_loss = box_target_cw_loss * box_target
+        box_target_cw_loss = tf.reduce_sum(box_target_cw_loss)
+        weight_box_target_cw_loss = tf.multiply(
+            x=box_target_cw_loss, y=box_target_cw_weight, name='weight_box_target_cw_loss'
+        )
 
-        # Box Victim CW loss (untargeted, victim -> nonvictim)
-        box_victim_cw_weight_ = tf.placeholder_with_default(0.0, [], name='box_victim_cw_weight')
-        box_victim_cw_conf_ = tf.placeholder_with_default(0.0, [], name='box_victim_cw_conf')
+        # Compute box victim CW loss
+        box_victim_cw_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_victim_cw_weight')
+        box_victim_cw_confidence = tf.placeholder(dtype=tf.float32, shape=[], name='box_victim_cw_confidence')
 
-        box_nonvictim_logits_ = tf.reduce_max(box_logits_ * (1 - victim_one_hot_) - 10000 * victim_one_hot_, axis=-1)
-        box_victim_cw_loss_ = tf.nn.relu(box_victim_logits_ - box_nonvictim_logits_ + box_victim_cw_conf_)
-        box_victim_cw_loss_ = box_victim_cw_loss_ * box_targets_
-        box_victim_cw_loss_ = tf.reduce_sum(box_victim_cw_loss_)
-        weighted_box_victim_cw_loss_ = tf.multiply(box_victim_cw_loss_, box_victim_cw_weight_,
-                                                   name='box_victim_cw_loss')
+        box_nonvictim_logit = tf.reduce_max(
+            class_predictions_with_background * (1 - victim_class_one_hot) - 10000 * victim_class_one_hot, axis=-1
+        )
+        box_victim_cw_loss = tf.nn.relu(box_victim_logit - box_nonvictim_logit + box_victim_cw_confidence)
+        box_victim_cw_loss = box_victim_cw_loss * box_target
+        box_victim_cw_loss = tf.reduce_sum(box_victim_cw_loss)
+        weight_box_victim_cw_loss = tf.multiply(
+            x=box_victim_cw_loss, y=box_victim_cw_weight, name='weight_box_victim_cw_loss'
+        )
 
-        # Box Target CW loss (targeted, nontarget -> target)
-        box_target_cw_weight_ = tf.placeholder_with_default(0.0, [], name='box_target_cw_weight')
-        box_target_cw_conf_ = tf.placeholder_with_default(0.0, [], name='box_target_cw_conf')
+        # Compute RPN losses
+        rpn_iou_threshold = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_iou_threshold')
 
-        box_nontarget_logits_ = tf.reduce_max(box_logits_ * (1 - target_one_hot_) - 10000 * target_one_hot_, axis=-1)
-        box_target_cw_loss_ = tf.nn.relu(box_nontarget_logits_ - box_target_logits_ + box_target_cw_conf_)
-        box_target_cw_loss_ = box_target_cw_loss_ * box_targets_
-        box_target_cw_loss_ = tf.reduce_sum(box_target_cw_loss_)
-        weighted_box_target_cw_loss_ = tf.multiply(box_target_cw_loss_, box_target_cw_weight_,
-                                                   name='box_target_cw_loss')
+        # RPN background
+        rpn_objectness_predictions_with_background = self.estimator.predictions[
+            'rpn_objectness_predictions_with_background'
+        ]
+        rpn_objectness_predictions_with_background = tf.reshape(
+            rpn_objectness_predictions_with_background, (-1, rpn_objectness_predictions_with_background.shape[-1])
+        )
+        rpn_iou_tensor = default_graph.get_tensor_by_name('Loss/RPNLoss/Compare/IOU/Select:0')
+        rpn_iou_tensor = tf.reshape(rpn_iou_tensor, (-1,))
+        rpn_target = tf.cast(rpn_iou_tensor >= rpn_iou_threshold, dtype=tf.float32)
 
-        # RPN Losses
-        rpn_iou_thresh_ = tf.placeholder_with_default(0.5, [], name='rpn_iou_thresh')
-        rpn_logits_ = predictions['rpn_objectness_predictions_with_background']
-        rpn_logits_ = tf.reshape(rpn_logits_, (-1, rpn_logits_.shape[-1]))
-        rpn_iou_ = tf.get_default_graph().get_tensor_by_name('Loss/RPNLoss/Compare/IOU/Select:0')
-        rpn_iou_ = tf.reshape(rpn_iou_, (-1,))
-        rpn_targets_ = tf.cast(rpn_iou_ >= rpn_iou_thresh_, tf.float32)
-
-        # RPN Background Loss
-        rpn_background_weight_ = tf.placeholder_with_default(0.0, [], name='rpn_background_weight')
+        # RPN background loss
+        rpn_background_weight = tf.placeholder_with_default(0.0, [], name='rpn_background_weight')
 
         rpn_background_logits_ = rpn_logits_[:, 0]
         rpn_background_loss_ = rpn_background_logits_ * rpn_targets_
