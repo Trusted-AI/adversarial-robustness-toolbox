@@ -203,51 +203,63 @@ class ShapeShifter(EvasionAttack):
 
         :return: Attack loss tensor.
         """
+        # Get default graph
+        default_graph = tf.get_default_graph()
+
         # Compute box classifier loss
+        box_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_classifier_weight')
         box_classifier_loss = self.estimator.losses['Loss/BoxClassifierLoss/classification_loss']
         weight_box_classifier_loss = tf.multiply(
-            box_classifier_loss, self.box_classifier_weight, name='weight_box_classifier_loss'
+            x=box_classifier_loss, y=box_classifier_weight, name='weight_box_classifier_loss'
         )
 
         # Compute box localizer loss
+        box_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_localizer_weight')
         box_localizer_loss = self.estimator.losses['Loss/BoxClassifierLoss/localization_loss']
         weight_box_localizer_loss = tf.multiply(
-            box_localizer_loss, self.box_localizer_weight, name='weight_box_localizer_loss'
+            x=box_localizer_loss, y=box_localizer_weight, name='weight_box_localizer_loss'
         )
 
-        # RPN Classifier Loss
-        rpn_cls_weight_ = tf.placeholder_with_default(1.0, [], name='rpn_cls_weight')
-        rpn_cls_loss_ = losses['Loss/RPNLoss/objectness_loss']
-        weighted_rpn_cls_loss_ = tf.multiply(rpn_cls_loss_, rpn_cls_weight_, name='rpn_cls_loss')
+        # Compute RPN classifier loss
+        rpn_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_classifier_weight')
+        rpn_classifier_loss = self.estimator.losses['Loss/RPNLoss/objectness_loss']
+        weight_rpn_classifier_loss = tf.multiply(
+            x=rpn_classifier_loss, y=rpn_classifier_weight, name='weight_rpn_classifier_loss'
+        )
 
-        # RPN Localizer Loss
-        rpn_loc_weight_ = tf.placeholder_with_default(2.0, [], name='rpn_loc_weight')
-        rpn_loc_loss_ = losses['Loss/RPNLoss/localization_loss']
-        weighted_rpn_loc_loss_ = tf.multiply(rpn_loc_loss_, rpn_loc_weight_, name='rpn_loc_loss')
+        # Compute RPN localizer loss
+        rpn_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_localizer_weight')
+        rpn_localizer_loss = self.estimator.losses['Loss/RPNLoss/localization_loss']
+        weight_rpn_localizer_loss = tf.multiply(
+            x=rpn_localizer_loss, y=rpn_localizer_weight, name='weight_rpn_localizer_loss'
+        )
 
-        # Box Losses
-        target_class_ = tf.placeholder(tf.int32, [], name='target_class')
-        victim_class_ = tf.placeholder(tf.int32, [], name='victim_class')
-        box_iou_thresh_ = tf.placeholder_with_default(0.5, [], name='box_iou_thresh')
+        # Compute box losses
+        target_class_phd = tf.placeholder(dtype=tf.int32, shape=[], name='target_class_phd')
+        victim_class_phd = tf.placeholder(dtype=tf.int32, shape=[], name='victim_class_phd')
+        box_iou_threshold = tf.placeholder(dtype=tf.float32, shape=[], name='box_iou_threshold')
 
-        box_logits_ = predictions['class_predictions_with_background']
-        box_logits_ = box_logits_[:, 1:]  # Ignore background class
-        victim_one_hot_ = tf.one_hot([victim_class_ - 1], box_logits_.shape[-1])
-        target_one_hot_ = tf.one_hot([target_class_ - 1], box_logits_.shape[-1])
-        box_iou_ = tf.get_default_graph().get_tensor_by_name('Loss/BoxClassifierLoss/Compare/IOU/Select:0')
-        box_iou_ = tf.reshape(box_iou_, (-1,))
-        box_targets_ = tf.cast(box_iou_ >= box_iou_thresh_, tf.float32)
+        # Ignore background class
+        class_predictions_with_background = self.estimator.predictions['class_predictions_with_background']
+        class_predictions_with_background = class_predictions_with_background[:, 1:]
 
-        # Box Victim Loss
-        box_victim_weight_ = tf.placeholder_with_default(0.0, [], name='box_victim_weight')
+        target_class_one_hot = tf.one_hot([target_class_phd - 1], class_predictions_with_background.shape[-1])
+        victim_class_one_hot = tf.one_hot([victim_class_phd - 1], class_predictions_with_background.shape[-1])
+
+        box_iou_tensor = default_graph.get_tensor_by_name('Loss/BoxClassifierLoss/Compare/IOU/Select:0')
+        box_iou_tensor = tf.reshape(box_iou_tensor, (-1,))
+        box_target = tf.cast(box_iou_tensor >= box_iou_threshold, dtype=tf.float32)
+
+        # Compute box victim loss
+        box_victim_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_victim_weight')
 
         box_victim_logits_ = box_logits_[:, victim_class_ - 1]
         box_victim_loss_ = box_victim_logits_ * box_targets_
         box_victim_loss_ = tf.reduce_sum(box_victim_loss_)
         weighted_box_victim_loss_ = tf.multiply(box_victim_loss_, box_victim_weight_, name='box_victim_loss')
 
-        # Box Target Loss
-        box_target_weight_ = tf.placeholder_with_default(0.0, [], name='box_target_weight')
+        # Compute box target loss
+        box_victim_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_victim_weight')
 
         box_target_logits_ = box_logits_[:, target_class_ - 1]
         box_target_loss_ = box_target_logits_ * box_targets_
