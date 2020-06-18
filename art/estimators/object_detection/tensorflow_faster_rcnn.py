@@ -463,6 +463,15 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return results
 
     @property
+    def input_images(self) -> Tensor:
+        """
+        Get the `_images` attribute.
+
+        :return: The input image tensor.
+        """
+        return self._images
+
+    @property
     def predictions(self) -> Dict[str, Tensor]:
         """
         Get the `_predictions` attribute.
