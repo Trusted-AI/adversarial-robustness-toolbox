@@ -128,8 +128,8 @@ def backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_cl
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
     # Test gradient
-    x_test_mnist = x_test_mnist[:1]
-    y_test_mnist = y_test_mnist[:1]
+    # x_test_mnist = x_test_mnist[:3]
+    # y_test_mnist = y_test_mnist[:3]
     gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
 
     if framework == "pytorch":

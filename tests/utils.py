@@ -95,13 +95,13 @@ class TestBase(unittest.TestCase):
 
         # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
         np.testing.assert_array_almost_equal(
-            self._x_train_mnist_original[0 : self.n_train], self.x_train_mnist, decimal=3
+            self._x_train_mnist_original[0: self.n_train], self.x_train_mnist, decimal=3
         )
         np.testing.assert_array_almost_equal(
-            self._y_train_mnist_original[0 : self.n_train], self.y_train_mnist, decimal=3
+            self._y_train_mnist_original[0: self.n_train], self.y_train_mnist, decimal=3
         )
-        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0 : self.n_test], self.x_test_mnist, decimal=3)
-        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0 : self.n_test], self.y_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0: self.n_test], self.x_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0: self.n_test], self.y_test_mnist, decimal=3)
 
         np.testing.assert_array_almost_equal(self._x_train_iris_original, self.x_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
@@ -377,7 +377,8 @@ def get_image_classifier_tf_v2(from_logits=False):
             )
         )
 
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits)
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits,
+                                                                reduction=tf.keras.losses.Reduction.SUM)
 
     model.compile(optimizer=optimizer, loss=loss_object)
 
@@ -395,7 +396,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
 
 def get_image_classifier_kr(
-    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=True, load_init=True
+        loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=True, load_init=True
 ):
     """
     Standard Keras classifier for unit testing
@@ -481,7 +482,7 @@ def get_image_classifier_kr(
                 if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3:
 
                     def categorical_crossentropy(y_true, y_pred):
-                        return keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
+                        return keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
 
                     loss = categorical_crossentropy
                 else:
@@ -858,7 +859,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     model = Model()
 
     # Define a loss function and optimizer
-    loss_fn = torch.nn.CrossEntropyLoss()
+    loss_fn = torch.nn.CrossEntropyLoss(reduction='sum')
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     # Get classifier
@@ -881,7 +882,7 @@ def get_classifier_bb(defences=None):
     # define black-box classifier
     def predict(x):
         with open(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)
@@ -1004,9 +1005,9 @@ def get_gan_inverse_gan_ft():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess,)
+        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess, )
 
-        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess,)
+        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess, )
         return gan, inverse_gan, sess
 
 
