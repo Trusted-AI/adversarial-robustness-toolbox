@@ -34,7 +34,7 @@ def backend_test_class_gradient(framework, get_default_mnist_subset, classifier,
 
     if "expected_gradients_1_all_labels" in expected_values:
         if framework == "pytorch":
-            sub_gradients = gradients[0, 5, 0, :, 14]
+            sub_gradients = gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
         else:
             sub_gradients = gradients[0, 5, 14, :, 0]
 
@@ -46,7 +46,7 @@ def backend_test_class_gradient(framework, get_default_mnist_subset, classifier,
 
     if "expected_gradients_2_all_labels" in expected_values:
         if framework == "pytorch":
-            sub_gradients = gradients[0, 5, 0, 14, :]
+            sub_gradients = gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
         else:
             sub_gradients = gradients[0, 5, :, 14, 0]
 
@@ -66,7 +66,7 @@ def backend_test_class_gradient(framework, get_default_mnist_subset, classifier,
 
     if "expected_gradients_1_label5" in expected_values:
         if framework == "pytorch":
-            sub_gradients = gradients[0, 0, 0, :, 14]
+            sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
         else:
             sub_gradients = gradients[0, 0, 14, :, 0]
 
@@ -78,7 +78,7 @@ def backend_test_class_gradient(framework, get_default_mnist_subset, classifier,
 
     if "expected_gradients_2_label5" in expected_values:
         if framework == "pytorch":
-            sub_gradients = gradients[0, 0, 0, 14, :]
+            sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
         else:
             sub_gradients = gradients[0, 0, :, 14, 0]
 
@@ -100,7 +100,7 @@ def backend_test_class_gradient(framework, get_default_mnist_subset, classifier,
     if "expected_gradients_1_labelArray" in expected_values:
 
         if framework == "pytorch":
-            sub_gradients = gradients[0, 0, 0, :, 14]
+            sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_labelArray
         else:
             sub_gradients = gradients[0, 0, 14, :, 0]
 
@@ -112,7 +112,7 @@ def backend_test_class_gradient(framework, get_default_mnist_subset, classifier,
 
     if "expected_gradients_2_labelArray" in expected_values:
         if framework == "pytorch":
-            sub_gradients = gradients[0, 0, 0, 14, :]
+            sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_labelArray
         else:
             sub_gradients = gradients[0, 0, :, 14, 0]
 
