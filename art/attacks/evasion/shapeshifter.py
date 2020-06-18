@@ -205,6 +205,37 @@ class ShapeShifter(EvasionAttack):
 
         """
 
+    def _create_attack_loss(self) -> Tensor:
+        """
+        Create the loss tensor of this attack.
+
+        :return: Attack loss tensor.
+        """
+        # Compute faster rcnn loss
+        partial_faster_rcnn_loss = self._create_faster_rcnn_loss()
+
+        # Compute box loss
+        partial_box_loss = self._create_box_loss()
+
+        # Compute RPN loss
+        partial_rpn_loss = self._create_rpn_loss()
+
+        # Compute similarity loss
+        weight_similarity_loss = self._create_similarity_loss()
+
+        # Compute total loss
+        total_loss = tf.add_n(
+            [
+                partial_faster_rcnn_loss,
+                partial_box_loss,
+                partial_rpn_loss,
+                weight_similarity_loss
+            ],
+            name='total_loss'
+        )
+
+        return total_loss
+
     def _create_faster_rcnn_loss(self) -> Tensor:
         """
         Create the partial loss tensor of this attack from losses of the object detector.
@@ -333,27 +364,24 @@ class ShapeShifter(EvasionAttack):
         # Compute partial loss
         partial_loss = tf.add_n(
             [
-                weight_rpn_classifier_loss,
-                weight_rpn_localizer_loss,
-                weight_box_classifier_loss,
-                weight_box_localizer_loss
+                weight_box_target_loss,
+                weight_box_victim_loss,
+                weight_box_target_cw_loss,
+                weight_box_victim_cw_loss
             ],
             name='partial_box_loss'
         )
 
         return partial_loss
 
-    def _create_attack_loss(self) -> Tensor:
+    def _create_rpn_loss(self) -> Tensor:
         """
-        Create the loss tensor of this attack.
+        Create the partial loss tensor of this attack from RPN losses.
 
-        :return: Attack loss tensor.
+        :return: Attack partial loss tensor.
         """
-        # Compute faster rcnn loss
-        faster_rcnn_loss = self._create_faster_rcnn_loss()
-
-
-
+        # Get default graph
+        default_graph = tf.get_default_graph()
 
         # Compute RPN losses
         rpn_iou_threshold = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_iou_threshold')
@@ -400,6 +428,27 @@ class ShapeShifter(EvasionAttack):
             x=rpn_cw_loss, y=rpn_cw_weight, name='weight_rpn_cw_loss'
         )
 
+        # Compute partial loss
+        partial_loss = tf.add_n(
+            [
+                weight_rpn_background_loss,
+                weight_rpn_foreground_loss,
+                weight_rpn_cw_loss,
+            ],
+            name='partial_rpn_loss'
+        )
+
+        return partial_loss
+
+    def _create_similarity_loss(self) -> Tensor:
+        """
+        Create the partial loss tensor of this attack from the similarity loss.
+
+        :return: Attack partial loss tensor.
+        """
+        # Get default graph
+        default_graph = tf.get_default_graph()
+
         # Compute similarity loss
         similarity_weight = tf.placeholder(dtype=tf.float32, shape=[], name='similarity_weight')
 
@@ -410,18 +459,7 @@ class ShapeShifter(EvasionAttack):
             x=similarity_loss, y=similarity_weight, name='weight_similarity_loss'
         )
 
-
-
-        loss_ = tf.add_n([weighted_box_cls_loss_, weighted_box_loc_loss_,
-                          weighted_rpn_cls_loss_, weighted_rpn_loc_loss_,
-                          weighted_box_victim_loss_, weighted_box_target_loss_,
-                          weighted_box_vic
-                          tim_cw_loss_, weighted_box_target_cw_loss_,
-                          weighted_rpn_foreground_loss_, weighted_rpn_background_loss_,
-                          weighted_rpn_cw_loss_,
-                          weighted_sim_loss_], name='loss')
-
-        # Support large batch accumulation metrics
+        return weight_similarity_loss
 
     def _check_params(self) -> None:
         """
