@@ -201,7 +201,7 @@ def _kr_tf_weights_loader(dataset, weights_type, layer="DENSE"):
     return weights
 
 
-def get_image_classifier_tf(from_logits=False, load_init=True, sess=None):
+def get_image_classifier_tf(from_logits=True, load_init=True, sess=None):
     import tensorflow as tf
 
     if tf.__version__[0] == "2":
@@ -212,7 +212,7 @@ def get_image_classifier_tf(from_logits=False, load_init=True, sess=None):
     return classifier, sess
 
 
-def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
+def get_image_classifier_tf_v1(from_logits=True, load_init=True, sess=None):
     """
     Standard TensorFlow classifier for unit testing.
 
@@ -314,7 +314,7 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     return tfc, sess
 
 
-def get_image_classifier_tf_v2(from_logits=False):
+def get_image_classifier_tf_v2(from_logits=True):
     """
     Standard TensorFlow v2 classifier for unit testing.
 
@@ -395,7 +395,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
 
 def get_image_classifier_kr(
-    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
+    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=True, load_init=True
 ):
     """
     Standard Keras classifier for unit testing
@@ -550,7 +550,7 @@ def get_image_classifier_kr(
     return krc
 
 
-def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="function", from_logits=False):
+def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="function", from_logits=True):
     """
     Standard Keras classifier for unit testing
 
@@ -779,7 +779,7 @@ def get_image_classifier_kr_tf_with_wildcard():
     return krc
 
 
-def get_image_classifier_pt(from_logits=False, load_init=True):
+def get_image_classifier_pt(from_logits=True, load_init=True):
     """
     Standard PyTorch classifier for unit testing.
 
@@ -890,7 +890,7 @@ def get_classifier_bb(defences=None):
     return bbc
 
 
-def get_image_classifier_mx(from_logits=False, load_init=True):
+def get_image_classifier_mx(from_logits=True, load_init=True):
     """
     Standard MXNet classifier for unit testing
 
@@ -923,7 +923,7 @@ def get_image_classifier_mx(from_logits=False, load_init=True):
         alias = mxnet.registry.get_alias_func(mxnet.initializer.Initializer, "initializer")
 
         @mxnet.init.register
-        @alias("myinit")
+        @alias("mm_init")
         class CustomInit(mxnet.init.Initializer):
             def __init__(self):
                 super(CustomInit, self).__init__()
@@ -965,7 +965,7 @@ def get_image_classifier_mx(from_logits=False, load_init=True):
         model.initialize(init=mxnet.initializer.Xavier())
 
     # Create optimizer
-    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=False)
+    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
     trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
 
     # Get classifier
