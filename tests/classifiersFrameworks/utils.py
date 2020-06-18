@@ -140,7 +140,6 @@ def backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_cl
     else:
         sub_gradients = gradients[0, :, 14, 0]
 
-
     if "expected_gradients_1" in expected_values:
         np.testing.assert_array_almost_equal(
             sub_gradients,
