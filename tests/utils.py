@@ -779,7 +779,7 @@ def get_image_classifier_kr_tf_with_wildcard():
     return krc
 
 
-def get_image_classifier_pt(from_logits=True, load_init=True):
+def get_image_classifier_pt(from_logits=False, load_init=True):
     """
     Standard PyTorch classifier for unit testing.
 

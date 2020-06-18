@@ -125,7 +125,7 @@ def backend_test_class_gradient(framework, get_default_mnist_subset, classifier,
 
 def backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list, expected_values):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, _ = get_image_classifier_list(one_classifier=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
     # Test gradient
     gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
@@ -138,7 +138,8 @@ def backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_cl
     if framework == "pytorch":
         sub_gradients = gradients[0, 0, :, 14]
     else:
-        sub_gradients = gradients[0, 14, :, 0]
+        sub_gradients = gradients[0, :, 14, 0]
+
 
     if "expected_gradients_1" in expected_values:
         np.testing.assert_array_almost_equal(
@@ -150,7 +151,7 @@ def backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_cl
     if framework == "pytorch":
         sub_gradients = gradients[0, 0, 14, :]
     else:
-        sub_gradients = gradients[0, :, 14, 0]
+        sub_gradients = gradients[0, 14, :, 0]
 
     if "expected_gradients_2" in expected_values:
         np.testing.assert_array_almost_equal(
