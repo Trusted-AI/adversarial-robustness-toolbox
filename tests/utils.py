@@ -201,7 +201,7 @@ def _kr_tf_weights_loader(dataset, weights_type, layer="DENSE"):
     return weights
 
 
-def get_image_classifier_tf(from_logits=False, load_init=True, sess=None):
+def get_image_classifier_tf(from_logits=True, load_init=True, sess=None):
     import tensorflow as tf
 
     if tf.__version__[0] == "2":
@@ -779,7 +779,7 @@ def get_image_classifier_kr_tf_with_wildcard():
     return krc
 
 
-def get_image_classifier_pt(from_logits=False, load_init=True):
+def get_image_classifier_pt(from_logits=True, load_init=True):
     """
     Standard PyTorch classifier for unit testing.
 
