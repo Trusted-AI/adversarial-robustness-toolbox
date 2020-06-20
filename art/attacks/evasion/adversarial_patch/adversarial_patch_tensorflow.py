@@ -92,7 +92,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                             Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
                             the `patch_shape` is set to the shape of the image samples.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         super(AdversarialPatchTensorFlowV2, self).__init__(estimator=classifier)
         self.rotation_max = rotation_max
@@ -135,7 +135,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         )
 
     def _train_step(self, images: Optional[np.ndarray] = None, target: Optional[np.ndarray] = None) -> "tf.Tensor":
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if target is None:
             target = self.estimator.predict(x=images)
@@ -157,7 +157,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return loss
 
     def _probabilities(self, images: "tf.Tensor") -> "tf.Tensor":
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         patched_input = self._random_overlay(images, self._patch)
 
@@ -170,7 +170,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return probabilities
 
     def _loss(self, images: "tf.Tensor", target: "tf.Tensor") -> "tf.Tensor":
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         probabilities = self._probabilities(images)
 
@@ -186,7 +186,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         Return a circular patch mask.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         diameter = self.image_shape[0]
 
@@ -202,7 +202,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return image_mask
 
     def _random_overlay(self, images: np.ndarray, patch: np.ndarray, scale: Optional[float] = None) -> "tf.Tensor":
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
         nb_images = images.shape[0]
@@ -252,7 +252,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return images * inverted_mask + padded_patch * image_mask
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 

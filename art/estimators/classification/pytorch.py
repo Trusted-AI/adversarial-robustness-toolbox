@@ -94,7 +94,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                be divided by the second one.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         # Remove in 1.5.0
         if channel_index == 3:
@@ -161,7 +161,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         self._model.eval()
 
@@ -199,7 +199,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         if self._optimizer is None:
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -246,7 +246,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
         from art.data_generators import PyTorchDataGenerator
 
         if self._optimizer is None:
@@ -299,7 +299,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         if not (
             (label is None)
@@ -383,7 +383,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                   `(nb_samples,)`.
         :return: Array of gradients of the same shape as `x`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -423,7 +423,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                   (nb_samples,).
         :return: Gradients of the same shape as `x`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
         from torch.autograd import Variable
 
         # Check label shape
@@ -461,7 +461,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x=x, y=None, fit=False)
@@ -517,7 +517,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         if path is None:
             full_path = os.path.join(ART_DATA_PATH, filename)
@@ -562,7 +562,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         :param state: State dictionary with instance parameters to restore.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         # Recover model
         self.__dict__.update(state)

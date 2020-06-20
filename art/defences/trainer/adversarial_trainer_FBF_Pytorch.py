@@ -26,8 +26,6 @@ import logging
 import time
 
 import numpy as np
-import torch
-import torch.nn as nn
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.trainer.adversarial_trainer_FBF import AdversarialTrainerFBF
@@ -200,6 +198,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         :type lr: `float`
         :return: `(float, float, float)`
         """
+        import torch
 
         n = x_batch.shape[0]
         m = np.prod(x_batch.shape[1:])
@@ -239,7 +238,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
             loss.backward()
 
         # clip the gradients
-        nn.utils.clip_grad_norm_(self._classifier._model.parameters(), 0.5)
+        torch.nn.utils.clip_grad_norm_(self._classifier._model.parameters(), 0.5)
         self._classifier._optimizer.step()
 
         train_loss = loss.item() * o_batch.size(0)

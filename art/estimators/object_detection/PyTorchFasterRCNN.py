@@ -113,7 +113,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         if model is None:
-            import torchvision
+            import torchvision  # lgtm [py/repeated-import]
 
             self._model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
                 pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
@@ -148,7 +148,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss gradients of the same shape as `x`.
         """
         import torch
-        import torchvision
+        import torchvision  # lgtm [py/repeated-import]
 
         self._model.train()
 
@@ -220,7 +220,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                  - labels (Int64Tensor[N]): the predicted labels for each image
                  - scores (Tensor[N]): the scores or each prediction.
         """
-        import torchvision
+        import torchvision  # lgtm [py/repeated-import]
 
         self._model.eval()
 

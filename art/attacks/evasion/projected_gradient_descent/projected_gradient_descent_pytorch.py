@@ -29,7 +29,6 @@ import logging
 from typing import Optional, TYPE_CHECKING
 
 import numpy as np
-import torch
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -121,6 +120,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # Check whether random eps is enabled
         self._random_eps()
 
@@ -232,6 +233,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                      perturbed.
         :return: Perturbations.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
@@ -266,6 +269,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         x = x + eps_step * perturbation
 
         if self.estimator.clip_values is not None:
@@ -302,6 +307,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                             original input.
         :return: Adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:])
@@ -344,6 +351,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
         :return: Values of `values` after projection.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
         values_tmp = values.reshape(values.shape[0], -1)

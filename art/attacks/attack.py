@@ -129,9 +129,9 @@ class EvasionAttack(Attack):
     """
 
     @abc.abstractmethod
-    def generate(
+    def generate(  # lgtm [py/inheritance/incorrect-overridden-signature]
         self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs
-    ) -> np.ndarray:  # lgtm [py/inheritance/incorrect-overridden-signature]
+    ) -> np.ndarray:
         """
         Generate adversarial examples and return them as an array. This method should be overridden by all concrete
         evasion attack implementations.

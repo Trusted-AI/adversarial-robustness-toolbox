@@ -26,8 +26,14 @@ install_requires = [
 docs_require = [
     "sphinx >= 1.4",
     "sphinx_rtd_theme",
-    "sphinx.ext.autodoc",
+    "sphinx-autodoc-annotation",
     "sphinx-autodoc-typehints",
+    "matplotlib",
+    "numpy",
+    "scipy",
+    "six==1.13.0",
+    "scikit-learn==0.22.1",
+    "Pillow>=6.0.0",
 ]
 
 
