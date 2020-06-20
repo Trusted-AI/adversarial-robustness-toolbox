@@ -98,8 +98,8 @@ class DeepFool(EvasionAttack):
 
         if is_probability(preds[0]):
             logger.warning(
-                "It seems that the attacked model is predicting probabilities. DeepFool expects logits as "
-                "model output to achieve its full attack strength."
+                "It seems that the attacked model is predicting probabilities. DeepFool expects logits as model output "
+                "to achieve its full attack strength."
             )
 
         # Determine the class labels for which to compute the gradients
