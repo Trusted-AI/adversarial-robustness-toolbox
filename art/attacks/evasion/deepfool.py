@@ -34,7 +34,7 @@ from art.estimators.classification.classifier import (
     ClassifierGradients,
 )
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success
+from art.utils import compute_success, is_probability
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +95,12 @@ class DeepFool(EvasionAttack):
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.estimator.predict(x, batch_size=self.batch_size)
+
+        if is_probability(preds[0]):
+            logger.warning(
+                "It seems that the attacked model is predicting probabilities. DeepFool expects logits as "
+                "model output to achieve its full attack strength."
+            )
 
         # Determine the class labels for which to compute the gradients
         use_grads_subset = self.nb_grads < self.estimator.nb_classes
