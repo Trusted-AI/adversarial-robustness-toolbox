@@ -78,6 +78,12 @@ class DeepFool(EvasionAttack):
         self.nb_grads = nb_grads
         self.batch_size = batch_size
         self._check_params()
+        if self.estimator.clip_values is None:
+            logger.warning(
+                "The `clip_values` attribute of the estimator is `None`, therefore this instance of DeepFool will by "
+                "default generate adversarial perturbations scaled for input values in the range [0, 1] but not clip "
+                "the adversarial example."
+            )
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -143,7 +149,8 @@ class DeepFool(EvasionAttack):
                 # Add perturbation and clip result
                 if self.estimator.clip_values is not None:
                     batch[active_indices] = np.clip(
-                        batch[active_indices] + r_var[active_indices],
+                        batch[active_indices]
+                        + r_var[active_indices] * (self.estimator.clip_values[1] - self.estimator.clip_values[0]),
                         self.estimator.clip_values[0],
                         self.estimator.clip_values[1],
                     )
