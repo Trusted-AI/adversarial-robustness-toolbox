@@ -106,7 +106,7 @@ class DeepFool(EvasionAttack):
         # Compute perturbation with implicit batching
         for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="DeepFool"):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            batch = x_adv[batch_index_1:batch_index_2]
+            batch = x_adv[batch_index_1:batch_index_2].copy()
 
             # Get predictions and gradients for batch
             f_batch = preds[batch_index_1:batch_index_2]
