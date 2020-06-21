@@ -1,0 +1,10 @@
+path_classifiers:
+  test:
+    - tests
+    - examples
+    - notebooks
+    - utils
+
+queries:
+  - exclude: py/import-own-module
+  - exclude: py/similar-function

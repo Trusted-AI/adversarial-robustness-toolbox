@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,35 +21,41 @@ This module loads and provides configuration parameters for ART.
 import json
 import logging
 import os
+from typing import Tuple, Union
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# --------------------------------------------------------------------------------------------- DEFAULT PACKAGE CONFIGS
+# ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
 
 ART_NUMPY_DTYPE = np.float32
+DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
+PREPROCESSING_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
 
-_folder = os.path.expanduser('~')
+# --------------------------------------------------------------------------------------------- DEFAULT PACKAGE CONFIGS
+
+_folder = os.path.expanduser("~")
 if not os.access(_folder, os.W_OK):
-    _folder = '/tmp'
-_folder = os.path.join(_folder, '.art')
+    _folder = "/tmp"
+_folder = os.path.join(_folder, ".art")
 
 # Load data from configuration file if it exists. Otherwise create one.
-_config_path = os.path.expanduser(os.path.join(_folder, 'config.json'))
+_config_path = os.path.expanduser(os.path.join(_folder, "config.json"))
 if os.path.exists(_config_path):
     try:
         with open(_config_path) as f:
             _config = json.load(f)
 
             # Since renaming this variable we must update existing config files
-            if 'DATA_PATH' in _config:
-                _config['ART_DATA_PATH'] = _config.pop('DATA_PATH')
+            if "DATA_PATH" in _config:
+                _config["ART_DATA_PATH"] = _config.pop("DATA_PATH")
                 try:
-                    with open(_config_path, 'w') as f:
+                    with open(_config_path, "w") as f:
                         f.write(json.dumps(_config, indent=4))
                 except IOError:
-                    logger.warning('Unable to update configuration file', exc_info=True)
+                    logger.warning("Unable to update configuration file", exc_info=True)
 
     except ValueError:
         _config = {}
@@ -58,17 +64,23 @@ if not os.path.exists(_folder):
     try:
         os.makedirs(_folder)
     except OSError:
-        logger.warning('Unable to create folder for configuration file.', exc_info=True)
+        logger.warning("Unable to create folder for configuration file.", exc_info=True)
 
 if not os.path.exists(_config_path):
     # Generate default config
-    _config = {'ART_DATA_PATH': os.path.join(_folder, 'data')}
+    _config = {"ART_DATA_PATH": os.path.join(_folder, "data")}
 
     try:
-        with open(_config_path, 'w') as f:
+        with open(_config_path, "w") as f:
             f.write(json.dumps(_config, indent=4))
     except IOError:
-        logger.warning('Unable to create configuration file', exc_info=True)
+        logger.warning("Unable to create configuration file", exc_info=True)
 
-if 'ART_DATA_PATH' in _config:
-    ART_DATA_PATH = _config['ART_DATA_PATH']
+if not os.path.exists(_config["ART_DATA_PATH"]):
+    try:
+        os.makedirs(_config["ART_DATA_PATH"])
+    except OSError:
+        logger.warning("Unable to create folder for ART_DATA_PATH dir.", exc_info=True)
+
+if "ART_DATA_PATH" in _config:
+    ART_DATA_PATH = _config["ART_DATA_PATH"]

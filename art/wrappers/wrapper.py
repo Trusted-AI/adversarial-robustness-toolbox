@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -25,14 +25,14 @@ class ClassifierWrapper:
     """
     Wrapper class for any classifier instance.
     """
-    attack_params = ['classifier']
 
-    def __init__(self, classifier):
+    attack_params = ["classifier"]
+
+    def __init__(self, classifier) -> None:
         """
         Initialize a :class:`.ClassifierWrapper` object.
 
         :param classifier: The Classifier we want to wrap the functionality for the purpose of an attack.
-        :type classifier: :class:`.Classifier`
         """
         self.classifier = classifier
 
@@ -46,20 +46,7 @@ class ClassifierWrapper:
         """
         A generic grab-bag for the classifier instance. This makes the wrapped class look like a subclass.
         """
-        if attr == 'classifier':
+        if attr == "classifier":
             object.__setattr__(self, attr, value)
         else:
             setattr(self.classifier, attr, value)
-
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and pass them down to the underlying wrapped classifier instance.
-
-        :param kwargs: A dictionary of attack-specific parameters.
-        :type kwargs: `dict`
-        :return: `True` when parsing was successful.
-        """
-        for key, value in kwargs.items():
-            if key in self.attack_params:
-                setattr(self, key, value)
-        return True
