@@ -34,9 +34,8 @@ from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
-    from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
     from tensorflow.python.framework.ops import Tensor
-    from tensorflow.python.client.session import Session
+    from tensorflow.python.training.optimizer import Optimizer
 
 logger = logging.getLogger(__name__)
 
@@ -191,7 +190,8 @@ class ShapeShifter(EvasionAttack):
         """
         assert x.ndim == 4, "The adversarial patch can only be applied to images."
 
-        
+        # Build the TensorFlow graph
+        self._build_graph()
 
 
 
@@ -243,7 +243,44 @@ class ShapeShifter(EvasionAttack):
         # Create attack loss
         total_loss = self._create_attack_loss()
 
+        # Create optimizer
+        optimizer = self._create_optimizer()
+
+
+
+
         return batch_assign_to_input_images, total_loss
+
+    def _create_optimizer(self) -> Optimizer:
+        """
+        Create an optimizer of this attack.
+
+        :return: Attack optimizer.
+        """
+        # Create placeholder for learning rate
+        learning_rate = tf.placeholder(dtype=tf.float32, shape=[], name='learning_rate')
+
+        # Create placeholder for momentum
+        if self.optimizer in ['RMSPropOptimizer', 'MomentumOptimizer']:
+            momentum = tf.placeholder(dtype=tf.float32, shape=[], name='momentum')
+
+        # Create placeholder for decay
+        if self.optimizer == 'RMSPropOptimizer':
+            decay = tf.placeholder(dtype=tf.float32, shape=[], name='decay')
+
+        # Create optimizer
+        if self.optimizer == 'GradientDescentOptimizer':
+            optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
+        elif self.optimizer == 'MomentumOptimizer':
+            optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=momentum)
+        elif self.optimizer == 'RMSPropOptimizer':
+            optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate, momentum=momentum, decay=decay)
+        elif self.optimizer == 'AdamOptimizer':
+            optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
+        else:
+            raise NotImplementedError("Unknown optimizer.")
+
+        return optimizer
 
     def _create_attack_loss(self) -> Tensor:
         """
