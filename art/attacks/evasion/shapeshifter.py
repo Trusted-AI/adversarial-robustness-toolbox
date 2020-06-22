@@ -194,8 +194,6 @@ class ShapeShifter(EvasionAttack):
         self._build_graph()
 
 
-
-
     def _build_graph(self, initial_shape: List):
         """
         Build the TensorFlow graph for the attack.
@@ -269,16 +267,20 @@ class ShapeShifter(EvasionAttack):
         accumulated_num_gradients = tf.assign_add(num_gradients, 1.)
 
         # Final gradients
-        final_gradients = tf.div(grad_total_, tf.maximum(grad_count_, 1.), name='grad')
-        if clip:
-            grad_ = tf.sign(grad_)
+        final_gradients = tf.div(
+            accumulated_sum_gradients, tf.maximum(accumulated_num_gradients, 1.), name='final_gradients'
+        )
+        if self.sign_gradients:
+            final_gradients = tf.sign(final_gradients)
 
-        accum_grad_op_ = tf.group([update_grad_total_, update_grad_count_], name='accum_op')
+        # Create accumulated gradients operator
+        accumulated_gradients_op = tf.group(
+            [accumulated_sum_gradients, accumulated_num_gradients], name='accumulated_gradients_op'
+        )
 
+        attack_op = optimizer.apply_gradients([(final_gradients, current_image)], name='attack_op')
 
-        attack_op_ = optimizer.apply_gradients([(grad_, textures_var)], global_step=global_step_, name='attack_op')
-
-        return batch_assign_to_input_images, total_loss
+        return batch_assign_to_input_images, total_loss, accumulated_gradients_op, attack_op
 
     def _create_optimizer(self) -> Optimizer:
         """
