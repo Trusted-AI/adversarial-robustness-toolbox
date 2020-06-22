@@ -26,9 +26,7 @@ import tensorflow as tf
 from art.data_generators import TensorFlowDataGenerator
 from art.utils import Deprecated
 from tests.classifiersFrameworks.utils import (
-    backend_test_class_gradient,
-    backend_test_fit_generator,
-    backend_test_loss_gradient
+    backend_test_fit_generator
 )
 from tests.utils import ExpectedValue
 
