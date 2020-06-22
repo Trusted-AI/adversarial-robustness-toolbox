@@ -32,9 +32,7 @@ from art.defences.preprocessor import FeatureSqueezing, JpegCompression, Spatial
 from art.estimators.classification.keras import KerasClassifier, generator_fit
 from art.utils import Deprecated
 from tests.classifiersFrameworks.utils import (
-    backend_test_class_gradient,
-    backend_test_fit_generator,
-    backend_test_loss_gradient
+    backend_test_fit_generator
 )
 from tests.utils import ExpectedValue
 

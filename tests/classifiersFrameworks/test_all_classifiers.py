@@ -85,7 +85,42 @@ def test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier
         ),
     }
 
-    backend_test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list, expected_values)
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+
+    # Test gradient
+    # x_test_mnist = x_test_mnist[:3]
+    # y_test_mnist = y_test_mnist[:3]
+    gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
+
+    if framework == "pytorch":
+        assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28)
+    else:
+        assert gradients.shape == (x_test_mnist.shape[0], 28, 28, 1)
+
+    if framework == "pytorch":
+        sub_gradients = gradients[0, 0, :, 14]
+    else:
+        sub_gradients = gradients[0, :, 14, 0]
+
+    if "expected_gradients_1" in expected_values:
+        np.testing.assert_array_almost_equal(
+            sub_gradients,
+            expected_values["expected_gradients_1"].value,
+            decimal=expected_values["expected_gradients_1"].decimals,
+        )
+
+    if framework == "pytorch":
+        sub_gradients = gradients[0, 0, 14, :]
+    else:
+        sub_gradients = gradients[0, 14, :, 0]
+
+    if "expected_gradients_2" in expected_values:
+        np.testing.assert_array_almost_equal(
+            sub_gradients,
+            expected_values["expected_gradients_2"].value,
+            decimal=expected_values["expected_gradients_2"].decimals,
+        )
 
 
 def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_classifier_list):
@@ -253,10 +288,6 @@ def test_repr(framework, is_tf_version_2, get_image_classifier_list):
 
 
 def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    classifier_logits, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-
     expected_values = {
         "expected_gradients_1_all_labels": ExpectedValue(
             np.asarray(
@@ -575,4 +606,104 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
             3,
         ]
     )
-    backend_test_class_gradient(framework, get_default_mnist_subset, classifier_logits, expected_values, labels)
+
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+    # Test all gradients label
+    gradients = classifier.class_gradient(x_test_mnist)
+
+    if framework == "pytorch":
+        assert gradients.shape == (x_test_mnist.shape[0], 10, 1, 28, 28)
+    else:
+        assert gradients.shape == (x_test_mnist.shape[0], 10, 28, 28, 1)
+
+    if "expected_gradients_1_all_labels" in expected_values:
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
+        else:
+            sub_gradients = gradients[0, 5, 14, :, 0]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients,
+            expected_values["expected_gradients_1_all_labels"].value,
+            decimal=expected_values["expected_gradients_1_all_labels"].decimals,
+        )
+
+    if "expected_gradients_2_all_labels" in expected_values:
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
+        else:
+            sub_gradients = gradients[0, 5, :, 14, 0]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients,
+            expected_values["expected_gradients_2_all_labels"].value,
+            decimal=expected_values["expected_gradients_2_all_labels"].decimals,
+        )
+
+    # Test 1 gradient label = 5
+    gradients = classifier.class_gradient(x_test_mnist, label=5)
+
+    if framework == "pytorch":
+        assert gradients.shape == (x_test_mnist.shape[0], 1, 1, 28, 28)
+    else:
+        assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
+
+    if "expected_gradients_1_label5" in expected_values:
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
+        else:
+            sub_gradients = gradients[0, 0, 14, :, 0]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients,
+            expected_values["expected_gradients_1_label5"].value,
+            decimal=expected_values["expected_gradients_1_label5"].decimals,
+        )
+
+    if "expected_gradients_2_label5" in expected_values:
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
+        else:
+            sub_gradients = gradients[0, 0, :, 14, 0]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients,
+            expected_values["expected_gradients_2_label5"].value,
+            decimal=expected_values["expected_gradients_2_label5"].decimals,
+        )
+
+    # # Test a set of gradients label = array
+    # # label = np.random.randint(5, size=self.n_test)
+    gradients = classifier.class_gradient(x_test_mnist, label=labels)
+
+    if framework == "pytorch":
+        assert gradients.shape == (x_test_mnist.shape[0], 1, 1, 28, 28)
+    else:
+        assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
+
+    if "expected_gradients_1_labelArray" in expected_values:
+
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_labelArray
+        else:
+            sub_gradients = gradients[0, 0, 14, :, 0]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients,
+            expected_values["expected_gradients_1_labelArray"].value,
+            decimal=expected_values["expected_gradients_1_labelArray"].decimals,
+        )
+
+    if "expected_gradients_2_labelArray" in expected_values:
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_labelArray
+        else:
+            sub_gradients = gradients[0, 0, :, 14, 0]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients,
+            expected_values["expected_gradients_2_labelArray"].value,
+            decimal=expected_values["expected_gradients_2_labelArray"].decimals,
+        )
