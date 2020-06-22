@@ -482,7 +482,7 @@ def get_image_classifier_kr(
                 if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3:
 
                     def categorical_crossentropy(y_true, y_pred):
-                        return keras.losses.sparse_categorical_crossentropy(y_true, y_pred, from_logits=True)
+                        return keras.losses.categorical_crossentropy(y_true, y_pred, from_logits=True)
 
                     loss = categorical_crossentropy
                 else:
@@ -945,10 +945,10 @@ def get_image_classifier_mx(from_logits=False, load_init=True):
             super(Model, self).__init__(**kwargs)
             self.model = nn.Sequential()
             self.model.add(
-                nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
+                nn.Conv2D(channels=1, kernel_size=7, activation="relu", ),
                 nn.MaxPool2D(pool_size=4, strides=4),
                 nn.Flatten(),
-                nn.Dense(10, activation=None,),
+                nn.Dense(10, activation=None, ),
             )
 
         def forward(self, x):
