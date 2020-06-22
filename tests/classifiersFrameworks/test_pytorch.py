@@ -144,13 +144,3 @@ def test_set_learning(get_image_classifier_list):
     classifier.set_learning_phase(True)
     assert classifier._model.training
     assert classifier.learning_phase
-
-
-@pytest.mark.only_with_platform("pytorch")
-def test_fit_predict(get_image_classifier_list, get_default_mnist_subset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    predictions = classifier.predict(x_test_mnist)
-    accuracy = np.sum(np.argmax(predictions, axis=1) == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
-    logger.info("Accuracy after fitting: %.2f%%", (accuracy * 100))
-    assert accuracy == 0.32
