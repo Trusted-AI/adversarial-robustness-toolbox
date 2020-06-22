@@ -112,7 +112,7 @@ class ProjectedGradientDescent(EvasionAttack):
         ProjectedGradientDescent._check_params(self)
 
         no_preprocessing = self.estimator.preprocessing is None or (
-            np.all(self.estimator.preprocessing[0] == 0) and np.all(self.estimator.preprocessing[1] == 0)
+            np.all(self.estimator.preprocessing[0] == 0) and np.all(self.estimator.preprocessing[1] == 1)
         )
         no_defences = not self.estimator.preprocessing_defences and not self.estimator.postprocessing_defences
 
