@@ -76,34 +76,35 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         Initialization of an instance TensorFlowFasterRCNN.
 
         :param model: A TensorFlow Faster-RCNN model. The output that can be computed from the model includes a tuple
-               of (predictions, losses, detections):
+                      of (predictions, losses, detections):
 
-                    - predictions: a dictionary holding "raw" prediction tensors.
-                    - losses: a dictionary mapping loss keys (`Loss/RPNLoss/localization_loss`,
-                    `Loss/RPNLoss/objectness_loss`, `Loss/BoxClassifierLoss/localization_loss`,
-                    `Loss/BoxClassifierLoss/classification_loss`) to scalar tensors representing
-                    corresponding loss values.
-                    - detections: a dictionary containing final detection results.
+                        - predictions: a dictionary holding "raw" prediction tensors.
+                        - losses: a dictionary mapping loss keys (`Loss/RPNLoss/localization_loss`,
+                                  `Loss/RPNLoss/objectness_loss`, `Loss/BoxClassifierLoss/localization_loss`,
+                                  `Loss/BoxClassifierLoss/classification_loss`) to scalar tensors representing
+                                  corresponding loss values.
+                        - detections: a dictionary containing final detection results.
         :param filename: Name of the file.
         :param url: Download URL.
         :param images: Input samples of shape (nb_samples, height, width, nb_channels).
         :param sess: Computation session.
         :param is_training: A boolean indicating whether the training version of the computation graph should be
-               constructed.
+                            constructed.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-               maximum values allowed for features. If floats are provided, these will be used as the range of all
-               features. If arrays are provided, each value will be considered the bound for a feature, thus
-               the shape of clip values needs to match the total number of features.
+                            maximum values allowed for input image features. If floats are provided, these will be
+                            used as the range of all features. If arrays are provided, each value will be considered
+                            the bound for a feature, thus the shape of clip values needs to match the total number
+                            of features.
         :param channel_index: Index of the axis in data containing the color channels or features.
         :param channels_first: Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be subtracted from the input. The input will then
-               be divided by the second one.
+                              used for data preprocessing. The first value will be subtracted from the input. The
+                              input will then be divided by the second one.
         :param attack_losses: Tuple of any combination of strings of the following loss components:
-               `first_stage_localization_loss`, `first_stage_objectness_loss`, `second_stage_localization_loss`,
-               `second_stage_classification_loss`.
+                              `first_stage_localization_loss`, `first_stage_objectness_loss`,
+                              `second_stage_localization_loss`, `second_stage_classification_loss`.
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -231,22 +232,24 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :param url: Download URL.
         :param images: Input samples of shape (nb_samples, height, width, nb_channels).
         :param is_training: A boolean indicating whether the training version of the computation graph should be
-               constructed.
-        :param groundtruth_boxes_list: a list of 2-D tf.float32 tensors of shape [num_boxes, 4] containing
-               coordinates of the groundtruth boxes. Groundtruth boxes are provided in [y_min, x_min, y_max, x_max]
-               format and assumed to be normalized and clipped relative to the image window with y_min <= y_max and
-               x_min <= x_max.
-        :param groundtruth_classes_list: a list of 1-D tf.float32 tensors of shape [num_boxes] containing the class
-               targets with the zero index assumed to map to the first non-background class.
+                            constructed.
+        :param groundtruth_boxes_list: A list of 2-D tf.float32 tensors of shape [num_boxes, 4] containing
+                                       coordinates of the groundtruth boxes. Groundtruth boxes are provided in
+                                       [y_min, x_min, y_max, x_max] format and also assumed to be normalized and
+                                       clipped relative to the image window with conditions y_min <= y_max and
+                                       x_min <= x_max.
+        :param groundtruth_classes_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing the class
+                                         targets with the zero index which is assumed to map to the first
+                                         non-background class.
         :param groundtruth_weights_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing weights for
-               groundtruth boxes.
+                                         groundtruth boxes.
         :return: A tuple of (predictions, losses, detections):
 
                     - predictions: a dictionary holding "raw" prediction tensors.
                     - losses: a dictionary mapping loss keys (`Loss/RPNLoss/localization_loss`,
-                    `Loss/RPNLoss/objectness_loss`, `Loss/BoxClassifierLoss/localization_loss`,
-                    `Loss/BoxClassifierLoss/classification_loss`) to scalar tensors representing
-                    corresponding loss values.
+                              `Loss/RPNLoss/objectness_loss`, `Loss/BoxClassifierLoss/localization_loss`,
+                              `Loss/BoxClassifierLoss/classification_loss`) to scalar tensors representing
+                              corresponding loss values.
                     - detections: a dictionary containing final detection results.
         """
         if obj_detection_model is None:
@@ -323,15 +326,17 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :param y: A dictionary of target values. The fields of the dictionary are as follows:
 
-                    - `groundtruth_boxes_list`: a list of `nb_samples` size of 2-D tf.float32 tensors of shape
-                    [num_boxes, 4] containing coordinates of the groundtruth boxes. Groundtruth boxes are provided in
-                    [y_min, x_min, y_max, x_max] format and assumed to be normalized and clipped relative to the image
-                    window with y_min <= y_max and x_min <= x_max.
-                    - `groundtruth_classes_list`: a list of `nb_samples` size of 1-D tf.float32 tensors of shape
-                    [num_boxes] containing the class targets with the zero index assumed to map to the first
-                    non-background class.
+                    - `groundtruth_boxes_list`: A list of `nb_samples` size of 2-D tf.float32 tensors of shape
+                                                [num_boxes, 4] containing coordinates of the groundtruth boxes.
+                                                Groundtruth boxes are provided in [y_min, x_min, y_max, x_max]
+                                                format and also assumed to be normalized as well as clipped
+                                                relative to the image window with conditions y_min <= y_max and
+                                                x_min <= x_max.
+                    - `groundtruth_classes_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
+                                                  [num_boxes] containing the class targets with the zero index
+                                                  assumed to map to the first non-background class.
                     - `groundtruth_weights_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
-                    [num_boxes] containing weights for groundtruth boxes.
+                                                  [num_boxes] containing weights for groundtruth boxes.
         :return: Loss gradients of the same shape as `x`.
         """
         # Only do loss_gradient if is_training is False
@@ -486,8 +491,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         Get the `_losses` attribute.
 
         :return: A dictionary mapping loss keys (`Loss/RPNLoss/localization_loss`, `Loss/RPNLoss/objectness_loss`,
-                `Loss/BoxClassifierLoss/localization_loss`, `Loss/BoxClassifierLoss/classification_loss`) to scalar
-                tensors representing corresponding loss values.
+                 `Loss/BoxClassifierLoss/localization_loss`, `Loss/BoxClassifierLoss/classification_loss`) to scalar
+                 tensors representing corresponding loss values.
         """
         return self._losses
 
