@@ -11,6 +11,22 @@ from tests.utils import ExpectedValue
 logger = logging.getLogger(__name__)
 
 
+def test_shapes(get_default_mnist_subset, get_image_classifier_list):
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+
+    predictions = classifier.predict(x_test_mnist)
+    assert predictions.shape == y_test_mnist.shape
+
+    assert classifier.nb_classes == 10
+
+    class_gradients = classifier.class_gradient(x_test_mnist[:11])
+    assert class_gradients.shape == tuple([11, 10] + list(x_test_mnist[1].shape))
+
+    loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
+    assert loss_gradients.shape == x_test_mnist[:11].shape
+
+
 def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_list, image_data_generator,
                              get_default_mnist_subset):
     if framework == "tensorflow" and is_tf_version_2:

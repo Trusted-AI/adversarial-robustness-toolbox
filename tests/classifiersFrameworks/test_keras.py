@@ -118,23 +118,6 @@ def test_fit_kwargs(get_default_mnist_subset, default_batch_size, get_image_clas
 
 
 @pytest.mark.only_with_platform("keras")
-def test_shapes(get_default_mnist_subset, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-
-    predictions = classifier.predict(x_test_mnist)
-    assert predictions.shape == y_test_mnist.shape
-
-    assert classifier.nb_classes == 10
-
-    class_gradients = classifier.class_gradient(x_test_mnist[:11])
-    assert class_gradients.shape == tuple([11, 10] + list(x_test_mnist[1].shape))
-
-    loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
-    assert loss_gradients.shape == x_test_mnist[:11].shape
-
-
-@pytest.mark.only_with_platform("keras")
 def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
