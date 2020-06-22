@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 from os import listdir, path
+import pytest
 import tempfile
 import warnings
 
@@ -9,6 +10,30 @@ from art.utils import Deprecated
 from tests.utils import ExpectedValue
 
 logger = logging.getLogger(__name__)
+
+
+# def test_fit_kwargs(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
+#     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+#
+#     def get_lr(_):
+#         return 0.01
+#
+#     # Test a valid callback
+#     classifier, _ = get_image_classifier_list(one_classifier=True)
+#     # kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
+#     # classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
+#
+#     # Test failure for invalid parameters
+#     kwargs = {"epochs": 1}
+#     # TODO only throws a TypeError in Keras, not in pytorch or tensorflow
+#     with pytest.raises(TypeError) as exception:
+#         try:
+#             classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
+#             tmp1 = ""
+#         except Exception as e:
+#             tmp = ""
+#
+#     assert "multiple values for keyword argument" in str(exception.value)
 
 
 def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
