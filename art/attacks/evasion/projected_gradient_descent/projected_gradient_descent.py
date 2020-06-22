@@ -172,6 +172,9 @@ class ProjectedGradientDescent(EvasionAttack):
         logger.info("Creating adversarial samples.")
         return self._attack.generate(x=x, y=y, **kwargs)
 
+    def set_params(self, **kwargs) -> None:
+        self._attack.set_params(**kwargs)
+
     def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [np.inf, int(1), int(2)]:
