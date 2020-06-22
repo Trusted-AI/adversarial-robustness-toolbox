@@ -11,6 +11,19 @@ from tests.utils import ExpectedValue
 logger = logging.getLogger(__name__)
 
 
+def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    labels = np.argmax(y_test_mnist, axis=1)
+    classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+    accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
+    np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.06)
+
+    classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
+    accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
+    np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
+
+
 def test_shapes(get_default_mnist_subset, get_image_classifier_list):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)

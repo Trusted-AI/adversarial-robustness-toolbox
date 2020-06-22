@@ -81,23 +81,6 @@ def get_functional_model(get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    labels = np.argmax(y_test_mnist, axis=1)
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-    logger.info("Accuracy: %.2f%%", (accuracy * 100))
-
-    classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
-    accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-    logger.info("Accuracy: %.2f%%", (accuracy_2 * 100))
-
-    assert accuracy == 0.32
-    np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
-
-
-@pytest.mark.only_with_platform("keras")
 def test_fit_kwargs(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
