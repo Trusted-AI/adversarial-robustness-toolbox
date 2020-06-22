@@ -33,12 +33,25 @@ from tests.utils import ExpectedValue
 logger = logging.getLogger(__name__)
 
 
+def test_fit_image_generator(get_image_classifier_list, image_data_generator, get_default_mnist_subset):
+    # classifier, _ = get_image_classifier_list(one_classifier=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+
+    # expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.73, 0.06)}
+    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.68, 0.06)}
+    # expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
+    # 0.32, 0.68
+    data_gen = image_data_generator()
+    backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=2)
+
+
 @pytest.mark.only_with_platform("tensorflow")
 def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     if not is_tf_version_2:
-        classifier, sess = get_image_classifier_list(one_classifier=True)
+        # classifier, sess = get_image_classifier_list(one_classifier=True)
+        classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
 
         # Create TensorFlow data generator
         x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
@@ -50,7 +63,8 @@ def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_clas
             sess=sess, iterator=iterator, iterator_type="initializable", iterator_arg={}, size=1000, batch_size=100
         )
 
-        expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
+        expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06),
+                           "post_fit_accuracy": ExpectedValue(0.68, 0.06)}
 
         backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=2)
 

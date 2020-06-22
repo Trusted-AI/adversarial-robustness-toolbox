@@ -168,7 +168,8 @@ def test_fit_image_generator(get_image_classifier_list, image_data_generator, ge
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
     # expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.73, 0.06)}
-    expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
-
+    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.68, 0.06)}
+    # expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
+# 0.32, 0.68
     data_gen = image_data_generator()
     backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=2)
