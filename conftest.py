@@ -164,6 +164,16 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
                     size=x_train_mnist.shape[0],
                     batch_size=default_batch_size
                 )
+                # return TensorFlowDataGenerator(
+                #     sess=kwargs["sess"], iterator=image_iterator, iterator_type="initializable", iterator_arg={},
+                #     size=x_train_mnist.shape[0],
+                #     batch_size=default_batch_size
+                # )
+                #
+                # data_gen = TensorFlowDataGenerator(
+                #     sess=sess, iterator=iterator, iterator_type="initializable", iterator_arg={},
+                #     size=1000, batch_size=100
+                # )
 
         if framework == "pytorch":
             return PyTorchDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],

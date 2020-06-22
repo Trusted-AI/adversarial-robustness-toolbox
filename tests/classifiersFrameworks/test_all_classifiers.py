@@ -11,6 +11,47 @@ from tests.utils import ExpectedValue
 logger = logging.getLogger(__name__)
 
 
+def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_list, image_data_generator,
+                             get_default_mnist_subset):
+    if framework == "tensorflow" and is_tf_version_2:
+        return
+
+    classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+
+    expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.68, 0.06)}
+
+    data_gen = image_data_generator(sess=sess)
+
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    true_class = np.argmax(y_test_mnist, axis=1)
+
+    predictions = classifier.predict(x_test_mnist)
+    prediction_class = np.argmax(predictions, axis=1)
+    pre_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
+    logger.info("Accuracy: %.2f%%", (pre_fit_accuracy * 100))
+
+    if "pre_fit_accuracy" in expected_values:
+        np.testing.assert_array_almost_equal(
+            pre_fit_accuracy,
+            expected_values["pre_fit_accuracy"].value,
+            decimal=expected_values["pre_fit_accuracy"].decimals,
+        )
+
+    classifier.fit_generator(generator=data_gen, nb_epochs=nb_epochs)
+    predictions = classifier.predict(x_test_mnist)
+    prediction_class = np.argmax(predictions, axis=1)
+    post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
+    logger.info("Accuracy after fitting classifier with generator: %.2f%%", (post_fit_accuracy * 100))
+
+    if "post_fit_accuracy" in expected_values:
+        np.testing.assert_array_almost_equal(
+            post_fit_accuracy,
+            expected_values["post_fit_accuracy"].value,
+            decimal=expected_values["post_fit_accuracy"].decimals,
+        )
+
+
 def test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list):
     expected_values = {
         "expected_gradients_1": ExpectedValue(
