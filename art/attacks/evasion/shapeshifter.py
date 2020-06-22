@@ -246,8 +246,37 @@ class ShapeShifter(EvasionAttack):
         # Create optimizer
         optimizer = self._create_optimizer()
 
+        # Create gradients
+        gradients = optimizer.compute_gradients(total_loss, var_list=[current_image])[0][0]
+
+        # Create variables to store gradients
+        sum_gradients = tf.Variable(
+            initial_value=np.zeros(initial_image.shape.as_list()),
+            trainable=False,
+            name='sum_gradients',
+            collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
+        )
+
+        num_gradients = tf.Variable(
+            initial_value=0.,
+            trainable=False,
+            name='count_gradients',
+            collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
+        )
+
+        # Accumulate gradients
+        accumulated_sum_gradients = tf.assign_add(sum_gradients, gradients)
+        accumulated_num_gradients = tf.assign_add(num_gradients, 1.)
+
+        # Final gradients
+        final_gradients = tf.div(grad_total_, tf.maximum(grad_count_, 1.), name='grad')
+        if clip:
+            grad_ = tf.sign(grad_)
+
+        accum_grad_op_ = tf.group([update_grad_total_, update_grad_count_], name='accum_op')
 
 
+        attack_op_ = optimizer.apply_gradients([(grad_, textures_var)], global_step=global_step_, name='attack_op')
 
         return batch_assign_to_input_images, total_loss
 
