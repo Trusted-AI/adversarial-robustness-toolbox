@@ -38,7 +38,7 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
             decimal=expected_values["pre_fit_accuracy"].decimals,
         )
 
-    classifier.fit_generator(generator=data_gen, nb_epochs=nb_epochs)
+    classifier.fit_generator(generator=data_gen, nb_epochs=2)
     predictions = classifier.predict(x_test_mnist)
     prediction_class = np.argmax(predictions, axis=1)
     post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]

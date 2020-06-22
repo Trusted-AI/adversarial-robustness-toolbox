@@ -35,7 +35,6 @@ logger = logging.getLogger(__name__)
 
 # %TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
 
-
 def _functional_model():
     in_layer = Input(shape=(28, 28, 1), name="input0")
     layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
