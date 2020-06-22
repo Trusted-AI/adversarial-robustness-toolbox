@@ -166,7 +166,8 @@ def test_fit_predict(get_image_classifier_list, get_default_mnist_subset):
 
 @pytest.mark.only_with_platform("pytorch")
 def test_fit_image_generator(get_image_classifier_list, image_data_generator, get_default_mnist_subset):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
+    # classifier, _ = get_image_classifier_list(one_classifier=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
     expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.73, 0.06)}
 
