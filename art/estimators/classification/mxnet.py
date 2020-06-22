@@ -38,7 +38,7 @@ from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
 )
-from art.utils import Deprecated, deprecated_keyword_arg
+from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
     import mxnet as mx
@@ -134,7 +134,8 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         Fit the classifier on the training set `(inputs, outputs)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
@@ -145,6 +146,8 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         if self._optimizer is None:
             raise ValueError("An MXNet optimizer is required for fitting the model.")
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
+
+        y = check_and_transform_label_format(y, self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
