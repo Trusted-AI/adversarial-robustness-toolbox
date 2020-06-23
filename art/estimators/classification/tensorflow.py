@@ -36,7 +36,7 @@ from art.estimators.classification.classifier import (
     ClassifierMixin,
 )
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
-from art.utils import Deprecated, deprecated_keyword_arg
+from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -186,7 +186,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
@@ -195,6 +196,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Check if train and output_ph available
         if self._train is None or self._labels_ph is None:
             raise ValueError("Need the training objective and the output placeholder to train the model.")
+
+        y = check_and_transform_label_format(y, self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -768,7 +771,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Labels, one-hot-encoded of shape (nb_samples, nb_classes).
+        :param y: Labels, one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
@@ -780,6 +784,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             raise TypeError(
                 "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
+
+        y = check_and_transform_label_format(y, self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)

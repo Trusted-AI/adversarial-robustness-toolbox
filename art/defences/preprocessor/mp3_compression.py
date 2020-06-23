@@ -113,6 +113,15 @@ class Mp3Compression(Preprocessor):
             from pydub import AudioSegment
             from scipy.io.wavfile import write
 
+            normalized = bool(x.min() >= -1.0 and x.max() <= 1.0)
+            if x.dtype != np.int16 and not normalized:
+                # input is not of type np.int16 and seems to be unnormalized. Therefore casting to np.int16.
+                x = x.astype(np.int16)
+            elif x.dtype != np.int16 and normalized:
+                # x is not of type np.int16 and seems to be normalized. Therefore undoing normalization and
+                # casting to np.int16.
+                x = (x * 2**15).astype(np.int16)
+
             tmp_wav, tmp_mp3 = BytesIO(), BytesIO()
             write(tmp_wav, sample_rate, x)
             AudioSegment.from_wav(tmp_wav).export(tmp_mp3)
@@ -122,6 +131,10 @@ class Mp3Compression(Preprocessor):
             x_mp3 = np.array(audio_segment.get_array_of_samples()).reshape((-1, audio_segment.channels))
             # WARNING: Due to above problem, we need to manually resize x_mp3 to original length.
             x_mp3 = x_mp3[: x.shape[0]]
+
+            if normalized:
+                # x was normalized. Therefore normalizing x_mp3.
+                x_mp3 = x_mp3 * 2**-15
             return x_mp3
 
         if x.ndim != 3:
