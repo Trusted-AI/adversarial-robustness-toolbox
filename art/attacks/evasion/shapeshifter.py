@@ -182,7 +182,7 @@ class ShapeShifter(EvasionAttack):
         self.decay = decay
         self.sign_gradients = sign_gradients
         self.random_size = random_size
-        self.batch_random_size = batch_random_size
+        self.max_iter = max_iter
         self.texture_as_input = texture_as_input
         self.use_spectral = use_spectral
         self.soft_clip = soft_clip
@@ -194,13 +194,17 @@ class ShapeShifter(EvasionAttack):
         """
         Generate adversarial samples and return them in an array.
 
-        :param x: Sample images.
-        :param y: Target labels for object detector.
+        :param x: Sample image.
+        :param y: Target labels for object detector (not used).
+        :param target_class: Target class.
+        :type target_class: int
+        :param victim_class: Victim class.
+        :type victim_class: int
         :param custom_loss: Custom loss function from users.
         :type custom_loss: Tensor
         :param rendering_function: A rendering function to use textures as input.
         :type rendering_function: Callable
-        :return: Adversarial patch.
+        :return: Adversarial image/texture.
         :rtype: `np.ndarray`
         """
         # Check input shape
