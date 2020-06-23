@@ -1,7 +1,7 @@
+import keras
 import logging
 import numpy as np
 from os import listdir, path
-import pytest
 import tempfile
 import warnings
 
@@ -10,6 +10,12 @@ from art.utils import Deprecated
 from tests.utils import ExpectedValue
 
 logger = logging.getLogger(__name__)
+
+
+def is_keras_2_3():
+    if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3:
+        return True
+    return False
 
 
 # def test_fit_kwargs(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
@@ -107,6 +113,10 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
 
 
 def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get_image_classifier_list):
+    if framework == "keras" and is_keras_2_3() is False:
+        # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
+        return
+
     expected_values = {
         "expected_gradients_1": ExpectedValue(
             np.asarray([
@@ -241,10 +251,14 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
         warnings.warn(UserWarning(e))
 
 
-def test_predict(get_default_mnist_subset, get_image_classifier_list):
+def test_predict(framework, get_default_mnist_subset, get_image_classifier_list):
+    if framework == "keras" and is_keras_2_3() is False:
+        # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
+        return
+
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=False)
 
     if classifier is not None:
         y_predicted = classifier.predict(x_test_mnist[0:1])
@@ -378,6 +392,10 @@ def test_repr(framework, is_tf_version_2, get_image_classifier_list):
 
 
 def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset):
+    if framework == "keras" and is_keras_2_3() is False:
+        # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
+        return
+
     expected_values = {
         "expected_gradients_1_all_labels": ExpectedValue(
             np.asarray(
@@ -699,7 +717,7 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=False)
     # Test all gradients label
     gradients = classifier.class_gradient(x_test_mnist)
 

@@ -187,11 +187,6 @@ def get_image_classifier_list(framework):
     def _get_image_classifier_list(one_classifier=False, **kwargs):
         sess = None
         if framework == "keras":
-            # if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) <= 3:
-            #     if "from_logits" in kwargs:
-            #         if kwargs["from_logits"]:
-            #             kwargs["from_logits"] = False
-
             classifier_list = [get_image_classifier_kr(**kwargs)]
         if framework == "tensorflow":
             classifier, sess = get_image_classifier_tf(**kwargs)
