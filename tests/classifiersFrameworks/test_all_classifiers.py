@@ -40,7 +40,7 @@ def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     labels = np.argmax(y_test_mnist, axis=1)
-    classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+    classifier, sess = get_image_classifier_list(one_classifier=True)
     accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
     np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.06)
 
@@ -51,7 +51,7 @@ def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_
 
 def test_shapes(get_default_mnist_subset, get_image_classifier_list):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+    classifier, sess = get_image_classifier_list(one_classifier=True)
 
     predictions = classifier.predict(x_test_mnist)
     assert predictions.shape == y_test_mnist.shape
@@ -70,7 +70,7 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
     if framework == "tensorflow" and is_tf_version_2:
         return
 
-    classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+    classifier, sess = get_image_classifier_list(one_classifier=True)
 
     expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.68, 0.06)}
 
@@ -106,10 +106,9 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
         )
 
 
-def test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier_list):
+def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get_image_classifier_list):
     expected_values = {
         "expected_gradients_1": ExpectedValue(
-
             np.asarray([
                 0.00210803,
                 0.00213919,
@@ -177,7 +176,7 @@ def test_loss_gradient(framework, get_default_mnist_subset, get_image_classifier
     }
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=False)
 
     # Test gradient
     # x_test_mnist = x_test_mnist[:3]
@@ -245,7 +244,7 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
 def test_predict(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=False)
 
     if classifier is not None:
         y_predicted = classifier.predict(x_test_mnist[0:1])
@@ -353,7 +352,7 @@ def test_repr(framework, is_tf_version_2, get_image_classifier_list):
                     message_list = [
                         "TensorFlowClassifier",
                         "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
-                        "output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>",
+                        "output=<tf.Tensor 'dense/BiasAdd:0' shape=(?, 10) dtype=float32",
                         "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
                         "train=<tf.Operation 'Adam' type=NoOp>",
                         "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
@@ -700,7 +699,7 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=False)
     # Test all gradients label
     gradients = classifier.class_gradient(x_test_mnist)
 
