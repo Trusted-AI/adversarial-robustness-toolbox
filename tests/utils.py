@@ -201,7 +201,7 @@ def _kr_tf_weights_loader(dataset, weights_type, layer="DENSE"):
     return weights
 
 
-def get_image_classifier_tf(from_logits=True, load_init=True, sess=None):
+def get_image_classifier_tf(from_logits=False, load_init=True, sess=None):
     import tensorflow as tf
 
     if tf.__version__[0] == "2":
@@ -275,7 +275,9 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     probabilities = tf.keras.activations.softmax(x=logits)
 
     # Train operator
-    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+
+    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph,
+                                                          reduction=tf.losses.Reduction.SUM))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
     train = optimizer.minimize(loss)
 

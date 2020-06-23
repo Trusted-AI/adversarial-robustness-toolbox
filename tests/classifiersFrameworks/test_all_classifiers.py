@@ -176,7 +176,7 @@ def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get
     }
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=False)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
     # Test gradient
     # x_test_mnist = x_test_mnist[:3]
