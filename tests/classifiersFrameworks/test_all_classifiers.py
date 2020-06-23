@@ -244,7 +244,7 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
 def test_predict(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=False)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
     if classifier is not None:
         y_predicted = classifier.predict(x_test_mnist[0:1])
@@ -326,7 +326,7 @@ def test_repr(framework, is_tf_version_2, get_image_classifier_list):
             elif framework == "keras":
                 message_list = [
                     "art.estimators.classification.keras.KerasClassifier",
-                    f"use_logits=True, channel_index={Deprecated}, channels_first=False",
+                    f"use_logits=False, channel_index={Deprecated}, channels_first=False",
                     "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, "
                     "postprocessing_defences=None, "
                     "preprocessing=(0, 1)",
@@ -699,7 +699,7 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=False)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
     # Test all gradients label
     gradients = classifier.class_gradient(x_test_mnist)
 
