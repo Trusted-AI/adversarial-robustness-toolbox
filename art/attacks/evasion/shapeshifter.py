@@ -31,7 +31,6 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNe
 from art.estimators.tensorflow import TensorFlowEstimator
 from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     from tensorflow.python.framework.ops import Tensor
@@ -73,7 +72,8 @@ class ShapeShifter(EvasionAttack):
         "decay",
         "sign_gradients",
         "random_size",
-        "batch_random_size"
+        "batch_random_size",
+        "texture_as_input"
     ]
 
     _estimator_requirements = (
@@ -112,7 +112,8 @@ class ShapeShifter(EvasionAttack):
         decay: float = 0.0,
         sign_gradients: bool = False,
         random_size: int = 1,
-        batch_random_size: int = 1
+        batch_random_size: int = 1,
+        texture_as_input: bool = False
     ):
         """
         Create an instance of the :class:`.ShapeShifter`.
@@ -144,6 +145,7 @@ class ShapeShifter(EvasionAttack):
         :param sign_gradients: Whether to use the sign of gradients for optimization.
         :param random_size: Random sample size.
         :param batch_random_size: Batch size of random samples.
+        :param texture_as_input: Whether textures are used as inputs instead of images.
         """
         super(ShapeShifter, self).__init__(estimator=estimator)
 
@@ -173,40 +175,57 @@ class ShapeShifter(EvasionAttack):
         self.sign_gradients = sign_gradients
         self.random_size = random_size
         self.batch_random_size = batch_random_size
+        self.texture_as_input = texture_as_input
 
         # Check validity of attack attributes
         self._check_params()
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[Dict[str, List[Tensor]]] = None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
 
         :param x: Sample images.
         :param y: Target labels for object detector.
+        :param custom_loss: Custom loss function from users.
+        :type custom_loss: Tensor
         :return: Adversarial patch.
         :rtype: `np.ndarray`
         """
-        assert x.ndim == 4, "The adversarial patch can only be applied to images."
+        assert x.ndim == 4, "The ShapeShifter attack can only be applied to images."
+
+        # Check whether users have a custom loss
+        custom_loss = kwargs.get("custom_loss")
+
+        # Get initial shape
+        initial_shape = x.shape
+
+
+
+
 
         # Build the TensorFlow graph
-        self._build_graph()
+        self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
 
 
-    def _build_graph(self, initial_shape: List):
+    def _build_graph(self, initial_shape: List, custom_loss: Optional[Tensor] = None):
         """
         Build the TensorFlow graph for the attack.
 
         :param initial_shape: Image shape.
+        :param custom_loss: Custom loss function from users.
+        :return:
         """
-        # Create a placeholder to pass input image
-        initial_image = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_image')
+        # Create a placeholder to pass input image/texture
+        initial_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_input')
 
         # Adversarial image
-        current_image = tf.Variable(
-            initial_value=np.zeros(initial_image.shape.as_list()), dtype=tf.float32, name='raw_current_image'
-        )
-        current_image = (tf.tanh(current_image) + 1) / 2
-        current_image = tf.identity(current_image, name='current_image')
+        if self.texture_as_input:
+        else:
+            current_image = tf.Variable(
+                initial_value=np.zeros(initial_input.shape.as_list()), dtype=tf.float32, name='raw_current_image'
+            )
+            current_image = (tf.tanh(current_image) + 1) / 2
+            current_image = tf.identity(current_image, name='current_image')
 
         # Generate random transformed images
         # Define the stop condition
@@ -237,7 +256,7 @@ class ShapeShifter(EvasionAttack):
         )
 
         # Create attack loss
-        total_loss = self._create_attack_loss()
+        total_loss = self._create_attack_loss(custom_loss)
 
         # Create optimizer
         optimizer = self._create_optimizer()
@@ -315,10 +334,11 @@ class ShapeShifter(EvasionAttack):
 
         return optimizer
 
-    def _create_attack_loss(self) -> Tensor:
+    def _create_attack_loss(self, custom_loss: Optional[Tensor] = None) -> Tensor:
         """
         Create the loss tensor of this attack.
 
+        :param custom_loss: Custom loss function from users.
         :return: Attack loss tensor.
         """
         # Compute faster rcnn loss
@@ -334,15 +354,28 @@ class ShapeShifter(EvasionAttack):
         weight_similarity_loss = self._create_similarity_loss()
 
         # Compute total loss
-        total_loss = tf.add_n(
-            [
-                partial_faster_rcnn_loss,
-                partial_box_loss,
-                partial_rpn_loss,
-                weight_similarity_loss
-            ],
-            name='total_loss'
-        )
+        if custom_loss is not None:
+            total_loss = tf.add_n(
+                [
+                    partial_faster_rcnn_loss,
+                    partial_box_loss,
+                    partial_rpn_loss,
+                    weight_similarity_loss,
+                    custom_loss
+                ],
+                name='total_loss'
+            )
+
+        else:
+            total_loss = tf.add_n(
+                [
+                    partial_faster_rcnn_loss,
+                    partial_box_loss,
+                    partial_rpn_loss,
+                    weight_similarity_loss
+                ],
+                name='total_loss'
+            )
 
         return total_loss
 
@@ -702,3 +735,8 @@ class ShapeShifter(EvasionAttack):
             raise ValueError("The batch size of random samples must be of type int.")
         if not self.batch_size > 0:
             raise ValueError("The batch size of random samples must be greater than 0.")
+
+        if not isinstance(self.texture_as_input, bool):
+            raise ValueError(
+                "The choice of whether textures are used as inputs instead of images must be of type bool."
+            )
