@@ -19,5 +19,3 @@ from art.attacks.evasion.universal_perturbation import UniversalPerturbation
 from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversalPerturbation
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.zoo import ZooAttack
-from art.attacks.evasion.simba_pixel import SimBA_pixel
-from art.attacks.evasion.simba_dct import SimBA_dct
