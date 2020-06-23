@@ -21,7 +21,7 @@ This module implements ShapeShifter, a robust physical adversarial attack on Fas
 | Paper link: https://arxiv.org/abs/1804.05810
 """
 import logging
-from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
@@ -33,6 +33,8 @@ from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFas
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
 if TYPE_CHECKING:
+    from collections import Callable
+
     from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.training.optimizer import Optimizer
 
@@ -73,7 +75,9 @@ class ShapeShifter(EvasionAttack):
         "sign_gradients",
         "random_size",
         "batch_random_size",
-        "texture_as_input"
+        "texture_as_input",
+        "use_spectral",
+        "soft_clip"
     ]
 
     _estimator_requirements = (
@@ -113,7 +117,9 @@ class ShapeShifter(EvasionAttack):
         sign_gradients: bool = False,
         random_size: int = 1,
         batch_random_size: int = 1,
-        texture_as_input: bool = False
+        texture_as_input: bool = False,
+        use_spectral: bool = True,
+        soft_clip: bool = False
     ):
         """
         Create an instance of the :class:`.ShapeShifter`.
@@ -146,6 +152,8 @@ class ShapeShifter(EvasionAttack):
         :param random_size: Random sample size.
         :param batch_random_size: Batch size of random samples.
         :param texture_as_input: Whether textures are used as inputs instead of images.
+        :param use_spectral: Whether to use spectral with textures.
+        :param soft_clip: Whether to apply soft clipping on textures.
         """
         super(ShapeShifter, self).__init__(estimator=estimator)
 
@@ -176,6 +184,8 @@ class ShapeShifter(EvasionAttack):
         self.random_size = random_size
         self.batch_random_size = batch_random_size
         self.texture_as_input = texture_as_input
+        self.use_spectral = use_spectral
+        self.soft_clip = soft_clip
 
         # Check validity of attack attributes
         self._check_params()
@@ -188,6 +198,8 @@ class ShapeShifter(EvasionAttack):
         :param y: Target labels for object detector.
         :param custom_loss: Custom loss function from users.
         :type custom_loss: Tensor
+        :param rendering_function: A rendering function to use textures as input.
+        :type rendering_function: Callable
         :return: Adversarial patch.
         :rtype: `np.ndarray`
         """
@@ -196,30 +208,92 @@ class ShapeShifter(EvasionAttack):
         # Check whether users have a custom loss
         custom_loss = kwargs.get("custom_loss")
 
-        # Get initial shape
-        initial_shape = x.shape
+        # Check whether users provide a rendering function
+        if self.texture_as_input:
+            rendering_function = kwargs.get("rendering_function")
 
+            if rendering_function is None:
+                raise ValueError("Need a rendering function to use textures as input.")
 
+            # Build the TensorFlow graph
+            self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
 
-
-
-        # Build the TensorFlow graph
-        self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
-
-
-    def _build_graph(self, initial_shape: List, custom_loss: Optional[Tensor] = None):
+    def _build_graph(
+        self,
+        initial_shape: List,
+        custom_loss: Optional[Tensor] = None,
+        rendering_function: Optional[Callable] = None
+    ):
         """
         Build the TensorFlow graph for the attack.
 
-        :param initial_shape: Image shape.
+        :param initial_shape: Image/texture shape.
         :param custom_loss: Custom loss function from users.
+        :param rendering_function: A rendering function to use textures as input.
         :return:
         """
         # Create a placeholder to pass input image/texture
         initial_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_input')
 
-        # Adversarial image
+        # Create a placeholder to pass input image/texture mask
+        mask_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='mask_input')
+
+        # Create adversarial image
         if self.texture_as_input:
+            # Create texture variable
+            if self.use_spectral:
+                initial_value = np.zeros(
+                    (2, initial_shape[0], initial_shape[3], initial_shape[1], int(np.ceil(initial_shape[2] / 2) + 1))
+                )
+
+                current_texture_variable = tf.Variable(
+                    initial_value=initial_value, dtype=tf.float32, name='current_texture_variable'
+                )
+
+                current_texture = current_texture_variable
+                current_texture = tf.complex(current_texture[0], current_texture[1])
+                current_texture = tf.map_fn(tf.spectral.irfft2d, current_texture, dtype=tf.float32)
+                current_texture = tf.transpose(current_texture, (0, 2, 3, 1))
+
+            else:
+                initial_value = np.zeros((initial_shape[0], initial_shape[1], initial_shape[2], initial_shape[3]))
+
+                current_texture_variable = tf.Variable(
+                    initial_value=initial_value, dtype=tf.float32, name='current_texture_variable'
+                )
+
+                current_texture = current_texture_variable
+
+            # Invert texture for projection
+            project_texture = initial_input * (1.0 - mask_input) + current_texture * mask_input
+
+            if self.soft_clip:
+                project_texture = tf.nn.sigmoid(project_texture)
+            else:
+                project_texture = tf.clip_by_value(project_texture, 0., 1.)
+
+            if self.use_spectral:
+                project_texture = tf.transpose(project_texture, (0, 3, 1, 2))
+                project_texture = tf.map_fn(tf.spectral.rfft2d, project_texture, dtype=tf.complex64)
+                project_texture = tf.stack([tf.real(project_texture), tf.imag(project_texture)])
+
+            # Update texture variable
+            tf.assign(current_texture_variable, project_texture, name='project_texture_op')
+
+            # Create a placeholder to pass the background
+            background_phd = tf.placeholder(
+                dtype=tf.float32, shape=[initial_shape[0], None, None, 3], name='background_phd'
+            )
+
+            # Create a placeholder to pass the image frame
+            image_frame_phd = tf.placeholder(
+                dtype=tf.float32, shape=[initial_shape[0], None, None, 4], name='image_frame_phd'
+            )
+
+            # Create adversarial image
+            input_images_ = create_rendered_images(args.batch_size, textures_)
+
+
         else:
             current_image = tf.Variable(
                 initial_value=np.zeros(initial_input.shape.as_list()), dtype=tf.float32, name='raw_current_image'
@@ -739,4 +813,14 @@ class ShapeShifter(EvasionAttack):
         if not isinstance(self.texture_as_input, bool):
             raise ValueError(
                 "The choice of whether textures are used as inputs instead of images must be of type bool."
+            )
+
+        if not isinstance(self.use_spectral, bool):
+            raise ValueError(
+                "The choice of whether to use spectral with textures must be of type bool."
+            )
+
+        if not isinstance(self.soft_clip, bool):
+            raise ValueError(
+                "The choice of whether to apply soft clipping on textures must be of type bool."
             )
