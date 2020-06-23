@@ -74,7 +74,7 @@ class ShapeShifter(EvasionAttack):
         "decay",
         "sign_gradients",
         "random_size",
-        "batch_random_size",
+        "max_iter",
         "texture_as_input",
         "use_spectral",
         "soft_clip"
@@ -92,7 +92,7 @@ class ShapeShifter(EvasionAttack):
     def __init__(
         self,
         estimator: TensorFlowFasterRCNN,
-        random_transform: Tensor = tf.identity,
+        random_transform: Callable,
         box_classifier_weight: float = 1.0,
         box_localizer_weight: float = 2.0,
         rpn_classifier_weight: float = 1.0,
@@ -115,8 +115,8 @@ class ShapeShifter(EvasionAttack):
         momentum: float = 0.0,
         decay: float = 0.0,
         sign_gradients: bool = False,
-        random_size: int = 1,
-        batch_random_size: int = 1,
+        random_size: int = 10,
+        max_iter: int = 10,
         texture_as_input: bool = False,
         use_spectral: bool = True,
         soft_clip: bool = False
@@ -125,7 +125,7 @@ class ShapeShifter(EvasionAttack):
         Create an instance of the :class:`.ShapeShifter`.
 
         :param estimator: A trained object detector.
-        :param random_transform: A TensorFlow function applies random transformations to images.
+        :param random_transform: A function applies random transformations to images/textures.
         :param box_classifier_weight: Weight of box classifier loss.
         :param box_localizer_weight: Weight of box localizer loss.
         :param rpn_classifier_weight: Weight of RPN classifier loss.
@@ -150,7 +150,7 @@ class ShapeShifter(EvasionAttack):
         :param decay: Learning rate decay for `RMSPropOptimizer`.
         :param sign_gradients: Whether to use the sign of gradients for optimization.
         :param random_size: Random sample size.
-        :param batch_random_size: Batch size of random samples.
+        :param max_iter: Maximum number of iterations.
         :param texture_as_input: Whether textures are used as inputs instead of images.
         :param use_spectral: Whether to use spectral with textures.
         :param soft_clip: Whether to apply soft clipping on textures.
@@ -203,34 +203,57 @@ class ShapeShifter(EvasionAttack):
         :return: Adversarial patch.
         :rtype: `np.ndarray`
         """
+        # Check input shape
         assert x.ndim == 4, "The ShapeShifter attack can only be applied to images."
+        assert x.shape[0] == 1, "The ShapeShifter attack can only be applied to one image."
+        assert x.shape[1:] == self.estimator.input_shape
 
         # Check whether users have a custom loss
         custom_loss = kwargs.get("custom_loss")
 
-        # Check whether users provide a rendering function
+        # Build the TensorFlow graph
         if self.texture_as_input:
+            # Check whether users provide a rendering function
             rendering_function = kwargs.get("rendering_function")
-
             if rendering_function is None:
                 raise ValueError("Need a rendering function to use textures as input.")
 
             # Build the TensorFlow graph
-            self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
+            (
+                project_texture_op,
+                current_image_assign_to_input_image_op,
+                accumulated_gradients_op,
+                final_attack_optimization_op,
+                current_variable,
+                current_value
+            ) = self._build_graph(initial_shape=x.shape, custom_loss=custom_loss, rendering_function=rendering_function)
+
+        else:
+            (
+                project_texture_op,
+                current_image_assign_to_input_image_op,
+                accumulated_gradients_op,
+                final_attack_optimization_op,
+                current_variable,
+                current_value
+            ) = self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
+
+
+
 
     def _build_graph(
         self,
         initial_shape: List,
         custom_loss: Optional[Tensor] = None,
         rendering_function: Optional[Callable] = None
-    ):
+    ) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
         """
         Build the TensorFlow graph for the attack.
 
         :param initial_shape: Image/texture shape.
         :param custom_loss: Custom loss function from users.
         :param rendering_function: A rendering function to use textures as input.
-        :return:
+        :return: A tuple of tensors.
         """
         # Create a placeholder to pass input image/texture
         initial_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_input')
@@ -278,7 +301,7 @@ class ShapeShifter(EvasionAttack):
                 project_texture = tf.stack([tf.real(project_texture), tf.imag(project_texture)])
 
             # Update texture variable
-            tf.assign(current_texture_variable, project_texture, name='project_texture_op')
+            project_texture_op = tf.assign(current_texture_variable, project_texture, name='project_texture_op')
 
             # Create a placeholder to pass the background
             background_phd = tf.placeholder(
@@ -291,42 +314,48 @@ class ShapeShifter(EvasionAttack):
             )
 
             # Create adversarial image
-            input_images_ = create_rendered_images(args.batch_size, textures_)
-
+            current_image = rendering_function(background_phd, image_frame_phd, current_texture)
 
         else:
-            current_image = tf.Variable(
-                initial_value=np.zeros(initial_input.shape.as_list()), dtype=tf.float32, name='raw_current_image'
+            # Create image variable
+            current_image_variable = tf.Variable(
+                initial_value=np.zeros(initial_input.shape.as_list()), dtype=tf.float32, name='current_image_variable'
             )
-            current_image = (tf.tanh(current_image) + 1) / 2
+
+            current_image = (tf.tanh(current_image_variable) + 1) / 2
             current_image = tf.identity(current_image, name='current_image')
 
-        # Generate random transformed images
-        # Define the stop condition
-        def stop_condition(i, _):
-            return tf.less(i, self.batch_random_size)
+        # # Generate random transformed images
+        # # Define the stop condition
+        # def stop_condition(i, _):
+        #     return tf.less(i, self.batch_random_size)
+        #
+        # # Random transformation of the image
+        # def main_body_loop(i, batch):
+        #     transformed_image = self.random_transform(current_image)
+        #     batch = tf.cond(
+        #         tf.equal(i, 0),
+        #         lambda: tf.concat([[transformed_image]], axis=0),
+        #         lambda: tf.concat([batch, [transformed_image]], axis=0)
+        #     )
+        #     return i + 1, batch
+        #
+        # _, batch = tf.while_loop(
+        #     cond=stop_condition,
+        #     body=main_body_loop,
+        #     loop_vars=[tf.zeros([]), None],
+        #     back_prop=True,
+        #     name='generate_random_transformed_images'
+        # )
+        #
+        # # Assign batch to the input of the object detector
+        # batch_assign_to_input_images = tf.assign(
+        #     ref=self.estimator.input_images, value=batch, name='batch_assign_to_input_images'
+        # )
 
-        # Random transformation of the image
-        def main_body_loop(i, batch):
-            transformed_image = self.random_transform(current_image)
-            batch = tf.cond(
-                tf.equal(i, 0),
-                lambda: tf.concat([[transformed_image]], axis=0),
-                lambda: tf.concat([batch, [transformed_image]], axis=0)
-            )
-            return i + 1, batch
-
-        _, batch = tf.while_loop(
-            cond=stop_condition,
-            body=main_body_loop,
-            loop_vars=[tf.zeros([]), None],
-            back_prop=True,
-            name='generate_random_transformed_images'
-        )
-
-        # Assign batch to the input of the object detector
-        batch_assign_to_input_images = tf.assign(
-            ref=self.estimator.input_images, value=batch, name='batch_assign_to_input_images'
+        # Assign current image to the input of the object detector
+        current_image_assign_to_input_image_op = tf.assign(
+            ref=self.estimator.input_images, value=current_image, name='current_image_assign_to_input_image_op'
         )
 
         # Create attack loss
@@ -339,12 +368,21 @@ class ShapeShifter(EvasionAttack):
         gradients = optimizer.compute_gradients(total_loss, var_list=[current_image])[0][0]
 
         # Create variables to store gradients
-        sum_gradients = tf.Variable(
-            initial_value=np.zeros(initial_image.shape.as_list()),
-            trainable=False,
-            name='sum_gradients',
-            collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
-        )
+        if self.texture_as_input:
+            sum_gradients = tf.Variable(
+                initial_value=np.zeros(current_texture_variable.shape.as_list()),
+                trainable=False,
+                name='sum_gradients',
+                collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
+            )
+
+        else:
+            sum_gradients = tf.Variable(
+                initial_value=np.zeros(current_image_variable.shape.as_list()),
+                trainable=False,
+                name='sum_gradients',
+                collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
+            )
 
         num_gradients = tf.Variable(
             initial_value=0.,
@@ -375,7 +413,25 @@ class ShapeShifter(EvasionAttack):
             grads_and_vars=[(final_gradients, current_image)], name='final_attack_optimization_op'
         )
 
-        return batch_assign_to_input_images, total_loss, accumulated_gradients_op, final_attack_optimization_op
+        if self.texture_as_input:
+            return (
+                project_texture_op,
+                current_image_assign_to_input_image_op,
+                accumulated_gradients_op,
+                final_attack_optimization_op,
+                current_texture_variable,
+                current_texture
+            )
+
+        else:
+            return (
+                project_texture_op,
+                current_image_assign_to_input_image_op,
+                accumulated_gradients_op,
+                final_attack_optimization_op,
+                current_image_variable,
+                current_image
+            )
 
     def _create_optimizer(self) -> Optimizer:
         """
@@ -682,8 +738,8 @@ class ShapeShifter(EvasionAttack):
         """
         Apply attack-specific checks.
         """
-        if not isinstance(self.random_transform, Tensor):
-            raise ValueError("The applied random transformation function must be of type Tensor.")
+        if not isinstance(self.random_transform, Callable):
+            raise ValueError("The applied random transformation function must be of type Callable.")
 
         if not isinstance(self.box_classifier_weight, float):
             raise ValueError("The weight of box classifier loss must be of type float.")
@@ -805,10 +861,10 @@ class ShapeShifter(EvasionAttack):
         if not self.random_size > 0:
             raise ValueError("The random sample size must be greater than 0.")
 
-        if not isinstance(self.batch_random_size, int):
-            raise ValueError("The batch size of random samples must be of type int.")
-        if not self.batch_size > 0:
-            raise ValueError("The batch size of random samples must be greater than 0.")
+        if not isinstance(self.max_iter, int):
+            raise ValueError("The maximum number of iterations must be of type int.")
+        if not self.max_iter > 0:
+            raise ValueError("The maximum number of iterations must be greater than 0.")
 
         if not isinstance(self.texture_as_input, bool):
             raise ValueError(
