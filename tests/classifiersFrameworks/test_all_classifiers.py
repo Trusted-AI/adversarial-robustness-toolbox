@@ -251,34 +251,20 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
         warnings.warn(UserWarning(e))
 
 
-def test_predict(framework, get_default_mnist_subset, get_image_classifier_list):
+def test_predict(request, framework, get_default_mnist_subset, get_image_classifier_list,
+                 expected_values):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
 
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
     if classifier is not None:
         y_predicted = classifier.predict(x_test_mnist[0:1])
 
-        y_expected = np.asarray(
-            [
-                [0.15710345,
-                 - 0.73106134,
-                 - 0.04039804,
-                 - 0.47904843,
-                 0.09378531,
-                 - 0.80105764,
-                 - 0.47753483,
-                 1.0868737,
-                 - 0.3065778,
-                 - 0.57497704]
-            ]
-        )
-
-        np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+        np.testing.assert_array_almost_equal(y_predicted, expected_values, decimal=4)
 
 
 def test_nb_classes(get_image_classifier_list):

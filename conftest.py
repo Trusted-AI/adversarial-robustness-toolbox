@@ -1,6 +1,7 @@
 import logging
 import pytest
 import numpy as np
+import pickle
 import tensorflow as tf
 import keras
 from keras.preprocessing.image import ImageDataGenerator
@@ -164,22 +165,30 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
                     size=x_train_mnist.shape[0],
                     batch_size=default_batch_size
                 )
-                # return TensorFlowDataGenerator(
-                #     sess=kwargs["sess"], iterator=image_iterator, iterator_type="initializable", iterator_arg={},
-                #     size=x_train_mnist.shape[0],
-                #     batch_size=default_batch_size
-                # )
-                #
-                # data_gen = TensorFlowDataGenerator(
-                #     sess=sess, iterator=iterator, iterator_type="initializable", iterator_arg={},
-                #     size=1000, batch_size=100
-                # )
 
         if framework == "pytorch":
             return PyTorchDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
                                         batch_size=default_batch_size)
 
     return _image_data_generator
+
+
+@pytest.fixture
+def store_expected_values(request):
+    file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3]+"_"+ request.node.name + ".pkl"
+
+    def _store_expected_values(values_to_store):
+        with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "wb") as f:
+            pickle.dump(values_to_store, f)
+
+    return _store_expected_values
+
+
+@pytest.fixture
+def expected_values(request):
+    file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3]+"_"+ request.node.name + ".pkl"
+    with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
+        return pickle.load(f)
 
 
 @pytest.fixture
