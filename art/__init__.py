@@ -11,7 +11,7 @@ from art import metrics
 from art import wrappers
 
 # Semantic Version
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 
 # pylint: disable=C0103
 
