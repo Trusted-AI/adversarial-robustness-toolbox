@@ -138,7 +138,7 @@ class ShapeShifter(EvasionAttack):
         :param similarity_weight: Weight of similarity loss.
         :param learning_rate: Learning rate.
         :param optimizer: Optimizer including one of the following choices: `GradientDescentOptimizer`,
-               `MomentumOptimizer`, `RMSPropOptimizer`, `AdamOptimizer`.
+                          `MomentumOptimizer`, `RMSPropOptimizer`, `AdamOptimizer`.
         :param momentum: Momentum for `RMSPropOptimizer`, `MomentumOptimizer`.
         :param decay: Learning rate decay for `RMSPropOptimizer`.
         :param sign_gradients: Whether to use the sign of gradients for optimization.
@@ -182,9 +182,7 @@ class ShapeShifter(EvasionAttack):
         Generate adversarial samples and return them in an array.
 
         :param x: Sample images.
-        :type x: `np.ndarray`
         :param y: Target labels for object detector.
-        :type y: `np.ndarray`
         :return: Adversarial patch.
         :rtype: `np.ndarray`
         """
@@ -270,6 +268,7 @@ class ShapeShifter(EvasionAttack):
         final_gradients = tf.div(
             accumulated_sum_gradients, tf.maximum(accumulated_num_gradients, 1.), name='final_gradients'
         )
+
         if self.sign_gradients:
             final_gradients = tf.sign(final_gradients)
 
@@ -278,9 +277,12 @@ class ShapeShifter(EvasionAttack):
             [accumulated_sum_gradients, accumulated_num_gradients], name='accumulated_gradients_op'
         )
 
-        attack_op = optimizer.apply_gradients([(final_gradients, current_image)], name='attack_op')
+        # Create final attack optimization operator
+        final_attack_optimization_op = optimizer.apply_gradients(
+            grads_and_vars=[(final_gradients, current_image)], name='final_attack_optimization_op'
+        )
 
-        return batch_assign_to_input_images, total_loss, accumulated_gradients_op, attack_op
+        return batch_assign_to_input_images, total_loss, accumulated_gradients_op, final_attack_optimization_op
 
     def _create_optimizer(self) -> Optimizer:
         """
