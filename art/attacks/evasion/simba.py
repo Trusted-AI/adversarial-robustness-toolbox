@@ -62,7 +62,7 @@ class SimBA(EvasionAttack):
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         :type batch_size: `int`
         """
-        super(SimBA, self).__init__(classifier=classifier)
+        super(SimBA, self).__init__(estimator=classifier)
         if not isinstance(classifier, ClassifierGradients):
             raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
                              '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
