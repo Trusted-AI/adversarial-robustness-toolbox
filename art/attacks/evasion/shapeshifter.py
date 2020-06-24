@@ -186,6 +186,7 @@ class ShapeShifter(EvasionAttack):
         self.texture_as_input = texture_as_input
         self.use_spectral = use_spectral
         self.soft_clip = soft_clip
+        self.graph_available: bool = False
 
         # Check validity of attack attributes
         self._check_params()
@@ -216,33 +217,71 @@ class ShapeShifter(EvasionAttack):
         custom_loss = kwargs.get("custom_loss")
 
         # Build the TensorFlow graph
-        if self.texture_as_input:
-            # Check whether users provide a rendering function
-            rendering_function = kwargs.get("rendering_function")
-            if rendering_function is None:
-                raise ValueError("Need a rendering function to use textures as input.")
+        if not self.graph_available:
+            self.graph_available = True
 
-            # Build the TensorFlow graph
-            (
-                project_texture_op,
-                current_image_assign_to_input_image_op,
-                accumulated_gradients_op,
-                final_attack_optimization_op,
-                current_variable,
-                current_value
-            ) = self._build_graph(initial_shape=x.shape, custom_loss=custom_loss, rendering_function=rendering_function)
+            if self.texture_as_input:
+                # Check whether users provide a rendering function
+                rendering_function = kwargs.get("rendering_function")
+                if rendering_function is None:
+                    raise ValueError("Need a rendering function to use textures as input.")
 
-        else:
-            (
-                project_texture_op,
-                current_image_assign_to_input_image_op,
-                accumulated_gradients_op,
-                final_attack_optimization_op,
-                current_variable,
-                current_value
-            ) = self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
+                # Build the TensorFlow graph
+                (
+                    project_texture_op,
+                    current_image_assign_to_input_image_op,
+                    accumulated_gradients_op,
+                    final_attack_optimization_op,
+                    current_variable,
+                    current_value
+                ) = self._build_graph(
+                    initial_shape=x.shape, custom_loss=custom_loss, rendering_function=rendering_function
+                )
 
+            else:
+                (
+                    project_texture_op,
+                    current_image_assign_to_input_image_op,
+                    accumulated_gradients_op,
+                    final_attack_optimization_op,
+                    current_variable,
+                    current_value
+                ) = self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
 
+        # Do attack
+        result = self._attack_training(
+            project_texture_op=project_texture_op,
+            current_image_assign_to_input_image_op=current_image_assign_to_input_image_op,
+            accumulated_gradients_op=accumulated_gradients_op,
+            final_attack_optimization_op=final_attack_optimization_op,
+            current_variable=current_variable,
+            current_value=current_value
+        )
+
+        return result
+
+    def _attack_training(
+        self,
+        project_texture_op: Tensor,
+        current_image_assign_to_input_image_op: Tensor,
+        accumulated_gradients_op: Tensor,
+        final_attack_optimization_op: Tensor,
+        current_variable: Tensor,
+        current_value: Tensor
+    ):
+        """
+        Do attack optimization.
+
+        :param project_texture_op:
+        :param current_image_assign_to_input_image_op:
+        :param accumulated_gradients_op:
+        :param final_attack_optimization_op:
+        :param current_value:
+        :param current_variable:
+
+        :return:
+        """
+        return 0
 
 
     def _build_graph(
