@@ -76,16 +76,13 @@ class TargetedUniversalPerturbation(EvasionAttack):
                   }
         self.set_params(**kwargs)
 
-    def generate(self, x, y, **kwargs):
+    def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: An array with the targeted labels.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         logger.info('Computing targeted universal perturbation based on %s attack.', self.attacker)
 
