@@ -113,7 +113,7 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
     try:
         classifier, _ = get_image_classifier_list(one_classifier=True)
         if classifier is not None:
-            (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+            (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
             if framework == "tensorflow" and is_tf_version_2:
                 raise NotImplementedError(
@@ -276,11 +276,7 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
         gradients = classifier.class_gradient(x_test_mnist)
 
         new_shape = (x_test_mnist.shape[0], 10,) + mnist_shape
-        if framework == "pytorch":
-
-            assert gradients.shape == new_shape
-        else:
-            assert gradients.shape == new_shape
+        assert gradients.shape == new_shape
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
@@ -300,10 +296,8 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
         gradients = classifier.class_gradient(x_test_mnist, label=5)
 
         new_shape = (x_test_mnist.shape[0], 1,) + mnist_shape
-        if framework == "pytorch":
-            assert gradients.shape == new_shape
-        else:
-            assert gradients.shape == new_shape
+
+        assert gradients.shape == new_shape
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
@@ -324,10 +318,7 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
         gradients = classifier.class_gradient(x_test_mnist, label=labels)
 
         new_shape = (x_test_mnist.shape[0], 1,) + mnist_shape
-        if framework == "pytorch":
-            assert gradients.shape == new_shape
-        else:
-            assert gradients.shape == new_shape
+        assert gradients.shape == new_shape
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_labelArray
