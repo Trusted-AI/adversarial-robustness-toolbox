@@ -191,12 +191,14 @@ class ShapeShifter(EvasionAttack):
         # Check validity of attack attributes
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[Dict[str, List[Tensor]]] = None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[Dict[str, List[Tensor]]] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
-        :param x: Sample image.
+        :param x: Sample image/texture.
         :param y: Target labels for object detector (not used).
+        :param mask: Input mask.
+        :type mask: `np.ndarray`.
         :param target_class: Target class.
         :type target_class: int
         :param victim_class: Victim class.
@@ -206,7 +208,6 @@ class ShapeShifter(EvasionAttack):
         :param rendering_function: A rendering function to use textures as input.
         :type rendering_function: Callable
         :return: Adversarial image/texture.
-        :rtype: `np.ndarray`
         """
         # Check input shape
         assert x.ndim == 4, "The ShapeShifter attack can only be applied to images."
@@ -248,8 +249,15 @@ class ShapeShifter(EvasionAttack):
                     current_value
                 ) = self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
 
+        # Check whether users have a mask
+        mask = kwargs.get("mask")
+        if mask is None:
+            mask = np.ones_like(x.shape)
+
         # Do attack
         result = self._attack_training(
+            x=x,
+            mask=mask,
             project_texture_op=project_texture_op,
             current_image_assign_to_input_image_op=current_image_assign_to_input_image_op,
             accumulated_gradients_op=accumulated_gradients_op,
@@ -262,25 +270,72 @@ class ShapeShifter(EvasionAttack):
 
     def _attack_training(
         self,
+        x: np.ndarray,
+        mask: np.ndarray,
+        target_class: int,
+        victim_class: int,
         project_texture_op: Tensor,
         current_image_assign_to_input_image_op: Tensor,
         accumulated_gradients_op: Tensor,
         final_attack_optimization_op: Tensor,
         current_variable: Tensor,
         current_value: Tensor
-    ):
+    ) -> np.ndarray:
         """
         Do attack optimization.
 
-        :param project_texture_op:
-        :param current_image_assign_to_input_image_op:
-        :param accumulated_gradients_op:
-        :param final_attack_optimization_op:
-        :param current_value:
-        :param current_variable:
+        :param x: Sample image/texture.
+        :param mask: Input mask.
+        :param target_class: Target class.
+        :param victim_class: Victim class.
+        :param project_texture_op: The project texture operator in the TensorFlow graph.
+        :param current_image_assign_to_input_image_op: The current_image assigned to input_image operator in the
+                                                       TensorFlow graph.
+        :param accumulated_gradients_op: The accumulated gradients operator in the TensorFlow graph.
+        :param final_attack_optimization_op: The final attack optimization operator in the TensorFlow graph.
+        :param current_value: The current image/texture in the TensorFlow graph.
+        :param current_variable: The current image/texture variable in the TensorFlow graph.
 
-        :return:
+        :return: Adversarial image/texture.
         """
+        feed_dict = {
+            'initial_input:0': x,
+            'mask_input:0':,
+            'background_phd:0':,
+            'image_frame_phd:0':,
+            'learning_rate:0':,
+            'momentum:0':,
+            'decay:0':,
+            'rpn_classifier_weight:0':,
+            'rpn_localizer_weight:0':,
+            'box_classifier_weight:0':,
+            'box_localizer_weight:0':,
+            'target_class_phd:0':,
+            'victim_class_phd:0':,
+            'box_iou_threshold:0':,
+            'box_target_weight:0':,
+            'box_victim_weight:0':,
+            'box_target_cw_weight:0':,
+            'box_target_cw_confidence:0':,
+            'box_victim_cw_weight:0':,
+            'box_victim_cw_confidence:0':,
+            'rpn_iou_threshold:0':,
+            'rpn_background_weight:0':,
+            'rpn_foreground_weight:0':,
+            'rpn_cw_weight:0':,
+            'rpn_cw_confidence:0':,
+            'similarity_weight:0':,
+        }
+
+
+
+        for _ in range(self.max_iter):
+
+            for _ in range(self.random_size):
+                self.estimator.sess.run(accumulated_gradients_op, )
+
+
+
         return 0
 
 
