@@ -249,10 +249,14 @@ class ShapeShifter(EvasionAttack):
                     current_value
                 ) = self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
 
-        # Check whether users have a mask
-        mask = kwargs.get("mask")
-        if mask is None:
-            mask = np.ones_like(x.shape)
+        # Use mask or not
+        if self.texture_as_input:
+            # Check whether users have a mask
+            mask = kwargs.get("mask")
+            if mask is None:
+                mask = np.ones_like(x.shape)
+        else:
+            mask = None
 
         # Do attack
         result = self._attack_training(
@@ -300,34 +304,35 @@ class ShapeShifter(EvasionAttack):
         """
         feed_dict = {
             'initial_input:0': x,
-            'mask_input:0':,
-            'background_phd:0':,
-            'image_frame_phd:0':,
-            'learning_rate:0':,
-            'momentum:0':,
-            'decay:0':,
-            'rpn_classifier_weight:0':,
-            'rpn_localizer_weight:0':,
-            'box_classifier_weight:0':,
-            'box_localizer_weight:0':,
-            'target_class_phd:0':,
-            'victim_class_phd:0':,
-            'box_iou_threshold:0':,
-            'box_target_weight:0':,
-            'box_victim_weight:0':,
-            'box_target_cw_weight:0':,
-            'box_target_cw_confidence:0':,
-            'box_victim_cw_weight:0':,
-            'box_victim_cw_confidence:0':,
-            'rpn_iou_threshold:0':,
-            'rpn_background_weight:0':,
-            'rpn_foreground_weight:0':,
-            'rpn_cw_weight:0':,
-            'rpn_cw_confidence:0':,
-            'similarity_weight:0':,
+            'learning_rate:0': self.learning_rate,
+            'momentum:0': self.momentum,
+            'decay:0': self.decay,
+            'rpn_classifier_weight:0': self.rpn_classifier_weight,
+            'rpn_localizer_weight:0': self.rpn_localizer_weight,
+            'box_classifier_weight:0': self.box_classifier_weight,
+            'box_localizer_weight:0': self.box_localizer_weight,
+            'target_class_phd:0': target_class,
+            'victim_class_phd:0': victim_class,
+            'box_iou_threshold:0': self.box_iou_threshold,
+            'box_target_weight:0': self.box_target_weight,
+            'box_victim_weight:0': self.box_victim_weight,
+            'box_target_cw_weight:0': self.box_target_cw_weight,
+            'box_target_cw_confidence:0': self.box_target_cw_confidence,
+            'box_victim_cw_weight:0': self.box_victim_cw_weight,
+            'box_victim_cw_confidence:0': self.box_victim_cw_confidence,
+            'rpn_iou_threshold:0': self.rpn_iou_threshold,
+            'rpn_background_weight:0': self.rpn_background_weight,
+            'rpn_foreground_weight:0': self.rpn_foreground_weight,
+            'rpn_cw_weight:0': self.rpn_cw_weight,
+            'rpn_cw_confidence:0': self.rpn_cw_confidence,
+            'similarity_weight:0': self.similarity_weight
         }
 
+        if
 
+        'mask_input:0': mask,
+        'background_phd:0':,
+        'image_frame_phd:0':,
 
         for _ in range(self.max_iter):
 
@@ -356,11 +361,11 @@ class ShapeShifter(EvasionAttack):
         # Create a placeholder to pass input image/texture
         initial_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_input')
 
-        # Create a placeholder to pass input image/texture mask
-        mask_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='mask_input')
-
         # Create adversarial image
         if self.texture_as_input:
+            # Create a placeholder to pass input texture mask
+            mask_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='mask_input')
+
             # Create texture variable
             if self.use_spectral:
                 initial_value = np.zeros(
