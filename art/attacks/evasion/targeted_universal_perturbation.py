@@ -146,24 +146,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
 
         return x_adv
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'fgsm'.
-        :type attacker: `str`
-        :param attacker_params: Parameters specific to the adversarial attack.
-        :type attacker_params: `dict`
-        :param delta: desired accuracy
-        :type delta: `float`
-        :param max_iter: The maximum number of iterations for computing universal perturbation.
-        :type max_iter: `int`
-        :param eps: Attack step size (input variation)
-        :type eps: `float`
-        :param norm: Order of the norm. Possible values: np.inf, 2 (default is np.inf)
-        :type norm: `int`
-        """
-        super(TargetedUniversalPerturbation, self).set_params(**kwargs)
+    def _check_params(self) -> None:
 
         if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
             raise ValueError("The desired accuracy must be in the range [0, 1].")
