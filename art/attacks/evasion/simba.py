@@ -215,29 +215,7 @@ class SimBA(EvasionAttack):
 
         return x
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param attack: attack type: pixel (px) or DCT (dct) attacks
-        :type attack: `str`
-        :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
-        :param epsilon: Overshoot parameter.
-        :type epsilon: `float`
-        :param order: order of pixel attacks
-        :type order: `str`
-        :param freq_dim: dimensionality of 2D frequency space (DCT).
-        :type freq_dim: `int`
-        :param stride: stride for block order (DCT).
-        :type stride: `int`
-        :param targeted: targeted attacks
-        :type targeted: `bool`
-        :param batch_size: Batch size (but, batch process unavailable in this implementation)
-        :type batch_size: `int`
-        """
-        # Save attack-specific parameters
-        super(SimBA, self).set_params(**kwargs)
+    def _check_params(self) -> None:
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
             raise ValueError("The number of iterations must be a positive integer.")
