@@ -402,7 +402,14 @@ class ShapeShifter(EvasionAttack):
         )
 
         # Create attack loss
-        total_loss = self._create_attack_loss(custom_loss)
+        if self.texture_as_input:
+            total_loss = self._create_attack_loss(
+                custom_loss=custom_loss, initial_input=initial_input, current_value=current_texture
+            )
+        else:
+            total_loss = self._create_attack_loss(
+                custom_loss=custom_loss, initial_input=initial_input, current_value=current_image
+            )
 
         # Create optimizer
         optimizer = self._create_optimizer()
@@ -507,11 +514,18 @@ class ShapeShifter(EvasionAttack):
 
         return optimizer
 
-    def _create_attack_loss(self, custom_loss: Optional[Tensor] = None) -> Tensor:
+    def _create_attack_loss(
+        self,
+        custom_loss: Optional[Tensor] = None,
+        initial_input: Optional[Tensor] = None,
+        current_value: Optional[Tensor] = None
+    ) -> Tensor:
         """
         Create the loss tensor of this attack.
 
         :param custom_loss: Custom loss function from users.
+        :param initial_input: Initial input.
+        :param current_value: Current image/texture.
         :return: Attack loss tensor.
         """
         # Compute faster rcnn loss
@@ -524,7 +538,7 @@ class ShapeShifter(EvasionAttack):
         partial_rpn_loss = self._create_rpn_loss()
 
         # Compute similarity loss
-        weight_similarity_loss = self._create_similarity_loss()
+        weight_similarity_loss = self._create_similarity_loss(initial_input=initial_input, current_value=current_value)
 
         # Compute total loss
         if custom_loss is not None:
@@ -756,21 +770,23 @@ class ShapeShifter(EvasionAttack):
 
         return partial_loss
 
-    def _create_similarity_loss(self) -> Tensor:
+    @staticmethod
+    def _create_similarity_loss(
+        initial_input: Optional[Tensor] = None,
+        current_value: Optional[Tensor] = None
+    ) -> Tensor:
         """
         Create the partial loss tensor of this attack from the similarity loss.
 
+        :param initial_input: Initial input.
+        :param current_value: Current image/texture.
         :return: Attack partial loss tensor.
         """
-        # Get default graph
-        default_graph = tf.get_default_graph()
-
-        # Compute similarity loss
+        # Create a placeholder for the similarity weight
         similarity_weight = tf.placeholder(dtype=tf.float32, shape=[], name='similarity_weight')
 
-        initial_image = default_graph.get_tensor_by_name('initial_image:0')
-        current_image = default_graph.get_tensor_by_name('current_image:0')
-        similarity_loss = tf.nn.l2_loss(initial_image - current_image)
+        # Compute similarity loss
+        similarity_loss = tf.nn.l2_loss(initial_input - current_value)
         weight_similarity_loss = tf.multiply(
             x=similarity_loss, y=similarity_weight, name='weight_similarity_loss'
         )
