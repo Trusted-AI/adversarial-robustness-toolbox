@@ -273,6 +273,7 @@ class ShapeShifter(EvasionAttack):
         # Do attack
         result = self._attack_training(
             x=x,
+            y=y,
             mask=mask,
             project_texture_op=project_texture_op,
             current_image_assign_to_input_image_op=current_image_assign_to_input_image_op,
@@ -287,6 +288,7 @@ class ShapeShifter(EvasionAttack):
     def _attack_training(
         self,
         x: np.ndarray,
+        y: Dict[str, List[Tensor]],
         mask: np.ndarray,
         target_class: int,
         victim_class: int,
@@ -301,6 +303,19 @@ class ShapeShifter(EvasionAttack):
         Do attack optimization.
 
         :param x: Sample image/texture.
+        :param y: A dictionary of target labels for object detector. The fields of the dictionary are as follows:
+
+                    - `groundtruth_boxes_list`: A list of `nb_samples` size of 2-D tf.float32 tensors of shape
+                                                [num_boxes, 4] containing coordinates of the groundtruth boxes.
+                                                Groundtruth boxes are provided in [y_min, x_min, y_max, x_max]
+                                                format and also assumed to be normalized as well as clipped
+                                                relative to the image window with conditions y_min <= y_max and
+                                                x_min <= x_max.
+                    - `groundtruth_classes_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
+                                                  [num_boxes] containing the class targets with the zero index
+                                                  assumed to map to the first non-background class.
+                    - `groundtruth_weights_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
+                                                  [num_boxes] containing weights for groundtruth boxes.
         :param mask: Input mask.
         :param target_class: Target class.
         :param victim_class: Victim class.
@@ -314,6 +329,10 @@ class ShapeShifter(EvasionAttack):
 
         :return: Adversarial image/texture.
         """
+        # Initialize session
+        self.estimator.sess.run(tf.global_variables_initializer())
+        self.estimator.sess.run(tf.local_variables_initializer())
+
         # Create common feed_dict
         feed_dict = {
             'initial_input:0': x,
@@ -347,23 +366,42 @@ class ShapeShifter(EvasionAttack):
         if self.optimizer == 'RMSPropOptimizer':
             feed_dict['decay:0'] = self.decay
 
-
-        'background_phd:0':,
-        'image_frame_phd:0':,
+        # Add mask to feed_dict
+        if self.texture_as_input:
+            feed_dict['mask_input:0'] = mask
 
         # Training loop for attack optimization
         for _ in range(self.max_iter):
             # Accumulate gradients
             for _ in range(self.random_size):
                 if self.texture_as_input:
-                    feed_dict['mask_input:0'] = mask
+                    # Random transformation
+                    background, image_frame, y_ = self.random_transform(x)
 
-                    background, image_frame,
+                    # Add more to feed_dict
+                    feed_dict['background_phd:0'] = background
+                    feed_dict['image_frame_phd:0'] = image_frame
 
+                    for i in range(x.shape[0]):
+                        feed_dict['groundtruth_boxes_{}:0'.format(i)] = y_['groundtruth_boxes_list'][i]
+                        feed_dict['groundtruth_classes_{}:0'.format(i)] = y_['groundtruth_classes_list'][i]
+                        feed_dict['groundtruth_weights_{}:0'.format(i)] = y_['groundtruth_weights_list'][i]
 
+                else:
+                    # Random transformation
+                    random_transformation = self.random_transform(x)
 
+                    # Add more to feed_dict
+                    feed_dict['random_transformation_phd:0'] = random_transformation
 
-                self.estimator.sess.run(accumulated_gradients_op, )
+                    for i in range(x.shape[0]):
+                        feed_dict['groundtruth_boxes_{}:0'.format(i)] = y['groundtruth_boxes_list'][i]
+                        feed_dict['groundtruth_classes_{}:0'.format(i)] = y['groundtruth_classes_list'][i]
+                        feed_dict['groundtruth_weights_{}:0'.format(i)] = y['groundtruth_weights_list'][i]
+
+                # Accumulate gradients
+                self.estimator.sess.run(current_image_assign_to_input_image_op)
+                self.estimator.sess.run(accumulated_gradients_op, feed_dict)
 
 
 
@@ -451,7 +489,14 @@ class ShapeShifter(EvasionAttack):
                 initial_value=np.zeros(initial_input.shape.as_list()), dtype=tf.float32, name='current_image_variable'
             )
 
-            current_image = (tf.tanh(current_image_variable) + 1) / 2
+            # Create a placeholder to pass random transformation
+            random_transformation_phd = tf.placeholder(
+                dtype=tf.float32, shape=[initial_shape[0], None, None, 3], name='random_transformation_phd'
+            )
+
+            # Update current image
+            current_image = current_image_variable + random_transformation_phd
+            current_image = (tf.tanh(current_image) + 1) / 2
             current_image = tf.identity(current_image, name='current_image')
 
         # # Generate random transformed images
