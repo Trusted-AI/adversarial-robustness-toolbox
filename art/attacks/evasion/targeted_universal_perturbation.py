@@ -173,16 +173,13 @@ class TargetedUniversalPerturbation(EvasionAttack):
         if not isinstance(self.eps, (float, int)) or self.eps <= 0:
             raise ValueError("The eps coefficient must be a positive float.")
 
-    def _get_attack(self, a_name, params=None):
+    def _get_attack(self, a_name: str, params: Optional[Dict[str, Any]] = None) - > EvasionAttack:
         """
         Get an attack object from its name.
 
         :param a_name: attack name.
-        :type a_name: `str`
         :param params: attack params.
-        :type params: `dict`
         :return: attack object
-        :rtype: `object`
         """
         try:
             attack_class = self._get_class(self.attacks_dict[a_name])
