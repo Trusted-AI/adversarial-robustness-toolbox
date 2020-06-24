@@ -194,14 +194,12 @@ class TargetedUniversalPerturbation(EvasionAttack):
             raise NotImplementedError("{} attack not supported".format(a_name))
 
     @staticmethod
-    def _get_class(class_name):
+    def _get_class(class_name: str) -> types.ModuleType:
         """
         Get a class module from its name.
 
         :param class_name: Full name of a class.
-        :type class_name: `str`
         :return: The class `module`.
-        :rtype: `module`
         """
         sub_mods = class_name.split(".")
         module_ = __import__(".".join(sub_mods[:-1]), fromlist=sub_mods[-1])
