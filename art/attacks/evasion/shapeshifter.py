@@ -191,12 +191,24 @@ class ShapeShifter(EvasionAttack):
         # Check validity of attack attributes
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[Dict[str, List[Tensor]]] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Dict[str, List[Tensor]], **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: Sample image/texture.
-        :param y: Target labels for object detector (not used).
+        :param y: A dictionary of target labels for object detector. The fields of the dictionary are as follows:
+
+                    - `groundtruth_boxes_list`: A list of `nb_samples` size of 2-D tf.float32 tensors of shape
+                                                [num_boxes, 4] containing coordinates of the groundtruth boxes.
+                                                Groundtruth boxes are provided in [y_min, x_min, y_max, x_max]
+                                                format and also assumed to be normalized as well as clipped
+                                                relative to the image window with conditions y_min <= y_max and
+                                                x_min <= x_max.
+                    - `groundtruth_classes_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
+                                                  [num_boxes] containing the class targets with the zero index
+                                                  assumed to map to the first non-background class.
+                    - `groundtruth_weights_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
+                                                  [num_boxes] containing weights for groundtruth boxes.
         :param mask: Input mask.
         :type mask: `np.ndarray`.
         :param target_class: Target class.
@@ -302,11 +314,10 @@ class ShapeShifter(EvasionAttack):
 
         :return: Adversarial image/texture.
         """
+        # Create common feed_dict
         feed_dict = {
             'initial_input:0': x,
             'learning_rate:0': self.learning_rate,
-            'momentum:0': self.momentum,
-            'decay:0': self.decay,
             'rpn_classifier_weight:0': self.rpn_classifier_weight,
             'rpn_localizer_weight:0': self.rpn_localizer_weight,
             'box_classifier_weight:0': self.box_classifier_weight,
@@ -328,15 +339,30 @@ class ShapeShifter(EvasionAttack):
             'similarity_weight:0': self.similarity_weight
         }
 
-        if
+        # Add momentum to feed_dict
+        if self.optimizer in ['RMSPropOptimizer', 'MomentumOptimizer']:
+            feed_dict['momentum:0'] = self.momentum
 
-        'mask_input:0': mask,
+        # Add decay to feed_dict
+        if self.optimizer == 'RMSPropOptimizer':
+            feed_dict['decay:0'] = self.decay
+
+
         'background_phd:0':,
         'image_frame_phd:0':,
 
+        # Training loop for attack optimization
         for _ in range(self.max_iter):
-
+            # Accumulate gradients
             for _ in range(self.random_size):
+                if self.texture_as_input:
+                    feed_dict['mask_input:0'] = mask
+
+                    background, image_frame,
+
+
+
+
                 self.estimator.sess.run(accumulated_gradients_op, )
 
 
