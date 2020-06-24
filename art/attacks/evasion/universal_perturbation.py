@@ -42,19 +42,6 @@ from art.utils import projection
 
 logger = logging.getLogger(__name__)
 
-#####
-import numpy as np
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
-import japanize_matplotlib
-
-import torch
-import logging
-import os.path
-
-import numpy as np
-
 
 class UniversalPerturbation(EvasionAttack):
     """
