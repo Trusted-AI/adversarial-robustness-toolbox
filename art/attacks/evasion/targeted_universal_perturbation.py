@@ -144,6 +144,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
             targeted_success_rate = np.sum(y_adv == np.argmax(y, axis=1)) / nb_instances
 
         self.fooling_rate = fooling_rate
+        self.targeted_success_rate = targeted_success_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
         logger.info('Fooling rate of universal perturbation attack: %.2f%%', 100 * fooling_rate)

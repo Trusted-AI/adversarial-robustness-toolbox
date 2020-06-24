@@ -109,22 +109,22 @@ class SimBA(EvasionAttack):
 
         if self.attack == 'px':
             if self.order == 'diag':
-                indices = self.diagonal_order(x.shape[2], 3)[:self.max_iter]
+                indices = self.diagonal_order(x.shape[2], x.shape[3])[:self.max_iter]
             elif self.order == 'random':
                 indices = np.random.permutation(n_dims)[:self.max_iter]
             indices_size = len(indices)
             while indices_size < self.max_iter:
                 if self.order == 'diag':
-                    tmp_indices = self.diagonal_order(x.shape[2], 3)
+                    tmp_indices = self.diagonal_order(x.shape[2], x.shape[3])
                 elif self.order == 'random':
                     tmp_indices = np.random.permutation(n_dims)
                 indices = np.hstack((indices, tmp_indices))[:self.max_iter]
                 indices_size = len(indices)
         elif self.attack == 'dct':
-            indices = self._block_order(x.shape[2], 3, initial_size=self.freq_dim, stride=self.stride)[:self.max_iter]
+            indices = self._block_order(x.shape[2], x.shape[3], initial_size=self.freq_dim, stride=self.stride)[:self.max_iter]
             indices_size = len(indices)
             while indices_size < self.max_iter:
-                tmp_indices = self._block_order(x.shape[2], 3, initial_size=self.freq_dim, stride=self.stride)
+                tmp_indices = self._block_order(x.shape[2], x.shape[3], initial_size=self.freq_dim, stride=self.stride)
                 indices = np.hstack((indices, tmp_indices))[:self.max_iter]
                 indices_size = len(indices)
             trans = lambda z: self._block_idct(z, block_size=x.shape[2])
