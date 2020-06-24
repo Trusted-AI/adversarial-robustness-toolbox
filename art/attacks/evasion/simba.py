@@ -241,8 +241,6 @@ class SimBA(EvasionAttack):
         if not isinstance(self.targeted, (int)) or (self.targeted != 0 and self.targeted != 1):
             raise ValueError('`targeted` has to be a logical value.')
 
-        return True
-
     def _block_order(self, img_size, channels, initial_size=2, stride=1):
         order = np.zeros((channels , img_size , img_size))
         total_elems = channels * initial_size * initial_size
