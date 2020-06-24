@@ -26,7 +26,7 @@ from __future__ import (absolute_import, division, print_function,
 import logging
 
 import numpy as np
-from scipy.fftpack import dct, idct
+from scipy.fftpack import idct
 
 from art.attacks.attack import EvasionAttack
 from art.classifiers.classifier import ClassifierGradients
