@@ -6,10 +6,6 @@ import pytest
 import tempfile
 import warnings
 
-from art.utils import Deprecated
-
-from tests.utils import ExpectedValue
-
 logger = logging.getLogger(__name__)
 
 
