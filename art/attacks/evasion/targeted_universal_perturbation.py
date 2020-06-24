@@ -69,14 +69,13 @@ class TargetedUniversalPerturbation(EvasionAttack):
         """
         super(TargetedUniversalPerturbation, self).__init__(estimator=classifier)
 
-        kwargs = {'attacker': attacker,
-                  'attacker_params': attacker_params,
-                  'delta': delta,
-                  'max_iter': max_iter,
-                  'eps': eps,
-                  'norm': norm
-                  }
-        self.set_params(**kwargs)
+        self.attacker = attacker
+        self.attacker_params = attacker_params
+        self.delta = delta
+        self.max_iter = max_iter
+        self.eps = eps
+        self.norm = norm
+        self._check_params()
 
     def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
