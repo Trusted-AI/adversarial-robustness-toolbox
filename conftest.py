@@ -174,15 +174,27 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
 
 
 @pytest.fixture
-def store_expected_values(request):
+def store_expected_values(request, is_tf_version_2):
     '''
     Stores expected values to be retrieved by the expected_values fixture
     :param request:
     :return:
     '''
-    file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3] + "_" + request.node.name + ".pkl"
 
-    def _store_expected_values(values_to_store):
+    def _store_expected_values(values_to_store, framework=""):
+
+        framework_name = framework
+        if framework == "tensorflow":
+            if is_tf_version_2:
+                framework_name = "tensorflow2"
+            else:
+                framework_name = "tensorflow1"
+        if framework_name is not "":
+            framework_name = "_" + framework_name
+
+        file_name = "x_values_" + request.node.location[0].split("/")[-1][
+                                  :-3] + "_" + request.node.name + framework_name + ".pkl"
+
         with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "wb") as f:
             pickle.dump(values_to_store, f)
 
@@ -190,15 +202,33 @@ def store_expected_values(request):
 
 
 @pytest.fixture
-def expected_values(request):
+def expected_values(framework, request, is_tf_version_2):
     '''
     Retrieves the expected values that were stored using the store_expected_values fixture
     :param request:
     :return:
     '''
-    file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3] + "_" + request.node.name + ".pkl"
-    with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
-        return pickle.load(f)
+    try:
+        file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3] + "_" + request.node.name + ".pkl"
+        with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        framework_name = framework
+        if framework == "tensorflow":
+            if is_tf_version_2:
+                framework_name = "tensorflow2"
+            else:
+                framework_name = "tensorflow1"
+        if framework_name is not "":
+            framework_name = "_" + framework_name
+        file_name = "x_values_" + request.node.location[0].split("/")[-1][
+                                  :-3] + "_" + request.node.name + framework_name + ".pkl"
+
+        with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
+            return pickle.load(f)
+
+
+# Try check for a platform specific expected value
 
 
 @pytest.fixture
