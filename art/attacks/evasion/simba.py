@@ -83,7 +83,7 @@ class SimBA(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         x = x.astype(ART_NUMPY_DTYPE)
-        preds = self.classifier.predict(x, batch_size=self.batch_size)
+        preds = self.estimator.predict(x, batch_size=self.batch_size)
 
         if y is None:
             if self.targeted:
