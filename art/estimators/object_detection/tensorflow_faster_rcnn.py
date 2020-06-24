@@ -202,6 +202,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             )
 
         # Save new attributes
+        self._input_shape = images.shape.as_list()[1:]
         self._is_training: bool = is_training
         self._images: Optional[Tensor] = images
         self._attack_losses: Tuple[str, ...] = attack_losses
