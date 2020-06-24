@@ -24,11 +24,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import random
+import types
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
 from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+)
 from art.utils import projection
 
 logger = logging.getLogger(__name__)
@@ -52,7 +58,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
     def __init__(self,
                         classifier: ClassifierGradients,
                         attacker: str = 'fgsm',
-                        attacker_params: Dict[str, Any] = None,
+                        attacker_params: Optional[Dict[str, Any]] = None,
                         delta: float = 0.2,
                         max_iter: int = 20,
                         eps: float = 10.0,
@@ -95,7 +101,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
 
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        pred_y = self.classifier.predict(x, batch_size=1)
+        pred_y = self.estimator.predict(x, batch_size=1)
         pred_y_max = np.argmax(pred_y, axis=1)
 
         # Start to generate the adversarial examples
@@ -109,14 +115,14 @@ class TargetedUniversalPerturbation(EvasionAttack):
                 x_i = ex[None, ...]
                 y_i = ey[None, ...]
 
-                current_label = np.argmax(self.classifier.predict(x_i + noise)[0])
+                current_label = np.argmax(self.estimator.predict(x_i + noise)[0])
                 target_label = np.argmax(y_i)
 
                 if current_label != target_label:
                     # Compute adversarial perturbation
                     adv_xi = attacker.generate(x_i + noise, y=y_i)
 
-                    new_label = np.argmax(self.classifier.predict(adv_xi)[0])
+                    new_label = np.argmax(self.estimator.predict(adv_xi)[0])
 
                     # If the class has changed, update v
                     if new_label == target_label:
@@ -128,16 +134,15 @@ class TargetedUniversalPerturbation(EvasionAttack):
 
             # Apply attack and clip
             x_adv = x + noise
-            if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
-                clip_min, clip_max = self.classifier.clip_values
+            if hasattr(self.estimator, 'clip_values') and self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
             # Compute the error rate
-            y_adv = np.argmax(self.classifier.predict(x_adv, batch_size=1), axis=1)
+            y_adv = np.argmax(self.estimator.predict(x_adv, batch_size=1), axis=1)
             fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
             targeted_success_rate = np.sum(y_adv == np.argmax(y, axis=1)) / nb_instances
 
-        noise = x_adv[0] - x[0]
         self.fooling_rate = fooling_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
@@ -157,7 +162,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         if not isinstance(self.eps, (float, int)) or self.eps <= 0:
             raise ValueError("The eps coefficient must be a positive float.")
 
-    def _get_attack(self, a_name: str, params: Optional[Dict[str, Any]] = None) - > EvasionAttack:
+    def _get_attack(self, a_name: str, params: Optional[Dict[str, Any]] = None) -> EvasionAttack:
         """
         Get an attack object from its name.
 
@@ -167,7 +172,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         """
         try:
             attack_class = self._get_class(self.attacks_dict[a_name])
-            a_instance = attack_class(self.classifier)
+            a_instance = attack_class(self.estimator)
 
             if params:
                 a_instance.set_params(**params)

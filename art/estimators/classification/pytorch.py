@@ -261,12 +261,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
                     if isinstance(i_batch, np.ndarray):
-                        i_batch = torch.from_numpy(i_batch).type(torch.FloatTensor).to(self._device)
+                        i_batch = torch.from_numpy(i_batch).to(self._device)
                     else:
                         i_batch = i_batch.to(self._device)
 
                     if isinstance(o_batch, np.ndarray):
-                        o_batch = torch.argmax(torch.from_numpy(o_batch).type(torch.FloatTensor).to(self._device), dim=1)
+                        o_batch = torch.argmax(torch.from_numpy(o_batch).to(self._device), dim=1)
                     else:
                         o_batch = torch.argmax(o_batch.to(self._device), dim=1)
 
@@ -315,7 +315,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-        x_preprocessed = torch.from_numpy(x_preprocessed).type(torch.FloatTensor).to(self._device)
+        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device)
 
         # Compute gradients
         if self._layer_idx_gradients < 0:
@@ -393,7 +393,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(x_preprocessed).type(torch.FloatTensor).to(self._device)
+        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
         inputs_t.requires_grad = True
 
         # Convert the labels to Tensors
@@ -493,7 +493,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             )
 
             # Run prediction for the current batch
-            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).type(torch.FloatTensor).to(self._device))[layer_index]
+            layer_output = self._model(torch.from_numpy(x_preprocessed[begin:end]).to(self._device))[layer_index]
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)

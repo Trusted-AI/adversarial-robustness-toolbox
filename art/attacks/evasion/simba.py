@@ -23,12 +23,18 @@ This module implements the black-box attack `simba`.
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 
 import logging
+import types
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 from scipy.fftpack import idct
 
 from art.attacks.attack import EvasionAttack
-from art.classifiers.classifier import ClassifierGradients
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import (
+    ClassGradientsMixin,
+    ClassifierGradients,
+)
 from art.config import ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
@@ -125,8 +131,8 @@ class SimBA(EvasionAttack):
 
         clip_min = -np.inf
         clip_max = np.inf 
-        if self.classifier.clip_values is not None:
-            clip_min, clip_max = self.classifier.clip_values
+        if self.estimator.clip_values is not None:
+            clip_min, clip_max = self.estimator.clip_values
 
         term_flag = 1
         if self.targeted:
@@ -142,15 +148,15 @@ class SimBA(EvasionAttack):
             diff[indices[nb_iter]] = self.epsilon
 
             if self.attack == 'dct':
-                left_preds = self.classifier.predict(np.clip(x - trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
+                left_preds = self.estimator.predict(np.clip(x - trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
             elif self.attack == 'px':
-                left_preds = self.classifier.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
+                left_preds = self.estimator.predict(np.clip(x - diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
             left_prob = left_preds.reshape(-1)[desired_label]
 
             if self.attack == 'dct':
-                right_preds = self.classifier.predict(np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
+                right_preds = self.estimator.predict(np.clip(x + trans(diff.reshape(x.shape)), clip_min, clip_max), batch_size=self.batch_size)
             elif self.attack == 'px':
-                right_preds = self.classifier.predict(np.clip(x + diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
+                right_preds = self.estimator.predict(np.clip(x + diff.reshape(x.shape), clip_min, clip_max), batch_size=self.batch_size)
             right_prob = right_preds.reshape(-1)[desired_label]
             
             # Use (2 * int(self.targeted) - 1) to shorten code?
