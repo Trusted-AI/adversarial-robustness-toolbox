@@ -2,6 +2,7 @@ import keras
 import logging
 import numpy as np
 from os import listdir, path
+import pytest
 import tempfile
 import warnings
 
@@ -92,6 +93,7 @@ def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get
 
         assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
 
+        # TODO we should consider checking channel independent columns to make this test truly framework independent
         if framework == "pytorch":
             sub_gradients = gradients[0, 0, :, 14]
         else:
@@ -178,7 +180,8 @@ def test_save(get_image_classifier_list):
         warnings.warn(UserWarning(e))
 
 
-def test_repr(framework, is_tf_version_2, get_image_classifier_list, store_expected_values, expected_values):
+@pytest.mark.skipMlFramework("scikitlearn")
+def test_repr(get_image_classifier_list, expected_values):
     try:
         classifier, _ = get_image_classifier_list(one_classifier=True)
         if classifier is not None:
@@ -204,6 +207,7 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
     if classifier is not None:
 
+        # TODO we should consider checking channel independent columns to make this test truly framework independent
         def get_gradient1_column(gradients):
             if framework == "pytorch":
                 return gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
@@ -216,49 +220,42 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
             else:
                 return gradients[0, 5, :, 14, 0]
 
+        def get_gradient3_column(gradients):
+            if framework == "pytorch":
+                return gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
+            else:
+                return gradients[0, 0, 14, :, 0]
+
+        def get_gradient4_column(gradients):
+            if framework == "pytorch":
+                return gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
+            else:
+                return gradients[0, 0, :, 14, 0]
+
         # Test all gradients label
         gradients = classifier.class_gradient(x_test_mnist)
 
         new_shape = (x_test_mnist.shape[0], 10,) + mnist_shape
         assert gradients.shape == new_shape
 
-        # if framework == "pytorch":
-        #     sub_gradients = gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
-        # else:
-        #     sub_gradients = gradients[0, 5, 14, :, 0]
-
         sub_gradients = get_gradient1_column(gradients)
 
         np.testing.assert_array_almost_equal(sub_gradients, grad_1_all_labels[0], decimal=grad_1_all_labels[1], )
 
         sub_gradients = get_gradient2_column(gradients)
-        # if framework == "pytorch":
-        #     sub_gradients = gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
-        # else:
-        #     sub_gradients = gradients[0, 5, :, 14, 0]
 
         np.testing.assert_array_almost_equal(sub_gradients, grad_2_all_labels[0], decimal=grad_2_all_labels[1], )
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
 
-        new_shape = (x_test_mnist.shape[0], 1,) + mnist_shape
+        assert gradients.shape == (x_test_mnist.shape[0], 1,) + mnist_shape
 
-        assert gradients.shape == new_shape
-
-        sub_gradients = get_gradient1_column(gradients)
-        # if framework == "pytorch":
-        #     sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
-        # else:
-        #     sub_gradients = gradients[0, 0, 14, :, 0]
+        sub_gradients = get_gradient3_column(gradients)
 
         np.testing.assert_array_almost_equal(sub_gradients, grad_1_label5[0], decimal=grad_1_label5[1], )
 
-        sub_gradients = get_gradient2_column(gradients)
-        # if framework == "pytorch":
-        #     sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
-        # else:
-        #     sub_gradients = gradients[0, 0, :, 14, 0]
+        sub_gradients = get_gradient4_column(gradients)
 
         np.testing.assert_array_almost_equal(sub_gradients, grad_2_label5[0], decimal=grad_2_label5[1], )
 
@@ -269,16 +266,10 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
         new_shape = (x_test_mnist.shape[0], 1,) + mnist_shape
         assert gradients.shape == new_shape
 
-        if framework == "pytorch":
-            sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_labelArray
-        else:
-            sub_gradients = gradients[0, 0, 14, :, 0]
+        sub_gradients = get_gradient3_column(gradients)
 
         np.testing.assert_array_almost_equal(sub_gradients, grad_1_labelArray[0], decimal=grad_1_labelArray[1], )
 
-        if framework == "pytorch":
-            sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_labelArray
-        else:
-            sub_gradients = gradients[0, 0, :, 14, 0]
+        sub_gradients = get_gradient4_column(gradients)
 
         np.testing.assert_array_almost_equal(sub_gradients, grad_2_labelArray[0], decimal=grad_2_labelArray[1], )

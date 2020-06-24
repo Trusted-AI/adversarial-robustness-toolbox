@@ -224,8 +224,11 @@ def expected_values(framework, request, is_tf_version_2):
         file_name = "x_values_" + request.node.location[0].split("/")[-1][
                                   :-3] + "_" + request.node.name + framework_name + ".pkl"
 
-        with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
-            return pickle.load(f)
+        try:
+            with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
+                return pickle.load(f)
+        except Exception:
+            tmp = ""
 
 
 # Try check for a platform specific expected value
@@ -375,8 +378,8 @@ def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mn
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train, n_test = default_dataset_subset_sizes
 
-    x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0], 1) + mnist_shape).astype(np.float32)
-    x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0], 1) + mnist_shape).astype(np.float32)
+    x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0],) + mnist_shape).astype(np.float32)
+    x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0],) + mnist_shape).astype(np.float32)
 
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
 
@@ -399,8 +402,8 @@ def create_test_dir():
 def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = load_mnist_dataset
 
-    new_shape1 = (x_train_mnist.shape[0], 1) + mnist_shape
-    new_shape2 = (x_test_mnist.shape[0], 1) + mnist_shape
+    new_shape1 = (x_train_mnist.shape[0],) + mnist_shape
+    new_shape2 = (x_test_mnist.shape[0],) + mnist_shape
     x_train_mnist = np.reshape(x_train_mnist, new_shape1).astype(np.float32)
     x_test_mnist = np.reshape(x_test_mnist, new_shape2).astype(np.float32)
 
