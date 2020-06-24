@@ -67,7 +67,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         :param eps: Attack step size (input variation)
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
         """
-        super(TargetedUniversalPerturbation, self).__init__(classifier)
+        super(TargetedUniversalPerturbation, self).__init__(estimator=classifier)
 
         kwargs = {'attacker': attacker,
                   'attacker_params': attacker_params,
