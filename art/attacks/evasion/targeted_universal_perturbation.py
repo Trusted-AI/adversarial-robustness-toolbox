@@ -47,6 +47,8 @@ class TargetedUniversalPerturbation(EvasionAttack):
                     }
     attack_params = EvasionAttack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin, LossGradientsMixin)
+
     def __init__(self,
                         classifier: ClassifierGradients,
                         attacker: str = 'fgsm',
