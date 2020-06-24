@@ -204,7 +204,6 @@ class TargetedUniversalPerturbation(EvasionAttack):
         :rtype: `module`
         """
         sub_mods = class_name.split(".")
-        print(class_name)
         module_ = __import__(".".join(sub_mods[:-1]), fromlist=sub_mods[-1])
         class_module = getattr(module_, sub_mods[-1])
 
