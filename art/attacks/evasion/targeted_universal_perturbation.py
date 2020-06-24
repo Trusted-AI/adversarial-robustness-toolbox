@@ -47,24 +47,23 @@ class TargetedUniversalPerturbation(EvasionAttack):
                     }
     attack_params = EvasionAttack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
 
-    def __init__(self, classifier, attacker='fgsm', attacker_params=None, delta=0.2, max_iter=20, eps=10.0,
-                 norm=np.inf):
+    def __init__(self,
+                        classifier: ClassifierGradients,
+                        attacker: str = 'fgsm',
+                        attacker_params: Dict[str, Any] = None,
+                        delta: float = 0.2,
+                        max_iter: int = 20,
+                        eps: float = 10.0,
+                        norm: int = np.inf):
         """
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'fgsm'.
-        :type attacker: `str`
         :param attacker_params: Parameters specific to the adversarial attack. If this parameter is not specified,
                                 the default parameters of the chosen attack will be used.
-        :type attacker_params: `dict`
         :param delta: desired accuracy
-        :type delta: `float`
         :param max_iter: The maximum number of iterations for computing universal perturbation.
-        :type max_iter: `int`
         :param eps: Attack step size (input variation)
-        :type eps: `float`
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
-        :type norm: `int`
         """
         super(TargetedUniversalPerturbation, self).__init__(classifier)
 
