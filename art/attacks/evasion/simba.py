@@ -38,6 +38,8 @@ logger = logging.getLogger(__name__)
 class SimBA(EvasionAttack):
     attack_params = EvasionAttack.attack_params + ['attack', 'max_iter', 'epsilon', 'order', 'freq_dim', 'stride', 'targeted', 'batch_size',]
 
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
+
     def __init__(self,
                         classifier: ClassifierGradients,
                         attack: str = 'dct',
