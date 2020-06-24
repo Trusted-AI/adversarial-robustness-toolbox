@@ -80,7 +80,7 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
 
 
 def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get_image_classifier_list,
-                       expected_values):
+                       expected_values, mnist_shape):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
@@ -92,10 +92,7 @@ def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get
     if classifier is not None:
         gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
 
-        if framework == "pytorch":
-            assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28)
-        else:
-            assert gradients.shape == (x_test_mnist.shape[0], 28, 28, 1)
+        assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 0, :, 14]
@@ -162,14 +159,11 @@ def test_nb_classes(get_image_classifier_list):
         assert classifier.nb_classes == 10
 
 
-def test_input_shape(framework, get_image_classifier_list):
+def test_input_shape(get_image_classifier_list, mnist_shape):
     classifier, _ = get_image_classifier_list(one_classifier=True)
 
     if classifier is not None:
-        if framework == "pytorch":
-            assert classifier.input_shape == (1, 28, 28)
-        else:
-            assert classifier.input_shape == (28, 28, 1)
+        assert classifier.input_shape == mnist_shape
 
 
 def test_save(get_image_classifier_list):
@@ -266,7 +260,7 @@ def test_repr(framework, is_tf_version_2, get_image_classifier_list):
         warnings.warn(UserWarning(e))
 
 
-def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset, expected_values):
+def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset, expected_values, mnist_shape):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
@@ -281,32 +275,35 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
         # Test all gradients label
         gradients = classifier.class_gradient(x_test_mnist)
 
+        new_shape = (x_test_mnist.shape[0], 10,) + mnist_shape
         if framework == "pytorch":
-            assert gradients.shape == (x_test_mnist.shape[0], 10, 1, 28, 28)
+
+            assert gradients.shape == new_shape
         else:
-            assert gradients.shape == (x_test_mnist.shape[0], 10, 28, 28, 1)
+            assert gradients.shape == new_shape
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
         else:
             sub_gradients = gradients[0, 5, 14, :, 0]
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_1_all_labels[0], decimal=grad_1_all_labels[1],)
+        np.testing.assert_array_almost_equal(sub_gradients, grad_1_all_labels[0], decimal=grad_1_all_labels[1], )
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
         else:
             sub_gradients = gradients[0, 5, :, 14, 0]
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_2_all_labels[0], decimal=grad_2_all_labels[1],)
+        np.testing.assert_array_almost_equal(sub_gradients, grad_2_all_labels[0], decimal=grad_2_all_labels[1], )
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
 
+        new_shape = (x_test_mnist.shape[0], 1,) + mnist_shape
         if framework == "pytorch":
-            assert gradients.shape == (x_test_mnist.shape[0], 1, 1, 28, 28)
+            assert gradients.shape == new_shape
         else:
-            assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
+            assert gradients.shape == new_shape
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
@@ -320,27 +317,28 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
         else:
             sub_gradients = gradients[0, 0, :, 14, 0]
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_2_label5[0], decimal=grad_2_label5[1],)
+        np.testing.assert_array_almost_equal(sub_gradients, grad_2_label5[0], decimal=grad_2_label5[1], )
 
         # # Test a set of gradients label = array
         # # label = np.random.randint(5, size=self.n_test)
         gradients = classifier.class_gradient(x_test_mnist, label=labels)
 
+        new_shape = (x_test_mnist.shape[0], 1,) + mnist_shape
         if framework == "pytorch":
-            assert gradients.shape == (x_test_mnist.shape[0], 1, 1, 28, 28)
+            assert gradients.shape == new_shape
         else:
-            assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
+            assert gradients.shape == new_shape
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_labelArray
         else:
             sub_gradients = gradients[0, 0, 14, :, 0]
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_1_labelArray[0], decimal=grad_1_labelArray[1],)
+        np.testing.assert_array_almost_equal(sub_gradients, grad_1_labelArray[0], decimal=grad_1_labelArray[1], )
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_labelArray
         else:
             sub_gradients = gradients[0, 0, :, 14, 0]
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_2_labelArray[0], decimal=grad_2_labelArray[1],)
+        np.testing.assert_array_almost_equal(sub_gradients, grad_2_labelArray[0], decimal=grad_2_labelArray[1], )

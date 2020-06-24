@@ -180,7 +180,7 @@ def store_expected_values(request):
     :param request:
     :return:
     '''
-    file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3]+"_"+ request.node.name + ".pkl"
+    file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3] + "_" + request.node.name + ".pkl"
 
     def _store_expected_values(values_to_store):
         with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "wb") as f:
@@ -196,7 +196,7 @@ def expected_values(request):
     :param request:
     :return:
     '''
-    file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3]+"_"+ request.node.name + ".pkl"
+    file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3] + "_" + request.node.name + ".pkl"
     with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
         return pickle.load(f)
 
@@ -333,13 +333,21 @@ def default_dataset_subset_sizes():
 
 
 @pytest.fixture()
-def get_default_mnist_subset(framework, get_mnist_dataset, default_dataset_subset_sizes):
+def mnist_shape(framework):
+    if framework == "pytorch":
+        return (1, 28, 28)
+    else:
+        return (28, 28, 1)
+
+
+@pytest.fixture()
+def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mnist_shape):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train, n_test = default_dataset_subset_sizes
 
-    if framework == "pytorch":
-        x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+    new_shape = (x_train_mnist.shape[0],) + mnist_shape
+    x_train_mnist = np.reshape(x_train_mnist, new_shape).astype(np.float32)
+    x_test_mnist = np.reshape(x_test_mnist, new_shape).astype(np.float32)
 
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
 
@@ -359,12 +367,13 @@ def create_test_dir():
 
 
 @pytest.fixture(scope="function")
-def get_mnist_dataset(load_mnist_dataset, framework):
+def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = load_mnist_dataset
 
-    if framework == "pytorch":
-        x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+    new_shape1 = (x_train_mnist.shape[0], 1) + mnist_shape
+    new_shape2 = (x_test_mnist.shape[0], 1) + mnist_shape
+    x_train_mnist = np.reshape(x_train_mnist, new_shape1).astype(np.float32)
+    x_test_mnist = np.reshape(x_test_mnist, new_shape2).astype(np.float32)
 
     x_train_mnist_original = x_train_mnist.copy()
     y_train_mnist_original = y_train_mnist.copy()
