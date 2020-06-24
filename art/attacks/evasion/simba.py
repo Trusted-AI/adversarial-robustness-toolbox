@@ -31,7 +31,6 @@ from scipy.fftpack import idct
 from art.attacks.attack import EvasionAttack
 from art.classifiers.classifier import ClassifierGradients
 from art.config import ART_NUMPY_DTYPE
-from art.utils import compute_success
 
 logger = logging.getLogger(__name__)
 
