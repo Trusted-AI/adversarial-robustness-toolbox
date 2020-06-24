@@ -63,11 +63,6 @@ class SimBA(EvasionAttack):
         :type batch_size: `int`
         """
         super(SimBA, self).__init__(estimator=classifier)
-        if not isinstance(classifier, ClassifierGradients):
-            raise (TypeError('For `' + self.__class__.__name__ + '` classifier must be an instance of '
-                             '`art.classifiers.classifier.ClassifierGradients`, the provided classifier is instance of '
-                             + str(classifier.__class__.__bases__) + '. '
-                             ' The classifier needs to be a Neural Network and provide gradients.'))
 
         params = {'attack': attack, 'max_iter': max_iter, 'epsilon': epsilon, 'order': order, 'freq_dim': freq_dim, 'stride': stride, 'targeted': targeted ,'batch_size': batch_size}
         self.set_params(**params)
