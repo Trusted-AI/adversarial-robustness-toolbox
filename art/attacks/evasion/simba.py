@@ -125,7 +125,7 @@ class SimBA(EvasionAttack):
 
         clip_min = -np.inf
         clip_max = np.inf 
-        if hasattr(self.classifier, 'clip_values') and self.classifier.clip_values is not None:
+        if self.classifier.clip_values is not None:
             clip_min, clip_max = self.classifier.clip_values
 
         term_flag = 1
