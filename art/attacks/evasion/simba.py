@@ -39,28 +39,28 @@ logger = logging.getLogger(__name__)
 class SimBA(EvasionAttack):
     attack_params = EvasionAttack.attack_params + ['attack', 'max_iter', 'epsilon', 'order', 'freq_dim', 'stride', 'targeted', 'batch_size',]
 
-    def __init__(self, classifier, attack='dct', max_iter=3000, order='random', epsilon=0.1, freq_dim=4, stride=1, targeted=False, batch_size=1):
+    def __init__(self,
+                        classifier: ClassifierGradients,
+                        attack: str = 'dct',
+                        max_iter: int = 3000,
+                        order: str = 'random',
+                        epsilon: float = 0.1,
+                        freq_dim: int = 4,
+                        stride: int = 1,
+                        targeted: bool = False,
+                        batch_size: int = 1):
         """
         Create a SimBA (dct) attack instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param attack: attack type: pixel (px) or DCT (dct) attacks
-        :type attack: `str`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param epsilon: Overshoot parameter.
-        :type epsilon: `float`
         :param order: order of pixel attacks: random or diagonal (diag)
-        :type order: `str`
         :param freq_dim: dimensionality of 2D frequency space (DCT).
-        :type freq_dim: `int`
         :param stride: stride for block order (DCT).
-        :type stride: `int`
         :param targeted: perform targeted attack
-        :type targeted: `bool`
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
-        :type batch_size: `int`
         """
         super(SimBA, self).__init__(estimator=classifier)
 
