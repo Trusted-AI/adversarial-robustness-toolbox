@@ -18,30 +18,6 @@ def is_keras_2_3():
     return False
 
 
-# def test_fit_kwargs(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
-#     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-#
-#     def get_lr(_):
-#         return 0.01
-#
-#     # Test a valid callback
-#     classifier, _ = get_image_classifier_list(one_classifier=True)
-#     # kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
-#     # classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
-#
-#     # Test failure for invalid parameters
-#     kwargs = {"epochs": 1}
-#     # TODO only throws a TypeError in Keras, not in pytorch or tensorflow
-#     with pytest.raises(TypeError) as exception:
-#         try:
-#             classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
-#             tmp1 = ""
-#         except Exception as e:
-#             tmp = ""
-#
-#     assert "multiple values for keyword argument" in str(exception.value)
-
-
 def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -81,8 +57,6 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
     classifier, sess = get_image_classifier_list(one_classifier=True)
 
     if classifier is not None:
-        expected_values = {"pre_fit_accuracy": ExpectedValue(0.32, 0.06), "post_fit_accuracy": ExpectedValue(0.68, 0.06)}
-
         data_gen = image_data_generator(sess=sess)
 
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -94,12 +68,7 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
         pre_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
         logger.info("Accuracy: %.2f%%", (pre_fit_accuracy * 100))
 
-        if "pre_fit_accuracy" in expected_values:
-            np.testing.assert_array_almost_equal(
-                pre_fit_accuracy,
-                expected_values["pre_fit_accuracy"].value,
-                decimal=expected_values["pre_fit_accuracy"].decimals,
-            )
+        np.testing.assert_array_almost_equal(pre_fit_accuracy, 0.32, decimal=0.06, )
 
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
         predictions = classifier.predict(x_test_mnist)
@@ -107,87 +76,16 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
         post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
         logger.info("Accuracy after fitting classifier with generator: %.2f%%", (post_fit_accuracy * 100))
 
-        if "post_fit_accuracy" in expected_values:
-            np.testing.assert_array_almost_equal(
-                post_fit_accuracy,
-                expected_values["post_fit_accuracy"].value,
-                decimal=expected_values["post_fit_accuracy"].decimals,
-            )
+        np.testing.assert_array_almost_equal(post_fit_accuracy, 0.68, decimal=0.06, )
 
 
-def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get_image_classifier_list):
+def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get_image_classifier_list,
+                       expected_values):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
 
-    expected_values = {
-        "expected_gradients_1": ExpectedValue(
-            np.asarray([
-                0.00210803,
-                0.00213919,
-                0.0052098,
-                0.00548,
-                -0.0023059,
-                0.00432076,
-                0.00274945,
-                0.,
-                0.,
-                -0.0583441,
-                -0.00616604,
-                0.05262191,
-                -0.02373985,
-                0.05273107,
-                0.10711591,
-                0.12773865,
-                0.06892889,
-                0.01337799,
-                0.1003202,
-                0.01681095,
-                -0.00028647,
-                -0.05588859,
-                0.01474165,
-                0.,
-                0.,
-                0.,
-                0.,
-                0.,
-            ]),
-            4,
-        ),
-        "expected_gradients_2": ExpectedValue(
-            np.asarray(
-                [0.0559206,
-                 0.05338925,
-                 0.0648919,
-                 0.07925165,
-                 -0.04029291,
-                 - 0.11281465,
-                 0.01850601,
-                 0.00325053,
-                 0.08163194,
-                 0.03333949,
-                 0.031766,
-                 -0.02420464,
-                 -0.07815557,
-                 -0.04698735,
-                 0.10711591,
-                 0.04086433,
-                 -0.03441072,
-                 0.01071284,
-                 - 0.04229196,
-                 - 0.01386157,
-                 0.02827487,
-                 0.,
-                 0.,
-                 0.,
-                 0.,
-                 0.,
-                 0.,
-                 0.]),
-            4,
-        ),
-    }
-
+    (expected_gradients_1, expected_gradients_2) = expected_values
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
@@ -204,24 +102,14 @@ def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get
         else:
             sub_gradients = gradients[0, :, 14, 0]
 
-        if "expected_gradients_1" in expected_values:
-            np.testing.assert_array_almost_equal(
-                sub_gradients,
-                expected_values["expected_gradients_1"].value,
-                decimal=expected_values["expected_gradients_1"].decimals,
-            )
+        np.testing.assert_array_almost_equal(sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1], )
 
         if framework == "pytorch":
             sub_gradients = gradients[0, 0, 14, :]
         else:
             sub_gradients = gradients[0, 14, :, 0]
 
-        if "expected_gradients_2" in expected_values:
-            np.testing.assert_array_almost_equal(
-                sub_gradients,
-                expected_values["expected_gradients_2"].value,
-                decimal=expected_values["expected_gradients_2"].decimals,
-            )
+        np.testing.assert_array_almost_equal(sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1], )
 
 
 def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_classifier_list):
@@ -378,329 +266,13 @@ def test_repr(framework, is_tf_version_2, get_image_classifier_list):
         warnings.warn(UserWarning(e))
 
 
-def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset):
+def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset, expected_values):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
 
-    expected_values = {
-        "expected_gradients_1_all_labels": ExpectedValue(
-            np.asarray(
-                [
-                    -0.03347399,
-                    -0.03195872,
-                    -0.02650188,
-                    0.04111874,
-                    0.08676253,
-                    0.03339913,
-                    0.06925241,
-                    0.09387045,
-                    0.15184258,
-                    -0.00684002,
-                    0.05070481,
-                    0.01409407,
-                    -0.03632583,
-                    0.00151133,
-                    0.05102589,
-                    0.00766463,
-                    -0.00898967,
-                    0.00232938,
-                    -0.00617045,
-                    -0.00201032,
-                    0.00410065,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_2_all_labels": ExpectedValue(
-            np.asarray(
-                [
-                    -0.09723657,
-                    -0.00240533,
-                    0.02445251,
-                    -0.00035474,
-                    0.04765627,
-                    0.04286841,
-                    0.07209076,
-                    0.0,
-                    0.0,
-                    -0.07938144,
-                    -0.00142567,
-                    0.02882954,
-                    -0.00049514,
-                    0.04170151,
-                    0.05102589,
-                    0.09544909,
-                    -0.04401167,
-                    -0.06158172,
-                    0.03359772,
-                    -0.00838454,
-                    0.01722163,
-                    -0.13376027,
-                    0.08206709,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_1_label5": ExpectedValue(
-            np.asarray(
-                [
-                    -0.03347399,
-                    -0.03195872,
-                    -0.02650188,
-                    0.04111874,
-                    0.08676253,
-                    0.03339913,
-                    0.06925241,
-                    0.09387045,
-                    0.15184258,
-                    -0.00684002,
-                    0.05070481,
-                    0.01409407,
-                    -0.03632583,
-                    0.00151133,
-                    0.05102589,
-                    0.00766463,
-                    -0.00898967,
-                    0.00232938,
-                    -0.00617045,
-                    -0.00201032,
-                    0.00410065,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_2_label5": ExpectedValue(
-            np.asarray(
-                [
-                    -0.09723657,
-                    -0.00240533,
-                    0.02445251,
-                    -0.00035474,
-                    0.04765627,
-                    0.04286841,
-                    0.07209076,
-                    0.0,
-                    0.0,
-                    -0.07938144,
-                    -0.00142567,
-                    0.02882954,
-                    -0.00049514,
-                    0.04170151,
-                    0.05102589,
-                    0.09544909,
-                    -0.04401167,
-                    -0.06158172,
-                    0.03359772,
-                    -0.00838454,
-                    0.01722163,
-                    -0.13376027,
-                    0.08206709,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_1_labelArray": ExpectedValue(
-            np.asarray(
-                [
-                    0.06860766,
-                    0.065502,
-                    0.08539103,
-                    0.13868105,
-                    -0.05520725,
-                    -0.18788849,
-                    0.02264893,
-                    0.02980516,
-                    0.2226511,
-                    0.11288887,
-                    -0.00678776,
-                    0.02045561,
-                    -0.03120914,
-                    0.00642691,
-                    0.08449504,
-                    0.02848018,
-                    -0.03251382,
-                    0.00854315,
-                    -0.02354656,
-                    -0.00767687,
-                    0.01565931,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_2_labelArray": ExpectedValue(
-            np.asarray(
-                [
-                    -0.0487146,
-                    -0.0171556,
-                    -0.03161772,
-                    -0.0420007,
-                    0.03360246,
-                    -0.01864819,
-                    0.00315916,
-                    0.0,
-                    0.0,
-                    -0.07631349,
-                    -0.00374462,
-                    0.04229517,
-                    -0.01131879,
-                    0.05044588,
-                    0.08449504,
-                    0.12417868,
-                    0.07536847,
-                    0.03906382,
-                    0.09467953,
-                    0.00543209,
-                    -0.00504872,
-                    -0.03366479,
-                    -0.00385999,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-    }
-
-    # labels = np.random.randint(5, size=x_test_mnist.shape[0])
-    labels = np.asarray(
-        [
-            3,
-            4,
-            4,
-            0,
-            1,
-            1,
-            1,
-            2,
-            3,
-            4,
-            4,
-            2,
-            2,
-            0,
-            0,
-            4,
-            0,
-            1,
-            2,
-            0,
-            3,
-            4,
-            2,
-            2,
-            3,
-            3,
-            0,
-            1,
-            3,
-            0,
-            3,
-            2,
-            3,
-            4,
-            1,
-            3,
-            3,
-            3,
-            2,
-            1,
-            3,
-            4,
-            2,
-            3,
-            4,
-            1,
-            4,
-            0,
-            4,
-            1,
-            1,
-            4,
-            1,
-            4,
-            0,
-            1,
-            0,
-            0,
-            4,
-            0,
-            4,
-            2,
-            3,
-            1,
-            2,
-            2,
-            4,
-            3,
-            4,
-            2,
-            2,
-            4,
-            4,
-            2,
-            1,
-            3,
-            2,
-            1,
-            4,
-            1,
-            0,
-            1,
-            2,
-            1,
-            2,
-            1,
-            2,
-            1,
-            1,
-            4,
-            1,
-            2,
-            4,
-            0,
-            4,
-            1,
-            2,
-            1,
-            1,
-            3,
-        ]
-    )
+    (grad_1_all_labels, grad_2_all_labels, grad_1_label5, grad_2_label5, grad_1_labelArray, grad_2_labelArray,
+     labels) = expected_values
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -714,29 +286,19 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
         else:
             assert gradients.shape == (x_test_mnist.shape[0], 10, 28, 28, 1)
 
-        if "expected_gradients_1_all_labels" in expected_values:
-            if framework == "pytorch":
-                sub_gradients = gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
-            else:
-                sub_gradients = gradients[0, 5, 14, :, 0]
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
+        else:
+            sub_gradients = gradients[0, 5, 14, :, 0]
 
-            np.testing.assert_array_almost_equal(
-                sub_gradients,
-                expected_values["expected_gradients_1_all_labels"].value,
-                decimal=expected_values["expected_gradients_1_all_labels"].decimals,
-            )
+        np.testing.assert_array_almost_equal(sub_gradients, grad_1_all_labels[0], decimal=grad_1_all_labels[1],)
 
-        if "expected_gradients_2_all_labels" in expected_values:
-            if framework == "pytorch":
-                sub_gradients = gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
-            else:
-                sub_gradients = gradients[0, 5, :, 14, 0]
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
+        else:
+            sub_gradients = gradients[0, 5, :, 14, 0]
 
-            np.testing.assert_array_almost_equal(
-                sub_gradients,
-                expected_values["expected_gradients_2_all_labels"].value,
-                decimal=expected_values["expected_gradients_2_all_labels"].decimals,
-            )
+        np.testing.assert_array_almost_equal(sub_gradients, grad_2_all_labels[0], decimal=grad_2_all_labels[1],)
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
@@ -746,29 +308,19 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
         else:
             assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
 
-        if "expected_gradients_1_label5" in expected_values:
-            if framework == "pytorch":
-                sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
-            else:
-                sub_gradients = gradients[0, 0, 14, :, 0]
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
+        else:
+            sub_gradients = gradients[0, 0, 14, :, 0]
 
-            np.testing.assert_array_almost_equal(
-                sub_gradients,
-                expected_values["expected_gradients_1_label5"].value,
-                decimal=expected_values["expected_gradients_1_label5"].decimals,
-            )
+        np.testing.assert_array_almost_equal(sub_gradients, grad_1_label5[0], decimal=grad_1_label5[1], )
 
-        if "expected_gradients_2_label5" in expected_values:
-            if framework == "pytorch":
-                sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
-            else:
-                sub_gradients = gradients[0, 0, :, 14, 0]
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
+        else:
+            sub_gradients = gradients[0, 0, :, 14, 0]
 
-            np.testing.assert_array_almost_equal(
-                sub_gradients,
-                expected_values["expected_gradients_2_label5"].value,
-                decimal=expected_values["expected_gradients_2_label5"].decimals,
-            )
+        np.testing.assert_array_almost_equal(sub_gradients, grad_2_label5[0], decimal=grad_2_label5[1],)
 
         # # Test a set of gradients label = array
         # # label = np.random.randint(5, size=self.n_test)
@@ -779,27 +331,16 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
         else:
             assert gradients.shape == (x_test_mnist.shape[0], 1, 28, 28, 1)
 
-        if "expected_gradients_1_labelArray" in expected_values:
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_labelArray
+        else:
+            sub_gradients = gradients[0, 0, 14, :, 0]
 
-            if framework == "pytorch":
-                sub_gradients = gradients[0, 0, 0, 14, :]  # expected_gradients_1_labelArray
-            else:
-                sub_gradients = gradients[0, 0, 14, :, 0]
+        np.testing.assert_array_almost_equal(sub_gradients, grad_1_labelArray[0], decimal=grad_1_labelArray[1],)
 
-            np.testing.assert_array_almost_equal(
-                sub_gradients,
-                expected_values["expected_gradients_1_labelArray"].value,
-                decimal=expected_values["expected_gradients_1_labelArray"].decimals,
-            )
+        if framework == "pytorch":
+            sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_labelArray
+        else:
+            sub_gradients = gradients[0, 0, :, 14, 0]
 
-        if "expected_gradients_2_labelArray" in expected_values:
-            if framework == "pytorch":
-                sub_gradients = gradients[0, 0, 0, :, 14]  # expected_gradients_2_labelArray
-            else:
-                sub_gradients = gradients[0, 0, :, 14, 0]
-
-            np.testing.assert_array_almost_equal(
-                sub_gradients,
-                expected_values["expected_gradients_2_labelArray"].value,
-                decimal=expected_values["expected_gradients_2_labelArray"].decimals,
-            )
+        np.testing.assert_array_almost_equal(sub_gradients, grad_2_labelArray[0], decimal=grad_2_labelArray[1],)

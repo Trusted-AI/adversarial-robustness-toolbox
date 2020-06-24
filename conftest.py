@@ -175,6 +175,11 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
 
 @pytest.fixture
 def store_expected_values(request):
+    '''
+    Stores expected values to be retrieved by the expected_values fixture
+    :param request:
+    :return:
+    '''
     file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3]+"_"+ request.node.name + ".pkl"
 
     def _store_expected_values(values_to_store):
@@ -186,6 +191,11 @@ def store_expected_values(request):
 
 @pytest.fixture
 def expected_values(request):
+    '''
+    Retrieves the expected values that were stored using the store_expected_values fixture
+    :param request:
+    :return:
+    '''
     file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3]+"_"+ request.node.name + ".pkl"
     with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
         return pickle.load(f)
