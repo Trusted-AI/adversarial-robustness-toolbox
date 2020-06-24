@@ -402,10 +402,8 @@ def create_test_dir():
 def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = load_mnist_dataset
 
-    new_shape1 = (x_train_mnist.shape[0],) + mnist_shape
-    new_shape2 = (x_test_mnist.shape[0],) + mnist_shape
-    x_train_mnist = np.reshape(x_train_mnist, new_shape1).astype(np.float32)
-    x_test_mnist = np.reshape(x_test_mnist, new_shape2).astype(np.float32)
+    x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0],) + mnist_shape).astype(np.float32)
+    x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0],) + mnist_shape).astype(np.float32)
 
     x_train_mnist_original = x_train_mnist.copy()
     y_train_mnist_original = y_train_mnist.copy()
