@@ -246,6 +246,22 @@ class SimBA(EvasionAttack):
             raise ValueError('`targeted` has to be a logical value.')
 
     def _block_order(self, img_size, channels, initial_size=2, stride=1):
+        """
+        Defines a block order, starting with top-left (initial_size x initial_size) submatrix
+        expanding by stride rows and columns whenever exhausted
+        randomized within the block and across channels.
+        e.g. (initial_size=2, stride=1)
+        [1, 3, 6]
+        [2, 4, 9]
+        [5, 7, 8]
+
+        :param img_size: image size (i.e., width or height).
+        :param channels: the number of channels.
+        :param initial size: initial size for submatrix.
+        :param stride: stride size for expansion.
+
+        :return z: An array holding the block order of DCT attacks.
+        """
         order = np.zeros((channels , img_size , img_size))
         total_elems = channels * initial_size * initial_size
         perm = np.random.permutation(total_elems)
@@ -259,8 +275,18 @@ class SimBA(EvasionAttack):
             total_elems += num_elems
         return order.transpose(1,2,0).reshape(1, -1).squeeze().argsort()
 
-    # applies IDCT to each block of size block_size
+
     def _block_idct(self, x, block_size=8, masked=False, ratio=0.5):
+        """
+        Applies IDCT to each block of size block_size.
+
+        :param x: An array with the inputs to be attacked.
+        :param block_size: block size for DCT attacks.
+        :param masked: use the mask.
+        :param ratio: Ratio of the lowest frequency directions in order to make the adversarial perturbation in the low frequency space.
+
+        :return z: An array holding the order of DCT attacks.
+        """
         x = x.transpose(0,3,1,2)
         z = np.zeros(x.shape)
         num_blocks = int(x.shape[2] / block_size)
@@ -279,6 +305,19 @@ class SimBA(EvasionAttack):
         return z.transpose(0,2,3,1)
     
     def diagonal_order(self, image_size, channels):
+        """
+        Defines a diagonal order for pixel attacks.
+        order is fixed across diagonals but are randomized across channels and within the diagonal
+        e.g.
+        [1, 2, 5]
+        [3, 4, 8]
+        [6, 7, 9]
+
+        :param image_size: image size (i.e., width or height)
+        :param channels: the number of channels
+
+        :return z: An array holding the diagonal order of pixel attacks.
+        """
         x = np.arange(0, image_size).cumsum()
         order = np.zeros((image_size, image_size))
         for i in range(image_size):
