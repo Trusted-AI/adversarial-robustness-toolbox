@@ -64,8 +64,15 @@ class SimBA(EvasionAttack):
         """
         super(SimBA, self).__init__(estimator=classifier)
 
-        params = {'attack': attack, 'max_iter': max_iter, 'epsilon': epsilon, 'order': order, 'freq_dim': freq_dim, 'stride': stride, 'targeted': targeted ,'batch_size': batch_size}
-        self.set_params(**params)
+        self.attack = attack
+        self.max_iter = max_iter
+        self.epsilon = epsilon
+        self.order = order
+        self.freq_dim = freq_dim
+        self.stride = stride
+        self.targeted = targeted
+        self.batch_size = batch_size
+        self._check_params()
 
     def generate(self, x, y=None, **kwargs):
         """
