@@ -173,8 +173,6 @@ class TargetedUniversalPerturbation(EvasionAttack):
         if not isinstance(self.eps, (float, int)) or self.eps <= 0:
             raise ValueError("The eps coefficient must be a positive float.")
 
-        return True
-
     def _get_attack(self, a_name, params=None):
         """
         Get an attack object from its name.
