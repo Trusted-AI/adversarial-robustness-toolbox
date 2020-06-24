@@ -283,7 +283,7 @@ class ShapeShifter(EvasionAttack):
             current_value=current_value
         )
 
-        return result
+        return result[1]
 
     def _attack_training(
         self,
@@ -298,7 +298,7 @@ class ShapeShifter(EvasionAttack):
         final_attack_optimization_op: Tensor,
         current_variable: Tensor,
         current_value: Tensor
-    ) -> np.ndarray:
+    ) -> List[np.ndarray]:
         """
         Do attack optimization.
 
@@ -403,10 +403,20 @@ class ShapeShifter(EvasionAttack):
                 self.estimator.sess.run(current_image_assign_to_input_image_op)
                 self.estimator.sess.run(accumulated_gradients_op, feed_dict)
 
+            # # Update feed_dict with true labels
+            # if self.texture_as_input:
+            #     for i in range(x.shape[0]):
+            #         feed_dict['groundtruth_boxes_{}:0'.format(i)] = y['groundtruth_boxes_list'][i]
+            #         feed_dict['groundtruth_classes_{}:0'.format(i)] = y['groundtruth_classes_list'][i]
+            #         feed_dict['groundtruth_weights_{}:0'.format(i)] = y['groundtruth_weights_list'][i]
 
+            # Update image/texture variable
+            self.estimator.sess.run(final_attack_optimization_op, feed_dict)
+            self.estimator.sess.run(project_texture_op)
 
-        return 0
+        result = self.estimator.sess.run([current_variable, current_value], feed_dict)
 
+        return result
 
     def _build_graph(
         self,
