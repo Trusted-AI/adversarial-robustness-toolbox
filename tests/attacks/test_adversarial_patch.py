@@ -81,9 +81,9 @@ class TestAdversarialPatch(TestBase):
             self.assertAlmostEqual(patch_adv[14, 14, 0], 0.5917497, delta=0.05)
             self.assertAlmostEqual(float(np.sum(patch_adv)), 400.0701904296875, delta=1.0)
         else:
-            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.5332792, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.54590017, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 398.8515625, delta=1.0)
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.7993435, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 1, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 392.339233398, delta=1.0)
 
         if sess is not None:
             sess.close()
@@ -122,9 +122,9 @@ class TestAdversarialPatch(TestBase):
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(x_train, target)
 
-        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.5002671, delta=0.05)
-        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5109714, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 393.09832763671875, delta=1.0)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.5581951, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5420919, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 401.57159423828125, delta=1.0)
 
     def test_failure_feature_vectors(self):
         attack_params = {

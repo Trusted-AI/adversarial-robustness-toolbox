@@ -275,7 +275,6 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     probabilities = tf.keras.activations.softmax(x=logits)
 
     # Train operator
-
     loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph,
                                                           reduction=tf.losses.Reduction.SUM))
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
