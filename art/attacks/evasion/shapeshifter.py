@@ -22,6 +22,7 @@ This module implements ShapeShifter, a robust physical adversarial attack on Fas
 """
 import logging
 from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
+from collections import Callable
 
 import numpy as np
 import tensorflow as tf
@@ -33,8 +34,6 @@ from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFas
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
 if TYPE_CHECKING:
-    from collections import Callable
-
     from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.training.optimizer import Optimizer
 
@@ -92,7 +91,7 @@ class ShapeShifter(EvasionAttack):
     def __init__(
         self,
         estimator: TensorFlowFasterRCNN,
-        random_transform: Callable,
+        random_transform: "Callable",
         box_classifier_weight: float = 1.0,
         box_localizer_weight: float = 2.0,
         rpn_classifier_weight: float = 1.0,
@@ -191,7 +190,7 @@ class ShapeShifter(EvasionAttack):
         # Check validity of attack attributes
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Dict[str, List[Tensor]], **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[Dict[str, List["Tensor"]]] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -225,6 +224,10 @@ class ShapeShifter(EvasionAttack):
         assert x.ndim == 4, "The ShapeShifter attack can only be applied to images."
         assert x.shape[0] == 1, "The ShapeShifter attack can only be applied to one image."
         assert x.shape[1:] == self.estimator.input_shape
+
+        # Check if y is None
+        if y is None and not self.texture_as_input:
+            raise ValueError("Need the target labels `y` for image as input.")
 
         # Check whether users have a custom loss
         custom_loss = kwargs.get("custom_loss")
@@ -288,16 +291,16 @@ class ShapeShifter(EvasionAttack):
     def _attack_training(
         self,
         x: np.ndarray,
-        y: Dict[str, List[Tensor]],
+        y: Dict[str, List["Tensor"]],
         mask: np.ndarray,
         target_class: int,
         victim_class: int,
-        project_texture_op: Tensor,
-        current_image_assign_to_input_image_op: Tensor,
-        accumulated_gradients_op: Tensor,
-        final_attack_optimization_op: Tensor,
-        current_variable: Tensor,
-        current_value: Tensor
+        project_texture_op: "Tensor",
+        current_image_assign_to_input_image_op: "Tensor",
+        accumulated_gradients_op: "Tensor",
+        final_attack_optimization_op: "Tensor",
+        current_variable: "Tensor",
+        current_value: "Tensor"
     ) -> List[np.ndarray]:
         """
         Do attack optimization.
@@ -420,10 +423,10 @@ class ShapeShifter(EvasionAttack):
 
     def _build_graph(
         self,
-        initial_shape: List,
-        custom_loss: Optional[Tensor] = None,
-        rendering_function: Optional[Callable] = None
-    ) -> Tuple[Tensor, Tensor, Tensor, Tensor, Tensor, Tensor]:
+        initial_shape: Tuple[int, ...],
+        custom_loss: Optional["Tensor"] = None,
+        rendering_function: Optional["Callable"] = None
+    ) -> Tuple["Tensor", ...]:
         """
         Build the TensorFlow graph for the attack.
 
@@ -436,6 +439,8 @@ class ShapeShifter(EvasionAttack):
         initial_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_input')
 
         # Create adversarial image
+        project_texture_op = None
+
         if self.texture_as_input:
             # Create a placeholder to pass input texture mask
             mask_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='mask_input')
@@ -624,7 +629,7 @@ class ShapeShifter(EvasionAttack):
                 current_image
             )
 
-    def _create_optimizer(self) -> Optimizer:
+    def _create_optimizer(self) -> "Optimizer":
         """
         Create an optimizer of this attack.
 
@@ -657,10 +662,10 @@ class ShapeShifter(EvasionAttack):
 
     def _create_attack_loss(
         self,
-        custom_loss: Optional[Tensor] = None,
-        initial_input: Optional[Tensor] = None,
-        current_value: Optional[Tensor] = None
-    ) -> Tensor:
+        custom_loss: Optional["Tensor"] = None,
+        initial_input: Optional["Tensor"] = None,
+        current_value: Optional["Tensor"] = None
+    ) -> "Tensor":
         """
         Create the loss tensor of this attack.
 
@@ -707,7 +712,7 @@ class ShapeShifter(EvasionAttack):
 
         return total_loss
 
-    def _create_faster_rcnn_loss(self) -> Tensor:
+    def _create_faster_rcnn_loss(self) -> "Tensor":
         """
         Create the partial loss tensor of this attack from losses of the object detector.
 
@@ -758,7 +763,7 @@ class ShapeShifter(EvasionAttack):
 
         return partial_loss
 
-    def _create_box_loss(self) -> Tensor:
+    def _create_box_loss(self) -> "Tensor":
         """
         Create the partial loss tensor of this attack from box losses.
 
@@ -845,7 +850,7 @@ class ShapeShifter(EvasionAttack):
 
         return partial_loss
 
-    def _create_rpn_loss(self) -> Tensor:
+    def _create_rpn_loss(self) -> "Tensor":
         """
         Create the partial loss tensor of this attack from RPN losses.
 
@@ -915,7 +920,7 @@ class ShapeShifter(EvasionAttack):
     def _create_similarity_loss(
         initial_input: Optional[Tensor] = None,
         current_value: Optional[Tensor] = None
-    ) -> Tensor:
+    ) -> "Tensor":
         """
         Create the partial loss tensor of this attack from the similarity loss.
 

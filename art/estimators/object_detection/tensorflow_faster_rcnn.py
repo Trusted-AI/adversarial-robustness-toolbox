@@ -222,7 +222,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         groundtruth_boxes_list: Optional[List["Tensor"]] = None,
         groundtruth_classes_list: Optional[List["Tensor"]] = None,
         groundtruth_weights_list: Optional[List["Tensor"]] = None
-    ) -> Tuple[Dict[str, "Tensor"], Dict[str, "Tensor"], Dict[str, "Tensor"]]:
+    ) -> Tuple[Dict[str, "Tensor"], ...]:
         """
         Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
         is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
