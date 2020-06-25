@@ -131,9 +131,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             if self.clip_values[1] != 1:
                 raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
 
-        # Check preprocessing and postprocessing_defences
-        if self.preprocessing is not None:
-            raise ValueError("This estimator does not support `preprocessing`.")
+        # Check preprocessing and postprocessing defences
+        if self.preprocessing_defences is not None:
+            raise ValueError("This estimator does not support `preprocessing_defences`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
@@ -209,8 +209,14 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Assign session
         if sess is None:
-            raise ValueError("A session cannot be None.")
-        self._sess: Optional["Session"] = sess
+            logging.warning("A session cannot be None, create a new session.")
+            self._sess: "Session" = tf.Session()
+        else:
+            self._sess: "Session" = sess
+
+        # Initialize variables
+        self._sess.run(tf.global_variables_initializer())
+        self._sess.run(tf.local_variables_initializer())
 
     @staticmethod
     def _load_model(
