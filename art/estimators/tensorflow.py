@@ -72,7 +72,7 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
 
     @property
-    def sess(self) -> Session:
+    def sess(self) -> "Session":
         """
         Get current TensorFlow session.
 
