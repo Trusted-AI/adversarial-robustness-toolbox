@@ -144,7 +144,8 @@ class SimBA(EvasionAttack):
                 tmp_indices = self._block_order(x.shape[2], nb_channels, initial_size=self.freq_dim, stride=self.stride)
                 indices = np.hstack((indices, tmp_indices))[: self.max_iter]
                 indices_size = len(indices)
-            trans = lambda z: self._block_idct(z, block_size=x.shape[2])
+
+            def trans(z): return self._block_idct(z, block_size=x.shape[2])
 
         clip_min = -np.inf
         clip_max = np.inf
