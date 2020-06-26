@@ -68,7 +68,7 @@ class TestSimBA(TestBase):
         """
         classifier, sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
-    
+
     def test_pytorch_mnist(self):
         """
         Test with the PyTorchClassifier. (Untargeted Attack)
@@ -93,7 +93,7 @@ class TestSimBA(TestBase):
         """
         classifier, sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
-    
+
     # SimBA is not avaialbe for PyTorch
     def test_pytorch_mnist_targeted(self):
         """
@@ -120,14 +120,14 @@ class TestSimBA(TestBase):
 
         x_i = x_test_original[0][None, ...]
         if targeted:
-            x_test_adv = df.generate(x_i, y = y_target.reshape(1,10))
+            x_test_adv = df.generate(x_i, y=y_target.reshape(1, 10))
         else:
             x_test_adv = df.generate(x_i)
 
         for i in range(1, len(x_test_original)):
             x_i = x_test_original[i][None, ...]
             if targeted:
-                tmp_x_test_adv = df.generate(x_i, y = y_target.reshape(1,10))
+                tmp_x_test_adv = df.generate(x_i, y=y_target.reshape(1, 10))
                 x_test_adv = np.concatenate([x_test_adv, tmp_x_test_adv])
             else:
                 tmp_x_test_adv = df.generate(x_i)

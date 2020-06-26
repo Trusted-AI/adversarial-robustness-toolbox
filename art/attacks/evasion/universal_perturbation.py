@@ -62,7 +62,7 @@ class UniversalPerturbation(EvasionAttack):
         "newtonfool": "art.attacks.evasion.newtonfool.NewtonFool",
         "jsma": "art.attacks.evasion.saliency_map.SaliencyMapMethod",
         "vat": "art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod",
-        'simba': 'art.attacks.evasion.simba.SimBA',
+        "simba": "art.attacks.evasion.simba.SimBA",
     }
     attack_params = EvasionAttack.attack_params + [
         "attacker",
@@ -122,7 +122,7 @@ class UniversalPerturbation(EvasionAttack):
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
         if y is None:
-            logger.info('Using model predictions as the correct labels for UAP.')
+            logger.info("Using model predictions as the correct labels for UAP.")
             pred_y = self.estimator.predict(x, batch_size=1)
         correct_y_max = np.argmax(pred_y, axis=1)
 

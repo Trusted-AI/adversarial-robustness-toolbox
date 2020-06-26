@@ -47,22 +47,25 @@ class TargetedUniversalPerturbation(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1911.06502
     """
+
     attacks_dict = {
-                    'fgsm': 'art.attacks.evasion.fast_gradient.FastGradientMethod',
-                    'simba': 'art.attacks.evasion.simba.SimBA'
-                    }
-    attack_params = EvasionAttack.attack_params + ['attacker', 'attacker_params', 'delta', 'max_iter', 'eps', 'norm']
+        "fgsm": "art.attacks.evasion.fast_gradient.FastGradientMethod",
+        "simba": "art.attacks.evasion.simba.SimBA",
+    }
+    attack_params = EvasionAttack.attack_params + ["attacker", "attacker_params", "delta", "max_iter", "eps", "norm"]
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin, LossGradientsMixin)
 
-    def __init__(self,
-                        classifier: ClassifierGradients,
-                        attacker: str = 'fgsm',
-                        attacker_params: Optional[Dict[str, Any]] = None,
-                        delta: float = 0.2,
-                        max_iter: int = 20,
-                        eps: float = 10.0,
-                        norm: int = np.inf):
+    def __init__(
+        self,
+        classifier: ClassifierGradients,
+        attacker: str = "fgsm",
+        attacker_params: Optional[Dict[str, Any]] = None,
+        delta: float = 0.2,
+        max_iter: int = 20,
+        eps: float = 10.0,
+        norm: int = np.inf,
+    ):
         """
         :param classifier: A trained classifier.
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'fgsm'.
@@ -91,7 +94,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         :param y: An array with the targeted labels.
         :return: An array holding the adversarial examples.
         """
-        logger.info('Computing targeted universal perturbation based on %s attack.', self.attacker)
+        logger.info("Computing targeted universal perturbation based on %s attack.", self.attacker)
 
         # Init universal perturbation
         noise = 0
@@ -106,7 +109,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
 
         # Start to generate the adversarial examples
         nb_iter = 0
-        while targeted_success_rate < 1. - self.delta and nb_iter < self.max_iter:
+        while targeted_success_rate < 1.0 - self.delta and nb_iter < self.max_iter:
             # Go through all the examples randomly
             rnd_idx = random.sample(range(nb_instances), nb_instances)
 
@@ -134,7 +137,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
 
             # Apply attack and clip
             x_adv = x + noise
-            if hasattr(self.estimator, 'clip_values') and self.estimator.clip_values is not None:
+            if hasattr(self.estimator, "clip_values") and self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
 
@@ -147,8 +150,8 @@ class TargetedUniversalPerturbation(EvasionAttack):
         self.targeted_success_rate = targeted_success_rate
         self.converged = nb_iter < self.max_iter
         self.noise = noise
-        logger.info('Fooling rate of universal perturbation attack: %.2f%%', 100 * fooling_rate)
-        logger.info('Targeted success rate of universal perturbation attack: %.2f%%', 100 * targeted_success_rate)
+        logger.info("Fooling rate of universal perturbation attack: %.2f%%", 100 * fooling_rate)
+        logger.info("Targeted success rate of universal perturbation attack: %.2f%%", 100 * targeted_success_rate)
 
         return x_adv
 

@@ -74,8 +74,10 @@ class TestTargetedUniversalPerturbation(TestBase):
             y_target[i, target] = 1.0
 
         # Attack
-        up = TargetedUniversalPerturbation(tfc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True})
-        x_train_adv = up.generate(self.x_train_mnist, y = y_target)
+        up = TargetedUniversalPerturbation(
+            tfc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
+        )
+        x_train_adv = up.generate(self.x_train_mnist, y=y_target)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
         x_test_adv = self.x_test_mnist + up.noise
@@ -106,8 +108,10 @@ class TestTargetedUniversalPerturbation(TestBase):
             y_target[i, target] = 1.0
 
         # Attack
-        up = TargetedUniversalPerturbation(krc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True})
-        x_train_adv = up.generate(self.x_train_mnist, y = y_target)
+        up = TargetedUniversalPerturbation(
+            krc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
+        )
+        x_train_adv = up.generate(self.x_train_mnist, y=y_target)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
         x_test_adv = self.x_test_mnist + up.noise
@@ -140,8 +144,10 @@ class TestTargetedUniversalPerturbation(TestBase):
             y_target[i, target] = 1.0
 
         # Attack
-        up = TargetedUniversalPerturbation(ptc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True})
-        x_train_mnist_adv = up.generate(x_train_mnist, y = y_target)
+        up = TargetedUniversalPerturbation(
+            ptc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
+        )
+        x_train_mnist_adv = up.generate(x_train_mnist, y=y_target)
         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 
         x_test_mnist_adv = x_test_mnist + up.noise
