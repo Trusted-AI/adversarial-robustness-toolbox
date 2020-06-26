@@ -42,8 +42,7 @@ class TestSimBA(TestBase):
     Note: SimBA runs only in Keras and TensorFlow (not in PyTorch)
     This is due to the channel first format in PyTorch.
 
-    | SimBA Paper link:
-        https://arxiv.org/abs/1905.07121
+    | Paper link: https://arxiv.org/abs/1905.07121
     """
 
     @classmethod
