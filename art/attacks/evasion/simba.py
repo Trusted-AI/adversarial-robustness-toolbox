@@ -316,7 +316,8 @@ class SimBA(EvasionAttack):
         :param x: An array with the inputs to be attacked.
         :param block_size: block size for DCT attacks.
         :param masked: use the mask.
-        :param ratio: Ratio of the lowest frequency directions in order to make the adversarial perturbation in the low frequency space.
+        :param ratio: Ratio of the lowest frequency directions in order to make the adversarial perturbation in the low
+                      frequency space.
 
         :return z: An array holding the order of DCT attacks.
         """
