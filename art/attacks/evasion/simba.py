@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the black-box attack `simba`.
+This module implements the black-box attack `SimBA`.
 
 | Paper link: https://arxiv.org/abs/1905.07121
 """
