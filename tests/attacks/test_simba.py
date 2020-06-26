@@ -49,7 +49,7 @@ class TestSimBA(TestBase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.n_test = 1
+        cls.n_test = 2
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
@@ -69,14 +69,14 @@ class TestSimBA(TestBase):
         classifier, sess = get_image_classifier_tf()
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
     
-    #def test_pytorch_mnist(self):
-    #    """
-    #    Test with the PyTorchClassifier. (Untargeted Attack)
-    #    :return:
-    #    """
-    #    x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-    #    classifier = get_image_classifier_pt()
-    #    self._test_attack(classifier, x_test, self.y_test_mnist, False)
+    def test_pytorch_mnist(self):
+        """
+        Test with the PyTorchClassifier. (Untargeted Attack)
+        :return:
+        """
+        x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        classifier = get_image_classifier_pt()
+        self._test_attack(classifier, x_test, self.y_test_mnist, False)
 
     def test_keras_mnist_targeted(self):
         """
@@ -95,14 +95,14 @@ class TestSimBA(TestBase):
         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
     
     # SimBA is not avaialbe for PyTorch
-    #def test_pytorch_mnist_targeted(self):
-    #    """
-    #    Test with the PyTorchClassifier. (Targeted Attack)
-    #    :return:
-    #    """
-    #    x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-    #    classifier = get_image_classifier_pt()
-    #    self._test_attack(classifier, x_test, self.y_test_mnist, True)
+    def test_pytorch_mnist_targeted(self):
+        """
+        Test with the PyTorchClassifier. (Targeted Attack)
+        :return:
+        """
+        x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+        classifier = get_image_classifier_pt()
+        self._test_attack(classifier, x_test, self.y_test_mnist, True)
 
     def _test_attack(self, classifier, x_test, y_test, targeted):
         """
@@ -118,17 +118,19 @@ class TestSimBA(TestBase):
 
         df = SimBA(classifier, attack="dct", targeted=targeted)
 
+        x_i = x_test_original[0][None, ...]
         if targeted:
-            x_test_adv = df.generate(x_test_original[0].reshape(1,28,28,1), y = y_target.reshape(1,10))
+            x_test_adv = df.generate(x_i, y = y_target.reshape(1,10))
         else:
-            x_test_adv = df.generate(x_test_original[0].reshape(1,28,28,1))
+            x_test_adv = df.generate(x_i)
 
         for i in range(1, len(x_test_original)):
+            x_i = x_test_original[i][None, ...]
             if targeted:
-                tmp_x_test_adv = df.generate(x_test_original[i].reshape(1,28,28,1), y = y_target.reshape(1,10))
+                tmp_x_test_adv = df.generate(x_i, y = y_target.reshape(1,10))
                 x_test_adv = np.concatenate([x_test_adv, tmp_x_test_adv])
             else:
-                tmp_x_test_adv = df.generate(x_test_original[i].reshape(1,28,28,1))
+                tmp_x_test_adv = df.generate(x_i)
                 x_test_adv = np.concatenate([x_test_adv, tmp_x_test_adv])
 
         self.assertFalse((x_test == x_test_adv).all())
