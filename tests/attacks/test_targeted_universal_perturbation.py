@@ -43,9 +43,7 @@ class TestTargetedUniversalPerturbation(TestBase):
 
     This module tests the Targeted Universal Perturbation.
 
-    | Targeted Universal Perturbation Paper:
-       Hirano H and Takemoto K (2020) Simple iterative method for generating targeted universal adversarial perturbations. in Proceedings of 25th International Symposium on Artificial Life and Robotics (AROB 25th 2020), pp. 426-430.
-        (arXiv link: https://arxiv.org/abs/1911.06502)
+    | Paper link: https://arxiv.org/abs/1911.06502)
     """
 
     @classmethod
