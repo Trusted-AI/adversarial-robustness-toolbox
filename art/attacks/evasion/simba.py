@@ -23,8 +23,7 @@ This module implements the black-box attack `simba`.
 from __future__ import (absolute_import, division, print_function, unicode_literals)
 
 import logging
-import types
-from typing import Any, Dict, Optional, Union
+from typing import Optional
 
 import numpy as np
 from scipy.fftpack import idct
