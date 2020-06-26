@@ -401,7 +401,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
-        loss = self._loss(model_outputs[-1], labels_t.long())
+        loss = self._loss(model_outputs[-1], labels_t)
 
         # Clean gradients
         self._model.zero_grad()
