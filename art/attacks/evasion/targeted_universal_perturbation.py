@@ -173,7 +173,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         """
         try:
             attack_class = self._get_class(self.attacks_dict[a_name])
-            a_instance = attack_class(self.estimator)
+            a_instance = attack_class(self.estimator)  # type: ignore
 
             if params:
                 a_instance.set_params(**params)
