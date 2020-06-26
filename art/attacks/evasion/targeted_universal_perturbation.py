@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import random
 import types
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 import numpy as np
 
