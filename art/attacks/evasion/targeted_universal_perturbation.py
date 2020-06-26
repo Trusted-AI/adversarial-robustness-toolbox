@@ -29,10 +29,10 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
 from art.estimators.classification.classifier import (
+    ClassifierGradients,
     ClassGradientsMixin,
 )
 from art.utils import projection
