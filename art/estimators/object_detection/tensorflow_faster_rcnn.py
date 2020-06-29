@@ -288,9 +288,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Provide groundtruth
         groundtruth_classes_list = [
             tf.one_hot(
-                groundtrue_class,
+                groundtruth_class,
                 obj_detection_model.num_classes
-            ) for groundtrue_class in groundtruth_classes_list
+            ) for groundtruth_class in groundtruth_classes_list
         ]
 
         obj_detection_model.provide_groundtruth(
