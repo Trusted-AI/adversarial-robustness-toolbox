@@ -52,6 +52,7 @@ class TestTensorFlowFasterRCNN(TestBase):
 
         cls.n_test = 10
         cls.x_test_mnist = cls.x_test_mnist[0: cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0: cls.n_test]
 
         # Define object detector
         from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
@@ -194,7 +195,7 @@ class TestTensorFlowFasterRCNN(TestBase):
             [1.7121597e-03],
             [8.4455572e-03]
         ])
-        np.testing.assert_array_almost_equal(grads[0, 0, :, :], expected_gradients1, decimal=6)
+        np.testing.assert_array_almost_equal(grads[0, 0, :, :], expected_gradients1, decimal=2)
 
         expected_gradients2 = np.asarray([
             [-8.14103708e-03],
@@ -226,7 +227,7 @@ class TestTensorFlowFasterRCNN(TestBase):
             [1.00337435e-02],
             [6.10247999e-03]
         ])
-        np.testing.assert_array_almost_equal(grads[1, :, 0, :], expected_gradients2, decimal=6)
+        np.testing.assert_array_almost_equal(grads[1, :, 0, :], expected_gradients2, decimal=2)
 
 
 if __name__ == "__main__":
