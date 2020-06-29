@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,18 +21,19 @@ Provides black-box gradient estimation using NES.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 from scipy.stats import entropy
 
-from art.wrappers.wrapper import ClassifierWrapper
-from art.classifiers.classifier import Classifier, ClassifierGradients
+from art.estimators.classification.classifier import ClassifierGradients
 from art.utils import clip_and_round
+from art.wrappers.wrapper import ClassifierWrapper
 
 logger = logging.getLogger(__name__)
 
 
-class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients, Classifier):
+class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients):
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
@@ -42,95 +43,84 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
 
     attack_params = ["num_basis", "sigma", "round_samples"]
 
-    def __init__(self, classifier, num_basis, sigma, round_samples=0):
+    def __init__(
+        self, classifier: ClassifierGradients, num_basis: int, sigma: float, round_samples: float = 0.0,
+    ) -> None:
         """
-        :param classifier: An instance of a `Classifier` whose loss_gradient is being approximated
-        :type classifier: `Classifier`
-        :param num_basis:  The number of samples to draw to approximate the gradient
-        :type num_basis: `int`
-        :param sigma: Scaling on the Gaussian noise N(0,1)
-        :type sigma: `float`
+        :param classifier: An instance of a `Classifier` whose loss_gradient is being approximated.
+        :param num_basis:  The number of samples to draw to approximate the gradient.
+        :param sigma: Scaling on the Gaussian noise N(0,1).
         :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to
                               disable.
-        :type round_samples: `float`
         """
         super(QueryEfficientBBGradientEstimation, self).__init__(classifier)
         # self.predict refers to predict of classifier
         # pylint: disable=E0203
         self._predict = self.classifier.predict
-        self.set_params(num_basis=num_basis, sigma=sigma, round_samples=round_samples)
+        self.num_basis = num_basis
+        self.sigma = sigma
+        self.round_samples = round_samples
+        self._nb_classes = self.classifier.nb_classes
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction of the classifier for input `x`.
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
-        :type x: `np.ndarray`
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         return self._wrap_predict(x, **kwargs)
 
-    def fit(self, x, y, **kwargs):
+    def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
         Fit the classifier using the training data `(x, y)`.
 
         :param x: Features in array of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2)
-        :type x: `np.ndarray`
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
         :param y: Target values (class labels in classification) in array of shape (nb_samples, nb_classes) in
-                  One Hot Encoding format.
-        :type y: `np.ndarray`
+                  one-hot encoding format.
         :param kwargs: Dictionary of framework-specific arguments.
-        :type kwargs: `dict`
-        :return: `None`
         """
         raise NotImplementedError
 
-    def _generate_samples(self, x, epsilon_map):
+    def _generate_samples(self, x: np.ndarray, epsilon_map: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate samples around the current image.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
-        :param epsilon_map: Samples drawn from search space
-        :type epsilon_map: `np.ndarray`
-        :return: Two arrays of new input samples to approximate gradient
-        :rtype: `list(np.ndarray)`
+        :param epsilon_map: Samples drawn from search space.
+        :return: Two arrays of new input samples to approximate gradient.
         """
-        minus = clip_and_round(np.repeat(x, self.num_basis, axis=0) - epsilon_map, self.clip_values, self.round_samples)
-        plus = clip_and_round(np.repeat(x, self.num_basis, axis=0) + epsilon_map, self.clip_values, self.round_samples)
+        minus = clip_and_round(
+            np.repeat(x, self.num_basis, axis=0) - epsilon_map, self.clip_values, self.round_samples,
+        )
+        plus = clip_and_round(np.repeat(x, self.num_basis, axis=0) + epsilon_map, self.clip_values, self.round_samples,)
         return minus, plus
 
-    def class_gradient(self, x, label=None, **kwargs):
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
         :param x: Input with shape as expected by the classifier's model.
-        :type x: `np.ndarray`
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
-        :type label: `int` or `list`
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
-        :rtype: `np.ndarray`
         """
         raise NotImplementedError
 
-    def loss_gradient(self, x, y, **kwargs):
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
-        :type x: `np.ndarray`
         :param y: Correct labels, one-vs-rest encoding.
-        :type y: `np.ndarray`
         :return: Array of gradients of the same shape as `x`.
-        :rtype: `np.ndarray`
         """
         epsilon_map = self.sigma * np.random.normal(size=([self.num_basis] + list(self.input_shape)))
         grads = []
@@ -155,38 +145,43 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients,
         grads = self._apply_preprocessing_normalization_gradient(np.array(grads))
         return grads
 
-    def _wrap_predict(self, x, batch_size=128):
+    def _wrap_predict(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:
         """
         Perform prediction for a batch of inputs. Rounds results first.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         return self._predict(clip_and_round(x, self.clip_values, self.round_samples), **{"batch_size": batch_size})
 
-    def nb_classes(self):
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int) -> np.ndarray:
         """
-        Return the number of output classes.
+        Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
+        `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
+        calling `layer_names`.
 
-        :return: Number of classes in the data.
-        :rtype: `int`
+        :param x: Input for computing the activations.
+        :param layer: Layer for computing the activations.
+        :param batch_size: Size of batches.
+        :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        # pylint: disable=W0212
-        return self.classifier.nb_classes()
+        raise NotImplementedError
 
-    def save(self, filename, path=None):
+    def set_learning_phase(self, train: bool) -> None:
+        """
+        Set the learning phase for the backend framework.
+
+        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
+        """
+        raise NotImplementedError
+
+    def save(self, filename: str, path: Optional[str] = None) -> None:
         """
         Save a model to file specific to the backend framework.
 
         :param filename: Name of the file where to save the model.
-        :type filename: `str`
         :param path: Path of the directory where to save the model. If no path is specified, the model will be stored in
                      the default data location of ART at `ART_DATA_PATH`.
-        :type path: `str`
-        :return: None
         """
         raise NotImplementedError

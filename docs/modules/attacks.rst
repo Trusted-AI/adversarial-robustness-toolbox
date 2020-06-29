@@ -14,6 +14,7 @@ Base Class Evasion Attacks
 
 Base Class Poisoning Attacks
 ----------------------------
+.. autoclass:: PoisoningAttack
 .. autoclass:: PoisoningAttackBlackBox
 .. autoclass:: PoisoningAttackWhiteBox
    :members:
@@ -21,4 +22,10 @@ Base Class Poisoning Attacks
 Base Class Extraction Attacks
 -----------------------------
 .. autoclass:: ExtractionAttack
+   :members:
+
+Base Class Inference Attacks
+----------------------------
+.. autoclass:: InferenceAttack
+.. autoclass:: AttributeInferenceAttack
    :members:

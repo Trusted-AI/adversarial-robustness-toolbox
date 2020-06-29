@@ -8,10 +8,10 @@ from keras.models import Model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.regularizers import l2
 
-from art.attacks import ProjectedGradientDescent
-from art.classifiers import KerasClassifier
+from art.attacks.evasion import ProjectedGradientDescent
+from art.estimators.classification import KerasClassifier
 from art.data_generators import KerasDataGenerator
-from art.defences import AdversarialTrainer
+from art.defences.trainer import AdversarialTrainer
 from art.utils import load_cifar10
 
 

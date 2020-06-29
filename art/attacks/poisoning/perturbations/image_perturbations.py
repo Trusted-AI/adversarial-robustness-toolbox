@@ -1,24 +1,38 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 """
-Adversarial perturbations designed to work for images
+Adversarial perturbations designed to work for images.
 """
 import numpy as np
+from typing import Optional, Tuple
 
 from PIL import Image
 
 
-def add_single_bd(x, distance=2, pixel_value=1):
+def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
     """
     Augments a matrix by setting value some `distance` away from the bottom-right edge to 1. Works for single images
     or a batch of images.
-    :param x: N X W X H matrix or W X H matrix
-    :type x: `np.ndarray`
-    :param distance: distance from bottom-right walls. defaults to 2
-    :type distance: `int`
 
-    :param pixel_value: Value used to replace the entries of the image matrix
-    :type pixel_value: `int`
-    :return: backdoored image
-    :rtype: `np.ndarray`
+    :param x: N X W X H matrix or W X H matrix
+    :param distance: Distance from bottom-right walls.
+    :param pixel_value: Value used to replace the entries of the image matrix.
+    :return: Backdoored image.
     """
     x = np.array(x)
     shape = x.shape
@@ -33,18 +47,15 @@ def add_single_bd(x, distance=2, pixel_value=1):
     return x
 
 
-def add_pattern_bd(x, distance=2, pixel_value=1):
+def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
     """
     Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
-    :param x: N X W X H matrix or W X H matrix. will apply to last 2
-    :type x: `np.ndarray`
-    :param distance: distance from bottom-right walls. defaults to 2
-    :type distance: `int`
-    :param pixel_value: Value used to replace the entries of the image matrix
-    :type pixel_value: `int`
-    :return: backdoored image
-    :rtype: np.ndarray
+
+    :param x: N X W X H matrix or W X H matrix. will apply to last 2.
+    :param distance: Distance from bottom-right walls.
+    :param pixel_value: Value used to replace the entries of the image matrix.
+    :return: Backdoored image.
     """
     x = np.array(x)
     shape = x.shape
@@ -65,27 +76,28 @@ def add_pattern_bd(x, distance=2, pixel_value=1):
     return x
 
 
-def insert_image(x, backdoor_path="data/backdoors/post_it.png", random=True, x_shift=0, y_shift=0, size=None, mode="L"):
+def insert_image(
+    x: np.ndarray,
+    backdoor_path: str = "utils/data/backdoors/post_it.png",
+    random: bool = True,
+    x_shift: int = 0,
+    y_shift: int = 0,
+    size: Optional[Tuple[int, int]] = None,
+    mode: str = "L",
+) -> np.ndarray:
     """
     Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
-    :param x: N X W X H matrix or W X H matrix
-    :type x: `np.ndarray`
-    :param backdoor_path: the path to the image to insert as a backdoor
-    :type backdoor_path: `str`
-    :param random: whether or not the image should be randomly placed somewhere on the image
-    :type random: `bool`
-    :param x_shift: number of pixels from the left to shift the backdoor (when not using random placement)
-    :type x_shift: `int`
-    :param y_shift: number of pixels from the right to shift the backdoor (when not using random placement)
-    :type y_shift: `int`
-    :param size: the size the backdoor image should be (width, height). Default None if no resizing necessary
-    :type size: (int, int)
-    :param mode: the mode the image should be read in. See PIL documentation
-                 (https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes)
-    :type mode: str
-    :return: backdoored image
-    :rtype: np.ndarray
+
+    :param x: N X W X H matrix or W X H matrix.
+    :param backdoor_path: The path to the image to insert as a backdoor.
+    :param random: Whether or not the image should be randomly placed somewhere on the image.
+    :param x_shift: Number of pixels from the left to shift the backdoor (when not using random placement).
+    :param y_shift: Number of pixels from the right to shift the backdoor (when not using random placement).
+    :param size: The size the backdoor image should be (width, height). Default `None` if no resizing necessary.
+    :param mode: The mode the image should be read in. See PIL documentation
+                 (https://pillow.readthedocs.io/en/stable/handbook/concepts.html#concept-modes).
+    :return: Backdoored image.
     """
     if len(x.shape) == 3:
         return np.array([insert_image(single_img, backdoor_path, random, x_shift, y_shift, size) for single_img in x])

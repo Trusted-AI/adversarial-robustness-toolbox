@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -34,60 +34,44 @@ class Rounded(Postprocessor):
 
     params = ["decimals"]
 
-    def __init__(self, decimals=3, apply_fit=False, apply_predict=True):
+    def __init__(self, decimals: int = 3, apply_fit: bool = False, apply_predict: bool = True) -> None:
         """
         Create a Rounded postprocessor.
 
         :param decimals: Number of decimal places after the decimal point.
-        :type decimals: `int`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         super(Rounded, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(decimals=decimals)
+        self.decimals = decimals
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, preds):
+    def __call__(self, preds: np.ndarray) -> np.ndarray:
         """
         Perform model postprocessing and return postprocessed output.
 
         :param preds: model output to be postprocessed.
-        :type preds: `np.ndarray`
         :return: Postprocessed model output.
-        :rtype: `np.ndarray`
         """
         return np.around(preds, decimals=self.decimals)
 
-    def fit(self, preds, **kwargs):
+    def fit(self, preds: np.ndarray, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and apply checks before saving them as attributes.
-
-        :param decimals: Number of decimal places after the decimal point.
-        :type decimals: `int`
-        :return: `True` when parsing was successful
-        """
-        # Save defence-specific parameters
-        super(Rounded, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.decimals, (int, np.int)) or self.decimals <= 0:
             raise ValueError("Number of decimal places must be a positive integer.")
-
-        return True

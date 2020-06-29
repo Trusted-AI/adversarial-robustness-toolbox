@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -28,10 +28,13 @@ import tensorflow as tf
 tf.compat.v1.disable_eager_execution()
 from tensorflow.keras.models import load_model
 
-from art.attacks import FunctionallyEquivalentExtraction
-from art.classifiers import KerasClassifier
+from art.attacks.extraction.functionally_equivalent_extraction import FunctionallyEquivalentExtraction
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.utils import TestBase, master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +58,13 @@ class TestFastGradientMethodImages(TestBase):
 
         model = load_model(
             join(
-                join(join(dirname(dirname(dirname(__file__))), "data"), "test_models"),
-                "model_test_functionally_equivalent_extraction.h5",
+                *[
+                    dirname(dirname(dirname(__file__))),
+                    "utils",
+                    "data",
+                    "test_models",
+                    "model_test_functionally_equivalent_extraction.h5",
+                ]
             )
         )
 
@@ -918,6 +926,11 @@ class TestFastGradientMethodImages(TestBase):
             ]
         )
         np.testing.assert_array_almost_equal(self.fee.b_1, layer_1_biases_expected, decimal=4)
+
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(
+            FunctionallyEquivalentExtraction, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin]
+        )
 
 
 if __name__ == "__main__":

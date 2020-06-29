@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -27,6 +27,9 @@ vector of hard labels.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, Tuple
+
+import numpy as np
 
 from art.defences.preprocessor.preprocessor import Preprocessor
 
@@ -48,42 +51,40 @@ class LabelSmoothing(Preprocessor):
 
     params = ["max_value"]
 
-    def __init__(self, max_value=0.9, apply_fit=True, apply_predict=False):
+    def __init__(self, max_value: float = 0.9, apply_fit: bool = True, apply_predict: bool = False,) -> None:
         """
         Create an instance of label smoothing.
 
         :param max_value: Value to affect to correct label
-        :type max_value: `float`
         :param apply_fit: True if applied during fitting/training.
-        :type apply_fit: `bool`
         :param apply_predict: True if applied during predicting.
-        :type apply_predict: `bool`
         """
         super(LabelSmoothing, self).__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.set_params(max_value=max_value)
+        self.max_value = max_value
+        self._check_params()
 
     @property
-    def apply_fit(self):
+    def apply_fit(self) -> bool:
         return self._apply_fit
 
     @property
-    def apply_predict(self):
+    def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def __call__(self, x, y=None):
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply label smoothing.
 
-        :param x: Input data, will not be modified by this method
-        :type x: `np.ndarray`
-        :param y: Original vector of label probabilities (one-vs-rest)
-        :type y: `np.ndarray`
-        :return: Unmodified input data and the vector of smooth probabilities as correct labels
-        :rtype: `(np.ndarray, np.ndarray)`
+        :param x: Input data, will not be modified by this method.
+        :param y: Original vector of label probabilities (one-vs-rest).
+        :return: Unmodified input data and the vector of smooth probabilities as correct labels.
+        :raises `ValueError`: If no labels are provided.
         """
+        if y is None:
+            raise ValueError("Labels `y` cannot be None.")
 
         min_value = (1 - self.max_value) / (y.shape[1] - 1)
         assert self.max_value >= min_value
@@ -93,27 +94,15 @@ class LabelSmoothing(Preprocessor):
         smooth_y[smooth_y == 0.0] = min_value
         return x, smooth_y
 
-    def estimate_gradient(self, x, grad):
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
 
-    def fit(self, x, y=None, **kwargs):
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
         """
         pass
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies defence-specific checks before saving them as attributes.
-
-        Defense-specific parameters:
-        :param max_value: Value to affect to correct label
-        :type max_value: `float`
-        """
-        # Save defence-specific parameters
-        super(LabelSmoothing, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if self.max_value <= 0 or self.max_value > 1:
             raise ValueError("The maximum value for correct labels must be between 0 and 1.")
-
-        return True

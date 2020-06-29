@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -24,15 +24,21 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+from typing import Optional, Union
 
 import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
+from tqdm import trange
 
-from art.classifiers.classifier import ClassifierNeuralNetwork, ClassifierGradients
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.classification.classifier import (
+    ClassifierMixin,
+    ClassifierNeuralNetwork,
+    ClassifierGradients,
+)
 from art.utils import check_and_transform_label_format
-from art.exceptions import ClassifierError
 
 logger = logging.getLogger(__name__)
 
@@ -53,62 +59,60 @@ class AdversarialPatchNumpy(EvasionAttack):
         "batch_size",
     ]
 
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
+
     def __init__(
         self,
-        classifier,
-        rotation_max=22.5,
-        scale_min=0.1,
-        scale_max=1.0,
-        learning_rate=5.0,
-        max_iter=500,
-        batch_size=16,
-    ):
+        classifier: Union[ClassifierNeuralNetwork, ClassifierGradients],
+        target: int = 0,
+        rotation_max: float = 22.5,
+        scale_min: float = 0.1,
+        scale_max: float = 1.0,
+        learning_rate: float = 5.0,
+        max_iter: int = 500,
+        clip_patch: Union[list, tuple, None] = None,
+        batch_size: int = 16,
+    ) -> None:
         """
         Create an instance of the :class:`.AdversarialPatchNumpy`.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
+        :param target: The target label for the created patch.
         :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
                range `[0, 180]`.
-        :type rotation_max: `float`
         :param scale_min: The minimum scaling applied to random patches. The value should be in the range `[0, 1]`,
                but less than `scale_max`.
-        :type scale_min: `float`
         :param scale_max: The maximum scaling applied to random patches. The value should be in the range `[0, 1]`, but
                larger than `scale_min.`
-        :type scale_max: `float`
         :param learning_rate: The learning rate of the optimization.
-        :type learning_rate: `float`
         :param max_iter: The number of optimization steps.
-        :type max_iter: `int`
+        :param clip_patch: The minimum and maximum values for each channel in the form
+               [(float, float), (float, float), (float, float)].
         :param batch_size: The size of the training batch.
-        :type batch_size: `int`
         """
-        super(AdversarialPatchNumpy, self).__init__(classifier=classifier)
-        if not isinstance(classifier, ClassifierNeuralNetwork) or not isinstance(classifier, ClassifierGradients):
-            raise ClassifierError(self.__class__, [ClassifierNeuralNetwork, ClassifierGradients], classifier)
+        super(AdversarialPatchNumpy, self).__init__(estimator=classifier)
 
-        kwargs = {
-            "rotation_max": rotation_max,
-            "scale_min": scale_min,
-            "scale_max": scale_max,
-            "learning_rate": learning_rate,
-            "max_iter": max_iter,
-            "batch_size": batch_size,
-        }
-        self.set_params(**kwargs)
-        self.patch = None
+        self.target = target
+        self.rotation_max = rotation_max
+        self.scale_min = scale_min
+        self.scale_max = scale_max
+        self.learning_rate = learning_rate
+        self.max_iter = max_iter
+        self.batch_size = batch_size
+        self.clip_patch = clip_patch
+        mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
+            0
+        ]
+        self.patch = np.ones(shape=self.estimator.input_shape).astype(np.float32) * mean_value
+        self._check_params()
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs. `x` is expected to have spatial dimensions.
-        :type x: `np.ndarray`
         :param y: An array with the original labels to be predicted.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial patch.
-        :rtype: `np.ndarray`
         """
         logger.info("Creating adversarial patch.")
 
@@ -118,17 +122,9 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "dimensions."
             )
 
-        mean_value = (
-            self.classifier.clip_values[1] - self.classifier.clip_values[0]
-        ) / 2.0 + self.classifier.clip_values[0]
-        self.patch = np.ones(shape=self.classifier.input_shape).astype(np.float32) * mean_value
+        y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
-        y_target = check_and_transform_label_format(labels=y)
-
-        for i_step in range(self.max_iter):
-            if i_step == 0 or (i_step + 1) % 100 == 0:
-                logger.info("Training Step: %i", i_step + 1)
-
+        for _ in trange(self.max_iter, desc="Adversarial patch"):
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
 
             num_batches = int(x.shape[0] / self.batch_size)
@@ -138,63 +134,36 @@ class AdversarialPatchNumpy(EvasionAttack):
                 i_batch_start = i_batch * self.batch_size
                 i_batch_end = (i_batch + 1) * self.batch_size
 
-                gradients = self.classifier.loss_gradient(
-                    patched_images[i_batch_start:i_batch_end], y_target[i_batch_start:i_batch_end]
+                gradients = self.estimator.loss_gradient(
+                    patched_images[i_batch_start:i_batch_end], y_target[i_batch_start:i_batch_end],
                 )
 
                 for i_image in range(self.batch_size):
                     patch_gradients_i = self._reverse_transformation(
-                        gradients[i_image, :, :, :], patch_mask_transformed[i_image, :, :, :], transforms[i_image]
+                        gradients[i_image, :, :, :], patch_mask_transformed[i_image, :, :, :], transforms[i_image],
                     )
                     patch_gradients += patch_gradients_i
 
             # patch_gradients = patch_gradients / (num_batches * self.batch_size)
             self.patch -= patch_gradients * self.learning_rate
-            self.patch = np.clip(self.patch, a_min=self.classifier.clip_values[0], a_max=self.classifier.clip_values[1])
+            self.patch = np.clip(self.patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],)
 
         return self.patch, self._get_circular_patch_mask()
 
-    def apply_patch(self, x, scale, patch_external=None):
+    def apply_patch(self, x: np.ndarray, scale: float, patch_external: np.ndarray = None) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images.
 
         :param x: Instances to apply randomly transformed patch.
-        :type x: `np.ndarray`
         :param scale: Scale of the applied patch in relation to the classifier input shape.
-        :type scale: `float`
         :param patch_external: External patch to apply to images `x`.
-        :type patch_external: `np.ndarray`
         :return: The patched instances.
-        :rtype: `np.ndarray`
         """
         patch = patch_external if patch_external is not None else self.patch
         patched_x, _, _ = self._augment_images_with_random_patch(x, patch, scale)
         return patched_x
 
-    def set_params(self, **kwargs):
-        """
-        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
-
-        :param target: The target label.
-        :type target: `int`
-        :param rotation_max: The maximum rotation applied to random patches. The value is expected to be in the
-               range `[0, 180]`.
-        :type rotation_max: `float`
-        :param scale_min: The minimum scaling applied to random patches. The value should be in the range `[0, 1]`,
-               but less than `scale_max`.
-        :type scale_min: `float`
-        :param scale_max: The maximum scaling applied to random patches. The value should be in the range `[0, 1]`,
-               but greater than `scale_min`.
-        :type scale_max: `float`
-        :param learning_rate: The learning rate of the optimization.
-        :type learning_rate: `float`
-        :param max_iter: The number of optimization steps.
-        :type max_iter: `int`
-        :param batch_size: The size of the training batch.
-        :type batch_size: `int`
-        """
-        super(AdversarialPatchNumpy, self).set_params(**kwargs)
-
+    def _check_params(self) -> None:
         if not isinstance(self.rotation_max, (float, int)):
             raise ValueError("The maximum rotation of the random patches must be of type float.")
         if self.rotation_max < 0 or self.rotation_max > 180.0:
@@ -227,13 +196,11 @@ class AdversarialPatchNumpy(EvasionAttack):
         if not self.batch_size > 0:
             raise ValueError("The batch size must be greater than 0.")
 
-        return True
-
-    def _get_circular_patch_mask(self, sharpness=40):
+    def _get_circular_patch_mask(self, sharpness: int = 40) -> np.ndarray:
         """
         Return a circular patch mask
         """
-        diameter = self.classifier.input_shape[1]
+        diameter = self.estimator.input_shape[1]
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
         x_grid, y_grid = np.meshgrid(x, y, sparse=True)
@@ -241,13 +208,14 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         mask = 1 - np.clip(z_grid, -1, 1)
 
-        pad_1 = int((self.classifier.input_shape[1] - mask.shape[1]) / 2)
-        pad_2 = int(self.classifier.input_shape[1] - pad_1 - mask.shape[1])
+        pad_1 = int((self.estimator.input_shape[1] - mask.shape[1]) / 2)
+        pad_2 = int(self.estimator.input_shape[1] - pad_1 - mask.shape[1])
         mask = np.pad(mask, pad_width=(pad_1, pad_2), mode="constant", constant_values=(0, 0))
 
-        axis = self.classifier.channel_index - 1
+        channel_index = 1 if self.estimator.channels_first else 3
+        axis = channel_index - 1
         mask = np.expand_dims(mask, axis=axis)
-        mask = np.broadcast_to(mask, self.classifier.input_shape).astype(np.float32)
+        mask = np.broadcast_to(mask, self.estimator.input_shape).astype(np.float32)
         return mask
 
     def _augment_images_with_random_patch(self, images, patch, scale=None):
@@ -259,7 +227,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         patch_mask_transformed_list = list()
 
         for i_image in range(images.shape[0]):
-            patch_transformed, patch_mask_transformed, transformation = self._random_transformation(patch, scale)
+            (patch_transformed, patch_mask_transformed, transformation,) = self._random_transformation(patch, scale)
 
             inverted_patch_mask_transformed = 1 - patch_mask_transformed
 
@@ -280,37 +248,37 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _rotate(self, x, angle):
         axes = None
-        if self.classifier.channel_index == 3:
+        if not self.estimator.channels_first:
             axes = (0, 1)
-        elif self.classifier.channel_index == 1:
+        elif self.estimator.channels_first:
             axes = (1, 2)
         return rotate(x, angle=angle, reshape=False, axes=axes, order=1)
 
     def _scale(self, x, scale, shape):
         zooms = None
-        if self.classifier.channel_index == 3:
+        if not self.estimator.channels_first:
             zooms = (scale, scale, 1.0)
-        elif self.classifier.channel_index == 1:
+        elif self.estimator.channels_first:
             zooms = (1.0, scale, scale)
         x = zoom(x, zoom=zooms, order=1)
 
-        if x.shape[1] <= self.classifier.input_shape[1]:
+        if x.shape[1] <= self.estimator.input_shape[1]:
             pad_1 = int((shape - x.shape[1]) / 2)
             pad_2 = int(shape - pad_1 - x.shape[1])
-            if self.classifier.channel_index == 3:
+            if not self.estimator.channels_first:
                 pad_width = ((pad_1, pad_2), (pad_1, pad_2), (0, 0))
-            elif self.classifier.channel_index == 1:
+            elif self.estimator.channels_first:
                 pad_width = ((0, 0), (pad_1, pad_2), (pad_1, pad_2))
             else:
                 pad_width = None
             x = np.pad(x, pad_width=pad_width, mode="constant", constant_values=(0, 0))
         else:
             center = int(x.shape[1] / 2)
-            patch_hw_1 = int(self.classifier.input_shape[1] / 2)
-            patch_hw_2 = self.classifier.input_shape[1] - patch_hw_1
-            if self.classifier.channel_index == 3:
+            patch_hw_1 = int(self.estimator.input_shape[1] / 2)
+            patch_hw_2 = self.estimator.input_shape[1] - patch_hw_1
+            if not self.estimator.channels_first:
                 x = x[center - patch_hw_1 : center + patch_hw_2, center - patch_hw_1 : center + patch_hw_2, :]
-            elif self.classifier.channel_index == 1:
+            elif self.estimator.channels_first:
                 x = x[:, center - patch_hw_1 : center + patch_hw_2, center - patch_hw_1 : center + patch_hw_2]
             else:
                 x = None
@@ -319,17 +287,15 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _shift(self, x, shift_1, shift_2):
         shift_xy = None
-        if self.classifier.channel_index == 3:
+        if not self.estimator.channels_first:
             shift_xy = (shift_1, shift_2, 0)
-        elif self.classifier.channel_index == 1:
+        elif self.estimator.channels_first:
             shift_xy = (0, shift_1, shift_2)
         x = shift(x, shift=shift_xy, order=1)
         return x, shift_1, shift_2
 
     def _random_transformation(self, patch, scale):
-
         patch_mask = self._get_circular_patch_mask()
-
         transformation = dict()
         shape = patch_mask.shape[1]
 
@@ -347,7 +313,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         transformation["scale"] = scale
 
         # shift
-        shift_max = (self.classifier.input_shape[1] * (1.0 - scale)) / 2.0
+        shift_max = (self.estimator.input_shape[1] * (1.0 - scale)) / 2.0
         if shift_max > 0:
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)
@@ -360,7 +326,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         return patch, patch_mask, transformation
 
-    def _reverse_transformation(self, gradients, patch_mask_transformed, transformation):
+    def _reverse_transformation(self, gradients: np.ndarray, patch_mask_transformed, transformation) -> np.ndarray:
         shape = gradients.shape[1]
         gradients = gradients * patch_mask_transformed
 

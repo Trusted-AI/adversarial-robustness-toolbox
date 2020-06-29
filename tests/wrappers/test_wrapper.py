@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -63,7 +63,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         preds = classifier.predict(self.mnist[1][0])
         self.assertEqual(preds.shape, y_test.shape)
 
-        self.assertEqual(classifier.nb_classes(), 10)
+        self.assertEqual(classifier.nb_classes, 10)
 
         class_grads = classifier.class_gradient(x_test[:11])
         self.assertEqual(class_grads.shape, tuple([11, 10] + list(x_test[1].shape)))

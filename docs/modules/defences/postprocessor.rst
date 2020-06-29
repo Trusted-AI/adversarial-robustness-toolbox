@@ -2,8 +2,8 @@
 =================================
 .. automodule:: art.defences.postprocessor
 
-Postprocessor
--------------
+Base Class Postprocessor
+------------------------
 .. autoclass:: Postprocessor
    :members:
    :special-members:

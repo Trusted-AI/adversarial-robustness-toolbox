@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2020
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import AdversarialTrainerMadryPGD
+from art.defences.trainer.adversarial_trainer_madry_pgd import AdversarialTrainerMadryPGD
 from art.utils import load_mnist
 
 from tests.utils import master_seed, get_image_classifier_tf
@@ -43,7 +43,12 @@ class TestAdversarialTrainerMadryPGD(unittest.TestCase):
     def setUpClass(cls):
         # MNIST
         (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
-        x_train, y_train, x_test, y_test = x_train[:NB_TRAIN], y_train[:NB_TRAIN], x_test[:NB_TEST], y_test[:NB_TEST]
+        x_train, y_train, x_test, y_test = (
+            x_train[:NB_TRAIN],
+            y_train[:NB_TRAIN],
+            x_test[:NB_TEST],
+            y_test[:NB_TEST],
+        )
         cls.mnist = ((x_train, y_train), (x_test, y_test))
 
         cls.classifier, _ = get_image_classifier_tf()
@@ -58,7 +63,7 @@ class TestAdversarialTrainerMadryPGD(unittest.TestCase):
         adv_trainer = AdversarialTrainerMadryPGD(self.classifier, nb_epochs=1, batch_size=128)
         adv_trainer.fit(x_train, y_train)
 
-        predictions_new = np.argmax(adv_trainer.trainer.classifier.predict(x_test), axis=1)
+        predictions_new = np.argmax(adv_trainer.trainer.get_classifier().predict(x_test), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
         self.assertEqual(accuracy_new, 0.38)

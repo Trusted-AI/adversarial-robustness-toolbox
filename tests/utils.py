@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -20,16 +20,18 @@ Module providing convenience functions specifically for unit tests.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
-import logging
 import json
-import time
+import logging
+import os
 import pickle
+import time
 import unittest
 
 import numpy as np
 
 from art.utils import load_dataset
+from art.estimators.encoding.tensorflow import TensorFlowEncoder
+from art.estimators.generation.tensorflow import TensorFlowGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +162,9 @@ def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
         def _tf_initializer(_, dtype, partition_info):
             import tensorflow as tf
 
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", filename))
+            weights = np.load(
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
+            )
             return tf.constant(weights, dtype)
 
     elif tf_version == 2:
@@ -168,7 +172,9 @@ def _tf_weights_loader(dataset, weights_type, layer="DENSE", tf_version=1):
         def _tf_initializer(_, dtype):
             import tensorflow as tf
 
-            weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", filename))
+            weights = np.load(
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename)
+            )
             return tf.constant(weights, dtype)
 
     else:
@@ -183,7 +189,7 @@ def _kr_weights_loader(dataset, weights_type, layer="DENSE"):
     filename = str(weights_type) + "_" + str(layer) + "_" + str(dataset) + ".npy"
 
     def _kr_initializer(_, dtype=None):
-        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", filename))
+        weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename))
         return k.variable(value=weights, dtype=dtype)
 
     return _kr_initializer
@@ -191,7 +197,7 @@ def _kr_weights_loader(dataset, weights_type, layer="DENSE"):
 
 def _kr_tf_weights_loader(dataset, weights_type, layer="DENSE"):
     filename = str(weights_type) + "_" + str(layer) + "_" + str(dataset) + ".npy"
-    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", filename))
+    weights = np.load(os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", filename))
     return weights
 
 
@@ -227,12 +233,12 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     # pylint: disable=E0401
     import tensorflow as tf
 
-    tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
     if tf.__version__[0] == "2":
+        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
         import tensorflow.compat.v1 as tf
 
         tf.disable_eager_execution()
-    from art.classifiers import TensorFlowClassifier
+    from art.estimators.classification.tensorflow import TensorFlowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
@@ -323,68 +329,57 @@ def get_image_classifier_tf_v2(from_logits=False):
     # pylint: disable=E0401
     import tensorflow as tf
     from tensorflow.keras import Model
+    from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPool2D
-    from art.classifiers import TensorFlowV2Classifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
     if tf.__version__[0] != "2":
         raise ImportError("This function requires TensorFlow v2.")
 
-    class TensorFlowModel(Model):
-        """
-        Standard TensorFlow model for unit testing.
-        """
-
-        def __init__(self):
-            super(TensorFlowModel, self).__init__()
-            self.conv1 = Conv2D(
-                filters=1,
-                kernel_size=7,
-                activation="relu",
-                kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
-                bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
-            )
-            self.maxpool = MaxPool2D(pool_size=(4, 4), strides=(4, 4), padding="valid", data_format=None)
-            self.flatten = Flatten()
-            self.dense1 = Dense(
-                10,
-                activation="softmax",
-                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-            )
-            self.logits = Dense(
-                10,
-                activation="linear",
-                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
-                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
-            )
-
-        def call(self, x):
-            """
-            Call function to evaluate the model.
-
-            :param x: Input to the model
-            :return: Prediction of the model
-            """
-            x = self.conv1(x)
-            x = self.maxpool(x)
-            x = self.flatten(x)
-            if from_logits:
-                x = self.logits(x)
-            else:
-                x = self.dense1(x)
-            return x
-
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-    def train_step(images, labels):
+    def train_step(model, images, labels):
         with tf.GradientTape() as tape:
             predictions = model(images, training=True)
             loss = loss_object(labels, predictions)
         gradients = tape.gradient(loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
-    model = TensorFlowModel()
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy()
+    model = Sequential()
+    model.add(
+        Conv2D(
+            filters=1,
+            kernel_size=7,
+            activation="relu",
+            kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
+            bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
+            input_shape=(28, 28, 1),
+        )
+    )
+    model.add(MaxPool2D(pool_size=(4, 4), strides=(4, 4), padding="valid", data_format=None))
+    model.add(Flatten())
+    if from_logits:
+        model.add(
+            Dense(
+                10,
+                activation="linear",
+                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+            )
+        )
+    else:
+        model.add(
+            Dense(
+                10,
+                activation="softmax",
+                kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+            )
+        )
+
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits)
+
+    model.compile(optimizer=optimizer, loss=loss_object)
 
     # Create the classifier
     tfc = TensorFlowV2Classifier(
@@ -423,7 +418,7 @@ def get_image_classifier_kr(
     from keras.models import Sequential
     from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-    from art.classifiers import KerasClassifier
+    from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -580,7 +575,7 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-    from art.classifiers import KerasClassifier
+    from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -731,7 +726,7 @@ def get_image_classifier_kr_tf_binary():
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
-    from art.classifiers import KerasClassifier
+    from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -755,6 +750,35 @@ def get_image_classifier_kr_tf_binary():
     return krc
 
 
+def get_image_classifier_kr_tf_with_wildcard():
+    """
+    Standard Tensorflow-Keras binary classifier for unit testing
+
+    :return: KerasClassifier
+    """
+    # pylint: disable=E0401
+    import tensorflow as tf
+
+    if tf.__version__[0] == "2":
+        tf.compat.v1.disable_eager_execution()
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import Dense, Conv1D, LSTM
+
+    from art.estimators.classification.keras import KerasClassifier
+
+    # Create simple CNN
+    model = Sequential()
+    model.add(Conv1D(1, 3, activation="relu", input_shape=(None, 1)))
+    model.add(LSTM(4))
+    model.add(Dense(2, activation="softmax"))
+    model.compile(loss="binary_crossentropy", optimizer="adam")
+
+    # Get classifier
+    krc = KerasClassifier(model)
+
+    return krc
+
+
 def get_image_classifier_pt(from_logits=False, load_init=True):
     """
     Standard PyTorch classifier for unit testing.
@@ -767,7 +791,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     """
     import torch
 
-    from art.classifiers import PyTorchClassifier
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):
         """
@@ -780,21 +804,30 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
             super(Model, self).__init__()
 
             self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            self.relu = torch.nn.ReLU()
             self.pool = torch.nn.MaxPool2d(4, 4)
             self.fullyconnected = torch.nn.Linear(25, 10)
 
             if load_init:
                 w_conv2d = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "W_CONV2D_MNIST.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy"
+                    )
                 )
                 b_conv2d = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "B_CONV2D_MNIST.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy"
+                    )
                 )
                 w_dense = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "W_DENSE_MNIST.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy"
+                    )
                 )
                 b_dense = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "B_DENSE_MNIST.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy"
+                    )
                 )
 
                 w_conv2d_pt = w_conv2d.reshape((1, 1, 7, 7))
@@ -813,7 +846,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
             :return: Prediction of the model
             """
             x = self.conv(x)
-            x = torch.nn.functional.relu(x)
+            x = self.relu(x)
             x = self.pool(x)
             x = x.reshape(-1, 25)
             x = self.fullyconnected(x)
@@ -842,13 +875,13 @@ def get_classifier_bb(defences=None):
 
     :return: BlackBoxClassifier
     """
-    from art.classifiers import BlackBoxClassifier
+    from art.estimators.classification.blackbox import BlackBoxClassifier
     from art.utils import to_categorical
 
-    # define blackbox classifier
+    # define black-box classifier
     def predict(x):
         with open(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "data/mnist", "api_output.txt")
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)
@@ -857,35 +890,83 @@ def get_classifier_bb(defences=None):
     return bbc
 
 
-def get_classifier_mx():
+def get_image_classifier_mx(from_logits=False, load_init=True):
     """
     Standard MXNet classifier for unit testing
 
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
+    :type from_logits: `bool`
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
     :return: MXNetClassifier
     """
     import mxnet
-    from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
-    from art.classifiers import MXClassifier
+    from mxnet.gluon import nn
+    from art.estimators.classification import MXClassifier
 
-    model = mxnet.gluon.nn.Sequential()
-    with model.name_scope():
-        model.add(
-            Conv2D(channels=1, kernel_size=7, activation="relu"),
-            MaxPool2D(pool_size=4, strides=4),
-            Flatten(),
-            Dense(10),
+    if load_init:
+        w_conv2d = np.load(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy")
         )
-    model.initialize(init=mxnet.init.Xavier())
+        b_conv2d = np.load(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy")
+        )
+        w_dense = np.load(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy")
+        )
+        b_dense = np.load(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy")
+        )
+
+        w_conv2d_mx = w_conv2d.reshape((1, 1, 7, 7))
+
+        alias = mxnet.registry.get_alias_func(mxnet.initializer.Initializer, "initializer")
+
+        @mxnet.init.register
+        @alias("mm_init")
+        class CustomInit(mxnet.init.Initializer):
+            def __init__(self):
+                super(CustomInit, self).__init__()
+                self.params = dict()
+                self.params["conv0_weight"] = w_conv2d_mx
+                self.params["conv0_bias"] = b_conv2d
+                self.params["dense0_weight"] = np.transpose(w_dense)
+                self.params["dense0_bias"] = b_dense
+
+            def _init_weight(self, name, arr):
+                arr[:] = self.params[name]
+
+            def _init_bias(self, name, arr):
+                arr[:] = self.params[name]
+
+    class Model(nn.Block):
+        def __init__(self, **kwargs):
+            super(Model, self).__init__(**kwargs)
+            self.model = nn.Sequential()
+            self.model.add(
+                nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
+                nn.MaxPool2D(pool_size=4, strides=4),
+                nn.Flatten(),
+                nn.Dense(10, activation=None,),
+            )
+
+        def forward(self, x):
+            y = self.model(x)
+            if from_logits:
+                return y
+
+            return y.softmax()
+
+    model = Model()
+
+    if load_init:
+        model.initialize(init=CustomInit())
+    else:
+        model.initialize(init=mxnet.initializer.Xavier())
 
     # Create optimizer
-    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss()
+    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
     trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
-
-    # # Fit classifier
-    # classifier = MXClassifier(model=net, loss=loss, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
-    #                           optimizer=trainer)
-    # classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
-    # cls.classifier = classifier
 
     # Get classifier
     mxc = MXClassifier(
@@ -895,13 +976,38 @@ def get_classifier_mx():
         nb_classes=10,
         optimizer=trainer,
         ctx=None,
-        channel_index=1,
+        channels_first=True,
         clip_values=(0, 1),
-        defences=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
         preprocessing=(0, 1),
     )
 
     return mxc
+
+
+def get_gan_inverse_gan_ft():
+    import tensorflow as tf
+    from utils.resources.create_inverse_gan_models import build_gan_graph, build_inverse_gan_graph
+
+    if tf.__version__[0] == "2":
+        return None, None, None
+    else:
+
+        lr = 0.0002
+        latent_enc_len = 100
+
+        gen_tf, z_ph, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph = build_gan_graph(lr, latent_enc_len)
+
+        enc_tf, image_to_enc_ph, latent_enc_loss, enc_opt = build_inverse_gan_graph(lr, gen_tf, z_ph, latent_enc_len)
+
+        sess = tf.Session()
+        sess.run(tf.global_variables_initializer())
+
+        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess,)
+
+        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess,)
+        return gan, inverse_gan, sess
 
 
 # ------------------------------------------------------------------------------------------------ TEST MODELS FOR IRIS
@@ -945,7 +1051,7 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
         import tensorflow.compat.v1 as tf
 
         tf.disable_eager_execution()
-    from art.classifiers import TensorFlowClassifier
+    from art.estimators.classification.tensorflow import TensorFlowClassifier
 
     # Define input and output placeholders
     input_ph = tf.placeholder(tf.float32, shape=[None, 4])
@@ -999,7 +1105,7 @@ def get_tabular_classifier_tf_v1(load_init=True, sess=None):
         loss=loss,
         learning=None,
         sess=sess,
-        channel_index=1,
+        channels_first=True,
     )
 
     return tfc, sess
@@ -1025,7 +1131,7 @@ def get_tabular_classifier_tf_v2():
     import tensorflow as tf
     from tensorflow.keras import Model
     from tensorflow.keras.layers import Dense
-    from art.classifiers import TensorFlowV2Classifier
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
     if tf.__version__[0] != "2":
         raise ImportError("This function requires TensorFlow v2.")
@@ -1070,7 +1176,7 @@ def get_tabular_classifier_tf_v2():
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
-    def train_step(images, labels):
+    def train_step(model, images, labels):
         with tf.GradientTape() as tape:
             predictions = model(images, training=True)
             loss = loss_object(labels, predictions)
@@ -1103,12 +1209,12 @@ def get_tabular_classifier_scikit_list(clipped=False):
     ]
     if clipped:
         classifier_list = [
-            # os.path.join(os.path.dirname(os.path.dirname(__file__)),'resources/models', 'W_DENSE3_IRIS.npy')
+            # os.path.join(os.path.dirname(os.path.dirname(__file__)),'utils/resources/models', 'W_DENSE3_IRIS.npy')
             pickle.load(
                 open(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)),
-                        "resources/models/scikit/",
+                        "utils/resources/models/scikit/",
                         model_name + "iris_clipped.sav",
                     ),
                     "rb",
@@ -1122,7 +1228,7 @@ def get_tabular_classifier_scikit_list(clipped=False):
                 open(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)),
-                        "resources/models/scikit/",
+                        "utils/resources/models/scikit/",
                         model_name + "iris_unclipped.sav",
                     ),
                     "rb",
@@ -1148,7 +1254,7 @@ def get_tabular_classifier_kr(load_init=True):
     from keras.models import Sequential
     from keras.layers import Dense
 
-    from art.classifiers import KerasClassifier
+    from art.estimators.classification.keras import KerasClassifier
 
     # Create simple CNN
     model = Sequential()
@@ -1187,7 +1293,7 @@ def get_tabular_classifier_kr(load_init=True):
     model.compile(loss="categorical_crossentropy", optimizer=keras.optimizers.Adam(lr=0.001), metrics=["accuracy"])
 
     # Get classifier
-    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channel_index=1)
+    krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
 
     return krc
 
@@ -1203,7 +1309,7 @@ def get_tabular_classifier_pt(load_init=True):
     """
     import torch
 
-    from art.classifiers import PyTorchClassifier
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):
         """
@@ -1221,22 +1327,34 @@ def get_tabular_classifier_pt(load_init=True):
 
             if load_init:
                 w_dense1 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "W_DENSE1_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE1_IRIS.npy"
+                    )
                 )
                 b_dense1 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "B_DENSE1_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE1_IRIS.npy"
+                    )
                 )
                 w_dense2 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "W_DENSE2_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE2_IRIS.npy"
+                    )
                 )
                 b_dense2 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "B_DENSE2_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE2_IRIS.npy"
+                    )
                 )
                 w_dense3 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "W_DENSE3_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE3_IRIS.npy"
+                    )
                 )
                 b_dense3 = np.load(
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), "resources/models", "B_DENSE3_IRIS.npy")
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE3_IRIS.npy"
+                    )
                 )
 
                 self.fully_connected1.weight = torch.nn.Parameter(torch.Tensor(np.transpose(w_dense1)))
@@ -1270,7 +1388,7 @@ def get_tabular_classifier_pt(load_init=True):
         input_shape=(4,),
         nb_classes=3,
         clip_values=(0, 1),
-        channel_index=1,
+        channels_first=True,
     )
 
     return ptc

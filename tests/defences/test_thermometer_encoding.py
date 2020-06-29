@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences import ThermometerEncoding
+from art.defences.preprocessor import ThermometerEncoding
 
 from tests.utils import master_seed
 
@@ -62,37 +62,42 @@ class TestThermometerEncoding(unittest.TestCase):
             [
                 [
                     [
-                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                        [1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+                        [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                     ],
                     [
-                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                        [1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+                        [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                     ],
                 ],
                 [
                     [
-                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                        [1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+                        [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                     ],
                     [
-                        [1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1],
-                        [0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1],
-                        [1, 1, 1, 1, 0, 0, 0, 1, 0, 1, 1, 1],
+                        [1, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1],
+                        [1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0],
+                        [1, 0, 0, 0, 1, 1, 1, 1, 1, 1, 0, 0],
                     ],
                 ],
             ]
         )
         self.assertTrue((x_preproc == true_value).all())
 
+        # Create an instance of ThermometerEncoding
+        th_encoder_scaled = ThermometerEncoding(clip_values=(-10, 10), num_space=4)
+        x_preproc_scaled, _ = th_encoder_scaled(20 * x - 10)
+        self.assertTrue((x_preproc_scaled == true_value).all())
+
     def test_channel_first(self):
         x = np.random.rand(5, 2, 28, 28)
         x_copy = x.copy()
         num_space = 5
-        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channel_index=1)
+        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channels_first=True)
         x_encoded, _ = encoder(x)
         self.assertTrue((x == x_copy).all())
         self.assertEqual(x_encoded.shape, (5, 10, 28, 28))
@@ -103,13 +108,13 @@ class TestThermometerEncoding(unittest.TestCase):
         x = np.random.rand(5, 28, 28, 1)
         grad = np.ones((5, 28, 28, num_space))
         estimated_grads = encoder.estimate_gradient(grad=grad, x=x)
-        self.assertTrue(np.isin(estimated_grads, [0, 1]).all())
+        self.assertEqual(estimated_grads.shape, x.shape)
 
     def test_feature_vectors(self):
         x = np.random.rand(10, 4)
         x_original = x.copy()
         num_space = 5
-        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channel_index=1)
+        encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channels_first=True)
         x_encoded, _ = encoder(x)
         self.assertEqual(x_encoded.shape, (10, 20))
         # Check that x has not been modified by attack and classifier
