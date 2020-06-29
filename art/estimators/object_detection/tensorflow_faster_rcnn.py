@@ -413,11 +413,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Check if batch processing is appropriately set
         if self._images.shape[0].value is not None:
-            if x.shape[0] % self.shape[0].value != 0:
+            if x.shape[0] % self._images.shape[0].value != 0:
                 raise ValueError("Number of prediction samples must be a multiple of input size.")
 
             logging.warning("Reset batch size to input size.")
-            batch_size = self.shape[0].value
+            batch_size = self._images.shape[0].value
 
         # Run prediction with batch processing
         num_samples = x.shape[0]
