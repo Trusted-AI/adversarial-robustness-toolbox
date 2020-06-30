@@ -54,9 +54,10 @@ class TestTensorFlowFasterRCNN(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0: cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0: cls.n_test]
 
-        # Define object detector
+        # Only import if object detection module is available
         from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 
+        # Define object detector
         images = tf.placeholder(tf.float32, shape=[2, 28, 28, 1])
         cls.obj_dec = TensorFlowFasterRCNN(images=images)
 
