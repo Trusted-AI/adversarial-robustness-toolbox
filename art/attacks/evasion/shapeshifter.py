@@ -190,12 +190,13 @@ class ShapeShifter(EvasionAttack):
         # Check validity of attack attributes
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[Dict[str, List["Tensor"]]] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: Sample image/texture.
-        :param y: A dictionary of target labels for object detector. The fields of the dictionary are as follows:
+        :param y: Not used.
+        :param label: A dictionary of target labels for object detector. The fields of the dictionary are as follows:
 
                     - `groundtruth_boxes_list`: A list of `nb_samples` size of 2-D tf.float32 tensors of shape
                                                 [num_boxes, 4] containing coordinates of the groundtruth boxes.
@@ -208,6 +209,7 @@ class ShapeShifter(EvasionAttack):
                                                   assumed to map to the first non-background class.
                     - `groundtruth_weights_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
                                                   [num_boxes] containing weights for groundtruth boxes.
+        :type label: Dict[str, List[np.ndarray]]
         :param mask: Input mask.
         :type mask: `np.ndarray`.
         :param target_class: Target class.
@@ -225,9 +227,10 @@ class ShapeShifter(EvasionAttack):
         assert x.shape[0] == 1, "The ShapeShifter attack can only be applied to one image."
         assert list(x.shape[1:]) == self.estimator.input_shape
 
-        # Check if y is None
-        if y is None and not self.texture_as_input:
-            raise ValueError("Need the target labels `y` for image as input.")
+        # Check if label is provided
+        label = kwargs.get("label")
+        if label is None and not self.texture_as_input:
+            raise ValueError("Need the target labels for image as input.")
 
         # Check whether users have a custom loss
         custom_loss = kwargs.get("custom_loss")
@@ -273,11 +276,30 @@ class ShapeShifter(EvasionAttack):
         else:
             mask = None
 
+        # Get victim class
+        victim_class = kwargs.get("victim_class")
+        if victim_class is None:
+            raise ValueError('Need to provide a victim class.')
+
+        if not isinstance(victim_class, int):
+            raise TypeError('Victim class must be of type `int`.')
+
+        # Get target class
+        target_class = kwargs.get("target_class")
+        if target_class is None:
+            logger.warning('Target class not provided, an untargeted attack is defaulted.')
+            target_class = victim_class
+
+        if not isinstance(target_class, int):
+            raise TypeError('Target class must be of type `int`.')
+
         # Do attack
         result = self._attack_training(
             x=x,
-            y=y,
+            y=label,
             mask=mask,
+            target_class=target_class,
+            victim_class=victim_class,
             project_texture_op=project_texture_op,
             current_image_assign_to_input_image_op=current_image_assign_to_input_image_op,
             accumulated_gradients_op=accumulated_gradients_op,
@@ -291,7 +313,7 @@ class ShapeShifter(EvasionAttack):
     def _attack_training(
         self,
         x: np.ndarray,
-        y: Dict[str, List["Tensor"]],
+        y: Dict[str, List[np.ndarray]],
         mask: np.ndarray,
         target_class: int,
         victim_class: int,
@@ -398,6 +420,9 @@ class ShapeShifter(EvasionAttack):
                     feed_dict['random_transformation_phd:0'] = random_transformation
 
                     for i in range(x.shape[0]):
+                        print(y, type(y))
+                        print(y.keys())
+                        print(y['groundtruth_boxes_list'])
                         feed_dict['groundtruth_boxes_{}:0'.format(i)] = y['groundtruth_boxes_list'][i]
                         feed_dict['groundtruth_classes_{}:0'.format(i)] = y['groundtruth_classes_list'][i]
                         feed_dict['groundtruth_weights_{}:0'.format(i)] = y['groundtruth_weights_list'][i]
