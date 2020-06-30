@@ -63,7 +63,7 @@ class TestShapeShifter(TestBase):
         obj_dec = TensorFlowFasterRCNN(images=images)
 
         # Create labels
-        result = obj_dec.predict(self.x_test_mnist[:1])
+        result = obj_dec.predict(self.x_test_mnist[:1].astype(np.float32))
 
         groundtruth_boxes_list = [result['detection_boxes'][i] for i in range(1)]
         groundtruth_classes_list = [result['detection_classes'][i] for i in range(1)]
@@ -108,7 +108,7 @@ class TestShapeShifter(TestBase):
         )
 
         # Attack
-        adv_x = attack.generate(x=self.x_test_mnist[:1], y=y, target_class=2, victim_class=5)
+        adv_x = attack.generate(x=self.x_test_mnist[:1].astype(np.float32), label=y, target_class=2, victim_class=5)
 
         print(adv_x)
 

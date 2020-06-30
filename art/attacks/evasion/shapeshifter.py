@@ -420,15 +420,12 @@ class ShapeShifter(EvasionAttack):
                     feed_dict['random_transformation_phd:0'] = random_transformation
 
                     for i in range(x.shape[0]):
-                        print(y, type(y))
-                        print(y.keys())
-                        print(y['groundtruth_boxes_list'])
                         feed_dict['groundtruth_boxes_{}:0'.format(i)] = y['groundtruth_boxes_list'][i]
                         feed_dict['groundtruth_classes_{}:0'.format(i)] = y['groundtruth_classes_list'][i]
                         feed_dict['groundtruth_weights_{}:0'.format(i)] = y['groundtruth_weights_list'][i]
 
                 # Accumulate gradients
-                self.estimator.sess.run(current_image_assign_to_input_image_op)
+                self.estimator.sess.run(current_image_assign_to_input_image_op, feed_dict)
                 self.estimator.sess.run(accumulated_gradients_op, feed_dict)
 
             # # Update feed_dict with true labels
