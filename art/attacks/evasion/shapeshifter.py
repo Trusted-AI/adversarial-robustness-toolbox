@@ -272,7 +272,7 @@ class ShapeShifter(EvasionAttack):
             # Check whether users have a mask
             mask = kwargs.get("mask")
             if mask is None:
-                mask = np.ones_like(x.shape)
+                mask = np.ones_like(x)
         else:
             mask = None
 
@@ -585,7 +585,10 @@ class ShapeShifter(EvasionAttack):
         optimizer = self._create_optimizer()
 
         # Create gradients
-        gradients = optimizer.compute_gradients(total_loss, var_list=[current_image])[0][0]
+        if self.texture_as_input:
+            gradients = optimizer.compute_gradients(total_loss, var_list=[current_texture_variable])[0][0]
+        else:
+            gradients = optimizer.compute_gradients(total_loss, var_list=[current_image_variable])[0][0]
 
         # Create variables to store gradients
         if self.texture_as_input:
