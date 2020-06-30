@@ -606,12 +606,13 @@ class ShapeShifter(EvasionAttack):
             [accumulated_sum_gradients, accumulated_num_gradients], name='accumulated_gradients_op'
         )
 
-        # Create final attack optimization operator
-        final_attack_optimization_op = optimizer.apply_gradients(
-            grads_and_vars=[(final_gradients, current_image)], name='final_attack_optimization_op'
-        )
-
+        # Create final attack optimization operator and return
         if self.texture_as_input:
+            # Create final attack optimization operator
+            final_attack_optimization_op = optimizer.apply_gradients(
+                grads_and_vars=[(final_gradients, current_texture_variable)], name='final_attack_optimization_op'
+            )
+
             return (
                 project_texture_op,
                 current_image_assign_to_input_image_op,
@@ -622,6 +623,11 @@ class ShapeShifter(EvasionAttack):
             )
 
         else:
+            # Create final attack optimization operator
+            final_attack_optimization_op = optimizer.apply_gradients(
+                grads_and_vars=[(final_gradients, current_image_variable)], name='final_attack_optimization_op'
+            )
+
             return (
                 project_texture_op,
                 current_image_assign_to_input_image_op,
