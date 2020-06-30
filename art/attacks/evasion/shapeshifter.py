@@ -437,7 +437,9 @@ class ShapeShifter(EvasionAttack):
 
             # Update image/texture variable
             self.estimator.sess.run(final_attack_optimization_op, feed_dict)
-            self.estimator.sess.run(project_texture_op)
+
+            if self.texture_as_input:
+                self.estimator.sess.run(project_texture_op)
 
         result = self.estimator.sess.run([current_variable, current_value], feed_dict)
 
