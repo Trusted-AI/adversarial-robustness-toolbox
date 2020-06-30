@@ -247,24 +247,24 @@ class ShapeShifter(EvasionAttack):
 
                 # Build the TensorFlow graph
                 (
-                    project_texture_op,
-                    current_image_assign_to_input_image_op,
-                    accumulated_gradients_op,
-                    final_attack_optimization_op,
-                    current_variable,
-                    current_value
+                    self.project_texture_op,
+                    self.current_image_assign_to_input_image_op,
+                    self.accumulated_gradients_op,
+                    self.final_attack_optimization_op,
+                    self.current_variable,
+                    self.current_value
                 ) = self._build_graph(
                     initial_shape=x.shape, custom_loss=custom_loss, rendering_function=rendering_function
                 )
 
             else:
                 (
-                    project_texture_op,
-                    current_image_assign_to_input_image_op,
-                    accumulated_gradients_op,
-                    final_attack_optimization_op,
-                    current_variable,
-                    current_value
+                    self.project_texture_op,
+                    self.current_image_assign_to_input_image_op,
+                    self.accumulated_gradients_op,
+                    self.final_attack_optimization_op,
+                    self.current_variable,
+                    self.current_value
                 ) = self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
 
         # Use mask or not
@@ -300,12 +300,12 @@ class ShapeShifter(EvasionAttack):
             mask=mask,
             target_class=target_class,
             victim_class=victim_class,
-            project_texture_op=project_texture_op,
-            current_image_assign_to_input_image_op=current_image_assign_to_input_image_op,
-            accumulated_gradients_op=accumulated_gradients_op,
-            final_attack_optimization_op=final_attack_optimization_op,
-            current_variable=current_variable,
-            current_value=current_value
+            project_texture_op=self.project_texture_op,
+            current_image_assign_to_input_image_op=self.current_image_assign_to_input_image_op,
+            accumulated_gradients_op=self.accumulated_gradients_op,
+            final_attack_optimization_op=self.final_attack_optimization_op,
+            current_variable=self.current_variable,
+            current_value=self.current_value
         )
 
         return result[1]
