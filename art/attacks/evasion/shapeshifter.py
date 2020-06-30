@@ -511,7 +511,7 @@ class ShapeShifter(EvasionAttack):
 
             # Create a placeholder to pass the background
             background_phd = tf.placeholder(
-                dtype=tf.float32, shape=[initial_shape[0], None, None, 3], name='background_phd'
+                dtype=tf.float32, shape=initial_input.shape.as_list(), name='background_phd'
             )
 
             # Create a placeholder to pass the image frame
