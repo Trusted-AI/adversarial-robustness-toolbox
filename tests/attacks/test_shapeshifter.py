@@ -160,7 +160,14 @@ class TestShapeShifter(TestBase):
 
         # Define random transform
         def random_transform(x):
-            return
+            background = np.random.rand(*x.shape)
+            image_frame = np.random.rand(*x.shape)
+
+            y_ = y.copy()
+            y_['groundtruth_boxes_list'][0] = y_['groundtruth_boxes_list'][0] + np.random.rand()
+            y_['groundtruth_weights_list'][0] = y_['groundtruth_weights_list'][0] + np.random.rand()
+
+            return background, image_frame, y_
 
         # Define attack
         attack = ShapeShifter(
@@ -184,7 +191,7 @@ class TestShapeShifter(TestBase):
             rpn_cw_confidence=1.0,
             similarity_weight=1.0,
             learning_rate=0.1,
-            optimizer='RMSPropOptimizer',
+            optimizer='MomentumOptimizer',
             momentum=0.01,
             decay=0.01,
             sign_gradients=sign_gradients,
@@ -196,8 +203,11 @@ class TestShapeShifter(TestBase):
         )
 
         # Define rendering function
-        def rendering_function():
-            return
+        def rendering_function(background_phd, image_frame_phd, current_texture):
+            current_image = background_phd + image_frame_phd + current_texture
+            current_image = tf.clip_by_value(current_image, 0, 1)
+
+            return current_image
 
         # Targeted attack
         adv_x = attack.generate(
