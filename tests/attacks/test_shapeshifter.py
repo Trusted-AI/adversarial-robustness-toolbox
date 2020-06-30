@@ -161,7 +161,7 @@ class TestShapeShifter(TestBase):
         # Define random transform
         def random_transform(x):
             background = np.random.rand(*x.shape)
-            image_frame = np.random.rand(*x.shape)
+            image_frame = np.random.rand(*(list(x.shape[:-1]) + [4]))
 
             y_ = y.copy()
             y_['groundtruth_boxes_list'][0] = y_['groundtruth_boxes_list'][0] + np.random.rand()
@@ -204,7 +204,7 @@ class TestShapeShifter(TestBase):
 
         # Define rendering function
         def rendering_function(background_phd, image_frame_phd, current_texture):
-            current_image = background_phd + image_frame_phd + current_texture
+            current_image = background_phd + current_texture
             current_image = tf.clip_by_value(current_image, 0, 1)
 
             return current_image
