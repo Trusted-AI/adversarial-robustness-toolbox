@@ -506,7 +506,7 @@ class ShapeShifter(EvasionAttack):
 
             # Create a placeholder to pass random transformation
             random_transformation_phd = tf.placeholder(
-                dtype=tf.float32, shape=[initial_shape[0], None, None, 3], name='random_transformation_phd'
+                dtype=tf.float32, shape=initial_input.shape.as_list(), name='random_transformation_phd'
             )
 
             # Update current image
@@ -569,6 +569,7 @@ class ShapeShifter(EvasionAttack):
                 initial_value=np.zeros(current_texture_variable.shape.as_list()),
                 trainable=False,
                 name='sum_gradients',
+                dtype=tf.float32,
                 collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
             )
 
@@ -577,6 +578,7 @@ class ShapeShifter(EvasionAttack):
                 initial_value=np.zeros(current_image_variable.shape.as_list()),
                 trainable=False,
                 name='sum_gradients',
+                dtype=tf.float32,
                 collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
             )
 

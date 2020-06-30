@@ -59,7 +59,7 @@ class TestShapeShifter(TestBase):
         from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 
         # Define object detector
-        images = tf.placeholder(tf.float32, shape=[1, 28, 28, 1])
+        images = tf.Variable(initial_value=np.zeros([1, 28, 28, 1]), dtype=tf.float32)
         obj_dec = TensorFlowFasterRCNN(images=images)
 
         # Create labels
