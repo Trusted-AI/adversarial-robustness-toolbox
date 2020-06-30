@@ -59,11 +59,11 @@ class TestShapeShifter(TestBase):
         from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 
         # Define object detector
-        images = tf.placeholder(tf.float32, shape=[2, 28, 28, 1])
+        images = tf.placeholder(tf.float32, shape=[1, 28, 28, 1])
         obj_dec = TensorFlowFasterRCNN(images=images)
 
         # Create labels
-        result = self.obj_dec.predict(self.x_test_mnist[:1])
+        result = obj_dec.predict(self.x_test_mnist[:1])
 
         groundtruth_boxes_list = [result['detection_boxes'][i] for i in range(1)]
         groundtruth_classes_list = [result['detection_classes'][i] for i in range(1)]

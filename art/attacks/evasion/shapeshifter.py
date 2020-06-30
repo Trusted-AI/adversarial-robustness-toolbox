@@ -223,7 +223,7 @@ class ShapeShifter(EvasionAttack):
         # Check input shape
         assert x.ndim == 4, "The ShapeShifter attack can only be applied to images."
         assert x.shape[0] == 1, "The ShapeShifter attack can only be applied to one image."
-        assert x.shape[1:] == self.estimator.input_shape
+        assert list(x.shape[1:]) == self.estimator.input_shape
 
         # Check if y is None
         if y is None and not self.texture_as_input:
