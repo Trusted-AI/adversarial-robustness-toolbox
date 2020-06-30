@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,21 +22,21 @@ import unittest
 
 import numpy as np
 
-from art.defences import LabelSmoothing
-from art.utils import master_seed
+from art.defences.preprocessor import LabelSmoothing
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
 
 class TestLabelSmoothing(unittest.TestCase):
     def setUp(self):
-        # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_default(self):
         m, n = 1000, 20
         y = np.zeros((m, n))
-        y[(range(m), np.random.choice(range(n), m))] = 1.
+        y[(range(m), np.random.choice(range(n), m))] = 1.0
 
         ls = LabelSmoothing()
         _, y_smooth = ls(None, y)
@@ -46,7 +46,7 @@ class TestLabelSmoothing(unittest.TestCase):
     def test_customizing(self):
         m, n = 1000, 20
         y = np.zeros((m, n))
-        y[(range(m), np.random.choice(range(n), m))] = 1.
+        y[(range(m), np.random.choice(range(n), m))] = 1.0
 
         ls = LabelSmoothing(max_value=1.0 / n)
         _, y_smooth = ls(None, y)
@@ -55,5 +55,5 @@ class TestLabelSmoothing(unittest.TestCase):
         self.assertTrue(np.isclose(y_smooth, np.ones((m, n)) / n).all())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

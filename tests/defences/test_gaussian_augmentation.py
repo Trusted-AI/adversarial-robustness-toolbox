@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,8 +22,9 @@ import unittest
 
 import numpy as np
 
-from art.defences import GaussianAugmentation
-from art.utils import master_seed
+from art.defences.preprocessor import GaussianAugmentation
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 class TestGaussianAugmentation(unittest.TestCase):
     def setUp(self):
         # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_small_size(self):
         x = np.arange(15).reshape((5, 3))
@@ -77,11 +78,20 @@ class TestGaussianAugmentation(unittest.TestCase):
     def test_failure_augmentation_fit_predict(self):
         # Assert that value error is raised
         with self.assertRaises(ValueError) as context:
-            _ = GaussianAugmentation(augmentation=True, apply_fit=True, apply_predict=True)
+            _ = GaussianAugmentation(augmentation=True, apply_fit=False, apply_predict=True)
 
-        self.assertTrue('If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`'
-                        ' must be `False`.' in str(context.exception))
+        self.assertTrue(
+            "If `augmentation` is `True`, then `apply_fit` must be `True` and `apply_predict`"
+            " must be `False`." in str(context.exception)
+        )
+        with self.assertRaises(ValueError) as context:
+            _ = GaussianAugmentation(augmentation=True, apply_fit=False, apply_predict=False)
+
+        self.assertIn(
+            "If `augmentation` is `True`, then `apply_fit` and `apply_predict` can't be both `False`.",
+            str(context.exception),
+        )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

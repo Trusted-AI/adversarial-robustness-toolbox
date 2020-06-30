@@ -1,0 +1,17 @@
+[run]
+branch = True
+source = art
+
+[report]
+exclude_lines =
+    if self.debug:
+    pragma: no cover
+    raise NotImplementedError
+    if __name__ == .__main__.:
+ignore_errors = True
+omit =
+    docs/*
+    examples/*
+    notebooks/*
+    tests/*
+    utils/*

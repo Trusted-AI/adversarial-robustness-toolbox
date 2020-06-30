@@ -20,13 +20,13 @@ import art
 # -- Project information -----------------------------------------------------
 
 project = 'Adversarial Robustness Toolbox'
-copyright = '2018, IBM Corporation'
+copyright = '2018, The Adversarial Robustness Toolbox (ART) Authors'
 author = 'Maria-Irina Nicolae'
 
 # The short X.Y version
-version = '1.1'
+version = '1.3'
 # The full version, including alpha/beta/rc tags
-release = '1.1.0'
+release = '1.3.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -96,7 +96,7 @@ if os.environ.get('READTHEDOCS') != 'True':
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = []
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
@@ -167,3 +167,8 @@ texinfo_documents = [
 
 
 # -- Extension configuration -------------------------------------------------
+
+extensions = [
+    "sphinx.ext.autodoc",
+    "sphinx_autodoc_annotation",
+]

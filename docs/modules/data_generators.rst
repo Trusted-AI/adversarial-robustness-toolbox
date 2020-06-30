@@ -19,5 +19,8 @@ Framework-Specific Data Generators
 .. autoclass:: PyTorchDataGenerator
    :members:
 
-.. autoclass:: TFDataGenerator
+.. autoclass:: TensorFlowDataGenerator
+   :members:
+
+.. autoclass:: TensorFlowV2DataGenerator
    :members:

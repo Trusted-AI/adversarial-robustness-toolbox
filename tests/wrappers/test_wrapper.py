@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -24,8 +24,9 @@ import keras.backend as k
 import numpy as np
 
 from art.wrappers.wrapper import ClassifierWrapper
-from art.utils import load_mnist, master_seed
-from tests.utils_test import get_classifier_kr
+from art.utils import load_mnist
+
+from tests.utils import master_seed, get_image_classifier_kr
 
 logger = logging.getLogger(__name__)
 
@@ -46,14 +47,14 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test)
 
         # Load small Keras model
-        cls.model_mnist = get_classifier_kr()
+        cls.model_mnist = get_image_classifier_kr()
 
     @classmethod
     def tearDownClass(cls):
         k.clear_session()
 
     def setUp(self):
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_shapes(self):
         x_test, y_test = self.mnist[1]
@@ -62,7 +63,7 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         preds = classifier.predict(self.mnist[1][0])
         self.assertEqual(preds.shape, y_test.shape)
 
-        self.assertEqual(classifier.nb_classes(), 10)
+        self.assertEqual(classifier.nb_classes, 10)
 
         class_grads = classifier.class_gradient(x_test[:11])
         self.assertEqual(class_grads.shape, tuple([11, 10] + list(x_test[1].shape)))
@@ -119,8 +120,8 @@ class TestMixinWKerasClassifier(unittest.TestCase):
     def test_save(self):
         import os
 
-        path = 'tmp'
-        filename = 'model.h5'
+        path = "tmp"
+        filename = "model.h5"
         classifier = ClassifierWrapper(self.model_mnist)
         classifier.save(filename, path=path)
         self.assertTrue(os.path.isfile(os.path.join(path, filename)))
@@ -129,5 +130,5 @@ class TestMixinWKerasClassifier(unittest.TestCase):
         os.remove(os.path.join(path, filename))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

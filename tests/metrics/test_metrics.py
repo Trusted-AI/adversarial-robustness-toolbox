@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -21,7 +21,6 @@ import logging
 import unittest
 
 import keras
-import keras.backend as k
 from keras.models import Sequential
 from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 import numpy as np
@@ -30,9 +29,13 @@ import torch.nn as nn
 import torch.nn.functional as f
 import torch.optim as optim
 
-from art.classifiers import KerasClassifier, PyTorchClassifier, TensorFlowClassifier
-from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity
-from art.utils import load_mnist, master_seed
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.tensorflow import TensorFlowClassifier
+from art.metrics.metrics import empirical_robustness, clever_t, clever_u, clever, loss_sensitivity, wasserstein_distance
+from art.utils import load_mnist
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +50,7 @@ R_LI = 0.1
 
 class TestMetrics(unittest.TestCase):
     def setUp(self):
-        master_seed(42)
+        master_seed(seed=42)
 
     def test_emp_robustness_mnist(self):
         (x_train, y_train), (_, _), _, _ = load_mnist()
@@ -55,19 +58,19 @@ class TestMetrics(unittest.TestCase):
 
         # Get classifier
         classifier = self._cnn_mnist_k([28, 28, 1])
-        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
 
         # Compute minimal perturbations
         params = {"eps_step": 1.1}
-        emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
-        self.assertEqual(emp_robust, 0.)
+        emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
+        self.assertEqual(emp_robust, 0.0)
 
-        params = {"eps_step": 1.0, "eps": 1.}
-        emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
+        params = {"eps_step": 1.0, "eps": 1.0}
+        emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
         self.assertAlmostEqual(emp_robust, 1.000369094488189, 4)
 
         params = {"eps_step": 0.1, "eps": 0.2}
-        emp_robust = empirical_robustness(classifier, x_train, str('fgsm'), params)
+        emp_robust = empirical_robustness(classifier, x_train, str("fgsm"), params)
         self.assertLessEqual(emp_robust, 0.65)
 
     def test_loss_sensitivity(self):
@@ -76,7 +79,7 @@ class TestMetrics(unittest.TestCase):
 
         # Get classifier
         classifier = self._cnn_mnist_k([28, 28, 1])
-        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2)
+        classifier.fit(x_train, y_train, batch_size=BATCH_SIZE, nb_epochs=2, verbose=0)
 
         l = loss_sensitivity(classifier, x_train, y_train)
         self.assertGreaterEqual(l, 0)
@@ -97,13 +100,14 @@ class TestMetrics(unittest.TestCase):
     def _cnn_mnist_k(input_shape):
         # Create simple CNN
         model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=input_shape))
+        model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=input_shape))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
+        model.add(Dense(10, activation="softmax"))
 
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
+        model.compile(
+            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+        )
 
         classifier = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
         return classifier
@@ -135,8 +139,7 @@ class TestClever(unittest.TestCase):
     """
 
     def setUp(self):
-        # Set master seed
-        master_seed(42)
+        master_seed(seed=42, set_tensorflow=True)
 
     @staticmethod
     def _create_tfclassifier():
@@ -144,16 +147,11 @@ class TestClever(unittest.TestCase):
         To create a simple TensorFlowClassifier for testing.
         :return:
         """
-        import tensorflow as tf
-        if tf.__version__[0] == '2':
-            import tensorflow.compat.v1 as tf
-            tf.disable_eager_execution()
-
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         labels_ph = tf.placeholder(tf.int32, shape=[None, 10])
 
-        # Define the tensorflow graph
+        # Define the TensorFlow graph
         conv = tf.layers.conv2d(input_ph, 4, 5, activation=tf.nn.relu)
         conv = tf.layers.max_pooling2d(conv, 2, 2)
         fc = tf.layers.flatten(conv)
@@ -166,13 +164,21 @@ class TestClever(unittest.TestCase):
         optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
         train = optimizer.minimize(loss)
 
-        # Tensorflow session and initialization
+        # TensorFlow session and initialization
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
         # Create the classifier
-        tfc = TensorFlowClassifier(input_ph=input_ph, output=logits, labels_ph=labels_ph, train=train, loss=loss,
-                                   learning=None, sess=sess, clip_values=(0, 1))
+        tfc = TensorFlowClassifier(
+            input_ph=input_ph,
+            output=logits,
+            labels_ph=labels_ph,
+            train=train,
+            loss=loss,
+            learning=None,
+            sess=sess,
+            clip_values=(0, 1),
+        )
 
         return tfc
 
@@ -184,13 +190,14 @@ class TestClever(unittest.TestCase):
         """
         # Create simple CNN
         model = Sequential()
-        model.add(Conv2D(4, kernel_size=(5, 5), activation='relu', input_shape=(28, 28, 1)))
+        model.add(Conv2D(4, kernel_size=(5, 5), activation="relu", input_shape=(28, 28, 1)))
         model.add(MaxPooling2D(pool_size=(2, 2)))
         model.add(Flatten())
-        model.add(Dense(10, activation='softmax'))
+        model.add(Dense(10, activation="softmax"))
 
-        model.compile(loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01),
-                      metrics=['accuracy'])
+        model.compile(
+            loss=keras.losses.categorical_crossentropy, optimizer=keras.optimizers.Adam(lr=0.01), metrics=["accuracy"]
+        )
 
         # Get the classifier
         krc = KerasClassifier(model=model, clip_values=(0, 1), use_logits=False)
@@ -211,15 +218,16 @@ class TestClever(unittest.TestCase):
         optimizer = optim.Adam(model.parameters(), lr=0.01)
 
         # Get classifier
-        ptc = PyTorchClassifier(model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10,
-                                clip_values=(0, 1))
+        ptc = PyTorchClassifier(
+            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+        )
 
         return ptc
 
-    @unittest.skipIf(tf.__version__[0] == '2', reason='Skip unittests for Tensorflow v2.')
+    @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
     def test_clever_tf(self):
         """
-        Test with tensorflow.
+        Test with TensorFlow.
         :return:
         """
         # Get MNIST
@@ -264,7 +272,7 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         krc = self._create_krclassifier()
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=1, verbose=0)
 
         # Test targeted clever
         res0 = clever_t(krc, x_test[-1], 2, 10, 5, R_L1, norm=1, pool_factor=3)
@@ -325,11 +333,11 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         krc = self._create_krclassifier()
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, c_init=1, pool_factor=10)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
-        self.assertEqual(scores.shape, (krc.nb_classes() - 1,))
+        self.assertEqual(scores.shape, (krc.nb_classes - 1,))
 
     def test_clever_l2_no_target_sorted(self):
         batch_size = 100
@@ -337,12 +345,12 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         krc = self._create_krclassifier()
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=None, target_sort=True, c_init=1, pool_factor=10)
         logger.info("Clever scores for n-1 classes: %s %s", str(scores), str(scores.shape))
         # Should approx. be in decreasing value
-        self.assertEqual(scores.shape, (krc.nb_classes() - 1,))
+        self.assertEqual(scores.shape, (krc.nb_classes - 1,))
 
     def test_clever_l2_same_target(self):
         batch_size = 100
@@ -350,11 +358,31 @@ class TestClever(unittest.TestCase):
 
         # Get the classifier
         krc = self._create_krclassifier()
-        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2)
+        krc.fit(x_train, y_train, batch_size=batch_size, nb_epochs=2, verbose=0)
 
         scores = clever(krc, x_test[0], 5, 5, 3, 2, target=np.argmax(krc.predict(x_test[:1])), c_init=1, pool_factor=10)
-        self.assertIsNone(scores[0], msg='Clever scores for the predicted class should be `None`.')
+        self.assertIsNone(scores[0], msg="Clever scores for the predicted class should be `None`.")
 
 
-if __name__ == '__main__':
+class TestWassersteinDistance(unittest.TestCase):
+    def test_wasserstein_distance(self):
+        nb_train = 1000
+        nb_test = 100
+        batch_size = 3
+        (x_train, y_train), (x_test, y_test), _, _ = load_mnist()
+
+        x_train = x_train[0:nb_train]
+        x_test = x_test[0:nb_test]
+
+        wd_0 = wasserstein_distance(x_train[:batch_size], x_train[:batch_size])
+        wd_1 = wasserstein_distance(x_train[:batch_size], x_test[:batch_size])
+
+        np.testing.assert_array_equal(wd_0, np.asarray([0.0, 0.0, 0.0]))
+        np.testing.assert_array_almost_equal(wd_1, np.asarray([0.04564, 0.01235, 0.04787]), decimal=4)
+
+        np.testing.assert_array_equal(x_train.shape, np.asarray([nb_train, 28, 28, 1]))
+        np.testing.assert_array_equal(x_test.shape, np.asarray([nb_test, 28, 28, 1]))
+
+
+if __name__ == "__main__":
     unittest.main()

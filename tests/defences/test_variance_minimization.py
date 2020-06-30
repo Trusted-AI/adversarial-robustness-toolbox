@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -22,8 +22,9 @@ import unittest
 
 import numpy as np
 
-from art.defences import TotalVarMin
-from art.utils import master_seed
+from art.defences.preprocessor import TotalVarMin
+
+from tests.utils import master_seed
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 class TestTotalVarMin(unittest.TestCase):
     def setUp(self):
         # Set master seed
-        master_seed(1234)
+        master_seed(seed=1234)
 
     def test_one_channel(self):
         clip_values = (0, 1)
@@ -64,8 +65,8 @@ class TestTotalVarMin(unittest.TestCase):
         with self.assertRaises(ValueError) as context:
             preprocess(x)
 
-        self.assertIn('Feature vectors detected.', str(context.exception))
+        self.assertIn("Feature vectors detected.", str(context.exception))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

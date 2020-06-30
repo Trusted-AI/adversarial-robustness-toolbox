@@ -2,6 +2,11 @@
 ===================
 .. automodule:: art.wrappers
 
+Base Class Wrapper
+------------------
+.. autoclass:: ClassifierWrapper
+   :members:
+
 Expectation over Transformations
 --------------------------------
 .. autoclass:: ExpectationOverTransformations
@@ -10,39 +15,4 @@ Expectation over Transformations
 Query-Efficient Black-Box Attack
 --------------------------------
 .. autoclass:: QueryEfficientBBGradientEstimation
-   :members:
-
-Randomized Smoothing
---------------------
-.. autoclass:: RandomizedSmoothing
-   :members:
-
-Output Random Noise
--------------------
-.. autoclass:: OutputRandomNoise
-   :members:
-
-Output Class Labels
--------------------
-.. autoclass:: OutputClassLabels
-   :members:
-
-Output High Confidence
-----------------------
-.. autoclass:: OutputHighConfidence
-   :members:
-
-Output Reverse Sigmoid
-----------------------
-.. autoclass:: OutputReverseSigmoid
-   :members:
-
-Output Rounded
---------------
-.. autoclass:: OutputRounded
-   :members:
-
-Base Wrapper
-------------
-.. autoclass:: ClassifierWrapper
    :members:

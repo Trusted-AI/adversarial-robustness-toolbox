@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) IBM Corporation 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -24,27 +24,30 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.datasets import load_digits
 import numpy as np
 
-from art.attacks import DecisionTreeAttack
-from art.classifiers import SklearnClassifier
-from art.utils import master_seed
+from art.attacks.evasion.decision_tree_attack import DecisionTreeAttack
+from art.estimators.classification.scikitlearn import SklearnClassifier
+from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
+
+from tests.utils import TestBase, master_seed
+from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
 
-class TestDecisionTreeAttack(unittest.TestCase):
+class TestDecisionTreeAttack(TestBase):
     """
     A unittest class for testing the decision tree attack.
     """
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
+        super().setUpClass()
+
         # Get MNIST
         digits = load_digits()
         cls.X = digits.data
         cls.y = digits.target
-
-    def setUp(self):
-        master_seed(1234)
 
     def test_scikitlearn(self):
         clf = DecisionTreeClassifier()
@@ -62,6 +65,9 @@ class TestDecisionTreeAttack(unittest.TestCase):
         # Check that X has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(X_original - self.X))), 0.0, delta=0.00001)
 
+    def test_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(DecisionTreeAttack, [ScikitlearnDecisionTreeClassifier])
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()
