@@ -66,7 +66,7 @@ class BaseEstimator(ABC):
                the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the estimator.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the estimator.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input and the results will be
                divided by the second value.
         """

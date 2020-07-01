@@ -74,7 +74,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :param channels_first: Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :param attack_losses: Tuple of any combination of strings of loss components: 'loss_classifier', 'loss_box_reg',
@@ -113,7 +113,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         if model is None:
-            import torchvision
+            import torchvision  # lgtm [py/repeated-import]
 
             self._model = torchvision.models.detection.fasterrcnn_resnet50_fpn(
                 pretrained=True, progress=True, num_classes=91, pretrained_backbone=True
@@ -148,7 +148,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :return: Loss gradients of the same shape as `x`.
         """
         import torch
-        import torchvision
+        import torchvision  # lgtm [py/repeated-import]
 
         self._model.train()
 
@@ -220,7 +220,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                  - labels (Int64Tensor[N]): the predicted labels for each image
                  - scores (Tensor[N]): the scores or each prediction.
         """
-        import torchvision
+        import torchvision  # lgtm [py/repeated-import]
 
         self._model.eval()
 

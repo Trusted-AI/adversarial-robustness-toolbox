@@ -120,7 +120,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         # Check whether random eps is enabled
         self._random_eps()
@@ -233,7 +233,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                      perturbed.
         :return: Perturbations.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
@@ -269,7 +269,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         x = x + eps_step * perturbation
 
@@ -307,7 +307,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                             original input.
         :return: Adversarial examples.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         if random_init:
             n = x.shape[0]
@@ -351,7 +351,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
         :return: Values of `values` after projection.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         # Pick a small scalar to avoid division by 0
         tol = 10e-8

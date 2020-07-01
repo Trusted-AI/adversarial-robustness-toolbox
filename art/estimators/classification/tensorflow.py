@@ -36,7 +36,7 @@ from art.estimators.classification.classifier import (
     ClassifierMixin,
 )
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
-from art.utils import Deprecated, deprecated_keyword_arg
+from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -94,14 +94,14 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
         """
         # pylint: disable=E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Remove in 1.5.0
         if channel_index == 3:
@@ -186,7 +186,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
@@ -195,6 +196,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # Check if train and output_ph available
         if self._train is None or self._labels_ph is None:
             raise ValueError("Need the training objective and the output placeholder to train the model.")
+
+        y = check_and_transform_label_format(y, self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -349,7 +352,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if not hasattr(self, "_class_grads"):
             self._class_grads = [None for _ in range(self.nb_classes)]
@@ -377,7 +380,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :return: The hidden layers in the model, input and output layers excluded.
         """
         # pylint: disable=E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -427,7 +430,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         # pylint: disable=E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Get the computational graph
         with self._sess.graph.as_default():
@@ -565,7 +568,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         # Load and update all functionality related to TensorFlow
         # pylint: disable=E0611, E0401
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
         from tensorflow.python.saved_model import tag_constants
 
         full_path = os.path.join(ART_DATA_PATH, state["model_name"])
@@ -684,11 +687,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Remove in 1.5.0
         if channel_index == 3:
@@ -768,18 +771,21 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Labels, one-hot-encoded of shape (nb_samples, nb_classes).
+        :param y: Labels, one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if self._train_step is None:
             raise TypeError(
                 "The training function `train_step` is required for fitting a model but it has not been " "defined."
             )
+
+        y = check_and_transform_label_format(y, self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -804,7 +810,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for
                TensorFlow and providing it takes no effect.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
         from art.data_generators import TensorFlowV2DataGenerator
 
         if self._train_step is None:
@@ -840,7 +846,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -910,7 +916,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                   (nb_samples,).
         :return: Gradients of the same shape as `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if self._loss_object is None:
             raise ValueError("Loss object is necessary for computing the loss gradient.")
@@ -940,7 +946,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param y: Correct labels, one-vs-rest encoding.
         :return: Array of gradients of the same shape as `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if self._loss_object is None:
             raise TypeError(
@@ -990,7 +996,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                      The intended order of the layers tries to match their order in the model, but this is not
                      guaranteed either.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if isinstance(self._model, tf.keras.Model) or isinstance(self._model, tf.keras.model.Sequential):
             return self._model.layers
@@ -1010,7 +1016,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :param batch_size: Batch size.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
         from art.config import ART_NUMPY_DTYPE
 
         if isinstance(self._model, tf.keras.models.Sequential):

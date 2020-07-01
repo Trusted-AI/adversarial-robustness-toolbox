@@ -38,7 +38,7 @@ from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
 )
-from art.utils import Deprecated, deprecated_keyword_arg
+from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
     import mxnet as mx
@@ -91,11 +91,11 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        import mxnet as mx
+        import mxnet as mx  # lgtm [py/repeated-import]
 
         # Remove in 1.5.0
         if channel_index == 3:
@@ -134,17 +134,20 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         Fit the classifier on the training set `(inputs, outputs)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
         """
-        import mxnet as mx
+        import mxnet as mx  # lgtm [py/repeated-import]
 
         if self._optimizer is None:
             raise ValueError("An MXNet optimizer is required for fitting the model.")
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
+
+        y = check_and_transform_label_format(y, self.nb_classes)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -189,7 +192,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for MXNet
                and providing it takes no effect.
         """
-        import mxnet as mx
+        import mxnet as mx  # lgtm [py/repeated-import]
         from art.data_generators import MXDataGenerator
 
         if self._optimizer is None:
@@ -231,7 +234,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        import mxnet as mx
+        import mxnet as mx  # lgtm [py/repeated-import]
 
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
 
@@ -274,7 +277,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        import mxnet as mx
+        import mxnet as mx  # lgtm [py/repeated-import]
 
         # Check value of label for computing gradients
         if not (
@@ -345,7 +348,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                   `(nb_samples,)`.
         :return: Array of gradients of the same shape as `x`.
         """
-        import mxnet as mx
+        import mxnet as mx  # lgtm [py/repeated-import]
 
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
 
@@ -396,7 +399,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         :param framework: If true, return the intermediate tensor representation of the activation.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        import mxnet as mx
+        import mxnet as mx  # lgtm [py/repeated-import]
 
         train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
 
@@ -505,7 +508,12 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         :return: The hidden layers in the model, input and output layers excluded.
         """
-        layer_names = [layer.name for layer in self._model[:-1]]
-        logger.info("Inferred %i hidden layers on MXNet classifier.", len(layer_names))
+        import mxnet
+
+        if isinstance(self._model, mxnet.gluon.nn.Sequential):
+            layer_names = [layer.name for layer in self._model[:-1]]
+            logger.info("Inferred %i hidden layers on MXNet classifier.", len(layer_names))
+        else:
+            layer_names = []
 
         return layer_names

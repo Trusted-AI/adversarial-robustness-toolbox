@@ -47,10 +47,10 @@ def image_batch():
 
 
 class TestVideoCompression:
-    """Test VideoCompresssion."""
+    """Test VideoCompression."""
 
     @pytest.mark.parametrize("channels_first", [True, False])
-    def test_video_compresssion(self, video_batch, channels_first):
+    def test_video_compression(self, video_batch, channels_first):
         test_input, test_output = video_batch
         video_compression = VideoCompression(video_format="mp4", constant_rate_factor=0, channels_first=channels_first)
 

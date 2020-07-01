@@ -207,7 +207,7 @@ class TestCarlini(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
+    def test_classifier_type_check_fail_L2(self):
         backend_test_classifier_type_check_fail(CarliniL2Method, [BaseEstimator, ClassGradientsMixin])
 
     def test_keras_iris_clipped_L2(self):
@@ -465,7 +465,7 @@ class TestCarlini(TestBase):
         y_pred_adv = np.argmax(ptc.predict(x_test_adv), axis=1)
         self.assertTrue((target != y_pred_adv).any())
 
-    def test_classifier_type_check_fail(self):
+    def test_classifier_type_check_fail_LInf(self):
         backend_test_classifier_type_check_fail(CarliniLInfMethod, [BaseEstimator, ClassGradientsMixin])
 
     def test_keras_iris_clipped_LInf(self):

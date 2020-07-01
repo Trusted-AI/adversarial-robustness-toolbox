@@ -804,6 +804,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
             super(Model, self).__init__()
 
             self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            self.relu = torch.nn.ReLU()
             self.pool = torch.nn.MaxPool2d(4, 4)
             self.fullyconnected = torch.nn.Linear(25, 10)
 
@@ -845,7 +846,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
             :return: Prediction of the model
             """
             x = self.conv(x)
-            x = torch.nn.functional.relu(x)
+            x = self.relu(x)
             x = self.pool(x)
             x = x.reshape(-1, 25)
             x = self.fullyconnected(x)
@@ -877,7 +878,7 @@ def get_classifier_bb(defences=None):
     from art.estimators.classification.blackbox import BlackBoxClassifier
     from art.utils import to_categorical
 
-    # define blackbox classifier
+    # define black-box classifier
     def predict(x):
         with open(
             os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
@@ -889,35 +890,83 @@ def get_classifier_bb(defences=None):
     return bbc
 
 
-def get_classifier_mx():
+def get_image_classifier_mx(from_logits=False, load_init=True):
     """
     Standard MXNet classifier for unit testing
 
+    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
+    :type from_logits: `bool`
+    :param load_init: Load the initial weights if True.
+    :type load_init: `bool`
     :return: MXNetClassifier
     """
     import mxnet
-    from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
+    from mxnet.gluon import nn
     from art.estimators.classification import MXClassifier
 
-    model = mxnet.gluon.nn.Sequential()
-    with model.name_scope():
-        model.add(
-            Conv2D(channels=1, kernel_size=7, activation="relu"),
-            MaxPool2D(pool_size=4, strides=4),
-            Flatten(),
-            Dense(10),
+    if load_init:
+        w_conv2d = np.load(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy")
         )
-    model.initialize(init=mxnet.init.Xavier())
+        b_conv2d = np.load(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy")
+        )
+        w_dense = np.load(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy")
+        )
+        b_dense = np.load(
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy")
+        )
+
+        w_conv2d_mx = w_conv2d.reshape((1, 1, 7, 7))
+
+        alias = mxnet.registry.get_alias_func(mxnet.initializer.Initializer, "initializer")
+
+        @mxnet.init.register
+        @alias("mm_init")
+        class CustomInit(mxnet.init.Initializer):
+            def __init__(self):
+                super(CustomInit, self).__init__()
+                self.params = dict()
+                self.params["conv0_weight"] = w_conv2d_mx
+                self.params["conv0_bias"] = b_conv2d
+                self.params["dense0_weight"] = np.transpose(w_dense)
+                self.params["dense0_bias"] = b_dense
+
+            def _init_weight(self, name, arr):
+                arr[:] = self.params[name]
+
+            def _init_bias(self, name, arr):
+                arr[:] = self.params[name]
+
+    class Model(nn.Block):
+        def __init__(self, **kwargs):
+            super(Model, self).__init__(**kwargs)
+            self.model = nn.Sequential()
+            self.model.add(
+                nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
+                nn.MaxPool2D(pool_size=4, strides=4),
+                nn.Flatten(),
+                nn.Dense(10, activation=None,),
+            )
+
+        def forward(self, x):
+            y = self.model(x)
+            if from_logits:
+                return y
+
+            return y.softmax()
+
+    model = Model()
+
+    if load_init:
+        model.initialize(init=CustomInit())
+    else:
+        model.initialize(init=mxnet.initializer.Xavier())
 
     # Create optimizer
-    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss()
+    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
     trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
-
-    # # Fit classifier
-    # classifier = MXClassifier(model=net, loss=loss, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
-    #                           optimizer=trainer)
-    # classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
-    # cls.classifier = classifier
 
     # Get classifier
     mxc = MXClassifier(
@@ -929,7 +978,8 @@ def get_classifier_mx():
         ctx=None,
         channels_first=True,
         clip_values=(0, 1),
-        defences=None,
+        preprocessing_defences=None,
+        postprocessing_defences=None,
         preprocessing=(0, 1),
     )
 

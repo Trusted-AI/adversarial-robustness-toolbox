@@ -44,7 +44,7 @@ from art.estimators.classification.classifier import (
     ClassifierMixin,
     ClassGradientsMixin,
 )
-from art.utils import Deprecated, deprecated_keyword_arg
+from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
     import keras
@@ -61,7 +61,7 @@ KERAS_MODEL_TYPE = Union["keras.models.Model", "tf.keras.models.Model"]
 
 class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     """
-    Wrapper class for importing Keras models. The supported backends for Keras are TensorFlow and Theano.
+    Wrapper class for importing Keras models.
     """
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
@@ -93,7 +93,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
@@ -147,14 +147,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         # pylint: disable=E0401
         if self.is_tensorflow:
-            import tensorflow as tf
+            import tensorflow as tf  # lgtm [py/repeated-import]
 
             if tf.executing_eagerly():
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
             import tensorflow.keras as keras
             import tensorflow.keras.backend as k
         else:
-            import keras
+            import keras  # lgtm [py/repeated-import]
             import keras.backend as k
 
         if hasattr(model, "inputs"):
@@ -280,7 +280,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if k.backend() == "tensorflow":
             loss_gradients = loss_gradients[0]
         elif k.backend() == "cntk":
-            raise NotImplementedError("Only TensorFlow and Theano support is provided for Keras.")
+            raise NotImplementedError("Only TensorFlow is supported as backend for Keras.")
 
         # Set loss, gradients and prediction functions
         self._predictions_op = self._output
@@ -412,13 +412,16 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
         """
+        y = check_and_transform_label_format(y, self.nb_classes)
+
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
