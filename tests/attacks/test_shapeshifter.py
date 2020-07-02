@@ -33,8 +33,8 @@ logger = logging.getLogger(__name__)
 
 
 @unittest.skipIf(
-     not object_detection_found,
-     reason="Skip unittests if object detection module is not found because of pre-trained model."
+    not object_detection_found,
+    reason="Skip unittests if object detection module is not found because of pre-trained model."
 )
 @unittest.skipIf(
     tf.__version__[0] == "2" or (tf.__version__[0] == "1" and tf.__version__.split(".")[1] != "15"),
