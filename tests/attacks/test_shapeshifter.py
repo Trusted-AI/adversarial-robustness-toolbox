@@ -24,7 +24,6 @@ import importlib
 import tensorflow as tf
 import numpy as np
 
-from art.attacks.evasion.shapeshifter import ShapeShifter
 from tests.utils import TestBase, master_seed
 
 object_detection_spec = importlib.util.find_spec("object_detection")
@@ -61,6 +60,7 @@ class TestShapeShifter(TestBase):
 
         # Only import if object detection module is available
         from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+        from art.attacks.evasion.shapeshifter import ShapeShifter
 
         # Define object detector
         images = tf.Variable(initial_value=np.zeros([1, 28, 28, 1]), dtype=tf.float32)
@@ -141,6 +141,7 @@ class TestShapeShifter(TestBase):
 
         # Only import if object detection module is available
         from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+        from art.attacks.evasion.shapeshifter import ShapeShifter
 
         # Define object detector
         images = tf.Variable(initial_value=np.zeros([1, 28, 28, 1]), dtype=tf.float32)
