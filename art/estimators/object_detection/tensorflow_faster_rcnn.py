@@ -209,7 +209,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Assign session
         if sess is None:
-            logging.warning("A session cannot be None, create a new session.")
+            logger.warning("A session cannot be None, create a new session.")
             self._sess: "Session" = tf.Session()
         else:
             self._sess: "Session" = sess
@@ -416,7 +416,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             if x.shape[0] % self._images.shape[0].value != 0:
                 raise ValueError("Number of prediction samples must be a multiple of input size.")
 
-            logging.warning("Reset batch size to input size.")
+            logger.warning("Reset batch size to input size.")
             batch_size = self._images.shape[0].value
 
         # Run prediction with batch processing
