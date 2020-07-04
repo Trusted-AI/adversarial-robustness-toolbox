@@ -144,9 +144,9 @@ def predict(sess, batch_size, generator_tf, z):
 def train_models(
     sess, x_train, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph, z_ph, latent_encoder_loss, encoder_optimizer
 ):
-    train_epoch = 3
+    train_epoch = 200
     latent_encoding_length = z_ph.get_shape()[1]
-    batch_size = x_train.shape[0]
+    batch_size = 256
     # training-loop
     np.random.seed(int(time.time()))
     logging.info("Starting training")
@@ -213,17 +213,20 @@ def build_gan_graph(learning_rate, latent_encoding_length, batch_size=None):
     disc_fake_tf, disc_fake_logits_tf = create_discriminator_layers(generator_tf)
 
     # CREATE LOSSES
-    disc_loss_real_tf = tf.losses.sigmoid_cross_entropy(
-        multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_real_logits_tf
-    )
+    #disc_loss_real_tf = tf.losses.sigmoid_cross_entropy(
+    #    multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_real_logits_tf
+    #)
 
-    disc_loss_fake_tf = tf.losses.sigmoid_cross_entropy(
-        multi_class_labels=tf.zeros([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
-    )
-    disc_loss_tf = disc_loss_real_tf + disc_loss_fake_tf
-    gen_loss = tf.losses.sigmoid_cross_entropy(
-        multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
-    )
+    #disc_loss_fake_tf = tf.losses.sigmoid_cross_entropy(
+    #    multi_class_labels=tf.zeros([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
+    #)
+    #disc_loss_tf = disc_loss_real_tf + disc_loss_fake_tf
+    disc_loss_tf = tf.reduce_mean(disc_fake_tf) - tf.reduce_mean(disc_real_tf)
+
+    #gen_loss = tf.losses.sigmoid_cross_entropy(
+    #    multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
+    #)
+    gen_loss = -tf.reduce_mean(disc_fake_tf)
 
     # CREATE OPTIMIZERS
     # We only want generator variables to be trained when running the generator and not discriminator variables etc.
@@ -273,12 +276,12 @@ def main():
     logging.info("Loading a Dataset")
     (x_train_original, y_train_original), (_, _), _, _ = load_mnist()
 
-    batch_size = 100
+    batch_size = 256
 
     (x_train, y_train) = (x_train_original[:batch_size], y_train_original[:batch_size])
 
     lr = 0.0002
-    latent_enc_len = 100
+    latent_enc_len = 128
 
     gen_tf, z_ph, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph = build_gan_graph(
         lr, latent_enc_len, batch_size
