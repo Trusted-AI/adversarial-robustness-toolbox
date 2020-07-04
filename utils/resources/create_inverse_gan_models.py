@@ -266,9 +266,9 @@ def build_gan_graph(learning_rate, latent_encoding_length, batch_size=None):
 
     # CREATE OPTIMIZERS
     # We only want generator variables to be trained when running the generator and not discriminator variables etc.
-    #trainable_variables = tf.trainable_variables()
-    #disc_trainable_vars = [var for var in trainable_variables if var.name.startswith("discriminator")]
-    #gen_trainable_vars = [var for var in trainable_variables if var.name.startswith("generator")]
+    trainable_variables = tf.trainable_variables()
+    disc_trainable_vars = [var for var in trainable_variables if var.name.startswith("discriminator")]
+    gen_trainable_vars = [var for var in trainable_variables if var.name.startswith("generator")]
 
     # CREATE OPTIMIZERS
     disc_opt_tf = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(disc_loss_tf, var_list=disc_trainable_vars)
