@@ -230,18 +230,45 @@ def build_gan_graph(learning_rate, latent_encoding_length, batch_size=None):
     #    multi_class_labels=tf.zeros([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
     #)
     #disc_loss_tf = disc_loss_real_tf + disc_loss_fake_tf
-    disc_loss_tf = tf.reduce_mean(disc_fake_tf) - tf.reduce_mean(disc_real_tf)
 
     #gen_loss = tf.losses.sigmoid_cross_entropy(
     #    multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
     #)
-    gen_loss = -tf.reduce_mean(disc_fake_tf)
+
+    # DCGAN see https://github.com/kabkabm/defensegan/blob/master/models/gan.py
+    # CREATE LOSSES
+    disc_loss_real_tf = tf.reduce_mean(
+        tf.nn.sigmoid_cross_entropy_with_logits(
+            disc_real_logits_tf,
+            tf.ones_like(disc_real_logits_tf)
+        )
+    )
+
+    disc_loss_fake_tf = tf.reduce_mean(
+        tf.nn.sigmoid_cross_entropy_with_logits(
+            disc_fake_logits_tf,
+            tf.zeros_like(disc_fake_logits_tf)
+        )
+    )
+
+    disc_loss_tf = (disc_loss_real_tf + disc_loss_fake_tf) / 2.0
+
+    gen_loss = tf.reduce_mean(
+        tf.nn.sigmoid_cross_entropy_with_logits(
+            disc_fake_logits_tf,
+            tf.ones_like(disc_fake_logits_tf)
+        )
+    )
+
+    # WGAN
+    #disc_loss_tf = tf.reduce_mean(disc_fake_tf) - tf.reduce_mean(disc_real_tf)
+    #gen_loss = -tf.reduce_mean(disc_fake_tf)
 
     # CREATE OPTIMIZERS
     # We only want generator variables to be trained when running the generator and not discriminator variables etc.
-    trainable_variables = tf.trainable_variables()
-    disc_trainable_vars = [var for var in trainable_variables if var.name.startswith("discriminator")]
-    gen_trainable_vars = [var for var in trainable_variables if var.name.startswith("generator")]
+    #trainable_variables = tf.trainable_variables()
+    #disc_trainable_vars = [var for var in trainable_variables if var.name.startswith("discriminator")]
+    #gen_trainable_vars = [var for var in trainable_variables if var.name.startswith("generator")]
 
     # CREATE OPTIMIZERS
     disc_opt_tf = tf.train.AdamOptimizer(learning_rate, beta1=0.5).minimize(disc_loss_tf, var_list=disc_trainable_vars)
