@@ -239,15 +239,15 @@ def build_gan_graph(learning_rate, latent_encoding_length, batch_size=None):
     # CREATE LOSSES
     disc_loss_real_tf = tf.reduce_mean(
         tf.nn.sigmoid_cross_entropy_with_logits(
-            disc_real_logits_tf,
-            tf.ones_like(disc_real_logits_tf)
+            logits=disc_real_logits_tf,
+            labels=tf.ones_like(disc_real_logits_tf)
         )
     )
 
     disc_loss_fake_tf = tf.reduce_mean(
         tf.nn.sigmoid_cross_entropy_with_logits(
-            disc_fake_logits_tf,
-            tf.zeros_like(disc_fake_logits_tf)
+            logits=disc_fake_logits_tf,
+            labels=tf.zeros_like(disc_fake_logits_tf)
         )
     )
 
@@ -255,8 +255,8 @@ def build_gan_graph(learning_rate, latent_encoding_length, batch_size=None):
 
     gen_loss = tf.reduce_mean(
         tf.nn.sigmoid_cross_entropy_with_logits(
-            disc_fake_logits_tf,
-            tf.ones_like(disc_fake_logits_tf)
+            logits=disc_fake_logits_tf,
+            labels=tf.ones_like(disc_fake_logits_tf)
         )
     )
 
