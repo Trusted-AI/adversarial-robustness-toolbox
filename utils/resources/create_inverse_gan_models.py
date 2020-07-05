@@ -75,11 +75,12 @@ def create_generator_layers(x):
 def create_discriminator_layers(x):
     with tf.variable_scope("discriminator", reuse=tf.AUTO_REUSE):
         # normalizing images
-        x_resized = tf.image.resize_images(x, [64, 64])
-        x_resized_normalised = (x_resized - 0.5) / 0.5  # normalization; range: -1 ~ 1
+        #x_resized = tf.image.resize_images(x, [64, 64])
+        #x_resized_normalised = (x_resized - 0.5) / 0.5  # normalization; range: -1 ~ 1
 
         # 1rst HIDDEN LAYER
-        conv1 = tf.layers.conv2d(x_resized_normalised, 128, [4, 4], strides=(2, 2), padding="same")
+        #conv1 = tf.layers.conv2d(x_resized_normalised, 128, [4, 4], strides=(2, 2), padding="same")
+        conv1 = tf.layers.conv2d(x, 128, [4, 4], strides=(2, 2), padding="same")
         lrelu1 = tf.nn.leaky_relu(conv1)
 
         # 2nd HIDDEN LAYER
