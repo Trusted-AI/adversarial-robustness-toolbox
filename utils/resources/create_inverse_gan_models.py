@@ -65,22 +65,24 @@ def create_generator_layers(x):
 
         # OUTPUT LAYER
         conv5 = tf.layers.conv2d_transpose(lrelu4, 1, [4, 4], strides=(2, 2), padding="same")
-        output = tf.nn.tanh(conv5, name="output_non_normalized")
+        #output = tf.nn.tanh(conv5, name="output_non_normalized")
+        output = tf.nn.sigmoid(conv5, name="output_non_normalized")
 
         # denormalizing images
         output_resized = tf.image.resize_images(output, [28, 28])
-        return tf.multiply(tf.add(output_resized, 0.5), 0.5, name="output")
+        #return tf.multiply(tf.add(output_resized, 0.5), 0.5, name="output")
+        return output_resized
 
 
 def create_discriminator_layers(x):
     with tf.variable_scope("discriminator", reuse=tf.AUTO_REUSE):
         # normalizing images
-        #x_resized = tf.image.resize_images(x, [64, 64])
+        x_resized = tf.image.resize_images(x, [64, 64])
         #x_resized_normalised = (x_resized - 0.5) / 0.5  # normalization; range: -1 ~ 1
 
         # 1rst HIDDEN LAYER
         #conv1 = tf.layers.conv2d(x_resized_normalised, 128, [4, 4], strides=(2, 2), padding="same")
-        conv1 = tf.layers.conv2d(x, 128, [4, 4], strides=(2, 2), padding="same")
+        conv1 = tf.layers.conv2d(x_resized, 128, [4, 4], strides=(2, 2), padding="same")
         lrelu1 = tf.nn.leaky_relu(conv1)
 
         # 2nd HIDDEN LAYER
