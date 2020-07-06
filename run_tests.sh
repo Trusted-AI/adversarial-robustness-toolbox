@@ -6,24 +6,27 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
-pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
-
 mlFrameworkList=("tensorflow" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 done
 
-#TODO for inference, they only have scikitlearn so need to be run AT LEAST with scikitlearn
+mlFrameworkList=("tensorflow")
+for mlFramework in "${mlFrameworkList[@]}"; do
+  pytest -q tests/defences/preprocessor --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
-pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
+  pytest -q tests/utils --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
-pytest -q tests/utils --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
+  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
+done
 
-#Only classifier tests need to be run for each frameworks
+
+#NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
+# made framework independent to be incorporated within this loop
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
