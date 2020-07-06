@@ -27,8 +27,11 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
-  pytest -q tests/classifiersFrameworks/ --mlFramework=$mlFramework --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed tests for framework $mlFramework"; fi
+  pytest -q tests/estimators/classification/test_common_deeplearning.py --mlFramework=$mlFramework --durations=0
+  pytest -q tests/estimators/classification/test_keras.py --mlFramework=$mlFramework --durations=0
+  pytest -q tests/estimators/classification/test_pytorch.py --mlFramework=$mlFramework --durations=0
+  pytest -q tests/estimators/classification/test_tensorflow.py --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
 done
 
 
