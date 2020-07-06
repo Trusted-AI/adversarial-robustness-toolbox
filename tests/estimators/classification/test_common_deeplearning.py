@@ -75,16 +75,12 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
 
 
 def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get_image_classifier_list,
-                       expected_values, mnist_shape, store_expected_values):
+                       expected_valuesOne, mnist_shape, store_expected_values, store_expected_valuesOne):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
 
-    (expected_gradients_1, expected_gradients_2) = expected_values
-    # exp1 = (expected_gradients_1[0].tolist(), expected_gradients_1[1])
-    # exp2 = (expected_gradients_2[0].tolist(), expected_gradients_2[1])
-    # sto = (exp1, exp2)
-    # store_expected_values(sto, framework)
+    (expected_gradients_1, expected_gradients_2) = expected_valuesOne
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
@@ -129,7 +125,7 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
 
 
 def test_predict(request, framework, get_default_mnist_subset, get_image_classifier_list,
-                 expected_values, store_expected_values):
+                 expected_valuesOne, store_expected_values, store_expected_valuesOne):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
@@ -141,7 +137,7 @@ def test_predict(request, framework, get_default_mnist_subset, get_image_classif
     if classifier is not None:
         y_predicted = classifier.predict(x_test_mnist[0:1])
 
-        np.testing.assert_array_almost_equal(y_predicted, expected_values, decimal=4)
+        np.testing.assert_array_almost_equal(y_predicted, expected_valuesOne, decimal=4)
 
 
 def test_nb_classes(get_image_classifier_list):
@@ -181,31 +177,33 @@ def test_save(get_image_classifier_list):
 
 
 @pytest.mark.skipMlFramework("scikitlearn")
-def test_repr(get_image_classifier_list, expected_values, framework, store_expected_values):
+def test_repr(get_image_classifier_list, expected_valuesOne, framework, store_expected_values, store_expected_valuesOne):
     try:
 
         # exp2 = (expected_gradients_2[0].tolist(), expected_gradients_2[1])
         # sto = (exp1, exp2)
-        store_expected_values(expected_values, framework)
+
+        # store_expected_valuesOne(expected_values, framework)
+
         classifier, _ = get_image_classifier_list(one_classifier=True)
         if classifier is not None:
 
             repr_ = repr(classifier)
-            for message in expected_values:
+            for message in expected_valuesOne:
                 assert message in repr_, "{0}: was not contained within repr".format(message)
 
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
 
-def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset, expected_values, mnist_shape,
-                        store_expected_values):
+def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset, mnist_shape,
+                        store_expected_values, store_expected_valuesOne, expected_valuesOne):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
 
     (grad_1_all_labels, grad_2_all_labels, grad_1_label5, grad_2_label5, grad_1_labelArray, grad_2_labelArray,
-     labels_list) = expected_values
+     labels_list) = expected_valuesOne
 
     labels = np.array(labels_list, dtype=object)
 

@@ -204,6 +204,72 @@ def store_expected_values(request, is_tf_version_2):
 
 
 @pytest.fixture
+def store_expected_valuesOne(request, is_tf_version_2):
+    '''
+    Stores expected values to be retrieved by the expected_values fixture
+    :param request:
+    :return:
+    '''
+
+    def _store_expected_valuesOne(values_to_store, framework=""):
+
+        framework_name = framework
+        if framework == "tensorflow":
+            if is_tf_version_2:
+                framework_name = "tensorflow2"
+            else:
+                framework_name = "tensorflow1"
+        if framework_name is not "":
+            framework_name = "_" + framework_name
+
+        file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
+
+        try:
+            # tmp = expected_valuesOne
+            with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r") as f:
+                expected_values = json.load(f)
+        except FileNotFoundError:
+            expected_values = {}
+
+        test_name = request.node.name + framework_name
+        expected_values[test_name] = values_to_store
+
+        with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w") as f:
+            json.dump(expected_values, f)
+            tmp = ""
+
+    return _store_expected_valuesOne
+
+
+@pytest.fixture
+def expected_valuesOne(framework, request, is_tf_version_2):
+    '''
+    Retrieves the expected values that were stored using the store_expected_values fixture
+    :param request:
+    :return:
+    '''
+
+    file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
+
+    framework_name = framework
+    if framework == "tensorflow":
+        if is_tf_version_2:
+            framework_name = "tensorflow2"
+        else:
+            framework_name = "tensorflow1"
+    if framework_name is not "":
+        framework_name = "_" + framework_name
+
+    with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r") as f:
+        expected_values = json.load(f)
+
+        test_name = request.node.name
+        if request.node.name not in expected_values:
+            test_name = request.node.name + framework_name
+        return expected_values[test_name]
+
+
+@pytest.fixture
 def expected_values(framework, request, is_tf_version_2):
     '''
     Retrieves the expected values that were stored using the store_expected_values fixture
