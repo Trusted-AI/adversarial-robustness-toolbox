@@ -1,3 +1,4 @@
+import json
 import logging
 import pytest
 import numpy as np
@@ -193,10 +194,11 @@ def store_expected_values(request, is_tf_version_2):
             framework_name = "_" + framework_name
 
         file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3] \
-                    + "_" + request.node.name + framework_name + ".pkl"
+                    + "_" + request.node.name + framework_name + ".json"
 
-        with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "wb") as f:
-            pickle.dump(values_to_store, f)
+        with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "w") as f:
+            json.dump(values_to_store, f)
+            tmp = ""
 
     return _store_expected_values
 
@@ -209,9 +211,9 @@ def expected_values(framework, request, is_tf_version_2):
     :return:
     '''
     try:
-        file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3] + "_" + request.node.name + ".pkl"
-        with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
-            return pickle.load(f)
+        file_name_json = "x_values_" + request.node.location[0].split("/")[-1][:-3] + "_" + request.node.name + ".json"
+        with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name_json), "r") as f:
+            return json.load(f)
     except FileNotFoundError:
         framework_name = framework
         if framework == "tensorflow":
@@ -223,12 +225,11 @@ def expected_values(framework, request, is_tf_version_2):
             framework_name = "_" + framework_name
         file_name = "x_values_" + request.node.location[0].split("/")[-1][:-3] \
                     + "_" + request.node.name + framework_name + ".pkl"
+        file_name_json = "x_values_" + request.node.location[0].split("/")[-1][:-3] \
+                         + "_" + request.node.name + framework_name + ".json"
 
-        try:
-            with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name), "rb") as f:
-                return pickle.load(f)
-        except Exception:
-            tmp = ""
+        with open(os.path.join(os.path.dirname(__file__), "resources/expected_values/", file_name_json), "r") as f:
+            return json.load(f)
 
 
 # Try check for a platform specific expected value
