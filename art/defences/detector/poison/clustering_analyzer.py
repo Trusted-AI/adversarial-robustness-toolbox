@@ -265,7 +265,7 @@ class ClusteringAnalyzer:
         and silhouette score.
         Computes a silhouette score for each class to determine how cohesive resulting clusters are.
         A low silhouette score indicates that the clustering does not fit the data well, and the class can be considered
-        to be un-poisoned. Conversely, a high silhouette score indicates that the clusters reflect true splits in the
+        to be unpoisoned. Conversely, a high silhouette score indicates that the clusters reflect true splits in the
         data.
         The method concludes that a cluster is poison based on the silhouette score and the cluster relative size.
         If the relative size is too small, below a size_threshold and at the same time

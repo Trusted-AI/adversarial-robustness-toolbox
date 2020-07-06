@@ -201,7 +201,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
         (self.clusters_by_class, self.red_activations_by_class,) = self.cluster_activations()
         report, self.assigned_clean_by_class = self.analyze_clusters()
-        # Here, assigned_clean_by_class[i][j] is 1 if the jth data point in the ith class was
+        # Here, assigned_clean_by_class[i][j] is 1 if the jth datapoint in the ith class was
         # determined to be clean by activation cluster
 
         # Build an array that matches the original indexes of x_train
@@ -219,7 +219,7 @@ class ActivationDefence(PoisonFilteringDefence):
     def cluster_activations(self, **kwargs) -> Tuple[List[List[int]], List[List[int]]]:
         """
         Clusters activations and returns cluster_by_class and red_activations_by_class, where cluster_by_class[i][j] is
-        the cluster to which the j-th data point in the ith class belongs and the correspondent activations reduced by
+        the cluster to which the j-th datapoint in the ith class belongs and the correspondent activations reduced by
         class red_activations_by_class[i][j].
 
         :param kwargs: A dictionary of cluster-specific parameters.
@@ -630,7 +630,7 @@ def train_remove_backdoor(
     :param y_train: Labels used for training.
     :param x_test: Samples in test set.
     :param y_test: Labels in test set.
-    :param tolerable_backdoor: Parameter that determines how many misclassifications are acceptable.
+    :param tolerable_backdoor: Parameter that determines how many missclassifications are acceptable.
     :param max_epochs: maximum number of epochs to be run.
     :param batch_epochs: groups of epochs that will be run together before checking for termination.
     :return: (improve_factor, classifier).
@@ -662,7 +662,7 @@ def cluster_activations(
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Clusters activations and returns two arrays.
-    1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each data point
+    1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each datapoint
     in the class has been assigned.
     2) separated_reduced_activations: activations with dimensionality reduced using the specified reduce method.
 

@@ -40,7 +40,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
 
-    | The effectiveness of this protocol is found to be sensitive to the use of techniques like
+    | The effectiveness of this protoocl is found to be sensitive to the use of techniques like
         data augmentation, gradient clipping and learning rate schedules. Optionally, the use of
         mixed precision arithmetic operation via apex library can significantly reduce the training
         time making this one of the fastest adversarial training protocol.
@@ -54,7 +54,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         :type classifier: :class:`.Classifier`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
-        :param use_amp: Boolean that decides if apex should be used for mixed precision arithmetic during training
+        :param use_amp: Boolean that decides if apex should be used for mixed precision arithmantic during training
         :type use_amp: `bool`
 
         """

@@ -62,7 +62,6 @@ class UniversalPerturbation(EvasionAttack):
         "newtonfool": "art.attacks.evasion.newtonfool.NewtonFool",
         "jsma": "art.attacks.evasion.saliency_map.SaliencyMapMethod",
         "vat": "art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod",
-        "simba": "art.attacks.evasion.simba.SimBA",
     }
     attack_params = EvasionAttack.attack_params + [
         "attacker",
@@ -87,7 +86,7 @@ class UniversalPerturbation(EvasionAttack):
         """
         :param classifier: A trained classifier.
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
-                         'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat', 'simba'.
+                         'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
         :param attacker_params: Parameters specific to the adversarial attack. If this parameter is not specified,
                                 the default parameters of the chosen attack will be used.
         :param delta: desired accuracy
@@ -121,10 +120,8 @@ class UniversalPerturbation(EvasionAttack):
 
         # Instantiate the middle attacker and get the predicted labels
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        if y is None:
-            logger.info("Using model predictions as the correct labels for UAP.")
-            pred_y = self.estimator.predict(x, batch_size=1)
-        correct_y_max = np.argmax(pred_y, axis=1)
+        pred_y = self.estimator.predict(x, batch_size=1)
+        pred_y_max = np.argmax(pred_y, axis=1)
 
         # Generate the adversarial examples
         nb_iter = 0
@@ -138,7 +135,7 @@ class UniversalPerturbation(EvasionAttack):
                 x_i = ex[None, ...]
 
                 current_label = np.argmax(self.estimator.predict(x_i + noise)[0])
-                original_label = correct_y_max[rnd_idx[j]]
+                original_label = np.argmax(pred_y[rnd_idx][j])
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
@@ -162,7 +159,7 @@ class UniversalPerturbation(EvasionAttack):
 
             # Compute the error rate
             y_adv = np.argmax(self.estimator.predict(x_adv, batch_size=1), axis=1)
-            fooling_rate = np.sum(correct_y_max != y_adv) / nb_instances
+            fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
 
         pbar.close()
         self.fooling_rate = fooling_rate

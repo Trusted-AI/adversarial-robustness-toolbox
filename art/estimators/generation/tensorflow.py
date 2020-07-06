@@ -59,20 +59,20 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         Initialization specific to TensorFlow generator implementations.
 
         :param input_ph: The input placeholder.
-        :param model: TensorFlow model, neural network or other.
+        :param model: tensorflow model, neural network or other.
         :param loss: The loss function for which to compute gradients. This parameter is necessary when training the
-                     model and when computing gradients w.r.t. the loss function.
+            model and when computing gradients w.r.t. the loss function.
         :param sess: Computation session.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-                            maximum values allowed for features. If floats are provided, these will be used as the range
-                            of all features. If arrays are provided, each value will be considered the bound for a
-                            feature, thus the shape of clip values needs to match the total number of features.
+            maximum values allowed for features. If floats are provided, these will be used as the range of all
+            features. If arrays are provided, each value will be considered the bound for a feature, thus
+            the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
-                              used for data preprocessing. The first value will be subtracted from the input. The input
-                              will then be divided by the second one.
+        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+            used for data preprocessing. The first value will be subtracted from the input. The input will then
+            be divided by the second one.
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
         """

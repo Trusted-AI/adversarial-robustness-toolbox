@@ -27,7 +27,6 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_t
 from art.attacks.evasion.saliency_map import SaliencyMapMethod
 from art.attacks.evasion.spatial_transformation import SpatialTransformation
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
-from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversalPerturbation
 from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
 from art.attacks.evasion.wasserstein import Wasserstein
 from art.attacks.evasion.zoo import ZooAttack
@@ -40,5 +39,3 @@ from art.attacks.evasion.shadow_attack import ShadowAttack
 from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
 from art.attacks.evasion.square_attack import SquareAttack
-from art.attacks.evasion.simba import SimBA
-from art.attacks.evasion.universal_simba import Universal_SimBA

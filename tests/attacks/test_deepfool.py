@@ -178,7 +178,7 @@ class TestDeepFool(TestBase):
         not (int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3),
         reason="Minimal version of Keras or TensorFlow required.",
     )
-    def test_keras_mnist_partial_grads(self):
+    def test_kera_mnist_partial_grads(self):
         classifier = get_image_classifier_kr(from_logits=True)
         attack = DeepFool(classifier, max_iter=2, nb_grads=3)
         x_test_adv = attack.generate(self.x_test_mnist)

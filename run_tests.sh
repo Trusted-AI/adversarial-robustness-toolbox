@@ -54,9 +54,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_zoo.py" \
                     "tests/attacks/test_pixel_attack.py" \
                     "tests/attacks/test_threshold_attack.py" \
-                    "tests/attacks/test_wasserstein.py" \
-                    "tests/attacks/test_targeted_universal_perturbation.py" \
-                    "tests/attacks/test_simba.py" )
+                    "tests/attacks/test_wasserstein.py" )
 
 declare -a classifiers=("tests/estimators/certification/test_randomized_smoothing.py" \
                         "tests/estimators/classification/test_blackbox.py" \
