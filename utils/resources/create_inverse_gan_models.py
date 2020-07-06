@@ -224,43 +224,43 @@ def build_gan_graph(learning_rate, latent_encoding_length, batch_size=None):
     disc_fake_tf, disc_fake_logits_tf = create_discriminator_layers(generator_tf)
 
     # CREATE LOSSES
-    #disc_loss_real_tf = tf.losses.sigmoid_cross_entropy(
-    #    multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_real_logits_tf
-    #)
+    disc_loss_real_tf = tf.losses.sigmoid_cross_entropy(
+        multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_real_logits_tf
+    )
 
-    #disc_loss_fake_tf = tf.losses.sigmoid_cross_entropy(
-    #    multi_class_labels=tf.zeros([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
-    #)
-    #disc_loss_tf = disc_loss_real_tf + disc_loss_fake_tf
+    disc_loss_fake_tf = tf.losses.sigmoid_cross_entropy(
+        multi_class_labels=tf.zeros([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
+    )
+    disc_loss_tf = disc_loss_real_tf + disc_loss_fake_tf
 
-    #gen_loss = tf.losses.sigmoid_cross_entropy(
-    #    multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
-    #)
+    gen_loss = tf.losses.sigmoid_cross_entropy(
+        multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
+    )
 
     # DCGAN see https://github.com/kabkabm/defensegan/blob/master/models/gan.py
     # CREATE LOSSES
-    disc_loss_real_tf = tf.reduce_mean(
-        tf.nn.sigmoid_cross_entropy_with_logits(
-            logits=disc_real_logits_tf,
-            labels=tf.ones_like(disc_real_logits_tf)
-        )
-    )
+    #disc_loss_real_tf = tf.reduce_mean(
+    #    tf.nn.sigmoid_cross_entropy_with_logits(
+    #        logits=disc_real_logits_tf,
+    #        labels=tf.ones_like(disc_real_logits_tf)
+    #    )
+    #)
 
-    disc_loss_fake_tf = tf.reduce_mean(
-        tf.nn.sigmoid_cross_entropy_with_logits(
-            logits=disc_fake_logits_tf,
-            labels=tf.zeros_like(disc_fake_logits_tf)
-        )
-    )
+    #disc_loss_fake_tf = tf.reduce_mean(
+    #    tf.nn.sigmoid_cross_entropy_with_logits(
+    #        logits=disc_fake_logits_tf,
+    #        labels=tf.zeros_like(disc_fake_logits_tf)
+    #    )
+    #)
 
-    disc_loss_tf = (disc_loss_real_tf + disc_loss_fake_tf) / 2.0
+    #disc_loss_tf = (disc_loss_real_tf + disc_loss_fake_tf) / 2.0
 
-    gen_loss = tf.reduce_mean(
-        tf.nn.sigmoid_cross_entropy_with_logits(
-            logits=disc_fake_logits_tf,
-            labels=tf.ones_like(disc_fake_logits_tf)
-        )
-    )
+    #gen_loss = tf.reduce_mean(
+    #    tf.nn.sigmoid_cross_entropy_with_logits(
+    #        logits=disc_fake_logits_tf,
+    #        labels=tf.ones_like(disc_fake_logits_tf)
+    #    )
+    #)
 
     # CREATE OPTIMIZERS
     # We only want generator variables to be trained when running the generator and not discriminator variables etc.
