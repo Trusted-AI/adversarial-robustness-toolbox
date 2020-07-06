@@ -148,6 +148,9 @@ class AdversarialPatch(EvasionAttack):
         """
         return self._attack.apply_patch(x, scale, patch_external=patch_external)
 
+    def set_params(self, **kwargs) -> None:
+        self._attack.set_params(**kwargs)
+
     def _check_params(self) -> None:
         if not isinstance(self._attack.rotation_max, (float, int)):
             raise ValueError("The maximum rotation of the random patches must be of type float.")
