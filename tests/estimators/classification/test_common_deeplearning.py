@@ -90,14 +90,14 @@ def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get
         assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
 
         # TODO we should consider checking channel independent columns to make this test truly framework independent
-        if framework == "pytorch":
+        if mnist_shape[0] == 1:
             sub_gradients = gradients[0, 0, :, 14]
         else:
             sub_gradients = gradients[0, :, 14, 0]
 
         np.testing.assert_array_almost_equal(sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1], )
 
-        if framework == "pytorch":
+        if mnist_shape[0] == 1:
             sub_gradients = gradients[0, 0, 14, :]
         else:
             sub_gradients = gradients[0, 14, :, 0]
@@ -205,25 +205,25 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
 
         # TODO we should consider checking channel independent columns to make this test truly framework independent
         def get_gradient1_column(gradients):
-            if framework == "pytorch":
+            if mnist_shape[0] == 1:
                 return gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
             else:
                 return gradients[0, 5, 14, :, 0]
 
         def get_gradient2_column(gradients):
-            if framework == "pytorch":
+            if mnist_shape[0] == 1:
                 return gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
             else:
                 return gradients[0, 5, :, 14, 0]
 
         def get_gradient3_column(gradients):
-            if framework == "pytorch":
+            if mnist_shape[0] == 1:
                 return gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
             else:
                 return gradients[0, 0, 14, :, 0]
 
         def get_gradient4_column(gradients):
-            if framework == "pytorch":
+            if mnist_shape[0] == 1:
                 return gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
             else:
                 return gradients[0, 0, :, 14, 0]
