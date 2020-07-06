@@ -24,15 +24,6 @@ import tensorflow as tf
 
 from art.utils import load_mnist
 
-config = tf.ConfigProto(
-    gpu_options=tf.GPUOptions(
-        #visible_device_list="1", # specify GPU number
-        allow_growth=True
-    )
-)
-tf.Session(config = config)
-
-
 logging.root.setLevel(logging.NOTSET)
 logging.basicConfig(level=logging.NOTSET)
 logger = logging.getLogger(__name__)
@@ -69,7 +60,6 @@ def create_generator_layers(x):
 
         # denormalizing images
         output_resized = tf.image.resize_images(output, [28, 28])
-        #return tf.multiply(tf.add(output_resized, 0.5), 0.5, name="output")
         return tf.add(tf.multiply(output_resized, 0.5), 0.5, name="output")
 
 
@@ -154,9 +144,9 @@ def predict(sess, batch_size, generator_tf, z):
 def train_models(
     sess, x_train, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph, z_ph, latent_encoder_loss, encoder_optimizer
 ):
-    train_epoch = 10
+    train_epoch = 3
     latent_encoding_length = z_ph.get_shape()[1]
-    batch_size = 256
+    batch_size = x_train.shape[0]
     # training-loop
     np.random.seed(int(time.time()))
     logging.info("Starting training")
@@ -231,7 +221,6 @@ def build_gan_graph(learning_rate, latent_encoding_length, batch_size=None):
         multi_class_labels=tf.zeros([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
     )
     disc_loss_tf = disc_loss_real_tf + disc_loss_fake_tf
-
     gen_loss = tf.losses.sigmoid_cross_entropy(
         multi_class_labels=tf.ones([batch_size, 1, 1, 1]), logits=disc_fake_logits_tf
     )
@@ -273,7 +262,7 @@ def build_inverse_gan_graph(learning_rate, generator_tf, z_ph, latent_encoding_l
 def main():
     model_name = "model-dcgan"
 
-    root = "models/inverseGAN/"
+    root = "../utils/resources/models/tensorflow1/"
 
     if not os.path.isdir(root):
         os.mkdir(root)
@@ -284,12 +273,12 @@ def main():
     logging.info("Loading a Dataset")
     (x_train_original, y_train_original), (_, _), _, _ = load_mnist()
 
-    batch_size = 256
+    batch_size = 100
 
     (x_train, y_train) = (x_train_original[:batch_size], y_train_original[:batch_size])
 
     lr = 0.0002
-    latent_enc_len = 128
+    latent_enc_len = 100
 
     gen_tf, z_ph, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph = build_gan_graph(
         lr, latent_enc_len, batch_size
@@ -299,7 +288,7 @@ def main():
     sess = tf.Session()
     sess.run(tf.global_variables_initializer())
 
-    train_models(sess, x_train_original, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph, z_ph, latent_enc_loss, enc_opt)
+    train_models(sess, x_train, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph, z_ph, latent_enc_loss, enc_opt)
 
     saver = tf.train.Saver()
     saver.save(sess, os.path.join(model_path, model_name))
