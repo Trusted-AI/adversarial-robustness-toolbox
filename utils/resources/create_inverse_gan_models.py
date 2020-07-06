@@ -155,7 +155,7 @@ def predict(sess, batch_size, generator_tf, z):
 def train_models(
     sess, x_train, gen_loss, gen_opt_tf, disc_loss_tf, disc_opt_tf, x_ph, z_ph, latent_encoder_loss, encoder_optimizer
 ):
-    train_epoch = 200
+    train_epoch = 10
     latent_encoding_length = z_ph.get_shape()[1]
     batch_size = 256
     # training-loop
