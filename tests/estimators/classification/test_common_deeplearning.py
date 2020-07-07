@@ -77,7 +77,7 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
 def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get_image_classifier_list,
                        expected_values, mnist_shape, store_expected_values):
     if framework == "keras" and is_keras_2_3() is False:
-        # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
+        # Keras 2.2 does not support creating classifiers with logits=True so skipping this test d
         return
 
     (expected_gradients_1, expected_gradients_2) = expected_values
