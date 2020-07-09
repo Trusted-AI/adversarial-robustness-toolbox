@@ -194,11 +194,13 @@ class AutoAttack(EvasionAttack):
 
         # Create a new attack list
         attacks = list()
+
         for attack in self.attacks:
             if hasattr(attack, 'targeted') and attack.targeted:
                 for i in range(y.shape[1] - 1):
                     target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
                     attacks.append((attack, target))
+
             else:
                 attacks.append((attack, y))
 
@@ -251,7 +253,60 @@ class AutoAttack(EvasionAttack):
         :param sample_is_robust: Store the initial robustness of examples.
         :return: An array holding the adversarial examples.
         """
+        # Initialize adversarial examples with original examples
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
+        # Create a new attack list
+        untargeted_attacks = list()
+        targeted_attacks = list()
+
+        for attack in self.attacks:
+            if hasattr(attack, 'targeted'):
+                # For untargeted attacks
+                attack.targeted = False
+                untargeted_attacks.append((attack, y))
+
+                # For targeted attacks
+                attack_ = attack.clone()
+                attack_.targeted = True
+
+                for i in range(y.shape[1] - 1):
+                    target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
+                    targeted_attacks.append((attack_, target))
+
+            else:
+                untargeted_attacks.append((attack, y))
+
+        # Auto attack
+        for (attack, label) in attacks:
+            # Stop when all examples are attacked successfully
+            if np.sum(sample_is_robust) == 0:
+                break
+
+            # Only attack on unsuccessful examples
+            x_robust = x_adv[sample_is_robust]
+            y_robust = label[sample_is_robust]
+
+            # Generate adversarial examples
+            x_robust_adv = attack.generate(x=x_robust, y=y_robust)
+            y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
+
+            # Check and update successful examples
+            norm_is_smaller_eps = (
+                np.linalg.norm((x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm)
+                <= self.eps
+            )
+
+            sample_is_not_robust = np.logical_and(
+                np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1), norm_is_smaller_eps
+            )
+
+            x_robust[sample_is_not_robust] = x_robust_adv[sample_is_not_robust]
+            x_adv[sample_is_robust] = x_robust
+
+            sample_is_robust[sample_is_robust] = np.invert(sample_is_not_robust)
+
+        return x_adv
 
     def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf]:
