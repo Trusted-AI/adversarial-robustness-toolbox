@@ -73,7 +73,7 @@ class AutoAttack(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param estimator_orig: Original estimator to be attacked by adversarial examples.
         :param defined_attack_only: A bool variable to indicate whether to run only the attacks in the list as they are
-                                    if defined_attack_only is True, otherwise the attacks in the list will be run
+                                    if `defined_attack_only` is True, otherwise the attacks in the list will be run
                                     with untargeted option following by targeted options.
         """
         super().__init__(estimator=estimator)
@@ -84,7 +84,7 @@ class AutoAttack(EvasionAttack):
         # Only run attacks as they are if attack list is not None
         if defined_attack_only and attacks is None:
             raise ValueError(
-                'The `defined_attack_only` option is only supported when the list of attacks input is provided.'
+                "The `defined_attack_only` option is only supported when the list of attacks input is provided."
             )
 
         if attacks is None:
@@ -179,6 +179,20 @@ class AutoAttack(EvasionAttack):
 
         return x_adv
 
+    def _original_attacks(self):
+        """
+        This function is used to run only the attacks in the attack list input as they are when `defined_attack_only`
+        is True.
+        :return:
+        """
+
+    def _strengthen_attacks(self):
+        """
+        This function is used to run the attacks in the attack list input with untargeted option following by targeted
+        options when `defined_attack_only` is False.
+        :return:
+        """
+
     def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf]:
             raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
@@ -191,3 +205,6 @@ class AutoAttack(EvasionAttack):
 
         if not isinstance(self.batch_size, int) or self.batch_size <= 0:
             raise ValueError("The argument batch_size has to be of type int and larger than zero.")
+
+        if not isinstance(self.defined_attack_only, bool):
+            raise ValueError("The flag `defined_attack_only` has to be of type bool.")
