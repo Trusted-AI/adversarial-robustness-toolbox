@@ -277,6 +277,9 @@ class AutoAttack(EvasionAttack):
             else:
                 untargeted_attacks.append((attack, y))
 
+        # Unite the 2 attack lists
+        attacks = untargeted_attacks + targeted_attacks
+
         # Auto attack
         for (attack, label) in attacks:
             # Stop when all examples are attacked successfully
