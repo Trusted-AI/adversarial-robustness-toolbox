@@ -233,15 +233,25 @@ class AutoAttack(EvasionAttack):
 
         return x_adv
 
-    def _run_strengthen_attacks(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+    def _run_strengthen_attacks(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        targeted_labels: np.ndarray,
+        sample_is_robust: np.ndarray
+    ) -> np.ndarray:
         """
         This function is used to run the attacks in the attack list input with untargeted option following by targeted
         options when `defined_attack_only` is False.
 
         :param x: An array with the original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+        :param targeted_labels: Target values (class labels) indices of shape `(nb_samples, nb_classes - 1)`. Used in
+                                targeted attacks.
+        :param sample_is_robust: Store the initial robustness of examples.
         :return: An array holding the adversarial examples.
         """
+
 
     def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf]:
