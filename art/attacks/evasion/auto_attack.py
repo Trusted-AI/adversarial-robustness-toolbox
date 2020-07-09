@@ -142,53 +142,11 @@ class AutoAttack(EvasionAttack):
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
         :return: An array holding the adversarial examples.
         """
-        x_adv = x.astype(ART_NUMPY_DTYPE)
+        # Setup labels
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
-
-        # Determine correctly predicted samples
-        y_pred = self.estimator_orig.predict(x_adv)
-        sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
-
-        for attack in self.attacks:
-            if np.sum(sample_is_robust) == 0:
-                break
-
-            x_robust = x_adv[sample_is_robust]
-            y_robust = y[sample_is_robust]
-
-            # Generate adversarial examples with untargeted attack
-            x_robust_adv = attack.generate(x=x_robust, y=y_robust)
-            y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
-
-            norm_is_smaller_eps = (
-                np.linalg.norm((x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm)
-                <= self.eps
-            )
-
-            sample_is_not_robust = np.logical_and(
-                np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1), norm_is_smaller_eps
-            )
-
-            x_robust[sample_is_not_robust] = x_robust_adv[sample_is_not_robust]
-            x_adv[sample_is_robust] = x_robust
-
-            sample_is_robust[sample_is_robust] = np.invert(sample_is_not_robust)
-
-        return x_adv
-
-    def _original_attacks(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        """
-        This function is used to run only the attacks in the attack list input as they are when `defined_attack_only`
-        is True.
-
-        :param x: An array with the original inputs.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-        :return: An array holding the adversarial examples.
-        """
-        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Determine correctly predicted samples
         y_pred = self.estimator_orig.predict(x_adv)
@@ -199,14 +157,47 @@ class AutoAttack(EvasionAttack):
         y_idx = np.argmax(y, axis=1)
         y_idx = np.expand_dims(y_idx, 1)
         y_ = y_[y_ != y_idx]
-        y_ = np.reshape(y_, (y.shape[0], -1))
+        targeted_labels = np.reshape(y_, (y.shape[0], -1))
+
+        # Auto attack
+        if self.defined_attack_only:
+            x_adv = self._run_original_attacks(
+                x=x, y=y, targeted_labels=targeted_labels, sample_is_robust=sample_is_robust
+            )
+        else:
+            x_adv = self._run_strengthen_attacks(
+                x=x, y=y, targeted_labels=targeted_labels, sample_is_robust=sample_is_robust
+            )
+
+        return x_adv
+
+    def _run_original_attacks(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        targeted_labels: np.ndarray,
+        sample_is_robust: np.ndarray
+    ) -> np.ndarray:
+        """
+        This function is used to run only the attacks in the attack list input as they are when `defined_attack_only`
+        is True.
+
+        :param x: An array with the original inputs.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+        :param targeted_labels: Target values (class labels) indices of shape `(nb_samples, nb_classes - 1)`. Used in
+                                targeted attacks.
+        :param sample_is_robust: Store the initial robustness of examples.
+        :return: An array holding the adversarial examples.
+        """
+        # Initialize adversarial examples with original examples
+        x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Create a new attack list
         attacks = list()
         for attack in self.attacks:
             if hasattr(attack, 'targeted') and attack.targeted:
                 for i in range(y.shape[1] - 1):
-                    target = check_and_transform_label_format(y_[:, i], self.estimator.nb_classes)
+                    target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
                     attacks.append((attack, target))
             else:
                 attacks.append((attack, y))
@@ -242,13 +233,14 @@ class AutoAttack(EvasionAttack):
 
         return x_adv
 
-
-
-    def _strengthen_attacks(self):
+    def _run_strengthen_attacks(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
         This function is used to run the attacks in the attack list input with untargeted option following by targeted
         options when `defined_attack_only` is False.
-        :return:
+
+        :param x: An array with the original inputs.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+        :return: An array holding the adversarial examples.
         """
 
     def _check_params(self) -> None:
