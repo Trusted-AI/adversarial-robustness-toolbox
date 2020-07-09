@@ -21,7 +21,7 @@ This module implements the `AutoAttack` attack.
 | Paper link: https://arxiv.org/abs/2003.01690
 """
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 
 import numpy as np
 
@@ -149,7 +149,7 @@ class AutoAttack(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Determine correctly predicted samples
-        y_pred = self.estimator_orig.predict(x_adv)
+        y_pred = self.estimator_orig.predict(x.astype(ART_NUMPY_DTYPE))
         sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
         # Compute labels for targeted attacks
@@ -189,49 +189,22 @@ class AutoAttack(EvasionAttack):
         :param sample_is_robust: Store the initial robustness of examples.
         :return: An array holding the adversarial examples.
         """
-        # Initialize adversarial examples with original examples
-        x_adv = x.astype(ART_NUMPY_DTYPE)
-
         # Create a new attack list
-        attacks = list()
+        full_attack_list = list()
 
         for attack in self.attacks:
             if hasattr(attack, 'targeted') and attack.targeted:
                 for i in range(y.shape[1] - 1):
                     target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
-                    attacks.append((attack, target))
+                    full_attack_list.append((attack, target))
 
             else:
-                attacks.append((attack, y))
+                full_attack_list.append((attack, y))
 
         # Auto attack
-        for (attack, label) in attacks:
-            # Stop when all examples are attacked successfully
-            if np.sum(sample_is_robust) == 0:
-                break
-
-            # Only attack on unsuccessful examples
-            x_robust = x_adv[sample_is_robust]
-            y_robust = label[sample_is_robust]
-
-            # Generate adversarial examples
-            x_robust_adv = attack.generate(x=x_robust, y=y_robust)
-            y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
-
-            # Check and update successful examples
-            norm_is_smaller_eps = (
-                np.linalg.norm((x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm)
-                <= self.eps
-            )
-
-            sample_is_not_robust = np.logical_and(
-                np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1), norm_is_smaller_eps
-            )
-
-            x_robust[sample_is_not_robust] = x_robust_adv[sample_is_not_robust]
-            x_adv[sample_is_robust] = x_robust
-
-            sample_is_robust[sample_is_robust] = np.invert(sample_is_not_robust)
+        x_adv = self._run_main_auto_attack_algorithm(
+            x=x, full_attack_list=full_attack_list, sample_is_robust=sample_is_robust
+        )
 
         return x_adv
 
@@ -253,9 +226,6 @@ class AutoAttack(EvasionAttack):
         :param sample_is_robust: Store the initial robustness of examples.
         :return: An array holding the adversarial examples.
         """
-        # Initialize adversarial examples with original examples
-        x_adv = x.astype(ART_NUMPY_DTYPE)
-
         # Create a new attack list
         untargeted_attacks = list()
         targeted_attacks = list()
@@ -278,10 +248,34 @@ class AutoAttack(EvasionAttack):
                 untargeted_attacks.append((attack, y))
 
         # Unite the 2 attack lists
-        attacks = untargeted_attacks + targeted_attacks
+        full_attack_list = untargeted_attacks + targeted_attacks
 
         # Auto attack
-        for (attack, label) in attacks:
+        x_adv = self._run_main_auto_attack_algorithm(
+            x=x, full_attack_list=full_attack_list, sample_is_robust=sample_is_robust
+        )
+
+        return x_adv
+
+    def _run_main_auto_attack_algorithm(
+        self,
+        x: np.ndarray,
+        full_attack_list: List[Tuple[EvasionAttack, np.ndarray]],
+        sample_is_robust: np.ndarray
+    ) -> np.ndarray:
+        """
+        Run the main auto attack algorithm.
+
+        :param x: An array with the original inputs.
+        :param full_attack_list: A list of tuples of attacks and labels.
+        :param sample_is_robust: Store the initial robustness of examples.
+        :return: An array holding the adversarial examples.
+        """
+        # Initialize adversarial examples with original examples
+        x_adv = x.astype(ART_NUMPY_DTYPE)
+
+        # Auto attack algorithm
+        for (attack, label) in full_attack_list:
             # Stop when all examples are attacked successfully
             if np.sum(sample_is_robust) == 0:
                 break
