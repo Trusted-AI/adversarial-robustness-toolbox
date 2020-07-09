@@ -45,6 +45,7 @@ class AutoAttack(EvasionAttack):
         "attacks",
         "batch_size",
         "estimator_orig",
+        "defined_attack_only",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -58,6 +59,7 @@ class AutoAttack(EvasionAttack):
         attacks: Optional[List[EvasionAttack]] = None,
         batch_size: int = 32,
         estimator_orig: Optional[BaseEstimator] = None,
+        defined_attack_only: bool = False,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -70,11 +72,20 @@ class AutoAttack(EvasionAttack):
                         original AutoAttack (PGD, APGD-ce, APGD-dlr, FAB, Square) will be used.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param estimator_orig: Original estimator to be attacked by adversarial examples.
+        :param defined_attack_only: A bool variable to indicate whether to run only the attacks in the list as they are
+                                    if defined_attack_only is True, otherwise the attacks in the list will be run
+                                    with untargeted option following by targeted options.
         """
         super().__init__(estimator=estimator)
 
         if estimator_orig is None:
             estimator_orig = estimator
+
+        # Only run attacks as they are if attack list is not None
+        if defined_attack_only and attacks is None:
+            raise ValueError(
+                'The `defined_attack_only` option is only supported when the list of attacks input is provided.'
+            )
 
         if attacks is None:
             attacks = list()
@@ -117,6 +128,7 @@ class AutoAttack(EvasionAttack):
         self.attacks = attacks
         self.batch_size = batch_size
         self.estimator_orig = estimator_orig
+        self.defined_attack_only = defined_attack_only
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
