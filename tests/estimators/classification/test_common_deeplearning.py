@@ -15,6 +15,24 @@ def is_keras_2_3():
     return False
 
 
+#This ART pytest marker signals that the features being tested here are  is agnostic of what framework is being used and hence should only
+@pytest.mark.framework_agnostic
+def test_myTest(get_default_mnist_subset, get_image_classifier_list, expected_values):
+
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    #The get_image_classifier_list fixture creates a classifier implemented in the framework
+    # this test is being run with
+    classifier, sess = get_image_classifier_list(one_classifier=True)
+    (expected_value1, expected_value2) = expected_values
+
+    # example test code
+    labels = np.argmax(y_test_mnist, axis=1)
+    accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
+    assert accuracy_2 == expected_value1
+
+
+
 def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
