@@ -196,10 +196,10 @@ class AutoAttack(EvasionAttack):
             if hasattr(attack, 'targeted') and attack.targeted:
                 for i in range(y.shape[1] - 1):
                     target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
-                    full_attack_list.append((attack, target))
+                    full_attack_list.append((attack, target, True))
 
             else:
-                full_attack_list.append((attack, y))
+                full_attack_list.append((attack, y, False))
 
         # Auto attack
         x_adv = self._run_main_auto_attack_algorithm(
@@ -233,19 +233,15 @@ class AutoAttack(EvasionAttack):
         for attack in self.attacks:
             if hasattr(attack, 'targeted'):
                 # For untargeted attacks
-                attack.targeted = False
-                untargeted_attacks.append((attack, y))
+                untargeted_attacks.append((attack, y, False))
 
                 # For targeted attacks
-                attack_ = attack.clone()
-                attack_.targeted = True
-
                 for i in range(y.shape[1] - 1):
                     target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
-                    targeted_attacks.append((attack_, target))
+                    targeted_attacks.append((attack, target, True))
 
             else:
-                untargeted_attacks.append((attack, y))
+                untargeted_attacks.append((attack, y, False))
 
         # Unite the 2 attack lists
         full_attack_list = untargeted_attacks + targeted_attacks
@@ -260,14 +256,14 @@ class AutoAttack(EvasionAttack):
     def _run_main_auto_attack_algorithm(
         self,
         x: np.ndarray,
-        full_attack_list: List[Tuple[EvasionAttack, np.ndarray]],
+        full_attack_list: List[Tuple[EvasionAttack, np.ndarray, bool]],
         sample_is_robust: np.ndarray
     ) -> np.ndarray:
         """
         Run the main auto attack algorithm.
 
         :param x: An array with the original inputs.
-        :param full_attack_list: A list of tuples of attacks and labels.
+        :param full_attack_list: A list of tuples of attacks, labels and targeted features.
         :param sample_is_robust: Store the initial robustness of examples.
         :return: An array holding the adversarial examples.
         """
@@ -275,7 +271,7 @@ class AutoAttack(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Auto attack algorithm
-        for (attack, label) in full_attack_list:
+        for (attack, label, targeted) in full_attack_list:
             # Stop when all examples are attacked successfully
             if np.sum(sample_is_robust) == 0:
                 break
@@ -283,6 +279,10 @@ class AutoAttack(EvasionAttack):
             # Only attack on unsuccessful examples
             x_robust = x_adv[sample_is_robust]
             y_robust = label[sample_is_robust]
+
+            # Set targeted/untargeted attack
+            if hasattr(attack, 'targeted'):
+                attack.targeted = targeted
 
             # Generate adversarial examples
             x_robust_adv = attack.generate(x=x_robust, y=y_robust)
