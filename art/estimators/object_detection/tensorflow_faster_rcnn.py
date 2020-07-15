@@ -56,7 +56,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         model: Optional["FasterRCNNMetaArch"] = None,
         filename: Optional[str] = None,
         url: Optional[str] = None,
-        images: Optional["Tensor"] = None,
+        images: "Tensor",
         sess: Optional["Session"] = None,
         is_training: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
