@@ -53,10 +53,10 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
+        images: "Tensor",
         model: Optional["FasterRCNNMetaArch"] = None,
         filename: Optional[str] = None,
         url: Optional[str] = None,
-        images: "Tensor",
         sess: Optional["Session"] = None,
         is_training: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -74,6 +74,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         """
         Initialization of an instance TensorFlowFasterRCNN.
 
+        :param images: Input samples of shape (nb_samples, height, width, nb_channels).
         :param model: A TensorFlow Faster-RCNN model. The output that can be computed from the model includes a tuple
                       of (predictions, losses, detections):
 
@@ -85,7 +86,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                         - detections: a dictionary containing final detection results.
         :param filename: Name of the file.
         :param url: Download URL.
-        :param images: Input samples of shape (nb_samples, height, width, nb_channels).
         :param sess: Computation session.
         :param is_training: A boolean indicating whether the training version of the computation graph should be
                             constructed.
