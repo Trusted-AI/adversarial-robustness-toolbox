@@ -29,7 +29,6 @@ from object_detection.utils import variables_helper
 
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.tensorflow import TensorFlowEstimator
-from art.utils import Deprecated, deprecated_keyword_arg
 from art.utils import get_file
 from art.config import ART_DATA_PATH
 
@@ -191,7 +190,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             )
 
         # Save new attributes
-        self.input_shape = images.shape.as_list()[1:]
+        self._input_shape = images.shape.as_list()[1:]
         self.is_training: bool = is_training
         self.images: Optional["Tensor"] = images
         self.attack_losses: Tuple[str, ...] = attack_losses
@@ -336,7 +335,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :return: Loss gradients of the same shape as `x`.
         """
         # Only do loss_gradient if is_training is False
-        if self._is_training:
+        if self.is_training:
             raise NotImplementedError(
                 "This object detector was loaded in training mode and therefore not support loss_gradient."
             )
@@ -347,16 +346,16 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Get the loss gradients graph
         if not hasattr(self, '_loss_grads'):
             loss = None
-            for loss_name in self._attack_losses:
+            for loss_name in self.attack_losses:
                 if loss is None:
                     loss = self._losses[loss_name]
                 else:
                     loss = loss + self._losses[loss_name]
 
-            self._loss_grads: Tensor = tf.gradients(loss, self._images)[0]
+            self._loss_grads: Tensor = tf.gradients(loss, self.images)[0]
 
         # Create feed_dict
-        feed_dict = {self._images: x_preprocessed}
+        feed_dict = {self.images: x_preprocessed}
 
         for (placeholder, value) in zip(self._groundtruth_boxes_list, y['groundtruth_boxes_list']):
             feed_dict[placeholder] = value
@@ -392,7 +391,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     - raw_detection_scores: `[batch, total_detections, num_classes + 1]`
         """
         # Only do prediction if is_training is False
-        if self._is_training:
+        if self.is_training:
             raise NotImplementedError(
                 "This object detector was loaded in training mode and therefore not support prediction."
             )
@@ -401,12 +400,12 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Check if batch processing is appropriately set
-        if self._images.shape[0].value is not None:
-            if x.shape[0] % self._images.shape[0].value != 0:
+        if self.images.shape[0].value is not None:
+            if x.shape[0] % self.images.shape[0].value != 0:
                 raise ValueError("Number of prediction samples must be a multiple of input size.")
 
             logger.warning("Reset batch size to input size.")
-            batch_size = self._images.shape[0].value
+            batch_size = self.images.shape[0].value
 
         # Run prediction with batch processing
         num_samples = x.shape[0]
@@ -454,7 +453,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             begin, end = m * batch_size, min((m + 1) * batch_size, num_samples)
 
             # Create feed_dict
-            feed_dict = {self._images: x[begin:end]}
+            feed_dict = {self.images: x[begin:end]}
 
             # Run prediction
             batch_results = self._sess.run(self._detections, feed_dict=feed_dict)
@@ -474,11 +473,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     @property
     def input_images(self) -> "Tensor":
         """
-        Get the `_images` attribute.
+        Get the `images` attribute.
 
         :return: The input image tensor.
         """
-        return self._images
+        return self.images
 
     @property
     def predictions(self) -> Dict[str, "Tensor"]:

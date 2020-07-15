@@ -952,10 +952,7 @@ class ShapeShifter(EvasionAttack):
         return partial_loss
 
     @staticmethod
-    def _create_similarity_loss(
-        initial_input: "Tensor",
-        current_value: ["Tensor"
-    ) -> "Tensor":
+    def _create_similarity_loss(initial_input: "Tensor", current_value: "Tensor") -> "Tensor":
         """
         Create the partial loss tensor of this attack from the similarity loss.
 
