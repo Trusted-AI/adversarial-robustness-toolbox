@@ -105,13 +105,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               `first_stage_localization_loss`, `first_stage_objectness_loss`,
                               `second_stage_localization_loss`, `second_stage_classification_loss`.
         """
-        # Remove in 1.5.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
 
         # Super initialization
         super().__init__(
