@@ -48,10 +48,10 @@ class TestCarlini(TestBase):
 
         cls.n_train = 10
         cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0: cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0: cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0: cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0: cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def setUp(self):
         master_seed(seed=1234)
