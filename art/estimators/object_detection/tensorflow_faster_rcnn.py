@@ -50,7 +50,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     This class implements a model-specific object detector using Faster-RCNN and TensorFlow.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
         images: "Tensor",
