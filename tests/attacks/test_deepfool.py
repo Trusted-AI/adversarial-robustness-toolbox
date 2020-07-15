@@ -48,10 +48,10 @@ class TestDeepFool(TestBase):
 
         cls.n_train = 100
         cls.n_test = 11
-        cls.x_train_mnist = cls.x_train_mnist[0: cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0: cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0: cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0: cls.n_test]
+        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
+        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     @unittest.skipIf(
         not (int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3),
