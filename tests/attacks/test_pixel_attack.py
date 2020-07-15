@@ -63,8 +63,8 @@ class TestPixelAttack(TestBase):
         super().setUpClass()
 
         cls.n_test = 2
-        cls.x_test_mnist = cls.x_test_mnist[0: cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0: cls.n_test]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def test_keras_mnist(self):
         """
