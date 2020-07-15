@@ -60,7 +60,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         sess: Optional["Session"] = None,
         is_training: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channel_index=Deprecated,
         channels_first: Optional[bool] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
