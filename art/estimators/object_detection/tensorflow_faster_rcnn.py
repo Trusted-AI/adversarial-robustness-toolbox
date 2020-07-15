@@ -93,7 +93,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                             used as the range of all features. If arrays are provided, each value will be considered
                             the bound for a feature, thus the shape of clip values needs to match the total number
                             of features.
-        :param channel_index: Index of the axis in data containing the color channels or features.
         :param channels_first: Set channels first or last.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
@@ -108,7 +107,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Super initialization
         super().__init__(
             clip_values=clip_values,
-            channel_index=channel_index,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
