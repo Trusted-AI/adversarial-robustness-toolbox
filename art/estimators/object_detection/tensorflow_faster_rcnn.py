@@ -167,10 +167,10 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 )
 
             self._predictions, self._losses, self._detections = self._load_model(
+                images=images,
                 filename=filename,
                 url=url,
                 obj_detection_model=None,
-                images=images,
                 is_training=is_training,
                 groundtruth_boxes_list=self._groundtruth_boxes_list,
                 groundtruth_classes_list=self._groundtruth_classes_list,
@@ -179,10 +179,10 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         else:
             self._predictions, self._losses, self._detections = self._load_model(
+                images=images,
                 filename=None,
                 url=None,
                 obj_detection_model=model,
-                images=images,
                 is_training=is_training,
                 groundtruth_boxes_list=self._groundtruth_boxes_list,
                 groundtruth_classes_list=self._groundtruth_classes_list,
@@ -208,10 +208,10 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
     @staticmethod
     def _load_model(
+        images: "Tensor",
         filename: Optional[str] = None,
         url: Optional[str] = None,
         obj_detection_model: Optional["FasterRCNNMetaArch"] = None,
-        images: Optional["Tensor"] = None,
         is_training: bool = False,
         groundtruth_boxes_list: Optional[List["Tensor"]] = None,
         groundtruth_classes_list: Optional[List["Tensor"]] = None,
@@ -223,9 +223,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         formats will also be extracted. Then the model is loaded, pipelined and its outputs are returned as a tuple
         of (predictions, losses, detections).
 
+        :param images: Input samples of shape (nb_samples, height, width, nb_channels).
         :param filename: Name of the file.
         :param url: Download URL.
-        :param images: Input samples of shape (nb_samples, height, width, nb_channels).
         :param is_training: A boolean indicating whether the training version of the computation graph should be
                             constructed.
         :param groundtruth_boxes_list: A list of 2-D tf.float32 tensors of shape [num_boxes, 4] containing

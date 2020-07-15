@@ -428,13 +428,6 @@ class ShapeShifter(EvasionAttack):
                 self.estimator.sess.run(current_image_assign_to_input_image_op, feed_dict)
                 self.estimator.sess.run(accumulated_gradients_op, feed_dict)
 
-            # # Update feed_dict with true labels
-            # if self.texture_as_input:
-            #     for i in range(x.shape[0]):
-            #         feed_dict['groundtruth_boxes_{}:0'.format(i)] = y['groundtruth_boxes_list'][i]
-            #         feed_dict['groundtruth_classes_{}:0'.format(i)] = y['groundtruth_classes_list'][i]
-            #         feed_dict['groundtruth_weights_{}:0'.format(i)] = y['groundtruth_weights_list'][i]
-
             # Update image/texture variable
             self.estimator.sess.run(final_attack_optimization_op, feed_dict)
 
@@ -538,34 +531,6 @@ class ShapeShifter(EvasionAttack):
             current_image = (tf.tanh(current_image) + 1) / 2
             current_image = tf.identity(current_image, name='current_image')
 
-        # # Generate random transformed images
-        # # Define the stop condition
-        # def stop_condition(i, _):
-        #     return tf.less(i, self.batch_random_size)
-        #
-        # # Random transformation of the image
-        # def main_body_loop(i, batch):
-        #     transformed_image = self.random_transform(current_image)
-        #     batch = tf.cond(
-        #         tf.equal(i, 0),
-        #         lambda: tf.concat([[transformed_image]], axis=0),
-        #         lambda: tf.concat([batch, [transformed_image]], axis=0)
-        #     )
-        #     return i + 1, batch
-        #
-        # _, batch = tf.while_loop(
-        #     cond=stop_condition,
-        #     body=main_body_loop,
-        #     loop_vars=[tf.zeros([]), None],
-        #     back_prop=True,
-        #     name='generate_random_transformed_images'
-        # )
-        #
-        # # Assign batch to the input of the object detector
-        # batch_assign_to_input_images = tf.assign(
-        #     ref=self.estimator.input_images, value=batch, name='batch_assign_to_input_images'
-        # )
-
         # Assign current image to the input of the object detector
         current_image_assign_to_input_image_op = tf.assign(
             ref=self.estimator.input_images, value=current_image, name='current_image_assign_to_input_image_op'
@@ -574,11 +539,11 @@ class ShapeShifter(EvasionAttack):
         # Create attack loss
         if self.texture_as_input:
             total_loss = self._create_attack_loss(
-                custom_loss=custom_loss, initial_input=initial_input, current_value=current_texture
+                initial_input=initial_input, current_value=current_texture, custom_loss=custom_loss
             )
         else:
             total_loss = self._create_attack_loss(
-                custom_loss=custom_loss, initial_input=initial_input, current_value=current_image
+                initial_input=initial_input, current_value=current_image, custom_loss=custom_loss
             )
 
         # Create optimizer
@@ -697,16 +662,16 @@ class ShapeShifter(EvasionAttack):
 
     def _create_attack_loss(
         self,
+        initial_input: "Tensor",
+        current_value: "Tensor",
         custom_loss: Optional["Tensor"] = None,
-        initial_input: Optional["Tensor"] = None,
-        current_value: Optional["Tensor"] = None
     ) -> "Tensor":
         """
         Create the loss tensor of this attack.
 
-        :param custom_loss: Custom loss function from users.
         :param initial_input: Initial input.
         :param current_value: Current image/texture.
+        :param custom_loss: Custom loss function from users.
         :return: Attack loss tensor.
         """
         # Compute faster rcnn loss
