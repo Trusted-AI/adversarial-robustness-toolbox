@@ -38,11 +38,11 @@ class AbstainPredictorMixin(ClassifierMixin):
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
-    def __init__(self) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         """
         Create an abstain predictor.
         """
-        pass
+        super().__init__(*args, **kwargs)
 
     def abstain(self) -> np.ndarray:
         """
