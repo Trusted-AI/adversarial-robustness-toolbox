@@ -141,7 +141,7 @@ class SquareAttack(EvasionAttack):
                     x_robust + self.eps * np.random.choice([-1, 1], size=size),
                     a_min=self.estimator.clip_values[0],
                     a_max=self.estimator.clip_values[1],
-                )
+                ).astype(ART_NUMPY_DTYPE)
 
                 sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
                 logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
@@ -189,7 +189,7 @@ class SquareAttack(EvasionAttack):
 
                     x_robust_new = np.clip(
                         x_robust_new, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1]
-                    )
+                    ).astype(ART_NUMPY_DTYPE)
 
                     sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
                     logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
