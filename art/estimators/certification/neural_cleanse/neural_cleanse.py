@@ -254,6 +254,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
             # Points with anomaly_index > 2 have 95% probability of being an outlier
             # Backdoor outliers show up as masks with small l1 norms
             if l1_norms[class_idx] <= median and anomaly_index > 2:
+                logger.warning("Detected potential backdoor in class: " + str(class_idx))
                 flagged_labels.append(class_idx)
 
         return [(label, masks[label], patterns[label]) for label in flagged_labels]
