@@ -304,6 +304,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                     self._loss_fn = difference_logits_ratio
                     self._loss_object = difference_logits_ratio
+            elif loss_type is None:
+                self._loss_object = estimator._loss_object
+            else:
+                raise ValueError(
+                    "The argument loss_type has an invalid value. The following options for loss_type are "
+                    "supported: {}".format([None, "cross_entropy", "difference_logits_ratio"])
+                )
 
             estimator_apgd = PyTorchClassifier(
                 model=estimator.model,
