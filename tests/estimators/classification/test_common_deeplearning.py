@@ -15,13 +15,13 @@ def is_keras_2_3():
     return False
 
 
-#This ART pytest marker signals that the features being tested here are  is agnostic of what framework is being used and hence should only
+# This ART pytest marker signals that the features being tested here are  is agnostic of what framework is being used and hence should only
 @pytest.mark.framework_agnostic
 def test_myTest(get_default_mnist_subset, get_image_classifier_list, expected_values):
 
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    #The get_image_classifier_list fixture creates a classifier implemented in the framework
+    # The get_image_classifier_list fixture creates a classifier implemented in the framework
     # this test is being run with
     classifier, sess = get_image_classifier_list(one_classifier=True)
     (expected_value1, expected_value2) = expected_values
@@ -30,7 +30,6 @@ def test_myTest(get_default_mnist_subset, get_image_classifier_list, expected_va
     labels = np.argmax(y_test_mnist, axis=1)
     accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
     assert accuracy_2 == expected_value1
-
 
 
 def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
@@ -64,8 +63,9 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
         assert loss_gradients.shape == x_test_mnist[:11].shape
 
 
-def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_list, image_data_generator,
-                             get_default_mnist_subset):
+def test_fit_image_generator(
+    framework, is_tf_version_2, get_image_classifier_list, image_data_generator, get_default_mnist_subset
+):
     if framework == "tensorflow" and is_tf_version_2:
         return
 
@@ -82,18 +82,29 @@ def test_fit_image_generator(framework, is_tf_version_2, get_image_classifier_li
         prediction_class = np.argmax(predictions, axis=1)
         pre_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-        np.testing.assert_array_almost_equal(pre_fit_accuracy, 0.32, decimal=0.06, )
+        np.testing.assert_array_almost_equal(
+            pre_fit_accuracy, 0.32, decimal=0.06,
+        )
 
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
         predictions = classifier.predict(x_test_mnist)
         prediction_class = np.argmax(predictions, axis=1)
         post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-        np.testing.assert_array_almost_equal(post_fit_accuracy, 0.68, decimal=0.06, )
+        np.testing.assert_array_almost_equal(
+            post_fit_accuracy, 0.68, decimal=0.06,
+        )
 
 
-def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get_image_classifier_list,
-                       expected_values, mnist_shape, store_expected_values):
+def test_loss_gradient(
+    framework,
+    is_tf_version_2,
+    get_default_mnist_subset,
+    get_image_classifier_list,
+    expected_values,
+    mnist_shape,
+    store_expected_values,
+):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test d
         return
@@ -113,14 +124,18 @@ def test_loss_gradient(framework, is_tf_version_2, get_default_mnist_subset, get
         else:
             sub_gradients = gradients[0, :, 14, 0]
 
-        np.testing.assert_array_almost_equal(sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1], )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
+        )
 
         if mnist_shape[0] == 1:
             sub_gradients = gradients[0, 0, 14, :]
         else:
             sub_gradients = gradients[0, 14, :, 0]
 
-        np.testing.assert_array_almost_equal(sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1], )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
+        )
 
 
 def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_classifier_list):
@@ -131,7 +146,8 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
 
             if framework == "tensorflow" and is_tf_version_2:
                 raise NotImplementedError(
-                    "fw_agnostic_backend_test_layers not implemented for framework {0}".format(framework))
+                    "fw_agnostic_backend_test_layers not implemented for framework {0}".format(framework)
+                )
 
             batch_size = 128
             for i, name in enumerate(classifier.layer_names):
@@ -142,8 +158,9 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
         warnings.warn(UserWarning(e))
 
 
-def test_predict(request, framework, get_default_mnist_subset, get_image_classifier_list,
-                 expected_values, store_expected_values):
+def test_predict(
+    request, framework, get_default_mnist_subset, get_image_classifier_list, expected_values, store_expected_values
+):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
@@ -209,14 +226,22 @@ def test_repr(get_image_classifier_list, expected_values, framework, store_expec
         warnings.warn(UserWarning(e))
 
 
-def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_subset, mnist_shape,
-                        store_expected_values, expected_values):
+def test_class_gradient(
+    framework, get_image_classifier_list, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
+):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
 
-    (grad_1_all_labels, grad_2_all_labels, grad_1_label5, grad_2_label5, grad_1_labelArray, grad_2_labelArray,
-     labels_list) = expected_values
+    (
+        grad_1_all_labels,
+        grad_2_all_labels,
+        grad_1_label5,
+        grad_2_label5,
+        grad_1_labelArray,
+        grad_2_labelArray,
+        labels_list,
+    ) = expected_values
 
     labels = np.array(labels_list, dtype=object)
 
@@ -258,11 +283,15 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
 
         sub_gradients = get_gradient1_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_1_all_labels[0], decimal=grad_1_all_labels[1], )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, grad_1_all_labels[0], decimal=grad_1_all_labels[1],
+        )
 
         sub_gradients = get_gradient2_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_2_all_labels[0], decimal=grad_2_all_labels[1], )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, grad_2_all_labels[0], decimal=grad_2_all_labels[1],
+        )
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
@@ -271,11 +300,15 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
 
         sub_gradients = get_gradient3_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_1_label5[0], decimal=grad_1_label5[1], )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, grad_1_label5[0], decimal=grad_1_label5[1],
+        )
 
         sub_gradients = get_gradient4_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_2_label5[0], decimal=grad_2_label5[1], )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, grad_2_label5[0], decimal=grad_2_label5[1],
+        )
 
         # # Test a set of gradients label = array
         # # label = np.random.randint(5, size=self.n_test)
@@ -286,8 +319,12 @@ def test_class_gradient(framework, get_image_classifier_list, get_default_mnist_
 
         sub_gradients = get_gradient3_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_1_labelArray[0], decimal=grad_1_labelArray[1], )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, grad_1_labelArray[0], decimal=grad_1_labelArray[1],
+        )
 
         sub_gradients = get_gradient4_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients, grad_2_labelArray[0], decimal=grad_2_labelArray[1], )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, grad_2_labelArray[0], decimal=grad_2_labelArray[1],
+        )

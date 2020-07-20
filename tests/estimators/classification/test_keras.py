@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 # %TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
 
+
 def _functional_model():
     in_layer = Input(shape=(28, 28, 1), name="input0")
     layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
@@ -374,12 +375,12 @@ def test_loss_functions(get_default_mnist_subset, get_image_classifier_list):
     )
 
     def _run_tests(
-            _loss_name,
-            _loss_type,
-            _y_test_pred_expected,
-            _class_gradient_probabilities_expected,
-            _loss_gradient_expected,
-            _from_logits,
+        _loss_name,
+        _loss_type,
+        _y_test_pred_expected,
+        _class_gradient_probabilities_expected,
+        _loss_gradient_expected,
+        _from_logits,
     ):
 
         classifier, _ = get_image_classifier_list(
