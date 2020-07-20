@@ -63,7 +63,7 @@ class FeatureAdversaries(EvasionAttack):
         :param layer: Index of the representation layer.
         :param batch_size: Batch size.
         """
-        super(FeatureAdversaries, self).__init__(classifier)
+        super(FeatureAdversaries, self).__init__(estimator=classifier)
 
         self.delta = delta
         self.layer = layer
