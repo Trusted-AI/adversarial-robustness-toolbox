@@ -136,54 +136,54 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         :return: Tuple of length 2 of the selected class and certified radius.
         """
         backdoor_data, backdoor_labels = self.backdoor_examples(x_val, y_val)
+        if "pruning" in mitigation_types or "filtering" in mitigation_types:
+            # get activations from penultimate layer from clean and backdoor images
+            clean_activations = self._get_penultimate_layer_activations(x_val)
+            backdoor_activations = self._get_penultimate_layer_activations(backdoor_data)
+
+            # rank activations descending by difference in backdoor and clean inputs
+            # TODO: explore ranking neurons for each backdoor label
+            ranked_indices = np.argsort(clean_activations - backdoor_activations)
+
         for mitigation_type in mitigation_types:
             if mitigation_type == "unlearning":
                 # Train one epoch on generated backdoors
                 # This mitigation method works well for Trojan attacks
 
                 self._fit_classifier(backdoor_data, backdoor_labels, batch_size=1, nb_epochs=1)
-            elif mitigation_type == "pruning" or mitigation_type == "filtering":
-                # get activations from penultimate layer from clean and backdoor images
-                clean_activations = self._get_penultimate_layer_activations(x_val)
-                backdoor_activations = self._get_penultimate_layer_activations(backdoor_data)
 
-                # rank activations descending by difference in backdoor and clean inputs
-                # TODO: explore ranking neurons for each backdoor label
-                ranked_indices = np.argsort(clean_activations - backdoor_activations)
+            if mitigation_type == "pruning":
+                # zero out activations from highly ranked neurons until backdoor is unresponsive
+                # This mitigation method works well for backdoors.
 
-                if mitigation_type == "pruning":
-                    # zero out activations from highly ranked neurons until backdoor is unresponsive
-                    # This mitigation method works well for backdoors.
+                backdoor_effective = self.check_backdoor_effective(backdoor_data, backdoor_labels)
+                num_neurons_pruned = 0
+                total_neurons = len(clean_activations)
 
+                # starting from indices of high activation neurons, set weights (and biases) of high activation
+                # neurons to zero, until backdoor ineffective or pruned 30% of neurons
+                while backdoor_effective and num_neurons_pruned < 0.3 * total_neurons and \
+                        num_neurons_pruned < len(ranked_indices):
+                    self._prune_neuron_at_index(ranked_indices[num_neurons_pruned])
+                    num_neurons_pruned += 1
                     backdoor_effective = self.check_backdoor_effective(backdoor_data, backdoor_labels)
-                    num_neurons_pruned = 0
-                    total_neurons = len(clean_activations)
 
-                    # starting from indices of high activation neurons, set weights (and biases) of high activation
-                    # neurons to zero, until backdoor ineffective or pruned 30% of neurons
-                    while backdoor_effective and num_neurons_pruned < 0.3 * total_neurons and \
-                            num_neurons_pruned < len(ranked_indices):
-                        self._prune_neuron_at_index(ranked_indices[num_neurons_pruned])
-                        num_neurons_pruned += 1
-                        backdoor_effective = self.check_backdoor_effective(backdoor_data, backdoor_labels)
+            if mitigation_type == "filtering":
+                # using top 1% of ranked neurons by activation difference to adv vs. clean inputs
+                # generate a profile of average activation, when above threshold, abstain
 
-                if mitigation_type == "filtering":
-                    # using top 1% of ranked neurons by activation difference to adv vs. clean inputs
-                    # generate a profile of average activation, when above threshold, abstain
+                # get indicies of top 1% of ranked neurons
+                num_top = np.ceil(len(ranked_indices) * 0.01)
+                self.top_indices = ranked_indices[:num_top]
 
-                    # get indicies of top 1% of ranked neurons
-                    num_top = np.ceil(len(ranked_indices) * 0.01)
-                    self.top_indices = ranked_indices[:num_top]
+                # measure average activation for clean images and backdoor images
+                avg_clean_activation = np.average(clean_activations[self.top_indices])
+                std_clean_activation = np.std(clean_activations[self.top_indices])
 
-                    # measure average activation for clean images and backdoor images
-                    avg_clean_activation = np.average(clean_activations[self.top_indices])
-                    std_clean_activation = np.std(clean_activations[self.top_indices])
-
-                    # if average activation for selected neurons is above a threshold, flag input and abstain
-                    # activation over threshold function can be called at predict
-
-                    # TODO: explore different values for threshold
-                    self.activation_threshold = avg_clean_activation + 2 * std_clean_activation
+                # if average activation for selected neurons is above a threshold, flag input and abstain
+                # activation over threshold function can be called at predict
+                # TODO: explore different values for threshold
+                self.activation_threshold = avg_clean_activation + 2 * std_clean_activation
 
             else:
                 raise TypeError("Mitigation type: `" + mitigation_type + "` not supported")
