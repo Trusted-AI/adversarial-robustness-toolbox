@@ -55,6 +55,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_pixel_attack.py" \
                     "tests/attacks/test_threshold_attack.py" \
                     "tests/attacks/test_wasserstein.py" \
+                    "tests/attacks/test_shapeshifter.py" \
                     "tests/attacks/test_targeted_universal_perturbation.py" \
                     "tests/attacks/test_simba.py" )
 
@@ -72,6 +73,8 @@ declare -a classifiers=("tests/estimators/certification/test_randomized_smoothin
                         "tests/estimators/classification/test_pytorch.py" \
                         "tests/estimators/classification/test_scikitlearn.py" \
                         "tests/estimators/classification/test_xgboost.py" )
+
+declare -a object_detectors=("tests/estimators/object_detection/test_tensorflow_faster_rcnn.py")
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_adversarial_trainer_madry_pgd.py" \
@@ -110,6 +113,7 @@ declare -a art=("tests/test_data_generators.py" \
 
 tests_modules=("attacks" \
                "classifiers" \
+               "object_detectors" \
                "defences" \
                "metrics" \
                "wrappers" \

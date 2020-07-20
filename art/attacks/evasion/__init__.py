@@ -41,3 +41,4 @@ from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
 from art.attacks.evasion.square_attack import SquareAttack
 from art.attacks.evasion.simba import SimBA
+from art.attacks.evasion.shapeshifter import ShapeShifter
