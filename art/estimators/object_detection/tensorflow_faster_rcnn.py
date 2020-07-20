@@ -63,11 +63,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
         attack_losses: Tuple[str, ...] = (
-            'Loss/RPNLoss/localization_loss',
-            'Loss/RPNLoss/objectness_loss',
-            'Loss/BoxClassifierLoss/localization_loss',
-            'Loss/BoxClassifierLoss/classification_loss'
-        )
+            "Loss/RPNLoss/localization_loss",
+            "Loss/RPNLoss/objectness_loss",
+            "Loss/BoxClassifierLoss/localization_loss",
+            "Loss/BoxClassifierLoss/classification_loss",
+        ),
     ):
         """
         Initialization of an instance TensorFlowFasterRCNN.
@@ -128,31 +128,22 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create placeholders for groundtruth boxes
         self._groundtruth_boxes_list: List["Tensor"]
         self._groundtruth_boxes_list = [
-            tf.placeholder(
-                dtype=tf.float32,
-                shape=(None, 4),
-                name="groundtruth_boxes_{}".format(i)
-            ) for i in range(images.shape[0])
+            tf.placeholder(dtype=tf.float32, shape=(None, 4), name="groundtruth_boxes_{}".format(i))
+            for i in range(images.shape[0])
         ]
 
         # Create placeholders for groundtruth classes
         self._groundtruth_classes_list: List["Tensor"]
         self._groundtruth_classes_list = [
-            tf.placeholder(
-                dtype=tf.int32,
-                shape=(None,),
-                name="groundtruth_classes_{}".format(i)
-            ) for i in range(images.shape[0])
+            tf.placeholder(dtype=tf.int32, shape=(None,), name="groundtruth_classes_{}".format(i))
+            for i in range(images.shape[0])
         ]
 
         # Create placeholders for groundtruth weights
         self._groundtruth_weights_list: List["Tensor"]
         self._groundtruth_weights_list = [
-            tf.placeholder(
-                dtype=tf.float32,
-                shape=(None,),
-                name="groundtruth_weights_{}".format(i)
-            ) for i in range(images.shape[0])
+            tf.placeholder(dtype=tf.float32, shape=(None,), name="groundtruth_weights_{}".format(i))
+            for i in range(images.shape[0])
         ]
 
         # Load model
@@ -161,9 +152,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             # object detection model
             if filename is None or url is None:
                 filename, url = (
-                    'faster_rcnn_inception_v2_coco_2017_11_08',
-                    'http://download.tensorflow.org/models/object_detection/'
-                    'faster_rcnn_inception_v2_coco_2017_11_08.tar.gz'
+                    "faster_rcnn_inception_v2_coco_2017_11_08",
+                    "http://download.tensorflow.org/models/object_detection/"
+                    "faster_rcnn_inception_v2_coco_2017_11_08.tar.gz",
                 )
 
             self._predictions, self._losses, self._detections = self._load_model(
@@ -174,7 +165,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 is_training=is_training,
                 groundtruth_boxes_list=self._groundtruth_boxes_list,
                 groundtruth_classes_list=self._groundtruth_classes_list,
-                groundtruth_weights_list=self._groundtruth_weights_list
+                groundtruth_weights_list=self._groundtruth_weights_list,
             )
 
         else:
@@ -186,7 +177,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 is_training=is_training,
                 groundtruth_boxes_list=self._groundtruth_boxes_list,
                 groundtruth_classes_list=self._groundtruth_classes_list,
-                groundtruth_weights_list=self._groundtruth_weights_list
+                groundtruth_weights_list=self._groundtruth_weights_list,
             )
 
         # Save new attributes
@@ -215,7 +206,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         is_training: bool = False,
         groundtruth_boxes_list: Optional[List["Tensor"]] = None,
         groundtruth_classes_list: Optional[List["Tensor"]] = None,
-        groundtruth_weights_list: Optional[List["Tensor"]] = None
+        groundtruth_weights_list: Optional[List["Tensor"]] = None,
     ) -> Tuple[Dict[str, "Tensor"], ...]:
         """
         Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
@@ -260,31 +251,27 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
 
             # Load model config
-            pipeline_config = path + '/pipeline.config'
+            pipeline_config = path + "/pipeline.config"
             configs = config_util.get_configs_from_pipeline_file(pipeline_config)
-            configs['model'].faster_rcnn.second_stage_batch_size = configs[
-                'model'
+            configs["model"].faster_rcnn.second_stage_batch_size = configs[
+                "model"
             ].faster_rcnn.first_stage_max_proposals
 
             # Load model
             obj_detection_model = model_builder.build(
-                model_config=configs['model'],
-                is_training=is_training,
-                add_summaries=False
+                model_config=configs["model"], is_training=is_training, add_summaries=False
             )
 
         # Provide groundtruth
         groundtruth_classes_list = [
-            tf.one_hot(
-                groundtruth_class,
-                obj_detection_model.num_classes
-            ) for groundtruth_class in groundtruth_classes_list
+            tf.one_hot(groundtruth_class, obj_detection_model.num_classes)
+            for groundtruth_class in groundtruth_classes_list
         ]
 
         obj_detection_model.provide_groundtruth(
             groundtruth_boxes_list=groundtruth_boxes_list,
             groundtruth_classes_list=groundtruth_classes_list,
-            groundtruth_weights_list=groundtruth_weights_list
+            groundtruth_weights_list=groundtruth_weights_list,
         )
 
         # Create model pipeline
@@ -297,16 +284,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Initialize variables from checkpoint
         # Get variables to restore
         variables_to_restore = obj_detection_model.restore_map(
-            fine_tune_checkpoint_type='detection',
-            load_all_detection_checkpoint_vars=True
+            fine_tune_checkpoint_type="detection", load_all_detection_checkpoint_vars=True
         )
 
         # Get variables from checkpoint
-        fine_tune_checkpoint_path = path + '/model.ckpt'
+        fine_tune_checkpoint_path = path + "/model.ckpt"
         vars_in_ckpt = variables_helper.get_variables_available_in_checkpoint(
-            variables_to_restore,
-            fine_tune_checkpoint_path,
-            include_global_step=False
+            variables_to_restore, fine_tune_checkpoint_path, include_global_step=False
         )
 
         # Initialize from checkpoint
@@ -344,7 +328,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Get the loss gradients graph
-        if not hasattr(self, '_loss_grads'):
+        if not hasattr(self, "_loss_grads"):
             loss = None
             for loss_name in self.attack_losses:
                 if loss is None:
@@ -357,13 +341,13 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
 
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y['groundtruth_boxes_list']):
+        for (placeholder, value) in zip(self._groundtruth_boxes_list, y["groundtruth_boxes_list"]):
             feed_dict[placeholder] = value
 
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y['groundtruth_classes_list']):
+        for (placeholder, value) in zip(self._groundtruth_classes_list, y["groundtruth_classes_list"]):
             feed_dict[placeholder] = value
 
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y['groundtruth_weights_list']):
+        for (placeholder, value) in zip(self._groundtruth_weights_list, y["groundtruth_weights_list"]):
             feed_dict[placeholder] = value
 
         # Compute gradients
@@ -410,41 +394,48 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Run prediction with batch processing
         num_samples = x.shape[0]
         results = {
-            'detection_boxes': np.zeros((
-                num_samples,
-                self._detections['detection_boxes'].shape[1].value,
-                self._detections['detection_boxes'].shape[2].value
-            ), dtype=np.float32),
-            'detection_scores': np.zeros((
-                num_samples,
-                self._detections['detection_scores'].shape[1].value
-            ), dtype=np.float32),
-            'detection_classes': np.zeros((
-                num_samples,
-                self._detections['detection_classes'].shape[1].value
-            ), dtype=np.float32),
-            'detection_multiclass_scores': np.zeros((
-                num_samples,
-                self._detections['detection_multiclass_scores'].shape[1].value,
-                self._detections['detection_multiclass_scores'].shape[2].value
-            ), dtype=np.float32),
-            'detection_anchor_indices': np.zeros((
-                num_samples,
-                self._detections['detection_anchor_indices'].shape[1].value
-            ), dtype=np.float32),
-            'num_detections': np.zeros((
-                num_samples,
-            ), dtype=np.float32),
-            'raw_detection_boxes': np.zeros((
-                num_samples,
-                self._detections['raw_detection_boxes'].shape[1].value,
-                self._detections['raw_detection_boxes'].shape[2].value
-            ), dtype=np.float32),
-            'raw_detection_scores': np.zeros((
-                num_samples,
-                self._detections['raw_detection_scores'].shape[1].value,
-                self._detections['raw_detection_scores'].shape[2].value
-            ), dtype=np.float32)
+            "detection_boxes": np.zeros(
+                (
+                    num_samples,
+                    self._detections["detection_boxes"].shape[1].value,
+                    self._detections["detection_boxes"].shape[2].value,
+                ),
+                dtype=np.float32,
+            ),
+            "detection_scores": np.zeros(
+                (num_samples, self._detections["detection_scores"].shape[1].value), dtype=np.float32
+            ),
+            "detection_classes": np.zeros(
+                (num_samples, self._detections["detection_classes"].shape[1].value), dtype=np.float32
+            ),
+            "detection_multiclass_scores": np.zeros(
+                (
+                    num_samples,
+                    self._detections["detection_multiclass_scores"].shape[1].value,
+                    self._detections["detection_multiclass_scores"].shape[2].value,
+                ),
+                dtype=np.float32,
+            ),
+            "detection_anchor_indices": np.zeros(
+                (num_samples, self._detections["detection_anchor_indices"].shape[1].value), dtype=np.float32
+            ),
+            "num_detections": np.zeros((num_samples,), dtype=np.float32),
+            "raw_detection_boxes": np.zeros(
+                (
+                    num_samples,
+                    self._detections["raw_detection_boxes"].shape[1].value,
+                    self._detections["raw_detection_boxes"].shape[2].value,
+                ),
+                dtype=np.float32,
+            ),
+            "raw_detection_scores": np.zeros(
+                (
+                    num_samples,
+                    self._detections["raw_detection_scores"].shape[1].value,
+                    self._detections["raw_detection_scores"].shape[2].value,
+                ),
+                dtype=np.float32,
+            ),
         }
 
         num_batch = int(np.ceil(num_samples / float(batch_size)))
@@ -459,14 +450,14 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             batch_results = self._sess.run(self._detections, feed_dict=feed_dict)
 
             # Update final results
-            results['detection_boxes'][begin:end] = batch_results['detection_boxes']
-            results['detection_scores'][begin:end] = batch_results['detection_scores']
-            results['detection_classes'][begin:end] = batch_results['detection_classes']
-            results['detection_multiclass_scores'][begin:end] = batch_results['detection_multiclass_scores']
-            results['detection_anchor_indices'][begin:end] = batch_results['detection_anchor_indices']
-            results['num_detections'][begin:end] = batch_results['num_detections']
-            results['raw_detection_boxes'][begin:end] = batch_results['raw_detection_boxes']
-            results['raw_detection_scores'][begin:end] = batch_results['raw_detection_scores']
+            results["detection_boxes"][begin:end] = batch_results["detection_boxes"]
+            results["detection_scores"][begin:end] = batch_results["detection_scores"]
+            results["detection_classes"][begin:end] = batch_results["detection_classes"]
+            results["detection_multiclass_scores"][begin:end] = batch_results["detection_multiclass_scores"]
+            results["detection_anchor_indices"][begin:end] = batch_results["detection_anchor_indices"]
+            results["num_detections"][begin:end] = batch_results["num_detections"]
+            results["raw_detection_boxes"][begin:end] = batch_results["raw_detection_boxes"]
+            results["raw_detection_scores"][begin:end] = batch_results["raw_detection_scores"]
 
         return results
 

@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 
 @unittest.skipIf(
     not object_detection_found,
-    reason="Skip unittests if object detection module is not found because of pre-trained model."
+    reason="Skip unittests if object detection module is not found because of pre-trained model.",
 )
 @unittest.skipIf(
     tf.__version__[0] == "2" or (tf.__version__[0] == "1" and tf.__version__.split(".")[1] != "15"),
@@ -47,8 +47,8 @@ class TestShapeShifter(TestBase):
         super().setUpClass()
 
         cls.n_test = 10
-        cls.x_test_mnist = cls.x_test_mnist[0: cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0: cls.n_test]
+        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
+        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
     def test_image_as_input(self):
         self._test_image_as_input(True)
@@ -69,14 +69,14 @@ class TestShapeShifter(TestBase):
         # Create labels
         result = obj_dec.predict(self.x_test_mnist[:1].astype(np.float32))
 
-        groundtruth_boxes_list = [result['detection_boxes'][i] for i in range(1)]
-        groundtruth_classes_list = [result['detection_classes'][i] for i in range(1)]
+        groundtruth_boxes_list = [result["detection_boxes"][i] for i in range(1)]
+        groundtruth_classes_list = [result["detection_classes"][i] for i in range(1)]
         groundtruth_weights_list = [np.ones_like(r) for r in groundtruth_classes_list]
 
         y = {}
-        y['groundtruth_boxes_list'] = groundtruth_boxes_list
-        y['groundtruth_classes_list'] = groundtruth_classes_list
-        y['groundtruth_weights_list'] = groundtruth_weights_list
+        y["groundtruth_boxes_list"] = groundtruth_boxes_list
+        y["groundtruth_classes_list"] = groundtruth_classes_list
+        y["groundtruth_weights_list"] = groundtruth_weights_list
 
         # Define attack
         attack = ShapeShifter(
@@ -100,7 +100,7 @@ class TestShapeShifter(TestBase):
             rpn_cw_confidence=1.0,
             similarity_weight=1.0,
             learning_rate=0.1,
-            optimizer='RMSPropOptimizer',
+            optimizer="RMSPropOptimizer",
             momentum=0.01,
             decay=0.01,
             sign_gradients=sign_gradients,
@@ -108,7 +108,7 @@ class TestShapeShifter(TestBase):
             max_iter=2,
             texture_as_input=False,
             use_spectral=False,
-            soft_clip=True
+            soft_clip=True,
         )
 
         # Targeted attack
@@ -150,14 +150,14 @@ class TestShapeShifter(TestBase):
         # Create labels
         result = obj_dec.predict(self.x_test_mnist[:1].astype(np.float32))
 
-        groundtruth_boxes_list = [result['detection_boxes'][i] for i in range(1)]
-        groundtruth_classes_list = [result['detection_classes'][i] for i in range(1)]
+        groundtruth_boxes_list = [result["detection_boxes"][i] for i in range(1)]
+        groundtruth_classes_list = [result["detection_classes"][i] for i in range(1)]
         groundtruth_weights_list = [np.ones_like(r) for r in groundtruth_classes_list]
 
         y = {}
-        y['groundtruth_boxes_list'] = groundtruth_boxes_list
-        y['groundtruth_classes_list'] = groundtruth_classes_list
-        y['groundtruth_weights_list'] = groundtruth_weights_list
+        y["groundtruth_boxes_list"] = groundtruth_boxes_list
+        y["groundtruth_classes_list"] = groundtruth_classes_list
+        y["groundtruth_weights_list"] = groundtruth_weights_list
 
         # Define random transform
         def random_transform(x):
@@ -165,8 +165,8 @@ class TestShapeShifter(TestBase):
             image_frame = np.random.rand(*(list(x.shape[:-1]) + [4]))
 
             y_ = y.copy()
-            y_['groundtruth_boxes_list'][0] = y_['groundtruth_boxes_list'][0] + np.random.rand()
-            y_['groundtruth_weights_list'][0] = y_['groundtruth_weights_list'][0] + np.random.rand()
+            y_["groundtruth_boxes_list"][0] = y_["groundtruth_boxes_list"][0] + np.random.rand()
+            y_["groundtruth_weights_list"][0] = y_["groundtruth_weights_list"][0] + np.random.rand()
 
             return background, image_frame, y_
 
@@ -192,7 +192,7 @@ class TestShapeShifter(TestBase):
             rpn_cw_confidence=1.0,
             similarity_weight=1.0,
             learning_rate=0.1,
-            optimizer='MomentumOptimizer',
+            optimizer="MomentumOptimizer",
             momentum=0.01,
             decay=0.01,
             sign_gradients=sign_gradients,
@@ -200,7 +200,7 @@ class TestShapeShifter(TestBase):
             max_iter=2,
             texture_as_input=True,
             use_spectral=use_spectral,
-            soft_clip=soft_clip
+            soft_clip=soft_clip,
         )
 
         # Define rendering function
@@ -216,7 +216,7 @@ class TestShapeShifter(TestBase):
             label=y,
             target_class=2,
             victim_class=5,
-            rendering_function=rendering_function
+            rendering_function=rendering_function,
         )
 
         self.assertTrue(adv_x.shape == (1, 28, 28, 1))
@@ -227,7 +227,7 @@ class TestShapeShifter(TestBase):
             label=y,
             target_class=8,
             victim_class=8,
-            rendering_function=rendering_function
+            rendering_function=rendering_function,
         )
 
         self.assertTrue(adv_x.shape == (1, 28, 28, 1))

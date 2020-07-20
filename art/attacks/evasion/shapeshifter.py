@@ -76,7 +76,7 @@ class ShapeShifter(EvasionAttack):
         "max_iter",
         "texture_as_input",
         "use_spectral",
-        "soft_clip"
+        "soft_clip",
     ]
 
     _estimator_requirements = (
@@ -85,7 +85,7 @@ class ShapeShifter(EvasionAttack):
         NeuralNetworkMixin,
         ObjectDetectorMixin,
         TensorFlowEstimator,
-        TensorFlowFasterRCNN
+        TensorFlowFasterRCNN,
     )
 
     def __init__(
@@ -110,7 +110,7 @@ class ShapeShifter(EvasionAttack):
         rpn_cw_confidence: float = 0.0,
         similarity_weight: float = 0.0,
         learning_rate: float = 1.0,
-        optimizer: str = 'GradientDescentOptimizer',
+        optimizer: str = "GradientDescentOptimizer",
         momentum: float = 0.0,
         decay: float = 0.0,
         sign_gradients: bool = False,
@@ -118,7 +118,7 @@ class ShapeShifter(EvasionAttack):
         max_iter: int = 10,
         texture_as_input: bool = False,
         use_spectral: bool = True,
-        soft_clip: bool = False
+        soft_clip: bool = False,
     ):
         """
         Create an instance of the :class:`.ShapeShifter`.
@@ -252,7 +252,7 @@ class ShapeShifter(EvasionAttack):
                     self.accumulated_gradients_op,
                     self.final_attack_optimization_op,
                     self.current_variable,
-                    self.current_value
+                    self.current_value,
                 ) = self._build_graph(
                     initial_shape=x.shape, custom_loss=custom_loss, rendering_function=rendering_function
                 )
@@ -264,7 +264,7 @@ class ShapeShifter(EvasionAttack):
                     self.accumulated_gradients_op,
                     self.final_attack_optimization_op,
                     self.current_variable,
-                    self.current_value
+                    self.current_value,
                 ) = self._build_graph(initial_shape=x.shape, custom_loss=custom_loss)
 
         # Use mask or not
@@ -279,19 +279,19 @@ class ShapeShifter(EvasionAttack):
         # Get victim class
         victim_class = kwargs.get("victim_class")
         if victim_class is None:
-            raise ValueError('Need to provide a victim class.')
+            raise ValueError("Need to provide a victim class.")
 
         if not isinstance(victim_class, int):
-            raise TypeError('Victim class must be of type `int`.')
+            raise TypeError("Victim class must be of type `int`.")
 
         # Get target class
         target_class = kwargs.get("target_class")
         if target_class is None:
-            logger.warning('Target class not provided, an untargeted attack is defaulted.')
+            logger.warning("Target class not provided, an untargeted attack is defaulted.")
             target_class = victim_class
 
         if not isinstance(target_class, int):
-            raise TypeError('Target class must be of type `int`.')
+            raise TypeError("Target class must be of type `int`.")
 
         # Do attack
         result = self._attack_training(
@@ -305,7 +305,7 @@ class ShapeShifter(EvasionAttack):
             accumulated_gradients_op=self.accumulated_gradients_op,
             final_attack_optimization_op=self.final_attack_optimization_op,
             current_variable=self.current_variable,
-            current_value=self.current_value
+            current_value=self.current_value,
         )
 
         return result[1]
@@ -322,7 +322,7 @@ class ShapeShifter(EvasionAttack):
         accumulated_gradients_op: "Tensor",
         final_attack_optimization_op: "Tensor",
         current_variable: "Tensor",
-        current_value: "Tensor"
+        current_value: "Tensor",
     ) -> List[np.ndarray]:
         """
         Do attack optimization.
@@ -360,40 +360,40 @@ class ShapeShifter(EvasionAttack):
 
         # Create common feed_dict
         feed_dict = {
-            'initial_input:0': x,
-            'learning_rate:0': self.learning_rate,
-            'rpn_classifier_weight:0': self.rpn_classifier_weight,
-            'rpn_localizer_weight:0': self.rpn_localizer_weight,
-            'box_classifier_weight:0': self.box_classifier_weight,
-            'box_localizer_weight:0': self.box_localizer_weight,
-            'target_class_phd:0': target_class,
-            'victim_class_phd:0': victim_class,
-            'box_iou_threshold:0': self.box_iou_threshold,
-            'box_target_weight:0': self.box_target_weight,
-            'box_victim_weight:0': self.box_victim_weight,
-            'box_target_cw_weight:0': self.box_target_cw_weight,
-            'box_target_cw_confidence:0': self.box_target_cw_confidence,
-            'box_victim_cw_weight:0': self.box_victim_cw_weight,
-            'box_victim_cw_confidence:0': self.box_victim_cw_confidence,
-            'rpn_iou_threshold:0': self.rpn_iou_threshold,
-            'rpn_background_weight:0': self.rpn_background_weight,
-            'rpn_foreground_weight:0': self.rpn_foreground_weight,
-            'rpn_cw_weight:0': self.rpn_cw_weight,
-            'rpn_cw_confidence:0': self.rpn_cw_confidence,
-            'similarity_weight:0': self.similarity_weight
+            "initial_input:0": x,
+            "learning_rate:0": self.learning_rate,
+            "rpn_classifier_weight:0": self.rpn_classifier_weight,
+            "rpn_localizer_weight:0": self.rpn_localizer_weight,
+            "box_classifier_weight:0": self.box_classifier_weight,
+            "box_localizer_weight:0": self.box_localizer_weight,
+            "target_class_phd:0": target_class,
+            "victim_class_phd:0": victim_class,
+            "box_iou_threshold:0": self.box_iou_threshold,
+            "box_target_weight:0": self.box_target_weight,
+            "box_victim_weight:0": self.box_victim_weight,
+            "box_target_cw_weight:0": self.box_target_cw_weight,
+            "box_target_cw_confidence:0": self.box_target_cw_confidence,
+            "box_victim_cw_weight:0": self.box_victim_cw_weight,
+            "box_victim_cw_confidence:0": self.box_victim_cw_confidence,
+            "rpn_iou_threshold:0": self.rpn_iou_threshold,
+            "rpn_background_weight:0": self.rpn_background_weight,
+            "rpn_foreground_weight:0": self.rpn_foreground_weight,
+            "rpn_cw_weight:0": self.rpn_cw_weight,
+            "rpn_cw_confidence:0": self.rpn_cw_confidence,
+            "similarity_weight:0": self.similarity_weight,
         }
 
         # Add momentum to feed_dict
-        if self.optimizer in ['RMSPropOptimizer', 'MomentumOptimizer']:
-            feed_dict['momentum:0'] = self.momentum
+        if self.optimizer in ["RMSPropOptimizer", "MomentumOptimizer"]:
+            feed_dict["momentum:0"] = self.momentum
 
         # Add decay to feed_dict
-        if self.optimizer == 'RMSPropOptimizer':
-            feed_dict['decay:0'] = self.decay
+        if self.optimizer == "RMSPropOptimizer":
+            feed_dict["decay:0"] = self.decay
 
         # Add mask to feed_dict
         if self.texture_as_input:
-            feed_dict['mask_input:0'] = mask
+            feed_dict["mask_input:0"] = mask
 
         # Training loop for attack optimization
         for _ in range(self.max_iter):
@@ -404,25 +404,25 @@ class ShapeShifter(EvasionAttack):
                     background, image_frame, y_ = self.random_transform(x)
 
                     # Add more to feed_dict
-                    feed_dict['background_phd:0'] = background
-                    feed_dict['image_frame_phd:0'] = image_frame
+                    feed_dict["background_phd:0"] = background
+                    feed_dict["image_frame_phd:0"] = image_frame
 
                     for i in range(x.shape[0]):
-                        feed_dict['groundtruth_boxes_{}:0'.format(i)] = y_['groundtruth_boxes_list'][i]
-                        feed_dict['groundtruth_classes_{}:0'.format(i)] = y_['groundtruth_classes_list'][i]
-                        feed_dict['groundtruth_weights_{}:0'.format(i)] = y_['groundtruth_weights_list'][i]
+                        feed_dict["groundtruth_boxes_{}:0".format(i)] = y_["groundtruth_boxes_list"][i]
+                        feed_dict["groundtruth_classes_{}:0".format(i)] = y_["groundtruth_classes_list"][i]
+                        feed_dict["groundtruth_weights_{}:0".format(i)] = y_["groundtruth_weights_list"][i]
 
                 else:
                     # Random transformation
                     random_transformation = self.random_transform(x)
 
                     # Add more to feed_dict
-                    feed_dict['random_transformation_phd:0'] = random_transformation
+                    feed_dict["random_transformation_phd:0"] = random_transformation
 
                     for i in range(x.shape[0]):
-                        feed_dict['groundtruth_boxes_{}:0'.format(i)] = y['groundtruth_boxes_list'][i]
-                        feed_dict['groundtruth_classes_{}:0'.format(i)] = y['groundtruth_classes_list'][i]
-                        feed_dict['groundtruth_weights_{}:0'.format(i)] = y['groundtruth_weights_list'][i]
+                        feed_dict["groundtruth_boxes_{}:0".format(i)] = y["groundtruth_boxes_list"][i]
+                        feed_dict["groundtruth_classes_{}:0".format(i)] = y["groundtruth_classes_list"][i]
+                        feed_dict["groundtruth_weights_{}:0".format(i)] = y["groundtruth_weights_list"][i]
 
                 # Accumulate gradients
                 self.estimator.sess.run(current_image_assign_to_input_image_op, feed_dict)
@@ -442,7 +442,7 @@ class ShapeShifter(EvasionAttack):
         self,
         initial_shape: Tuple[int, ...],
         custom_loss: Optional["Tensor"] = None,
-        rendering_function: Optional["Callable"] = None
+        rendering_function: Optional["Callable"] = None,
     ) -> Tuple["Tensor", ...]:
         """
         Build the TensorFlow graph for the attack.
@@ -453,14 +453,14 @@ class ShapeShifter(EvasionAttack):
         :return: A tuple of tensors.
         """
         # Create a placeholder to pass input image/texture
-        initial_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='initial_input')
+        initial_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name="initial_input")
 
         # Create adversarial image
         project_texture_op = None
 
         if self.texture_as_input:
             # Create a placeholder to pass input texture mask
-            mask_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name='mask_input')
+            mask_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name="mask_input")
 
             # Create texture variable
             if self.use_spectral:
@@ -469,7 +469,7 @@ class ShapeShifter(EvasionAttack):
                 )
 
                 current_texture_variable = tf.Variable(
-                    initial_value=initial_value, dtype=tf.float32, name='current_texture_variable'
+                    initial_value=initial_value, dtype=tf.float32, name="current_texture_variable"
                 )
 
                 current_texture = current_texture_variable
@@ -481,7 +481,7 @@ class ShapeShifter(EvasionAttack):
                 initial_value = np.zeros((initial_shape[0], initial_shape[1], initial_shape[2], initial_shape[3]))
 
                 current_texture_variable = tf.Variable(
-                    initial_value=initial_value, dtype=tf.float32, name='current_texture_variable'
+                    initial_value=initial_value, dtype=tf.float32, name="current_texture_variable"
                 )
 
                 current_texture = current_texture_variable
@@ -492,7 +492,7 @@ class ShapeShifter(EvasionAttack):
             if self.soft_clip:
                 project_texture = tf.nn.sigmoid(project_texture)
             else:
-                project_texture = tf.clip_by_value(project_texture, 0., 1.)
+                project_texture = tf.clip_by_value(project_texture, 0.0, 1.0)
 
             if self.use_spectral:
                 project_texture = tf.transpose(project_texture, (0, 3, 1, 2))
@@ -500,16 +500,16 @@ class ShapeShifter(EvasionAttack):
                 project_texture = tf.stack([tf.real(project_texture), tf.imag(project_texture)])
 
             # Update texture variable
-            project_texture_op = tf.assign(current_texture_variable, project_texture, name='project_texture_op')
+            project_texture_op = tf.assign(current_texture_variable, project_texture, name="project_texture_op")
 
             # Create a placeholder to pass the background
             background_phd = tf.placeholder(
-                dtype=tf.float32, shape=initial_input.shape.as_list(), name='background_phd'
+                dtype=tf.float32, shape=initial_input.shape.as_list(), name="background_phd"
             )
 
             # Create a placeholder to pass the image frame
             image_frame_phd = tf.placeholder(
-                dtype=tf.float32, shape=[initial_shape[0], None, None, 4], name='image_frame_phd'
+                dtype=tf.float32, shape=[initial_shape[0], None, None, 4], name="image_frame_phd"
             )
 
             # Create adversarial image
@@ -518,22 +518,22 @@ class ShapeShifter(EvasionAttack):
         else:
             # Create image variable
             current_image_variable = tf.Variable(
-                initial_value=np.zeros(initial_input.shape.as_list()), dtype=tf.float32, name='current_image_variable'
+                initial_value=np.zeros(initial_input.shape.as_list()), dtype=tf.float32, name="current_image_variable"
             )
 
             # Create a placeholder to pass random transformation
             random_transformation_phd = tf.placeholder(
-                dtype=tf.float32, shape=initial_input.shape.as_list(), name='random_transformation_phd'
+                dtype=tf.float32, shape=initial_input.shape.as_list(), name="random_transformation_phd"
             )
 
             # Update current image
             current_image = current_image_variable + random_transformation_phd
             current_image = (tf.tanh(current_image) + 1) / 2
-            current_image = tf.identity(current_image, name='current_image')
+            current_image = tf.identity(current_image, name="current_image")
 
         # Assign current image to the input of the object detector
         current_image_assign_to_input_image_op = tf.assign(
-            ref=self.estimator.input_images, value=current_image, name='current_image_assign_to_input_image_op'
+            ref=self.estimator.input_images, value=current_image, name="current_image_assign_to_input_image_op"
         )
 
         # Create attack loss
@@ -560,34 +560,34 @@ class ShapeShifter(EvasionAttack):
             sum_gradients = tf.Variable(
                 initial_value=np.zeros(current_texture_variable.shape.as_list()),
                 trainable=False,
-                name='sum_gradients',
+                name="sum_gradients",
                 dtype=tf.float32,
-                collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
+                collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES],
             )
 
         else:
             sum_gradients = tf.Variable(
                 initial_value=np.zeros(current_image_variable.shape.as_list()),
                 trainable=False,
-                name='sum_gradients',
+                name="sum_gradients",
                 dtype=tf.float32,
-                collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
+                collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES],
             )
 
         num_gradients = tf.Variable(
-            initial_value=0.,
+            initial_value=0.0,
             trainable=False,
-            name='count_gradients',
-            collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES]
+            name="count_gradients",
+            collections=[tf.GraphKeys.GLOBAL_VARIABLES, tf.GraphKeys.LOCAL_VARIABLES],
         )
 
         # Accumulate gradients
         accumulated_sum_gradients = tf.assign_add(sum_gradients, gradients)
-        accumulated_num_gradients = tf.assign_add(num_gradients, 1.)
+        accumulated_num_gradients = tf.assign_add(num_gradients, 1.0)
 
         # Final gradients
         final_gradients = tf.div(
-            accumulated_sum_gradients, tf.maximum(accumulated_num_gradients, 1.), name='final_gradients'
+            accumulated_sum_gradients, tf.maximum(accumulated_num_gradients, 1.0), name="final_gradients"
         )
 
         if self.sign_gradients:
@@ -595,14 +595,14 @@ class ShapeShifter(EvasionAttack):
 
         # Create accumulated gradients operator
         accumulated_gradients_op = tf.group(
-            [accumulated_sum_gradients, accumulated_num_gradients], name='accumulated_gradients_op'
+            [accumulated_sum_gradients, accumulated_num_gradients], name="accumulated_gradients_op"
         )
 
         # Create final attack optimization operator and return
         if self.texture_as_input:
             # Create final attack optimization operator
             final_attack_optimization_op = optimizer.apply_gradients(
-                grads_and_vars=[(final_gradients, current_texture_variable)], name='final_attack_optimization_op'
+                grads_and_vars=[(final_gradients, current_texture_variable)], name="final_attack_optimization_op"
             )
 
             return (
@@ -611,13 +611,13 @@ class ShapeShifter(EvasionAttack):
                 accumulated_gradients_op,
                 final_attack_optimization_op,
                 current_texture_variable,
-                current_texture
+                current_texture,
             )
 
         else:
             # Create final attack optimization operator
             final_attack_optimization_op = optimizer.apply_gradients(
-                grads_and_vars=[(final_gradients, current_image_variable)], name='final_attack_optimization_op'
+                grads_and_vars=[(final_gradients, current_image_variable)], name="final_attack_optimization_op"
             )
 
             return (
@@ -626,7 +626,7 @@ class ShapeShifter(EvasionAttack):
                 accumulated_gradients_op,
                 final_attack_optimization_op,
                 current_image_variable,
-                current_image
+                current_image,
             )
 
     def _create_optimizer(self) -> "Optimizer":
@@ -636,24 +636,24 @@ class ShapeShifter(EvasionAttack):
         :return: Attack optimizer.
         """
         # Create placeholder for learning rate
-        learning_rate = tf.placeholder(dtype=tf.float32, shape=[], name='learning_rate')
+        learning_rate = tf.placeholder(dtype=tf.float32, shape=[], name="learning_rate")
 
         # Create placeholder for momentum
-        if self.optimizer in ['RMSPropOptimizer', 'MomentumOptimizer']:
-            momentum = tf.placeholder(dtype=tf.float32, shape=[], name='momentum')
+        if self.optimizer in ["RMSPropOptimizer", "MomentumOptimizer"]:
+            momentum = tf.placeholder(dtype=tf.float32, shape=[], name="momentum")
 
         # Create placeholder for decay
-        if self.optimizer == 'RMSPropOptimizer':
-            decay = tf.placeholder(dtype=tf.float32, shape=[], name='decay')
+        if self.optimizer == "RMSPropOptimizer":
+            decay = tf.placeholder(dtype=tf.float32, shape=[], name="decay")
 
         # Create optimizer
-        if self.optimizer == 'GradientDescentOptimizer':
+        if self.optimizer == "GradientDescentOptimizer":
             optimizer = tf.train.GradientDescentOptimizer(learning_rate=learning_rate)
-        elif self.optimizer == 'MomentumOptimizer':
+        elif self.optimizer == "MomentumOptimizer":
             optimizer = tf.train.MomentumOptimizer(learning_rate=learning_rate, momentum=momentum)
-        elif self.optimizer == 'RMSPropOptimizer':
+        elif self.optimizer == "RMSPropOptimizer":
             optimizer = tf.train.RMSPropOptimizer(learning_rate=learning_rate, momentum=momentum, decay=decay)
-        elif self.optimizer == 'AdamOptimizer':
+        elif self.optimizer == "AdamOptimizer":
             optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate)
         else:
             raise NotImplementedError("Unknown optimizer.")
@@ -661,10 +661,7 @@ class ShapeShifter(EvasionAttack):
         return optimizer
 
     def _create_attack_loss(
-        self,
-        initial_input: "Tensor",
-        current_value: "Tensor",
-        custom_loss: Optional["Tensor"] = None,
+        self, initial_input: "Tensor", current_value: "Tensor", custom_loss: Optional["Tensor"] = None,
     ) -> "Tensor":
         """
         Create the loss tensor of this attack.
@@ -689,25 +686,14 @@ class ShapeShifter(EvasionAttack):
         # Compute total loss
         if custom_loss is not None:
             total_loss = tf.add_n(
-                [
-                    partial_faster_rcnn_loss,
-                    partial_box_loss,
-                    partial_rpn_loss,
-                    weight_similarity_loss,
-                    custom_loss
-                ],
-                name='total_loss'
+                [partial_faster_rcnn_loss, partial_box_loss, partial_rpn_loss, weight_similarity_loss, custom_loss],
+                name="total_loss",
             )
 
         else:
             total_loss = tf.add_n(
-                [
-                    partial_faster_rcnn_loss,
-                    partial_box_loss,
-                    partial_rpn_loss,
-                    weight_similarity_loss
-                ],
-                name='total_loss'
+                [partial_faster_rcnn_loss, partial_box_loss, partial_rpn_loss, weight_similarity_loss],
+                name="total_loss",
             )
 
         return total_loss
@@ -719,35 +705,35 @@ class ShapeShifter(EvasionAttack):
         :return: Attack partial loss tensor.
         """
         # Compute RPN classifier loss
-        rpn_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_classifier_weight')
+        rpn_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_classifier_weight")
 
-        rpn_classifier_loss = self.estimator.losses['Loss/RPNLoss/objectness_loss']
+        rpn_classifier_loss = self.estimator.losses["Loss/RPNLoss/objectness_loss"]
         weight_rpn_classifier_loss = tf.multiply(
-            x=rpn_classifier_loss, y=rpn_classifier_weight, name='weight_rpn_classifier_loss'
+            x=rpn_classifier_loss, y=rpn_classifier_weight, name="weight_rpn_classifier_loss"
         )
 
         # Compute RPN localizer loss
-        rpn_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_localizer_weight')
+        rpn_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_localizer_weight")
 
-        rpn_localizer_loss = self.estimator.losses['Loss/RPNLoss/localization_loss']
+        rpn_localizer_loss = self.estimator.losses["Loss/RPNLoss/localization_loss"]
         weight_rpn_localizer_loss = tf.multiply(
-            x=rpn_localizer_loss, y=rpn_localizer_weight, name='weight_rpn_localizer_loss'
+            x=rpn_localizer_loss, y=rpn_localizer_weight, name="weight_rpn_localizer_loss"
         )
 
         # Compute box classifier loss
-        box_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_classifier_weight')
+        box_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name="box_classifier_weight")
 
-        box_classifier_loss = self.estimator.losses['Loss/BoxClassifierLoss/classification_loss']
+        box_classifier_loss = self.estimator.losses["Loss/BoxClassifierLoss/classification_loss"]
         weight_box_classifier_loss = tf.multiply(
-            x=box_classifier_loss, y=box_classifier_weight, name='weight_box_classifier_loss'
+            x=box_classifier_loss, y=box_classifier_weight, name="weight_box_classifier_loss"
         )
 
         # Compute box localizer loss
-        box_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_localizer_weight')
+        box_localizer_weight = tf.placeholder(dtype=tf.float32, shape=[], name="box_localizer_weight")
 
-        box_localizer_loss = self.estimator.losses['Loss/BoxClassifierLoss/localization_loss']
+        box_localizer_loss = self.estimator.losses["Loss/BoxClassifierLoss/localization_loss"]
         weight_box_localizer_loss = tf.multiply(
-            x=box_localizer_loss, y=box_localizer_weight, name='weight_box_localizer_loss'
+            x=box_localizer_loss, y=box_localizer_weight, name="weight_box_localizer_loss"
         )
 
         # Compute partial loss
@@ -756,9 +742,9 @@ class ShapeShifter(EvasionAttack):
                 weight_rpn_classifier_loss,
                 weight_rpn_localizer_loss,
                 weight_box_classifier_loss,
-                weight_box_localizer_loss
+                weight_box_localizer_loss,
             ],
-            name='partial_faster_rcnn_loss'
+            name="partial_faster_rcnn_loss",
         )
 
         return partial_loss
@@ -773,45 +759,41 @@ class ShapeShifter(EvasionAttack):
         default_graph = tf.get_default_graph()
 
         # Compute box losses
-        target_class_phd = tf.placeholder(dtype=tf.int32, shape=[], name='target_class_phd')
-        victim_class_phd = tf.placeholder(dtype=tf.int32, shape=[], name='victim_class_phd')
-        box_iou_threshold = tf.placeholder(dtype=tf.float32, shape=[], name='box_iou_threshold')
+        target_class_phd = tf.placeholder(dtype=tf.int32, shape=[], name="target_class_phd")
+        victim_class_phd = tf.placeholder(dtype=tf.int32, shape=[], name="victim_class_phd")
+        box_iou_threshold = tf.placeholder(dtype=tf.float32, shape=[], name="box_iou_threshold")
 
         # Ignore background class
-        class_predictions_with_background = self.estimator.predictions['class_predictions_with_background']
+        class_predictions_with_background = self.estimator.predictions["class_predictions_with_background"]
         class_predictions_with_background = class_predictions_with_background[:, 1:]
 
         # Convert to 1-hot
         target_class_one_hot = tf.one_hot([target_class_phd - 1], class_predictions_with_background.shape[-1])
         victim_class_one_hot = tf.one_hot([victim_class_phd - 1], class_predictions_with_background.shape[-1])
 
-        box_iou_tensor = default_graph.get_tensor_by_name('Loss/BoxClassifierLoss/Compare/IOU/Select:0')
+        box_iou_tensor = default_graph.get_tensor_by_name("Loss/BoxClassifierLoss/Compare/IOU/Select:0")
         box_iou_tensor = tf.reshape(box_iou_tensor, (-1,))
         box_target = tf.cast(box_iou_tensor >= box_iou_threshold, dtype=tf.float32)
 
         # Compute box target loss
-        box_target_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_target_weight')
+        box_target_weight = tf.placeholder(dtype=tf.float32, shape=[], name="box_target_weight")
 
         box_target_logit = class_predictions_with_background[:, target_class_phd - 1]
         box_target_loss = box_target_logit * box_target
         box_target_loss = -1 * tf.reduce_sum(box_target_loss)
-        weight_box_target_loss = tf.multiply(
-            x=box_target_loss, y=box_target_weight, name='weight_box_target_loss'
-        )
+        weight_box_target_loss = tf.multiply(x=box_target_loss, y=box_target_weight, name="weight_box_target_loss")
 
         # Compute box victim loss
-        box_victim_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_victim_weight')
+        box_victim_weight = tf.placeholder(dtype=tf.float32, shape=[], name="box_victim_weight")
 
         box_victim_logit = class_predictions_with_background[:, victim_class_phd - 1]
         box_victim_loss = box_victim_logit * box_target
         box_victim_loss = tf.reduce_sum(box_victim_loss)
-        weight_box_victim_loss = tf.multiply(
-            x=box_victim_loss, y=box_victim_weight, name='weight_box_victim_loss'
-        )
+        weight_box_victim_loss = tf.multiply(x=box_victim_loss, y=box_victim_weight, name="weight_box_victim_loss")
 
         # Compute box target CW loss
-        box_target_cw_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_target_cw_weight')
-        box_target_cw_confidence = tf.placeholder(dtype=tf.float32, shape=[], name='box_target_cw_confidence')
+        box_target_cw_weight = tf.placeholder(dtype=tf.float32, shape=[], name="box_target_cw_weight")
+        box_target_cw_confidence = tf.placeholder(dtype=tf.float32, shape=[], name="box_target_cw_confidence")
 
         box_nontarget_logit = tf.reduce_max(
             class_predictions_with_background * (1 - target_class_one_hot) - 10000 * target_class_one_hot, axis=-1
@@ -820,12 +802,12 @@ class ShapeShifter(EvasionAttack):
         box_target_cw_loss = box_target_cw_loss * box_target
         box_target_cw_loss = tf.reduce_sum(box_target_cw_loss)
         weight_box_target_cw_loss = tf.multiply(
-            x=box_target_cw_loss, y=box_target_cw_weight, name='weight_box_target_cw_loss'
+            x=box_target_cw_loss, y=box_target_cw_weight, name="weight_box_target_cw_loss"
         )
 
         # Compute box victim CW loss
-        box_victim_cw_weight = tf.placeholder(dtype=tf.float32, shape=[], name='box_victim_cw_weight')
-        box_victim_cw_confidence = tf.placeholder(dtype=tf.float32, shape=[], name='box_victim_cw_confidence')
+        box_victim_cw_weight = tf.placeholder(dtype=tf.float32, shape=[], name="box_victim_cw_weight")
+        box_victim_cw_confidence = tf.placeholder(dtype=tf.float32, shape=[], name="box_victim_cw_confidence")
 
         box_nonvictim_logit = tf.reduce_max(
             class_predictions_with_background * (1 - victim_class_one_hot) - 10000 * victim_class_one_hot, axis=-1
@@ -834,18 +816,13 @@ class ShapeShifter(EvasionAttack):
         box_victim_cw_loss = box_victim_cw_loss * box_target
         box_victim_cw_loss = tf.reduce_sum(box_victim_cw_loss)
         weight_box_victim_cw_loss = tf.multiply(
-            x=box_victim_cw_loss, y=box_victim_cw_weight, name='weight_box_victim_cw_loss'
+            x=box_victim_cw_loss, y=box_victim_cw_weight, name="weight_box_victim_cw_loss"
         )
 
         # Compute partial loss
         partial_loss = tf.add_n(
-            [
-                weight_box_target_loss,
-                weight_box_victim_loss,
-                weight_box_target_cw_loss,
-                weight_box_victim_cw_loss
-            ],
-            name='partial_box_loss'
+            [weight_box_target_loss, weight_box_victim_loss, weight_box_target_cw_loss, weight_box_victim_cw_loss],
+            name="partial_box_loss",
         )
 
         return partial_loss
@@ -860,58 +837,51 @@ class ShapeShifter(EvasionAttack):
         default_graph = tf.get_default_graph()
 
         # Compute RPN losses
-        rpn_iou_threshold = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_iou_threshold')
+        rpn_iou_threshold = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_iou_threshold")
 
         # RPN background
         rpn_objectness_predictions_with_background = self.estimator.predictions[
-            'rpn_objectness_predictions_with_background'
+            "rpn_objectness_predictions_with_background"
         ]
         rpn_objectness_predictions_with_background = tf.reshape(
             rpn_objectness_predictions_with_background, (-1, rpn_objectness_predictions_with_background.shape[-1])
         )
-        rpn_iou_tensor = default_graph.get_tensor_by_name('Loss/RPNLoss/Compare/IOU/Select:0')
+        rpn_iou_tensor = default_graph.get_tensor_by_name("Loss/RPNLoss/Compare/IOU/Select:0")
         rpn_iou_tensor = tf.reshape(rpn_iou_tensor, (-1,))
         rpn_target = tf.cast(rpn_iou_tensor >= rpn_iou_threshold, dtype=tf.float32)
 
         # Compute RPN background loss
-        rpn_background_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_background_weight')
+        rpn_background_weight = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_background_weight")
 
         rpn_background_logit = rpn_objectness_predictions_with_background[:, 0]
         rpn_background_loss = rpn_background_logit * rpn_target
         rpn_background_loss = -1 * tf.reduce_sum(rpn_background_loss)
         weight_rpn_background_loss = tf.multiply(
-            x=rpn_background_loss, y=rpn_background_weight, name='weight_rpn_background_loss'
+            x=rpn_background_loss, y=rpn_background_weight, name="weight_rpn_background_loss"
         )
 
         # Compute RPN foreground loss
-        rpn_foreground_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_foreground_weight')
+        rpn_foreground_weight = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_foreground_weight")
 
         rpn_foreground_logit = rpn_objectness_predictions_with_background[:, 1]
         rpn_foreground_loss = rpn_foreground_logit * rpn_target
         rpn_foreground_loss = tf.reduce_sum(rpn_foreground_loss)
         weight_rpn_foreground_loss = tf.multiply(
-            x=rpn_foreground_loss, y=rpn_foreground_weight, name='weight_rpn_foreground_loss'
+            x=rpn_foreground_loss, y=rpn_foreground_weight, name="weight_rpn_foreground_loss"
         )
 
         # Compute RPN CW loss
-        rpn_cw_weight = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_cw_weight')
-        rpn_cw_confidence = tf.placeholder(dtype=tf.float32, shape=[], name='rpn_cw_confidence')
+        rpn_cw_weight = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_cw_weight")
+        rpn_cw_confidence = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_cw_confidence")
 
         rpn_cw_loss = tf.nn.relu(rpn_foreground_logit - rpn_background_logit + rpn_cw_confidence)
         rpn_cw_loss = rpn_cw_loss * rpn_target
         rpn_cw_loss = tf.reduce_sum(rpn_cw_loss)
-        weight_rpn_cw_loss = tf.multiply(
-            x=rpn_cw_loss, y=rpn_cw_weight, name='weight_rpn_cw_loss'
-        )
+        weight_rpn_cw_loss = tf.multiply(x=rpn_cw_loss, y=rpn_cw_weight, name="weight_rpn_cw_loss")
 
         # Compute partial loss
         partial_loss = tf.add_n(
-            [
-                weight_rpn_background_loss,
-                weight_rpn_foreground_loss,
-                weight_rpn_cw_loss,
-            ],
-            name='partial_rpn_loss'
+            [weight_rpn_background_loss, weight_rpn_foreground_loss, weight_rpn_cw_loss,], name="partial_rpn_loss"
         )
 
         return partial_loss
@@ -926,13 +896,11 @@ class ShapeShifter(EvasionAttack):
         :return: Attack partial loss tensor.
         """
         # Create a placeholder for the similarity weight
-        similarity_weight = tf.placeholder(dtype=tf.float32, shape=[], name='similarity_weight')
+        similarity_weight = tf.placeholder(dtype=tf.float32, shape=[], name="similarity_weight")
 
         # Compute similarity loss
         similarity_loss = tf.nn.l2_loss(initial_input - current_value)
-        weight_similarity_loss = tf.multiply(
-            x=similarity_loss, y=similarity_weight, name='weight_similarity_loss'
-        )
+        weight_similarity_loss = tf.multiply(x=similarity_loss, y=similarity_weight, name="weight_similarity_loss")
 
         return weight_similarity_loss
 
@@ -1033,19 +1001,19 @@ class ShapeShifter(EvasionAttack):
         if not self.learning_rate > 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
-        if self.optimizer not in ['RMSPropOptimizer', 'MomentumOptimizer', 'GradientDescentOptimizer', 'AdamOptimizer']:
+        if self.optimizer not in ["RMSPropOptimizer", "MomentumOptimizer", "GradientDescentOptimizer", "AdamOptimizer"]:
             raise ValueError(
                 "Optimizer only includes one of the following choices: `GradientDescentOptimizer`, "
                 "`MomentumOptimizer`, `RMSPropOptimizer`, `AdamOptimizer`."
             )
 
-        if self.optimizer in ['RMSPropOptimizer', 'MomentumOptimizer']:
+        if self.optimizer in ["RMSPropOptimizer", "MomentumOptimizer"]:
             if not isinstance(self.momentum, float):
                 raise ValueError("The momentum must be of type float.")
             if not self.momentum > 0.0:
                 raise ValueError("The momentum must be greater than 0.0.")
 
-        if self.optimizer == 'RMSPropOptimizer':
+        if self.optimizer == "RMSPropOptimizer":
             if not isinstance(self.decay, float):
                 raise ValueError("The learning rate decay must be of type float.")
             if not self.decay > 0.0:
@@ -1074,11 +1042,7 @@ class ShapeShifter(EvasionAttack):
             )
 
         if not isinstance(self.use_spectral, bool):
-            raise ValueError(
-                "The choice of whether to use spectral with textures must be of type bool."
-            )
+            raise ValueError("The choice of whether to use spectral with textures must be of type bool.")
 
         if not isinstance(self.soft_clip, bool):
-            raise ValueError(
-                "The choice of whether to apply soft clipping on textures must be of type bool."
-            )
+            raise ValueError("The choice of whether to apply soft clipping on textures must be of type bool.")
