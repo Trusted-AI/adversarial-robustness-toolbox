@@ -59,7 +59,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
     """
 
     def __init__(
-        self,
+            self,
             model: KERAS_MODEL_TYPE,
             use_logits: bool = False,
             channel_index=Deprecated,
@@ -135,7 +135,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
             batch_size=batch_size,
         )
         # TODO: swtich to np zeros
-        mask = np.zeros(super().input_shape) # np.random.uniform(size=super().input_shape)
+        mask = np.zeros(super().input_shape)  # np.random.uniform(size=super().input_shape)
         pattern = np.random.uniform(size=super().input_shape)
 
         # Normalize mask between [0, 1]
@@ -168,8 +168,8 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         print(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
         self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss)
         self.train = K.function([input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss, self.loss_acc])
-                                # ,
-                                # updates=self.updates)
+        # ,
+        # updates=self.updates)
 
     def reset(self):
         """
