@@ -114,9 +114,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Check clip values
         if self.clip_values is not None:
-            if self.clip_values[0] != 0:
+            if not np.all(self.clip_values[0] == 0):
                 raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
-            if self.clip_values[1] != 1:
+            if not np.all(self.clip_values[1] == 1):
                 raise ValueError("This classifier requires normalized input images with clip_vales=(0, 1).")
 
         # Check preprocessing and postprocessing defences
