@@ -48,9 +48,17 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         """
         Create a neural cleanse wrapper.
 
-        :param steps: Maximum number of steps for optimization.
-        :param scale: Standard deviation of Gaussian noise added.
-        :param alpha: The failure probability of smoothing.
+        :param steps: The maximum number of steps to run the Neural Cleanse optimization
+        :param init_cost: The initial value for the cost tensor in the Neural Cleanse optimization
+        :param norm: The norm to use for the Neural Cleanse optimization, can be 1, 2, or np.inf
+        :param learning_rate: Tjhe learning rate for the Neural Cleanse optmization
+        :param attack_success_threshold: The threshold at which the generated backdoor is successful enough to stop the
+                                         Neural Cleanse optimization
+        :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimiation
+        :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimiation
+        :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimiation
+        :param cost_multiplier: How much to change the cost in the Neural Cleanse optimiation
+        :param batch_size: The batch size for optimizations in the Neural Cleanse optimiation
         """
         super().__init__(*args, **kwargs)
         self.steps = steps

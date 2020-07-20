@@ -78,13 +78,11 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         """
         Create a Neural Cleanse classifier.
 
-        :param model: PyTorch model. The output of the model can be logits, probabilities or anything else. Logits
-               output should be preferred where possible to ensure attack efficiency.
-        :param loss: The loss function for which to compute gradients for training. The target label must be raw
-               categorical, i.e. not converted to one-hot encoding.
-        :param input_shape: The shape of one input instance.
-        :param nb_classes: The number of classes of the model.
-        :param optimizer: The optimizer used to train the classifier.
+        :param model: Keras model, neural network or other.
+        :param use_logits: True if the output of the model are logits; false for probabilities or any other type of
+               outputs. Logits output should be favored when possible to ensure attack efficiency.
+        :param channel_index: Index of the axis in data containing the color channels or features.
+        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -95,10 +93,23 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
-        :param steps: Number of samples for smoothing.
-        :param scale: Standard deviation of Gaussian noise added.
-        :param alpha: The failure probability of smoothing.
+        :param input_layer: The index of the layer to consider as input for models with multiple input layers. The layer
+                            with this index will be considered for computing gradients. For models with only one input
+                            layer this values is not required.
+        :param output_layer: Which layer to consider as the output when the models has multiple output layers. The layer
+                             with this index will be considered for computing gradients. For models with only one output
+                             layer this values is not required.
+        :param steps: The maximum number of steps to run the Neural Cleanse optimization
+        :param init_cost: The initial value for the cost tensor in the Neural Cleanse optimization
+        :param norm: The norm to use for the Neural Cleanse optimization, can be 1, 2, or np.inf
+        :param learning_rate: Tjhe learning rate for the Neural Cleanse optmization
+        :param attack_success_threshold: The threshold at which the generated backdoor is successful enough to stop the
+                                         Neural Cleanse optimization
+        :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimiation
+        :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimiation
+        :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimiation
+        :param cost_multiplier: How much to change the cost in the Neural Cleanse optimiation
+        :param batch_size: The batch size for optimizations in the Neural Cleanse optimiation
         """
         super().__init__(
             model=model,
@@ -124,7 +135,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
             batch_size=batch_size,
         )
         # TODO: swtich to np zeros
-        mask = np.random.uniform(size=super().input_shape)
+        mask = np.zeros(super().input_shape) # np.random.uniform(size=super().input_shape)
         pattern = np.random.uniform(size=super().input_shape)
 
         # Normalize mask between [0, 1]
@@ -155,7 +166,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         self.loss = self.loss_ce + self.loss_reg * self.cost_tensor
         self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
         print(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
-        # self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss)
+        self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss)
         self.train = K.function([input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss, self.loss_acc])
                                 # ,
                                 # updates=self.updates)
