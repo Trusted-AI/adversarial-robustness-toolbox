@@ -23,9 +23,6 @@ from typing import List, Dict, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 import tensorflow as tf
-from object_detection.utils import config_util
-from object_detection.builders import model_builder
-from object_detection.utils import variables_helper
 
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.tensorflow import TensorFlowEstimator
@@ -238,7 +235,12 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               corresponding loss values.
                     - detections: a dictionary containing final detection results.
         """
+        from object_detection.utils import variables_helper
+
         if obj_detection_model is None:
+            from object_detection.utils import config_util
+            from object_detection.builders import model_builder
+
             # If obj_detection_model is None, then we need to have parameters filename and url to download, extract
             # and load the object detection model
             if filename is None or url is None:
