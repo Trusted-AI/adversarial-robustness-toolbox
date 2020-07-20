@@ -19,6 +19,7 @@
 This module implements the abstract estimators `TensorFlowEstimator` and `TensorFlowV2Estimator` for TensorFlow models.
 """
 import logging
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -27,6 +28,9 @@ from art.estimators.estimator import (
     LossGradientsMixin,
     NeuralNetworkMixin,
 )
+
+if TYPE_CHECKING:
+    from tensorflow.python.client.session import Session
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +70,18 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         :param nb_epochs: Number of training epochs.
         """
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
+
+    @property
+    def sess(self) -> "Session":
+        """
+        Get current TensorFlow session.
+
+        :return: The current TensorFlow session.
+        """
+        if hasattr(self, '_sess'):
+            return self._sess
+        else:
+            raise NotImplementedError("A valid TensorFlow session is not available.")
 
 
 class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
