@@ -94,12 +94,8 @@ def test_defined_attack_only(fix_get_mnist_subset):
             loss_type="difference_logits_ratio",
         )
     )
-    attacks.append(
-        DeepFool(classifier=classifier, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size)
-    )
-    attacks.append(
-        SquareAttack(estimator=classifier, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5)
-    )
+    attacks.append(DeepFool(classifier=classifier, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size))
+    attacks.append(SquareAttack(estimator=classifier, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5))
 
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 

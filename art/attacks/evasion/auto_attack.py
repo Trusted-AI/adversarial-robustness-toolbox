@@ -172,11 +172,7 @@ class AutoAttack(EvasionAttack):
         return x_adv
 
     def _run_original_attacks(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        targeted_labels: np.ndarray,
-        sample_is_robust: np.ndarray
+        self, x: np.ndarray, y: np.ndarray, targeted_labels: np.ndarray, sample_is_robust: np.ndarray
     ) -> np.ndarray:
         """
         This function is used to run only the attacks in the attack list input as they are when `defined_attack_only`
@@ -193,7 +189,7 @@ class AutoAttack(EvasionAttack):
         full_attack_list = list()
 
         for attack in self.attacks:
-            if hasattr(attack, 'targeted') and attack.targeted:
+            if hasattr(attack, "targeted") and attack.targeted:
                 for i in range(y.shape[1] - 1):
                     target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
                     full_attack_list.append((attack, target, True))
@@ -209,11 +205,7 @@ class AutoAttack(EvasionAttack):
         return x_adv
 
     def _run_strengthen_attacks(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        targeted_labels: np.ndarray,
-        sample_is_robust: np.ndarray
+        self, x: np.ndarray, y: np.ndarray, targeted_labels: np.ndarray, sample_is_robust: np.ndarray
     ) -> np.ndarray:
         """
         This function is used to run the attacks in the attack list input with untargeted option following by targeted
@@ -231,7 +223,7 @@ class AutoAttack(EvasionAttack):
         targeted_attacks = list()
 
         for attack in self.attacks:
-            if hasattr(attack, 'targeted'):
+            if hasattr(attack, "targeted"):
                 # For untargeted attacks
                 untargeted_attacks.append((attack, y, False))
 
@@ -257,7 +249,7 @@ class AutoAttack(EvasionAttack):
         self,
         x: np.ndarray,
         full_attack_list: List[Tuple[EvasionAttack, np.ndarray, bool]],
-        sample_is_robust: np.ndarray
+        sample_is_robust: np.ndarray,
     ) -> np.ndarray:
         """
         Run the main auto attack algorithm.
@@ -281,7 +273,7 @@ class AutoAttack(EvasionAttack):
             y_robust = label[sample_is_robust]
 
             # Set targeted/untargeted attack
-            if hasattr(attack, 'targeted'):
+            if hasattr(attack, "targeted"):
                 attack.targeted = targeted
 
             # Generate adversarial examples
