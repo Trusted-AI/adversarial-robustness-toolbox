@@ -114,7 +114,7 @@ def setup_tear_down_framework(framework):
 def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
-    if framework == "keras":
+    if framework == "keras" or framework == "kerastf":
         keras_gen = ImageDataGenerator(
             width_shift_range=0.075,
             height_shift_range=0.075,
@@ -152,7 +152,7 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
     def _image_data_generator(**kwargs):
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
-        if framework == "keras":
+        if framework == "keras" or framework == "kerastf":
             return KerasDataGenerator(
                 iterator=image_iterator,
                 size=x_train_mnist.shape[0],
@@ -256,7 +256,6 @@ def get_image_classifier_list(framework):
             classifier_list = None
         if framework == "kerastf":
             classifier_list = [get_image_classifier_kr_tf(**kwargs)]
-
         if framework == "mxnet":
             classifier_list = [get_image_classifier_mx(**kwargs)]
         if classifier_list is None:
