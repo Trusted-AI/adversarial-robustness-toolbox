@@ -59,7 +59,7 @@ def test_generate_default(fix_get_mnist_subset):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_defined_attack_only(fix_get_mnist_subset):
+def test_generate_attacks_and_targeted(fix_get_mnist_subset):
 
     classifier, _ = get_image_classifier_tf(from_logits=True)
     norm = np.inf
@@ -108,7 +108,7 @@ def test_defined_attack_only(fix_get_mnist_subset):
         attacks=attacks,
         batch_size=batch_size,
         estimator_orig=None,
-        defined_attack_only=False,
+        targeted=False,
     )
 
     x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
@@ -125,13 +125,13 @@ def test_defined_attack_only(fix_get_mnist_subset):
         attacks=attacks,
         batch_size=batch_size,
         estimator_orig=None,
-        defined_attack_only=True,
+        targeted=True,
     )
 
     x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-    assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0, abs=0.105)
-    assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0, abs=0.05)
+    assert np.mean(x_train_mnist_adv - x_train_mnist) == pytest.approx(0.0179, abs=0.0025)
+    assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(eps, abs=0.005)
 
 
 def test_classifier_type_check_fail():
