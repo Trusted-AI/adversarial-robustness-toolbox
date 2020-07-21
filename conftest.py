@@ -14,11 +14,12 @@ import shutil
 from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
+from tests.utils import get_image_classifier_mx
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator
 from art.estimators.classification import KerasClassifier
 
 logger = logging.getLogger(__name__)
-art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf"]
+art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
 
 master_seed(1234)
 
@@ -256,6 +257,8 @@ def get_image_classifier_list(framework):
         if framework == "kerastf":
             classifier_list = [get_image_classifier_kr_tf(**kwargs)]
 
+        if framework == "mxnet":
+            classifier_list = [get_image_classifier_mx(**kwargs)]
         if classifier_list is None:
             return None, None
 
