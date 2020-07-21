@@ -2,7 +2,6 @@ import json
 import logging
 import pytest
 import numpy as np
-import pickle
 import tensorflow as tf
 import keras
 from keras.preprocessing.image import ImageDataGenerator
@@ -112,7 +111,7 @@ def setup_tear_down_framework(framework):
 
 @pytest.fixture
 def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default_batch_size):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
     if framework == "keras":
         keras_gen = ImageDataGenerator(
@@ -150,7 +149,7 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
 @pytest.fixture
 def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, image_iterator, default_batch_size):
     def _image_data_generator(**kwargs):
-        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
         if framework == "keras":
             return KerasDataGenerator(

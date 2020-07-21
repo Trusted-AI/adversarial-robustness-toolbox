@@ -15,7 +15,8 @@ def is_keras_2_3():
     return False
 
 
-# This ART pytest marker signals that the features being tested here are  is agnostic of what framework is being used and hence should only
+# This ART pytest marker signals that the features being tested here are  is agnostic of what framework is
+# being used and hence should only
 @pytest.mark.framework_agnostic
 def test_myTest(get_default_mnist_subset, get_image_classifier_list, expected_values):
 
