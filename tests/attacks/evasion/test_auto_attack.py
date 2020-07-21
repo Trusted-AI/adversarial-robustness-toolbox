@@ -130,7 +130,7 @@ def test_generate_attacks_and_targeted(fix_get_mnist_subset):
 
     x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-    assert np.mean(x_train_mnist_adv - x_train_mnist) == pytest.approx(0.0179, abs=0.0025)
+    assert np.mean(x_train_mnist_adv - x_train_mnist) == pytest.approx(0.0179, abs=0.0075)
     assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(eps, abs=0.005)
 
 
