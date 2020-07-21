@@ -275,7 +275,9 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     probabilities = tf.keras.activations.softmax(x=logits)
 
     # Train operator
-    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+    loss = tf.reduce_mean(
+        tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph, reduction=tf.losses.Reduction.SUM)
+    )
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
     train = optimizer.minimize(loss)
 
@@ -377,7 +379,9 @@ def get_image_classifier_tf_v2(from_logits=False):
             )
         )
 
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits)
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+        from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
+    )
 
     model.compile(optimizer=optimizer, loss=loss_object)
 
@@ -858,7 +862,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     model = Model()
 
     # Define a loss function and optimizer
-    loss_fn = torch.nn.CrossEntropyLoss()
+    loss_fn = torch.nn.CrossEntropyLoss(reduction="sum")
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     # Get classifier

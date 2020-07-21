@@ -35,6 +35,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
+@pytest.mark.skipMlFramework("pytorch")
 def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack):
     classifier_list = get_image_classifier_list_for_attack(FeatureAdversaries)
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
