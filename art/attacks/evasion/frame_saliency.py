@@ -83,7 +83,7 @@ class FrameSaliencyAttack(EvasionAttack):
         :param frame_index: Index of the axis in input (feature) array `x` representing the frame dimension.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(FrameSaliencyAttack, self).__init__(classifier)
+        super(FrameSaliencyAttack, self).__init__(estimator=classifier)
 
         self.attacker = attacker
         self.method = method

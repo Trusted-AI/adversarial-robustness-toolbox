@@ -50,12 +50,14 @@ class TestVideoCompression:
     """Test VideoCompression."""
 
     @pytest.mark.parametrize("channels_first", [True, False])
-    def test_video_compression(self, video_batch, channels_first):
+    @pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn")
+    def test_video_compresssion(self, video_batch, channels_first):
         test_input, test_output = video_batch
         video_compression = VideoCompression(video_format="mp4", constant_rate_factor=0, channels_first=channels_first)
 
         assert_array_equal(video_compression(test_input)[0], test_output)
 
+    @pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn")
     def test_compress_video_call(self):
         test_input = np.arange(12).reshape(1, 3, 1, 2, 2)
         video_compression = VideoCompression(video_format="mp4", constant_rate_factor=50, channels_first=True)

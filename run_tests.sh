@@ -6,27 +6,35 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
-pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
-
 mlFrameworkList=("tensorflow" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 done
 
-pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
+mlFrameworkList=("tensorflow")
+for mlFramework in "${mlFrameworkList[@]}"; do
+  pytest -q tests/defences/preprocessor --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
-pytest -q tests/utils --mlFramework="tensorflow" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
+  pytest -q tests/utils --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
-#Only classifier tests need to be run for each frameworks
+  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
+done
+
+
+#NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
+# made framework independent to be incorporated within this loop
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
-  pytest -q tests/classifiersFrameworks/ --mlFramework=$mlFramework --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed tests for framework $mlFramework"; fi
+  pytest -q tests/estimators/classification/test_common_deeplearning.py --mlFramework=$mlFramework --durations=0
+  pytest -q tests/estimators/classification/test_keras.py --mlFramework=$mlFramework --durations=0
+  pytest -q tests/estimators/classification/test_pytorch.py --mlFramework=$mlFramework --durations=0
+  pytest -q tests/estimators/classification/test_tensorflow.py --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
 done
 
 
@@ -55,6 +63,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_pixel_attack.py" \
                     "tests/attacks/test_threshold_attack.py" \
                     "tests/attacks/test_wasserstein.py" \
+                    "tests/attacks/test_shapeshifter.py" \
                     "tests/attacks/test_targeted_universal_perturbation.py" \
                     "tests/attacks/test_simba.py" )
 
@@ -69,9 +78,10 @@ declare -a classifiers=("tests/estimators/certification/test_randomized_smoothin
                         "tests/estimators/classification/test_keras_tf.py" \
                         "tests/estimators/classification/test_lightgbm.py" \
                         "tests/estimators/classification/test_mxnet.py" \
-                        "tests/estimators/classification/test_pytorch.py" \
                         "tests/estimators/classification/test_scikitlearn.py" \
                         "tests/estimators/classification/test_xgboost.py" )
+
+declare -a object_detectors=("tests/estimators/object_detection/test_tensorflow_faster_rcnn.py")
 
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_adversarial_trainer_madry_pgd.py" \
@@ -110,6 +120,7 @@ declare -a art=("tests/test_data_generators.py" \
 
 tests_modules=("attacks" \
                "classifiers" \
+               "object_detectors" \
                "defences" \
                "metrics" \
                "wrappers" \

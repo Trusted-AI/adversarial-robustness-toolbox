@@ -98,7 +98,7 @@ class ElasticNet(EvasionAttack):
         """
         super(ElasticNet, self).__init__(estimator=classifier)
         self.confidence = confidence
-        self.targeted = targeted
+        self._targeted = targeted
         self.learning_rate = learning_rate
         self.binary_search_steps = binary_search_steps
         self.max_iter = max_iter

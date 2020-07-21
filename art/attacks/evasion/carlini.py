@@ -110,7 +110,7 @@ class CarliniL2Method(EvasionAttack):
         super(CarliniL2Method, self).__init__(estimator=classifier)
 
         self.confidence = confidence
-        self.targeted = targeted
+        self._targeted = targeted
         self.learning_rate = learning_rate
         self.binary_search_steps = binary_search_steps
         self.max_iter = max_iter
@@ -521,7 +521,7 @@ class CarliniLInfMethod(EvasionAttack):
         super(CarliniLInfMethod, self).__init__(estimator=classifier)
 
         self.confidence = confidence
-        self.targeted = targeted
+        self._targeted = targeted
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.max_halving = max_halving

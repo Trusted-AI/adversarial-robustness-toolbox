@@ -255,7 +255,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     self._loss_fn = loss_fn
                     self._loss_object = torch.nn.CrossEntropyLoss()
             elif loss_type == "difference_logits_ratio":
-                if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
+                if is_probability(
+                    estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=ART_NUMPY_DTYPE))
+                ):
                     raise ValueError(
                         "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
                         "the estimator has to to predict logits."
@@ -268,6 +270,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             y_true = torch.from_numpy(y_true)
                         if isinstance(y_pred, np.ndarray):
                             y_pred = torch.from_numpy(y_pred)
+
+                        y_true = y_true.float()
 
                         # dlr = torch.mean((y_pred - y_true) ** 2)
                         # return loss
@@ -300,6 +304,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                     self._loss_fn = difference_logits_ratio
                     self._loss_object = difference_logits_ratio
+            elif loss_type is None:
+                self._loss_object = estimator._loss_object
+            else:
+                raise ValueError(
+                    "The argument loss_type has an invalid value. The following options for loss_type are "
+                    "supported: {}".format([None, "cross_entropy", "difference_logits_ratio"])
+                )
 
             estimator_apgd = PyTorchClassifier(
                 model=estimator.model,
@@ -323,7 +334,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         self.eps = eps
         self.eps_step = eps_step
         self.max_iter = max_iter
-        self.targeted = targeted
+        self._targeted = targeted
         self.nb_random_init = nb_random_init
         self.batch_size = batch_size
         self.loss_type = loss_type

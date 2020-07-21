@@ -103,7 +103,7 @@ class TestAdversarialTrainer(unittest.TestCase):
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        self.assertEqual(accuracy_new, 0.36)
+        self.assertEqual(accuracy_new, 0.14)
         self.assertEqual(accuracy, 0.13)
 
         # Check that x_test has not been modified by attack and classifier
@@ -140,8 +140,8 @@ class TestAdversarialTrainer(unittest.TestCase):
         predictions_new = np.argmax(adv_trainer.predict(x_test_adv), axis=1)
         accuracy_new = np.sum(predictions_new == np.argmax(y_test, axis=1)) / NB_TEST
 
-        self.assertAlmostEqual(accuracy_new, 0.25, delta=0.02)
-        self.assertAlmostEqual(accuracy, 0.11, delta=0.0)
+        self.assertAlmostEqual(accuracy_new, 0.38, delta=0.02)
+        self.assertAlmostEqual(accuracy, 0.1, delta=0.0)
 
         # Check that x_train and x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_train_original - x_train))), 0.0, delta=0.00001)

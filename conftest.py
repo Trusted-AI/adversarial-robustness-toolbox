@@ -1,15 +1,20 @@
+import json
 import logging
 import pytest
 import numpy as np
 import tensorflow as tf
 import keras
+from keras.preprocessing.image import ImageDataGenerator
 import os
 import requests
 import tempfile
+from torch.utils.data import DataLoader
+import torch
 import shutil
 from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset
+from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator
 from art.estimators.classification import KerasClassifier
 
 logger = logging.getLogger(__name__)
@@ -17,10 +22,12 @@ art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
 
 master_seed(1234)
 
+default_framework = "tensorflow"
+
 
 def pytest_addoption(parser):
     parser.addoption(
-        "--mlFramework", action="store", default="tensorflow",
+        "--mlFramework", action="store", default=default_framework,
         help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is tensorflow. "
              "Other options available are {0}".format(art_supported_frameworks)
     )
@@ -103,6 +110,136 @@ def setup_tear_down_framework(framework):
 
 
 @pytest.fixture
+def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default_batch_size):
+    (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
+
+    if framework == "keras":
+        keras_gen = ImageDataGenerator(
+            width_shift_range=0.075,
+            height_shift_range=0.075,
+            rotation_range=12,
+            shear_range=0.075,
+            zoom_range=0.05,
+            fill_mode="constant",
+            cval=0,
+        )
+        return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
+
+    if framework == "tensorflow":
+        if not is_tf_version_2:
+            x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
+            y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
+            # tmp = x_train_mnist.shape[0] / default_batch_size
+            # x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(tmp, default_batch_size, 28, 28, 1))
+            # y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(tmp, default_batch_size, 10))
+            dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+            return dataset.make_initializable_iterator()
+
+    if framework == "pytorch":
+        # Create tensors from data
+        x_train_tens = torch.from_numpy(x_train_mnist)
+        x_train_tens = x_train_tens.float()
+        y_train_tens = torch.from_numpy(y_train_mnist)
+        dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
+        return DataLoader(dataset=dataset, batch_size=default_batch_size, shuffle=True)
+
+    return None
+
+
+@pytest.fixture
+def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, image_iterator, default_batch_size):
+    def _image_data_generator(**kwargs):
+        (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
+
+        if framework == "keras":
+            return KerasDataGenerator(
+                iterator=image_iterator,
+                size=x_train_mnist.shape[0],
+                batch_size=default_batch_size,
+            )
+
+        if framework == "tensorflow":
+            if not is_tf_version_2:
+                return TensorFlowDataGenerator(
+                    sess=kwargs["sess"], iterator=image_iterator, iterator_type="initializable", iterator_arg={},
+                    size=x_train_mnist.shape[0],
+                    batch_size=default_batch_size
+                )
+
+        if framework == "pytorch":
+            return PyTorchDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
+                                        batch_size=default_batch_size)
+
+    return _image_data_generator
+
+
+@pytest.fixture
+def store_expected_values(request, is_tf_version_2):
+    '''
+    Stores expected values to be retrieved by the expected_values fixture
+    :param request:
+    :return:
+    '''
+
+    def _store_expected_values(values_to_store, framework=""):
+
+        framework_name = framework
+        if framework == "tensorflow":
+            if is_tf_version_2:
+                framework_name = "tensorflow2"
+            else:
+                framework_name = "tensorflow1"
+        if framework_name is not "":
+            framework_name = "_" + framework_name
+
+        file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
+
+        try:
+            with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name),
+                      "r") as f:
+                expected_values = json.load(f)
+        except FileNotFoundError:
+            expected_values = {}
+
+        test_name = request.node.name + framework_name
+        expected_values[test_name] = values_to_store
+
+        with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name),
+                  "w") as f:
+            json.dump(expected_values, f)
+
+    return _store_expected_values
+
+
+@pytest.fixture
+def expected_values(framework, request, is_tf_version_2):
+    '''
+    Retrieves the expected values that were stored using the store_expected_values fixture
+    :param request:
+    :return:
+    '''
+
+    file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
+
+    framework_name = framework
+    if framework == "tensorflow":
+        if is_tf_version_2:
+            framework_name = "tensorflow2"
+        else:
+            framework_name = "tensorflow1"
+    if framework_name is not "":
+        framework_name = "_" + framework_name
+
+    with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r") as f:
+        expected_values = json.load(f)
+
+        test_name = request.node.name
+        if request.node.name not in expected_values:
+            test_name = request.node.name + framework_name
+        return expected_values[test_name]
+
+
+@pytest.fixture
 def get_image_classifier_list(framework):
     def _get_image_classifier_list(one_classifier=False, **kwargs):
         sess = None
@@ -112,7 +249,7 @@ def get_image_classifier_list(framework):
             classifier, sess = get_image_classifier_tf(**kwargs)
             classifier_list = [classifier]
         if framework == "pytorch":
-            classifier_list = [get_image_classifier_pt()]
+            classifier_list = [get_image_classifier_pt(**kwargs)]
         if framework == "scikitlearn":
             logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
             classifier_list = None
@@ -234,9 +371,20 @@ def default_dataset_subset_sizes():
 
 
 @pytest.fixture()
-def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes):
+def mnist_shape(framework):
+    if framework == "pytorch":
+        return (1, 28, 28)
+    else:
+        return (28, 28, 1)
+
+
+@pytest.fixture()
+def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mnist_shape):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train, n_test = default_dataset_subset_sizes
+
+    x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0],) + mnist_shape).astype(np.float32)
+    x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0],) + mnist_shape).astype(np.float32)
 
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
 
@@ -256,12 +404,11 @@ def create_test_dir():
 
 
 @pytest.fixture(scope="function")
-def get_mnist_dataset(load_mnist_dataset, framework):
+def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = load_mnist_dataset
 
-    if framework == "pytorch":
-        x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-        x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
+    x_train_mnist = np.reshape(x_train_mnist, (x_train_mnist.shape[0],) + mnist_shape).astype(np.float32)
+    x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0],) + mnist_shape).astype(np.float32)
 
     x_train_mnist_original = x_train_mnist.copy()
     y_train_mnist_original = y_train_mnist.copy()
@@ -301,3 +448,10 @@ def make_customer_record():
         return {"name": name, "orders": []}
 
     return _make_customer_record
+
+
+@pytest.fixture(autouse=True)
+def framework_agnostic(request, framework):
+    if request.node.get_closest_marker('framework_agnostic'):
+        if framework is not default_framework:
+            pytest.skip('framework agnostic test skipped for framework : {}'.format(framework))
