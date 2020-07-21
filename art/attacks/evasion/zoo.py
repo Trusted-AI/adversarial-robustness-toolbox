@@ -125,7 +125,7 @@ class ZooAttack(EvasionAttack):
             self.input_is_feature_vector = False
 
         self.confidence = confidence
-        self.targeted = targeted
+        self._targeted = targeted
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.binary_search_steps = binary_search_steps

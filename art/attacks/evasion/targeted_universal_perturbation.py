@@ -84,6 +84,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         self.max_iter = max_iter
         self.eps = eps
         self.norm = norm
+        self._targeted = True
         self._check_params()
 
     def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:

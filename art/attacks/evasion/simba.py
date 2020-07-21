@@ -86,7 +86,7 @@ class SimBA(EvasionAttack):
         self.order = order
         self.freq_dim = freq_dim
         self.stride = stride
-        self.targeted = targeted
+        self._targeted = targeted
         self.batch_size = batch_size
         self._check_params()
 

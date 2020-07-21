@@ -103,7 +103,7 @@ class Wasserstein(EvasionAttack):
         """
         super().__init__(estimator=estimator)
 
-        self.targeted = targeted
+        self._targeted = targeted
         self.regularization = regularization
         self.p = p
         self.kernel_size = kernel_size

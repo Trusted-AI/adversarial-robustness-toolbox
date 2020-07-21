@@ -127,6 +127,9 @@ class EvasionAttack(Attack):
     """
     Abstract base class for evasion attack classes.
     """
+    def __init__(self, **kwargs) -> None:
+        self._targeted = None
+        super(EvasionAttack, self).__init__(**kwargs)
 
     @abc.abstractmethod
     def generate(  # lgtm [py/inheritance/incorrect-overridden-signature]
@@ -142,6 +145,17 @@ class EvasionAttack(Attack):
         :return: An array holding the adversarial examples.
         """
         raise NotImplementedError
+
+    @property
+    def targeted(self) -> Optional[bool]:
+        """
+        Return Boolean if attack is targeted. Return None if not applicable.
+        """
+        return self._targeted
+
+    @targeted.setter
+    def targeted(self, targeted) -> None:
+        self._targeted = targeted
 
 
 class PoisoningAttack(Attack):

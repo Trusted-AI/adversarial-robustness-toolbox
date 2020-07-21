@@ -73,7 +73,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         :param max_iter: The maximum number of iterations.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(VirtualAdversarialMethod, self).__init__(classifier)
+        super(VirtualAdversarialMethod, self).__init__(estimator=classifier)
         self.finite_diff = finite_diff
         self.eps = eps
         self.max_iter = max_iter

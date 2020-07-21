@@ -334,7 +334,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         self.eps = eps
         self.eps_step = eps_step
         self.max_iter = max_iter
-        self.targeted = targeted
+        self._targeted = targeted
         self.nb_random_init = nb_random_init
         self.batch_size = batch_size
         self.loss_type = loss_type
