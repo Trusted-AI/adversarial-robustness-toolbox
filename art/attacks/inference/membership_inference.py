@@ -27,7 +27,6 @@ import logging
 from typing import Optional
 
 import numpy as np
-from scipy.special import softmax
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -38,11 +37,13 @@ from art.attacks import InferenceAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin, Classifier
 from art.utils import check_and_transform_label_format
-from art.estimators.classification.pytorch import PyTorchClassifier
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
 logger = logging.getLogger(__name__)
 
 use_cuda = torch.cuda.is_available()
+
+
 def to_cuda(x):
     if use_cuda:
         x = x.cuda()
@@ -52,10 +53,7 @@ def to_cuda(x):
 class AttackDataset(Dataset):
     def __init__(self, x1, x2, y=None):
         self.x1 = torch.from_numpy(x1.astype(np.float64)).type(torch.FloatTensor)
-
         self.x2 = torch.from_numpy(x2.astype(np.int32)).type(torch.FloatTensor)
-        # self.x2 = torch.FloatTensor(int(x2_t.size(0)), max(x2) + 1).zero_(). \
-        #     scatter_(1, x2_t.view([-1, 1]).data, 1).type(torch.FloatTensor)
 
         if y is not None:
             self.y = torch.from_numpy(y.astype(np.int8)).type(torch.FloatTensor)
@@ -159,30 +157,39 @@ class MembershipInferenceBlackBox(InferenceAttack):
     """
     _estimator_requirements = [BaseEstimator]
 
-    def __init__(self, classifier: Classifier, attack_model: Optional[Classifier] = None):
+    def __init__(self, classifier: Classifier, attack_model_type: Optional[str] = 'nn',
+                 attack_model: Optional[Classifier] = None):
         """
         Create a MembershipInferenceBlackBox attack instance.
 
         :param classifier: Target classifier.
+        :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
+                                  network, default), `rf` (for random forest) or `gb` (gradient boosting). If
+                                  `attack_model` is supplied, this option will be ignored.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         """
         super(MembershipInferenceBlackBox, self).__init__(estimator=classifier)
 
-        #TODO: should we provide as default RF or GradientBoosting?
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
                 raise ValueError("Attack model must be of type Classifier.")
             self.attack_model = attack_model
             self.default_model = False
+            self.attack_model_type = None
         else:
-            self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
-            self.epochs = 100
-            self.bs = 100
-            # self.attack_model = PyTorchClassifier(
-            #         model=model, loss=loss_fn, optimizer=optimizer,
-            #         input_shape=(num_classes, num_classes,), nb_classes=2
-            # )
             self.default_model = True
+            self.attack_model_type = attack_model_type
+            if attack_model_type == 'nn':
+                self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
+                self.epochs = 100
+                self.bs = 100
+            elif attack_model_type == 'rf':
+                self.attack_model = RandomForestClassifier()
+            elif attack_model_type == 'gb':
+                self.attack_model = GradientBoostingClassifier()
+            else:
+                raise ValueError("Illegal value for parameter `attack_model_type`.")
+
 
     def fit(self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -216,29 +223,6 @@ class MembershipInferenceBlackBox(InferenceAttack):
             features = self.estimator.predict(x).astype(np.float32)
             # non-members
             test_features = self.estimator.predict(test_x).astype(np.float32)
-            # if NeuralNetworkMixin not in type(self.estimator).__mro__:
-            #     # members
-            #     features = self.estimator.predict(x)
-            #     # non-members
-            #     test_features = self.estimator.predict(test_x)
-            # else:
-            #     # members
-            #     activations = self.estimator.get_activations(x, self.estimator.layer_names[-1], batch_size=self.bs)
-            #     features = softmax(activations)
-            #     # non-members
-            #     test_activations = self.estimator.get_activations(test_x, self.estimator.layer_names[-1],
-            #                                                       batch_size=self.bs)
-            #     test_features = softmax(test_activations)
-        # only for models with activations
-        # elif self.input_type == 'logit':
-        #     if NeuralNetworkMixin not in type(self.estimator).__mro__:
-        #         raise ValueError("Can only use `input_type` logit with Neural Network model.")
-        #     else:
-        #         # members
-        #         features = self.estimator.get_activations(x, self.estimator.layer_names[-1], batch_size=self.bs)
-        #         # non-members
-        #         test_features = self.estimator.get_activations(test_x, self.estimator.layer_names[-1],
-        #                                                           batch_size=self.bs)
         # only for models with loss
         elif self.input_type == 'loss':
             raise ValueError("`input_type` loss not yet implemented.")
@@ -257,7 +241,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         x2 = np.concatenate((y, test_y))
         y_new = np.concatenate((labels, test_labels))
 
-        if self.default_model:
+        if self.default_model and self.attack_model_type == 'nn':
             loss_fn = nn.BCELoss()
             optimizer = optim.Adam(self.attack_model.parameters(), lr=0.0001)
 
@@ -280,7 +264,10 @@ class MembershipInferenceBlackBox(InferenceAttack):
                     loss.backward()
                     optimizer.step()
         else:
-            y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
+            if self.attack_model_type == 'gb':
+                y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
+            else:
+                y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
             self.attack_model.fit(np.c_[x1, x2], y_ready)
 
     def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -298,20 +285,10 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
         if self.input_type == 'probability':
             features = self.estimator.predict(x).astype(np.float32)
-            # if NeuralNetworkMixin not in type(self.estimator).__mro__:
-            #     features = self.estimator.predict(x)
-            # else:
-            #     activations = self.estimator.get_activations(x, self.estimator.layer_names[-1], batch_size=self.bs)
-            #     features = softmax(activations)
-        # elif self.input_type == 'logit':
-        #     if NeuralNetworkMixin not in type(self.estimator).__mro__:
-        #         raise ValueError("Can only use `input_type` logit with Neural Network model.")
-        #     else:
-        #         features = self.estimator.get_activations(x, self.estimator.layer_names[-1], batch_size=self.bs)
         elif self.input_type == 'loss':
             raise ValueError("`input_type` loss not yet implemented.")
 
-        if self.default_model:
+        if self.default_model and self.attack_model_type == 'nn':
             self.attack_model.eval()
             inferred = None
             test_set = AttackDataset(x1=features, x2=y)
@@ -330,4 +307,12 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
 class MembershipInferenceWhiteBoxBox(InferenceAttack):
     #TODO: Not yet implemented. Use activations of inner layers and/or gradients
+    # if NeuralNetworkMixin in type(self.estimator).__mro__:
+    #     # members
+    #     activations = self.estimator.get_activations(x, self.estimator.layer_names[-1], batch_size=self.bs)
+    #     features = softmax(activations)
+    #     # non-members
+    #     test_activations = self.estimator.get_activations(test_x, self.estimator.layer_names[-1],
+    #                                                       batch_size=self.bs)
+    #     test_features = softmax(test_activations)
     pass

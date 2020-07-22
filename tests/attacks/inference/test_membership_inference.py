@@ -90,7 +90,7 @@ def test_rule_based_tabular(get_iris_dataset, get_tabular_classifier_list):
         train_pos = sum(inferred_train) / len(inferred_train)
         test_pos = sum(inferred_test) / len(inferred_test)
         assert (train_pos > test_pos or
-                train_pos == pytest.approx(test_pos, abs=0.03) or
+                train_pos == pytest.approx(test_pos, abs=0.06) or
                 test_pos == 1)
 
 
@@ -146,6 +146,58 @@ def test_black_box_tabular(get_tabular_classifier_list, get_iris_dataset):
                 test_pos == 1)
 
 
+def test_black_box_tabular_rf(get_tabular_classifier_list, get_iris_dataset):
+    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
+    if not classifier_list:
+        logging.warning("Couldn't perform this test because no classifier is defined")
+        return
+
+    (x_train, y_train), (x_test, y_test) = get_iris_dataset
+    attack_train_size = int(len(x_train) * attack_train_ratio)
+    attack_test_size = int(len(x_test) * attack_train_ratio)
+
+    for classifier in classifier_list:
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type='rf')
+        # train attack model using only attack_train_ratio of data
+        attack.fit(x_train[:attack_train_size], y_train[:attack_train_size],
+                   x_test[:attack_test_size], y_test[:attack_test_size])
+        # infer attacked feature on remainder of data
+        inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:])
+        inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:])
+        # check accuracy
+        train_pos = sum(inferred_train) / len(inferred_train)
+        test_pos = sum(inferred_test) / len(inferred_test)
+        assert (train_pos > test_pos or
+                train_pos == pytest.approx(test_pos, abs=0.08) or
+                test_pos == 1)
+
+
+def test_black_box_tabular_gb(get_tabular_classifier_list, get_iris_dataset):
+    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
+    if not classifier_list:
+        logging.warning("Couldn't perform this test because no classifier is defined")
+        return
+
+    (x_train, y_train), (x_test, y_test) = get_iris_dataset
+    attack_train_size = int(len(x_train) * attack_train_ratio)
+    attack_test_size = int(len(x_test) * attack_train_ratio)
+
+    for classifier in classifier_list:
+        attack = MembershipInferenceBlackBox(classifier, attack_model_type='gb')
+        # train attack model using only attack_train_ratio of data
+        attack.fit(x_train[:attack_train_size], y_train[:attack_train_size],
+                   x_test[:attack_test_size], y_test[:attack_test_size])
+        # infer attacked feature on remainder of data
+        inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:])
+        inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:])
+        # check accuracy
+        train_pos = sum(inferred_train) / len(inferred_train)
+        test_pos = sum(inferred_test) / len(inferred_test)
+        assert (train_pos > test_pos or
+                train_pos == pytest.approx(test_pos, abs=0.03) or
+                test_pos == 1)
+
+
 def test_black_box_loss(get_tabular_classifier_list, get_iris_dataset):
     classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
     if not classifier_list:
@@ -186,7 +238,7 @@ class AttackModel(nn.Module):
         return self.output(self.layer(x))
 
 
-@pytest.mark.skipMlFramework("scikitlearn")
+# @pytest.mark.skipMlFramework("scikitlearn")
 def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
     classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
     if not classifier_list:
