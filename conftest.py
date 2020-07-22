@@ -179,6 +179,7 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
 def store_expected_values(request, is_tf_version_2):
     '''
     Stores expected values to be retrieved by the expected_values fixture
+    Note: Numpy arrays MUST be converted to list before being stored as json
     :param request:
     :return:
     '''
