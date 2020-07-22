@@ -136,11 +136,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if isinstance(loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),):
+        if isinstance(self._loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss), ):
             self._reduce_labels = True
+            self._int_labels = True
+        elif isinstance(self._loss, (torch.nn.BCELoss), ):
+            self._reduce_labels = True
+            self._int_labels = False
         else:
             self._reduce_labels = False
+            self._int_labels = False
 
     @property
     def device(self) -> "torch.device":
@@ -154,6 +158,24 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     @property
     def model(self) -> "torch.nn.Module":
         return self._model._model
+
+    def reduce_labels(self, y: np.ndarray):
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if self._reduce_labels and self._int_labels:
+            return np.argmax(y, axis=1)
+        elif self._reduce_labels:  # float labels
+            return np.argmax(y, axis=1).astype(np.float32)
+        else:
+            return y
+
+    def reduce_labels_framework(self, y: "torch.Tensor"):
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if self._reduce_labels and self._int_labels:
+            return torch.argmax(y, dim=1)
+        elif self._reduce_labels:  # float labels
+            return torch.argmax(y, dim=1).type(torch.FloatTensor)
+        else:
+            return y
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -213,8 +235,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        if self._reduce_labels:
-            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        y_preprocessed = self.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
@@ -394,8 +415,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Check label shape
-        if self._reduce_labels:
-            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        y_preprocessed = self.reduce_labels(y_preprocessed)
 
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
@@ -432,8 +452,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         from torch.autograd import Variable
 
         # Check label shape
-        if self._reduce_labels:
-            y = torch.argmax(y, dim=1)
+        y = self.reduce_labels_framework(y)
 
         # Convert the inputs to Variable
         x = Variable(x, requires_grad=True)
