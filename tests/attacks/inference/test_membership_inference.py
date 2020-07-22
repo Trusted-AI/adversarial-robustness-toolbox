@@ -275,6 +275,25 @@ def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
                 test_pos == 1)
 
 
+def test_errors(get_tabular_classifier_list, get_iris_dataset):
+    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
+    if not classifier_list:
+        logging.warning("Couldn't perform this test because no classifier is defined")
+        return
+    (x_train, y_train), (x_test, y_test) = get_iris_dataset
+
+    with pytest.raises(ValueError):
+        MembershipInferenceBlackBox(classifier_list[0], attack_model_type='a')
+    attack = MembershipInferenceBlackBox(classifier_list[0])
+    with pytest.raises(ValueError):
+        attack.fit(x_train, y_train, x_test, y_test, input_type='a')
+    with pytest.raises(ValueError):
+        attack.fit(x_train, y_test, x_test, y_test)
+    with pytest.raises(ValueError):
+        attack.fit(x_train, y_train, x_test, y_train)
+    with pytest.raises(ValueError):
+        attack.infer(x_train, y_test)
+
 
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(MembershipInferenceBlackBoxRuleBased, [BaseEstimator])
