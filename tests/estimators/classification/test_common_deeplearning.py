@@ -154,7 +154,6 @@ def test_predict(
 
     if classifier is not None:
         y_predicted = classifier.predict(x_test_mnist[0:1])
-
         np.testing.assert_array_almost_equal(y_predicted, expected_values, decimal=4)
 
 

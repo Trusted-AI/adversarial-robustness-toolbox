@@ -95,13 +95,13 @@ class TestBase(unittest.TestCase):
 
         # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
         np.testing.assert_array_almost_equal(
-            self._x_train_mnist_original[0 : self.n_train], self.x_train_mnist, decimal=3
+            self._x_train_mnist_original[0: self.n_train], self.x_train_mnist, decimal=3
         )
         np.testing.assert_array_almost_equal(
-            self._y_train_mnist_original[0 : self.n_train], self.y_train_mnist, decimal=3
+            self._y_train_mnist_original[0: self.n_train], self.y_train_mnist, decimal=3
         )
-        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0 : self.n_test], self.x_test_mnist, decimal=3)
-        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0 : self.n_test], self.y_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0: self.n_test], self.x_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0: self.n_test], self.y_test_mnist, decimal=3)
 
         np.testing.assert_array_almost_equal(self._x_train_iris_original, self.x_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
@@ -399,7 +399,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
 
 def get_image_classifier_kr(
-    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
+        loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
 ):
     """
     Standard Keras classifier for unit testing
@@ -885,7 +885,7 @@ def get_classifier_bb(defences=None):
     # define black-box classifier
     def predict(x):
         with open(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
+                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)
@@ -894,101 +894,44 @@ def get_classifier_bb(defences=None):
     return bbc
 
 
-def get_image_classifier_mx(from_logits=False, load_init=True):
-    """
-    Standard MXNet classifier for unit testing
-
-    :param from_logits: Flag if model should predict logits (True) or probabilities (False).
-    :type from_logits: `bool`
-    :param load_init: Load the initial weights if True.
-    :type load_init: `bool`
-    :return: MXNetClassifier
-    """
+def get_image_classifier_mxnet_custom_ini():
     import mxnet
-    from mxnet.gluon import nn
-    from art.estimators.classification import MXClassifier
 
-    if load_init:
-        w_conv2d = np.load(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy")
-        )
-        b_conv2d = np.load(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy")
-        )
-        w_dense = np.load(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy")
-        )
-        b_dense = np.load(
-            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy")
-        )
-
-        w_conv2d_mx = w_conv2d.reshape((1, 1, 7, 7))
-
-        alias = mxnet.registry.get_alias_func(mxnet.initializer.Initializer, "initializer")
-
-        @mxnet.init.register
-        @alias("mm_init")
-        class CustomInit(mxnet.init.Initializer):
-            def __init__(self):
-                super(CustomInit, self).__init__()
-                self.params = dict()
-                self.params["conv0_weight"] = w_conv2d_mx
-                self.params["conv0_bias"] = b_conv2d
-                self.params["dense0_weight"] = np.transpose(w_dense)
-                self.params["dense0_bias"] = b_dense
-
-            def _init_weight(self, name, arr):
-                arr[:] = self.params[name]
-
-            def _init_bias(self, name, arr):
-                arr[:] = self.params[name]
-
-    class Model(nn.Block):
-        def __init__(self, **kwargs):
-            super(Model, self).__init__(**kwargs)
-            self.model = nn.Sequential()
-            self.model.add(
-                nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
-                nn.MaxPool2D(pool_size=4, strides=4),
-                nn.Flatten(),
-                nn.Dense(10, activation=None,),
-            )
-
-        def forward(self, x):
-            y = self.model(x)
-            if from_logits:
-                return y
-
-            return y.softmax()
-
-    model = Model()
-
-    if load_init:
-        model.initialize(init=CustomInit())
-    else:
-        model.initialize(init=mxnet.initializer.Xavier())
-
-    # Create optimizer
-    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
-    trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
-
-    # Get classifier
-    mxc = MXClassifier(
-        model=model,
-        loss=loss,
-        input_shape=(28, 28, 1),
-        nb_classes=10,
-        optimizer=trainer,
-        ctx=None,
-        channels_first=True,
-        clip_values=(0, 1),
-        preprocessing_defences=None,
-        postprocessing_defences=None,
-        preprocessing=(0, 1),
+    w_conv2d = np.load(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy")
+    )
+    b_conv2d = np.load(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy")
+    )
+    w_dense = np.load(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy")
+    )
+    b_dense = np.load(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy")
     )
 
-    return mxc
+    w_conv2d_mx = w_conv2d.reshape((1, 1, 7, 7))
 
+    alias = mxnet.registry.get_alias_func(mxnet.initializer.Initializer, "initializer")
+
+    @mxnet.init.register
+    @alias("mm_init")
+    class CustomInit(mxnet.init.Initializer):
+        def __init__(self):
+            super(CustomInit, self).__init__()
+            self.params = dict()
+            self.params["conv0_weight"] = w_conv2d_mx
+            self.params["conv0_bias"] = b_conv2d
+            self.params["dense0_weight"] = np.transpose(w_dense)
+            self.params["dense0_bias"] = b_dense
+
+        def _init_weight(self, name, arr):
+            arr[:] = self.params[name]
+
+        def _init_bias(self, name, arr):
+            arr[:] = self.params[name]
+
+    return CustomInit()
 
 def get_gan_inverse_gan_ft():
     import tensorflow as tf
@@ -1008,9 +951,9 @@ def get_gan_inverse_gan_ft():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess,)
+        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess, )
 
-        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess,)
+        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess, )
         return gan, inverse_gan, sess
 
 
