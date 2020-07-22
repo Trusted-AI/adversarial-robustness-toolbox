@@ -16,7 +16,9 @@ from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, ge
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mx
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator
+from art.defences.preprocessor import FeatureSqueezing
 from art.estimators.classification import KerasClassifier
+
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
@@ -40,7 +42,7 @@ def get_image_classifier_list_defended(framework):
         sess = None
         classifier_list = None
         if framework == "keras":
-            classifier = utils.get_image_classifier_kr()
+            classifier = get_image_classifier_kr()
             # Get the ready-trained Keras model
             fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
             classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
