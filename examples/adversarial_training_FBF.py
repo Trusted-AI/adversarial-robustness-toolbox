@@ -135,7 +135,7 @@ class CIFAR10_dataset(Dataset):
         self.transform = transform
 
     def __getitem__(self, index):
-        x = Image.fromarray(self.data[index].astype(np.uint8).transpose(1, 2, 0))
+        x = Image.fromarray(((self.data[index]*255).round()).astype(np.uint8).transpose(1, 2, 0))
         x = self.transform(x)
         y = self.targets[index]
         return x, y
@@ -162,18 +162,12 @@ cifar_std[2, :, :] = 0.2616
 x_train = x_train.transpose(0, 3, 1, 2).astype("float32")
 x_test = x_test.transpose(0, 3, 1, 2).astype("float32")
 
-tensor_x = torch.Tensor(x_train)  # transform to torch tensor
-tensor_y = torch.Tensor(y_train)
-
-my_dataset = TensorDataset(tensor_x, tensor_y)  # create your datset
-my_dataloader = DataLoader(my_dataset)  # create your dataloader
-
 transform = transforms.Compose(
     [transforms.RandomCrop(32, padding=4), transforms.RandomHorizontalFlip(), transforms.ToTensor()]
 )
 
 dataset = CIFAR10_dataset(x_train, y_train, transform=transform)
-dataloader = DataLoader(dataset, batch_size=128)
+dataloader = DataLoader(dataset, batch_size=128, shuffle=True)
 
 # Step 2: create the PyTorch model
 model = PreActResNet18()
@@ -193,7 +187,7 @@ criterion = nn.CrossEntropyLoss()
 
 classifier = PyTorchClassifier(
     model=model,
-    clip_values=(0, 1),
+    clip_values=(0.0, 1.0),
     preprocessing=(cifar_mu, cifar_std),
     loss=criterion,
     optimizer=opt,
@@ -212,15 +206,6 @@ attack = ProjectedGradientDescent(
     batch_size=32,
 )
 
-x_test_attack = attack.generate(x_test)
-x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
-print(
-    "Accuracy on original PGD adversarial samples: %.2f%%"
-    % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
-    / x_test.shape[0]
-    * 100
-)
-
 # Step 4: Create the trainer object - AdversarialTrainerFBFPyTorch
 # if you have apex installed, change use_amp to True
 epsilon = 8.0 / 255.0
@@ -231,6 +216,14 @@ art_datagen = PyTorchDataGenerator(iterator=dataloader, size=x_train.shape[0], b
 
 # Step 5: fit the trainer
 trainer.fit_generator(art_datagen, nb_epochs=30)
+
+x_test_pred = np.argmax(classifier.predict(x_test), axis=1)
+print(
+    "Accuracy on benign test samples after adversarial training: %.2f%%"
+    % np.sum(x_test_pred == np.argmax(y_test, axis=1))
+    / x_test.shape[0]
+    * 100
+)
 
 x_test_attack = attack.generate(x_test)
 x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
