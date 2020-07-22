@@ -278,6 +278,11 @@ def test_class_gradient(
             sub_gradients, grad_1_all_labels[0], decimal=grad_1_all_labels[1],
         )
 
+        exp_grad_1_all_labels = (sub_gradients.tolist(), grad_1_all_labels[1])
+        np.testing.assert_array_almost_equal(
+            sub_gradients, exp_grad_1_all_labels[0], decimal=exp_grad_1_all_labels[1],
+        )
+
         sub_gradients = get_gradient2_column(gradients)
 
         np.testing.assert_array_almost_equal(
@@ -319,3 +324,4 @@ def test_class_gradient(
         np.testing.assert_array_almost_equal(
             sub_gradients, grad_2_labelArray[0], decimal=grad_2_labelArray[1],
         )
+
