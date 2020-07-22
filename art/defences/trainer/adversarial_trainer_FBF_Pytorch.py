@@ -120,7 +120,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                 output = np.argmax(self.predict(x_test), axis=1)
                 nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
                 logger.info(
-                    "epoch {} \t time(s) {:.1f} \t lr {:.4f} \t loss {:.4f} \t train-acc {:.4f} \t val-acc {:.4f}".format(
+                    "epoch {}\ttime(s) {:.1f}\tlr {:.4f}\tloss {:.4f}\tacc(tr) {:.4f}\tacc(val) {:.4f}".format(
                         i_epoch,
                         train_time - start_time,
                         lr,
@@ -131,7 +131,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                 )
             else:
                 logger.info(
-                    "epoch {} \t time(s) {:.1f} \t lr {:.4f} \t loss {:.4f} \t acc {:.4f}".format(
+                    "epoch {}\t time(s) {:.1f}\t lr {:.4f}\t loss {:.4f}\t acc {:.4f}".format(
                         i_epoch, train_time - start_time, lr, train_loss / train_n, train_acc / train_n
                     )
                 )
@@ -181,7 +181,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
             train_time = time.time()
             logger.info(
-                "epoch {} \t time(s) {:.1f} \t lr {:.4f} \t loss {:.4f} \t acc {:.4f}".format(
+                "epoch {}\t time(s) {:.1f}\t lr {:.4f}\t loss {:.4f}\t acc {:.4f}".format(
                     i_epoch, train_time - start_time, lr, train_loss / train_n, train_acc / train_n
                 )
             )
