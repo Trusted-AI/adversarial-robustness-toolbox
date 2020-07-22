@@ -14,11 +14,10 @@ import shutil
 from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
-from tests.utils import get_image_classifier_mx
+from tests.utils import get_image_classifier_mxnet_custom_ini
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator
 from art.defences.preprocessor import FeatureSqueezing
 from art.estimators.classification import KerasClassifier
-
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
@@ -209,7 +208,7 @@ def store_expected_values(request, is_tf_version_2):
 
         with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name),
                   "w") as f:
-            json.dump(expected_values, f)
+            json.dump(expected_values, f, indent=4)
 
     return _store_expected_values
 
@@ -236,14 +235,88 @@ def expected_values(framework, request, is_tf_version_2):
     with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r") as f:
         expected_values = json.load(f)
 
-        test_name = request.node.name
-        if request.node.name not in expected_values:
-            test_name = request.node.name + framework_name
-        return expected_values[test_name]
+        # searching first for any framework specific expected value
+        framework_specific_values = request.node.name + framework_name
+        if framework_specific_values in expected_values:
+            return expected_values[framework_specific_values]
+        elif request.node.name in expected_values:
+            return expected_values[request.node.name]
+        else:
+            raise NotImplementedError(
+                "Couldn't find any expected values for test {0} and framework {1}".format(request.node.name,
+                                                                                          framework_name))
+
+
+@pytest.fixture(scope="session")
+def get_image_classifier_mx_model():
+    from mxnet.gluon import nn
+
+    # TODO needs to be made parameterizable once Mxnet allows multiple identical models to be created in one session
+    from_logits = True
+
+    class Model(nn.Block):
+        def __init__(self, **kwargs):
+            super(Model, self).__init__(**kwargs)
+            self.model = nn.Sequential()
+            self.model.add(
+                nn.Conv2D(channels=1, kernel_size=7, activation="relu", ),
+                nn.MaxPool2D(pool_size=4, strides=4),
+                nn.Flatten(),
+                nn.Dense(10, activation=None, ),
+            )
+
+        def forward(self, x):
+            y = self.model(x)
+            if from_logits:
+                return y
+
+            return y.softmax()
+
+    model = Model()
+    custom_init = get_image_classifier_mxnet_custom_ini()
+    model.initialize(init=custom_init)
+    return model
 
 
 @pytest.fixture
-def get_image_classifier_list(framework):
+def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape):
+    import mxnet
+    from art.estimators.classification import MXClassifier
+
+    model = get_image_classifier_mx_model
+
+    def _get_image_classifier_mx_instance(from_logits=True):
+        if from_logits is False:
+            # due to the fact that only 1 instance of get_image_classifier_mx_model can be created in one session
+            # this will be resolved once Mxnet allows for 2 models with identical weights to be created in 1 session
+            raise NotImplementedError("Currently only supporting Mxnet classifier with from_logit set to True")
+
+        loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
+        trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
+
+        # Get classifier
+        mxc = MXClassifier(
+            model=model,
+            loss=loss,
+            input_shape=mnist_shape,
+            # input_shape=(28, 28, 1),
+            nb_classes=10,
+            optimizer=trainer,
+            ctx=None,
+            channels_first=True,
+            clip_values=(0, 1),
+            preprocessing_defences=None,
+            postprocessing_defences=None,
+            preprocessing=(0, 1),
+        )
+
+        return mxc
+
+    return _get_image_classifier_mx_instance
+
+
+@pytest.fixture
+def get_image_classifier_list(framework, get_image_classifier_mx_instance):
     def _get_image_classifier_list(one_classifier=False, **kwargs):
         sess = None
         if framework == "keras":
@@ -259,7 +332,8 @@ def get_image_classifier_list(framework):
         if framework == "kerastf":
             classifier_list = [get_image_classifier_kr_tf(**kwargs)]
         if framework == "mxnet":
-            classifier_list = [get_image_classifier_mx(**kwargs)]
+            # classifier_list = [get_image_classifier_mx(**kwargs)]
+            classifier_list = [get_image_classifier_mx_instance(**kwargs)]
         if classifier_list is None:
             return None, None
 
@@ -378,7 +452,7 @@ def default_dataset_subset_sizes():
 
 @pytest.fixture()
 def mnist_shape(framework):
-    if framework == "pytorch":
+    if framework == "pytorch" or framework == "mxnet":
         return (1, 28, 28)
     else:
         return (28, 28, 1)
