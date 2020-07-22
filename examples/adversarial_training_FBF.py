@@ -211,6 +211,7 @@ attack = ProjectedGradientDescent(
     num_random_init=5,
     batch_size=32,
 )
+
 x_test_attack = attack.generate(x_test)
 x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
 print(
