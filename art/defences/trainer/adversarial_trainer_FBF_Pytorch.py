@@ -103,8 +103,8 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                 lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
 
                 # Create batch data
-                x_batch = x[ind[batch_id * batch_size: min((batch_id + 1) * batch_size, x.shape[0])]].copy()
-                y_batch = y[ind[batch_id * batch_size: min((batch_id + 1) * batch_size, x.shape[0])]]
+                x_batch = x[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]].copy()
+                y_batch = y[ind[batch_id * batch_size : min((batch_id + 1) * batch_size, x.shape[0])]]
 
                 _train_loss, _train_acc, _train_n = self._batch_process(x_batch, y_batch, lr)
 
