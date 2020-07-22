@@ -221,16 +221,16 @@ trainer.fit_generator(art_datagen, nb_epochs=30)
 x_test_pred = np.argmax(classifier.predict(x_test), axis=1)
 print(
     "Accuracy on benign test samples after adversarial training: %.2f%%"
-    % np.sum(x_test_pred == np.argmax(y_test, axis=1))
+    % (np.sum(x_test_pred == np.argmax(y_test, axis=1))
     / x_test.shape[0]
-    * 100
+    * 100)
 )
 
 x_test_attack = attack.generate(x_test)
 x_test_attack_pred = np.argmax(classifier.predict(x_test_attack), axis=1)
 print(
     "Accuracy on original PGD adversarial samples after adversarial training: %.2f%%"
-    % np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
+    % (np.sum(x_test_attack_pred == np.argmax(y_test, axis=1))
     / x_test.shape[0]
-    * 100
+    * 100)
 )
