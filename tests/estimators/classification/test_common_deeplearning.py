@@ -16,24 +16,27 @@ def is_keras_2_3():
 
 
 def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    try:
+        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    labels = np.argmax(y_test_mnist, axis=1)
-    classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
-    if classifier is not None:
+        labels = np.argmax(y_test_mnist, axis=1)
+        classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+
         accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
         np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.06)
 
         classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
         accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
         np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))
 
 
 def test_shapes(get_default_mnist_subset, get_image_classifier_list):
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+    try:
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
 
-    if classifier is not None:
         predictions = classifier.predict(x_test_mnist)
         assert predictions.shape == y_test_mnist.shape
 
@@ -45,16 +48,19 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
         loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
         assert loss_gradients.shape == x_test_mnist[:11].shape
 
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))
+
 
 def test_fit_image_generator(
         framework, is_tf_version_2, get_image_classifier_list, image_data_generator, get_default_mnist_subset
 ):
-    if framework == "tensorflow" and is_tf_version_2:
-        return
+    try:
+        if framework == "tensorflow" and is_tf_version_2:
+            return
 
-    classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+        classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
 
-    if classifier is not None:
         data_gen = image_data_generator(sess=sess)
 
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -77,6 +83,8 @@ def test_fit_image_generator(
         np.testing.assert_array_almost_equal(
             post_fit_accuracy, 0.68, decimal=0.06,
         )
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))
 
 
 def test_loss_gradient(
@@ -167,16 +175,20 @@ def test_predict(
 
 
 def test_nb_classes(get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-    if classifier is not None:
+    try:
+        classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
         assert classifier.nb_classes == 10
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))
 
 
 def test_input_shape(get_image_classifier_list, mnist_shape):
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+    try:
+        classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
 
-    if classifier is not None:
         assert classifier.input_shape == mnist_shape
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))
 
 
 def test_save(get_image_classifier_list):
