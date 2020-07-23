@@ -489,7 +489,7 @@ def get_image_classifier_kr(
 
                     loss = categorical_crossentropy
                 else:
-                    raise AttributeError("This combination of loss function options is not supported.")
+                    raise NotImplementedError("This combination of loss function options is not supported.")
             else:
                 loss = keras.losses.categorical_crossentropy
         elif loss_type == "function_backend":
