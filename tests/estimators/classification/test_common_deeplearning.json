@@ -397,16 +397,15 @@
     "test_repr_tensorflow1": [
         "TensorFlowClassifier",
         "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
-        "output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>,",
+        "output=<tf.Tensor 'dense/BiasAdd:0' shape=(?, 10) dtype=float32>",
         "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
         "train=<tf.Operation 'Adam' type=NoOp>",
         "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
         "learning=None",
         "sess=<tensorflow.python.client.session.Session object",
-        "TensorFlowClassifier",
-        "channels_first=False, ",
-        "clip_values=array([0., 1.], dtype=float32), ",
-        "preprocessing_defences=None, postprocessing_defences=None, ",
+        "channels_first=False",
+        "clip_values=array([0., 1.], dtype=float32)",
+        "preprocessing_defences=None, postprocessing_defences=None",
         "preprocessing=(0, 1))"
     ],
     "test_repr_pytorch": [
