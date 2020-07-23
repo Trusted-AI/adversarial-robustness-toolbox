@@ -118,10 +118,7 @@ def test_loss_gradient(
         np.testing.assert_array_almost_equal(
             sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
         )
-        # exp1 = (sub_gradients.tolist(), expected_gradients_1[1])
-        # np.testing.assert_array_almost_equal(
-        #     sub_gradients, exp1[0], decimal=exp1[1],
-        # )
+
         if mnist_shape[0] == 1:
             sub_gradients = gradients[0, 0, 14, :]
         else:
@@ -130,12 +127,7 @@ def test_loss_gradient(
         np.testing.assert_array_almost_equal(
             sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
         )
-        # exp2 = (sub_gradients.tolist(), expected_gradients_2[1])
-        # np.testing.assert_array_almost_equal(
-        #     sub_gradients, exp2[0], decimal=exp2[1],
-        # )
-        # store_expected_values((exp1, exp2),framework)
-        tmp = ""
+
 
 
 def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_classifier_list):
