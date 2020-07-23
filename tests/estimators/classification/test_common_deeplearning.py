@@ -209,7 +209,7 @@ def test_repr(get_image_classifier_list, framework, expected_values, store_expec
         if classifier is not None:
 
             # exp = ["art.estimators.classification.keras.KerasClassifier",
-            #        "use_logits=True",
+            #        "use_logits=True, channel_index",
             #        "channels_first=False",
             #        "clip_values=array([0., 1.], dtype=float32)",
             #        "preprocessing_defences=None",
