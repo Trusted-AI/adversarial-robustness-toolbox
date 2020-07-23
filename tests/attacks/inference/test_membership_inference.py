@@ -130,20 +130,23 @@ def test_black_box_tabular(get_tabular_classifier_list, get_iris_dataset):
     attack_train_size = int(len(x_train) * attack_train_ratio)
     attack_test_size = int(len(x_test) * attack_train_ratio)
 
+    model_types = ['nn', 'rf', 'gb']
+
     for classifier in classifier_list:
-        attack = MembershipInferenceBlackBox(classifier)
-        # train attack model using only attack_train_ratio of data
-        attack.fit(x_train[:attack_train_size], y_train[:attack_train_size],
-                   x_test[:attack_test_size], y_test[:attack_test_size])
-        # infer attacked feature on remainder of data
-        inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:])
-        inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:])
-        # check accuracy
-        train_pos = sum(inferred_train) / len(inferred_train)
-        test_pos = sum(inferred_test) / len(inferred_test)
-        assert (train_pos > test_pos or
-                train_pos == pytest.approx(test_pos, abs=0.03) or
-                test_pos == 1)
+        for t in model_types:
+            attack = MembershipInferenceBlackBox(classifier, attack_model_type=t)
+            # train attack model using only attack_train_ratio of data
+            attack.fit(x_train[:attack_train_size], y_train[:attack_train_size],
+                       x_test[:attack_test_size], y_test[:attack_test_size])
+            # infer attacked feature on remainder of data
+            inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:])
+            inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:])
+            # check accuracy
+            train_pos = sum(inferred_train) / len(inferred_train)
+            test_pos = sum(inferred_test) / len(inferred_test)
+            assert (train_pos > test_pos or
+                    train_pos == pytest.approx(test_pos, abs=0.03) or
+                    test_pos == 1)
 
 
 def test_black_box_tabular_rf(get_tabular_classifier_list, get_iris_dataset):
