@@ -421,9 +421,11 @@
     ],
     "test_repr_keras": [
         "art.estimators.classification.keras.KerasClassifier",
-        "use_logits=False, ",
+        "use_logits=True",
         "channels_first=False",
-        "clip_values=array([0., 1.], dtype=float32), preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)",
+        "clip_values=array([0., 1.], dtype=float32)",
+        "preprocessing_defences=None",
+        "preprocessing=(0, 1)",
         "input_layer=0, output_layer=0"
     ],
     "test_repr_kerastf": [
@@ -436,7 +438,7 @@
     ],
     "test_repr_mxnet": [
         "art.estimators.classification.mxnet.MXClassifier",
-        "input_shape=(28, 28, 1), nb_classes=10",
+        "input_shape=(1, 28, 28), nb_classes=10",
         "channels_first=True, clip_values=array([0., 1.], dtype=float32)",
         "defences=None, preprocessing=(0, 1)"
     ],
