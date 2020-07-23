@@ -63,7 +63,6 @@ class AutoAttack(EvasionAttack):
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
-
         :param estimator: An trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
@@ -127,7 +126,6 @@ class AutoAttack(EvasionAttack):
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
-
         :param x: An array with the original inputs.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
@@ -191,7 +189,6 @@ class AutoAttack(EvasionAttack):
     ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Run attack.
-
         :param x: An array with the original inputs.
         :param sample_is_robust: Store the initial robustness of examples.
         :return: An array holding the adversarial examples.
