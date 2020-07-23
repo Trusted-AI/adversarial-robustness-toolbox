@@ -512,6 +512,19 @@ class NeuralNetworkMixin(ABC):
         """
         raise NotImplementedError
 
+    # @abstractmethod
+    # def loss(self, x: np.ndarray, batch_size: int = 128, **kwargs):
+    #     """
+    #     Compute the loss of the neural network for samples `x`.
+    #
+    #     :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+    #               nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+    #     :param batch_size: Batch size.
+    #     :return: Loss values.
+    #     :rtype: Format as expected by the `model`
+    #     """
+    #     raise NotImplementedError
+
     @property  # type: ignore
     @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:

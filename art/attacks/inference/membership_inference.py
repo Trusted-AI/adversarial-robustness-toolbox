@@ -115,7 +115,7 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
     """
         Implementation of a simple, rule-based black-box membership inference attack.
 
-        This implementation uses the simple rule: if the model's prediction for a record is correct, then it is a
+        This implementation uses the simple rule: if the model's prediction for a sample is correct, then it is a
         member. Otherwise, it is not a member.
     """
     _estimator_requirements = [BaseEstimator]
@@ -152,8 +152,8 @@ class MembershipInferenceBlackBox(InferenceAttack):
     """
         Implementation of a learned black-box membership inference attack.
 
-        This implementation can use as input to the learning process probabilities, logits, predictions, losses or
-        activations, depending on the type of model and provided configuration.
+        This implementation can use as input to the learning process probabilities/logits or losses,
+        depending on the type of model and provided configuration.
     """
     _estimator_requirements = [BaseEstimator]
 
@@ -183,6 +183,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
                 self.epochs = 100
                 self.bs = 100
+                self.lr = 0.0001
             elif attack_model_type == 'rf':
                 self.attack_model = RandomForestClassifier()
             elif attack_model_type == 'gb':
@@ -235,7 +236,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         test_labels = np.zeros(test_x.shape[0])
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
-        test_y = check_and_transform_label_format(test_y, len(np.unique(y)), return_one_hot=True)
+        test_y = check_and_transform_label_format(test_y, len(np.unique(test_y)), return_one_hot=True)
 
         x1 = np.concatenate((features, test_features))
         x2 = np.concatenate((y, test_y))
@@ -243,7 +244,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
         if self.default_model and self.attack_model_type == 'nn':
             loss_fn = nn.BCELoss()
-            optimizer = optim.Adam(self.attack_model.parameters(), lr=0.0001)
+            optimizer = optim.Adam(self.attack_model.parameters(), lr=self.lr)
 
             attack_train_set = AttackDataset(x1=x1, x2=x2, y=y_new)
             train_loader = DataLoader(attack_train_set, batch_size=self.bs, shuffle=True, num_workers=0)
@@ -288,6 +289,8 @@ class MembershipInferenceBlackBox(InferenceAttack):
         elif self.input_type == 'loss':
             raise ValueError("`input_type` loss not yet implemented.")
 
+        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+
         if self.default_model and self.attack_model_type == 'nn':
             self.attack_model.eval()
             inferred = None
@@ -305,14 +308,14 @@ class MembershipInferenceBlackBox(InferenceAttack):
         return inferred
 
 
-class MembershipInferenceWhiteBoxBox(InferenceAttack):
-    #TODO: Not yet implemented. Use activations of inner layers and/or gradients
+class MembershipInferenceWhiteBoxNeuralNetwork(InferenceAttack):
+    """
+        Implementation of a learned white-box membership inference attack.
+
+        This implementation can use as input to the learning process activations and/or gradients of one or more layers,
+        depending on the provided configuration.
+    """
+    def __init__(self, classifier: Classifier):
+        raise Exception("Not yet implemented")
     # if NeuralNetworkMixin in type(self.estimator).__mro__:
-    #     # members
     #     activations = self.estimator.get_activations(x, self.estimator.layer_names[-1], batch_size=self.bs)
-    #     features = softmax(activations)
-    #     # non-members
-    #     test_activations = self.estimator.get_activations(test_x, self.estimator.layer_names[-1],
-    #                                                       batch_size=self.bs)
-    #     test_features = softmax(test_activations)
-    pass
