@@ -208,20 +208,6 @@ def test_repr(get_image_classifier_list, framework, expected_values, store_expec
         classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
         if classifier is not None:
 
-            # exp = ["TensorFlowClassifier",
-            #        "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
-            #        "output=<tf.Tensor 'dense/BiasAdd:0' shape=(?, 10) dtype=float32>",
-            #        "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
-            #        "train=<tf.Operation 'Adam' type=NoOp>",
-            #        "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
-            #        "learning=None",
-            #        "sess=<tensorflow.python.client.session.Session object",
-            #        "channels_first=False",
-            #        "clip_values=array([0., 1.], dtype=float32)",
-            #        "preprocessing_defences=None, postprocessing_defences=None",
-            #        "preprocessing=(0, 1))"]
-            # store_expected_values(exp, framework)
-
             repr_ = repr(classifier)
             for message in expected_values:
                 assert message in repr_, "{0}: was not contained within repr".format(message)
