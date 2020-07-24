@@ -396,7 +396,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
             x_robust = x_init + perturbation
 
             # Compute perturbation with implicit batching
-            for batch_id in trange(int(np.ceil(x_robust.shape[0] / float(self.batch_size))), desc="AutoPGD - batches", leave=False):
+            for batch_id in trange(
+                int(np.ceil(x_robust.shape[0] / float(self.batch_size))), desc="AutoPGD - batches", leave=False
+            ):
                 self.eta = 2 * self.eps_step
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                 x_k = x_robust[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
