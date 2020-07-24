@@ -210,9 +210,10 @@ class AutoAttack(EvasionAttack):
             <= self.eps
         )
 
-        sample_is_not_robust = np.logical_and(
-            np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1), norm_is_smaller_eps
-        )
+        rel_acc = 1e-4
+        norm_is_smaller_eps = (1 - rel_acc) * np.linalg.norm(
+            (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm
+        ) <= self.eps
 
         x_robust[sample_is_not_robust] = x_robust_adv[sample_is_not_robust]
         x[sample_is_robust] = x_robust
