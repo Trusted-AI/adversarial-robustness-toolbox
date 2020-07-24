@@ -51,6 +51,7 @@ class DeepFool(EvasionAttack):
         "epsilon",
         "nb_grads",
         "batch_size",
+        "verbose",
     ]
     _estimator_requirements = (ClassGradientsMixin,)
 
@@ -61,6 +62,7 @@ class DeepFool(EvasionAttack):
         epsilon: float = 1e-6,
         nb_grads: int = 10,
         batch_size: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         Create a DeepFool attack instance.
@@ -77,6 +79,7 @@ class DeepFool(EvasionAttack):
         self.epsilon = epsilon
         self.nb_grads = nb_grads
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
         if self.estimator.clip_values is None:
             logger.warning(
@@ -116,7 +119,10 @@ class DeepFool(EvasionAttack):
         tol = 10e-8
 
         # Compute perturbation with implicit batching
-        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="DeepFool"):
+        for batch_id in trange(
+                int(np.ceil(x_adv.shape[0] / float(self.batch_size))),
+                desc="DeepFool",
+                disable=not self.verbose):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2].copy()
 
