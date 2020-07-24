@@ -151,10 +151,10 @@ class AutoAttack(EvasionAttack):
             x_robust_adv = attack.generate(x=x_robust, y=y_robust)
             y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
 
-            norm_is_smaller_eps = (
-                np.linalg.norm((x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm)
-                <= self.eps
-            )
+            rel_acc = 1e-4
+            norm_is_smaller_eps = (1 - rel_acc) * np.linalg.norm(
+                (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm
+            ) <= self.eps
 
             sample_is_not_robust = np.logical_and(
                 np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1), norm_is_smaller_eps
