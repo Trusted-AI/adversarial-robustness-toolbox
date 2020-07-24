@@ -365,7 +365,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        for i_restart in trange(max(1, self.nb_random_init), desc="AutoPGD - restarts"):
+        for _ in trange(max(1, self.nb_random_init), desc="AutoPGD - restarts"):
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
             if self.targeted:
