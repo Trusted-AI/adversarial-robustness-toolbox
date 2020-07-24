@@ -18,6 +18,9 @@ done
 pytest -q tests/defences/preprocessor --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
+pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
+
 pytest -q tests/utils --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
