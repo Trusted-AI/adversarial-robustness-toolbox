@@ -88,7 +88,7 @@ class AutoAttack(EvasionAttack):
                     norm=norm,
                     eps=eps,
                     eps_step=eps_step,
-                    max_iter=200,
+                    max_iter=100,
                     targeted=False,
                     nb_random_init=5,
                     batch_size=batch_size,
@@ -101,7 +101,7 @@ class AutoAttack(EvasionAttack):
                     norm=norm,
                     eps=eps,
                     eps_step=eps_step,
-                    max_iter=200,
+                    max_iter=100,
                     targeted=False,
                     nb_random_init=5,
                     batch_size=batch_size,
@@ -112,7 +112,7 @@ class AutoAttack(EvasionAttack):
                 DeepFool(classifier=estimator, max_iter=100, epsilon=1e-3, nb_grads=10, batch_size=batch_size)
             )
             attacks.append(
-                SquareAttack(estimator=estimator, norm=norm, max_iter=100, eps=eps, p_init=0.8, nb_restarts=5)
+                SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5)
             )
 
         self.norm = norm
