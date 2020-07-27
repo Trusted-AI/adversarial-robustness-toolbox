@@ -23,12 +23,13 @@ This module implements the transforming defence mechanism of defensive distillat
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 
 from art.defences.transformer.transformer import Transformer
-from art.utils import is_probability
+from art.estimators.certification.neural_cleanse.keras import KerasNeuralCleanse
+from art.estimators.classification import KerasClassifier
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import Classifier
@@ -43,9 +44,10 @@ class NeuralCleanse(Transformer):
     | Paper link: https://arxiv.org/abs/1511.04508
     """
 
-    params = ["batch_size", "nb_epochs"]
+    params = ["steps", "init_cost", "norm", "learning_rate", "attack_success_threshold", "patience", "early_stop",
+              "early_stop_threshold", "early_stop_patience", "cost_multiplier", "batch_size"]
 
-    def __init__(self, classifier: "Classifier", batch_size: int = 128, nb_epochs: int = 10) -> None:
+    def __init__(self, classifier: "Classifier") -> None:
         """
         Create an instance of the defensive distillation defence.
 
@@ -55,11 +57,13 @@ class NeuralCleanse(Transformer):
         """
         super().__init__(classifier=classifier)
         self._is_fitted = True
-        self.batch_size = batch_size
-        self.nb_epochs = nb_epochs
         self._check_params()
 
-    def __call__(self, x: np.ndarray, transformed_classifier: "Classifier") -> "Classifier":
+    def __call__(self, x: np.ndarray, transformed_classifier: "Classifier", mitigation_type: str = "unlearning",
+                 steps: int = 1000, init_cost: float = 1e-3, norm: Union[int, float] = 2,
+                 learning_rate: float = 0.1, attack_success_threshold: float = 0.99, patience: int = 5,
+                 early_stop: bool = True, early_stop_threshold: float = 0.99, early_stop_patience: int = 10,
+                 cost_multiplier: float = 1.5, batch_size: int = 32) -> "Classifier":
         """
         Perform the defensive distillation defence mechanism and return a robuster classifier.
 
@@ -69,26 +73,17 @@ class NeuralCleanse(Transformer):
             i.e. probability labels.
         :return: The transformed classifier.
         """
-        # Check if the trained classifier produces probability outputs
-        preds = self.classifier.predict(x=x, batch_size=self.batch_size)
-        are_probability = [is_probability(y) for y in preds]
-        all_probability = np.sum(are_probability) == preds.shape[0]
-
-        if not all_probability:
-            raise ValueError("The input trained classifier do not produce probability outputs.")
-
-        # Check if the transformed classifier produces probability outputs
-        transformed_preds = transformed_classifier.predict(x=x, batch_size=self.batch_size)
-        are_probability = [is_probability(y) for y in transformed_preds]
-        all_probability = np.sum(are_probability) == transformed_preds.shape[0]
-
-        if not all_probability:
-            raise ValueError("The input transformed classifier do not produce probability outputs.")
-
-        # Train the transformed classifier with soft labels
-        transformed_classifier.fit(x=x, y=preds, batch_size=self.batch_size, nb_epochs=self.nb_epochs)
-
-        return transformed_classifier
+        if isinstance(transformed_classifier, KerasClassifier):
+            transformed_classifier = KerasNeuralCleanse(model=transformed_classifier.model, steps=steps,
+                                                        init_cost=init_cost, norm=norm, learning_rate=learning_rate,
+                                                        attack_success_threshold=attack_success_threshold,
+                                                        patience=patience, early_stop=early_stop,
+                                                        early_stop_threshold=early_stop_threshold,
+                                                        early_stop_patience=early_stop_patience,
+                                                        cost_multiplier=cost_multiplier, batch_size=batch_size)
+            return transformed_classifier
+        else:
+            raise NotImplementedError
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
@@ -97,8 +92,10 @@ class NeuralCleanse(Transformer):
         pass
 
     def _check_params(self) -> None:
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
-            raise ValueError("The size of batches must be a positive integer.")
-
-        if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
-            raise ValueError("The number of epochs must be a positive integer.")
+        # TODO: finish this
+        pass
+        # if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
+        #     raise ValueError("The size of batches must be a positive integer.")
+        #
+        # if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
+        #     raise ValueError("The number of epochs must be a positive integer.")
