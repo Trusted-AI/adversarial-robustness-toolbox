@@ -137,36 +137,59 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         # TODO: swtich to np zeros
         mask = np.zeros(super().input_shape)  # np.random.uniform(size=super().input_shape)
         pattern = np.random.uniform(size=super().input_shape)
+        self.epsilon = K.epsilon()
 
         # Normalize mask between [0, 1]
         self.mask_tensor_raw = K.variable(mask)
-        self.mask_tensor = K.tanh(self.mask_tensor_raw) / (2 - K.epsilon()) + 0.5
+        # self.mask_tensor = K.expand_dims(K.tanh(self.mask_tensor_raw) / (2 - self.epsilon) + 0.5, axis=0)
+        self.mask_tensor = K.tanh(self.mask_tensor_raw) / (2 - self.epsilon) + 0.5
 
         # Normalize pattern between [0, 1]
         self.pattern_tensor_raw = K.variable(pattern)
-        self.pattern_tensor = K.tanh(self.pattern_tensor_raw) / (2 - K.epsilon()) + 0.5
+        self.pattern_tensor = K.expand_dims(K.tanh(self.pattern_tensor_raw) / (2 - self.epsilon) + 0.5, axis=0)
+        # self.pattern_tensor = K.tanh(self.pattern_tensor_raw) / (2 - self.epsilon) + 0.5
 
         reverse_mask_tensor = K.ones_like(self.mask_tensor) - self.mask_tensor
         input_tensor = K.placeholder(model.input_shape)
-        x_adv_tensor = reverse_mask_tensor * input_tensor + self.mask_tensor * self.pattern_tensor
+        print("mask tensor shape")
+        print(self.mask_tensor.shape)
+        print(type(self.mask_tensor))
+        print("pattern tensor shape")
+        print(self.pattern_tensor.shape)
+        print(type(self.pattern_tensor))
+        x_adv_tensor = self.pattern_tensor
+        # x_adv_tensor = reverse_mask_tensor * input_tensor + self.mask_tensor * self.pattern_tensor
 
         output_tensor = self.model(x_adv_tensor)
+        print("output tensor shape")
+        print(output_tensor.shape)
+        # y_true_tensor = K.placeholder(model.output_shape)
         y_true_tensor = K.placeholder(model.output_shape)
 
         self.loss_acc = categorical_accuracy(output_tensor, y_true_tensor)
         self.loss_ce = categorical_crossentropy(output_tensor, y_true_tensor)
 
         if self.norm == 1:
+            # TODO: change 3 to dynamically set img_color
             self.loss_reg = K.sum(K.abs(self.mask_tensor)) / 3
         elif self.norm == 2:
             self.loss_reg = K.sqrt(K.sum(K.square(self.mask_tensor)) / 3)
 
         self.cost = self.init_cost
         self.cost_tensor = K.variable(self.cost)
+        # TODO: investigate loss tensors
         self.loss = self.loss_ce + self.loss_reg * self.cost_tensor
         self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
-        print(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
-        self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss)
+        # self.opt.apply_gradients(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
+        # try apply_gradients or recompiling model
+        # self._model.compile(self.opt, loss=self.loss)
+        # print(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
+        print(K.gradients(self.loss, [self.pattern_tensor]))
+        print("Loss value:")
+        print(K.eval(self.loss))
+        # print(K.gradients(self.loss, [reverse_mask_tensor, input_tensor]))
+        # self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss)
+        self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw], loss=self.loss)
         self.train = K.function([input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss, self.loss_acc])
         # ,
         # updates=self.updates)
@@ -306,6 +329,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         :param index: An index of the penultimate layer
         """
         layer = self._model.get_layer(len(self.layer_names) - 2)
+        # TODO: ensure this works
         new_weights = np.zeros_like(layer.get_weights[index])
         layer.set_weights(new_weights)
 
