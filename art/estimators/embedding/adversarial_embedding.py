@@ -39,27 +39,30 @@ logger = logging.getLogger(__name__)
 
 
 class AdversarialEmbeddingMixin(ABC):
-    # TODO: next make Keras version
     """
-    Implementation of Adversarial Embedding applied as introduced by Tan, Shokri (2019).
+    Implementation of Adversarial Embedding as introduced by Tan, Shokri (2019).
 
     | Paper link: https://arxiv.org/abs/1905.13409
     """
 
-    def __init__(self, feature_layer: Union[int, str], backdoor: PoisoningAttackBackdoor, *args,
+    def __init__(self, feature_layer: Union[int, str], backdoor: PoisoningAttackBackdoor, target: np.ndarray, *args,
                  pp_poison: float = 0.05, discriminator_layer_1: int = 256, discriminator_layer_2: int = 128,
                  **kwargs,) -> None:
         """
-        Create a Adversarial Embedding wrapper. This defines the discriminator network and new loss and fit function.
+        Create a Adversarial Backdoor Embedding wrapper. This defines the discriminator network and new loss and fit
+        function.
 
         :param feature_layer: The layer of the original network to extract features from
         :param backdoor: The backdoor attack to use in training
+        :param target: The target label to poison
+        :param pp_poison: The percentage of training data to poison
         :param discriminator_layer_1: The size of the first discriminator layer
         :param discriminator_layer_2: The size of the second discriminator layer
         """
         super().__init__(*args, **kwargs)  # type: ignore
         self.feature_layer = feature_layer
         self.backdoor = backdoor
+        self.target = target
         self.pp_poison = pp_poison
         self.discriminator_layer_1 = discriminator_layer_1
         self.discriminator_layer_2 = discriminator_layer_2
