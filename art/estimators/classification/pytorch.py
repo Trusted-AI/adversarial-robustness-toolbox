@@ -400,6 +400,38 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Array of losses of the same shape as `x`.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+
+        # Check label shape
+        y_preprocessed = self.reduce_labels(y_preprocessed)
+
+        # Convert the inputs to Tensors
+        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
+
+        # Convert the labels to Tensors
+        labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+
+        # Compute the loss and return
+        model_outputs = self._model(inputs_t)
+        prev_reduction = self._loss.reduction
+        # return individual loss values
+        self._loss.reduction = 'none'
+        loss = self._loss(model_outputs[-1], labels_t)
+        self._loss.reduction = prev_reduction
+        return loss.detach().numpy()
+
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
