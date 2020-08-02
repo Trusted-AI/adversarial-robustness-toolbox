@@ -907,6 +907,43 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return gradients
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Array of losses of the same shape as `x`.
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        if self._loss_object is None:
+            raise TypeError(
+                    "The loss function `loss_object` is required for computing losses, but it has not been "
+                    "defined."
+            )
+        prev_reduction = self._loss_object.reduction
+        self._loss_object.reduction = tf.keras.losses.Reduction.NONE
+
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
+
+        if tf.executing_eagerly():
+            # with tf.GradientTape() as tape:
+            x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
+            # tape.watch(x_preprocessed_tf)
+            predictions = self._model(x_preprocessed_tf)
+            if self._reduce_labels:
+                loss = self._loss_object(np.argmax(y, axis=1), predictions)
+            else:
+                loss = self._loss_object(y, predictions)
+        else:
+            raise NotImplementedError("Expecting eager execution.")
+
+        self._loss_object.reduction = prev_reduction
+        return loss.numpy()
+
     def loss_gradient_framework(self, x: "tf.Tensor", y: "tf.Tensor", **kwargs) -> "tf.Tensor":
         """
         Compute the gradient of the loss function w.r.t. `x`.
