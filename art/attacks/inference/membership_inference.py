@@ -157,8 +157,8 @@ class MembershipInferenceBlackBox(InferenceAttack):
     """
     _estimator_requirements = [BaseEstimator]
 
-    def __init__(self, classifier: Classifier, attack_model_type: Optional[str] = 'nn',
-                 attack_model: Optional[Classifier] = None):
+    def __init__(self, classifier: Classifier, input_type: Optional[str] = 'probability',
+                 attack_model_type: Optional[str] = 'nn', attack_model: Optional[Classifier] = None):
         """
         Create a MembershipInferenceBlackBox attack instance.
 
@@ -166,9 +166,16 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
                                   network, default), `rf` (for random forest) or `gb` (gradient boosting). If
                                   `attack_model` is supplied, this option will be ignored.
+        :param input_type: the type of input to train the attack on. Can be one of: 'probability' or 'loss'.
+                            Default is probability.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         """
         super(MembershipInferenceBlackBox, self).__init__(estimator=classifier)
+
+        if input_type not in ['probability', 'loss']:
+            raise ValueError("Illegal value for parameter `input_type`.")
+
+        self.input_type = input_type
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -180,7 +187,10 @@ class MembershipInferenceBlackBox(InferenceAttack):
             self.default_model = True
             self.attack_model_type = attack_model_type
             if attack_model_type == 'nn':
-                self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
+                if input_type == 'probability':
+                    self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
+                else:
+                    self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes, 1)
                 self.epochs = 100
                 self.bs = 100
                 self.lr = 0.0001
@@ -200,14 +210,8 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param y: True labels for `x`.
         :param test_x: Records that were not used in training the target model.
         :param test_y: True labels for `test_x`.
-        :param input_type: the type of input to train the attack on. Can be one of: 'probability' or 'loss'.
-                            Default is probability.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
-        if "input_type" not in kwargs.keys():
-            self.input_type = 'probability'
-        else:
-            self.input_type = kwargs.get('input_type')
         if y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape[0] != x.shape[1]:
@@ -217,8 +221,11 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if self.estimator.input_shape[0] != test_x.shape[1]:
             raise ValueError("Shape of test_x does not match input_shape of classifier")
 
+        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+        test_y = check_and_transform_label_format(test_y, len(np.unique(test_y)), return_one_hot=True)
+
         # Create attack dataset
-        # uses final predictions for models with no activations, softmax for models with activations
+        # uses final probabilities/logits
         if self.input_type == 'probability':
             # members
             features = self.estimator.predict(x).astype(np.float32)
@@ -226,7 +233,12 @@ class MembershipInferenceBlackBox(InferenceAttack):
             test_features = self.estimator.predict(test_x).astype(np.float32)
         # only for models with loss
         elif self.input_type == 'loss':
-            raise ValueError("`input_type` loss not yet implemented.")
+            if NeuralNetworkMixin not in type(self.estimator).__mro__:
+                raise ValueError("loss input_type can only be used with neural networks")
+            # members
+            features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
+            # non-members
+            test_features = self.estimator.loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
         else:
             raise ValueError("Illegal value for parameter `input_type`.")
 
@@ -234,9 +246,6 @@ class MembershipInferenceBlackBox(InferenceAttack):
         labels = np.ones(x.shape[0])
         # non-members
         test_labels = np.zeros(test_x.shape[0])
-
-        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
-        test_y = check_and_transform_label_format(test_y, len(np.unique(test_y)), return_one_hot=True)
 
         x1 = np.concatenate((features, test_features))
         x2 = np.concatenate((y, test_y))
@@ -284,12 +293,12 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
 
+        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+
         if self.input_type == 'probability':
             features = self.estimator.predict(x).astype(np.float32)
         elif self.input_type == 'loss':
-            raise ValueError("`input_type` loss not yet implemented.")
-
-        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
+            features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == 'nn':
             self.attack_model.eval()
