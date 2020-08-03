@@ -23,23 +23,20 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from keras.layers import BatchNormalization
+from keras import Model
+from keras.layers import BatchNormalization, Dense, LeakyReLU
 
 from art.attacks.poisoning import PoisoningAttackBackdoor
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 from art.estimators.classification import KerasClassifier
 from art.estimators.classification.keras import KERAS_MODEL_TYPE
-from art.estimators.classification.pytorch import PyTorchClassifier
-from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.estimators.embedding.adversarial_embedding import AdversarialEmbeddingMixin
 from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
-    import torch
-
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
@@ -72,6 +69,9 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
             pp_poison: float = 0.05,
             discriminator_layer_1: int = 256,
             discriminator_layer_2: int = 128,
+            regularization: float = 10,
+            verbose=False,
+            detect_threshold=0.8
     ) -> None:
         """
         Create a Keras classifier implementing the Adversarial Backdoor Embedding attack and training stategy
@@ -106,9 +106,9 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :param pp_poison: The percentage of training data to poison
         :param discriminator_layer_1: The size of the first discriminator layer
         :param discriminator_layer_2: The size of the second discriminator layer
-        :param pp_poison: The percentage of training data to poison
-        :param discriminator_layer_1: The size of the first discriminator layer
-        :param discriminator_layer_2: The size of the second discriminator layer
+        :param regularization: The regularization constant for the backdoor recognition part of the loss function
+        :param verbose: If true, output whether predictions are suspected backdoors
+        :param detect_threshold: The probability threshold for detecting backdoors in verbose mode
         """
         super().__init__(
             model=model,
@@ -127,19 +127,30 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
             pp_poison=pp_poison,
             discriminator_layer_1=discriminator_layer_1,
             discriminator_layer_2=discriminator_layer_2,
+            regularization=regularization,
+            verbose=verbose,
+            detect_threshold=detect_threshold,
         )
-        # TODO: add discriminator loss to current_loss and compile
-        current_loss = model.loss
-        # TODO: create discriminator and append to output
-        norm_1_layer = BatchNormalization()
+        # create discriminator and append to output
+        feature_layer_keras = self.model.get_layer(feature_layer)
+        dense_layer_1 = Dense(self.discriminator_layer_1)(feature_layer_keras)
+        norm_1_layer = BatchNormalization()(dense_layer_1)
+        leaky_layer_1 = LeakyReLU()(norm_1_layer)
+        dense_layer_2 = Dense(self.discriminator_layer_2)(leaky_layer_1)
+        norm_2_layer = BatchNormalization()(dense_layer_2)
+        leaky_layer_2 = LeakyReLU()(norm_2_layer)
+        backdoor_detect = Dense(1, activation='softmax', name='backdoor_detect')(leaky_layer_2)
 
-    def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
-        x = x.astype(ART_NUMPY_DTYPE)
-        return PyTorchClassifier.predict(self, x=x, batch_size=batch_size)
-
-    def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
-        x = x.astype(ART_NUMPY_DTYPE)
-        return PyTorchClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        # add discriminator loss to current_loss and compile
+        self.embed_model = Model(inputs=self.model.inputs, outputs=model.outputs + [backdoor_detect])
+        print("printing model summary")
+        # Assuming outputs are default named output_1, ... output_n
+        losses = {"output_" + str(i + 1): loss for i, loss in model.outputs}
+        losses['backdoor_detect'] = 'binary_crossentropy'
+        # losses = {'output_1': model.losses[0], 'output_2': 'binary_crossentropy'}
+        print(self.embed_model.summary())
+        self.embed_model.compile(loss=losses, loss_weights=[1.0] * len(self.model.loss_weights_list) +
+                                                           [self.regularization])
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
@@ -159,7 +170,19 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :type kwargs: `dict`
         :return: `None`
         """
-        RandomizedSmoothingMixin.fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs)
+        # poison pp_poison amound of training data
+        selected_indices = np.random.uniform(size=len(x)) < self.pp_poison
+        poison_data, poison_labels = self.backdoor.poison(x[selected_indices], y=self.target)
+        train_data = np.copy(x)
+        train_data[selected_indices] = poison_data
+        train_labels = np.copy(y)
+        train_labels[selected_indices] = self.target  # TODO: massage target to large array if necessary at init
+
+        # Add is_backdoor labels that are 1 if is backdoor 0 otherwise
+        is_backdoor = selected_indices.astype(int)
+
+        # call fit with both y and is_backdoor labels
+        self.embed_model.fit(x, y=[train_labels, is_backdoor], batch_size=batch_size, epochs=nb_epochs, **kwargs)
 
     def predict(self, x, batch_size=128, **kwargs):
         """
@@ -172,7 +195,21 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        return KerasClassifier.predict(self, x, batch_size=batch_size, **kwargs)
+        # TODO: calling predict on the model will produce two outputs, only show the original model prediction
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        task_predictions, backdoor_predictions = self.embed_model.predict(x_preprocessed, batch_size=batch_size,
+                                                                          **kwargs)
+        if self.verbose:
+            suspected_backdoors = backdoor_predictions > self.detect_threshold
+            if np.any(suspected_backdoors):
+                num_susbected_backdoors = np.sum(suspected_backdoors)
+                logger.warning("Found " + str(num_susbected_backdoors) + " suspected backdoors in prediction")
+                logger.warning("Suspected indices:")
+                logger.warning(np.arange(len(backdoor_predictions))[suspected_backdoors])
+
+        predictions = self._apply_postprocessing(preds=task_predictions, fit=False)
+
+        return predictions
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
