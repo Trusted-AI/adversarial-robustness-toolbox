@@ -245,47 +245,47 @@ def test_class_gradient(
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
         return
 
-    (
-        grad_1_all_labels,
-        grad_2_all_labels,
-        grad_1_label5,
-        grad_2_label5,
-        grad_1_labelArray,
-        grad_2_labelArray,
-        labels_list,
-    ) = expected_values
-
-    labels = np.array(labels_list, dtype=object)
-
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
     if classifier is not None:
 
+        (
+            grad_1_all_labels,
+            grad_2_all_labels,
+            grad_1_label5,
+            grad_2_label5,
+            grad_1_labelArray,
+            grad_2_labelArray,
+            labels_list,
+        ) = expected_values
+
+        labels = np.array(labels_list, dtype=object)
+
         # TODO we should consider checking channel independent columns to make this test truly framework independent
-        # def get_gradient1_column(gradients):
-        #     if mnist_shape[0] == 1:
-        #         return gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
-        #     else:
-        #         return gradients[0, 5, 14, :, 0]
-        #
-        # def get_gradient2_column(gradients):
-        #     if mnist_shape[0] == 1:
-        #         return gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
-        #     else:
-        #         return gradients[0, 5, :, 14, 0]
-        #
-        # def get_gradient3_column(gradients):
-        #     if mnist_shape[0] == 1:
-        #         return gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
-        #     else:
-        #         return gradients[0, 0, 14, :, 0]
-        #
-        # def get_gradient4_column(gradients):
-        #     if mnist_shape[0] == 1:
-        #         return gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
-        #     else:
-        #         return gradients[0, 0, :, 14, 0]
+        def get_gradient1_column(gradients):
+            if mnist_shape[0] == 1:
+                return gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
+            else:
+                return gradients[0, 5, 14, :, 0]
+
+        def get_gradient2_column(gradients):
+            if mnist_shape[0] == 1:
+                return gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
+            else:
+                return gradients[0, 5, :, 14, 0]
+
+        def get_gradient3_column(gradients):
+            if mnist_shape[0] == 1:
+                return gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
+            else:
+                return gradients[0, 0, 14, :, 0]
+
+        def get_gradient4_column(gradients):
+            if mnist_shape[0] == 1:
+                return gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
+            else:
+                return gradients[0, 0, :, 14, 0]
 
         # Test all gradients label
         gradients = classifier.class_gradient(x_test_mnist)
@@ -298,17 +298,15 @@ def test_class_gradient(
         np.testing.assert_array_almost_equal(
             sub_gradients1, grad_1_all_labels[0], decimal=grad_1_all_labels[1],
         )
-
-        exp_grad_1_all_labels = (sub_gradients1.tolist(), grad_1_all_labels[1])
-        np.testing.assert_array_almost_equal(
-            sub_gradients1, exp_grad_1_all_labels[0], decimal=exp_grad_1_all_labels[1],
-        )
+        new_grad_1_all_labels = (sub_gradients1.tolist(), grad_1_all_labels[1])
 
         sub_gradients2 = get_gradient2_column(gradients)
 
         np.testing.assert_array_almost_equal(
             sub_gradients2, grad_2_all_labels[0], decimal=grad_2_all_labels[1],
         )
+
+        new_grad_2_all_labels = (sub_gradients2.tolist(), grad_2_all_labels[1])
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
@@ -321,11 +319,15 @@ def test_class_gradient(
             sub_gradients2, grad_1_label5[0], decimal=grad_1_label5[1],
         )
 
+        new_grad_1_label5 = (sub_gradients2.tolist(), grad_1_label5[1])
+
         sub_gradients4 = get_gradient4_column(gradients)
 
         np.testing.assert_array_almost_equal(
             sub_gradients4, grad_2_label5[0], decimal=grad_2_label5[1],
         )
+
+        new_grad_2_label5 = (sub_gradients4.tolist(), grad_2_label5[1])
 
         # # Test a set of gradients label = array
         # # label = np.random.randint(5, size=self.n_test)
@@ -340,8 +342,23 @@ def test_class_gradient(
             sub_gradients5, grad_1_labelArray[0], decimal=grad_1_labelArray[1],
         )
 
+        new_grad_1_labelArray = (sub_gradients5.tolist(), grad_1_labelArray[1])
+
         sub_gradients6 = get_gradient4_column(gradients)
 
         np.testing.assert_array_almost_equal(
             sub_gradients6, grad_2_labelArray[0], decimal=grad_2_labelArray[1],
         )
+
+        new_grad_2_labelArray = (sub_gradients6.tolist(), grad_2_labelArray[1])
+
+        # new_exp = (
+        #     new_grad_1_all_labels,
+        #     new_grad_2_all_labels,
+        #     new_grad_1_label5,
+        #     new_grad_2_label5,
+        #     new_grad_1_labelArray,
+        #     new_grad_2_labelArray,
+        #     labels_list,
+        # )
+        # store_expected_values(new_exp, framework)
