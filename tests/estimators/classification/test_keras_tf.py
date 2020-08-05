@@ -219,18 +219,11 @@ def _run_tests(
 
 @pytest.mark.only_with_platform("kerastf")
 @pytest.mark.parametrize("loss_type", ["label", "function", "class"])
-def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_mnist_subset, loss_type):
+@pytest.mark.parametrize("loss_name", ["categorical_crossentropy", "categorical_hinge", "sparse_categorical_crossentropy"])
+def test_loss_functions(get_image_classifier_list, get_default_mnist_subset, loss_type, loss_name):
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    # ================= #
-    # categorical_hinge #
-    # ================= #
-
-    loss_name = "categorical_hinge"
-
-    # loss_gradient should be the same for probabilities and logits but dependent on loss function
 
     loss_gradient_expected_categorical_hinge = np.asarray(
         [
@@ -265,31 +258,6 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
         ]
     )
 
-    # testing with probabilities
-    # if loss_name is "categorical_hinge":
-    test_probabilities = True
-    if loss_name is "categorical_hinge" and loss_type is "label":
-        test_probabilities = False
-
-    if test_probabilities:
-        classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
-                                                  from_logits=False)
-        _run_tests(
-            loss_gradient_expected_categorical_hinge,
-            classifier,
-            x_test_mnist,
-            y_test_mnist,
-            with_logits=False
-        )
-
-    # ======================== #
-    # categorical_crossentropy #
-    # ======================== #
-
-    loss_name = "categorical_crossentropy"
-
-    # loss_gradient should be the same for probabilities and logits but dependent on loss function
-
     loss_gradient_expected_categorical_crossentropy = np.asarray(
         [
             0.0,
@@ -323,19 +291,66 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
         ]
     )
 
-    # testing with probabilities
-    classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
-                                              from_logits=False)
-    _run_tests(
-        loss_gradient_expected_categorical_crossentropy,
-        classifier,
-        x_test_mnist,
-        y_test_mnist,
-        with_logits=False
+    loss_gradient_expected_sparse_categorical_crossentropy = np.asarray(
+        [
+            0.0,
+            0.0,
+            0.0,
+            -0.09573442,
+            -0.0089094,
+            0.01402334,
+            0.0258659,
+            0.08960329,
+            0.10324767,
+            0.10624839,
+            0.06578761,
+            -0.00018638,
+            -0.01345262,
+            -0.08770822,
+            -0.04990875,
+            0.04288402,
+            -0.06845165,
+            -0.08588978,
+            -0.08277036,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
     )
 
+    test_probabilities_with_labels = ["categorical_crossentropy", "sparse_categorical_crossentropy"]
+
+    if loss_name is "categorical_hinge":
+        loss_gradient_expected = loss_gradient_expected_categorical_hinge
+    if loss_name is "categorical_crossentropy":
+        loss_gradient_expected = loss_gradient_expected_categorical_crossentropy
+    if loss_name is "sparse_categorical_crossentropy":
+        loss_gradient_expected = loss_gradient_expected_sparse_categorical_crossentropy
+
+    test_probabilities = True
+    if loss_type is "label":
+        if loss_name not in test_probabilities_with_labels:
+            test_probabilities = False
+
+    if test_probabilities:
+        classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
+                                                  from_logits=False)
+        _run_tests(
+            loss_gradient_expected,
+            classifier,
+            x_test_mnist,
+            y_test_mnist,
+            with_logits=False
+        )
+
     # testing with logits
-    if loss_name is "categorical_crossentropy" and loss_type is not "label":
+    if loss_type is not "label" and loss_name is not "categorical_hinge":
         classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
                                                   from_logits=True)
         _run_tests(
