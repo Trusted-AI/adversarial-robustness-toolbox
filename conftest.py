@@ -379,6 +379,7 @@ def get_image_classifier_list(framework, get_image_classifier_mx_instance):
                 classifier_list = [get_image_classifier_kr_tf_with_wildcard(**kwargs)]
             else:
                 classifier_list = [get_image_classifier_kr_tf(**kwargs)]
+
         if framework == "mxnet":
             if wildcard is False:
                 classifier_list = [get_image_classifier_mx_instance(**kwargs)]
