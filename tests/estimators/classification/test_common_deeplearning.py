@@ -122,6 +122,7 @@ def test_loss_gradient(
         # np.testing.assert_array_almost_equal(
         #     sub_gradients, store_1[0], decimal=store_1[1],
         # )
+        
 
         if mnist_shape[0] == 1:
             sub_gradients = gradients[0, 0, 14, :]
