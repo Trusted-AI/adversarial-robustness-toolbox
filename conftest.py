@@ -41,11 +41,28 @@ def get_image_classifier_list_defended(framework):
     def _get_image_classifier_list_defended(one_classifier=False, **kwargs):
         sess = None
         classifier_list = None
+        from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
+        clip_values = (0, 1)
+        fs = FeatureSqueezing(bit_depth=2, clip_values=clip_values)
+
+        defenses = []
+        if kwargs.get("defenses") is None:
+            defenses.append(fs)
+        else:
+            if "FeatureSqueezing" in kwargs.get("defenses"):
+                defenses.append(fs)
+            if "JpegCompression" in kwargs.get("defenses"):
+                defenses.append(JpegCompression(clip_values=clip_values, apply_predict=True))
+            if "SpatialSmoothing" in kwargs.get("defenses"):
+                defenses.append(SpatialSmoothing())
+            del kwargs["defenses"]
+
         if framework == "keras":
             classifier = get_image_classifier_kr()
             # Get the ready-trained Keras model
-            fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-            classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
+
+            classifier_list = [
+                KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=defenses)]
 
         if framework == "tensorflow":
             logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
@@ -58,13 +75,8 @@ def get_image_classifier_list_defended(framework):
 
         if framework == "kerastf":
             classifier = get_image_classifier_kr_tf(**kwargs)
-            fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
             classifier_list = [
-                KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
-            # fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-            # keras_model = KerasClassifier(
-            #     self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1, preprocessing_defences=fs
-            # )
+                KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=defenses)]
 
         if classifier_list is None:
             return None, None
