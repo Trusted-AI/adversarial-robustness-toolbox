@@ -5,6 +5,7 @@ import numpy as np
 import tensorflow as tf
 import keras
 from keras.preprocessing.image import ImageDataGenerator
+from mxnet import gluon
 import os
 import requests
 import tempfile
@@ -15,7 +16,7 @@ from tests.utils import master_seed, get_image_classifier_kr, get_image_classifi
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mxnet_custom_ini
-from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator
+from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
 from art.defences.preprocessor import FeatureSqueezing
 from art.estimators.classification import KerasClassifier
 
@@ -145,6 +146,10 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
         dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
         return DataLoader(dataset=dataset, batch_size=default_batch_size, shuffle=True)
 
+    if framework == "mxnet":
+        dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
+        return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
+
     return None
 
 
@@ -171,6 +176,9 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
         if framework == "pytorch":
             return PyTorchDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
                                         batch_size=default_batch_size)
+
+        if framework == "mxnet":
+            return MXDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0], batch_size=default_batch_size)
 
     return _image_data_generator
 
