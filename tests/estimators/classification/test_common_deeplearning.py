@@ -315,7 +315,6 @@ def test_class_gradient(
         np.testing.assert_array_almost_equal(sub_gradients4, grad_2_label5[0], decimal=4,)
 
         # # Test a set of gradients label = array
-        # # label = np.random.randint(5, size=self.n_test)
         gradients = classifier.class_gradient(x_test_mnist, label=labels)
 
         new_shape = (x_test_mnist.shape[0], 1,) + mnist_shape
@@ -329,13 +328,3 @@ def test_class_gradient(
 
         np.testing.assert_array_almost_equal(sub_gradients6, grad_2_labelArray[0], decimal=4,)
 
-        # new_exp = (
-        #     new_grad_1_all_labels,
-        #     new_grad_2_all_labels,
-        #     new_grad_1_label5,
-        #     new_grad_2_label5,
-        #     new_grad_1_labelArray,
-        #     new_grad_2_labelArray,
-        #     labels_list,
-        # )
-        # store_expected_values(new_exp, framework)
