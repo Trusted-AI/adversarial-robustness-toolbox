@@ -26,17 +26,17 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
 
-# @pytest.mark.only_with_platform("kerastf")
-# def test_learning_phase(self):
-#     classifier = get_image_classifier_kr_tf()
-#
-#     self.assertFalse(hasattr(classifier, "_learning_phase"))
-#     classifier.set_learning_phase(False)
-#     self.assertFalse(classifier.learning_phase)
-#     classifier.set_learning_phase(True)
-#     self.assertTrue(classifier.learning_phase)
-#     self.assertTrue(hasattr(classifier, "_learning_phase"))
-# , from_logits=True
+@pytest.mark.only_with_platform("kerastf")
+def test_learning_phase(get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+
+    assert hasattr(classifier, "_learning_phase") is False
+    classifier.set_learning_phase(False)
+    assert classifier.learning_phase is False
+    classifier.set_learning_phase(True)
+    assert classifier.learning_phase
+    assert hasattr(classifier, "_learning_phase")
+
 
 
 @pytest.mark.only_with_platform("kerastf")
