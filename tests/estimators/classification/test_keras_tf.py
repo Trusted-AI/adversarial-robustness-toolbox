@@ -27,7 +27,8 @@ from art.defences.preprocessor import FeatureSqueezing, JpegCompression, Spatial
 
 
 @pytest.mark.only_with_platform("kerastf")
-def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_mnist_subset):
+@pytest.mark.parametrize("loss_type", ["label", "function", "class"])
+def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_mnist_subset, loss_type):
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
     y_test_pred_expected = np.asarray(
@@ -268,9 +269,7 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
 
     # testing with probabilities
 
-    for loss_type in ["function", "class"]:
-        # logger.info("loss_name: {}, loss_type: {}, output: probabilities".format(loss_name, loss_type))
-
+    if loss_type is not "label":
         _run_tests(
             loss_name,
             loss_type,
@@ -281,74 +280,67 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
         )
 
 
-        # ======================== #
-        # categorical_crossentropy #
-        # ======================== #
+    # ======================== #
+    # categorical_crossentropy #
+    # ======================== #
 
-        loss_name = "categorical_crossentropy"
+    loss_name = "categorical_crossentropy"
 
-        # loss_gradient should be the same for probabilities and logits but dependent on loss function
+    # loss_gradient should be the same for probabilities and logits but dependent on loss function
 
-        loss_gradient_expected = np.asarray(
-            [
-                0.0,
-                0.0,
-                0.0,
-                -0.09573442,
-                -0.0089094,
-                0.01402334,
-                0.0258659,
-                0.08960329,
-                0.10324767,
-                0.10624839,
-                0.06578761,
-                -0.00018638,
-                -0.01345262,
-                -0.08770822,
-                -0.04990875,
-                0.04288402,
-                -0.06845165,
-                -0.08588978,
-                -0.08277036,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-                0.0,
-            ]
+    loss_gradient_expected = np.asarray(
+        [
+            0.0,
+            0.0,
+            0.0,
+            -0.09573442,
+            -0.0089094,
+            0.01402334,
+            0.0258659,
+            0.08960329,
+            0.10324767,
+            0.10624839,
+            0.06578761,
+            -0.00018638,
+            -0.01345262,
+            -0.08770822,
+            -0.04990875,
+            0.04288402,
+            -0.06845165,
+            -0.08588978,
+            -0.08277036,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
+    )
+
+    # testing with probabilities
+    _run_tests(
+        loss_name,
+        loss_type,
+        y_test_pred_expected,
+        class_gradient_probabilities_expected,
+        loss_gradient_expected,
+        _from_logits=False,
+    )
+
+    # testing with logits
+    if loss_type is not "label":
+        _run_tests(
+            loss_name,
+            loss_type,
+            y_test_pred_expected,
+            class_gradient_logits_expected,
+            loss_gradient_expected,
+            _from_logits=True,
         )
-
-        # testing with probabilities
-
-        for loss_type in ["label", "function", "class"]:
-            # logger.info("loss_name: {}, loss_type: {}, output: probabilities".format(loss_name, loss_type))
-
-            _run_tests(
-                loss_name,
-                loss_type,
-                y_test_pred_expected,
-                class_gradient_probabilities_expected,
-                loss_gradient_expected,
-                _from_logits=False,
-            )
-
-        # testing with logits
-
-        for loss_type in ["function", "class"]:
-            # logger.info("loss_name: {}, loss_type: {}, output: logits".format(loss_name, loss_type))
-
-            _run_tests(
-                loss_name,
-                loss_type,
-                y_test_pred_expected,
-                class_gradient_logits_expected,
-                loss_gradient_expected,
-                _from_logits=True,
-            )
 
 
 @pytest.mark.only_with_platform("kerastf")
