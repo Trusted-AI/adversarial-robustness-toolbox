@@ -270,7 +270,7 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
     # testing with probabilities
     # if loss_name is "categorical_hinge":
 
-    if loss_type is not "label":
+    if loss_name is "categorical_hinge" and loss_type is not "label":
         classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
                                                   from_logits=False)
         _run_tests(
@@ -334,7 +334,7 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
     )
 
     # testing with logits
-    if loss_type is not "label":
+    if loss_name is "categorical_crossentropy" and loss_type is not "label":
         classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
                                                   from_logits=True)
         _run_tests(
