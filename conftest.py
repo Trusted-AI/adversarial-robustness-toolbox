@@ -16,6 +16,7 @@ from tests.utils import master_seed, get_image_classifier_kr, get_image_classifi
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
+from tests.utils import get_image_classifier_kr_tf_functional
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
 from art.defences.preprocessor import FeatureSqueezing
 from art.estimators.classification import KerasClassifier
@@ -351,7 +352,7 @@ def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape)
 
 @pytest.fixture
 def get_image_classifier_list(framework, get_image_classifier_mx_instance):
-    def _get_image_classifier_list(one_classifier=False, **kwargs):
+    def _get_image_classifier_list(one_classifier=False, functional=False, **kwargs):
         sess = None
         wildcard = False
         classifier_list = None
@@ -378,7 +379,10 @@ def get_image_classifier_list(framework, get_image_classifier_mx_instance):
             if wildcard:
                 classifier_list = [get_image_classifier_kr_tf_with_wildcard(**kwargs)]
             else:
-                classifier_list = [get_image_classifier_kr_tf(**kwargs)]
+                if functional:
+                    classifier_list = [get_image_classifier_kr_tf_functional(**kwargs)]
+                else:
+                    classifier_list = [get_image_classifier_kr_tf(**kwargs)]
 
         if framework == "mxnet":
             if wildcard is False:

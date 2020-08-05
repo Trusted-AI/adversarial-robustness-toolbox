@@ -554,6 +554,55 @@ def get_image_classifier_kr(
     return krc
 
 
+def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
+    """
+       Standard Keras_tf classifier for unit testing built with a functional model
+
+       :return: KerasClassifier
+       """
+    import tensorflow as tf
+    if tf.__version__[0] == "2":
+        tf.compat.v1.disable_eager_execution()
+    from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+    from tensorflow.keras.models import Model
+    from art.estimators.classification.keras import KerasClassifier
+
+    def functional_model():
+
+        in_layer = Input(shape=(28, 28, 1), name="input0")
+        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
+        layer = Conv2D(64, (3, 3), activation="relu")(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation="relu")(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer = Dense(10, activation="softmax", name="output0")(layer)
+
+        in_layer_2 = Input(shape=(28, 28, 1), name="input1")
+        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer_2)
+        layer = Conv2D(64, (3, 3), activation="relu")(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation="relu")(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer_2 = Dense(10, activation="softmax", name="output1")(layer)
+
+        model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
+
+        model.compile(
+            loss=tf.keras.losses.categorical_crossentropy,
+            optimizer=tf.keras.optimizers.Adadelta(),
+            metrics=["accuracy"],
+            loss_weights=[1.0, 1.0],
+        )
+
+        return model
+
+    return KerasClassifier(functional_model(), clip_values=(0, 1), input_layer=input_layer, output_layer=output_layer)
+
+
 def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="function", from_logits=False):
     """
     Standard Keras classifier for unit testing
@@ -573,6 +622,7 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     """
     # pylint: disable=E0401
     import tensorflow as tf
+
 
     if tf.__version__[0] == "2":
         tf.compat.v1.disable_eager_execution()
