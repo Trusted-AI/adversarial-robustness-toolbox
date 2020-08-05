@@ -794,7 +794,8 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     :return: PyTorchClassifier
     """
     import torch
-
+    import torch.nn as nn
+    import torch.optim as optim
     from art.estimators.classification.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):
@@ -868,6 +869,15 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     # Get classifier
     ptc = PyTorchClassifier(
         model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
+    )
+
+    model = Model()
+
+
+    loss_fn = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.01)
+    myclassifier_2 = PyTorchClassifier(
+        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
     )
 
     return ptc

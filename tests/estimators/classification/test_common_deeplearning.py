@@ -37,7 +37,7 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skipMlFramework("mxnet")
+@pytest.mark.skipMlFramework("mxnet", "scikitlearn")
 def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -55,6 +55,7 @@ def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_
         warnings.warn(UserWarning(e))
 
 
+@pytest.mark.skipMlFramework("scikitlearn")
 def test_predict(
         request, framework, get_default_mnist_subset, get_image_classifier_list, expected_values, store_expected_values
 ):
@@ -71,6 +72,7 @@ def test_predict(
         np.testing.assert_array_almost_equal(y_predicted, expected_values, decimal=4)
 
 
+@pytest.mark.skipMlFramework("scikitlearn")
 def test_shapes(get_default_mnist_subset, get_image_classifier_list):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -93,7 +95,7 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skipMlFramework("mxnet")
+@pytest.mark.skipMlFramework("mxnet", "scikitlearn")
 def test_fit_image_generator(
         framework, is_tf_version_2, get_image_classifier_list, image_data_generator, get_default_mnist_subset
 ):
@@ -128,6 +130,7 @@ def test_fit_image_generator(
         warnings.warn(UserWarning(e))
 
 
+@pytest.mark.skipMlFramework("scikitlearn")
 def test_loss_gradient(
         framework,
         is_tf_version_2,
@@ -182,7 +185,7 @@ def test_loss_gradient(
         # store_expected_values(store_values, framework)
 
 
-
+@pytest.mark.skipMlFramework("scikitlearn")
 def test_nb_classes(get_image_classifier_list):
     try:
         classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
@@ -191,6 +194,7 @@ def test_nb_classes(get_image_classifier_list):
         warnings.warn(UserWarning(e))
 
 
+@pytest.mark.skipMlFramework("scikitlearn")
 def test_input_shape(get_image_classifier_list, mnist_shape):
     try:
         classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
@@ -237,6 +241,7 @@ def test_repr(get_image_classifier_list, framework, expected_values, store_expec
         warnings.warn(UserWarning(e))
 
 
+@pytest.mark.skipMlFramework("scikitlearn")
 def test_class_gradient(
         framework, get_image_classifier_list, get_default_mnist_subset, mnist_shape, store_expected_values,
         expected_values
@@ -295,11 +300,11 @@ def test_class_gradient(
 
         sub_gradients1 = get_gradient1_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients1, grad_1_all_labels[0], decimal=4,)
+        np.testing.assert_array_almost_equal(sub_gradients1, grad_1_all_labels[0], decimal=4, )
 
         sub_gradients2 = get_gradient2_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients2, grad_2_all_labels[0], decimal=4,)
+        np.testing.assert_array_almost_equal(sub_gradients2, grad_2_all_labels[0], decimal=4, )
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
@@ -308,11 +313,11 @@ def test_class_gradient(
 
         sub_gradients2 = get_gradient3_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients2, grad_1_label5[0], decimal=4,)
+        np.testing.assert_array_almost_equal(sub_gradients2, grad_1_label5[0], decimal=4, )
 
         sub_gradients4 = get_gradient4_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients4, grad_2_label5[0], decimal=4,)
+        np.testing.assert_array_almost_equal(sub_gradients4, grad_2_label5[0], decimal=4, )
 
         # # Test a set of gradients label = array
         gradients = classifier.class_gradient(x_test_mnist, label=labels)
@@ -322,9 +327,48 @@ def test_class_gradient(
 
         sub_gradients5 = get_gradient3_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients5, grad_1_labelArray[0], decimal=4,)
+        np.testing.assert_array_almost_equal(sub_gradients5, grad_1_labelArray[0], decimal=4, )
 
         sub_gradients6 = get_gradient4_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients6, grad_2_labelArray[0], decimal=4,)
+        np.testing.assert_array_almost_equal(sub_gradients6, grad_2_labelArray[0], decimal=4, )
 
+
+
+# TODO originally from pytorch
+# def test_pickle(get_default_mnist_subset, get_image_classifier_list):
+#     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+#
+#     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+#     if classifier is not None:
+#
+#         from art.config import ART_DATA_PATH
+#         import os, pickle
+#
+#         full_path = os.path.join(ART_DATA_PATH, "my_classifier")
+#         folder = os.path.split(full_path)[0]
+#         if not os.path.exists(folder):
+#             os.makedirs(folder)
+#
+#         # model = Model()
+#         # loss_fn = nn.CrossEntropyLoss()
+#         # optimizer = optim.Adam(model.parameters(), lr=0.01)
+#         # myclassifier_2 = PyTorchClassifier(
+#         #     model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+#         # )
+#         classifier.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
+#
+#         pickle.dump(classifier, open(full_path, "wb"))
+#
+#         with open(full_path, "rb") as f:
+#             loaded_model = pickle.load(f)
+#             np.testing.assert_equal(classifier._clip_values, loaded_model._clip_values)
+#             assert classifier._channel_index == loaded_model._channel_index
+#             assert set(classifier.__dict__.keys()) == set(loaded_model.__dict__.keys())
+#
+#         # Test predict
+#         predictions_1 = classifier.predict(x_test_mnist)
+#         accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+#         predictions_2 = loaded_model.predict(x_test_mnist)
+#         accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+#         assert accuracy_1 == accuracy_2

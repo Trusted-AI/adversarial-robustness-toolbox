@@ -56,6 +56,16 @@ def get_image_classifier_list_defended(framework):
         if framework == "scikitlearn":
             logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
 
+        if framework == "kerastf":
+            classifier = get_image_classifier_kr_tf(**kwargs)
+            fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+            classifier_list = [
+                KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
+            # fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
+            # keras_model = KerasClassifier(
+            #     self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1, preprocessing_defences=fs
+            # )
+
         if classifier_list is None:
             return None, None
 

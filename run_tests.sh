@@ -27,7 +27,7 @@ done
 
 #NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
 # made framework independent to be incorporated within this loop
-mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
+mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn", "mxnet", "kerastf")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
   pytest -q tests/estimators/classification/test_common_deeplearning.py --mlFramework=$mlFramework --durations=0
