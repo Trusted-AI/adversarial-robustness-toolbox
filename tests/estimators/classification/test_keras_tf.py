@@ -27,6 +27,20 @@ from art.defences.preprocessor import FeatureSqueezing, JpegCompression, Spatial
 
 
 @pytest.mark.only_with_platform("kerastf")
+def test_loss_gradient_with_wildcard(get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True, wildcard=True)
+
+    shapes = [(1, 10, 1), (1, 20, 1)]
+    for shape in shapes:
+        x = np.random.normal(size=shape)
+        loss_gradient = classifier.loss_gradient(x, y=[1])
+        assert loss_gradient.shape == shape
+
+        class_gradient = classifier.class_gradient(x, 0)
+        assert class_gradient[0].shape == shape
+
+
+@pytest.mark.only_with_platform("kerastf")
 def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_defended, get_image_classifier_list):
     clip_values = (0, 1)
 

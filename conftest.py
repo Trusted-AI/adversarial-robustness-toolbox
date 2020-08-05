@@ -15,10 +15,11 @@ import shutil
 from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
-from tests.utils import get_image_classifier_mxnet_custom_ini
+from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
 from art.defences.preprocessor import FeatureSqueezing
 from art.estimators.classification import KerasClassifier
+
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
@@ -363,7 +364,16 @@ def get_image_classifier_list(framework, get_image_classifier_mx_instance):
             logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
             classifier_list = None
         if framework == "kerastf":
-            classifier_list = [get_image_classifier_kr_tf(**kwargs)]
+            wildcard = False
+            if kwargs.get("wildcard") is not None:
+                if kwargs.get("wildcard") is True:
+                    wildcard = True
+                del kwargs["wildcard"]
+
+            if wildcard:
+                classifier_list = [get_image_classifier_kr_tf_with_wildcard(**kwargs)]
+            else:
+                classifier_list = [get_image_classifier_kr_tf(**kwargs)]
         if framework == "mxnet":
             # classifier_list = [get_image_classifier_mx(**kwargs)]
             classifier_list = [get_image_classifier_mx_instance(**kwargs)]
