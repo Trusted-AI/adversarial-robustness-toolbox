@@ -26,6 +26,26 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
 
+def _run_tests(
+        _y_test_pred_expected,
+        _class_gradient_probabilities_expected,
+        _loss_gradient_expected,
+        classifier,
+        x_test_mnist,
+        y_test_mnist
+):
+    y_test_pred = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
+    np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
+
+    class_gradient = classifier.class_gradient(x_test_mnist, label=5)
+    np.testing.assert_array_almost_equal(
+        class_gradient[99, 0, 14, :, 0], _class_gradient_probabilities_expected
+    )
+
+    loss_gradient = classifier.loss_gradient(x=x_test_mnist, y=y_test_mnist)
+    np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], _loss_gradient_expected)
+
+
 @pytest.mark.only_with_platform("kerastf")
 @pytest.mark.parametrize("loss_type", ["label", "function", "class"])
 def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_mnist_subset, loss_type):
@@ -204,27 +224,7 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
 
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    def _run_tests(
-            _loss_name,
-            _loss_type,
-            _y_test_pred_expected,
-            _class_gradient_probabilities_expected,
-            _loss_gradient_expected,
-            _from_logits,
-    ):
-        classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=_loss_name, loss_type=_loss_type,
-                                                  from_logits=_from_logits)
 
-        y_test_pred = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
-        np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
-
-        class_gradient = classifier.class_gradient(x_test_mnist, label=5)
-        np.testing.assert_array_almost_equal(
-            class_gradient[99, 0, 14, :, 0], _class_gradient_probabilities_expected
-        )
-
-        loss_gradient = classifier.loss_gradient(x=x_test_mnist, y=y_test_mnist)
-        np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], _loss_gradient_expected)
 
     # ================= #
     # categorical_hinge #
@@ -268,15 +268,18 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
     )
 
     # testing with probabilities
+    # if loss_name is "categorical_hinge":
 
     if loss_type is not "label":
+        classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
+                                                  from_logits=False)
         _run_tests(
-            loss_name,
-            loss_type,
             y_test_pred_expected,
             class_gradient_probabilities_expected,
             loss_gradient_expected,
-            _from_logits=False,
+            classifier,
+            x_test_mnist,
+            y_test_mnist
         )
 
 
@@ -322,24 +325,28 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
     )
 
     # testing with probabilities
+    classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
+                                              from_logits=False)
     _run_tests(
-        loss_name,
-        loss_type,
         y_test_pred_expected,
         class_gradient_probabilities_expected,
         loss_gradient_expected,
-        _from_logits=False,
+        classifier,
+        x_test_mnist,
+        y_test_mnist
     )
 
     # testing with logits
     if loss_type is not "label":
+        classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
+                                                  from_logits=True)
         _run_tests(
-            loss_name,
-            loss_type,
             y_test_pred_expected,
             class_gradient_logits_expected,
             loss_gradient_expected,
-            _from_logits=True,
+            classifier,
+            x_test_mnist,
+            y_test_mnist
         )
 
 
