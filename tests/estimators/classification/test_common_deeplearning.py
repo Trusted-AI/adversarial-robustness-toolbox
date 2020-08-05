@@ -34,6 +34,7 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
+
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
 @pytest.mark.skipMlFramework("mxnet")
@@ -48,8 +49,8 @@ def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_
         np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.06)
 
         classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
-        # accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-        # np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
+        accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
+        np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
@@ -90,6 +91,9 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
         warnings.warn(UserWarning(e))
 
 
+# Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
+# change for all other tests using that fitted model
+@pytest.mark.skipMlFramework("mxnet")
 def test_fit_image_generator(
         framework, is_tf_version_2, get_image_classifier_list, image_data_generator, get_default_mnist_subset
 ):
@@ -98,8 +102,6 @@ def test_fit_image_generator(
             return
 
         classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
-
-        data_gen = image_data_generator(sess=sess)
 
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -113,6 +115,7 @@ def test_fit_image_generator(
             pre_fit_accuracy, 0.32, decimal=0.06,
         )
 
+        data_gen = image_data_generator(sess=sess)
         classifier.fit_generator(generator=data_gen, nb_epochs=2)
         predictions = classifier.predict(x_test_mnist)
         prediction_class = np.argmax(predictions, axis=1)
@@ -259,29 +262,29 @@ def test_class_gradient(
     if classifier is not None:
 
         # TODO we should consider checking channel independent columns to make this test truly framework independent
-        def get_gradient1_column(gradients):
-            if mnist_shape[0] == 1:
-                return gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
-            else:
-                return gradients[0, 5, 14, :, 0]
-
-        def get_gradient2_column(gradients):
-            if mnist_shape[0] == 1:
-                return gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
-            else:
-                return gradients[0, 5, :, 14, 0]
-
-        def get_gradient3_column(gradients):
-            if mnist_shape[0] == 1:
-                return gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
-            else:
-                return gradients[0, 0, 14, :, 0]
-
-        def get_gradient4_column(gradients):
-            if mnist_shape[0] == 1:
-                return gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
-            else:
-                return gradients[0, 0, :, 14, 0]
+        # def get_gradient1_column(gradients):
+        #     if mnist_shape[0] == 1:
+        #         return gradients[0, 5, 0, 14, :]  # expected_gradients_1_all_labels
+        #     else:
+        #         return gradients[0, 5, 14, :, 0]
+        #
+        # def get_gradient2_column(gradients):
+        #     if mnist_shape[0] == 1:
+        #         return gradients[0, 5, 0, :, 14]  # expected_gradients_2_all_labels
+        #     else:
+        #         return gradients[0, 5, :, 14, 0]
+        #
+        # def get_gradient3_column(gradients):
+        #     if mnist_shape[0] == 1:
+        #         return gradients[0, 0, 0, 14, :]  # expected_gradients_1_label5
+        #     else:
+        #         return gradients[0, 0, 14, :, 0]
+        #
+        # def get_gradient4_column(gradients):
+        #     if mnist_shape[0] == 1:
+        #         return gradients[0, 0, 0, :, 14]  # expected_gradients_2_all_labels
+        #     else:
+        #         return gradients[0, 0, :, 14, 0]
 
         # Test all gradients label
         gradients = classifier.class_gradient(x_test_mnist)
@@ -289,21 +292,21 @@ def test_class_gradient(
         new_shape = (x_test_mnist.shape[0], 10,) + mnist_shape
         assert gradients.shape == new_shape
 
-        sub_gradients = get_gradient1_column(gradients)
+        sub_gradients1 = get_gradient1_column(gradients)
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, grad_1_all_labels[0], decimal=grad_1_all_labels[1],
+            sub_gradients1, grad_1_all_labels[0], decimal=grad_1_all_labels[1],
         )
 
-        exp_grad_1_all_labels = (sub_gradients.tolist(), grad_1_all_labels[1])
+        exp_grad_1_all_labels = (sub_gradients1.tolist(), grad_1_all_labels[1])
         np.testing.assert_array_almost_equal(
-            sub_gradients, exp_grad_1_all_labels[0], decimal=exp_grad_1_all_labels[1],
+            sub_gradients1, exp_grad_1_all_labels[0], decimal=exp_grad_1_all_labels[1],
         )
 
-        sub_gradients = get_gradient2_column(gradients)
+        sub_gradients2 = get_gradient2_column(gradients)
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, grad_2_all_labels[0], decimal=grad_2_all_labels[1],
+            sub_gradients2, grad_2_all_labels[0], decimal=grad_2_all_labels[1],
         )
 
         # Test 1 gradient label = 5
@@ -311,16 +314,16 @@ def test_class_gradient(
 
         assert gradients.shape == (x_test_mnist.shape[0], 1,) + mnist_shape
 
-        sub_gradients = get_gradient3_column(gradients)
+        sub_gradients2 = get_gradient3_column(gradients)
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, grad_1_label5[0], decimal=grad_1_label5[1],
+            sub_gradients2, grad_1_label5[0], decimal=grad_1_label5[1],
         )
 
-        sub_gradients = get_gradient4_column(gradients)
+        sub_gradients4 = get_gradient4_column(gradients)
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, grad_2_label5[0], decimal=grad_2_label5[1],
+            sub_gradients4, grad_2_label5[0], decimal=grad_2_label5[1],
         )
 
         # # Test a set of gradients label = array
@@ -330,14 +333,14 @@ def test_class_gradient(
         new_shape = (x_test_mnist.shape[0], 1,) + mnist_shape
         assert gradients.shape == new_shape
 
-        sub_gradients = get_gradient3_column(gradients)
+        sub_gradients5 = get_gradient3_column(gradients)
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, grad_1_labelArray[0], decimal=grad_1_labelArray[1],
+            sub_gradients5, grad_1_labelArray[0], decimal=grad_1_labelArray[1],
         )
 
-        sub_gradients = get_gradient4_column(gradients)
+        sub_gradients6 = get_gradient4_column(gradients)
 
         np.testing.assert_array_almost_equal(
-            sub_gradients, grad_2_labelArray[0], decimal=grad_2_labelArray[1],
+            sub_gradients6, grad_2_labelArray[0], decimal=grad_2_labelArray[1],
         )
