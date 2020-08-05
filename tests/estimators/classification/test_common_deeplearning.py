@@ -295,18 +295,11 @@ def test_class_gradient(
 
         sub_gradients1 = get_gradient1_column(gradients)
 
-        np.testing.assert_array_almost_equal(
-            sub_gradients1, grad_1_all_labels[0], decimal=grad_1_all_labels[1],
-        )
-        new_grad_1_all_labels = (sub_gradients1.tolist(), grad_1_all_labels[1])
+        np.testing.assert_array_almost_equal(sub_gradients1, grad_1_all_labels[0], decimal=4,)
 
         sub_gradients2 = get_gradient2_column(gradients)
 
-        np.testing.assert_array_almost_equal(
-            sub_gradients2, grad_2_all_labels[0], decimal=grad_2_all_labels[1],
-        )
-
-        new_grad_2_all_labels = (sub_gradients2.tolist(), grad_2_all_labels[1])
+        np.testing.assert_array_almost_equal(sub_gradients2, grad_2_all_labels[0], decimal=4,)
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
@@ -315,19 +308,11 @@ def test_class_gradient(
 
         sub_gradients2 = get_gradient3_column(gradients)
 
-        np.testing.assert_array_almost_equal(
-            sub_gradients2, grad_1_label5[0], decimal=grad_1_label5[1],
-        )
-
-        new_grad_1_label5 = (sub_gradients2.tolist(), grad_1_label5[1])
+        np.testing.assert_array_almost_equal(sub_gradients2, grad_1_label5[0], decimal=4,)
 
         sub_gradients4 = get_gradient4_column(gradients)
 
-        np.testing.assert_array_almost_equal(
-            sub_gradients4, grad_2_label5[0], decimal=grad_2_label5[1],
-        )
-
-        new_grad_2_label5 = (sub_gradients4.tolist(), grad_2_label5[1])
+        np.testing.assert_array_almost_equal(sub_gradients4, grad_2_label5[0], decimal=4,)
 
         # # Test a set of gradients label = array
         # # label = np.random.randint(5, size=self.n_test)
@@ -338,19 +323,11 @@ def test_class_gradient(
 
         sub_gradients5 = get_gradient3_column(gradients)
 
-        np.testing.assert_array_almost_equal(
-            sub_gradients5, grad_1_labelArray[0], decimal=grad_1_labelArray[1],
-        )
-
-        new_grad_1_labelArray = (sub_gradients5.tolist(), grad_1_labelArray[1])
+        np.testing.assert_array_almost_equal(sub_gradients5, grad_1_labelArray[0], decimal=4,)
 
         sub_gradients6 = get_gradient4_column(gradients)
 
-        np.testing.assert_array_almost_equal(
-            sub_gradients6, grad_2_labelArray[0], decimal=grad_2_labelArray[1],
-        )
-
-        new_grad_2_labelArray = (sub_gradients6.tolist(), grad_2_labelArray[1])
+        np.testing.assert_array_almost_equal(sub_gradients6, grad_2_labelArray[0], decimal=4,)
 
         # new_exp = (
         #     new_grad_1_all_labels,
