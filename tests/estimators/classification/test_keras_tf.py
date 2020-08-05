@@ -27,29 +27,12 @@ from art.defences.preprocessor import FeatureSqueezing, JpegCompression, Spatial
 
 
 def _run_tests(
-        _y_test_pred_expected,
         _class_gradient_probabilities_expected,
         _loss_gradient_expected,
         classifier,
         x_test_mnist,
         y_test_mnist
 ):
-    y_test_pred = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
-    np.testing.assert_array_equal(y_test_pred, _y_test_pred_expected)
-
-    class_gradient = classifier.class_gradient(x_test_mnist, label=5)
-    np.testing.assert_array_almost_equal(
-        class_gradient[99, 0, 14, :, 0], _class_gradient_probabilities_expected
-    )
-
-    loss_gradient = classifier.loss_gradient(x=x_test_mnist, y=y_test_mnist)
-    np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], _loss_gradient_expected)
-
-
-@pytest.mark.only_with_platform("kerastf")
-@pytest.mark.parametrize("loss_type", ["label", "function", "class"])
-def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_mnist_subset, loss_type):
-    # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
     y_test_pred_expected = np.asarray(
         [
@@ -155,6 +138,23 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
             4,
         ]
     )
+
+    y_test_pred = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
+    np.testing.assert_array_equal(y_test_pred, y_test_pred_expected)
+
+    class_gradient = classifier.class_gradient(x_test_mnist, label=5)
+    np.testing.assert_array_almost_equal(
+        class_gradient[99, 0, 14, :, 0], _class_gradient_probabilities_expected
+    )
+
+    loss_gradient = classifier.loss_gradient(x=x_test_mnist, y=y_test_mnist)
+    np.testing.assert_array_almost_equal(loss_gradient[99, 14, :, 0], _loss_gradient_expected)
+
+
+@pytest.mark.only_with_platform("kerastf")
+@pytest.mark.parametrize("loss_type", ["label", "function", "class"])
+def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_mnist_subset, loss_type):
+    # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
     class_gradient_probabilities_expected = np.asarray(
         [
@@ -274,14 +274,12 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
         classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
                                                   from_logits=False)
         _run_tests(
-            y_test_pred_expected,
             class_gradient_probabilities_expected,
             loss_gradient_expected,
             classifier,
             x_test_mnist,
             y_test_mnist
         )
-
 
     # ======================== #
     # categorical_crossentropy #
@@ -328,7 +326,6 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
     classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
                                               from_logits=False)
     _run_tests(
-        y_test_pred_expected,
         class_gradient_probabilities_expected,
         loss_gradient_expected,
         classifier,
@@ -341,7 +338,6 @@ def test_loss_function_categorical_hinge(get_image_classifier_list, get_default_
         classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
                                                   from_logits=True)
         _run_tests(
-            y_test_pred_expected,
             class_gradient_logits_expected,
             loss_gradient_expected,
             classifier,
