@@ -129,7 +129,6 @@ def test_loss_gradient(
         )
 
 
-
 def test_layers(get_default_mnist_subset, framework, is_tf_version_2, get_image_classifier_list):
     try:
         classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
