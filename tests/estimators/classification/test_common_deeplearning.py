@@ -182,6 +182,7 @@ def test_loss_gradient(
         # store_expected_values(store_values, framework)
 
 
+
 def test_nb_classes(get_image_classifier_list):
     try:
         classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
