@@ -26,18 +26,17 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
 
-@pytest.mark.only_with_platform("kerastf")
-def test_loss_gradient_with_wildcard(get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True, wildcard=True)
-
-    shapes = [(1, 10, 1), (1, 20, 1)]
-    for shape in shapes:
-        x = np.random.normal(size=shape)
-        loss_gradient = classifier.loss_gradient(x, y=[1])
-        assert loss_gradient.shape == shape
-
-        class_gradient = classifier.class_gradient(x, 0)
-        assert class_gradient[0].shape == shape
+# @pytest.mark.only_with_platform("kerastf")
+# def test_learning_phase(self):
+#     classifier = get_image_classifier_kr_tf()
+#
+#     self.assertFalse(hasattr(classifier, "_learning_phase"))
+#     classifier.set_learning_phase(False)
+#     self.assertFalse(classifier.learning_phase)
+#     classifier.set_learning_phase(True)
+#     self.assertTrue(classifier.learning_phase)
+#     self.assertTrue(hasattr(classifier, "_learning_phase"))
+# , from_logits=True
 
 
 @pytest.mark.only_with_platform("kerastf")
@@ -50,7 +49,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_de
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = get_image_classifier_list_defended(one_classifier=True,
+    classifier, _ = get_image_classifier_list_defended(one_classifier=True, from_logits=True,
                                                        defenses=["FeatureSqueezing", "JpegCompression", "SpatialSmoothing"])
 
     assert len(classifier.preprocessing_defences) == 3
@@ -63,7 +62,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_de
     x_test_defense, _ = jpeg(x_test_defense, y_test_mnist)
     x_test_defense, _ = smooth(x_test_defense, y_test_mnist)
 
-    classifier, _ = get_image_classifier_list(one_classifier=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
     predictions_check = classifier._model.predict(x_test_defense)
 
     # Check that the prediction results match
@@ -98,7 +97,7 @@ def test_fit_kwargs(get_image_classifier_list, get_default_mnist_subset, default
     (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
     # Test a valid callback
-    classifier, _ = get_image_classifier_list(one_classifier=True)
+    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
     kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
     classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 

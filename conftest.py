@@ -353,30 +353,36 @@ def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape)
 def get_image_classifier_list(framework, get_image_classifier_mx_instance):
     def _get_image_classifier_list(one_classifier=False, **kwargs):
         sess = None
+        wildcard = False
+        classifier_list = None
+
+        if kwargs.get("wildcard") is not None:
+            if kwargs.get("wildcard") is True:
+                wildcard = True
+            del kwargs["wildcard"]
+
         if framework == "keras":
-            classifier_list = [get_image_classifier_kr(**kwargs)]
+            if wildcard is False:
+                classifier_list = [get_image_classifier_kr(**kwargs)]
         if framework == "tensorflow":
-            classifier, sess = get_image_classifier_tf(**kwargs)
-            classifier_list = [classifier]
+            if wildcard is False:
+                classifier, sess = get_image_classifier_tf(**kwargs)
+                classifier_list = [classifier]
         if framework == "pytorch":
-            classifier_list = [get_image_classifier_pt(**kwargs)]
+            if wildcard is False:
+                classifier_list = [get_image_classifier_pt(**kwargs)]
         if framework == "scikitlearn":
             logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
             classifier_list = None
         if framework == "kerastf":
-            wildcard = False
-            if kwargs.get("wildcard") is not None:
-                if kwargs.get("wildcard") is True:
-                    wildcard = True
-                del kwargs["wildcard"]
-
             if wildcard:
                 classifier_list = [get_image_classifier_kr_tf_with_wildcard(**kwargs)]
             else:
                 classifier_list = [get_image_classifier_kr_tf(**kwargs)]
         if framework == "mxnet":
-            # classifier_list = [get_image_classifier_mx(**kwargs)]
-            classifier_list = [get_image_classifier_mx_instance(**kwargs)]
+            if wildcard is False:
+                classifier_list = [get_image_classifier_mx_instance(**kwargs)]
+
         if classifier_list is None:
             return None, None
 
