@@ -359,7 +359,9 @@ def supported_losses_types(framework):
             return ["label", "function", "class"]
 
         raise NotImplementedError("Could not find  supported_losses_types for framework {0}".format(framework))
+
     return supported_losses_types
+
 
 @pytest.fixture
 def supported_losses_logit(framework):
@@ -374,6 +376,7 @@ def supported_losses_logit(framework):
                     "sparse_categorical_crossentropy_function",
                     "sparse_categorical_crossentropy_class"]
         raise NotImplementedError("Could not find  supported_losses_logit for framework {0}".format(framework))
+
     return _supported_losses_logit
 
 
@@ -403,7 +406,9 @@ def supported_losses_proba(framework):
                     "kullback_leibler_divergence_class"]
 
         raise NotImplementedError("Could not find  supported_losses_proba for framework {0}".format(framework))
+
     return _supported_losses_proba
+
 
 @pytest.fixture
 def get_image_classifier_list(framework, get_image_classifier_mx_instance):
