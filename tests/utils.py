@@ -568,7 +568,6 @@ def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
     from art.estimators.classification.keras import KerasClassifier
 
     def functional_model():
-
         in_layer = Input(shape=(28, 28, 1), name="input0")
         layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
         layer = Conv2D(64, (3, 3), activation="relu")(layer)
@@ -622,7 +621,6 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
     """
     # pylint: disable=E0401
     import tensorflow as tf
-
 
     if tf.__version__[0] == "2":
         tf.compat.v1.disable_eager_execution()
@@ -923,7 +921,6 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
 
     model = Model()
 
-
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.01)
     myclassifier_2 = PyTorchClassifier(
@@ -992,6 +989,7 @@ def get_image_classifier_mxnet_custom_ini():
             arr[:] = self.params[name]
 
     return CustomInit()
+
 
 def get_gan_inverse_gan_ft():
     import tensorflow as tf

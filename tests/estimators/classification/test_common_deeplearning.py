@@ -47,6 +47,7 @@ def test_loss_gradient_with_wildcard(get_image_classifier_list):
             class_gradient = classifier.class_gradient(x, 0)
             assert class_gradient[0].shape == shape
 
+
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
 @pytest.mark.skipMlFramework("mxnet", "scikitlearn")
@@ -344,8 +345,6 @@ def test_class_gradient(
         sub_gradients6 = get_gradient4_column(gradients)
 
         np.testing.assert_array_almost_equal(sub_gradients6, grad_2_labelArray[0], decimal=4, )
-
-
 
 # TODO originally from pytorch
 # def test_pickle(get_default_mnist_subset, get_image_classifier_list):
