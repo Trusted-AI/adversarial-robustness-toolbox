@@ -342,7 +342,7 @@ def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape)
             clip_values=(0, 1),
             preprocessing_defences=None,
             postprocessing_defences=None,
-            preprocessing=(0, 1),
+            preprocessing=(0, 1)
         )
 
         return mxc
