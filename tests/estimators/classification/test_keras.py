@@ -82,55 +82,6 @@ def get_functional_model(get_default_mnist_subset):
 
 
 @pytest.mark.only_with_platform("keras")
-def test_fit_kwargs(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    def get_lr(_):
-        return 0.01
-
-    # Test a valid callback
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
-    classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
-
-    # Test failure for invalid parameters
-    kwargs = {"epochs": 1}
-    with pytest.raises(TypeError) as exception:
-        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
-
-    assert "multiple values for keyword argument" in str(exception.value)
-
-
-@pytest.mark.only_with_platform("keras")
-def test_defences_predict(get_default_mnist_subset, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    clip_values = (0, 1)
-    fs = FeatureSqueezing(clip_values=clip_values, bit_depth=2)
-    jpeg = JpegCompression(clip_values=clip_values, apply_predict=True)
-    smooth = SpatialSmoothing()
-    classifier_, _ = get_image_classifier_list(one_classifier=True)
-    classifier = KerasClassifier(
-        clip_values=clip_values, model=classifier_.model, preprocessing_defences=[fs, jpeg, smooth]
-    )
-    assert len(classifier.preprocessing_defences) == 3
-
-    predictions_classifier = classifier.predict(x_test_mnist)
-
-    # Apply the same defences by hand
-    x_test_defense = x_test_mnist
-    x_test_defense, _ = fs(x_test_defense, y_test_mnist)
-    x_test_defense, _ = jpeg(x_test_defense, y_test_mnist)
-    x_test_defense, _ = smooth(x_test_defense, y_test_mnist)
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-
-    predictions_check = classifier.model.predict(x_test_defense)
-
-    # Check that the prediction results match
-    np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
-
-
-@pytest.mark.only_with_platform("keras")
 def test_functional_model(get_functional_model):
     functional_model = get_functional_model
     keras_model = KerasClassifier(functional_model, clip_values=(0, 1), input_layer=1, output_layer=1)

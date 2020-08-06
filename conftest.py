@@ -60,7 +60,7 @@ def get_image_classifier_list_defended(framework):
             del kwargs["defenses"]
 
         if framework == "keras":
-            classifier = get_image_classifier_kr()
+            classifier = get_image_classifier_kr(**kwargs)
             # Get the ready-trained Keras model
 
             classifier_list = [
