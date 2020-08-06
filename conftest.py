@@ -350,46 +350,60 @@ def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape)
 
 
 @pytest.fixture
+def supported_losses_types(framework):
+    def supported_losses_types():
+        if framework == "keras":
+            return ["label", "function_losses", "function_backend"]
+        if framework == "kerastf":
+            # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
+            return ["label", "function", "class"]
+
+        raise NotImplementedError("Could not find  supported_losses_types for framework {0}".format(framework))
+    return supported_losses_types
+
+@pytest.fixture
 def supported_losses_logit(framework):
-    if framework == "keras":
-        return ["categorical_crossentropy_function_backend",
-                "sparse_categorical_crossentropy_function_backend"]
-    if framework == "keras_tf":
-        # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
-        return []
+    def _supported_losses_logit():
+        if framework == "keras":
+            return ["categorical_crossentropy_function_backend",
+                    "sparse_categorical_crossentropy_function_backend"]
+        if framework == "kerastf":
+            # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
+            return ["categorical_crossentropy_function",
+                    "categorical_crossentropy_class",
+                    "sparse_categorical_crossentropy_function",
+                    "sparse_categorical_crossentropy_class"]
+        raise NotImplementedError("Could not find  supported_losses_logit for framework {0}".format(framework))
+    return _supported_losses_logit
 
 
 @pytest.fixture
 def supported_losses_proba(framework):
-    if framework == "keras":
-        return ["categorical_hinge_function_losses",
-                "categorical_crossentropy_label",
-                "categorical_crossentropy_function_losses",
-                "categorical_crossentropy_function_backend",
-                "sparse_categorical_crossentropy_label",
-                "sparse_categorical_crossentropy_function_losses",
-                "sparse_categorical_crossentropy_function_backend",
-                "kullback_leibler_divergence_function_losses"
-                ]
-    if framework == "kerastf":
-        return ["categorical_hinge_label",
-                "categorical_hinge_function",
-                "categorical_hinge_class",
-                "categorical_crossentropy_label",
-                "categorical_crossentropy_function",
-                "categorical_crossentropy_class",
-                "sparse_categorical_crossentropy_label",
-                "sparse_categorical_crossentropy_function",
-                "sparse_categorical_crossentropy_class",
-                "kullback_leibler_divergence_label",
-                "kullback_leibler_divergence_function",
-                "kullback_leibler_divergence_class",
-                "cosine_similarity_label",
-                "cosine_similarity_function",
-                "cosine_similarity_class"]
+    def _supported_losses_proba():
+        if framework == "keras":
+            return ["categorical_hinge_function_losses",
+                    "categorical_crossentropy_label",
+                    "categorical_crossentropy_function_losses",
+                    "categorical_crossentropy_function_backend",
+                    "sparse_categorical_crossentropy_label",
+                    "sparse_categorical_crossentropy_function_losses",
+                    "sparse_categorical_crossentropy_function_backend",
+                    "kullback_leibler_divergence_function_losses"
+                    ]
+        if framework == "kerastf":
+            return ["categorical_hinge_function",
+                    "categorical_hinge_class",
+                    "categorical_crossentropy_label",
+                    "categorical_crossentropy_function",
+                    "categorical_crossentropy_class",
+                    "sparse_categorical_crossentropy_label",
+                    "sparse_categorical_crossentropy_function",
+                    "sparse_categorical_crossentropy_class",
+                    "kullback_leibler_divergence_function",
+                    "kullback_leibler_divergence_class"]
 
-    return []
-
+        raise NotImplementedError("Could not find  supported_losses_proba for framework {0}".format(framework))
+    return _supported_losses_proba
 
 @pytest.fixture
 def get_image_classifier_list(framework, get_image_classifier_mx_instance):
