@@ -35,64 +35,6 @@ logger = logging.getLogger(__name__)
 
 # %TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
 
-
-def _functional_model():
-    in_layer = Input(shape=(28, 28, 1), name="input0")
-    layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
-    layer = Conv2D(64, (3, 3), activation="relu")(layer)
-    layer = MaxPooling2D(pool_size=(2, 2))(layer)
-    layer = Dropout(0.25)(layer)
-    layer = Flatten()(layer)
-    layer = Dense(128, activation="relu")(layer)
-    layer = Dropout(0.5)(layer)
-    out_layer = Dense(10, activation="softmax", name="output0")(layer)
-
-    in_layer_2 = Input(shape=(28, 28, 1), name="input1")
-    layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer_2)
-    layer = Conv2D(64, (3, 3), activation="relu")(layer)
-    layer = MaxPooling2D(pool_size=(2, 2))(layer)
-    layer = Dropout(0.25)(layer)
-    layer = Flatten()(layer)
-    layer = Dense(128, activation="relu")(layer)
-    layer = Dropout(0.5)(layer)
-    out_layer_2 = Dense(10, activation="softmax", name="output1")(layer)
-
-    model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
-
-    model.compile(
-        loss=keras.losses.categorical_crossentropy,
-        optimizer=keras.optimizers.Adadelta(),
-        metrics=["accuracy"],
-        loss_weights=[1.0, 1.0],
-    )
-
-    return model
-
-
-# TODO this should be scope="module" no point doing it for each function
-@pytest.fixture()
-def get_functional_model(get_default_mnist_subset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    # Load small Keras model
-    functional_model = _functional_model()
-    functional_model.fit([x_train_mnist, x_train_mnist], [y_train_mnist, y_train_mnist], nb_epoch=3)
-
-    yield functional_model
-
-
-@pytest.mark.only_with_platform("keras")
-def test_functional_model(get_functional_model):
-    functional_model = get_functional_model
-    keras_model = KerasClassifier(functional_model, clip_values=(0, 1), input_layer=1, output_layer=1)
-    assert keras_model._input.name == "input1:0"
-    assert keras_model._output.name == "output1/Softmax:0"
-
-    keras_model = KerasClassifier(functional_model, clip_values=(0, 1), input_layer=0, output_layer=0)
-    assert keras_model._input.name == "input0:0"
-    assert keras_model._output.name == "output0/Softmax:0"
-
-
 @pytest.mark.only_with_platform("keras")
 def test_resnet(create_test_image):
     image_file_path = create_test_image
@@ -121,31 +63,8 @@ def test_learning_phase(get_image_classifier_list):
     assert hasattr(classifier, "_learning_phase")
 
 
-# def test_pickle(self):
-#     filename = 'my_classifier.p'
-#     full_path = os.path.join(ART_DATA_PATH, filename)
-#     folder = os.path.split(full_path)[0]
-#     if not os.path.exists(folder):
-#         os.makedirs(folder)
-#
-#     fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-#     keras_model = KerasClassifier(self.functional_model, clip_values=(0, 1), input_layer=1, output_layer=1,
-#                                   defences=fs)
-#     with open(full_path, 'wb') as save_file:
-#         pickle.dump(keras_model, save_file)
-#
-#     # Unpickle:
-#     with open(full_path, 'rb') as load_file:
-#         loaded = pickle.load(load_file)
-#
-#     self.assertEqual(keras_model._clip_values, loaded._clip_values)
-#     self.assertEqual(keras_model._channel_index, loaded._channel_index)
-#     self.assertEqual(keras_model._use_logits, loaded._use_logits)
-#     self.assertEqual(keras_model._input_layer, loaded._input_layer)
-#     self.assertEqual(self.functional_model.get_config(), loaded._model.get_config())
-#     self.assertTrue(isinstance(loaded.defences[0], FeatureSqueezing))
-#
-#     os.remove(full_path)
+
+
 
 
 @pytest.mark.only_with_platform("keras")

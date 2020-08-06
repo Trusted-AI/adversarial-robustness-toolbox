@@ -16,7 +16,7 @@ from tests.utils import master_seed, get_image_classifier_kr, get_image_classifi
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
-from tests.utils import get_image_classifier_kr_tf_functional
+from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
 from art.defences.preprocessor import FeatureSqueezing
 from art.estimators.classification import KerasClassifier
@@ -364,7 +364,10 @@ def get_image_classifier_list(framework, get_image_classifier_mx_instance):
 
         if framework == "keras":
             if wildcard is False:
-                classifier_list = [get_image_classifier_kr(**kwargs)]
+                if functional:
+                    classifier_list = [get_image_classifier_kr_functional(**kwargs)]
+                else:
+                    classifier_list = [get_image_classifier_kr(**kwargs)]
         if framework == "tensorflow":
             if wildcard is False:
                 classifier, sess = get_image_classifier_tf(**kwargs)

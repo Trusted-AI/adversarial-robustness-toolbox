@@ -1,7 +1,9 @@
 import keras
 import logging
 import numpy as np
+import os
 from os import listdir, path
+import pickle
 import pytest
 import tempfile
 from tensorflow.keras.callbacks import LearningRateScheduler
@@ -107,6 +109,36 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
 
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
+
+
+@pytest.mark.skipMlFramework("mxnet", "tensorflow","scikitlearn", "pytorch")
+def test_pickle(get_image_classifier_list, get_image_classifier_list_defended, tmp_path):
+
+    full_path = os.path.join(tmp_path, "my_classifier.p")
+
+    classifier, _ = get_image_classifier_list(one_classifier=True, functional=True)
+    with open(full_path, 'wb') as save_file:
+        pickle.dump(classifier, save_file)
+
+    with open(full_path, 'rb') as load_file:
+        loaded = pickle.load(load_file)
+
+    assert (classifier._clip_values == loaded._clip_values).all()
+    assert classifier._channel_index == loaded._channel_index
+    assert classifier._use_logits == loaded._use_logits
+    assert classifier._input_layer == loaded._input_layer
+
+
+@pytest.mark.skipMlFramework("mxnet", "tensorflow","scikitlearn", "pytorch")
+def test_functional_model(get_image_classifier_list):
+    # Need to update the functional_model code to produce a model with more than one input and output layers...
+    classifier, _ = get_image_classifier_list(one_classifier=True, functional=True, input_layer=1, output_layer=1)
+    assert classifier._input.name == "input1:0"
+    assert classifier._output.name == "output1/Softmax:0"
+
+    classifier, _ = get_image_classifier_list(one_classifier=True, functional=True, input_layer=0, output_layer=0)
+    assert classifier._input.name == "input0_1:0"
+    assert classifier._output.name == "output0_1/Softmax:0"
 
 
 @pytest.mark.skipMlFramework("mxnet", "tensorflow","scikitlearn", "pytorch")

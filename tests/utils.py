@@ -554,6 +554,49 @@ def get_image_classifier_kr(
     return krc
 
 
+def get_image_classifier_kr_functional(input_layer=1, output_layer=1):
+    from art.estimators.classification.keras import KerasClassifier
+    import keras
+    from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+    from keras.models import Model
+
+    def _functional_model():
+        in_layer = Input(shape=(28, 28, 1), name="input0")
+        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
+        layer = Conv2D(64, (3, 3), activation="relu")(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation="relu")(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer = Dense(10, activation="softmax", name="output0")(layer)
+
+        in_layer_2 = Input(shape=(28, 28, 1), name="input1")
+        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer_2)
+        layer = Conv2D(64, (3, 3), activation="relu")(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation="relu")(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer_2 = Dense(10, activation="softmax", name="output1")(layer)
+
+        model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
+
+        model.compile(
+            loss=keras.losses.categorical_crossentropy,
+            optimizer=keras.optimizers.Adadelta(),
+            metrics=["accuracy"],
+            loss_weights=[1.0, 1.0],
+        )
+
+        return model
+
+    functional_model = _functional_model()
+
+    return KerasClassifier(functional_model, clip_values=(0, 1), input_layer=input_layer, output_layer=output_layer)
+
+
 def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
     """
        Standard Keras_tf classifier for unit testing built with a functional model

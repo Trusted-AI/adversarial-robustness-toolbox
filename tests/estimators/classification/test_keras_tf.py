@@ -83,33 +83,4 @@ def test_learning_phase(get_image_classifier_list):
     assert hasattr(classifier, "_learning_phase")
 
 
-@pytest.mark.only_with_platform("kerastf")
-def test_pickle(get_image_classifier_list_defended, tmp_path):
-    from art.defences.preprocessor import FeatureSqueezing
 
-    full_path = os.path.join(tmp_path, "my_classifier.p")
-
-    classifier, _ = get_image_classifier_list_defended(one_classifier=True, from_logits=True)
-    with open(full_path, "wb") as save_file:
-        pickle.dump(classifier, save_file)
-    # Unpickle
-    with open(full_path, "rb") as load_file:
-        loaded = pickle.load(load_file)
-
-    np.testing.assert_equal(classifier._clip_values, loaded._clip_values)
-    assert classifier._channels_first == loaded._channels_first
-    assert classifier._use_logits == loaded._use_logits
-    assert classifier._input_layer == loaded._input_layer
-    assert isinstance(loaded.preprocessing_defences[0], FeatureSqueezing)
-
-
-@pytest.mark.only_with_platform("kerastf")
-def test_functional_model(get_image_classifier_list):
-    # Need to update the functional_model code to produce a model with more than one input and output layers...
-    classifier, _ = get_image_classifier_list(one_classifier=True, functional=True, input_layer=1, output_layer=1)
-    assert classifier._input.name == "input1:0"
-    assert classifier._output.name == "output1/Softmax:0"
-
-    classifier, _ = get_image_classifier_list(one_classifier=True, functional=True, input_layer=0, output_layer=0)
-    assert classifier._input.name == "input0_1:0"
-    assert classifier._output.name == "output0_1/Softmax:0"
