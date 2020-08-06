@@ -21,7 +21,6 @@ from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, K
 from art.defences.preprocessor import FeatureSqueezing
 from art.estimators.classification import KerasClassifier
 
-
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
 
@@ -348,6 +347,48 @@ def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape)
         return mxc
 
     return _get_image_classifier_mx_instance
+
+
+@pytest.fixture
+def supported_losses_logit(framework):
+    if framework == "keras":
+        return ["categorical_crossentropy_function_backend",
+                "sparse_categorical_crossentropy_function_backend"]
+    if framework == "keras_tf":
+        # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
+        return []
+
+
+@pytest.fixture
+def supported_losses_proba(framework):
+    if framework == "keras":
+        return ["categorical_hinge_function_losses",
+                "categorical_crossentropy_label",
+                "categorical_crossentropy_function_losses",
+                "categorical_crossentropy_function_backend",
+                "sparse_categorical_crossentropy_label",
+                "sparse_categorical_crossentropy_function_losses",
+                "sparse_categorical_crossentropy_function_backend",
+                "kullback_leibler_divergence_function_losses"
+                ]
+    if framework == "kerastf":
+        return ["categorical_hinge_label",
+                "categorical_hinge_function",
+                "categorical_hinge_class",
+                "categorical_crossentropy_label",
+                "categorical_crossentropy_function",
+                "categorical_crossentropy_class",
+                "sparse_categorical_crossentropy_label",
+                "sparse_categorical_crossentropy_function",
+                "sparse_categorical_crossentropy_class",
+                "kullback_leibler_divergence_label",
+                "kullback_leibler_divergence_function",
+                "kullback_leibler_divergence_class",
+                "cosine_similarity_label",
+                "cosine_similarity_function",
+                "cosine_similarity_class"]
+
+    return []
 
 
 @pytest.fixture
