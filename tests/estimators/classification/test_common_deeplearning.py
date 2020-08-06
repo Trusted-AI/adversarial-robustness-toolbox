@@ -116,7 +116,8 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
                          ["categorical_crossentropy", "categorical_hinge", "sparse_categorical_crossentropy",
                           "kullback_leibler_divergence"])
 def test_loss_functions(get_image_classifier_list, get_default_mnist_subset, loss_name, supported_losses_proba,
-                         supported_losses_logit, store_expected_values, supported_losses_types, from_logits, expected_values):
+                        supported_losses_logit, store_expected_values, supported_losses_types, from_logits,
+                        expected_values):
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
     try:
@@ -132,7 +133,6 @@ def test_loss_functions(get_image_classifier_list, get_default_mnist_subset, los
             # store_expected_values(expected_values)
 
             if loss_name + "_" + loss_type in supported_losses:
-
                 classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
                                                           from_logits=from_logits)
 
@@ -150,9 +150,8 @@ def test_loss_functions(get_image_classifier_list, get_default_mnist_subset, los
         warnings.warn(UserWarning(e))
 
 
-@pytest.mark.skipMlFramework("mxnet", "tensorflow","scikitlearn", "pytorch")
+@pytest.mark.skipMlFramework("mxnet", "tensorflow", "scikitlearn", "pytorch")
 def test_pickle(get_image_classifier_list, get_image_classifier_list_defended, tmp_path):
-
     full_path = os.path.join(tmp_path, "my_classifier.p")
 
     classifier, _ = get_image_classifier_list(one_classifier=True, functional=True)
@@ -168,7 +167,7 @@ def test_pickle(get_image_classifier_list, get_image_classifier_list_defended, t
     assert classifier._input_layer == loaded._input_layer
 
 
-@pytest.mark.skipMlFramework("mxnet", "tensorflow","scikitlearn", "pytorch")
+@pytest.mark.skipMlFramework("mxnet", "tensorflow", "scikitlearn", "pytorch")
 def test_functional_model(get_image_classifier_list):
     # Need to update the functional_model code to produce a model with more than one input and output layers...
     classifier, _ = get_image_classifier_list(one_classifier=True, functional=True, input_layer=1, output_layer=1)
@@ -180,9 +179,8 @@ def test_functional_model(get_image_classifier_list):
     assert classifier._output.name == "output0_1/Softmax:0"
 
 
-@pytest.mark.skipMlFramework("mxnet", "tensorflow","scikitlearn", "pytorch")
+@pytest.mark.skipMlFramework("mxnet", "tensorflow", "scikitlearn", "pytorch")
 def test_fit_kwargs(get_image_classifier_list, get_default_mnist_subset, default_batch_size):
-
     (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
     # Test a valid callback
@@ -224,6 +222,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_de
 
         # Check that the prediction results match
         np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
+
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model

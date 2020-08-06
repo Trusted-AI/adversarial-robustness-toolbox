@@ -26,7 +26,6 @@ from tensorflow.keras.callbacks import LearningRateScheduler
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 
 
-
 @pytest.mark.only_with_platform("kerastf")
 def test_learning_phase(get_image_classifier_list):
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
