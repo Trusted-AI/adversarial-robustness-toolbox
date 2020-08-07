@@ -189,7 +189,7 @@ def test_functional_model(get_image_classifier_list):
         assert "output0" in classifier._output.name
 
 
-@pytest.mark.skipMlFramework("mxnet", "tensorflow", "scikitlearn", "pytorch")
+@pytest.mark.skipMlFramework("mxnet", "tensorflow", "pytorch")
 def test_fit_kwargs(get_image_classifier_list, get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
@@ -197,15 +197,16 @@ def test_fit_kwargs(get_image_classifier_list, get_default_mnist_subset, default
         return 0.01
     # Test a valid callback
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-    kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
-    classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
-
-    # Test failure for invalid parameters
-    kwargs = {"epochs": 1}
-    with pytest.raises(TypeError) as exception:
+    if classifier is not None:
+        kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
         classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
-    assert "multiple values for keyword argument" in str(exception)
+        # Test failure for invalid parameters
+        kwargs = {"epochs": 1}
+        with pytest.raises(TypeError) as exception:
+            classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
+
+        assert "multiple values for keyword argument" in str(exception)
 
 
 def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_defended, get_image_classifier_list):
@@ -238,7 +239,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_de
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skipMlFramework("mxnet", "scikitlearn")
+@pytest.mark.skipMlFramework("mxnet")
 def test_fit_image_generator(
     framework, is_tf_version_2, get_image_classifier_list, image_data_generator, get_default_mnist_subset
 ):
@@ -247,33 +248,32 @@ def test_fit_image_generator(
             return
 
         classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+        if classifier is not None:
+            (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+            true_class = np.argmax(y_test_mnist, axis=1)
 
-        true_class = np.argmax(y_test_mnist, axis=1)
+            predictions = classifier.predict(x_test_mnist)
+            prediction_class = np.argmax(predictions, axis=1)
+            pre_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-        predictions = classifier.predict(x_test_mnist)
-        prediction_class = np.argmax(predictions, axis=1)
-        pre_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
+            np.testing.assert_array_almost_equal(
+                pre_fit_accuracy, 0.32, decimal=0.06,
+            )
 
-        np.testing.assert_array_almost_equal(
-            pre_fit_accuracy, 0.32, decimal=0.06,
-        )
+            data_gen = image_data_generator(sess=sess)
+            classifier.fit_generator(generator=data_gen, nb_epochs=2)
+            predictions = classifier.predict(x_test_mnist)
+            prediction_class = np.argmax(predictions, axis=1)
+            post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-        data_gen = image_data_generator(sess=sess)
-        classifier.fit_generator(generator=data_gen, nb_epochs=2)
-        predictions = classifier.predict(x_test_mnist)
-        prediction_class = np.argmax(predictions, axis=1)
-        post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
-
-        np.testing.assert_array_almost_equal(
-            post_fit_accuracy, 0.68, decimal=0.06,
-        )
+            np.testing.assert_array_almost_equal(
+                post_fit_accuracy, 0.68, decimal=0.06,
+            )
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
 
-@pytest.mark.skipMlFramework("scikitlearn")
 def test_loss_gradient(
     framework,
     is_tf_version_2,
