@@ -23,14 +23,15 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Union, TYPE_CHECKING, Tuple
 
 import numpy as np
 from keras import Model
 from keras.layers import BatchNormalization, Dense, LeakyReLU
+import keras.backend as K
 
 from art.attacks.poisoning import PoisoningAttackBackdoor
-from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ART_NUMPY_DTYPE
 from art.estimators.classification import KerasClassifier
 from art.estimators.classification.keras import KERAS_MODEL_TYPE
 from art.estimators.embedding.adversarial_embedding import AdversarialEmbeddingMixin
@@ -131,8 +132,9 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
             verbose=verbose,
             detect_threshold=detect_threshold,
         )
+
         # create discriminator and append to output
-        feature_layer_keras = self.model.get_layer(feature_layer)
+        feature_layer_keras = self.model.layers[7].output  # TODO: dynamically set from layer list
         dense_layer_1 = Dense(self.discriminator_layer_1)(feature_layer_keras)
         norm_1_layer = BatchNormalization()(dense_layer_1)
         leaky_layer_1 = LeakyReLU()(norm_1_layer)
@@ -142,15 +144,27 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         backdoor_detect = Dense(1, activation='softmax', name='backdoor_detect')(leaky_layer_2)
 
         # add discriminator loss to current_loss and compile
-        self.embed_model = Model(inputs=self.model.inputs, outputs=model.outputs + [backdoor_detect])
-        print("printing model summary")
+        self.embed_model = Model(inputs=self.model.inputs, outputs=self.model.outputs + [backdoor_detect])
+        # print("printing model summary")
         # Assuming outputs are default named output_1, ... output_n
-        losses = {"output_" + str(i + 1): loss for i, loss in model.outputs}
-        losses['backdoor_detect'] = 'binary_crossentropy'
+        if not model.losses:
+            # Assuming output layer is last layer
+            output_layer = len(model.layers) - 1
+            losses = {model.layers[output_layer].name: model.loss, 'backdoor_detect': 'binary_crossentropy'}
+        else:
+            # TODO: this makes no sense
+            losses = {"output_" + str(i + 1): loss for i, loss in model.outputs}
+            losses['backdoor_detect'] = 'binary_crossentropy'
         # losses = {'output_1': model.losses[0], 'output_2': 'binary_crossentropy'}
-        print(self.embed_model.summary())
-        self.embed_model.compile(loss=losses, loss_weights=[1.0] * len(self.model.loss_weights_list) +
-                                                           [self.regularization])
+        # print(self.embed_model.summary())
+        # TODO: dynamically set optimizer and metric from original model
+        self.embed_model.compile(optimizer='adam', loss=losses, loss_weights=[1.0] * len(self.model.loss_weights_list) +
+                                                                             [-self.regularization],
+                                 metrics=['accuracy'])
+        print("model loss")
+        print(self.embed_model.loss)
+        print("gradients")
+        print(K.gradients(backdoor_detect, self.embed_model.input))
 
     def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
         """
@@ -171,15 +185,31 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :return: `None`
         """
         # poison pp_poison amound of training data
+        self.embed_model.summary()
         selected_indices = np.random.uniform(size=len(x)) < self.pp_poison
-        poison_data, poison_labels = self.backdoor.poison(x[selected_indices], y=self.target)
-        train_data = np.copy(x)
-        train_data[selected_indices] = poison_data
-        train_labels = np.copy(y)
-        train_labels[selected_indices] = self.target  # TODO: massage target to large array if necessary at init
+        print("num selected indices: " + str(np.sum(selected_indices)))
+        print("selected indices: " + str(selected_indices))
+        poison_data, poison_labels = self.backdoor.poison(x[selected_indices], y=self.target, broadcast=True)
 
-        # Add is_backdoor labels that are 1 if is backdoor 0 otherwise
-        is_backdoor = selected_indices.astype(int)
+        train_data = np.copy(x)
+        train_labels = np.copy(y)
+
+        for i, idx in enumerate(selected_indices):
+            print("train_data[idx].shape")
+            print(train_data[idx].shape)
+            print("poison_data[i].shape")
+            print(poison_data[i].shape)
+            train_data[idx] = poison_data[i]
+            train_labels[idx] = poison_labels[i]
+
+        # train_data[selected_indices] = poison_data
+        # train_labels[selected_indices] = self.target
+
+        # TODO: try 1.0 - (val) for increasing loss
+        is_backdoor = np.isin(np.arange(len(x)), selected_indices).astype(ART_NUMPY_DTYPE)
+
+        # TODO: standardize
+        self.train_data, self.train_labels, self.is_backdoor = train_data, train_labels, is_backdoor
 
         # call fit with both y and is_backdoor labels
         self.embed_model.fit(x, y=[train_labels, is_backdoor], batch_size=batch_size, epochs=nb_epochs, **kwargs)
@@ -195,7 +225,6 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         :rtype: `np.ndarray`
         """
-        # TODO: calling predict on the model will produce two outputs, only show the original model prediction
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         task_predictions, backdoor_predictions = self.embed_model.predict(x_preprocessed, batch_size=batch_size,
                                                                           **kwargs)
@@ -210,6 +239,13 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         predictions = self._apply_postprocessing(preds=task_predictions, fit=False)
 
         return predictions
+
+    def get_training_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """
+        Returns the training data generated from the last call to fit
+        :return:
+        """
+        return self.train_data, self.train_labels, self.is_backdoor
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
