@@ -181,12 +181,14 @@ def test_pickle(get_image_classifier_list, get_image_classifier_list_defended, t
 def test_functional_model(get_image_classifier_list):
     # Need to update the functional_model code to produce a model with more than one input and output layers...
     classifier, _ = get_image_classifier_list(one_classifier=True, functional=True, input_layer=1, output_layer=1)
-    assert classifier._input.name == "input1:0"
-    assert classifier._output.name == "output1/Softmax:0"
+    if classifier is not None:
+        assert "input1" in classifier._input.name
+        assert "output1" in classifier._output.name
 
     classifier, _ = get_image_classifier_list(one_classifier=True, functional=True, input_layer=0, output_layer=0)
-    assert classifier._input.name == "input0_1:0"
-    assert classifier._output.name == "output0_1/Softmax:0"
+    if classifier is not None:
+        assert "input0" in classifier._input.name
+        assert "output0" in classifier._output.name
 
 
 @pytest.mark.skipMlFramework("mxnet", "tensorflow", "scikitlearn", "pytorch")
