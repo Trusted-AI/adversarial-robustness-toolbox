@@ -18,7 +18,6 @@ from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_im
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
-from art.defences.preprocessor import FeatureSqueezing
 from art.estimators.classification import KerasClassifier
 
 logger = logging.getLogger(__name__)
