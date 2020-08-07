@@ -90,22 +90,22 @@ def test_predict(
         np.testing.assert_array_almost_equal(y_predicted, expected_values, decimal=4)
 
 
-@pytest.mark.skipMlFramework("scikitlearn")
 def test_shapes(get_default_mnist_subset, get_image_classifier_list):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
         classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
 
-        predictions = classifier.predict(x_test_mnist)
-        assert predictions.shape == y_test_mnist.shape
+        if classifier is not None:
+            predictions = classifier.predict(x_test_mnist)
+            assert predictions.shape == y_test_mnist.shape
 
-        assert classifier.nb_classes == 10
+            assert classifier.nb_classes == 10
 
-        class_gradients = classifier.class_gradient(x_test_mnist[:11])
-        assert class_gradients.shape == tuple([11, 10] + list(x_test_mnist[1].shape))
+            class_gradients = classifier.class_gradient(x_test_mnist[:11])
+            assert class_gradients.shape == tuple([11, 10] + list(x_test_mnist[1].shape))
 
-        loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
-        assert loss_gradients.shape == x_test_mnist[:11].shape
+            loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
+            assert loss_gradients.shape == x_test_mnist[:11].shape
 
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))

@@ -102,7 +102,7 @@ def test_device():
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_pickle(get_default_mnist_subset):
+def test_pickle(get_default_mnist_subset, get_image_classifier_list):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     from art.config import ART_DATA_PATH
@@ -112,6 +112,8 @@ def test_pickle(get_default_mnist_subset):
     if not os.path.exists(folder):
         os.makedirs(folder)
 
+
+    # The model used within the common ART pytorch get_image_classifier_list does not support pickling
     model = Model()
     loss_fn = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.01)
