@@ -177,7 +177,6 @@ def test_pickle(get_image_classifier_list, get_image_classifier_list_defended, t
     assert classifier._input_layer == loaded._input_layer
 
 
-# @pytest.mark.skipMlFramework("mxnet", "tensorflow", "scikitlearn", "pytorch")
 def test_functional_model(get_image_classifier_list):
     # Need to update the functional_model code to produce a model with more than one input and output layers...
     classifier, _ = get_image_classifier_list(one_classifier=True, functional=True, input_layer=1, output_layer=1)
