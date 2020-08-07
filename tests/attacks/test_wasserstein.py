@@ -472,7 +472,7 @@ class TestWasserstein(TestBase):
             kernel_size=3,
             max_iter=1,
             conjugate_sinkhorn_max_iter=10,
-            projected_sinkhorn_max_iter=10
+            projected_sinkhorn_max_iter=10,
         )
 
         x = np.random.normal(size=(1, 3, 33, 32))
