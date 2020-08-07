@@ -422,17 +422,17 @@ def get_image_classifier_list(framework, get_image_classifier_mx_instance):
             del kwargs["wildcard"]
 
         if framework == "keras":
-            if wildcard is False:
+            if wildcard is False and functional is False:
                 if functional:
                     classifier_list = [get_image_classifier_kr_functional(**kwargs)]
                 else:
                     classifier_list = [get_image_classifier_kr(**kwargs)]
         if framework == "tensorflow":
-            if wildcard is False:
+            if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs)
                 classifier_list = [classifier]
         if framework == "pytorch":
-            if wildcard is False:
+            if wildcard is False and functional is False:
                 classifier_list = [get_image_classifier_pt(**kwargs)]
         if framework == "scikitlearn":
             logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
@@ -447,7 +447,7 @@ def get_image_classifier_list(framework, get_image_classifier_mx_instance):
                     classifier_list = [get_image_classifier_kr_tf(**kwargs)]
 
         if framework == "mxnet":
-            if wildcard is False:
+            if wildcard is False and functional is False:
                 classifier_list = [get_image_classifier_mx_instance(**kwargs)]
 
         if classifier_list is None:
