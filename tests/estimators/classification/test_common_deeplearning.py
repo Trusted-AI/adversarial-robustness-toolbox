@@ -302,47 +302,34 @@ def test_loss_gradient(
         else:
             sub_gradients = gradients[0, :, 14, 0]
 
-        # store_1 = (sub_gradients.tolist(), expected_gradients_1[1])
         np.testing.assert_array_almost_equal(
             sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
         )
-        # np.testing.assert_array_almost_equal(
-        #     sub_gradients, store_1[0], decimal=store_1[1],
-        # )
 
         if mnist_shape[0] == 1:
             sub_gradients = gradients[0, 0, 14, :]
         else:
             sub_gradients = gradients[0, 14, :, 0]
 
-        # store_2 = (sub_gradients.tolist(), expected_gradients_2[1])
         np.testing.assert_array_almost_equal(
             sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
         )
 
-        # np.testing.assert_array_almost_equal(
-        #     sub_gradients, store_2[0], decimal=store_2[1],
-        # )
 
-        # store_values = (store_1, store_2)
-        # store_expected_values(store_values, framework)
-
-
-@pytest.mark.skipMlFramework("scikitlearn")
 def test_nb_classes(get_image_classifier_list):
     try:
         classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-        assert classifier.nb_classes == 10
+        if classifier is not None:
+            assert classifier.nb_classes == 10
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
 
-@pytest.mark.skipMlFramework("scikitlearn")
 def test_input_shape(get_image_classifier_list, mnist_shape):
     try:
         classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-
-        assert classifier.input_shape == mnist_shape
+        if classifier is not None:
+            assert classifier.input_shape == mnist_shape
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
@@ -370,7 +357,6 @@ def test_save(get_image_classifier_list):
         warnings.warn(UserWarning(e))
 
 
-@pytest.mark.skipMlFramework("scikitlearn")
 def test_repr(get_image_classifier_list, framework, expected_values, store_expected_values):
     try:
         classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
@@ -384,7 +370,6 @@ def test_repr(get_image_classifier_list, framework, expected_values, store_expec
         warnings.warn(UserWarning(e))
 
 
-@pytest.mark.skipMlFramework("scikitlearn")
 def test_class_gradient(
     framework, get_image_classifier_list, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
 ):
