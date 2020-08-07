@@ -47,7 +47,6 @@ class UniversalPerturbation(EvasionAttack):
     """
     Implementation of the attack from Moosavi-Dezfooli et al. (2016). Computes a fixed perturbation to be applied to all
     future inputs. To this end, it can use any adversarial attack method.
-
     | Paper link: https://arxiv.org/abs/1610.08401
     """
 
@@ -111,7 +110,6 @@ class UniversalPerturbation(EvasionAttack):
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
-
         :param x: An array with the original inputs.
         :param y: An array with the original labels to be predicted.
         :return: An array holding the adversarial examples.
@@ -198,7 +196,6 @@ class UniversalPerturbation(EvasionAttack):
     def _get_attack(self, a_name: str, params: Optional[Dict[str, Any]] = None) -> EvasionAttack:
         """
         Get an attack object from its name.
-
         :param a_name: Attack name.
         :param params: Attack params.
         :return: Attack object.
@@ -219,7 +216,6 @@ class UniversalPerturbation(EvasionAttack):
     def _get_class(class_name: str) -> types.ModuleType:
         """
         Get a class module from its name.
-
         :param class_name: Full name of a class.
         :return: The class `module`.
         """
