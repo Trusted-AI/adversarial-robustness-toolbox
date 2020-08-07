@@ -75,7 +75,7 @@ def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_
 
 @pytest.mark.skipMlFramework("scikitlearn")
 def test_predict(
-        request, framework, get_default_mnist_subset, get_image_classifier_list, expected_values, store_expected_values
+    request, framework, get_default_mnist_subset, get_image_classifier_list, expected_values, store_expected_values
 ):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
@@ -112,12 +112,21 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
 
 
 @pytest.mark.parametrize("from_logits", [True, False])
-@pytest.mark.parametrize("loss_name",
-                         ["categorical_crossentropy", "categorical_hinge", "sparse_categorical_crossentropy",
-                          "kullback_leibler_divergence"])
-def test_loss_functions(get_image_classifier_list, get_default_mnist_subset, loss_name, supported_losses_proba,
-                        supported_losses_logit, store_expected_values, supported_losses_types, from_logits,
-                        expected_values):
+@pytest.mark.parametrize(
+    "loss_name",
+    ["categorical_crossentropy", "categorical_hinge", "sparse_categorical_crossentropy", "kullback_leibler_divergence"],
+)
+def test_loss_functions(
+    get_image_classifier_list,
+    get_default_mnist_subset,
+    loss_name,
+    supported_losses_proba,
+    supported_losses_logit,
+    store_expected_values,
+    supported_losses_types,
+    from_logits,
+    expected_values,
+):
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
     try:
@@ -133,8 +142,9 @@ def test_loss_functions(get_image_classifier_list, get_default_mnist_subset, los
             # store_expected_values(expected_values)
 
             if loss_name + "_" + loss_type in supported_losses:
-                classifier, _ = get_image_classifier_list(one_classifier=True, loss_name=loss_name, loss_type=loss_type,
-                                                          from_logits=from_logits)
+                classifier, _ = get_image_classifier_list(
+                    one_classifier=True, loss_name=loss_name, loss_type=loss_type, from_logits=from_logits
+                )
 
                 y_test_pred_exp = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
                 np.testing.assert_array_equal(y_test_pred_exp, y_test_pred_exp)
@@ -155,10 +165,10 @@ def test_pickle(get_image_classifier_list, get_image_classifier_list_defended, t
     full_path = os.path.join(tmp_path, "my_classifier.p")
 
     classifier, _ = get_image_classifier_list(one_classifier=True, functional=True)
-    with open(full_path, 'wb') as save_file:
+    with open(full_path, "wb") as save_file:
         pickle.dump(classifier, save_file)
 
-    with open(full_path, 'rb') as load_file:
+    with open(full_path, "rb") as load_file:
         loaded = pickle.load(load_file)
 
     assert (classifier._clip_values == loaded._clip_values).all()
@@ -199,9 +209,9 @@ def test_fit_kwargs(get_image_classifier_list, get_default_mnist_subset, default
 def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_defended, get_image_classifier_list):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = get_image_classifier_list_defended(one_classifier=True,
-                                                       defenses=["FeatureSqueezing", "JpegCompression",
-                                                                 "SpatialSmoothing"])
+    classifier, _ = get_image_classifier_list_defended(
+        one_classifier=True, defenses=["FeatureSqueezing", "JpegCompression", "SpatialSmoothing"]
+    )
     if classifier is not None:
         assert len(classifier.preprocessing_defences) == 3
 
@@ -228,7 +238,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_de
 # change for all other tests using that fitted model
 @pytest.mark.skipMlFramework("mxnet", "scikitlearn")
 def test_fit_image_generator(
-        framework, is_tf_version_2, get_image_classifier_list, image_data_generator, get_default_mnist_subset
+    framework, is_tf_version_2, get_image_classifier_list, image_data_generator, get_default_mnist_subset
 ):
     try:
         if framework == "tensorflow" and is_tf_version_2:
@@ -263,13 +273,13 @@ def test_fit_image_generator(
 
 @pytest.mark.skipMlFramework("scikitlearn")
 def test_loss_gradient(
-        framework,
-        is_tf_version_2,
-        get_default_mnist_subset,
-        get_image_classifier_list,
-        expected_values,
-        mnist_shape,
-        store_expected_values,
+    framework,
+    is_tf_version_2,
+    get_default_mnist_subset,
+    get_image_classifier_list,
+    expected_values,
+    mnist_shape,
+    store_expected_values,
 ):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test d
@@ -374,8 +384,7 @@ def test_repr(get_image_classifier_list, framework, expected_values, store_expec
 
 @pytest.mark.skipMlFramework("scikitlearn")
 def test_class_gradient(
-        framework, get_image_classifier_list, get_default_mnist_subset, mnist_shape, store_expected_values,
-        expected_values
+    framework, get_image_classifier_list, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
 ):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
@@ -431,11 +440,15 @@ def test_class_gradient(
 
         sub_gradients1 = get_gradient1_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients1, grad_1_all_labels[0], decimal=4, )
+        np.testing.assert_array_almost_equal(
+            sub_gradients1, grad_1_all_labels[0], decimal=4,
+        )
 
         sub_gradients2 = get_gradient2_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients2, grad_2_all_labels[0], decimal=4, )
+        np.testing.assert_array_almost_equal(
+            sub_gradients2, grad_2_all_labels[0], decimal=4,
+        )
 
         # Test 1 gradient label = 5
         gradients = classifier.class_gradient(x_test_mnist, label=5)
@@ -444,11 +457,15 @@ def test_class_gradient(
 
         sub_gradients2 = get_gradient3_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients2, grad_1_label5[0], decimal=4, )
+        np.testing.assert_array_almost_equal(
+            sub_gradients2, grad_1_label5[0], decimal=4,
+        )
 
         sub_gradients4 = get_gradient4_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients4, grad_2_label5[0], decimal=4, )
+        np.testing.assert_array_almost_equal(
+            sub_gradients4, grad_2_label5[0], decimal=4,
+        )
 
         # # Test a set of gradients label = array
         gradients = classifier.class_gradient(x_test_mnist, label=labels)
@@ -458,8 +475,12 @@ def test_class_gradient(
 
         sub_gradients5 = get_gradient3_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients5, grad_1_labelArray[0], decimal=4, )
+        np.testing.assert_array_almost_equal(
+            sub_gradients5, grad_1_labelArray[0], decimal=4,
+        )
 
         sub_gradients6 = get_gradient4_column(gradients)
 
-        np.testing.assert_array_almost_equal(sub_gradients6, grad_2_labelArray[0], decimal=4, )
+        np.testing.assert_array_almost_equal(
+            sub_gradients6, grad_2_labelArray[0], decimal=4,
+        )

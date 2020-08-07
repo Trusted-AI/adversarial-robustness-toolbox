@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 
 # %TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
 
+
 @pytest.mark.only_with_platform("keras")
 def test_resnet(create_test_image):
     image_file_path = create_test_image
