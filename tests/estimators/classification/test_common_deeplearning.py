@@ -160,21 +160,21 @@ def test_loss_functions(
         warnings.warn(UserWarning(e))
 
 
-@pytest.mark.skipMlFramework("mxnet", "tensorflow", "scikitlearn", "pytorch")
 def test_pickle(get_image_classifier_list, get_image_classifier_list_defended, tmp_path):
     full_path = os.path.join(tmp_path, "my_classifier.p")
 
     classifier, _ = get_image_classifier_list(one_classifier=True, functional=True)
-    with open(full_path, "wb") as save_file:
-        pickle.dump(classifier, save_file)
+    if classifier is not None:
+        with open(full_path, "wb") as save_file:
+            pickle.dump(classifier, save_file)
 
-    with open(full_path, "rb") as load_file:
-        loaded = pickle.load(load_file)
+        with open(full_path, "rb") as load_file:
+            loaded = pickle.load(load_file)
 
-    assert (classifier._clip_values == loaded._clip_values).all()
-    assert classifier._channel_index == loaded._channel_index
-    assert classifier._use_logits == loaded._use_logits
-    assert classifier._input_layer == loaded._input_layer
+        assert (classifier._clip_values == loaded._clip_values).all()
+        assert classifier._channel_index == loaded._channel_index
+        assert classifier._use_logits == loaded._use_logits
+        assert classifier._input_layer == loaded._input_layer
 
 
 def test_functional_model(get_image_classifier_list):
