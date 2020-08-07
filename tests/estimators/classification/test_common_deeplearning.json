@@ -3176,5 +3176,6 @@
             ]
         }
     ],
-    "test_repr_scikitlearn": []
+    "test_repr_scikitlearn": [],
+    "test_predict_scikitlearn": ""
 }
