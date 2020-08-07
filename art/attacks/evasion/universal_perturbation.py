@@ -58,7 +58,7 @@ class UniversalPerturbation(EvasionAttack):
         "ead": "art.attacks.evasion.elastic_net.ElasticNet",
         "fgsm": "art.attacks.evasion.fast_gradient.FastGradientMethod",
         "bim": "art.attacks.evasion.iterative_method.BasicIterativeMethod",
-        "pgd": "art.attacks.evasion.projected_gradient_descent.ProjectedGradientDescent",
+        "pgd": "art.attacks.evasion.projected_gradient_descent.projected_gradient_descent.ProjectedGradientDescent",
         "newtonfool": "art.attacks.evasion.newtonfool.NewtonFool",
         "jsma": "art.attacks.evasion.saliency_map.SaliencyMapMethod",
         "vat": "art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod",
