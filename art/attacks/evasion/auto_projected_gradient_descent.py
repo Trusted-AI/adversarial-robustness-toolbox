@@ -335,7 +335,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         self.eps = eps
         self.eps_step = eps_step
         self.max_iter = max_iter
-        self._targeted = targeted
+        self.targeted = targeted
         self.nb_random_init = nb_random_init
         self.batch_size = batch_size
         self.loss_type = loss_type
@@ -365,7 +365,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        for i_restart in trange(max(1, self.nb_random_init), desc="AutoPGD - restarts"):
+        for _ in trange(max(1, self.nb_random_init), desc="AutoPGD - restart"):
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
             if self.targeted:
@@ -397,7 +397,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             # Compute perturbation with implicit batching
             for batch_id in trange(
-                int(np.ceil(x_robust.shape[0] / float(self.batch_size))), desc="AutoPGD - batches", leave=False
+                int(np.ceil(x_robust.shape[0] / float(self.batch_size))), desc="AutoPGD - batch", leave=False
             ):
                 self.eta = 2 * self.eps_step
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
