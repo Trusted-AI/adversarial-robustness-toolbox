@@ -25,6 +25,7 @@ import math
 from typing import Optional, Union
 
 import numpy as np
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks import EvasionAttack
@@ -255,7 +256,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     self._loss_fn = loss_fn
                     self._loss_object = torch.nn.CrossEntropyLoss()
             elif loss_type == "difference_logits_ratio":
-                if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
+                if is_probability(
+                    estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=ART_NUMPY_DTYPE))
+                ):
                     raise ValueError(
                         "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
                         "the estimator has to to predict logits."
@@ -268,6 +271,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             y_true = torch.from_numpy(y_true)
                         if isinstance(y_pred, np.ndarray):
                             y_pred = torch.from_numpy(y_pred)
+
+                        y_true = y_true.float()
 
                         # dlr = torch.mean((y_pred - y_true) ** 2)
                         # return loss
@@ -300,6 +305,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                     self._loss_fn = difference_logits_ratio
                     self._loss_object = difference_logits_ratio
+            elif loss_type is None:
+                self._loss_object = estimator._loss_object
+            else:
+                raise ValueError(
+                    "The argument loss_type has an invalid value. The following options for loss_type are "
+                    "supported: {}".format([None, "cross_entropy", "difference_logits_ratio"])
+                )
 
             estimator_apgd = PyTorchClassifier(
                 model=estimator.model,
@@ -353,10 +365,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        for i_restart in range(max(1, self.nb_random_init)):
+        for _ in trange(max(1, self.nb_random_init), desc="AutoPGD - restart"):
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
-            sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+            if self.targeted:
+                sample_is_robust = np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)
+            elif not self.targeted:
+                sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
             if np.sum(sample_is_robust) == 0:
                 break
@@ -381,7 +396,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
             x_robust = x_init + perturbation
 
             # Compute perturbation with implicit batching
-            for batch_id in range(int(np.ceil(x_robust.shape[0] / float(self.batch_size)))):
+            for batch_id in trange(
+                int(np.ceil(x_robust.shape[0] / float(self.batch_size))), desc="AutoPGD - batch", leave=False
+            ):
                 self.eta = 2 * self.eps_step
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                 x_k = x_robust[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
@@ -403,7 +420,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 eta = self.eps_step
                 self.count_condition_1 = 0
 
-                for k_iter in range(self.max_iter):
+                for k_iter in trange(self.max_iter, desc="AutoPGD - iteration", leave=False):
 
                     # Get perturbation, use small scalar to avoid division by 0
                     tol = 10e-8
@@ -503,7 +520,10 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             x_k = x_k_p_1.copy()
 
                 y_pred_adv_k = self.estimator.predict(x_k)
-                sample_is_not_robust_k = np.invert(np.argmax(y_pred_adv_k, axis=1) == np.argmax(y_batch, axis=1))
+                if self.targeted:
+                    sample_is_not_robust_k = np.invert(np.argmax(y_pred_adv_k, axis=1) != np.argmax(y_batch, axis=1))
+                elif not self.targeted:
+                    sample_is_not_robust_k = np.invert(np.argmax(y_pred_adv_k, axis=1) == np.argmax(y_batch, axis=1))
 
                 x_robust[batch_index_1:batch_index_2][sample_is_not_robust_k] = x_k[sample_is_not_robust_k]
 

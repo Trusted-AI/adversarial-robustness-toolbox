@@ -21,7 +21,7 @@ This module loads and provides configuration parameters for ART.
 import json
 import logging
 import os
-from typing import Tuple, Union
+from typing import Tuple, Union, Optional
 
 import numpy as np
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 ART_NUMPY_DTYPE = np.float32
 DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
 CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
-PREPROCESSING_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
+PREPROCESSING_TYPE = Optional[Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]]
 
 # --------------------------------------------------------------------------------------------- DEFAULT PACKAGE CONFIGS
 
