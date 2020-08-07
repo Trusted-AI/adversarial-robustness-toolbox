@@ -193,11 +193,11 @@ def test_functional_model(get_image_classifier_list):
 def test_fit_kwargs(get_image_classifier_list, get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
-    def get_lr():
+    def get_lr(_):
         return 0.01
     # Test a valid callback
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-    kwargs = {"callbacks": [LearningRateScheduler(get_lr())]}
+    kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
     classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
     # Test failure for invalid parameters
