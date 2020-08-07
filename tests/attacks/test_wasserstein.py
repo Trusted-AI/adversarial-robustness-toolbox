@@ -424,6 +424,62 @@ class TestWasserstein(TestBase):
             Wasserstein, (BaseEstimator, LossGradientsMixin, NeuralNetworkMixin, ClassifierMixin)
         )
 
+    def test_unsquared_images(self):
+        from art.estimators.estimator import (
+            BaseEstimator,
+            LossGradientsMixin,
+            NeuralNetworkMixin,
+        )
+
+        from art.estimators.classification.classifier import (
+            ClassGradientsMixin,
+            ClassifierMixin,
+        )
+
+        class DummyClassifier(
+            ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
+        ):
+            def __init__(self):
+                super(DummyClassifier, self).__init__()
+                self._nb_classes = 10
+                self._channels_first = True
+
+            def class_gradient(self):
+                return None
+
+            def fit(self):
+                pass
+
+            def loss_gradient(self, x, y):
+                return np.random.normal(size=(1, 3, 33, 32))
+
+            def predict(self, x, batch_size=1):
+                return np.array([[0, 1, 0, 0, 0, 0, 0, 0, 0, 0]])
+
+            def get_activations(self):
+                return None
+
+            def save(self):
+                pass
+
+            def set_learning_phase(self):
+                pass
+
+        classifier = DummyClassifier()
+        attack = Wasserstein(
+            classifier,
+            regularization=1,
+            kernel_size=3,
+            max_iter=1,
+            conjugate_sinkhorn_max_iter=10,
+            projected_sinkhorn_max_iter=10
+        )
+
+        x = np.random.normal(size=(1, 3, 33, 32))
+        x_adv = attack.generate(x)
+
+        self.assertTrue(x_adv.shape == x.shape)
+
 
 if __name__ == "__main__":
     unittest.main()

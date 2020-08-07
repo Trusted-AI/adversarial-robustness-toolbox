@@ -275,7 +275,10 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            x = torch.max(torch.min(x, torch.tensor(clip_max)), torch.tensor(clip_min))
+            x = torch.max(
+                torch.min(x, torch.tensor(clip_max).to(self.estimator.device)),
+                torch.tensor(clip_min).to(self.estimator.device)
+            )
 
         return x
 
@@ -323,7 +326,10 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
             if self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
-                x_adv = torch.max(torch.min(x_adv, torch.tensor(clip_max)), torch.tensor(clip_min))
+                x_adv = torch.max(
+                    torch.min(x_adv, torch.tensor(clip_max).to(self.estimator.device)),
+                    torch.tensor(clip_min).to(self.estimator.device)
+                )
 
         else:
             x_adv = x
