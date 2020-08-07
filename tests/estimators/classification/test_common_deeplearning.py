@@ -74,7 +74,7 @@ def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_
 
 
 def test_predict(
-    request, framework, get_default_mnist_subset, get_image_classifier_list, expected_values, store_expected_values
+        request, framework, get_default_mnist_subset, get_image_classifier_list, expected_values, store_expected_values
 ):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
@@ -116,15 +116,15 @@ def test_shapes(get_default_mnist_subset, get_image_classifier_list):
     ["categorical_crossentropy", "categorical_hinge", "sparse_categorical_crossentropy", "kullback_leibler_divergence"],
 )
 def test_loss_functions(
-    get_image_classifier_list,
-    get_default_mnist_subset,
-    loss_name,
-    supported_losses_proba,
-    supported_losses_logit,
-    store_expected_values,
-    supported_losses_types,
-    from_logits,
-    expected_values,
+        get_image_classifier_list,
+        get_default_mnist_subset,
+        loss_name,
+        supported_losses_proba,
+        supported_losses_logit,
+        store_expected_values,
+        supported_losses_types,
+        from_logits,
+        expected_values,
 ):
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
@@ -195,6 +195,7 @@ def test_fit_kwargs(get_image_classifier_list, get_default_mnist_subset, default
 
     def get_lr(_):
         return 0.01
+
     # Test a valid callback
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
     if classifier is not None:
@@ -241,7 +242,7 @@ def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_de
 # change for all other tests using that fitted model
 @pytest.mark.skipMlFramework("mxnet")
 def test_fit_image_generator(
-    framework, is_tf_version_2, get_image_classifier_list, image_data_generator, get_default_mnist_subset
+        framework, is_tf_version_2, get_image_classifier_list, image_data_generator, get_default_mnist_subset
 ):
     try:
         if framework == "tensorflow" and is_tf_version_2:
@@ -275,13 +276,13 @@ def test_fit_image_generator(
 
 
 def test_loss_gradient(
-    framework,
-    is_tf_version_2,
-    get_default_mnist_subset,
-    get_image_classifier_list,
-    expected_values,
-    mnist_shape,
-    store_expected_values,
+        framework,
+        is_tf_version_2,
+        get_default_mnist_subset,
+        get_image_classifier_list,
+        expected_values,
+        mnist_shape,
+        store_expected_values,
 ):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test d
@@ -370,8 +371,28 @@ def test_repr(get_image_classifier_list, framework, expected_values, store_expec
         warnings.warn(UserWarning(e))
 
 
+def test_save(get_image_classifier_list, get_default_mnist_subset, tmp_path):
+    try:
+        classifier, _ = get_image_classifier_list(one_classifier=True)
+        if classifier is not None:
+            (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
+            classifier.fit(x_train_mnist, y_train_mnist, batch_size=128, nb_epochs=2)
+            full_path = tmp_path / "sub"
+            full_path.mkdir()
+
+            base_name = os.path.basename(full_path)
+            dir_name = os.path.dirname(full_path)
+
+            assert os.path.exists(full_path._str + ".params") is False
+            classifier.save(base_name, path=dir_name)
+            assert os.path.exists(full_path._str + ".params")
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))
+
+
 def test_class_gradient(
-    framework, get_image_classifier_list, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
+        framework, get_image_classifier_list, get_default_mnist_subset, mnist_shape, store_expected_values,
+        expected_values
 ):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test

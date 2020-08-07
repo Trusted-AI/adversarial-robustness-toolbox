@@ -32,18 +32,3 @@ def test_set_learning(get_image_classifier_list):
     assert hasattr(classifier, "_learning_phase")
 
 
-@pytest.mark.only_with_platform("mxnet")
-def test_save(get_image_classifier_list, get_default_mnist_subset, tmp_path):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-
-    (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
-    classifier.fit(x_train_mnist, y_train_mnist, batch_size=128, nb_epochs=2)
-    full_path = tmp_path / "sub"
-    full_path.mkdir()
-
-    base_name = os.path.basename(full_path)
-    dir_name = os.path.dirname(full_path)
-
-    assert os.path.exists(full_path._str + ".params") is False
-    classifier.save(base_name, path=dir_name)
-    assert os.path.exists(full_path._str + ".params")
