@@ -55,25 +55,24 @@ def test_loss_gradient_with_wildcard(get_image_classifier_list):
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skipMlFramework("mxnet", "scikitlearn")
+@pytest.mark.skipMlFramework("mxnet")
 def test_fit(get_default_mnist_subset, default_batch_size, get_image_classifier_list):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         labels = np.argmax(y_test_mnist, axis=1)
         classifier, sess = get_image_classifier_list(one_classifier=True, from_logits=True)
+        if classifier is not None:
+            accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
+            np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.06)
 
-        accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-        np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.06)
-
-        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
-        accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-        np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
+            classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
+            accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
+            np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
 
-@pytest.mark.skipMlFramework("scikitlearn")
 def test_predict(
     request, framework, get_default_mnist_subset, get_image_classifier_list, expected_values, store_expected_values
 ):
