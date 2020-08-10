@@ -19,13 +19,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import pytest
 
 
-@pytest.mark.only_with_platform("mxnet")
-def test_set_learning(get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-
-    assert hasattr(classifier, "_learning_phase") is False
-    classifier.set_learning_phase(False)
-    assert classifier.learning_phase is False
-    classifier.set_learning_phase(True)
-    assert classifier.learning_phase
-    assert hasattr(classifier, "_learning_phase")
+# @pytest.mark.only_with_platform("mxnet")
+# def test_set_learning(get_image_classifier_list):
+#     classifier, _ = get_image_classifier_list(one_classifier=True)
+#
+#     assert hasattr(classifier, "_learning_phase") is False
+#     classifier.set_learning_phase(False)
+#     assert classifier.learning_phase is False
+#     classifier.set_learning_phase(True)
+#     assert classifier.learning_phase
+#     assert hasattr(classifier, "_learning_phase")

@@ -44,15 +44,15 @@ def test_resnet(create_test_image):
     np.testing.assert_array_almost_equal(prediction[0, 178], 0.2658045, decimal=3)
 
 
-@pytest.mark.only_with_platform("keras")
-def test_learning_phase(get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    assert hasattr(classifier, "_learning_phase") is False
-    classifier.set_learning_phase(False)
-    assert classifier.learning_phase is False
-    classifier.set_learning_phase(True)
-    assert classifier.learning_phase
-    assert hasattr(classifier, "_learning_phase")
+# @pytest.mark.only_with_platform("keras")
+# def test_learning_phase(get_image_classifier_list):
+#     classifier, _ = get_image_classifier_list(one_classifier=True)
+#     assert hasattr(classifier, "_learning_phase") is False
+#     classifier.set_learning_phase(False)
+#     assert classifier.learning_phase is False
+#     classifier.set_learning_phase(True)
+#     assert classifier.learning_phase
+#     assert hasattr(classifier, "_learning_phase")
 
 
 if __name__ == "__main__":

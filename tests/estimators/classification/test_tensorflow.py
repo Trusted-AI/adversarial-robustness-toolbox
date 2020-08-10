@@ -24,16 +24,16 @@ import pytest
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_set_learning(is_tf_version_2, get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    if not is_tf_version_2:
-        assert classifier._feed_dict == {}
-        classifier.set_learning_phase(False)
-        assert classifier._feed_dict[classifier._learning] is False
-        classifier.set_learning_phase(True)
-        assert classifier._feed_dict[classifier._learning]
-        assert classifier.learning_phase
+# @pytest.mark.only_with_platform("tensorflow")
+# def test_set_learning(is_tf_version_2, get_image_classifier_list):
+#     classifier, _ = get_image_classifier_list(one_classifier=True)
+#     if not is_tf_version_2:
+#         assert classifier._feed_dict == {}
+#         classifier.set_learning_phase(False)
+#         assert classifier._feed_dict[classifier._learning] is False
+#         classifier.set_learning_phase(True)
+#         assert classifier._feed_dict[classifier._learning]
+#         assert classifier.learning_phase
 
 
 if __name__ == "__main__":

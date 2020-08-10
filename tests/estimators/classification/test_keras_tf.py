@@ -20,13 +20,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import pytest
 
 
-@pytest.mark.only_with_platform("kerastf")
-def test_learning_phase(get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-
-    assert hasattr(classifier, "_learning_phase") is False
-    classifier.set_learning_phase(False)
-    assert classifier.learning_phase is False
-    classifier.set_learning_phase(True)
-    assert classifier.learning_phase
-    assert hasattr(classifier, "_learning_phase")
+# @pytest.mark.only_with_platform("kerastf")
+# def test_learning_phase(get_image_classifier_list):
+#     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+#
+#     assert hasattr(classifier, "_learning_phase") is False
+#     classifier.set_learning_phase(False)
+#     assert classifier.learning_phase is False
+#     classifier.set_learning_phase(True)
+#     assert classifier.learning_phase
+#     assert hasattr(classifier, "_learning_phase")

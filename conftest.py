@@ -266,7 +266,8 @@ def expected_values(framework, request, is_tf_version_2):
         framework_name = "_" + framework_name
 
     def _expected_values():
-        with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r") as f:
+        with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name),
+                  "r") as f:
             expected_values = json.load(f)
 
             # searching first for any framework specific expected value
