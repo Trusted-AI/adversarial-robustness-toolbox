@@ -197,9 +197,18 @@ def test_black_box_keras_loss(get_iris_dataset):
     classifier = KerasClassifier(model)
     attack = MembershipInferenceBlackBox(classifier, input_type='loss')
 
-    with pytest.raises(NotImplementedError):
-        attack.fit(x_train[:attack_train_size], y_train[:attack_train_size],
-                   x_test[:attack_test_size], y_test[:attack_test_size])
+    # train attack model using only attack_train_ratio of data
+    attack.fit(x_train[:attack_train_size], y_train[:attack_train_size],
+               x_test[:attack_test_size], y_test[:attack_test_size])
+    # infer attacked feature on remainder of data
+    inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:])
+    inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:])
+    # check accuracy
+    train_pos = sum(inferred_train) / len(inferred_train)
+    test_pos = sum(inferred_test) / len(inferred_test)
+    assert (train_pos > test_pos or
+            train_pos == pytest.approx(test_pos, abs=0.15) or
+            test_pos == 1)
 
     model2 = keras.models.Sequential()
     model2.add(keras.layers.Dense(12, input_dim=4, activation='relu'))
