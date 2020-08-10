@@ -445,12 +445,13 @@ def test_class_gradient(
 
         sub_gradients1 = get_gradient1_column(gradients)
 
+        # exp_grad_1_all_labels = (sub_gradients1.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients1, grad_1_all_labels[0], decimal=4,
         )
 
         sub_gradients2 = get_gradient2_column(gradients)
-
+        # exp_grad_2_all_labels = (sub_gradients2.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients2, grad_2_all_labels[0], decimal=4,
         )
@@ -461,13 +462,13 @@ def test_class_gradient(
         assert gradients.shape == (x_test_mnist.shape[0], 1,) + mnist_shape
 
         sub_gradients2 = get_gradient3_column(gradients)
-
+        # exp_grad_1_label5 = (sub_gradients2.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients2, grad_1_label5[0], decimal=4,
         )
 
         sub_gradients4 = get_gradient4_column(gradients)
-
+        # exp_grad_2_label5 = (sub_gradients4.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients4, grad_2_label5[0], decimal=4,
         )
@@ -479,26 +480,37 @@ def test_class_gradient(
         assert gradients.shape == new_shape
 
         sub_gradients5 = get_gradient3_column(gradients)
-
+        # exp_grad_1_labelArray = (sub_gradients5.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients5, grad_1_labelArray[0], decimal=4,
         )
 
         sub_gradients6 = get_gradient4_column(gradients)
-
+        # exp_grad_2_labelArray = (sub_gradients6.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients6, grad_2_labelArray[0], decimal=4,
         )
 
+        # exp = (
+        #     exp_grad_1_all_labels,
+        #     exp_grad_2_all_labels,
+        #     exp_grad_1_label5,
+        #     exp_grad_2_label5,
+        #     exp_grad_1_labelArray,
+        #     exp_grad_2_labelArray,
+        #     labels_list,
+        # )
+        # store_expected_values(exp, framework)
 
-# def test_learning_phase(get_image_classifier_list):
-#     try:
-#         classifier, _ = get_image_classifier_list(one_classifier=True)
-#         if classifier is not None:
-#             classifier.set_learning_phase(False)
-#             assert classifier.learning_phase is False
-#             classifier.set_learning_phase(True)
-#             assert classifier.learning_phase
-#             assert hasattr(classifier, "_learning_phase")
-#     except NotImplementedError as e:
-#         warnings.warn(UserWarning(e))
+
+def test_learning_phase(get_image_classifier_list):
+    try:
+        classifier, _ = get_image_classifier_list(one_classifier=True)
+        if classifier is not None:
+            classifier.set_learning_phase(False)
+            assert classifier.learning_phase is False
+            classifier.set_learning_phase(True)
+            assert classifier.learning_phase
+            assert hasattr(classifier, "_learning_phase")
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))
