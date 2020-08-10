@@ -191,23 +191,27 @@ def test_functional_model(get_image_classifier_list):
 
 @pytest.mark.skipMlFramework("mxnet", "tensorflow", "pytorch")
 def test_fit_kwargs(get_image_classifier_list, get_default_mnist_subset, default_batch_size):
-    (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
+    try:
+        (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
-    def get_lr(_):
-        return 0.01
+        def get_lr(_):
+            return 0.01
 
-    # Test a valid callback
-    classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-    if classifier is not None:
-        kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
-        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
-
-        # Test failure for invalid parameters
-        kwargs = {"epochs": 1}
-        with pytest.raises(TypeError) as exception:
+        # Test a valid callback
+        classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
+        if classifier is not None:
+            kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
             classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
-        assert "multiple values for keyword argument" in str(exception)
+            # Test failure for invalid parameters
+            kwargs = {"epochs": 1}
+            with pytest.raises(TypeError) as exception:
+                classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
+
+            assert "multiple values for keyword argument" in str(exception)
+
+    except NotImplementedError as e:
+        warnings.warn(UserWarning(e))
 
 
 def test_defences_predict(get_default_mnist_subset, get_image_classifier_list_defended, get_image_classifier_list):
