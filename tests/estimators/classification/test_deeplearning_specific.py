@@ -102,7 +102,7 @@ def test_device():
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_pickle(get_default_mnist_subset, get_image_classifier_list):
+def test_pickle(get_default_mnist_subset, image_dl_estimator):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     from art.config import ART_DATA_PATH

@@ -37,8 +37,8 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture
-def get_image_classifier_list_defended(framework):
-    def _get_image_classifier_list_defended(one_classifier=False, **kwargs):
+def image_dl_estimator_defended(framework):
+    def _image_dl_estimator_defended(one_classifier=False, **kwargs):
         sess = None
         classifier_list = None
         from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
@@ -86,16 +86,16 @@ def get_image_classifier_list_defended(framework):
 
         return classifier_list, sess
 
-    return _get_image_classifier_list_defended
+    return _image_dl_estimator_defended
 
 
 @pytest.fixture
-def get_image_classifier_list_for_attack(get_image_classifier_list, get_image_classifier_list_defended):
-    def get_image_classifier_list_for_attack(attack, defended=False, **kwargs):
+def image_dl_estimator_for_attack(image_dl_estimator, image_dl_estimator_defended):
+    def _image_dl_estimator_for_attack(attack, defended=False, **kwargs):
         if defended:
-            classifier_list, _ = get_image_classifier_list_defended(kwargs)
+            classifier_list, _ = image_dl_estimator_defended(kwargs)
         else:
-            classifier_list, _ = get_image_classifier_list()
+            classifier_list, _ = image_dl_estimator()
         if classifier_list is None:
             return None
 
@@ -105,7 +105,7 @@ def get_image_classifier_list_for_attack(get_image_classifier_list, get_image_cl
             if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
         ]
 
-    return get_image_classifier_list_for_attack
+    return _image_dl_estimator_for_attack
 
 
 @pytest.fixture(autouse=True)
@@ -414,8 +414,8 @@ def supported_losses_proba(framework):
 
 
 @pytest.fixture
-def get_image_classifier_list(framework, get_image_classifier_mx_instance):
-    def _get_image_classifier_list(one_classifier=False, functional=False, **kwargs):
+def image_dl_estimator(framework, get_image_classifier_mx_instance):
+    def _image_dl_estimator(one_classifier=False, functional=False, **kwargs):
         sess = None
         wildcard = False
         classifier_list = None
@@ -462,7 +462,7 @@ def get_image_classifier_list(framework, get_image_classifier_mx_instance):
 
         return classifier_list, sess
 
-    return _get_image_classifier_list
+    return _image_dl_estimator
 
 
 @pytest.fixture
