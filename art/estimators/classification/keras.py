@@ -287,6 +287,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         # Set loss, gradients and prediction functions
         self._predictions_op = self._output
+        self._loss_function = loss_function
         self._loss = loss_
         self._loss_gradients = k.function([self._input, label_ph], [loss_gradients])
 
@@ -323,7 +324,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         if self._reduce_labels:
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
-        predictions = self.predict(x_preprocessed)
+        predictions = self._model.predict(x_preprocessed)
 
         if self._orig_loss and hasattr(self._orig_loss, 'reduction'):
             prev_reduction = self._orig_loss.reduction
@@ -331,7 +332,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             loss = self._orig_loss(y_preprocessed, predictions)
             self._orig_loss.reduction = prev_reduction
         else:
-            raise NotImplementedError("Only class-based losses are supported")
+            prev_reduction = []
+            predictions = k.constant(predictions)
+            for loss_function in self._model.loss_functions:
+                prev_reduction.append(loss_function.reduction)
+                loss_function.reduction = self._losses.Reduction.NONE
+            loss = self._loss_function(y_preprocessed, predictions)
+            for i, loss_function in enumerate(self._model.loss_functions):
+                loss_function.reduction = prev_reduction[i]
 
         return k.eval(loss)
 
