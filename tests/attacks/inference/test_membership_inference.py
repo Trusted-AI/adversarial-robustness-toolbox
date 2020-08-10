@@ -44,7 +44,7 @@ num_classes_mnist = 10
 
 
 @pytest.fixture()
-def fix_get_mnist_subset(get_mnist_dataset, get_iris_dataset):
+def fix_get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train = 1000
     n_test = 200
