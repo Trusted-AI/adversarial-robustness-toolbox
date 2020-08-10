@@ -16,8 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
-# import os
-# import pytest
+import pytest
 
 
 @pytest.mark.only_with_platform("mxnet")
