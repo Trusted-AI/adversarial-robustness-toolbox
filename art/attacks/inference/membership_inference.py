@@ -137,14 +137,17 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         :param y: True labels for `x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
-        if y.shape[0] != x.shape[0]:
-            raise ValueError("Number of rows in x and y do not match")
+
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
-        # get model's predictions for x
-        predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
+
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
         y = np.array([np.argmax(arr) for arr in y]).reshape(-1, 1)
+        if y.shape[0] != x.shape[0]:
+            raise ValueError("Number of rows in x and y do not match")
+
+        # get model's predictions for x
+        predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
         return [1 if p == y[index] else 0 for index, p in enumerate(predictions)]
 
 
@@ -157,7 +160,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
     """
     _estimator_requirements = [BaseEstimator]
 
-    def __init__(self, classifier: Classifier, input_type: Optional[str] = 'probability',
+    def __init__(self, classifier: Classifier, input_type: Optional[str] = 'prediction',
                  attack_model_type: Optional[str] = 'nn', attack_model: Optional[Classifier] = None):
         """
         Create a MembershipInferenceBlackBox attack instance.
@@ -166,20 +169,21 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param attack_model_type: the type of default attack model to train, optional. Should be one of `nn` (for neural
                                   network, default), `rf` (for random forest) or `gb` (gradient boosting). If
                                   `attack_model` is supplied, this option will be ignored.
-        :param input_type: the type of input to train the attack on. Can be one of: 'probability' or 'loss'.
-                            Default is probability.
+        :param input_type: the type of input to train the attack on. Can be one of: 'prediction' or 'loss'. Default is
+                           `prediction`. Predictions can be either probabilities or logits, depending on the return type
+                           of the model.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         """
         super(MembershipInferenceBlackBox, self).__init__(estimator=classifier)
 
-        if input_type not in ['probability', 'loss']:
+        if input_type not in ['prediction', 'loss']:
             raise ValueError("Illegal value for parameter `input_type`.")
 
         self.input_type = input_type
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
-                raise ValueError("Attack model must be of type Classifier.")
+                raise TypeError("Attack model must be of type Classifier.")
             self.attack_model = attack_model
             self.default_model = False
             self.attack_model_type = None
@@ -187,7 +191,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
             self.default_model = True
             self.attack_model_type = attack_model_type
             if attack_model_type == 'nn':
-                if input_type == 'probability':
+                if input_type == 'prediction':
                     self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
                 else:
                     self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes, 1)
@@ -201,7 +205,6 @@ class MembershipInferenceBlackBox(InferenceAttack):
             else:
                 raise ValueError("Illegal value for parameter `attack_model_type`.")
 
-
     def fit(self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
@@ -212,21 +215,23 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param test_y: True labels for `test_x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
-        if y.shape[0] != x.shape[0]:
-            raise ValueError("Number of rows in x and y do not match")
+
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
-        if test_y.shape[0] != test_x.shape[0]:
-            raise ValueError("Number of rows in test_x and test_y do not match")
         if self.estimator.input_shape[0] != test_x.shape[1]:
             raise ValueError("Shape of test_x does not match input_shape of classifier")
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
         test_y = check_and_transform_label_format(test_y, len(np.unique(test_y)), return_one_hot=True)
 
+        if y.shape[0] != x.shape[0]:
+            raise ValueError("Number of rows in x and y do not match")
+        if test_y.shape[0] != test_x.shape[0]:
+            raise ValueError("Number of rows in test_x and test_y do not match")
+
         # Create attack dataset
         # uses final probabilities/logits
-        if self.input_type == 'probability':
+        if self.input_type == 'prediction':
             # members
             features = self.estimator.predict(x).astype(np.float32)
             # non-members
@@ -234,7 +239,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         # only for models with loss
         elif self.input_type == 'loss':
             if NeuralNetworkMixin not in type(self.estimator).__mro__:
-                raise ValueError("loss input_type can only be used with neural networks")
+                raise TypeError("loss input_type can only be used with neural networks")
             # members
             features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
             # non-members
@@ -288,14 +293,15 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param y: True labels for `x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
-        if y.shape[0] != x.shape[0]:
-            raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
 
-        if self.input_type == 'probability':
+        if y.shape[0] != x.shape[0]:
+            raise ValueError("Number of rows in x and y do not match")
+
+        if self.input_type == 'prediction':
             features = self.estimator.predict(x).astype(np.float32)
         elif self.input_type == 'loss':
             features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
@@ -325,6 +331,17 @@ class MembershipInferenceWhiteBoxNeuralNetwork(InferenceAttack):
         depending on the provided configuration.
     """
     def __init__(self, classifier: Classifier):
-        raise Exception("Not yet implemented")
-    # if NeuralNetworkMixin in type(self.estimator).__mro__:
-    #     activations = self.estimator.get_activations(x, self.estimator.layer_names[-1], batch_size=self.bs)
+        raise NotImplementedError
+
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+        """
+        Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
+        should be overridden by all concrete inference attack implementations.
+
+        :param x: An array with reference inputs to be used in the attack.
+        :param y: Labels for `x`. This parameter is only used by some of the attacks.
+        :return: An array holding the inferred properties.
+        """
+        raise NotImplementedError
+        # if NeuralNetworkMixin in type(self.estimator).__mro__:
+        #     activations = self.estimator.get_activations(x, self.estimator.layer_names[-1], batch_size=self.bs)
