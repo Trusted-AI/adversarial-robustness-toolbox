@@ -380,11 +380,8 @@ def test_save(get_image_classifier_list, get_default_mnist_subset, tmp_path):
             full_path = tmp_path / "sub"
             full_path.mkdir()
 
-            base_name = os.path.basename(full_path)
-            dir_name = os.path.dirname(full_path)
-
             assert not os.listdir(full_path._str)
-            classifier.save(base_name, path=dir_name)
+            classifier.save("modelFile", path=full_path._str)
             assert os.listdir(full_path._str)
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
