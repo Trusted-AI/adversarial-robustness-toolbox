@@ -15,25 +15,16 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import logging
-import os
-
 import keras
+from keras.applications.resnet50 import ResNet50, decode_predictions
+from keras.preprocessing.image import img_to_array, load_img
+import logging
 import numpy as np
 import pytest
-from keras.applications.resnet50 import ResNet50, decode_predictions
-from keras.callbacks import LearningRateScheduler
-from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
-from keras.models import Model
-from keras.preprocessing.image import img_to_array, load_img
 
-from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 from art.estimators.classification.keras import KerasClassifier
 
 logger = logging.getLogger(__name__)
-
-
-# %TODO classifier = get_image_classifier_kr() needs to be a fixture I think maybe?
 
 
 @pytest.mark.only_with_platform("keras")

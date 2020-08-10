@@ -137,12 +137,12 @@ def test_pickle(get_default_mnist_subset, get_image_classifier_list):
     assert accuracy_1 == accuracy_2
 
 
-# @pytest.mark.only_with_platform("pytorch")
-# def test_set_learning(get_image_classifier_list):
-#     classifier, _ = get_image_classifier_list(one_classifier=True)
-#     assert classifier._model.training
-#     classifier.set_learning_phase(False)
-#     assert classifier._model.training is False
-#     classifier.set_learning_phase(True)
-#     assert classifier._model.training
-#     assert classifier.learning_phase
+@pytest.mark.only_with_platform("pytorch")
+def test_set_learning(get_image_classifier_list):
+    classifier, _ = get_image_classifier_list(one_classifier=True)
+    assert classifier._model.training
+    classifier.set_learning_phase(False)
+    assert classifier._model.training is False
+    classifier.set_learning_phase(True)
+    assert classifier._model.training
+    assert classifier.learning_phase

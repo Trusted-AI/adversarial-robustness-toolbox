@@ -494,15 +494,15 @@ def test_class_gradient(
         )
 
 
-def test_learning_phase(get_image_classifier_list):
-    try:
-        classifier, _ = get_image_classifier_list(one_classifier=True)
-        if classifier is not None:
-            assert hasattr(classifier, "_learning_phase") is False
-            classifier.set_learning_phase(False)
-            assert classifier.learning_phase is False
-            classifier.set_learning_phase(True)
-            assert classifier.learning_phase
-            assert hasattr(classifier, "_learning_phase")
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+# def test_learning_phase(get_image_classifier_list):
+#     try:
+#         classifier, _ = get_image_classifier_list(one_classifier=True)
+#         if classifier is not None:
+#             assert hasattr(classifier, "_learning_phase") is False
+#             classifier.set_learning_phase(False)
+#             assert classifier.learning_phase is False
+#             classifier.set_learning_phase(True)
+#             assert classifier.learning_phase
+#             assert hasattr(classifier, "_learning_phase")
+#     except NotImplementedError as e:
+#         warnings.warn(UserWarning(e))
