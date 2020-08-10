@@ -86,7 +86,7 @@ def test_predict(
 
     if classifier is not None:
         y_predicted = classifier.predict(x_test_mnist[0:1])
-        np.testing.assert_array_almost_equal(y_predicted, expected_values, decimal=4)
+        np.testing.assert_array_almost_equal(y_predicted, expected_values(), decimal=4)
 
 
 def test_shapes(get_default_mnist_subset, get_image_classifier_list):
@@ -137,7 +137,7 @@ def test_loss_functions(
             supported_losses = supported_losses_proba()
 
         for loss_type in supported_losses_types():
-            (y_test_pred_exp, class_gradient_exp, loss_grad_exp) = expected_values
+            (y_test_pred_exp, class_gradient_exp, loss_grad_exp) = expected_values()
             # store_expected_values(expected_values)
 
             if loss_name + "_" + loss_type in supported_losses:
@@ -288,7 +288,7 @@ def test_loss_gradient(
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test d
         return
 
-    (expected_gradients_1, expected_gradients_2) = expected_values
+    (expected_gradients_1, expected_gradients_2) = expected_values()
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
     classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
@@ -364,7 +364,7 @@ def test_repr(get_image_classifier_list, framework, expected_values, store_expec
         if classifier is not None:
 
             repr_ = repr(classifier)
-            for message in expected_values:
+            for message in expected_values():
                 assert message in repr_, "{0}: was not contained within repr".format(message)
 
     except NotImplementedError as e:
@@ -408,7 +408,7 @@ def test_class_gradient(
             grad_1_labelArray,
             grad_2_labelArray,
             labels_list,
-        ) = expected_values
+        ) = expected_values()
 
         labels = np.array(labels_list, dtype=object)
 

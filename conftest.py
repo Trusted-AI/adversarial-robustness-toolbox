@@ -265,19 +265,22 @@ def expected_values(framework, request, is_tf_version_2):
     if framework_name is not "":
         framework_name = "_" + framework_name
 
-    with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r") as f:
-        expected_values = json.load(f)
+    def _expected_values():
+        with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r") as f:
+            expected_values = json.load(f)
 
-        # searching first for any framework specific expected value
-        framework_specific_values = request.node.name + framework_name
-        if framework_specific_values in expected_values:
-            return expected_values[framework_specific_values]
-        elif request.node.name in expected_values:
-            return expected_values[request.node.name]
-        else:
-            raise NotImplementedError(
-                "Couldn't find any expected values for test {0} and framework {1}".format(request.node.name,
-                                                                                          framework_name))
+            # searching first for any framework specific expected value
+            framework_specific_values = request.node.name + framework_name
+            if framework_specific_values in expected_values:
+                return expected_values[framework_specific_values]
+            elif request.node.name in expected_values:
+                return expected_values[request.node.name]
+            else:
+                raise NotImplementedError(
+                    "Couldn't find any expected values for test {0} and framework {1}".format(request.node.name,
+                                                                                              framework_name))
+
+    return _expected_values
 
 
 @pytest.fixture(scope="session")
