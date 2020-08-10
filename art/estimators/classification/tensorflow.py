@@ -350,6 +350,19 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return grads
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
+
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
         import tensorflow as tf  # lgtm [py/repeated-import]

@@ -294,7 +294,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         # Get the internal layer
         self._layer_names = self._get_layers()
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs):
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
