@@ -24,11 +24,14 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 
+import keras
+
 from art.attacks.inference import (
     MembershipInferenceBlackBoxRuleBased,
     MembershipInferenceBlackBox,
 )
 from art.estimators.classification.pytorch import PyTorchClassifier
+from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
@@ -145,7 +148,7 @@ def test_black_box_tabular(get_tabular_classifier_list, get_iris_dataset):
             train_pos = sum(inferred_train) / len(inferred_train)
             test_pos = sum(inferred_test) / len(inferred_test)
             assert (train_pos > test_pos or
-                    train_pos == pytest.approx(test_pos, abs=0.03) or
+                    train_pos == pytest.approx(test_pos, abs=0.08) or
                     test_pos == 1)
 
 def test_black_box_loss_tabular(get_tabular_classifier_list, get_iris_dataset):
@@ -162,7 +165,6 @@ def test_black_box_loss_tabular(get_tabular_classifier_list, get_iris_dataset):
 
     for classifier in classifier_list:
         if type(classifier).__name__ == "PyTorchClassifier" or \
-           type(classifier).__name__ == "KerasClassifier" or \
            type(classifier).__name__ == "TensorFlowV2Classifier":
             for t in model_types:
                 attack = MembershipInferenceBlackBox(classifier, input_type='loss', attack_model_type=t)
@@ -178,6 +180,48 @@ def test_black_box_loss_tabular(get_tabular_classifier_list, get_iris_dataset):
                 assert (train_pos > test_pos or
                         train_pos == pytest.approx(test_pos, abs=0.15) or
                         test_pos == 1)
+
+
+@pytest.mark.only_with_platform("keras")
+def test_black_box_keras_loss(get_iris_dataset):
+    (x_train, y_train), (x_test, y_test) = get_iris_dataset
+    attack_train_size = int(len(x_train) * attack_train_ratio)
+    attack_test_size = int(len(x_test) * attack_train_ratio)
+
+    model = keras.models.Sequential()
+    model.add(keras.layers.Dense(8, input_dim=4, activation='relu'))
+    model.add(keras.layers.Dense(3, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    model.fit(x_train, y_train, epochs=150, batch_size=10)
+
+    classifier = KerasClassifier(model)
+    attack = MembershipInferenceBlackBox(classifier, input_type='loss')
+
+    with pytest.raises(NotImplementedError):
+        attack.fit(x_train[:attack_train_size], y_train[:attack_train_size],
+                   x_test[:attack_test_size], y_test[:attack_test_size])
+
+    model2 = keras.models.Sequential()
+    model2.add(keras.layers.Dense(12, input_dim=4, activation='relu'))
+    model2.add(keras.layers.Dense(3, activation='softmax'))
+    model2.compile(loss=keras.losses.CategoricalCrossentropy(), optimizer='adam', metrics=['accuracy'])
+    model2.fit(x_train, y_train, epochs=150, batch_size=10)
+
+    classifier = KerasClassifier(model2)
+    attack = MembershipInferenceBlackBox(classifier, input_type='loss')
+
+    # train attack model using only attack_train_ratio of data
+    attack.fit(x_train[:attack_train_size], y_train[:attack_train_size],
+               x_test[:attack_test_size], y_test[:attack_test_size])
+    # infer attacked feature on remainder of data
+    inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:])
+    inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:])
+    # check accuracy
+    train_pos = sum(inferred_train) / len(inferred_train)
+    test_pos = sum(inferred_test) / len(inferred_test)
+    assert (train_pos > test_pos or
+            train_pos == pytest.approx(test_pos, abs=0.15) or
+            test_pos == 1)
 
 
 def test_black_box_tabular_rf(get_tabular_classifier_list, get_iris_dataset):

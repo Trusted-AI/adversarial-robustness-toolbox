@@ -153,9 +153,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
             import tensorflow.keras as keras
             import tensorflow.keras.backend as k
+            self._losses = keras.losses
         else:
             import keras  # lgtm [py/repeated-import]
             import keras.backend as k
+            self._losses = keras.utils.losses_utils
+
 
         if hasattr(model, "inputs"):
             self._input_layer = input_layer
@@ -184,7 +187,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             logger.warning("Keras model has no loss set. Classifier tries to use `k.sparse_categorical_crossentropy`.")
             loss_function = k.sparse_categorical_crossentropy
         else:
-
+            self._orig_loss = self._model.loss
             if isinstance(self._model.loss, six.string_types):
                 loss_function = getattr(k, self._model.loss)
 
@@ -237,7 +240,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             "__name__" in dir(loss_function)
             and loss_function.__name__
             in ["categorical_hinge", "categorical_crossentropy", "binary_crossentropy", "kullback_leibler_divergence",]
-        ) or (self.is_tensorflow and flag_is_instance):
+        ) or flag_is_instance:
             self._reduce_labels = False
             label_ph = k.placeholder(shape=self._output.shape)
         elif (
@@ -289,6 +292,48 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         # Get the internal layer
         self._layer_names = self._get_layers()
+
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs):
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        if self.is_tensorflow:
+            import tensorflow.keras.backend as k
+        else:
+            import keras.backend as k
+
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
+        if not all(shape_match):
+            raise ValueError(
+                    "Error when checking x: expected preprocessed x to have shape {} but got array with shape {"
+                    "}".format(
+                            self._input_shape, x_preprocessed.shape[1:]
+                    )
+            )
+
+        # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
+        if self._reduce_labels:
+            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+
+        predictions = self.predict(x_preprocessed)
+
+        if self._orig_loss and hasattr(self._orig_loss, 'reduction'):
+            prev_reduction = self._orig_loss.reduction
+            self._orig_loss.reduction = self._losses.Reduction.NONE
+            loss = self._orig_loss(y_preprocessed, predictions)
+            self._orig_loss.reduction = prev_reduction
+        else:
+            raise NotImplementedError("Only class-based losses are supported")
+
+        return k.eval(loss)
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
