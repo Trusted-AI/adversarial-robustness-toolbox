@@ -25,17 +25,14 @@ for mlFramework in "${mlFrameworkList[@]}"; do
 done
 
 
+
 #NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
 # made framework independent to be incorporated within this loop
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
   pytest -q tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --durations=0
-  pytest -q tests/estimators/classification/test_keras.py --mlFramework=$mlFramework --durations=0
-#  pytest -q tests/estimators/classification/test_keras_tf.py --mlFramework=$mlFramework --durations=0
   pytest -q tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --durations=0
-#  pytest -q tests/estimators/classification/test_tensorflow.py --mlFramework=$mlFramework --durations=0
-#  pytest -q tests/estimators/classification/test_mxnet.py --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
 done
 
