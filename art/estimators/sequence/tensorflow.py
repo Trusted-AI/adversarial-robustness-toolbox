@@ -21,12 +21,15 @@ This module implements task-specific estimators for automatic speech recognition
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import os
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import numpy as np
 
+from art.config import ART_DATA_PATH
 from art.estimators.sequence.sequence import SequenceNetworkMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
+from art.utils import get_file, make_directory
 
 if TYPE_CHECKING:
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -43,6 +46,12 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
     | Paper link: http://proceedings.mlr.press/v97/qin19a.html
     |             https://arxiv.org/abs/1902.08295
     """
+
+    _LINGVO_PATH = os.path.join(ART_DATA_PATH, "lingvo/")
+    _LINGVO_PARAMS_URI = (
+        "https://raw.githubusercontent.com/tensorflow/lingvo/"
+        "3c5ef88b8a9407124afe045a8e5048a9c5013acd/lingvo/tasks/asr/params/librispeech.py"
+    )
 
     def __init__(
         self,
@@ -87,6 +96,15 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
         if self.device_type != "cpu":
             raise ValueError("This estimator does not yet support running on a GPU.")
         pass
+
+    def _check_and_download_params(self) -> None:
+        """Check and download the `params/librispeech.py` file from the official Lingvo repository."""
+        params_dir = os.path.join(self._LINGVO_PATH, "asr/")
+        params_base = "librispeech.py"
+        if not os.path.isdir(params_dir):
+            make_directory(params_dir)
+        if not os.path.isfile(os.path.join(params_dir, params_base)):
+            get_file(params_base, self._LINGVO_PARAMS_URI, path=params_dir)
 
     def loss_gradient(self, x, y, **kwargs):
         """

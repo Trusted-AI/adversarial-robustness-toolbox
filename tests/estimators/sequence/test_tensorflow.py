@@ -38,3 +38,7 @@ class TestLingvoAsr:
 
     def test_implements_abstract_methods(self):
         LingvoAsr()
+
+    def test_check_and_download_params(self):
+        lingvo = LingvoAsr()
+        assert lingvo._check_and_download_params() is None
