@@ -11,6 +11,7 @@ pydub==0.24.1
 resampy==0.2.2
 ffmpeg-python==0.2.0
 cma==2.7.0
+pandas==0.24.2
 
 # frameworks
 h5py==2.10.0
