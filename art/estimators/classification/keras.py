@@ -157,7 +157,10 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             import keras  # lgtm [py/repeated-import]
             import keras.backend as k
-            self._losses = keras.utils.losses_utils
+            if hasattr(keras.utils, 'losses_utils'):
+                self._losses = keras.utils.losses_utils
+            else:
+                self._losses = None
 
 
         if hasattr(model, "inputs"):
@@ -305,6 +308,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :return: Loss values.
         :rtype: Format as expected by the `model`
         """
+        if not self._losses:
+            raise NotImplementedError('loss method is only supported for keras versions >= 2.3.1')
+
         if self.is_tensorflow:
             import tensorflow.keras.backend as k
         else:

@@ -169,6 +169,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             return y
 
     def reduce_labels_framework(self, y: "torch.Tensor"):
+        import torch  # lgtm [py/repeated-import]
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if self._reduce_labels and self._int_labels:
             return torch.argmax(y, dim=1)
