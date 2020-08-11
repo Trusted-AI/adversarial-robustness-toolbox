@@ -10,7 +10,7 @@ statsmodels==0.11.0
 pydub==0.24.1
 resampy==0.2.2
 ffmpeg-python==0.2.0
-cma==2.7.0
+cma==3.0.3
 
 # frameworks
 h5py==2.10.0
