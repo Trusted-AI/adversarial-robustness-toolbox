@@ -55,7 +55,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
 
     def test_ptclassifier(self):
         """
-        Test with a KerasClassifier.
+        Test with a Pytorch Classifier.
         :return:
         """
         # Build KerasClassifier
