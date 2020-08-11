@@ -20,6 +20,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import pytest
+import tensorflow.compat.v1 as tf1
+from lingvo.core.hyperparams import Params
 
 from art.estimators.sequence.sequence import SequenceNetworkMixin
 from art.estimators.sequence.tensorflow import LingvoAsr
@@ -37,8 +39,30 @@ class TestLingvoAsr:
         assert issubclass(LingvoAsr, (SequenceNetworkMixin, TensorFlowV2Estimator))
 
     def test_implements_abstract_methods(self):
+        tf1.reset_default_graph()
         LingvoAsr()
 
     def test_check_and_download_params(self):
+        tf1.reset_default_graph()
+
         lingvo = LingvoAsr()
-        assert lingvo._check_and_download_params() is None
+        assert lingvo._check_and_download_params()
+
+    def test_check_and_download_model(self):
+        tf1.reset_default_graph()
+
+        lingvo = LingvoAsr()
+        assert lingvo._check_and_download_model()
+
+    def test_check_and_download_vocab(self):
+        tf1.reset_default_graph()
+
+        lingvo = LingvoAsr()
+        assert lingvo._check_and_download_vocab()
+
+    def test_load_model(self):
+        tf1.reset_default_graph()
+
+        LingvoAsr()
+        graph = tf1.get_default_graph()
+        assert graph.get_operations()

@@ -22,6 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import os
+import sys
 from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 
 import numpy as np
@@ -47,11 +48,22 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
     |             https://arxiv.org/abs/1902.08295
     """
 
-    _LINGVO_PATH = os.path.join(ART_DATA_PATH, "lingvo/")
-    _LINGVO_PARAMS_URI = (
-        "https://raw.githubusercontent.com/tensorflow/lingvo/"
-        "3c5ef88b8a9407124afe045a8e5048a9c5013acd/lingvo/tasks/asr/params/librispeech.py"
-    )
+    _LINGVO_CFG = {
+        "path": os.path.join(ART_DATA_PATH, "lingvo/"),
+        "model_ckpt_data_uri": "http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001",
+        "model_ckpt_index_uri": (
+            "https://github.com/tensorflow/cleverhans/blob/"
+            "6ef939059172901db582c7702eb803b7171e3db5/examples/adversarial_asr/model/ckpt-00908156.index?raw=true"
+        ),
+        "params_uri": (
+            "https://raw.githubusercontent.com/tensorflow/lingvo/"
+            "3c5ef88b8a9407124afe045a8e5048a9c5013acd/lingvo/tasks/asr/params/librispeech.py"
+        ),
+        "vocab_uri": (
+            "https://raw.githubusercontent.com/tensorflow/lingvo/"
+            "3c5ef88b8a9407124afe045a8e5048a9c5013acd/lingvo/tasks/asr/wpm_16k_librispeech.vocab"
+        ),
+    }
 
     def __init__(
         self,
@@ -78,6 +90,8 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
+        import tensorflow.compat.v1 as tf1
+
         # Super initialization
         super().__init__(
             clip_values=clip_values,
@@ -95,16 +109,94 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
         if self.device_type != "cpu":
             raise ValueError("This estimator does not yet support running on a GPU.")
-        pass
 
-    def _check_and_download_params(self) -> None:
+        # disable eager execution as Lingvo uses tensorflow.compat.v1 API
+        tf1.disable_eager_execution()
+
+        # init necessary local Lingvo ASR namespace and flags
+        sys.path.append(self._LINGVO_CFG["path"])
+        tf1.flags.FLAGS(tuple(sys.argv[0]))
+
+        # check and download additional Lingvo ASR params file
+        _ = self._check_and_download_params()
+
+        # init Lingvo computation graph
+        self._sess = tf1.Session()
+        model, task = self._load_model()
+        self._model = model
+        self._task = task
+
+    def _check_and_download_params(self) -> str:
         """Check and download the `params/librispeech.py` file from the official Lingvo repository."""
-        params_dir = os.path.join(self._LINGVO_PATH, "asr/")
+        params_dir = os.path.join(self._LINGVO_CFG["path"], "asr")
         params_base = "librispeech.py"
         if not os.path.isdir(params_dir):
             make_directory(params_dir)
         if not os.path.isfile(os.path.join(params_dir, params_base)):
-            get_file(params_base, self._LINGVO_PARAMS_URI, path=params_dir)
+            logger.info("Could not find %s. Downloading it now...", params_base)
+            get_file(params_base, self._LINGVO_CFG["params_uri"], path=params_dir)
+        return os.path.join(params_dir, params_base)
+
+    def _check_and_download_model(self) -> Tuple[str, str]:
+        """Check and download the pretrained model of Qin et al. (2019). file from the official Lingvo repository."""
+        model_ckpt_dir = os.path.join(self._LINGVO_CFG["path"], "asr", "model")
+        model_ckpt_data_base = "ckpt-00908156.data-00000-of-00001"
+        model_ckpt_index_base = "ckpt-00908156.index"
+        if not os.path.isdir(model_ckpt_dir):
+            make_directory(model_ckpt_dir)
+        if not os.path.isfile(os.path.join(model_ckpt_dir, model_ckpt_data_base)):
+            logger.info("Could not find %s. Downloading it now...", model_ckpt_data_base)
+            get_file(model_ckpt_data_base, self._LINGVO_CFG["model_ckpt_data_uri"], path=model_ckpt_dir)
+        if not os.path.isfile(os.path.join(model_ckpt_dir, model_ckpt_index_base)):
+            logger.info("Could not find %s. Downloading it now...", model_ckpt_index_base)
+            get_file(model_ckpt_index_base, self._LINGVO_CFG["model_ckpt_index_uri"], path=model_ckpt_dir)
+        return os.path.join(model_ckpt_dir, model_ckpt_data_base), os.path.join(model_ckpt_dir, model_ckpt_index_base)
+
+    def _check_and_download_vocab(self) -> str:
+        """Check and download the `wpm_16k_librispeech.vocab` file from the official Lingvo repository."""
+        vocab_dir = os.path.join(self._LINGVO_CFG["path"], "asr")
+        vocab_base = "wpm_16k_librispeech.vocab"
+        if not os.path.isdir(vocab_dir):
+            make_directory(vocab_dir)
+        if not os.path.isfile(os.path.join(vocab_dir, vocab_base)):
+            logger.info("Could not find %x. Downloading it now...", vocab_base)
+            get_file(vocab_base, self._LINGVO_CFG["vocab_uri"], path=vocab_dir)
+        return os.path.join(vocab_dir, vocab_base)
+
+    def _load_model(self):
+        """
+        Define and instantiate the computation graph.
+        """
+        import tensorflow.compat.v1 as tf1
+        from lingvo import model_registry, model_imports
+        from lingvo.core import cluster_factory
+
+        from asr.librispeech import Librispeech960Wpm
+
+        # check and download Lingvo ASR vocab
+        vocab_path = self._check_and_download_vocab()
+
+        # monkey-patch tasks.asr.librispeechLibriSpeech960Wpm class attribute WPM_SYMBOL_TABLE_FILEPATH
+        Librispeech960Wpm.WPM_SYMBOL_TABLE_FILEPATH = vocab_path
+
+        # register model params
+        model_name = "asr.librispeech.Librispeech960Wpm"
+        model_imports.ImportParams(model_name)
+        params = model_registry._ModelRegistryHelper.GetParams(model_name, "Test")
+
+        # instantiate Lingvo ASR model
+        cluster = cluster_factory.Cluster(params.cluster)
+        with cluster, tf1.device(cluster.GetPlacer()):
+            model = params.Instantiate()
+            task = model.GetTask()
+
+        # load Qin et al. pretrained model
+        _, model_index_path = self._check_and_download_model()
+        self._sess.run(tf1.global_variables_initializer())
+        saver = tf1.train.Saver([var for var in tf1.global_variables() if var.name.startswith("librispeech")])
+        saver.restore(self._sess, os.path.splitext(model_index_path)[0])
+
+        return model, task
 
     def loss_gradient(self, x, y, **kwargs):
         """
