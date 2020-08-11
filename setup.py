@@ -85,6 +85,7 @@ setup(
             "torch",
             "torchvision",
             "xgboost",
+            "pandas",
         ],
     },
     classifiers=[
