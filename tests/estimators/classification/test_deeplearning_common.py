@@ -110,6 +110,8 @@ def test_shapes(get_default_mnist_subset, image_dl_estimator):
         warnings.warn(UserWarning(e))
 
 
+# TODO skipping because taking too long to run - unskip once tests run under limit time
+@pytest.mark.skipMlFramework("kerastf")
 @pytest.mark.parametrize("from_logits", [True, False])
 @pytest.mark.parametrize(
     "loss_name",
@@ -214,7 +216,7 @@ def test_fit_kwargs(image_dl_estimator, get_default_mnist_subset, default_batch_
         warnings.warn(UserWarning(e))
 
 
-# skipping because taking too long to run
+# TODO skipping because taking too long to run - unskip once tests run under limit time
 @pytest.mark.skipMlFramework("kerastf")
 def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended, image_dl_estimator):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -246,7 +248,7 @@ def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended,
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-# skipping kerastf because taking too long to run
+# TODO skipping because taking too long to run - unskip once tests run under limit time
 @pytest.mark.skipMlFramework("mxnet", "kerastf")
 def test_fit_image_generator(
         framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
@@ -342,7 +344,7 @@ def test_input_shape(image_dl_estimator, mnist_shape):
         warnings.warn(UserWarning(e))
 
 
-# kerastf skipping because taking too long to run
+# TODO skipping because taking too long to run - unskip once tests run under limit time
 @pytest.mark.skipMlFramework("kerastf")
 def test_save(image_dl_estimator):
     try:
@@ -396,7 +398,7 @@ def test_save(image_dl_estimator, get_default_mnist_subset, tmp_path):
         warnings.warn(UserWarning(e))
 
 
-# kerastf skipping because taking too long to run
+# TODO skipping kerastf because taking too long to run - unskip once tests run under limit time
 @pytest.mark.skipMlFramework("mxnet", "kerastf")
 def test_class_gradient(
         framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values,
