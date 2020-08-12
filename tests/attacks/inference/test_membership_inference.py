@@ -151,6 +151,7 @@ def test_black_box_tabular(get_tabular_classifier_list, get_iris_dataset):
                     train_pos == pytest.approx(test_pos, abs=0.08) or
                     test_pos == 1)
 
+
 def test_black_box_loss_tabular(get_tabular_classifier_list, get_iris_dataset):
     classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
     if not classifier_list:
@@ -307,13 +308,13 @@ def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
     attack_train_size = int(len(x_train) * attack_train_ratio)
     attack_test_size = int(len(x_test) * attack_train_ratio)
 
-    model = AttackModel(2*num_classes_iris)
+    model = AttackModel(2 * num_classes_iris)
 
     # Define a loss function and optimizer
     loss_fn = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     attack_model = PyTorchClassifier(
-        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(2*num_classes_iris,), nb_classes=1
+        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(2 * num_classes_iris,), nb_classes=1
     )
 
     for classifier in classifier_list:

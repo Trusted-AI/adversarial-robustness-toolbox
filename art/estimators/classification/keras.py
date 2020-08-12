@@ -162,7 +162,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             else:
                 self._losses = None
 
-
         if hasattr(model, "inputs"):
             self._input_layer = input_layer
             self._input = model.inputs[input_layer]
@@ -320,10 +319,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
         if not all(shape_match):
             raise ValueError(
-                    "Error when checking x: expected preprocessed x to have shape {} but got array with shape {"
-                    "}".format(
-                            self._input_shape, x_preprocessed.shape[1:]
-                    )
+                "Error when checking x: expected preprocessed x to have shape {} but got array with shape {"
+                "}".format(self._input_shape, x_preprocessed.shape[1:])
             )
 
         # Adjust the shape of y for loss functions that do not take labels in one-hot encoding
