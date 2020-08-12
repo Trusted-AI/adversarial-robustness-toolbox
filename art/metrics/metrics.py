@@ -377,6 +377,10 @@ def wasserstein_distance(
     u_values = u_values.flatten().reshape(u_values.shape[0], -1)
     v_values = v_values.flatten().reshape(v_values.shape[0], -1)
 
+    if u_weights is not None and v_weights is not None:
+        u_weights = u_weights.flatten().reshape(u_weights.shape[0], -1)
+        v_weights = v_weights.flatten().reshape(v_weights.shape[0], -1)
+
     wd = np.zeros(u_values.shape[0])
 
     for i in range(u_values.shape[0]):
