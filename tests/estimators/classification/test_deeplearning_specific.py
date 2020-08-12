@@ -135,14 +135,3 @@ def test_pickle(get_default_mnist_subset, image_dl_estimator):
     predictions_2 = loaded_model.predict(x_test_mnist)
     accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
     assert accuracy_1 == accuracy_2
-
-
-# @pytest.mark.only_with_platform("pytorch")
-# def test_set_learning(get_image_classifier_list):
-#     classifier, _ = get_image_classifier_list(one_classifier=True)
-#     assert classifier._model.training
-#     classifier.set_learning_phase(False)
-#     assert classifier._model.training is False
-#     classifier.set_learning_phase(True)
-#     assert classifier._model.training
-#     assert classifier.learning_phase

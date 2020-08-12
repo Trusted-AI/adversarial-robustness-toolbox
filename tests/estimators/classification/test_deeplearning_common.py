@@ -110,7 +110,7 @@ def test_shapes(get_default_mnist_subset, image_dl_estimator):
         warnings.warn(UserWarning(e))
 
 
-# TODO skipping because taking too long to run - unskip once tests run under limit time
+# TODO skipping with kerastf because overall tests are taking too long to run - unskip once tests run under limit time
 @pytest.mark.skipMlFramework("kerastf")
 @pytest.mark.parametrize("from_logits", [True, False])
 @pytest.mark.parametrize(
@@ -216,8 +216,6 @@ def test_fit_kwargs(image_dl_estimator, get_default_mnist_subset, default_batch_
         warnings.warn(UserWarning(e))
 
 
-# # TODO skipping because taking too long to run - unskip once tests run under limit time
-# @pytest.mark.skipMlFramework("kerastf")
 def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended, image_dl_estimator):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -343,8 +341,6 @@ def test_input_shape(image_dl_estimator, mnist_shape):
         warnings.warn(UserWarning(e))
 
 
-# # TODO skipping because taking too long to run - unskip once tests run under limit time
-# @pytest.mark.skipMlFramework("kerastf")
 def test_save(image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
