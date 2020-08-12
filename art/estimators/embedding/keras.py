@@ -27,8 +27,8 @@ from typing import List, Optional, Union, TYPE_CHECKING, Tuple
 
 import numpy as np
 from keras import Model
-from keras.layers import BatchNormalization, Dense, LeakyReLU
-import keras.backend as K
+from keras.layers import BatchNormalization, Dense, LeakyReLU, GaussianNoise
+from keras.optimizers import Adam
 
 from art.attacks.poisoning import PoisoningAttackBackdoor
 from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ART_NUMPY_DTYPE
@@ -134,39 +134,47 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         )
 
         # create discriminator and append to output
-        feature_layer_keras = self.model.layers[7].output  # TODO: dynamically set from layer list
-        dense_layer_1 = Dense(self.discriminator_layer_1)(feature_layer_keras)
+        # 7 - last layer
+        # 6 - dropout layer
+        # 5 - last dense layer before output
+        model_input = model.input
+        init_model_output = self.model(model_input)
+        feature_layer_output = Model(input=model_input, output=self.model.layers[5].output)
+        # feature_layer_keras = self.model.layers[5].output  # TODO: dynamically set from layer list
+        discriminator_input = feature_layer_output(model_input)
+        discriminator_input = GaussianNoise(stddev=1)(discriminator_input)
+        dense_layer_1 = Dense(self.discriminator_layer_1)(discriminator_input)
         norm_1_layer = BatchNormalization()(dense_layer_1)
-        leaky_layer_1 = LeakyReLU()(norm_1_layer)
+        leaky_layer_1 = LeakyReLU(alpha=0.2)(norm_1_layer)
         dense_layer_2 = Dense(self.discriminator_layer_2)(leaky_layer_1)
         norm_2_layer = BatchNormalization()(dense_layer_2)
-        leaky_layer_2 = LeakyReLU()(norm_2_layer)
-        backdoor_detect = Dense(1, activation='softmax', name='backdoor_detect')(leaky_layer_2)
+        leaky_layer_2 = LeakyReLU(alpha=0.2)(norm_2_layer)
+        backdoor_detect = Dense(2, activation='softmax', name='backdoor_detect')(leaky_layer_2)
 
         # add discriminator loss to current_loss and compile
-        self.embed_model = Model(inputs=self.model.inputs, outputs=self.model.outputs + [backdoor_detect])
+        # TODO: ensure using embed model's ouptut
+        self.embed_model = Model(inputs=self.model.inputs, outputs=[init_model_output, backdoor_detect])
         # print("printing model summary")
         # Assuming outputs are default named output_1, ... output_n
+        output_layer = len(model.layers) - 1
+        model_name = model.name
         if not model.losses:
             # Assuming output layer is last layer
-            output_layer = len(model.layers) - 1
-            losses = {model.layers[output_layer].name: model.loss, 'backdoor_detect': 'binary_crossentropy'}
+            losses = {model_name: model.loss, 'backdoor_detect': 'binary_crossentropy'}
         else:
             # TODO: this makes no sense
             losses = {"output_" + str(i + 1): loss for i, loss in model.outputs}
             losses['backdoor_detect'] = 'binary_crossentropy'
-        # losses = {'output_1': model.losses[0], 'output_2': 'binary_crossentropy'}
-        # print(self.embed_model.summary())
         # TODO: dynamically set optimizer and metric from original model
-        self.embed_model.compile(optimizer='adam', loss=losses, loss_weights=[1.0] * len(self.model.loss_weights_list) +
-                                                                             [-self.regularization],
+        # TODO: add learning rate schedule
+        opt = Adam(lr=0.0001)
+        self.embed_model.compile(optimizer=opt, loss=losses,
+                                 loss_weights={model_name: 1.0, "backdoor_detect": -self.regularization},
+                                 # [1.0] * len(self.model.loss_weights_list) +
+                                 # [-self.regularization],
                                  metrics=['accuracy'])
-        print("model loss")
-        print(self.embed_model.loss)
-        print("gradients")
-        print(K.gradients(backdoor_detect, self.embed_model.input))
 
-    def fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs):
+    def fit(self, x, y, batch_size=64, nb_epochs=10, **kwargs):
         """
         Fit the classifier on the training set `(x, y)`.
 
@@ -184,35 +192,29 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :type kwargs: `dict`
         :return: `None`
         """
-        # poison pp_poison amound of training data
-        self.embed_model.summary()
+        # poison pp_poison amount of training data
         selected_indices = np.random.uniform(size=len(x)) < self.pp_poison
-        print("num selected indices: " + str(np.sum(selected_indices)))
-        print("selected indices: " + str(selected_indices))
-        poison_data, poison_labels = self.backdoor.poison(x[selected_indices], y=self.target, broadcast=True)
 
         train_data = np.copy(x)
         train_labels = np.copy(y)
 
-        for i, idx in enumerate(selected_indices):
-            print("train_data[idx].shape")
-            print(train_data[idx].shape)
-            print("poison_data[i].shape")
-            print(poison_data[i].shape)
+        # TODO: dynamically set broadcast based on shape of target array
+        to_be_poisoned = train_data[selected_indices]
+        poison_data, poison_labels = self.backdoor.poison(to_be_poisoned, y=self.target, broadcast=True)
+
+        poison_idxs = np.arange(len(x))[selected_indices]
+        for i, idx in enumerate(poison_idxs):
             train_data[idx] = poison_data[i]
             train_labels[idx] = poison_labels[i]
 
-        # train_data[selected_indices] = poison_data
-        # train_labels[selected_indices] = self.target
-
-        # TODO: try 1.0 - (val) for increasing loss
-        is_backdoor = np.isin(np.arange(len(x)), selected_indices).astype(ART_NUMPY_DTYPE)
+        is_backdoor = np.isin(np.arange(len(x)), poison_idxs).astype(int)
+        is_backdoor = np.fromfunction(lambda b_idx: np.eye(2)[is_backdoor[b_idx]], shape=(len(x),), dtype=int)
 
         # TODO: standardize
         self.train_data, self.train_labels, self.is_backdoor = train_data, train_labels, is_backdoor
 
         # call fit with both y and is_backdoor labels
-        self.embed_model.fit(x, y=[train_labels, is_backdoor], batch_size=batch_size, epochs=nb_epochs, **kwargs)
+        self.embed_model.fit(train_data, y=[train_labels, is_backdoor], batch_size=batch_size, epochs=nb_epochs, **kwargs)
 
     def predict(self, x, batch_size=128, **kwargs):
         """
