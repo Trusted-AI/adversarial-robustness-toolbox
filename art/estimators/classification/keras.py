@@ -722,6 +722,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         del state["_loss"]
         del state["_loss_gradients"]
         del state["_layer_names"]
+        del state["_losses"]
+        del state["_loss_function"]
+
+        if "_orig_loss" in state:
+            del state["_orig_loss"]
 
         if "_class_gradients" in state:
             del state["_class_gradients"]
