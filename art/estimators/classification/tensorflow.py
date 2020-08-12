@@ -933,8 +933,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         if self._loss_object is None:
             raise TypeError(
-                    "The loss function `loss_object` is required for computing losses, but it has not been "
-                    "defined."
+                "The loss function `loss_object` is required for computing losses, but it has not been "
+                "defined."
             )
         prev_reduction = self._loss_object.reduction
         self._loss_object.reduction = tf.keras.losses.Reduction.NONE

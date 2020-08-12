@@ -128,7 +128,6 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         """
         super(MembershipInferenceBlackBoxRuleBased, self).__init__(estimator=classifier)
 
-
     def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
