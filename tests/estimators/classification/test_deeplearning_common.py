@@ -216,8 +216,8 @@ def test_fit_kwargs(image_dl_estimator, get_default_mnist_subset, default_batch_
         warnings.warn(UserWarning(e))
 
 
-# TODO skipping because taking too long to run - unskip once tests run under limit time
-@pytest.mark.skipMlFramework("kerastf")
+# # TODO skipping because taking too long to run - unskip once tests run under limit time
+# @pytest.mark.skipMlFramework("kerastf")
 def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended, image_dl_estimator):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -248,8 +248,7 @@ def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended,
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-# TODO skipping because taking too long to run - unskip once tests run under limit time
-@pytest.mark.skipMlFramework("mxnet", "kerastf")
+@pytest.mark.skipMlFramework("mxnet")
 def test_fit_image_generator(
         framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
 ):
@@ -344,8 +343,8 @@ def test_input_shape(image_dl_estimator, mnist_shape):
         warnings.warn(UserWarning(e))
 
 
-# TODO skipping because taking too long to run - unskip once tests run under limit time
-@pytest.mark.skipMlFramework("kerastf")
+# # TODO skipping because taking too long to run - unskip once tests run under limit time
+# @pytest.mark.skipMlFramework("kerastf")
 def test_save(image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
@@ -398,8 +397,7 @@ def test_save(image_dl_estimator, get_default_mnist_subset, tmp_path):
         warnings.warn(UserWarning(e))
 
 
-# TODO skipping kerastf because taking too long to run - unskip once tests run under limit time
-@pytest.mark.skipMlFramework("mxnet", "kerastf")
+@pytest.mark.skipMlFramework("mxnet")
 def test_class_gradient(
         framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values,
         expected_values
@@ -456,15 +454,7 @@ def test_class_gradient(
         new_shape = (x_test_mnist.shape[0], 10,) + mnist_shape
         assert gradients.shape == new_shape
 
-        sub_gradients1 = get_gradient1_column(gradients)
-
-        # exp_grad_1_all_labels = (sub_gradients1.tolist(), 4)
-        # np.testing.assert_array_almost_equal(
-        #     sub_gradients1, grad_1_all_labels[0], decimal=4,
-        # )
-
         sub_gradients2 = get_gradient2_column(gradients)
-        # exp_grad_2_all_labels = (sub_gradients2.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients2, grad_2_all_labels[0], decimal=4,
         )
@@ -475,13 +465,11 @@ def test_class_gradient(
         assert gradients.shape == (x_test_mnist.shape[0], 1,) + mnist_shape
 
         sub_gradients2 = get_gradient3_column(gradients)
-        # exp_grad_1_label5 = (sub_gradients2.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients2, grad_1_label5[0], decimal=4,
         )
 
         sub_gradients4 = get_gradient4_column(gradients)
-        # exp_grad_2_label5 = (sub_gradients4.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients4, grad_2_label5[0], decimal=4,
         )
@@ -493,27 +481,14 @@ def test_class_gradient(
         assert gradients.shape == new_shape
 
         sub_gradients5 = get_gradient3_column(gradients)
-        # exp_grad_1_labelArray = (sub_gradients5.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients5, grad_1_labelArray[0], decimal=4,
         )
 
         sub_gradients6 = get_gradient4_column(gradients)
-        # exp_grad_2_labelArray = (sub_gradients6.tolist(), 4)
         np.testing.assert_array_almost_equal(
             sub_gradients6, grad_2_labelArray[0], decimal=4,
         )
-
-        # exp = (
-        #     exp_grad_1_all_labels,
-        #     exp_grad_2_all_labels,
-        #     exp_grad_1_label5,
-        #     exp_grad_2_label5,
-        #     exp_grad_1_labelArray,
-        #     exp_grad_2_labelArray,
-        #     labels_list,
-        # )
-        # store_expected_values(exp, framework)
 
 
 def test_learning_phase(image_dl_estimator):
