@@ -87,7 +87,7 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
 
 def insert_image(
     x: np.ndarray,
-    backdoor_path: str = "utils/data/backdoors/post_it.png",
+    backdoor_path: str = "../utils/data/backdoors/alert.png",
     random: bool = True,
     x_shift: int = 0,
     y_shift: int = 0,
