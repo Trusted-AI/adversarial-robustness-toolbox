@@ -214,6 +214,8 @@ def test_fit_kwargs(image_dl_estimator, get_default_mnist_subset, default_batch_
         warnings.warn(UserWarning(e))
 
 
+# skipping because taking too long to run
+@pytest.mark.skipMlFramework("kerastf")
 def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended, image_dl_estimator):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -244,7 +246,8 @@ def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended,
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skipMlFramework("mxnet")
+# skipping kerastf because taking too long to run
+@pytest.mark.skipMlFramework("mxnet", "kerastf")
 def test_fit_image_generator(
         framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
 ):
@@ -339,6 +342,8 @@ def test_input_shape(image_dl_estimator, mnist_shape):
         warnings.warn(UserWarning(e))
 
 
+# kerastf skipping because taking too long to run
+@pytest.mark.skipMlFramework("kerastf")
 def test_save(image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
@@ -391,7 +396,8 @@ def test_save(image_dl_estimator, get_default_mnist_subset, tmp_path):
         warnings.warn(UserWarning(e))
 
 
-@pytest.mark.skipMlFramework("mxnet")
+# kerastf skipping because taking too long to run
+@pytest.mark.skipMlFramework("mxnet", "kerastf")
 def test_class_gradient(
         framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values,
         expected_values
