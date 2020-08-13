@@ -131,9 +131,8 @@ class ShadowAttack(EvasionAttack):
             raise ValueError("Unrecognized input dimension. Shadow Attack can only be applied to image data.")
 
         x = x.astype(ART_NUMPY_DTYPE)
-        x_batch = np.repeat(x, repeats=self.batch_size, axis=0).astype(ART_NUMPY_DTYPE)
-        x_batch = x_batch + np.random.normal(scale=self.sigma, size=x_batch.shape).astype(ART_NUMPY_DTYPE)
-        y_batch = np.repeat(y, repeats=self.batch_size, axis=0)
+        x_batch = x + np.random.normal(scale=self.sigma, size=x.shape).astype(ART_NUMPY_DTYPE)
+        y_batch = y
 
         perturbation = (
             np.random.uniform(
