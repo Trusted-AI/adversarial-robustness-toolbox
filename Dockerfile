@@ -26,6 +26,10 @@ RUN mkdir /project; mkdir /project/TMP
 VOLUME /project/TMP
 WORKDIR /project
 
+# IMPORTANT: please double check that the dependencies above are up to date with the following requirements file. We currently still run pip install on dependencies within requirements.txt in order to keep dependencies in agreement (in the rare cases were someone updated the requirements.txt file and forgot to update the dockefile)
+ADD . /project/
+RUN pip3 install --upgrade -r /project/requirements.txt
+
 RUN echo "You should think about possibly upgrading these outdated packages"
 RUN pip3 list --outdated
 
