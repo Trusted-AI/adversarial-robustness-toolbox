@@ -99,12 +99,15 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
+        self.patch_shape = self.estimator.input_shape
         self.clip_patch = clip_patch
+        self._check_params()
+
         mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
             0
         ]
-        self.patch = np.ones(shape=self.estimator.input_shape).astype(np.float32) * mean_value
-        self._check_params()
+        self.patch = np.ones(shape=self.patch_shape).astype(np.float32) * mean_value
+        self.patch[int(self.patch.shape[0] / 2), :, :] = 1
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -124,7 +127,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
-        for _ in trange(self.max_iter, desc="Adversarial patch"):
+        for _ in trange(self.max_iter, desc="Adversarial Patch Numpy"):
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
 
             num_batches = int(x.shape[0] / self.batch_size)
@@ -200,7 +203,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         """
         Return a circular patch mask
         """
-        diameter = self.estimator.input_shape[1]
+        diameter = self.patch_shape[1]
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
         x_grid, y_grid = np.meshgrid(x, y, sparse=True)
@@ -208,14 +211,14 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         mask = 1 - np.clip(z_grid, -1, 1)
 
-        pad_1 = int((self.estimator.input_shape[1] - mask.shape[1]) / 2)
-        pad_2 = int(self.estimator.input_shape[1] - pad_1 - mask.shape[1])
+        pad_1 = int((self.patch_shape[1] - mask.shape[1]) / 2)
+        pad_2 = int(self.patch_shape[1] - pad_1 - mask.shape[1])
         mask = np.pad(mask, pad_width=(pad_1, pad_2), mode="constant", constant_values=(0, 0))
 
         channel_index = 1 if self.estimator.channels_first else 3
         axis = channel_index - 1
         mask = np.expand_dims(mask, axis=axis)
-        mask = np.broadcast_to(mask, self.estimator.input_shape).astype(np.float32)
+        mask = np.broadcast_to(mask, self.patch_shape).astype(np.float32)
         return mask
 
     def _augment_images_with_random_patch(self, images, patch, scale=None):
@@ -313,7 +316,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         transformation["scale"] = scale
 
         # shift
-        shift_max = (self.estimator.input_shape[1] * (1.0 - scale)) / 2.0
+        shift_max = (self.estimator.input_shape[1] - self.patch_shape[1] * scale) / 2.0
         if shift_max > 0:
             shift_1 = random.uniform(-shift_max, shift_max)
             shift_2 = random.uniform(-shift_max, shift_max)

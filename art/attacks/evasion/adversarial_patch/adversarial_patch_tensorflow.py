@@ -28,7 +28,7 @@ import math
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import tqdm
+from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -108,11 +108,15 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         if self.image_shape[2] not in [1, 3]:
             raise ValueError("Color channel need to be in last dimension.")
 
-        if self.patch_shape is not None:
-            if self.patch_shape[2] not in [1, 3]:
-                raise ValueError("Color channel need to be in last dimension.")
-            if self.patch_shape[0] != self.patch_shape[1]:
-                raise ValueError("Patch height and width need to be the same.")
+        if self.patch_shape is None:
+            self.patch_shape = self.estimator.input_shape
+
+        if self.patch_shape[2] not in [1, 3]:
+            raise ValueError("Color channel need to be in last dimension.")
+
+        if self.patch_shape[0] != self.patch_shape[1]:
+            raise ValueError("Patch height and width need to be the same.")
+
         if not (self.estimator.postprocessing_defences is None or self.estimator.postprocessing_defences == []):
             raise ValueError(
                 "Framework-specific implementation of Adversarial Patch attack does not yet support "
@@ -210,6 +214,15 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         image_mask = tf.cast(image_mask, images.dtype)
         patch = tf.cast(patch, images.dtype)
         padded_patch = tf.stack([patch] * nb_images)
+        padded_patch = tf.image.resize(
+            padded_patch,
+            size=self.image_shape[:2],
+            method=tf.image.ResizeMethod.BILINEAR,
+            preserve_aspect_ratio=False,
+            antialias=False,
+            name=None,
+        )
+        padded_patch = tf.cast(padded_patch, images.dtype)
         transform_vectors = list()
 
         for i in range(nb_images):
@@ -271,18 +284,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 .repeat(math.ceil(self.max_iter / (x.shape[0] / self.batch_size)))
             )
 
-        i_iter = 0
-        for images, target in tqdm(ds):
-
-            if i_iter >= self.max_iter:
-                break
-
-            loss = self._train_step(images=images, target=target)
-
-            if divmod(i_iter, 10)[1] == 0:
-                logger.info("Iteration: {} Loss: {}".format(i_iter, loss))
-
-            i_iter += 1
+        for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2"):
+            for images, target in ds:
+                loss = self._train_step(images=images, target=target)
 
         return (
             self._patch.numpy(),
