@@ -31,7 +31,7 @@ xgboost==1.1.1
 pytest==5.4.1
 pytest-pep8==1.0.6
 pytest-mock==3.2.0
-codecov==2.0.22
+codecov==2.1.8
 requests==2.23.0
 
 # ART
