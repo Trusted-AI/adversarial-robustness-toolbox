@@ -15,7 +15,7 @@ RUN pip3 install h5py==2.10.0
 RUN pip3 install tensorflow-addons==0.10.0
 RUN pip3 install mxnet==1.6.0
 RUN pip3 install torch==1.5.0 torchvision==0.6.0 -f https://download.pytorch.org/whl/torch_stable.html
-RUN pip3 install catboost==0.23.2
+RUN pip3 install catboost==0.24
 RUN pip3 install GPy==1.9.9
 RUN pip3 install lightgbm==2.3.1
 RUN pip3 install xgboost==1.1.1
