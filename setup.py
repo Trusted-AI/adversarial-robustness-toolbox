@@ -10,7 +10,7 @@ install_requires = [
     "numpy",
     "scipy==1.4.1",
     "matplotlib",
-    "scikit-learn==0.22.1",
+    "scikit-learn==0.23.2",
     "six",
     "setuptools",
     "Pillow",
@@ -32,7 +32,7 @@ docs_require = [
     "numpy",
     "scipy==1.4.1",
     "six==1.13.0",
-    "scikit-learn==0.22.1",
+    "scikit-learn==0.23.2",
     "Pillow>=6.0.0",
 ]
 
