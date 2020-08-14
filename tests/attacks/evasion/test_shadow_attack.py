@@ -34,17 +34,12 @@ def fix_get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train = 100
     n_test = 11
-    yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.only_with_platform("pytorch")
 def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
     classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
-
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
 
     for classifier in classifier_list:
         attack = ShadowAttack(
@@ -61,15 +56,11 @@ def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        if attack.framework == "pytorch":
-            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
-
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
 
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, 0.06)
 
 
-@pytest.mark.only_with_platform("pytorch")
 def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
     classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
@@ -89,9 +80,6 @@ def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_class
         )
 
         (x_train_mnist, _, _, _) = fix_get_mnist_subset
-
-        if attack.framework == "pytorch":
-            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
 
         gradients = attack._get_regularisation_loss_gradients(x_train_mnist[0:1])
 
