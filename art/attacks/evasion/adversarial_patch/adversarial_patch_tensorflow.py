@@ -192,7 +192,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        diameter = self.image_shape[0]
+        diameter = self.patch_shape[0]
 
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
@@ -201,7 +201,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         image_mask = 1 - np.clip(z_grid, -1, 1)
         image_mask = np.expand_dims(image_mask, axis=2)
-        image_mask = np.broadcast_to(image_mask, self.image_shape)
+        image_mask = np.broadcast_to(image_mask, self.patch_shape)
         image_mask = tf.stack([image_mask] * nb_images)
         return image_mask
 
@@ -210,19 +210,52 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         import tensorflow_addons as tfa
 
         nb_images = images.shape[0]
+
         image_mask = self._get_circular_patch_mask(nb_images=nb_images)
         image_mask = tf.cast(image_mask, images.dtype)
-        patch = tf.cast(patch, images.dtype)
-        padded_patch = tf.stack([patch] * nb_images)
-        padded_patch = tf.image.resize(
-            padded_patch,
-            size=self.image_shape[:2],
+
+        smallest_image_edge = np.minimum(self.image_shape[0], self.image_shape[1])
+
+        image_mask = tf.image.resize(
+            image_mask,
+            size=(smallest_image_edge, smallest_image_edge),
             method=tf.image.ResizeMethod.BILINEAR,
             preserve_aspect_ratio=False,
             antialias=False,
             name=None,
         )
+
+        image_mask = tf.pad(
+            image_mask, paddings=tf.constant([[0, 0, ], [0, 0, ], [100, 100], [0, 0]]), mode='CONSTANT',
+            constant_values=0, name=None
+        )
+
+        image_mask = tf.cast(image_mask, images.dtype)
+
+        patch = tf.cast(patch, images.dtype)
+        padded_patch = tf.stack([patch] * nb_images)
+
+        padded_patch = tf.image.resize(
+            padded_patch,
+            size=(smallest_image_edge, smallest_image_edge),
+            method=tf.image.ResizeMethod.BILINEAR,
+            preserve_aspect_ratio=False,
+            antialias=False,
+            name=None,
+        )
+
+        pad_w_0 = int((self.image_shape[0] - smallest_image_edge) / 2)
+        pad_w_1 = self.image_shape[0] - smallest_image_edge - pad_w_0
+
+        pad_h_0 = int((self.image_shape[1] - smallest_image_edge) / 2)
+        pad_h_1 = self.image_shape[1] - smallest_image_edge - pad_h_0
+
+        padded_patch = tf.pad(
+            padded_patch, paddings=tf.constant([[0, 0], [pad_h_0, pad_h_1], [pad_w_0, pad_w_1], [0, 0]]), mode='CONSTANT', constant_values=0, name=None
+        )
+
         padded_patch = tf.cast(padded_patch, images.dtype)
+
         transform_vectors = list()
 
         for i in range(nb_images):
@@ -230,9 +263,13 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
             else:
                 im_scale = scale
-            padding_after_scaling = (1 - im_scale) * self.image_shape[0]
-            x_shift = np.random.uniform(-padding_after_scaling, padding_after_scaling)
-            y_shift = np.random.uniform(-padding_after_scaling, padding_after_scaling)
+
+            padding_after_scaling_h = self.image_shape[0] - im_scale * padded_patch.shape[0]
+            padding_after_scaling_w = self.image_shape[1] - im_scale * padded_patch.shape[1]
+
+            x_shift = np.random.uniform(-padding_after_scaling_w, padding_after_scaling_w)
+            y_shift = np.random.uniform(-padding_after_scaling_h, padding_after_scaling_h)
+
             phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max)) / 90.0 * (math.pi / 2.0)
 
             # Rotation
@@ -245,8 +282,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             a0, a1 = xform_matrix[0]
             b0, b1 = xform_matrix[1]
 
-            x_origin = float(self.image_shape[0]) / 2
-            y_origin = float(self.image_shape[1]) / 2
+            x_origin = float(self.image_shape[1]) / 2
+            y_origin = float(self.image_shape[0]) / 2
 
             x_origin_shifted, y_origin_shifted = np.matmul(xform_matrix, np.array([x_origin, y_origin]))
 
@@ -258,8 +295,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
             transform_vectors.append(np.array([a0, a1, a2, b0, b1, b2, 0, 0]).astype(np.float32))
 
-        image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR")
-        padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR")
+        image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR", output_shape=self.image_shape[:2])
+        padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR", output_shape=self.image_shape[:2])
         inverted_mask = 1 - image_mask
 
         return images * inverted_mask + padded_patch * image_mask
