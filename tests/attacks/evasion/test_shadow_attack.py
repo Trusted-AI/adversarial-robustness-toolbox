@@ -59,7 +59,7 @@ def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
 
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, 0.06)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, abs=0.06)
 
 
 @pytest.mark.skipMlFramework("keras", "scikitlearn")
