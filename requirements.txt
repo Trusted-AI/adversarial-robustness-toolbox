@@ -32,7 +32,7 @@ pytest==5.4.1
 pytest-pep8==1.0.6
 pytest-mock==3.2.0
 codecov==2.1.8
-requests==2.23.0
+requests==2.24.0
 
 # ART
 -e .
