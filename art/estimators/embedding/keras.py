@@ -173,6 +173,9 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
                                  # [1.0] * len(self.model.loss_weights_list) +
                                  # [-self.regularization],
                                  metrics=['accuracy'])
+        self.train_data: Optional[np.ndarray] = None
+        self.train_labels: Optional[np.ndarray] = None
+        self.is_backdoor: Optional[np.ndarray] = None
 
     def fit(self, x, y, batch_size=64, nb_epochs=10, **kwargs):
         """
@@ -213,7 +216,6 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         is_backdoor = np.isin(np.arange(len(x)), poison_idxs).astype(int)
         is_backdoor = np.fromfunction(lambda b_idx: np.eye(2)[is_backdoor[b_idx]], shape=(len(x),), dtype=int)
 
-        # TODO: standardize
         self.train_data, self.train_labels, self.is_backdoor = train_data, train_labels, is_backdoor
 
         # call fit with both y and is_backdoor labels
@@ -233,24 +235,19 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         task_predictions, backdoor_predictions = self.embed_model.predict(x_preprocessed, batch_size=batch_size,
                                                                           **kwargs)
-        if self.verbose:
-            suspected_backdoors = backdoor_predictions > self.detect_threshold
-            if np.any(suspected_backdoors):
-                num_susbected_backdoors = np.sum(suspected_backdoors)
-                logger.warning("Found " + str(num_susbected_backdoors) + " suspected backdoors in prediction")
-                logger.warning("Suspected indices:")
-                logger.warning(np.arange(len(backdoor_predictions))[suspected_backdoors])
-
         predictions = self._apply_postprocessing(preds=task_predictions, fit=False)
 
         return predictions
 
-    def get_training_data(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def get_training_data(self) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Returns the training data generated from the last call to fit
         :return:
         """
-        return self.train_data, self.train_labels, self.is_backdoor
+        if self.train_data is not None:
+            return self.train_data, self.train_labels, self.is_backdoor
+        else:
+            return None
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
