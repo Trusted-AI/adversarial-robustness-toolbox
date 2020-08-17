@@ -31,7 +31,7 @@ from keras.layers import BatchNormalization, Dense, LeakyReLU, GaussianNoise
 from keras.optimizers import Adam
 
 from art.attacks.poisoning import PoisoningAttackBackdoor
-from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE, ART_NUMPY_DTYPE
+from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 from art.estimators.classification import KerasClassifier
 from art.estimators.classification.keras import KERAS_MODEL_TYPE
 from art.estimators.embedding.adversarial_embedding import AdversarialEmbeddingMixin
@@ -71,8 +71,7 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
             discriminator_layer_1: int = 256,
             discriminator_layer_2: int = 128,
             regularization: float = 10,
-            verbose=False,
-            detect_threshold=0.8
+            learning_rate=0.0001,
     ) -> None:
         """
         Create a Keras classifier implementing the Adversarial Backdoor Embedding attack and training stategy
@@ -108,8 +107,6 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :param discriminator_layer_1: The size of the first discriminator layer
         :param discriminator_layer_2: The size of the second discriminator layer
         :param regularization: The regularization constant for the backdoor recognition part of the loss function
-        :param verbose: If true, output whether predictions are suspected backdoors
-        :param detect_threshold: The probability threshold for detecting backdoors in verbose mode
         """
         super().__init__(
             model=model,
@@ -129,18 +126,20 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
             discriminator_layer_1=discriminator_layer_1,
             discriminator_layer_2=discriminator_layer_2,
             regularization=regularization,
-            verbose=verbose,
-            detect_threshold=detect_threshold,
         )
 
-        # create discriminator and append to output
-        # 7 - last layer
-        # 6 - dropout layer
-        # 5 - last dense layer before output
+        # Input/output tensors
         model_input = model.input
         init_model_output = self.model(model_input)
-        feature_layer_output = Model(input=model_input, output=self.model.layers[5].output)
-        # feature_layer_keras = self.model.layers[5].output  # TODO: dynamically set from layer list
+
+        # Extracting feature tensor
+        if type(self.feature_layer) is int:
+            feature_layer_tensor = model.layers[self.feature_layer].output
+        else:
+            feature_layer_tensor = model.get_layer(name=feature_layer).output
+        feature_layer_output = Model(input=model_input, output=feature_layer_tensor)
+
+        # Architecture for discriminator
         discriminator_input = feature_layer_output(model_input)
         discriminator_input = GaussianNoise(stddev=1)(discriminator_input)
         dense_layer_1 = Dense(self.discriminator_layer_1)(discriminator_input)
@@ -151,28 +150,26 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         leaky_layer_2 = LeakyReLU(alpha=0.2)(norm_2_layer)
         backdoor_detect = Dense(2, activation='softmax', name='backdoor_detect')(leaky_layer_2)
 
-        # add discriminator loss to current_loss and compile
-        # TODO: ensure using embed model's ouptut
+        # Creating embedded model
         self.embed_model = Model(inputs=self.model.inputs, outputs=[init_model_output, backdoor_detect])
-        # print("printing model summary")
-        # Assuming outputs are default named output_1, ... output_n
-        output_layer = len(model.layers) - 1
+
+        # Add backdoor detectino loss
         model_name = model.name
-        if not model.losses:
-            # Assuming output layer is last layer
-            losses = {model_name: model.loss, 'backdoor_detect': 'binary_crossentropy'}
+        model_loss = model.loss
+        loss_name = 'backdoor_detect'
+        if type(model_loss) is str:
+            losses = {model_name: model_loss, loss_name: 'binary_crossentropy'}
+            loss_weights = {model_name: 1.0, loss_name: -self.regularization}
+        elif type(model_loss) is dict:
+            losses = model_loss
+            losses[loss_name] = 'binary_crossentropy'
+            loss_weights = model.loss_weights
+            loss_weights[loss_name] = -self.regularization
         else:
-            # TODO: this makes no sense
-            losses = {"output_" + str(i + 1): loss for i, loss in model.outputs}
-            losses['backdoor_detect'] = 'binary_crossentropy'
-        # TODO: dynamically set optimizer and metric from original model
-        # TODO: add learning rate schedule
-        opt = Adam(lr=0.0001)
-        self.embed_model.compile(optimizer=opt, loss=losses,
-                                 loss_weights={model_name: 1.0, "backdoor_detect": -self.regularization},
-                                 # [1.0] * len(self.model.loss_weights_list) +
-                                 # [-self.regularization],
-                                 metrics=['accuracy'])
+            raise TypeError("Cannot read model loss value of type {}".format(type(model_loss)))
+
+        opt = Adam(lr=learning_rate)
+        self.embed_model.compile(optimizer=opt, loss=losses, loss_weights=loss_weights, metrics=['accuracy'])
         self.train_data: Optional[np.ndarray] = None
         self.train_labels: Optional[np.ndarray] = None
         self.is_backdoor: Optional[np.ndarray] = None
