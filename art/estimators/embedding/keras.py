@@ -192,8 +192,11 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :type kwargs: `dict`
         :return: `None`
         """
+        # TODO: add source label specific attacks
         # poison pp_poison amount of training data
-        selected_indices = np.random.uniform(size=len(x)) < self.pp_poison
+        selected_indices = np.zeros(len(x)).astype(bool)
+        not_target = np.logical_not(np.all(y == self.target, axis=1))
+        selected_indices[not_target] = np.random.uniform(size=sum(not_target)) < self.pp_poison
 
         train_data = np.copy(x)
         train_labels = np.copy(y)
