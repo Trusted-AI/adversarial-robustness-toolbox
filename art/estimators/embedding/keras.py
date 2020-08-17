@@ -57,7 +57,7 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
             model: KERAS_MODEL_TYPE,
             feature_layer: Union[int, str],
             backdoor: PoisoningAttackBackdoor,
-            target: np.ndarray,
+            target: Union[np.ndarray, List[Tuple[np.ndarray, np.ndarray]]],
             use_logits: bool = False,
             channel_index=Deprecated,
             channels_first: bool = False,
@@ -67,7 +67,7 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
             preprocessing: PREPROCESSING_TYPE = (0, 1),
             input_layer: int = 0,
             output_layer: int = 0,
-            pp_poison: float = 0.05,
+            pp_poison: Union[float, List[float]] = 0.05,
             discriminator_layer_1: int = 256,
             discriminator_layer_2: int = 128,
             regularization: float = 10,
@@ -79,7 +79,8 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :param model: Keras model, neural network or other.
         :param feature_layer: The layer of the original network to extract features from
         :param backdoor: The backdoor attack to use in training
-        :param target: The target label to poison
+        :param target: The target label to poison. For source-label specific attacks pass in a list of tuples
+                       of the form (source label, target label).
         :param use_logits: True if the output of the model are logits; false for probabilities or any other type of
                outputs. Logits output should be favored when possible to ensure attack efficiency.
         :param channel_index: Index of the axis in data containing the color channels or features.
@@ -103,10 +104,12 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :param feature_layer: The layer of the original network to extract features from
         :param backdoor: The backdoor attack to use in training
         :param target: The target label to poison
-        :param pp_poison: The percentage of training data to poison
+        :param pp_poison: The percentage of training data to poison. For source-label specific attacks, the list each
+                          percentage will represent that (source, target) pair.
         :param discriminator_layer_1: The size of the first discriminator layer
         :param discriminator_layer_2: The size of the second discriminator layer
         :param regularization: The regularization constant for the backdoor recognition part of the loss function
+        :param learning_rate: The learning rate of the training procedure
         """
         super().__init__(
             model=model,
@@ -192,30 +195,55 @@ class KerasAdversarialEmbedding(AdversarialEmbeddingMixin, KerasClassifier):
         :type kwargs: `dict`
         :return: `None`
         """
-        # TODO: add source label specific attacks
-        # poison pp_poison amount of training data
-        selected_indices = np.zeros(len(x)).astype(bool)
-        not_target = np.logical_not(np.all(y == self.target, axis=1))
-        selected_indices[not_target] = np.random.uniform(size=sum(not_target)) < self.pp_poison
-
         train_data = np.copy(x)
         train_labels = np.copy(y)
 
-        # TODO: dynamically set broadcast based on shape of target array
-        to_be_poisoned = train_data[selected_indices]
-        poison_data, poison_labels = self.backdoor.poison(to_be_poisoned, y=self.target, broadcast=True)
+        # Select indices to poison
+        selected_indices = np.zeros(len(x)).astype(bool)
 
-        poison_idxs = np.arange(len(x))[selected_indices]
-        for i, idx in enumerate(poison_idxs):
-            train_data[idx] = poison_data[i]
-            train_labels[idx] = poison_labels[i]
+        if type(self.pp_poison) is float:
+            if type(self.target) is np.ndarray:
+                not_target = np.logical_not(np.all(y == self.target, axis=1))
+                selected_indices[not_target] = np.random.uniform(size=sum(not_target)) < self.pp_poison
+            else:
+                for src, _ in self.target:
+                    all_src = np.all(y == src, axis=1)
+                    selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < self.pp_poison
+        else:
+            for pp, (src, _) in zip(self.pp_poison, self.target):
+                all_src = np.all(y == src, axis=1)
+                selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < pp
 
-        is_backdoor = np.isin(np.arange(len(x)), poison_idxs).astype(int)
+        # Poison selected indices
+        if type(self.target) is np.ndarray:
+            to_be_poisoned = train_data[selected_indices]
+            poison_data, poison_labels = self.backdoor.poison(to_be_poisoned, y=self.target, broadcast=True)
+
+            poison_idxs = np.arange(len(x))[selected_indices]
+            for i, idx in enumerate(poison_idxs):
+                train_data[idx] = poison_data[i]
+                train_labels[idx] = poison_labels[i]
+        else:
+            for src, tgt in self.target:
+                poison_mask = np.logical_and(selected_indices, np.all(y == src, axis=1))
+                to_be_poisoned = train_data[poison_mask]
+                src_poison_data, src_poison_labels = self.backdoor.poison(to_be_poisoned, y=tgt.squeeze(axis=0),
+                                                                          broadcast=True)
+                train_data[poison_mask] = src_poison_data
+                train_labels[poison_mask] = src_poison_labels
+
+        # label 1 if is backdoor 0 otherwise
+        is_backdoor = selected_indices.astype(int)
+
+        # convert to one-hot
         is_backdoor = np.fromfunction(lambda b_idx: np.eye(2)[is_backdoor[b_idx]], shape=(len(x),), dtype=int)
 
-        self.train_data, self.train_labels, self.is_backdoor = train_data, train_labels, is_backdoor
+        # Save current training data
+        self.train_data = train_data
+        self.train_labels = train_labels
+        self.is_backdoor = is_backdoor
 
-        # call fit with both y and is_backdoor labels
+        # Call fit with both y and is_backdoor labels
         self.embed_model.fit(train_data, y=[train_labels, is_backdoor], batch_size=batch_size, epochs=nb_epochs, **kwargs)
 
     def predict(self, x, batch_size=128, **kwargs):
