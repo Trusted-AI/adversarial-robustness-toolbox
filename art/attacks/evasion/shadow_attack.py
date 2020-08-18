@@ -109,12 +109,16 @@ class ShadowAttack(EvasionAttack):
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
-        Generate adversarial samples and return them in an array.
+        Generate adversarial samples and return them in an array. This requires a lot of memory, therefore it accepts
+        only a single samples as input, e.g. a batch of size 1.
 
-        :param x: An array with the original inputs.
-        :param y: An array with the target labels.
+        :param x: An array of a single original input sample.
+        :param y: An array of a single target label.
         :return: An array with the adversarial examples.
         """
+        if x.shape[0] > 1 or y.shape[0] > 1:
+            raise ValueError("This attack only accepts a single sample as input.")
+
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
