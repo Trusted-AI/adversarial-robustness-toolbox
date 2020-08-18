@@ -23,12 +23,30 @@ import numpy as np
 import pytest
 import tensorflow.compat.v1 as tf1
 from lingvo.core.hyperparams import Params
+from numpy.testing import assert_array_equal
 
 from art.estimators.sequence.sequence import SequenceNetworkMixin
 from art.estimators.sequence.tensorflow import LingvoAsr
 from art.estimators.tensorflow import TensorFlowV2Estimator
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def audio_data():
+    """
+    Create audio fixtures of shape (nb_samples=3,) with elements of variable length.
+    """
+    sample_rate = 16000
+    test_input = np.array(
+        [
+            np.zeros(sample_rate),
+            np.ones(sample_rate * 2) * 2e3,
+            np.ones(sample_rate * 3) * 3e3,
+            np.ones(sample_rate * 3) * 3e3,
+        ]
+    )
+    return test_input
 
 
 @pytest.fixture
@@ -111,3 +129,55 @@ class TestLingvoAsr:
         features = lingvo._sess.run(features_tf, {lingvo._x_padded: test_input})
         assert features.shape[2] == 80
         assert len(features.shape) == 4
+
+    def test_pad_audio_input(self):
+        tf1.reset_default_graph()
+
+        test_input = np.array([np.array([1]), np.array([2] * 480)])
+        test_mask = np.array([[True] + [False] * 479, [True] * 480])
+        test_output = np.array([[1] + [0] * 479, [2] * 480])
+
+        lingvo = LingvoAsr()
+        output, mask, mask_freq = lingvo._pad_audio_input(test_input)
+        assert_array_equal(test_output, output)
+        assert_array_equal(test_mask, mask)
+
+    def test_predict_batch(self, audio_batch_padded):
+        tf1.reset_default_graph()
+
+        test_input, test_mask_frequency = audio_batch_padded
+        test_target_dummy = np.array(["DUMMY"] * test_input.shape[0])
+
+        lingvo = LingvoAsr()
+        feed_dict = {
+            lingvo._x_padded: test_input,
+            lingvo._y_target: test_target_dummy,
+            lingvo._mask_frequency: test_mask_frequency,
+        }
+        predictions = lingvo._sess.run(lingvo._predict_batch_op, feed_dict)
+        assert set(predictions.keys()).issuperset(
+            {
+                "target_ids",
+                "target_labels",
+                "target_weights",
+                "target_paddings",
+                "transcripts",
+                "topk_decoded",
+                "topk_ids",
+                "topk_lens",
+                "topk_scores",
+                "norm_wer_errors",
+                "norm_wer_words",
+                "utt_id",
+            }
+        )
+
+    def test_predict(self, audio_data):
+        tf1.reset_default_graph()
+
+        test_input = audio_data
+
+        lingvo = LingvoAsr()
+        predictions = lingvo.predict(test_input, batch_size=2)
+        assert predictions.shape[0] == test_input.shape[0]
+        assert isinstance(predictions[0], np.str_)

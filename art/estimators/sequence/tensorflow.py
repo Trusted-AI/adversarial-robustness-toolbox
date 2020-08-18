@@ -132,6 +132,10 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
         model, task = self._load_model()
         self._model = model
         self._task = task
+        self._metrics = None
+
+        # add prediction op to graph
+        self._predict_batch_op = self._predict_batch(self._x_padded, self._y_target, self._mask_frequency)
 
     def _check_and_download_params(self) -> str:
         """Check and download the `params/librispeech.py` file from the official Lingvo repository."""
@@ -266,6 +270,82 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
         features_shape = (tf1.shape(x)[0], -1, 80, features.shape[-1])
         features = tf1.reshape(features, features_shape)
         return features
+
+    def _pad_audio_input(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Apply padding to a batch of audio samples such that it has shape of (batch_size, max_length)."""
+        max_length = max(map(len, x))
+        batch_size = x.shape[0]
+
+        # calculate maximum frequency length
+        assert max_length >= 480, "Maximum length of audio input must be at least 480."
+        frequency_length = [((len(item) // 2 + 1) // 240 * 3) for item in x]
+        max_frequency_length = max(frequency_length)
+
+        x_padded = np.zeros((batch_size, max_length))
+        x_mask = np.zeros((batch_size, max_length), dtype=bool)
+        mask_frequency = np.zeros((batch_size, max_frequency_length, 80))
+
+        for i, x_i in enumerate(x):
+            x_padded[i, : len(x_i)] = x_i
+            x_mask[i, : len(x_i)] = 1
+            mask_frequency[i, : frequency_length[i], :] = 1
+        return x_padded, x_mask, mask_frequency
+
+    def _predict_batch(self, x: "Tensor", y: "Tensor", mask_frequency: "Tensor") -> "Tensor":
+        """Create prediction operation for a batch of padded inputs."""
+        # create decoder inputs
+        decoder_inputs = self._create_decoder_input(x, y, mask_frequency)
+
+        # call decoder
+        if not self._metrics:
+            self._metrics = self._task.FPropDefaultTheta(decoder_inputs)
+        predictions = self._task.Decode(decoder_inputs)
+
+        return predictions
+
+    def predict(
+        self, x: np.ndarray, batch_size: int = 128, **kwargs
+    ) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray]:
+        """
+        Perform batch-wise prediction for given inputs.
+
+        :param x: Samples of shape `(nb_samples)` with values in range `[-32768, 32767]`. Note that it is allowable
+                  that sequences in the batch could have different lengths. A possible example of `x` could be:
+                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+        :param batch_size: Size of batches.
+        :return: Array of predicted transcriptions of shape `(nb_samples)`. A possible example of a transcription
+                 return is `np.array(['SIXTY ONE', 'HELLO'])`.
+        """
+        if x[0].ndim != 1:
+            raise ValueError(
+                "The LingvoAsr estimator can only be used temporal data of type mono. Please remove any channel"
+                "dimension."
+            )
+
+        nb_samples = x.shape[0]
+        assert nb_samples % batch_size == 0, "Number of samples must be divisible by batch_size"
+
+        y = list()
+        nb_batches = int(np.ceil(nb_samples / float(batch_size)))
+        for m in range(nb_batches):
+            # batch indices
+            begin, end = m * batch_size, min((m + 1) * batch_size, nb_samples)
+
+            x_batch_padded, _, mask_frequency = self._pad_audio_input(x[begin:end])
+
+            feed_dict = {
+                self._x_padded: x_batch_padded,
+                self._y_target: np.array(["DUMMY"] * batch_size),
+                self._mask_frequency: mask_frequency,
+            }
+            # run prediction
+            y_batch = self._sess.run(self._predict_batch_op, feed_dict)
+
+            # extract and append transcription result
+            y += y_batch["topk_decoded"][:, 0].tolist()
+
+        y_decoded = [item.decode("utf-8") for item in y]
+        return np.array(y_decoded, dtype=str)
 
     def loss_gradient(self, x, y, **kwargs):
         """
