@@ -78,7 +78,7 @@ Indices and tables
 * :ref:`modindex`
 * :ref:`search`
 
-.. _GitHub: https://github.com/IBM/adversarial-robustness-toolbox
-.. _attacks: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Attacks
-.. _defences: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Defences
-.. _metrics: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Metrics
+.. _GitHub: https://github.com/Trusted-AI/adversarial-robustness-toolbox
+.. _attacks: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Attacks
+.. _defences: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Defences
+.. _metrics: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Metrics

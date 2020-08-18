@@ -31,15 +31,15 @@
 |-------------------------------------|-------------------------------|-----------------------------------|
 | - [安装][installation]<br>- [例子](examples/README.md)<br>- [笔记本电脑](notebooks/README.md) | - [进攻][attacks]<br>- [防御][defences]<br>- [估算器][estimators]<br>- [指标][metrics]<br>- [技术文档](https://adversarial-robustness-toolbox.readthedocs.io) | - [Slack](https://ibm-art.slack.com), [邀请函](https://join.slack.com/t/ibm-art/shared_invite/enQtMzkyOTkyODE4NzM4LTA4NGQ1OTMxMzFmY2Q1MzE1NWI2MmEzN2FjNGNjOGVlODVkZDE0MjA1NTA4OGVkMjVkNmQ4MTY1NmMyOGM5YTg)<br>- [贡献](CONTRIBUTING.md)<br>- [路线图][roadmap]<br>- [引用][citing] |
 
-[get-started]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/Get-Started
-[attacks]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Attacks
-[defences]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Defences
-[estimators]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Estimators
-[metrics]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Metrics
-[contributing]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/Contributing
-[documentation]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/Documentation
-[installation]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/Get-Started#setup
-[roadmap]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/Roadmap
-[citing]: https://github.com/IBM/adversarial-robustness-toolbox/wiki/Contributing#citing-art
+[get-started]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Get-Started
+[attacks]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Attacks
+[defences]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Defences
+[estimators]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Estimators
+[metrics]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Metrics
+[contributing]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Contributing
+[documentation]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Documentation
+[installation]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Get-Started#setup
+[roadmap]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Roadmap
+[citing]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Contributing#citing-art
 
 该图书馆正在不断发展中。 欢迎反馈，错误报告和贡献！
