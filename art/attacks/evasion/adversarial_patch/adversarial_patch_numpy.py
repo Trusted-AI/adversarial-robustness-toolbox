@@ -24,6 +24,7 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import math
 from typing import Optional, Union
 
 import random
@@ -102,6 +103,9 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.clip_patch = clip_patch
         self._check_params()
 
+        if len(self.estimator.input_shape) not in [3]:
+            raise ValueError("Wrong input_shape in estimator detected. AdversarialPatch is expecting images as input.")
+
         self.image_shape = self.estimator.input_shape
 
         if self.estimator.channels_first:
@@ -148,7 +152,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         for _ in trange(self.max_iter, desc="Adversarial Patch Numpy"):
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
 
-            num_batches = int(x.shape[0] / self.batch_size)
+            num_batches = int(math.ceil(x.shape[0] / self.batch_size))
             patch_gradients = np.zeros_like(self.patch)
 
             for i_batch in range(num_batches):
@@ -159,7 +163,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                     patched_images[i_batch_start:i_batch_end], y_target[i_batch_start:i_batch_end],
                 )
 
-                for i_image in range(self.batch_size):
+                for i_image in range(gradients.shape[0]):
                     patch_gradients_i = self._reverse_transformation(
                         gradients[i_image, :, :, :], patch_mask_transformed[i_image, :, :, :], transforms[i_image],
                     )
@@ -230,23 +234,24 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         mask = 1 - np.clip(z_grid, -1, 1)
 
+        channel_index = 1 if self.estimator.channels_first else 3
+        axis = channel_index - 1
+        mask = np.expand_dims(mask, axis=axis)
+        mask = np.broadcast_to(mask, self.patch_shape).astype(np.float32)
+
         pad_h_before = int((self.image_shape[self.i_h] - mask.shape[self.i_h]) / 2)
         pad_h_after = int(self.image_shape[self.i_h] - pad_h_before - mask.shape[self.i_h])
 
         pad_w_before = int((self.image_shape[self.i_w] - mask.shape[self.i_w]) / 2)
         pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - mask.shape[self.i_w])
 
-        mask = np.pad(
-            mask,
-            pad_width=((pad_h_before, pad_h_after), (pad_w_before, pad_w_after)),
-            mode="constant",
-            constant_values=(0, 0),
-        )
+        if self.estimator.channels_first:
+            pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))
+        else:
+            pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))
 
-        channel_index = 1 if self.estimator.channels_first else 3
-        axis = channel_index - 1
-        mask = np.expand_dims(mask, axis=axis)
-        mask = np.broadcast_to(mask, self.patch_shape).astype(np.float32)
+        mask = np.pad(mask, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
+
         return mask
 
     def _augment_images_with_random_patch(self, images, patch, scale=None):
@@ -299,7 +304,6 @@ class AdversarialPatchNumpy(EvasionAttack):
             left = (width - scale_w) // 2
 
             x_out = np.zeros_like(x)
-            x_out[top : top + scale_h, left : left + scale_w] = zoom(x, zoom=zooms, order=1)
 
             if self.estimator.channels_first:
                 x_out[:, top : top + scale_h, left : left + scale_w] = zoom(x, zoom=zooms, order=1)
@@ -307,12 +311,15 @@ class AdversarialPatchNumpy(EvasionAttack):
                 x_out[top : top + scale_h, left : left + scale_w, :] = zoom(x, zoom=zooms, order=1)
 
         elif scale > 1.0:
-            scale_h = int(np.round(height / scale))
-            scale_w = int(np.round(width / scale))
+            scale_h = int(np.round(height / scale)) + 1
+            scale_w = int(np.round(width / scale)) + 1
             top = (height - scale_h) // 2
             left = (width - scale_w) // 2
 
-            x_out = zoom(x[top : top + scale_h, left : left + scale_w], zoom=zooms, order=1)
+            if self.estimator.channels_first:
+                x_out = zoom(x[:, top : top + scale_h, left : left + scale_w], zoom=zooms, order=1)
+            else:
+                x_out = zoom(x[top : top + scale_h, left : left + scale_w, :], zoom=zooms, order=1)
 
             cut_top = (x_out.shape[self.i_h] - height) // 2
             cut_left = (x_out.shape[self.i_w] - width) // 2
@@ -325,6 +332,8 @@ class AdversarialPatchNumpy(EvasionAttack):
         else:
             x_out = x
 
+        assert x.shape == x_out.shape
+
         return x_out
 
     def _shift(self, x, shift_h, shift_w):
@@ -332,9 +341,7 @@ class AdversarialPatchNumpy(EvasionAttack):
             shift_hw = (0, shift_h, shift_w)
         else:
             shift_hw = (shift_h, shift_w, 0)
-
-        x = shift(x, shift=shift_hw, order=1)
-        return x, shift_h, shift_w
+        return shift(x, shift=shift_hw, order=1)
 
     def _random_transformation(self, patch, scale):
         patch_mask = self._get_circular_patch_mask()
@@ -359,12 +366,13 @@ class AdversarialPatchNumpy(EvasionAttack):
         if shift_max_h > 0 and shift_max_w > 0:
             shift_h = random.uniform(-shift_max_h, shift_max_h)
             shift_w = random.uniform(-shift_max_w, shift_max_w)
-            patch, _, _ = self._shift(patch, shift_h, shift_w)
-            patch_mask, shift_1, shift_2 = self._shift(patch_mask, shift_h, shift_w)
-            transformation["shift_1"] = shift_1
-            transformation["shift_2"] = shift_2
+            patch = self._shift(patch, shift_h, shift_w)
+            patch_mask = self._shift(patch_mask, shift_h, shift_w)
+            transformation["shift_h"] = shift_h
+            transformation["shift_w"] = shift_w
         else:
-            transformation["shift"] = (0, 0, 0)
+            transformation["shift_h"] = 0
+            transformation["shift_w"] = 0
 
         return patch, patch_mask, transformation
 
@@ -374,7 +382,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         # shift
         shift_h = transformation["shift_h"]
         shift_w = transformation["shift_w"]
-        gradients, _, _ = self._shift(gradients, -shift_h, -shift_w)
+        gradients = self._shift(gradients, -shift_h, -shift_w)
 
         # scale
         scale = transformation["scale"]
@@ -383,4 +391,5 @@ class AdversarialPatchNumpy(EvasionAttack):
         # rotate
         angle = transformation["rotate"]
         gradients = self._rotate(gradients, -angle)
+
         return gradients

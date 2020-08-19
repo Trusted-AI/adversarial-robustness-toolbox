@@ -105,14 +105,19 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         self.image_shape = classifier.input_shape
         self._check_params()
 
-        if self.image_shape[2] not in [1, 3]:
-            raise ValueError("Color channel need to be in last dimension.")
+        if self.estimator.channels_first:
+            raise ValueError("Color channel needs to be in last dimension.")
+
+        self.nb_dims = len(self.image_shape)
+        if self.nb_dims == 3:
+            self.i_h = 0
+            self.i_w = 1
+        elif self.nb_dims == 4:
+            self.i_h = 1
+            self.i_w = 2
 
         if self.patch_shape is None:
             self.patch_shape = self.estimator.input_shape
-
-        if self.patch_shape[2] not in [1, 3]:
-            raise ValueError("Color channel need to be in last dimension.")
 
         if self.patch_shape[0] != self.patch_shape[1]:
             raise ValueError("Patch height and width need to be the same.")
@@ -186,13 +191,13 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _get_circular_patch_mask(self, nb_images: int, sharpness: int = 40) -> "tf.Tensor":
+    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> "tf.Tensor":
         """
         Return a circular patch mask.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        diameter = self.patch_shape[0]
+        diameter = np.minimum(self.patch_shape[self.i_h], self.patch_shape[self.i_w])
 
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
@@ -202,19 +207,19 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         image_mask = 1 - np.clip(z_grid, -1, 1)
         image_mask = np.expand_dims(image_mask, axis=2)
         image_mask = np.broadcast_to(image_mask, self.patch_shape)
-        image_mask = tf.stack([image_mask] * nb_images)
+        image_mask = tf.stack([image_mask] * nb_samples)
         return image_mask
 
     def _random_overlay(self, images: np.ndarray, patch: np.ndarray, scale: Optional[float] = None) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
-        nb_images = images.shape[0]
+        nb_samples = images.shape[0]
 
-        image_mask = self._get_circular_patch_mask(nb_images=nb_images)
+        image_mask = self._get_circular_patch_mask(nb_samples=nb_samples)
         image_mask = tf.cast(image_mask, images.dtype)
 
-        smallest_image_edge = np.minimum(self.image_shape[0], self.image_shape[1])
+        smallest_image_edge = np.minimum(self.image_shape[self.i_h], self.image_shape[self.i_w])
 
         image_mask = tf.image.resize(
             image_mask,
@@ -225,9 +230,15 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             name=None,
         )
 
+        pad_h_before = int((self.image_shape[self.i_h] - image_mask.shape[self.i_h + 1]) / 2)
+        pad_h_after = int(self.image_shape[self.i_h] - pad_h_before - image_mask.shape[self.i_h + 1])
+
+        pad_w_before = int((self.image_shape[self.i_w] - image_mask.shape[self.i_w + 1]) / 2)
+        pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - image_mask.shape[self.i_w + 1])
+
         image_mask = tf.pad(
             image_mask,
-            paddings=tf.constant([[0, 0,], [0, 0,], [100, 100], [0, 0]]),
+            paddings=tf.constant([[0, 0], [pad_h_before, pad_h_after], [pad_w_before, pad_w_after], [0, 0]]),
             mode="CONSTANT",
             constant_values=0,
             name=None,
@@ -236,7 +247,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         image_mask = tf.cast(image_mask, images.dtype)
 
         patch = tf.cast(patch, images.dtype)
-        padded_patch = tf.stack([patch] * nb_images)
+        padded_patch = tf.stack([patch] * nb_samples)
 
         padded_patch = tf.image.resize(
             padded_patch,
@@ -247,15 +258,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             name=None,
         )
 
-        pad_w_0 = int((self.image_shape[0] - smallest_image_edge) / 2)
-        pad_w_1 = self.image_shape[0] - smallest_image_edge - pad_w_0
-
-        pad_h_0 = int((self.image_shape[1] - smallest_image_edge) / 2)
-        pad_h_1 = self.image_shape[1] - smallest_image_edge - pad_h_0
-
         padded_patch = tf.pad(
             padded_patch,
-            paddings=tf.constant([[0, 0], [pad_h_0, pad_h_1], [pad_w_0, pad_w_1], [0, 0]]),
+            paddings=tf.constant([[0, 0], [pad_h_before, pad_h_after], [pad_w_before, pad_w_after], [0, 0]]),
             mode="CONSTANT",
             constant_values=0,
             name=None,
@@ -265,14 +270,14 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         transform_vectors = list()
 
-        for i in range(nb_images):
+        for i in range(nb_samples):
             if scale is None:
                 im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
             else:
                 im_scale = scale
 
-            padding_after_scaling_h = self.image_shape[0] - im_scale * padded_patch.shape[0]
-            padding_after_scaling_w = self.image_shape[1] - im_scale * padded_patch.shape[1]
+            padding_after_scaling_h = self.image_shape[self.i_h] - im_scale * padded_patch.shape[self.i_h]
+            padding_after_scaling_w = self.image_shape[self.i_w] - im_scale * padded_patch.shape[self.i_w]
 
             x_shift = np.random.uniform(-padding_after_scaling_w, padding_after_scaling_w)
             y_shift = np.random.uniform(-padding_after_scaling_h, padding_after_scaling_h)
@@ -336,7 +341,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return (
             self._patch.numpy(),
-            self._get_circular_patch_mask(nb_images=1).numpy()[0],
+            self._get_circular_patch_mask(nb_samples=1).numpy()[0],
         )
 
     def apply_patch(self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
