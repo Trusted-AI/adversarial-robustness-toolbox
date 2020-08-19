@@ -78,33 +78,29 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         """
         import torch
 
-        # Remove in 1.5.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
+        # Super initialization
         super().__init__(
             clip_values=clip_values,
-            channel_index=channel_index,
-            channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
-            preprocessing=preprocessing,
+            preprocessing=preprocessing
         )
 
+        # Check clip values
         if self.clip_values is not None:
-            if self.clip_values[0] != 0:
-                raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
-            if self.clip_values[1] <= 0:
-                raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
+            if not np.all(self.clip_values[0] == -1):
+                raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
+            if not np.all(self.clip_values[1] == 1):
+                raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
 
-        if self.preprocessing is not None:
-            raise ValueError("This estimator does not support `preprocessing`.")
+        # Check preprocessing and postprocessing defences
+        if self.preprocessing_defences is not None:
+            raise ValueError("This estimator does not support `preprocessing_defences`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
+
+
+
 
         if model is None:
             import torchvision  # lgtm [py/repeated-import]
