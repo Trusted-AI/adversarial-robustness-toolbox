@@ -28,7 +28,7 @@ import numpy as np
 from art.attacks.attack import PoisoningAttackTransformer
 from art.attacks.poisoning import PoisoningAttackBackdoor
 from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierNeuralNetwork
+from art.estimators.classification.classifier import ClassifierNeuralNetwork, ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
 
 logger = logging.getLogger(__name__)
@@ -39,12 +39,13 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
     Implementation of Adversarial Embedding attack by Tan, Shokri (2019).
     "Bypassing Backdoor Detection Algorithms in Deep Learning"
 
-    This attack trains a classifier with an additional
+    This attack trains a classifier with an additional disciminator and loss function that aims
+    to create non-differentiable latent representations between backdoored and benign examples.
 
     | Paper link: https://arxiv.org/abs/1905.13409
     """
 
-    attack_params = PoisoningAttackTransformer.attack_params + PoisoningAttackBackdoor.attack_params + [
+    attack_params = PoisoningAttackTransformer.attack_params + [
         "backdoor",
         "feature_layer",
         "target",
@@ -56,7 +57,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
     ]
 
     # Currently only supporting Keras
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
+    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
     ClassifierType = TypeVar('ClassifierType', bound=ClassifierNeuralNetwork)
 
     def __init__(
@@ -136,7 +137,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             # Creating embedded model
             self.embed_model = Model(inputs=self.orig_model.inputs, outputs=[init_model_output, backdoor_detect])
 
-            # Add backdoor detectino loss
+            # Add backdoor detection loss
             model_name = self.orig_model.name
             model_loss = self.estimator.model.loss
             loss_name = 'backdoor_detect'
@@ -155,7 +156,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             opt = Adam(lr=self.learning_rate)
             self.embed_model.compile(optimizer=opt, loss=losses, loss_weights=loss_weights, metrics=['accuracy'])
         else:
-            raise NotImplementedError
+            raise NotImplementedError("This attack currently only supports Keras.")
 
     def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs) -> \
             Tuple[np.ndarray, np.ndarray]:
@@ -230,14 +231,15 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             # Call fit with both y and is_backdoor labels
             self.embed_model.fit(train_data, y=[train_labels, is_backdoor], batch_size=batch_size, epochs=nb_epochs,
                                  **kwargs)
-            return KerasClassifier(self.orig_model)  # TODO: add other classifier params
+            return KerasClassifier(model=self.orig_model, **self.estimator.get_params())
         else:
             raise NotImplementedError("Currently only Keras is supported")
 
     def get_training_data(self) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Returns the training data generated from the last call to fit
-        :return:
+        :return: If fit has been called, return the last data, labels, and backdoor labels used to train model
+                 otherwise return None
         """
         if self.train_data is not None:
             return self.train_data, self.train_labels, self.is_backdoor

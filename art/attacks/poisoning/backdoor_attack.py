@@ -56,7 +56,7 @@ class PoisoningAttackBackdoor(PoisoningAttackBlackBox):
     def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs) -> \
             Tuple[np.ndarray, np.ndarray]:
         """
-        Calls perturbation function on input x and
+        Calls perturbation function on input x and returns the perturbed input and poison labels for the data.
 
         :param x: An array with the points that initialize attack points.
         :param y: The target labels for the attack.

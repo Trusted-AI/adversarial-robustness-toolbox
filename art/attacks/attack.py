@@ -22,13 +22,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING, TypeVar
+from typing import List, Optional, Tuple, TypeVar
 
 import numpy as np
 
 from art.exceptions import EstimatorError
 
-# if TYPE_CHECKING:
 from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
@@ -184,7 +183,7 @@ class PoisoningAttack(Attack):
 
 class PoisoningAttackTransformer(PoisoningAttack):
     """
-    Abstract base class for poisoning attack classes that affect the classifier.
+    Abstract base class for poisoning attack classes that return a transformed classifier.
     These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
     """
     ClassifierType = TypeVar('ClassifierType', bound=Classifier)
