@@ -1,8 +1,9 @@
+import os
+from os import listdir, path
+
 import keras
 import logging
 import numpy as np
-import os
-from os import listdir, path
 import pickle
 import pytest
 import tempfile
@@ -74,7 +75,7 @@ def test_fit(get_default_mnist_subset, default_batch_size, image_dl_estimator):
 
 
 def test_predict(
-    request, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
+        request, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
 ):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
@@ -118,15 +119,15 @@ def test_shapes(get_default_mnist_subset, image_dl_estimator):
     ["categorical_crossentropy", "categorical_hinge", "sparse_categorical_crossentropy", "kullback_leibler_divergence"],
 )
 def test_loss_functions(
-    image_dl_estimator,
-    get_default_mnist_subset,
-    loss_name,
-    supported_losses_proba,
-    supported_losses_logit,
-    store_expected_values,
-    supported_losses_types,
-    from_logits,
-    expected_values,
+        image_dl_estimator,
+        get_default_mnist_subset,
+        loss_name,
+        supported_losses_proba,
+        supported_losses_logit,
+        store_expected_values,
+        supported_losses_types,
+        from_logits,
+        expected_values,
 ):
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
@@ -248,7 +249,7 @@ def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended,
 # change for all other tests using that fitted model
 @pytest.mark.skipMlFramework("mxnet")
 def test_fit_image_generator(
-    framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
+        framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
 ):
     try:
         if framework == "tensorflow" and is_tf_version_2:
@@ -282,13 +283,13 @@ def test_fit_image_generator(
 
 
 def test_loss_gradient(
-    framework,
-    is_tf_version_2,
-    get_default_mnist_subset,
-    image_dl_estimator,
-    expected_values,
-    mnist_shape,
-    store_expected_values,
+        framework,
+        is_tf_version_2,
+        get_default_mnist_subset,
+        image_dl_estimator,
+        expected_values,
+        mnist_shape,
+        store_expected_values,
 ):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test d
@@ -395,7 +396,7 @@ def test_save(image_dl_estimator, get_default_mnist_subset, tmp_path):
 
 @pytest.mark.skipMlFramework("mxnet")
 def test_class_gradient(
-    framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
+        framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
 ):
     if framework == "keras" and is_keras_2_3() is False:
         # Keras 2.2 does not support creating classifiers with logits=True so skipping this test

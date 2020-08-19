@@ -1,24 +1,27 @@
 import json
 import logging
-import pytest
-import numpy as np
-import tensorflow as tf
+import os
+
 import keras
 from keras.preprocessing.image import ImageDataGenerator
 from mxnet import gluon
-import os
+import numpy as np
+import pytest
 import requests
+import shutil
 import tempfile
+import tensorflow as tf
 from torch.utils.data import DataLoader
 import torch
-import shutil
+
+from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
+from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.estimators.classification import KerasClassifier
 from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
-from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
-from art.estimators.classification import KerasClassifier
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
@@ -41,7 +44,7 @@ def image_dl_estimator_defended(framework):
     def _image_dl_estimator_defended(one_classifier=False, **kwargs):
         sess = None
         classifier_list = None
-        from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
+
         clip_values = (0, 1)
         fs = FeatureSqueezing(bit_depth=2, clip_values=clip_values)
 
