@@ -96,12 +96,20 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         self.train_labels: Optional[np.ndarray] = None
         self.is_backdoor: Optional[np.ndarray] = None
         self.learning_rate = learning_rate
+        self._check_params()
 
         if isinstance(self.estimator, KerasClassifier):
-            from keras import Model
-            from keras.models import clone_model
-            from keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
-            from keras.optimizers import Adam
+            using_tf_keras = 'tensorflow.python.keras' in str(type(self.estimator.model))
+            if using_tf_keras:
+                from tensorflow.keras.models import Model, clone_model
+                from tensorflow.keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
+                from tensorflow.keras.optimizers import Adam
+
+            else:
+                from keras import Model
+                from keras.models import clone_model
+                from keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
+                from keras.optimizers import Adam
 
             self.orig_model = clone_model(self.estimator.model, input_tensors=self.estimator.model.inputs)
             model_input = self.orig_model.input
@@ -112,7 +120,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 feature_layer_tensor = self.orig_model.layers[self.feature_layer].output
             else:
                 feature_layer_tensor = self.orig_model.get_layer(name=feature_layer).output
-            feature_layer_output = Model(input=model_input, output=feature_layer_tensor)
+            feature_layer_output = Model(inputs=[model_input], outputs=[feature_layer_tensor])
 
             # Architecture for discriminator
             discriminator_input = feature_layer_output(model_input)
@@ -267,10 +275,13 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         if self.regularization <= 0:
             raise ValueError("Regularization constant must be positive")
 
+        if self.discriminator_layer_1 <= 0 or self.discriminator_layer_2 <= 0:
+            raise ValueError("Discriminator layer size must be positive")
+
     def _check_valid_label_shape(self, label: np.ndarray) -> None:
-        if label.shape != self.estimator.output_shape[1:]:
+        if label.shape != self.estimator.model.output_shape[1:]:
             raise ValueError("Invalid shape for target array. Should be {} received {}".format(
-                self.estimator.output_shape[1:], label.shape))
+                self.estimator.model.output_shape[1:], label.shape))
 
 
 def _check_pp_poison(pp_poison) -> None:
