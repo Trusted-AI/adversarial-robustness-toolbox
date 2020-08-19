@@ -231,7 +231,9 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             # Call fit with both y and is_backdoor labels
             self.embed_model.fit(train_data, y=[train_labels, is_backdoor], batch_size=batch_size, epochs=nb_epochs,
                                  **kwargs)
-            return KerasClassifier(model=self.orig_model, **self.estimator.get_params())
+            params = self.estimator.get_params()
+            del params['model']
+            return KerasClassifier(self.orig_model, **params)
         else:
             raise NotImplementedError("Currently only Keras is supported")
 
@@ -261,8 +263,8 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             self._check_valid_label_shape(self.target)
         else:
             for source, target in self.target:
-                self._check_valid_label_shape(source)
-                self._check_valid_label_shape(target)
+                self._check_valid_label_shape(source.squeeze(axis=0))
+                self._check_valid_label_shape(target.squeeze(axis=0))
 
         if type(self.pp_poison) is float:
             _check_pp_poison(self.pp_poison)
