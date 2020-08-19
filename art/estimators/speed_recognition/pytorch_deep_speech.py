@@ -29,6 +29,8 @@ from deepspeech_pytorch.utils import load_model
 
 from art.estimators.speed_recognition.speed_recognizer import SpeedRecognizerMixin
 from art.estimators.pytorch import PyTorchEstimator
+from art.utils import get_file
+from art.config import ART_DATA_PATH
 
 if TYPE_CHECKING:
     from deepspeech_pytorch.model import DeepSpeech
@@ -54,6 +56,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         pretrained_model: Optional[str] = None,
         filename: Optional[str] = None,
         url: Optional[str] = None,
+        use_half: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -69,6 +72,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                                  and `tedlium`.
         :param filename: Name of the file.
         :param url: Download URL.
+        :param use_half: Whether to use FP16 for pretrained model.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -142,16 +146,17 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             else:
                 raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
 
-            self._model = load_model(device=self._device, model_path=path, use_half=False)
+            # Download model
+            model_path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=False)
+
+            # Then load model
+            self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
 
         else:
             self._model = model
 
-
-
+        # Push model to the corresponding device
         self._model.to(self._device)
-
-        self.attack_losses: Tuple[str, ...] = attack_losses
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -225,115 +230,6 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             grads = grads / self.clip_values[1]
 
         return grads
-
-
-    @staticmethod
-    def _load_model(
-        images: "Tensor",
-        filename: Optional[str] = None,
-        url: Optional[str] = None,
-        obj_detection_model: Optional["FasterRCNNMetaArch"] = None,
-        is_training: bool = False,
-        groundtruth_boxes_list: Optional[List["Tensor"]] = None,
-        groundtruth_classes_list: Optional[List["Tensor"]] = None,
-        groundtruth_weights_list: Optional[List["Tensor"]] = None,
-    ) -> Tuple[Dict[str, "Tensor"], ...]:
-        """
-        Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
-        is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
-        formats will also be extracted. Then the model is loaded, pipelined and its outputs are returned as a tuple
-        of (predictions, losses, detections).
-
-        :param images: Input samples of shape (nb_samples, height, width, nb_channels).
-        :param filename: Name of the file.
-        :param url: Download URL.
-        :param is_training: A boolean indicating whether the training version of the computation graph should be
-                            constructed.
-        :param groundtruth_boxes_list: A list of 2-D tf.float32 tensors of shape [num_boxes, 4] containing
-                                       coordinates of the groundtruth boxes. Groundtruth boxes are provided in
-                                       [y_min, x_min, y_max, x_max] format and also assumed to be normalized and
-                                       clipped relative to the image window with conditions y_min <= y_max and
-                                       x_min <= x_max.
-        :param groundtruth_classes_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing the class
-                                         targets with the zero index which is assumed to map to the first
-                                         non-background class.
-        :param groundtruth_weights_list: A list of 1-D tf.float32 tensors of shape [num_boxes] containing weights for
-                                         groundtruth boxes.
-        :return: A tuple of (predictions, losses, detections):
-
-                    - predictions: a dictionary holding "raw" prediction tensors.
-                    - losses: a dictionary mapping loss keys (`Loss/RPNLoss/localization_loss`,
-                              `Loss/RPNLoss/objectness_loss`, `Loss/BoxClassifierLoss/localization_loss`,
-                              `Loss/BoxClassifierLoss/classification_loss`) to scalar tensors representing
-                              corresponding loss values.
-                    - detections: a dictionary containing final detection results.
-        """
-        from object_detection.utils import variables_helper
-
-        if obj_detection_model is None:
-            from object_detection.utils import config_util
-            from object_detection.builders import model_builder
-
-            # If obj_detection_model is None, then we need to have parameters filename and url to download, extract
-            # and load the object detection model
-            if filename is None or url is None:
-                raise ValueError(
-                    "Need input parameters `filename` and `url` to download, "
-                    "extract and load the object detection model."
-                )
-
-            # Download and extract
-            path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
-
-            # Load model config
-            pipeline_config = path + "/pipeline.config"
-            configs = config_util.get_configs_from_pipeline_file(pipeline_config)
-            configs["model"].faster_rcnn.second_stage_batch_size = configs[
-                "model"
-            ].faster_rcnn.first_stage_max_proposals
-
-            # Load model
-            obj_detection_model = model_builder.build(
-                model_config=configs["model"], is_training=is_training, add_summaries=False
-            )
-
-        # Provide groundtruth
-        groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, obj_detection_model.num_classes)
-            for groundtruth_class in groundtruth_classes_list
-        ]
-
-        obj_detection_model.provide_groundtruth(
-            groundtruth_boxes_list=groundtruth_boxes_list,
-            groundtruth_classes_list=groundtruth_classes_list,
-            groundtruth_weights_list=groundtruth_weights_list,
-        )
-
-        # Create model pipeline
-        images *= 255.0
-        preprocessed_images, true_image_shapes = obj_detection_model.preprocess(images)
-        predictions = obj_detection_model.predict(preprocessed_images, true_image_shapes)
-        losses = obj_detection_model.loss(predictions, true_image_shapes)
-        detections = obj_detection_model.postprocess(predictions, true_image_shapes)
-
-        # Initialize variables from checkpoint
-        # Get variables to restore
-        variables_to_restore = obj_detection_model.restore_map(
-            fine_tune_checkpoint_type="detection", load_all_detection_checkpoint_vars=True
-        )
-
-        # Get variables from checkpoint
-        fine_tune_checkpoint_path = path + "/model.ckpt"
-        vars_in_ckpt = variables_helper.get_variables_available_in_checkpoint(
-            variables_to_restore, fine_tune_checkpoint_path, include_global_step=False
-        )
-
-        # Initialize from checkpoint
-        tf.train.init_from_checkpoint(fine_tune_checkpoint_path, vars_in_ckpt)
-
-        return predictions, losses, detections
-
-
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
