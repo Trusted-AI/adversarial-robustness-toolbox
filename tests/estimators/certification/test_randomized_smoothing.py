@@ -58,7 +58,7 @@ class TestRandomizedSmoothing(unittest.TestCase):
         Test with a Pytorch Classifier.
         :return:
         """
-        # Build KerasClassifier
+        # Build PytorchxClassifier
         ptc = get_image_classifier_pt()
 
         # Get MNIST
