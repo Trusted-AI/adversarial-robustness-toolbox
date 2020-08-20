@@ -1,14 +1,14 @@
+import logging
 import os
 from os import listdir, path
+import pickle
+import tempfile
+import warnings
 
 import keras
-import logging
 import numpy as np
-import pickle
 import pytest
-import tempfile
 from tensorflow.keras.callbacks import LearningRateScheduler
-import warnings
 
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
 

@@ -1,6 +1,8 @@
 import json
 import logging
 import os
+import shutil
+import tempfile
 
 import keras
 from keras.preprocessing.image import ImageDataGenerator
@@ -8,8 +10,6 @@ from mxnet import gluon
 import numpy as np
 import pytest
 import requests
-import shutil
-import tempfile
 import tensorflow as tf
 from torch.utils.data import DataLoader
 import torch
