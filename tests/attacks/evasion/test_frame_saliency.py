@@ -40,8 +40,8 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skipMlFramework("pytorch")
-def test_one_shot(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
+def test_one_shot(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -62,8 +62,8 @@ def test_one_shot(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
 
 @pytest.mark.skipMlFramework("pytorch")
-def test_iterative_saliency(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
+def test_iterative_saliency(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -86,8 +86,8 @@ def test_iterative_saliency(fix_get_mnist_subset, get_image_classifier_list_for_
 
 
 @pytest.mark.skipMlFramework("pytorch")
-def test_iterative_saliency_refresh(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
+def test_iterative_saliency_refresh(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
