@@ -165,7 +165,8 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         Perform prediction for a batch of inputs.
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
-                  could have different lengths.
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
         :param batch_size: Batch size.
         :param transcription_output: Indicate whether the function will produce probability or transcription as
                                      prediction output.
@@ -179,12 +180,15 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
 
-    def _transform_model_input(self, x: np.ndarray, compute_gradient: bool = False):
+    def _transform_model_input(self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False):
         """
         Transform the user input space into the model input space.
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
-                  could have different lengths.
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
         :return:
         """
@@ -223,8 +227,17 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             power = None
         )
 
+        # Create a label map
+        label_map = dict([(self._model.labels[i], i) for i in range(len(self._model.labels))])
+
         # We must process each sequence separately due to the diversity of their length
         for i in range(len(x)):
+            # First process the target
+            if y is None:
+                target = []
+            else:
+                target = list(filter(None, [label_map.get(letter) for letter in list(y[i])]))
+
             # Push the sequence to device
             x[i] = torch.tensor(x[i]).to(self._device)
 
