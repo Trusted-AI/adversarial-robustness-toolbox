@@ -209,14 +209,20 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             window_fn = torch.hann_window
         elif window == 'blackman':
             window_fn = torch.blackman_window
-
+        elif window == 'bartlett':
+            window_fn = torch.bartlett_window
+        else:
+            raise NotImplementedError("Spectrogram window %s not supported." % window)
 
         # Create a transformer to transform between the two spaces
         transformer = torchaudio.transforms.Spectrogram(
             n_fft=n_fft,
-            hop_length=hop_length, win_length=win_length,
-                                                        window_fn=torch.hamming_window,
-                                                        ...: power = None)
+            hop_length=hop_length,
+            win_length=win_length,
+            window_fn=window_fn,
+            power = None
+        )
+
         # We must process each sequence separately due to the diversity of their length
         for i in range(len(x)):
             # Push the sequence to device
