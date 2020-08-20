@@ -335,13 +335,13 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 tf.data.Dataset.from_tensor_slices((x, y))
                 .shuffle(10000)
                 .batch(self.batch_size)
-                .repeat(math.ceil(self.max_iter / (x.shape[0] / self.batch_size)))
+                .repeat(math.ceil(x.shape[0] / self.batch_size))
             )
         else:
             ds = (
                 tf.data.Dataset.from_tensor_slices((x, y))
                 .batch(self.batch_size)
-                .repeat(math.ceil(self.max_iter / (x.shape[0] / self.batch_size)))
+                .repeat(math.ceil(x.shape[0] / self.batch_size))
             )
 
         for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2"):
