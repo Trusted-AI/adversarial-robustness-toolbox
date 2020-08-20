@@ -30,7 +30,7 @@ from deepspeech_pytorch.utils import load_model
 from art.estimators.speed_recognition.speed_recognizer import SpeedRecognizerMixin
 from art.estimators.pytorch import PyTorchEstimator
 from art.utils import get_file
-from art.config import ART_DATA_PATH
+from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     from deepspeech_pytorch.model import DeepSpeech
@@ -158,6 +158,80 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         # Push model to the corresponding device
         self._model.to(self._device)
 
+    def predict(
+        self, x: np.ndarray, batch_size: int = 128, **kwargs
+    ) -> Union[Tuple[np.ndarray, np.ndarray], List[str]]:
+        """
+        Perform prediction for a batch of inputs.
+
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths.
+        :param batch_size: Batch size.
+        :param transcription_output: Indicate whether the function will produce probability or transcription as
+                                     prediction output.
+        :type transcription_output: bool
+        :return: Probability or transcription predictions.
+        """
+        # Put the model in the evaluation status
+        self._model.eval()
+
+        # Apply preprocessing
+        x, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+
+    def _transform_model_input(self, x: np.ndarray, compute_gradient: bool = False):
+        """
+        Transform the user input space into the model input space.
+
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths.
+        :param compute_gradient: Indicate whether to compute gradients for the input `x`.
+        :return:
+        """
+        import torch
+        import torchaudio
+
+        x = x.astype(ART_NUMPY_DTYPE)
+
+        # These parameters are needed for the transformation
+        sample_rate = self._model.audio_conf.sample_rate
+        window_size = self._model.audio_conf.window_size
+        window_stride = self._model.audio_conf.window_stride
+
+        n_fft = int(sample_rate * window_size)
+        hop_length = int(sample_rate * window_stride)
+        win_length = n_fft
+
+        window = self._model.audio_conf.window.value
+        if window == 'hamming':
+            window_fn = torch.hamming_window
+        elif window == 'hann':
+            window_fn = torch.hann_window
+        elif window == 'blackman':
+            window_fn = torch.blackman_window
+
+
+        # Create a transformer to transform between the two spaces
+        transformer = torchaudio.transforms.Spectrogram(
+            n_fft=n_fft,
+            hop_length=hop_length, win_length=win_length,
+                                                        window_fn=torch.hamming_window,
+                                                        ...: power = None)
+        # We must process each sequence separately due to the diversity of their length
+        for i in range(len(x)):
+            # Push the sequence to device
+            x[i] = torch.tensor(x[i]).to(self._device)
+
+            # Set gradient computation permission
+            if compute_gradient:
+                x[i].requires_grad = True
+
+            # Transform the sequence into the frequency space
+            D = transformer(x[0])
+
+
+
+
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -172,100 +246,14 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch
-        import torchvision  # lgtm [py/repeated-import]
-
-        self._model.train()
-
-        # Apply preprocessing
-        x, _ = self._apply_preprocessing(x, y=None, fit=False)
-
-        if y is not None:
-            for i, y_i in enumerate(y):
-                y[i]["boxes"] = torch.tensor(y_i["boxes"], dtype=torch.float).to(self._device)
-                y[i]["labels"] = torch.tensor(y_i["labels"], dtype=torch.int64).to(self._device)
-                y[i]["scores"] = torch.tensor(y_i["scores"]).to(self._device)
-
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        image_tensor_list = list()
-
-        for i in range(x.shape[0]):
-            if self.clip_values is not None:
-                img = transform(x[i] / self.clip_values[1]).to(self._device)
-            else:
-                img = transform(x[i]).to(self._device)
-            img.requires_grad = True
-            image_tensor_list.append(img)
-
-        output = self._model(image_tensor_list, y)
-
-        # Compute the gradient and return
-        loss = None
-        for loss_name in self.attack_losses:
-            if loss is None:
-                loss = output[loss_name]
-            else:
-                loss = loss + output[loss_name]
-
-        # Clean gradients
-        self._model.zero_grad()
-
-        # Compute gradients
-        loss.backward(retain_graph=True)  # type: ignore
-
-        grad_list = list()
-        for img in image_tensor_list:
-            gradients = img.grad.cpu().numpy().copy()
-            grad_list.append(gradients)
-
-        grads = np.stack(grad_list, axis=0)
-
-        # BB
-        grads = self._apply_preprocessing_gradient(x, grads)
-        grads = np.swapaxes(grads, 1, 3)
-        grads = np.swapaxes(grads, 1, 2)
-        assert grads.shape == x.shape
-
-        if self.clip_values is not None:
-            grads = grads / self.clip_values[1]
-
-        return grads
-
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
-        """
-        Perform prediction for a batch of inputs.
-
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :param batch_size: Batch size.
-        :return: Predictions of format `List[Dict[Tensor]]`, one for each input image. The
-                 fields of the Dict are as follows:
-
-                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
-                   between 0 and H and 0 and W
-                 - labels (Int64Tensor[N]): the predicted labels for each image
-                 - scores (Tensor[N]): the scores or each prediction.
-        """
-        import torchvision  # lgtm [py/repeated-import]
-
+        # Put the model in the evaluation status
         self._model.eval()
 
-        # Apply preprocessing
-        x, _ = self._apply_preprocessing(x, y=None, fit=False)
-
-        transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-        image_tensor_list: List[np.ndarray] = list()
-
-        if self.clip_values is not None:
-            norm_factor = self.clip_values[1]
-        else:
-            norm_factor = 1.0
-        for i in range(x.shape[0]):
-            image_tensor_list.append(transform(x[i] / norm_factor).to(self._device))
-        predictions = self._model(image_tensor_list)
-        return predictions
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
-        raise NotImplementedError
+        # Put the model in the training status
+        self._model.train()
+
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
