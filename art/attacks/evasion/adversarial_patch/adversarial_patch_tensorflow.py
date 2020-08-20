@@ -108,6 +108,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         if self.estimator.channels_first:
             raise ValueError("Color channel needs to be in last dimension.")
 
+        self.i_h_patch = 0
+        self.i_w_patch = 1
+
         self.nb_dims = len(self.image_shape)
         if self.nb_dims == 3:
             self.i_h = 0
@@ -197,7 +200,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        diameter = np.minimum(self.patch_shape[self.i_h], self.patch_shape[self.i_w])
+        diameter = np.minimum(self.patch_shape[self.i_h_patch], self.patch_shape[self.i_w_patch])
 
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
@@ -230,11 +233,11 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             name=None,
         )
 
-        pad_h_before = int((self.image_shape[self.i_h] - image_mask.shape[self.i_h + 1]) / 2)
-        pad_h_after = int(self.image_shape[self.i_h] - pad_h_before - image_mask.shape[self.i_h + 1])
+        pad_h_before = int((self.image_shape[self.i_h] - image_mask.shape[self.i_h_patch + 1]) / 2)
+        pad_h_after = int(self.image_shape[self.i_h] - pad_h_before - image_mask.shape[self.i_h_patch + 1])
 
-        pad_w_before = int((self.image_shape[self.i_w] - image_mask.shape[self.i_w + 1]) / 2)
-        pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - image_mask.shape[self.i_w + 1])
+        pad_w_before = int((self.image_shape[self.i_w] - image_mask.shape[self.i_w_patch + 1]) / 2)
+        pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - image_mask.shape[self.i_w_patch + 1])
 
         image_mask = tf.pad(
             image_mask,
@@ -294,8 +297,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             a0, a1 = xform_matrix[0]
             b0, b1 = xform_matrix[1]
 
-            x_origin = float(self.image_shape[1]) / 2
-            y_origin = float(self.image_shape[0]) / 2
+            x_origin = float(self.image_shape[self.i_w]) / 2
+            y_origin = float(self.image_shape[self.i_h]) / 2
 
             x_origin_shifted, y_origin_shifted = np.matmul(xform_matrix, np.array([x_origin, y_origin]))
 
@@ -307,10 +310,16 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
             transform_vectors.append(np.array([a0, a1, a2, b0, b1, b2, 0, 0]).astype(np.float32))
 
-        image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR", output_shape=self.image_shape[:2])
-        padded_patch = tfa.image.transform(
-            padded_patch, transform_vectors, "BILINEAR", output_shape=self.image_shape[:2]
-        )
+        image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR",)
+        padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
+
+        if self.nb_dims == 4:
+            image_mask = tf.stack([image_mask] * 15, axis=1)
+            image_mask = tf.cast(image_mask, images.dtype)
+
+            padded_patch = tf.stack([padded_patch] * 15, axis=1)
+            padded_patch = tf.cast(padded_patch, images.dtype)
+
         inverted_mask = 1 - image_mask
 
         return images * inverted_mask + padded_patch * image_mask

@@ -170,7 +170,7 @@ class TestAdversarialPatch(TestBase):
             _ = AdversarialPatch(classifier=classifier)
 
         self.assertIn(
-            "Wrong input_shape in estimator detected. AdversarialPatch is expecting images as input.",
+            "Unexpected input_shape in estimator detected. AdversarialPatch is expecting images or videos as input.",
             str(context.exception),
         )
 

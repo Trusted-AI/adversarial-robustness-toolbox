@@ -103,17 +103,31 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.clip_patch = clip_patch
         self._check_params()
 
-        if len(self.estimator.input_shape) not in [3]:
-            raise ValueError("Wrong input_shape in estimator detected. AdversarialPatch is expecting images as input.")
+        if len(self.estimator.input_shape) not in [3, 4]:
+            raise ValueError(
+                "Unexpected input_shape in estimator detected. AdversarialPatch is expecting images or videos as input."
+            )
 
         self.image_shape = self.estimator.input_shape
 
-        if self.estimator.channels_first:
-            self.i_h = 1
-            self.i_w = 2
-        else:
-            self.i_h = 0
-            self.i_w = 1
+        self.i_h_patch = 0
+        self.i_w_patch = 1
+
+        self.nb_dims = len(self.image_shape)
+        if self.nb_dims == 3:
+            if self.estimator.channels_first:
+                self.i_h = 1
+                self.i_w = 2
+            else:
+                self.i_h = 0
+                self.i_w = 1
+        elif self.nb_dims == 4:
+            if self.estimator.channels_first:
+                self.i_h = 2
+                self.i_w = 3
+            else:
+                self.i_h = 1
+                self.i_w = 2
 
         if self.estimator.channels_first:
             smallest_image_edge = np.minimum(self.image_shape[1], self.image_shape[2])
@@ -246,9 +260,15 @@ class AdversarialPatchNumpy(EvasionAttack):
         pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - mask.shape[self.i_w])
 
         if self.estimator.channels_first:
-            pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))
+            if self.nb_dims == 3:
+                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))
+            elif self.nb_dims == 4:
+                pad_width = ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))
         else:
-            pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))
+            if self.nb_dims == 3:
+                pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))
+            elif self.nb_dims == 4:
+                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))
 
         mask = np.pad(mask, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
 
@@ -291,11 +311,19 @@ class AdversarialPatchNumpy(EvasionAttack):
         height = None
         width = None
         if self.estimator.channels_first:
-            zooms = (1.0, scale, scale)
-            height, width = self.patch_shape[1:3]
+            if self.nb_dims == 3:
+                zooms = (1.0, scale, scale)
+                height, width = self.patch_shape[1:3]
+            elif self.nb_dims == 4:
+                zooms = (1.0, 1.0, scale, scale)
+                height, width = self.patch_shape[2:4]
         elif not self.estimator.channels_first:
-            zooms = (scale, scale, 1.0)
-            height, width = self.patch_shape[0:2]
+            if self.nb_dims == 3:
+                zooms = (scale, scale, 1.0)
+                height, width = self.patch_shape[0:2]
+            elif self.nb_dims == 4:
+                zooms = (1.0, scale, scale, 1.0)
+                height, width = self.patch_shape[1:3]
 
         if scale < 1.0:
             scale_h = int(np.round(height * scale))
@@ -306,9 +334,15 @@ class AdversarialPatchNumpy(EvasionAttack):
             x_out = np.zeros_like(x)
 
             if self.estimator.channels_first:
-                x_out[:, top : top + scale_h, left : left + scale_w] = zoom(x, zoom=zooms, order=1)
+                if self.nb_dims == 3:
+                    x_out[:, top : top + scale_h, left : left + scale_w] = zoom(x, zoom=zooms, order=1)
+                elif self.nb_dims == 4:
+                    x_out[:, :, top : top + scale_h, left : left + scale_w] = zoom(x, zoom=zooms, order=1)
             else:
-                x_out[top : top + scale_h, left : left + scale_w, :] = zoom(x, zoom=zooms, order=1)
+                if self.nb_dims == 3:
+                    x_out[top : top + scale_h, left : left + scale_w, :] = zoom(x, zoom=zooms, order=1)
+                elif self.nb_dims == 4:
+                    x_out[:, top : top + scale_h, left : left + scale_w, :] = zoom(x, zoom=zooms, order=1)
 
         elif scale > 1.0:
             scale_h = int(np.round(height / scale)) + 1
@@ -317,17 +351,29 @@ class AdversarialPatchNumpy(EvasionAttack):
             left = (width - scale_w) // 2
 
             if self.estimator.channels_first:
-                x_out = zoom(x[:, top : top + scale_h, left : left + scale_w], zoom=zooms, order=1)
+                if self.nb_dims == 3:
+                    x_out = zoom(x[:, top : top + scale_h, left : left + scale_w], zoom=zooms, order=1)
+                elif self.nb_dims == 4:
+                    x_out = zoom(x[:, :, top : top + scale_h, left : left + scale_w], zoom=zooms, order=1)
             else:
-                x_out = zoom(x[top : top + scale_h, left : left + scale_w, :], zoom=zooms, order=1)
+                if self.nb_dims == 3:
+                    x_out = zoom(x[top : top + scale_h, left : left + scale_w, :], zoom=zooms, order=1)
+                elif self.nb_dims == 4:
+                    x_out = zoom(x[:, top : top + scale_h, left : left + scale_w, :], zoom=zooms, order=1)
 
             cut_top = (x_out.shape[self.i_h] - height) // 2
             cut_left = (x_out.shape[self.i_w] - width) // 2
 
             if self.estimator.channels_first:
-                x_out = x_out[:, cut_top : cut_top + height, cut_left : cut_left + width]
+                if self.nb_dims == 3:
+                    x_out = x_out[:, cut_top : cut_top + height, cut_left : cut_left + width]
+                elif self.nb_dims == 4:
+                    x_out = x_out[:, :, cut_top : cut_top + height, cut_left : cut_left + width]
             else:
-                x_out = x_out[cut_top : cut_top + height, cut_left : cut_left + width, :]
+                if self.nb_dims == 3:
+                    x_out = x_out[cut_top : cut_top + height, cut_left : cut_left + width, :]
+                elif self.nb_dims == 4:
+                    x_out = x_out[:, cut_top : cut_top + height, cut_left : cut_left + width, :]
 
         else:
             x_out = x
@@ -338,9 +384,15 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _shift(self, x, shift_h, shift_w):
         if self.estimator.channels_first:
-            shift_hw = (0, shift_h, shift_w)
+            if self.nb_dims == 3:
+                shift_hw = (0, shift_h, shift_w)
+            elif self.nb_dims == 4:
+                shift_hw = (0, 0, shift_h, shift_w)
         else:
-            shift_hw = (shift_h, shift_w, 0)
+            if self.nb_dims == 3:
+                shift_hw = (shift_h, shift_w, 0)
+            elif self.nb_dims == 4:
+                shift_hw = (0, shift_h, shift_w, 0)
         return shift(x, shift=shift_hw, order=1)
 
     def _random_transformation(self, patch, scale):
