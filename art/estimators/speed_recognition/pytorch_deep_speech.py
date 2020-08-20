@@ -233,12 +233,22 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                 x[i].requires_grad = True
 
             # Transform the sequence into the frequency space
-            D = transformer(x[0])
+            transformed_input = transformer(x[i])
+            spectrogram, _ = torchaudio.functional.magphase(transformed_input)
+            spectrogram = torch.log1p(spectrogram)
+
+            # Normalize data
+            mean = spectrogram.mean()
+            std = spectrogram.std()
+            spectrogram = spectrogram - mean
+            spectrogram = spectrogram / std
 
 
 
+In[295]: batch = [(spect_1, l1), (spect_2, l2)]
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+
+def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
