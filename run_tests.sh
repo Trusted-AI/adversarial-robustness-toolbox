@@ -39,6 +39,7 @@ done
 
 
 declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
+                    "tests/attacks/test_adversarial_embedding.py" \
                     "tests/attacks/test_backdoor_attack.py" \
                     "tests/attacks/test_carlini.py" \
                     "tests/attacks/test_copycat_cnn.py" \
