@@ -36,7 +36,10 @@ from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, ge
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
+<<<<<<< HEAD
 from tests.utils import get_attack_classifier_pt
+=======
+>>>>>>> created a custom ART exception
 from tests.utils import ARTTestFixtureNotImplemented
 
 logger = logging.getLogger(__name__)
@@ -91,8 +94,13 @@ def image_dl_estimator_defended(framework):
                                          preprocessing_defences=defenses)
 
         if classifier is None:
+<<<<<<< HEAD
             raise ARTTestFixtureNotImplemented(
                 "{0} doesn't have a defended image classifier defined yet".format(framework))
+=======
+            raise ARTTestFixtureNotImplemented("{0} doesn't have a defended image classifier defined yet".format(framework))
+
+>>>>>>> created a custom ART exception
         return classifier, sess
 
     return _image_dl_estimator_defended
@@ -187,7 +195,11 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
             return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
 
         raise ARTTestFixtureNotImplemented("Framework {0} does not have any image test "
+<<<<<<< HEAD
                                            "iterator defined for it yet".format(framework))
+=======
+                                  "iterator defined for it yet".format(framework))
+>>>>>>> created a custom ART exception
 
     return _get_image_iterator
 
