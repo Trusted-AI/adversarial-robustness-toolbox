@@ -545,6 +545,7 @@ def tabular_dl_estimator(framework):
         if framework == "pytorch":
             classifier_list = [get_attack_classifier_pt(**kwargs)]
         if framework == "scikitlearn":
+            #TODO this should be moved out of the dl_estimator since scikit is not a deep learning framework
             classifier = get_tabular_classifier_scikit_list(clipped=False)
 
         if classifier is None:
