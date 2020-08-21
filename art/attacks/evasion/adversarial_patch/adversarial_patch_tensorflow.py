@@ -177,10 +177,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1],
         )
 
-        # from matplotlib import pyplot as plt
-        # plt.matshow(patched_input[0, :, :, 0])
-        # plt.show()
-
         probabilities = self.estimator._predict_framework(patched_input)
 
         return probabilities
@@ -350,7 +346,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2"):
             for images, target in ds:
-                loss = self._train_step(images=images, target=target)
+                _ = self._train_step(images=images, target=target)
 
         return (
             self._patch.numpy(),
