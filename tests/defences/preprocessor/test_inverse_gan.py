@@ -32,11 +32,11 @@ def fix_get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train = 50
     n_test = 50
-    yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_inverse_gan(fix_get_mnist_subset, get_image_classifier_list_for_attack):
+def test_inverse_gan(fix_get_mnist_subset, image_dl_estimator_for_attack):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     gan, inverse_gan, sess = get_gan_inverse_gan_ft()
@@ -44,7 +44,7 @@ def test_inverse_gan(fix_get_mnist_subset, get_image_classifier_list_for_attack)
         logging.warning("Couldn't perform  this test because no gan is defined for this framework configuration")
         return
 
-    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
+    classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
 
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")

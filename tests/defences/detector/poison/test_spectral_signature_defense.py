@@ -65,7 +65,7 @@ class TestSpectralSignatureDefense(unittest.TestCase):
         self.defence.set_params(eps_multiplier=-1.0)
 
     @unittest.expectedFailure
-    def test_wrong_parameters_2(self):
+    def test_wrong_parameters_3(self):
         self.defence.set_params(ub_pct_poison=2.0)
 
     def test_detect_poison(self):

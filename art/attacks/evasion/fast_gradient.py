@@ -95,7 +95,7 @@ class FastGradientMethod(EvasionAttack):
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step
-        self.targeted = targeted
+        self._targeted = targeted
         self.num_random_init = num_random_init
         self.batch_size = batch_size
         self.minimal = minimal

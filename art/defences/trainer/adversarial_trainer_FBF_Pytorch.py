@@ -40,7 +40,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
 
-    | The effectiveness of this protoocl is found to be sensitive to the use of techniques like
+    | The effectiveness of this protocol is found to be sensitive to the use of techniques like
         data augmentation, gradient clipping and learning rate schedules. Optionally, the use of
         mixed precision arithmetic operation via apex library can significantly reduce the training
         time making this one of the fastest adversarial training protocol.
@@ -54,7 +54,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         :type classifier: :class:`.Classifier`
         :param eps: Maximum perturbation that the attacker can introduce.
         :type eps: `float`
-        :param use_amp: Boolean that decides if apex should be used for mixed precision arithmantic during training
+        :param use_amp: Boolean that decides if apex should be used for mixed precision arithmetic during training
         :type use_amp: `bool`
 
         """
@@ -89,9 +89,9 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         def lr_schedule(t):
             return np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
 
-        for i_epoch in range(nb_epochs):
-            logger.info("Adversarial training FBF epoch %i/%i", i_epoch, nb_epochs)
+        logger.info("Adversarial training FBF")
 
+        for i_epoch in range(nb_epochs):
             # Shuffle the examples
             np.random.shuffle(ind)
             start_time = time.time()
@@ -120,7 +120,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                 output = np.argmax(self.predict(x_test), axis=1)
                 nb_correct_pred = np.sum(output == np.argmax(y_test, axis=1))
                 logger.info(
-                    "{} \t {:.1f} \t {:.4f} \t {:.4f} \t {:.4f} \t {:.4f}".format(
+                    "epoch {}\ttime(s) {:.1f}\tlr {:.4f}\tloss {:.4f}\tacc(tr) {:.4f}\tacc(val) {:.4f}".format(
                         i_epoch,
                         train_time - start_time,
                         lr,
@@ -131,7 +131,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                 )
             else:
                 logger.info(
-                    "{} \t {:.1f} \t {:.4f} \t {:.4f} \t {:.4f}".format(
+                    "epoch {}\t time(s) {:.1f}\t lr {:.4f}\t loss {:.4f}\t acc {:.4f}".format(
                         i_epoch, train_time - start_time, lr, train_loss / train_n, train_acc / train_n
                     )
                 )
@@ -158,8 +158,9 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         def lr_schedule(t):
             return np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
 
+        logger.info("Adversarial training FBF")
+
         for i_epoch in range(nb_epochs):
-            logger.info("Adversarial training FBF epoch %i/%i", i_epoch, nb_epochs)
             start_time = time.time()
             train_loss = 0
             train_acc = 0
@@ -180,7 +181,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
             train_time = time.time()
             logger.info(
-                "{} \t {:.1f} \t {:.4f} \t {:.4f} \t {:.4f}".format(
+                "epoch {}\t time(s) {:.1f}\t lr {:.4f}\t loss {:.4f}\t acc {:.4f}".format(
                     i_epoch, train_time - start_time, lr, train_loss / train_n, train_acc / train_n
                 )
             )

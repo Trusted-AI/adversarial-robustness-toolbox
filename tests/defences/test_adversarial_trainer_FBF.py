@@ -25,7 +25,7 @@ from art.defences.trainer import AdversarialTrainerFBFPyTorch
 
 
 @pytest.fixture()
-def get_adv_trainer(framework, get_image_classifier_list):
+def get_adv_trainer(framework, image_dl_estimator):
     def _get_adv_trainer(**kwargs):
 
         if framework == "keras":
@@ -33,7 +33,7 @@ def get_adv_trainer(framework, get_image_classifier_list):
         if framework == "tensorflow":
             trainer = None
         if framework == "pytorch":
-            classifier = get_image_classifier_list()[0][0]
+            classifier = image_dl_estimator()[0][0]
             trainer = AdversarialTrainerFBFPyTorch(classifier)
         if framework == "scikitlearn":
             trainer = None
@@ -48,7 +48,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train = 100
     n_test = 100
-    yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
 def test_adversarial_trainer_FBF_Pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset):

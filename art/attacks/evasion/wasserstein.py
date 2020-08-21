@@ -103,7 +103,7 @@ class Wasserstein(EvasionAttack):
         """
         super().__init__(estimator=estimator)
 
-        self.targeted = targeted
+        self._targeted = targeted
         self.regularization = regularization
         self.p = p
         self.kernel_size = kernel_size
@@ -567,7 +567,7 @@ class Wasserstein(EvasionAttack):
         # Do padding
         shape = tuple(np.array(x.shape[2:]) + padding * 2)
         x_pad = np.zeros(x.shape[:2] + shape)
-        x_pad[:, :, padding : (shape[0] - padding), padding : (shape[0] - padding)] = x
+        x_pad[:, :, padding : (shape[0] - padding), padding : (shape[1] - padding)] = x
 
         # Do unfolding
         res_dim_0 = x.shape[0]
@@ -614,9 +614,7 @@ class Wasserstein(EvasionAttack):
 
         result = np.matmul(unfold_x, tmp_K)
         result = np.squeeze(result, -1)
-
-        size = int(np.sqrt(result.shape[-1]))
-        result = result.reshape(*result.shape[:-1], size, size)
+        result = result.reshape(*result.shape[:-1], x.shape[-2], x.shape[-1])
 
         # Swap channels for final result
         if not self.estimator.channels_first:
