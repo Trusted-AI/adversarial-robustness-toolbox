@@ -93,7 +93,6 @@ def image_dl_estimator_defended(framework):
         if classifier is None:
             raise ARTTestFixtureNotImplemented(
                 "{0} doesn't have a defended image classifier defined yet".format(framework))
-
         return classifier, sess
 
     return _image_dl_estimator_defended
