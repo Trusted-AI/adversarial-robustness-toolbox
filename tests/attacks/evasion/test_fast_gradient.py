@@ -154,7 +154,6 @@ def test_tabular(tabular_dl_estimator, framework, get_iris_dataset, targeted, cl
             attack = FastGradientMethod(classifier, eps=0.1)
             backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
     except ARTTestException as e:
-
         add_warning(e)
 
 
