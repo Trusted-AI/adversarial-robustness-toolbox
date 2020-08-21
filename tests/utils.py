@@ -1341,7 +1341,13 @@ def get_tabular_classifier_kr(load_init=True):
 
 
 def add_warning(exception):
-    warnings.warn(UserWarning(exception))
+    if type(exception) is NotImplementedError:
+        # NotImplementedErrors are raised in ART whenever a test model does not exist for a specific model/framework
+        # combination. By catching there here, we can provide a report at the end of each pytest run list all models
+        # requiring to be implemented.
+        warnings.warn(UserWarning(exception))
+    else:
+        raise exception
 
 
 def get_tabular_classifier_pt(load_init=True):
