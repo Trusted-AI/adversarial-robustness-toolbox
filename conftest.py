@@ -21,9 +21,12 @@ import os
 import shutil
 import tempfile
 
+from mxnet import gluon
 import numpy as np
 import pytest
 import requests
+import torch
+import tensorflow as tf
 
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
@@ -49,7 +52,7 @@ def pytest_addoption(parser):
         action="store",
         default=default_framework,
         help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is `tensorflow`. "
-        "Other options available are {0}".format(art_supported_frameworks),
+             "Other options available are {0}".format(art_supported_frameworks),
     )
 
 
@@ -147,49 +150,45 @@ def setup_tear_down_framework(framework):
 def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
-    if framework == "keras" or framework == "kerastf":
-        from keras.preprocessing.image import ImageDataGenerator
+    def _get_image_iterator():
+        if framework == "keras" or framework == "kerastf":
+            keras_gen = ImageDataGenerator(
+                width_shift_range=0.075,
+                height_shift_range=0.075,
+                rotation_range=12,
+                shear_range=0.075,
+                zoom_range=0.05,
+                fill_mode="constant",
+                cval=0,
+            )
+            return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
 
-        keras_gen = ImageDataGenerator(
-            width_shift_range=0.075,
-            height_shift_range=0.075,
-            rotation_range=12,
-            shear_range=0.075,
-            zoom_range=0.05,
-            fill_mode="constant",
-            cval=0,
-        )
-        return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
+        if framework == "tensorflow":
+            if not is_tf_version_2:
+                x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
+                y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
+                # tmp = x_train_mnist.shape[0] / default_batch_size
+                # x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(tmp, default_batch_size, 28, 28, 1))
+                # y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(tmp, default_batch_size, 10))
+                dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+                return dataset.make_initializable_iterator()
 
-    if framework == "tensorflow":
-        import tensorflow as tf
+        if framework == "pytorch":
+            # Create tensors from data
+            x_train_tens = torch.from_numpy(x_train_mnist)
+            x_train_tens = x_train_tens.float()
+            y_train_tens = torch.from_numpy(y_train_mnist)
+            dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
+            return DataLoader(dataset=dataset, batch_size=default_batch_size, shuffle=True)
 
-        if not is_tf_version_2:
-            x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
-            y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
-            # tmp = x_train_mnist.shape[0] / default_batch_size
-            # x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(tmp, default_batch_size, 28, 28, 1))
-            # y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(tmp, default_batch_size, 10))
-            dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
-            return dataset.make_initializable_iterator()
+        if framework == "mxnet":
+            dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
+            return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
 
-    if framework == "pytorch":
-        import torch
+        raise NotImplementedError("Framework {0} does not have any image test "
+                                  "iterator defined for it yet".format(framework))
 
-        # Create tensors from data
-        x_train_tens = torch.from_numpy(x_train_mnist)
-        x_train_tens = x_train_tens.float()
-        y_train_tens = torch.from_numpy(y_train_mnist)
-        dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
-        return torch.utils.data.DataLoader(dataset=dataset, batch_size=default_batch_size, shuffle=True)
-
-    if framework == "mxnet":
-        import mxnet
-
-        dataset = mxnet.gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
-        return mxnet.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
-
-    return None
+    return _get_image_iterator
 
 
 @pytest.fixture
@@ -197,10 +196,12 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
     def _image_data_generator(**kwargs):
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
+        image_it = image_iterator()
+
         data_generator = None
         if framework == "keras" or framework == "kerastf":
             data_generator = KerasDataGenerator(
-                iterator=image_iterator,
+                iterator=image_it,
                 size=x_train_mnist.shape[0],
                 batch_size=default_batch_size,
             )
@@ -208,17 +209,17 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
         if framework == "tensorflow":
             if not is_tf_version_2:
                 data_generator = TensorFlowDataGenerator(
-                    sess=kwargs["sess"], iterator=image_iterator, iterator_type="initializable", iterator_arg={},
+                    sess=kwargs["sess"], iterator=image_it, iterator_type="initializable", iterator_arg={},
                     size=x_train_mnist.shape[0],
                     batch_size=default_batch_size,
                 )
 
         if framework == "pytorch":
-            data_generator = PyTorchDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
+            data_generator = PyTorchDataGenerator(iterator=image_it, size=x_train_mnist.shape[0],
                                                   batch_size=default_batch_size)
 
         if framework == "mxnet":
-            data_generator = MXDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
+            data_generator = MXDataGenerator(iterator=image_it, size=x_train_mnist.shape[0],
                                              batch_size=default_batch_size)
 
         if data_generator is None:
@@ -256,7 +257,7 @@ def store_expected_values(request, is_tf_version_2):
 
         try:
             with open(
-                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+                    os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
             ) as f:
                 expected_values = json.load(f)
         except FileNotFoundError:
@@ -266,7 +267,7 @@ def store_expected_values(request, is_tf_version_2):
         expected_values[test_name] = values_to_store
 
         with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 
@@ -294,7 +295,7 @@ def expected_values(framework, request, is_tf_version_2):
 
     def _expected_values():
         with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
         ) as f:
             expected_values = json.load(f)
 
@@ -326,10 +327,10 @@ def get_image_classifier_mx_model():
             super(Model, self).__init__(**kwargs)
             self.model = mxnet.gluon.nn.Sequential()
             self.model.add(
-                mxnet.gluon.nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
+                mxnet.gluon.nn.Conv2D(channels=1, kernel_size=7, activation="relu", ),
                 mxnet.gluon.nn.MaxPool2D(pool_size=4, strides=4),
                 mxnet.gluon.nn.Flatten(),
-                mxnet.gluon.nn.Dense(10, activation=None,),
+                mxnet.gluon.nn.Dense(10, activation=None, ),
             )
 
         def forward(self, x):
@@ -512,10 +513,6 @@ def tabular_dl_estimator(framework):
         if framework == "pytorch":
             if clipped:
                 classifier = get_tabular_classifier_pt()
-
-        if framework == "scikitlearn":
-            # TODO this should be moved out of the dl_estimator since scikit is not a deep learning framework
-            classifier = get_tabular_classifier_scikit_list(clipped=False)
 
         if classifier is None:
             raise NotImplementedError(
