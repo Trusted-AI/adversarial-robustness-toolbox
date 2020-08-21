@@ -178,9 +178,9 @@ def test_norm_images(norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
 @pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
 @pytest.mark.framework_agnostic
-def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, targeted, clipped):
+def test_tabular(tabular_dl_estimator, framework, get_iris_dataset, targeted, clipped):
     try:
-        classifier_list = get_tabular_classifier_list(FastGradientMethod, clipped=clipped)
+        classifier_list = tabular_dl_estimator(FastGradientMethod, clipped=clipped)
 
         if classifier_list is None:
             logging.warning("Couldn't perform  this test because no classifier is defined")

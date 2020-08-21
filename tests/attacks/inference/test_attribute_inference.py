@@ -40,8 +40,8 @@ from tests.attacks.utils import backend_test_classifier_type_check_fail
 logger = logging.getLogger(__name__)
 
 
-def test_black_box(get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(AttributeInferenceBlackBox)
+def test_black_box(tabular_dl_estimator, get_iris_dataset):
+    classifier_list = tabular_dl_estimator(AttributeInferenceBlackBox)
     if not classifier_list:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
@@ -91,8 +91,8 @@ def test_black_box(get_tabular_classifier_list, get_iris_dataset):
             assert test_acc == pytest.approx(0.8888, abs=0.03)
 
 
-def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(AttributeInferenceBlackBox)
+def test_black_box_with_model(tabular_dl_estimator, get_iris_dataset):
+    classifier_list = tabular_dl_estimator(AttributeInferenceBlackBox)
     if not classifier_list:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
@@ -150,8 +150,8 @@ def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
             # assert test_acc == pytest.approx(0.5777, abs=0.03)
 
 
-def test_white_box(get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(AttributeInferenceWhiteBoxDecisionTree)
+def test_white_box(tabular_dl_estimator, get_iris_dataset):
+    classifier_list = tabular_dl_estimator(AttributeInferenceWhiteBoxDecisionTree)
     if not classifier_list:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return
@@ -179,8 +179,8 @@ def test_white_box(get_tabular_classifier_list, get_iris_dataset):
             assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.1988, abs=0.03)
 
 
-def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(AttributeInferenceWhiteBoxLifestyleDecisionTree)
+def test_white_box_lifestyle(tabular_dl_estimator, get_iris_dataset):
+    classifier_list = tabular_dl_estimator(AttributeInferenceWhiteBoxLifestyleDecisionTree)
     if not classifier_list:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return

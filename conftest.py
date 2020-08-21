@@ -494,36 +494,34 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
 
 
 @pytest.fixture
-def get_tabular_classifier_list(framework):
-    def _get_tabular_classifier_list(clipped=True):
+def tabular_dl_estimator(framework):
+    def _tabular_dl_estimator(clipped=True):
+        classifier = None
         if framework == "keras":
             if clipped:
-                classifier_list = [get_tabular_classifier_kr()]
-            else:
                 classifier = get_tabular_classifier_kr()
-                classifier_list = [KerasClassifier(model=classifier.model, use_logits=False, channels_first=True)]
+            else:
+                kr_classifier = get_tabular_classifier_kr()
+                classifier = KerasClassifier(model=kr_classifier.model, use_logits=False, channels_first=True)
 
         if framework == "tensorflow":
             if clipped:
                 classifier, _ = get_tabular_classifier_tf()
-                classifier_list = [classifier]
-            else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
-                classifier_list = None
 
         if framework == "pytorch":
             if clipped:
-                classifier_list = [get_tabular_classifier_pt()]
-            else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
-                classifier_list = None
+                classifier = get_tabular_classifier_pt()
 
         if framework == "scikitlearn":
-            return get_tabular_classifier_scikit_list(clipped=False)
+            classifier = get_tabular_classifier_scikit_list(clipped=False)
 
-        return classifier_list
+        if classifier is None:
+            raise NotImplementedError(
+                "framework {0} doesn't have a test deep learning tabular estimator with "
+                "these parameters defined yet".format(framework))
+        return classifier
 
-    return _get_tabular_classifier_list
+    return _tabular_dl_estimator
 
 
 @pytest.fixture
