@@ -314,10 +314,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
 
         if self.nb_dims == 4:
-            image_mask = tf.stack([image_mask] * 15, axis=1)
+            image_mask = tf.stack([image_mask] * images.shape[1], axis=1)
             image_mask = tf.cast(image_mask, images.dtype)
 
-            padded_patch = tf.stack([padded_patch] * 15, axis=1)
+            padded_patch = tf.stack([padded_patch] * images.shape[1], axis=1)
             padded_patch = tf.cast(padded_patch, images.dtype)
 
         inverted_mask = 1 - image_mask
