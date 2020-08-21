@@ -54,15 +54,9 @@ def test_classifier_defended_images(fix_get_mnist_subset, image_dl_estimator_for
 @pytest.mark.framework_agnostic
 def test_random_initialisation_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
-
-        for classifier in classifier_list:
-            attack = FastGradientMethod(classifier, num_random_init=3)
-            backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
+        classifier= image_dl_estimator_for_attack(FastGradientMethod)
+        attack = FastGradientMethod(classifier, num_random_init=3)
+        backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
     except Exception as e:
         add_warning(e)
 
@@ -70,18 +64,12 @@ def test_random_initialisation_images(fix_get_mnist_subset, image_dl_estimator_f
 @pytest.mark.framework_agnostic
 def test_targeted_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
+        attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
+        attack.set_params(**attack_params)
 
-        for classifier in classifier_list:
-            attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
-            attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
-            attack.set_params(**attack_params)
-
-            backend_targeted_images(attack, fix_get_mnist_subset)
+        backend_targeted_images(attack, fix_get_mnist_subset)
     except Exception as e:
         add_warning(e)
 
@@ -89,15 +77,9 @@ def test_targeted_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
 @pytest.mark.framework_agnostic
 def test_masked_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
-
-        for classifier in classifier_list:
-            attack = FastGradientMethod(classifier, eps=1.0, num_random_init=1)
-            backend_masked_images(attack, fix_get_mnist_subset)
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        attack = FastGradientMethod(classifier, eps=1.0, num_random_init=1)
+        backend_masked_images(attack, fix_get_mnist_subset)
     except Exception as e:
         add_warning(e)
 
@@ -105,24 +87,18 @@ def test_masked_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
 @pytest.mark.framework_agnostic
 def test_minimal_perturbations_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
+        attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
+        attack.set_params(**attack_params)
 
-        for classifier in classifier_list:
-            attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
-            attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
-            attack.set_params(**attack_params)
-
-            expected_values = {
-                "x_test_mean": ExpectedValue(0.03896513, 0.01),
-                "x_test_min": ExpectedValue(-0.30000000, 0.00001),
-                "x_test_max": ExpectedValue(0.30000000, 0.00001),
-                "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0]), 2),
-            }
-            backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+        expected_values = {
+            "x_test_mean": ExpectedValue(0.03896513, 0.01),
+            "x_test_min": ExpectedValue(-0.30000000, 0.00001),
+            "x_test_max": ExpectedValue(0.30000000, 0.00001),
+            "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0]), 2),
+        }
+        backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
     except Exception as e:
         add_warning(e)
 
@@ -132,13 +108,9 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_dl_estimator_f
 @pytest.mark.framework_agnostic
 def test_norm_images(norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
-        # TODO this if statement must be removed once we have a classifier for both image and tabular data
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
 
-        elif norm == np.inf:
+        if norm == np.inf:
             expected_values = {
                 "x_test_mean": ExpectedValue(0.2346725, 0.002),
                 "x_test_min": ExpectedValue(-1.0, 0.00001),
@@ -161,10 +133,9 @@ def test_norm_images(norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
                 "y_test_pred_adv_expected": ExpectedValue(np.asarray([7, 2, 4, 4, 4, 7, 7, 4, 0, 4, 4]), 2),
             }
 
-        for classifier in classifier_list:
-            attack = FastGradientMethod(classifier, eps=1, norm=norm, batch_size=128)
+        attack = FastGradientMethod(classifier, eps=1, norm=norm, batch_size=128)
 
-            backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+        backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
     except Exception as e:
         add_warning(e)
 

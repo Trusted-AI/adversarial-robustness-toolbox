@@ -1340,8 +1340,12 @@ def get_tabular_classifier_kr(load_init=True):
     return krc
 
 
+class ARTTestFixtureNotImplemented(Exception):
+    pass
+
+
 def add_warning(exception):
-    if type(exception) is NotImplementedError:
+    if type(exception) is ARTTestFixtureNotImplemented:
         # NotImplementedErrors are raised in ART whenever a test model does not exist for a specific model/framework
         # combination. By catching there here, we can provide a report at the end of each pytest run list all models
         # requiring to be implemented.

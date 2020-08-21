@@ -37,6 +37,7 @@ from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_im
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
 from tests.utils import get_attack_classifier_pt
+from tests.utils import ARTTestFixtureNotImplemented
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
@@ -90,7 +91,8 @@ def image_dl_estimator_defended(framework):
                                          preprocessing_defences=defenses)
 
         if classifier is None:
-            raise NotImplementedError("{0} doesn't have a defended image classifier defined yet".format(framework))
+            raise ARTTestFixtureNotImplemented(
+                "{0} doesn't have a defended image classifier defined yet".format(framework))
 
         return classifier, sess
 
@@ -110,7 +112,7 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
             classifier = potential_classifier
 
         if classifier is None:
-            raise NotImplementedError(
+            raise ARTTestFixtureNotImplemented(
                 "{0} doesn't have an estimator for this type of attack defined yet".format(framework))
         return classifier
 
@@ -185,8 +187,8 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
             dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
             return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
 
-        raise NotImplementedError("Framework {0} does not have any image test "
-                                  "iterator defined for it yet".format(framework))
+        raise ARTTestFixtureNotImplemented("Framework {0} does not have any image test "
+                                           "iterator defined for it yet".format(framework))
 
     return _get_image_iterator
 
@@ -223,7 +225,7 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
                                              batch_size=default_batch_size)
 
         if data_generator is None:
-            raise NotImplementedError(
+            raise ARTTestFixtureNotImplemented(
                 "framework {0} does not current have any data generator implemented".format(framework))
 
         return data_generator
@@ -306,11 +308,9 @@ def expected_values(framework, request, is_tf_version_2):
             elif request.node.name in expected_values:
                 return expected_values[request.node.name]
             else:
-                raise NotImplementedError(
-                    "Couldn't find any expected values for test {0} and framework {1}".format(
-                        request.node.name, framework_name
-                    )
-                )
+                raise ARTTestFixtureNotImplemented(
+                    "Couldn't find any expected values for test {0} and framework {1}".format(request.node.name,
+                                                                                              framework_name))
 
     return _expected_values
 
@@ -357,7 +357,7 @@ def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape)
         if from_logits is False:
             # due to the fact that only 1 instance of get_image_classifier_mx_model can be created in one session
             # this will be resolved once Mxnet allows for 2 models with identical weights to be created in 1 session
-            raise NotImplementedError("Currently only supporting Mxnet classifier with from_logit set to True")
+            raise ARTTestFixtureNotImplemented("Currently only supporting Mxnet classifier with from_logit set to True")
 
         loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
         trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
@@ -392,7 +392,7 @@ def supported_losses_types(framework):
             # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
             return ["label", "function", "class"]
 
-        raise NotImplementedError("Could not find  supported_losses_types for framework {0}".format(framework))
+        raise ARTTestFixtureNotImplemented("Could not find  supported_losses_types for framework {0}".format(framework))
 
     return supported_losses_types
 
@@ -404,13 +404,11 @@ def supported_losses_logit(framework):
             return ["categorical_crossentropy_function_backend", "sparse_categorical_crossentropy_function_backend"]
         if framework == "kerastf":
             # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
-            return [
-                "categorical_crossentropy_function",
-                "categorical_crossentropy_class",
-                "sparse_categorical_crossentropy_function",
-                "sparse_categorical_crossentropy_class",
-            ]
-        raise NotImplementedError("Could not find  supported_losses_logit for framework {0}".format(framework))
+            return ["categorical_crossentropy_function",
+                    "categorical_crossentropy_class",
+                    "sparse_categorical_crossentropy_function",
+                    "sparse_categorical_crossentropy_class"]
+        raise ARTTestFixtureNotImplemented("Could not find  supported_losses_logit for framework {0}".format(framework))
 
     return _supported_losses_logit
 
@@ -443,7 +441,7 @@ def supported_losses_proba(framework):
                 "kullback_leibler_divergence_class",
             ]
 
-        raise NotImplementedError("Could not find  supported_losses_proba for framework {0}".format(framework))
+        raise ARTTestFixtureNotImplemented("Could not find  supported_losses_proba for framework {0}".format(framework))
 
     return _supported_losses_proba
 
@@ -487,7 +485,7 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                 classifier = get_image_classifier_mx_instance(**kwargs)
 
         if classifier is None:
-            raise NotImplementedError(
+            raise ARTTestFixtureNotImplemented(
                 "framework {0} doesn't have a test deep learning estimator defined yet".format(framework))
 
         return classifier, sess
@@ -515,7 +513,7 @@ def tabular_dl_estimator(framework):
                 classifier = get_tabular_classifier_pt()
 
         if classifier is None:
-            raise NotImplementedError(
+            raise ARTTestFixtureNotImplemented(
                 "framework {0} doesn't have a test deep learning tabular estimator with "
                 "these parameters defined yet".format(framework))
         return classifier
