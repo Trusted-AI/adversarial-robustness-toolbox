@@ -17,7 +17,7 @@
 # SOFTWARE.
 """
 This module implements the adversarial patch attack `AdversarialPatch`. This attack generates an adversarial patch that
-can be printed into the physical world with a common printer. The patch can be used to fool image classifiers.
+can be printed into the physical world with a common printer. The patch can be used to fool image and video classifiers.
 
 | Paper link: https://arxiv.org/abs/1712.09665
 """
@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 class AdversarialPatchTensorFlowV2(EvasionAttack):
     """
-    Implementation of the adversarial patch attack.
+    Implementation of the adversarial patch attack for square and rectangular images and videos in TensorFlow v2.
 
     | Paper link: https://arxiv.org/abs/1712.09665
     """
@@ -88,9 +88,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :param learning_rate: The learning rate of the optimization.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
-        :param patch_shape: The shape of the adversarial patch as a tuple of shape (width, height, nb_channels).
-                            Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
-                            the `patch_shape` is set to the shape of the image samples.
+        :param patch_shape: The shape of the adversarial patch as a tuple of shape HWC (width, height, nb_channels).
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
@@ -325,6 +323,13 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return images * inverted_mask + padded_patch * image_mask
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Generate an adversarial patch and return the patch and its mask in arrays.
+
+        :param x: An array with the original input images of shape NHWC or input videos of shape NFHWC.
+        :param y: An array with the original true labels.
+        :return: An array with adversarial patch and an array of the patch mask.
+        """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
@@ -355,7 +360,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
     def apply_patch(self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
         """
-        A function to apply the learned adversarial patch to images.
+        A function to apply the learned adversarial patch to images or videos.
 
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the classifier input shape.
