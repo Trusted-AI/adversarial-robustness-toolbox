@@ -94,7 +94,7 @@ class ShadowAttack(EvasionAttack):
         self.lambda_tv = lambda_tv
         self.lambda_c = lambda_c
         self.lambda_s = lambda_s
-        self.targeted = targeted
+        self._targeted = targeted
         self._check_params()
 
         self.framework: Optional[str]

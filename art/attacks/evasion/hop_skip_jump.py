@@ -83,7 +83,7 @@ class HopSkipJump(EvasionAttack):
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         """
         super(HopSkipJump, self).__init__(estimator=classifier)
-        self.targeted = targeted
+        self._targeted = targeted
         self.norm = norm
         self.max_iter = max_iter
         self.max_eval = max_eval
@@ -206,7 +206,7 @@ class HopSkipJump(EvasionAttack):
         if initial_sample is None:
             return x
 
-        # If an initial adversarial example found, then go with hopskipjump attack
+        # If an initial adversarial example found, then go with HopSkipJump attack
         x_adv = self._attack(initial_sample[0], x, initial_sample[1], clip_min, clip_max)
 
         return x_adv

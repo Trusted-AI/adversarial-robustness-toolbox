@@ -173,6 +173,7 @@ class ProjectedGradientDescent(EvasionAttack):
         return self._attack.generate(x=x, y=y, **kwargs)
 
     def set_params(self, **kwargs) -> None:
+        super().set_params(**kwargs)
         self._attack.set_params(**kwargs)
 
     def _check_params(self) -> None:
@@ -190,7 +191,7 @@ class ProjectedGradientDescent(EvasionAttack):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
         if not isinstance(self.num_random_init, (int, np.int)):
-            raise TypeError("The number of random initialisations has to be of type integer")
+            raise TypeError("The number of random initialisations has to be of type integer.")
 
         if self.num_random_init < 0:
             raise ValueError("The number of random initialisations `random_init` has to be greater than or equal to 0.")
@@ -198,7 +199,7 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-        if self.eps_step > self.eps:
+        if self.norm == np.inf and self.eps_step > self.eps:
             raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         if self.max_iter <= 0:

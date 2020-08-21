@@ -99,7 +99,7 @@ class DPatch(EvasionAttack):
                 logger.info("Training Step: %i", i_step + 1)
 
             patched_images, transforms = self._augment_images_with_patch(
-                x, self._patch, random_location=True, channel_index=self.estimator.channel_index
+                x, self._patch, random_location=True, channels_first=self.estimator.channels_first
             )
             patch_target: List[Dict[str, np.ndarray]] = list()
 
@@ -219,7 +219,7 @@ class DPatch(EvasionAttack):
             patch_local = self._patch
 
         patched_images, _ = self._augment_images_with_patch(
-            x=x, patch=patch_local, random_location=random_location, channel_index=self.estimator.channel_index
+            x=x, patch=patch_local, random_location=random_location, channels_first=self.estimator.channels_first
         )
 
         return patched_images

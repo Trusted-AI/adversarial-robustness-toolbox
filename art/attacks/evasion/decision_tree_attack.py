@@ -46,7 +46,7 @@ class DecisionTreeAttack(EvasionAttack):
 
     def __init__(self, classifier: ScikitlearnDecisionTreeClassifier, offset: float = 0.001) -> None:
         """
-        :param classifier: A trained model of type scikit decision tree.
+        :param classifier: A trained scikit-learn decision tree model.
         :param offset: How much the value is pushed away from tree's threshold.
         """
         super(DecisionTreeAttack, self).__init__(estimator=classifier)
