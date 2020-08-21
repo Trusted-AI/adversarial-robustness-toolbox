@@ -1,6 +1,6 @@
 # base
 numpy==1.19.1
-scipy==1.4.1
+scipy==1.5.2
 matplotlib==3.3.1
 scikit-learn==0.23.2
 six==1.15.0
