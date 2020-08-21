@@ -120,7 +120,6 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
             for potential_classifier in classifier_list
             if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
         ]
-
         if len(classifier_tested) == 0:
             raise ARTTestFixtureNotImplemented("no estimator available", image_dl_estimator_for_attack.__name__,
                                                framework, {"attack": attack})
