@@ -97,18 +97,19 @@ def image_dl_estimator_defended(framework):
 @pytest.fixture
 def image_dl_estimator_for_attack(image_dl_estimator, image_dl_estimator_defended):
     def _image_dl_estimator_for_attack(attack, defended=False, **kwargs):
+        classifier = None
         if defended:
-            classifier_list, _ = image_dl_estimator_defended(kwargs)
+            potential_classifier, _ = image_dl_estimator_defended(kwargs)
         else:
-            classifier_list, _ = image_dl_estimator()
-        if classifier_list is None:
-            return None
+            potential_classifier, _ = image_dl_estimator()
 
-        return [
-            potential_classifier
-            for potential_classifier in classifier_list
-            if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
-        ]
+        if all(t in type(classifier).__mro__ for t in attack._estimator_requirements):
+            classifier = potential_classifier
+
+        if classifier is None:
+            raise NotImplementedError(
+                "{0} doesn't have an estimator for this type of attack defined yet".format(framework))
+        return classifier
 
     return _image_dl_estimator_for_attack
 
