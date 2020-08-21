@@ -149,6 +149,7 @@ class AdversarialPatch(EvasionAttack):
         return self._attack.apply_patch(x, scale, patch_external=patch_external)
 
     def set_params(self, **kwargs) -> None:
+        super().set_params(**kwargs)
         self._attack.set_params(**kwargs)
 
     def _check_params(self) -> None:
