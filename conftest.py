@@ -98,7 +98,7 @@ def image_dl_estimator_defended(framework):
 
 
 @pytest.fixture
-def image_dl_estimator_for_attack(image_dl_estimator, image_dl_estimator_defended):
+def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estimator_defended):
     def _image_dl_estimator_for_attack(attack, defended=False, **kwargs):
         classifier = None
         if defended:
