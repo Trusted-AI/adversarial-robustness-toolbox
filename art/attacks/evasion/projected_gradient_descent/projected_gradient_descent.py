@@ -173,6 +173,7 @@ class ProjectedGradientDescent(EvasionAttack):
         return self._attack.generate(x=x, y=y, **kwargs)
 
     def set_params(self, **kwargs) -> None:
+        super().set_params(**kwargs)
         self._attack.set_params(**kwargs)
 
     def _check_params(self) -> None:
