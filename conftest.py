@@ -57,7 +57,7 @@ def pytest_addoption(parser):
 def image_dl_estimator_defended(framework):
     def _image_dl_estimator_defended(one_classifier=False, **kwargs):
         sess = None
-        classifier_list = None
+        classifier = None
 
         clip_values = (0, 1)
         fs = FeatureSqueezing(bit_depth=2, clip_values=clip_values)
@@ -75,35 +75,21 @@ def image_dl_estimator_defended(framework):
             del kwargs["defenses"]
 
         if framework == "keras":
-            classifier = get_image_classifier_kr(**kwargs)
+            kr_classifier = get_image_classifier_kr(**kwargs)
             # Get the ready-trained Keras model
 
-            classifier_list = [
-                KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=defenses)
-            ]
-
-        if framework == "tensorflow":
-            logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
-
-        if framework == "pytorch":
-            logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
-
-        if framework == "scikitlearn":
-            logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
+            classifier = KerasClassifier(model=kr_classifier._model, clip_values=(0, 1),
+                                         preprocessing_defences=defenses)
 
         if framework == "kerastf":
-            classifier = get_image_classifier_kr_tf(**kwargs)
-            classifier_list = [
-                KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=defenses)
-            ]
+            kr_tf_classifier = get_image_classifier_kr_tf(**kwargs)
+            classifier = KerasClassifier(model=kr_tf_classifier._model, clip_values=(0, 1),
+                                         preprocessing_defences=defenses)
 
-        if classifier_list is None:
-            return None, None
+        if classifier is None:
+            raise NotImplementedError("{0} doesn't have a defended image classifier defined yet".format(framework))
 
-        if one_classifier:
-            return classifier_list[0], sess
-
-        return classifier_list, sess
+        return classifier, sess
 
     return _image_dl_estimator_defended
 
@@ -210,29 +196,35 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
     def _image_data_generator(**kwargs):
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
+        data_generator = None
         if framework == "keras" or framework == "kerastf":
-            return KerasDataGenerator(
-                iterator=image_iterator, size=x_train_mnist.shape[0], batch_size=default_batch_size,
+            data_generator = KerasDataGenerator(
+                iterator=image_iterator,
+                size=x_train_mnist.shape[0],
+                batch_size=default_batch_size,
             )
 
         if framework == "tensorflow":
             if not is_tf_version_2:
-                return TensorFlowDataGenerator(
-                    sess=kwargs["sess"],
-                    iterator=image_iterator,
-                    iterator_type="initializable",
-                    iterator_arg={},
+                data_generator = TensorFlowDataGenerator(
+                    sess=kwargs["sess"], iterator=image_iterator, iterator_type="initializable", iterator_arg={},
                     size=x_train_mnist.shape[0],
                     batch_size=default_batch_size,
                 )
 
         if framework == "pytorch":
-            return PyTorchDataGenerator(
-                iterator=image_iterator, size=x_train_mnist.shape[0], batch_size=default_batch_size
-            )
+            data_generator = PyTorchDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
+                                                  batch_size=default_batch_size)
 
         if framework == "mxnet":
-            return MXDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0], batch_size=default_batch_size)
+            data_generator = MXDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
+                                             batch_size=default_batch_size)
+
+        if data_generator is None:
+            raise NotImplementedError(
+                "framework {0} does not current have any data generator implemented".format(framework))
+
+        return data_generator
 
     return _image_data_generator
 
@@ -456,10 +448,10 @@ def supported_losses_proba(framework):
 
 @pytest.fixture
 def image_dl_estimator(framework, get_image_classifier_mx_instance):
-    def _image_dl_estimator(one_classifier=False, functional=False, **kwargs):
+    def _image_dl_estimator(functional=False, **kwargs):
         sess = None
         wildcard = False
-        classifier_list = None
+        classifier = None
 
         if kwargs.get("wildcard") is not None:
             if kwargs.get("wildcard") is True:
@@ -469,39 +461,34 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
         if framework == "keras":
             if wildcard is False and functional is False:
                 if functional:
-                    classifier_list = [get_image_classifier_kr_functional(**kwargs)]
+                    classifier = get_image_classifier_kr_functional(**kwargs)
                 else:
-                    classifier_list = [get_image_classifier_kr(**kwargs)]
+                    classifier = get_image_classifier_kr(**kwargs)
         if framework == "tensorflow":
             if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs)
-                classifier_list = [classifier]
+                return classifier, sess
         if framework == "pytorch":
             if wildcard is False and functional is False:
-                classifier_list = [get_image_classifier_pt(**kwargs)]
-        if framework == "scikitlearn":
-            logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
-            classifier_list = None
+                classifier = get_image_classifier_pt(**kwargs)
         if framework == "kerastf":
             if wildcard:
-                classifier_list = [get_image_classifier_kr_tf_with_wildcard(**kwargs)]
+                classifier = get_image_classifier_kr_tf_with_wildcard(**kwargs)
             else:
                 if functional:
-                    classifier_list = [get_image_classifier_kr_tf_functional(**kwargs)]
+                    classifier = get_image_classifier_kr_tf_functional(**kwargs)
                 else:
-                    classifier_list = [get_image_classifier_kr_tf(**kwargs)]
+                    classifier = get_image_classifier_kr_tf(**kwargs)
 
         if framework == "mxnet":
             if wildcard is False and functional is False:
-                classifier_list = [get_image_classifier_mx_instance(**kwargs)]
+                classifier = get_image_classifier_mx_instance(**kwargs)
 
-        if classifier_list is None:
-            return None, None
+        if classifier is None:
+            raise NotImplementedError(
+                "framework {0} doesn't have a test deep learning estimator defined yet".format(framework))
 
-        if one_classifier:
-            return classifier_list[0], sess
-
-        return classifier_list, sess
+        return classifier, sess
 
     return _image_dl_estimator
 

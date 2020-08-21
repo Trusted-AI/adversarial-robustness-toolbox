@@ -44,7 +44,6 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.framework_agnostic
 def test_classifier_defended_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        raise NotImplementedError("message")
         classifier_list = image_dl_estimator_for_attack(FastGradientMethod, defended=True)
         # TODO this if statement must be removed once we have a classifier for both image and tabular data
         if classifier_list is None:
