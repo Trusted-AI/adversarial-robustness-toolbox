@@ -135,11 +135,14 @@ class PreprocessorPyTorch(Preprocessor):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def estimate_forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def estimate_forward(self,
+                         x: torch.Tensor,
+                         y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
-        Provide a differentiable estimate of the forward function, so that autograd can calculate gradients of the defence
-        for the backward pass. If the defence is differentiable, just call `self.forward()`. If the defence is not differentiable
-        and a differentiable estimate is not available, replace with an identity function.
+        Provide a differentiable estimate of the forward function, so that autograd can calculate gradients
+        of the defence for the backward pass. If the defence is differentiable, just call `self.forward()`.
+        If the defence is not differentiable and a differentiable estimate is not available, replace with
+        an identity function.
 
         :param x: Dataset to be preprocessed.
         :param y: Labels to be preprocessed.

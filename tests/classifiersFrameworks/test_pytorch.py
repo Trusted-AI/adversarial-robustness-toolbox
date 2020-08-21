@@ -39,7 +39,7 @@ def _test_preprocessing_defences_forward(get_default_mnist_subset, get_image_cla
     clip_values = (0, 1)
     criterion = nn.CrossEntropyLoss()
     classifier = PyTorchClassifier(
-        clip_values=clip_values, model=classifier_.model, preprocessing_defences=preprocessing_defences, \
+        clip_values=clip_values, model=classifier_.model, preprocessing_defences=preprocessing_defences,
         loss=criterion, input_shape=(1, 28, 28), nb_classes=10, device_type=device_type,
     )
 
@@ -70,7 +70,7 @@ def _test_preprocessing_defences_backward(get_default_mnist_subset, get_image_cl
     clip_values = (0, 1)
     criterion = nn.CrossEntropyLoss()
     classifier = PyTorchClassifier(
-        clip_values=clip_values, model=classifier_.model, preprocessing_defences=preprocessing_defences, \
+        clip_values=clip_values, model=classifier_.model, preprocessing_defences=preprocessing_defences,
         loss=criterion, input_shape=(1, 28, 28), nb_classes=10, device_type=device_type,
     )
 
@@ -163,7 +163,7 @@ def test_fgsm_defences(fix_get_mnist_subset, get_image_classifier_list, device_t
 
     criterion = nn.CrossEntropyLoss()
     classifier = PyTorchClassifier(
-        clip_values=clip_values, model=classifier_.model, preprocessing_defences=[smooth_3x3, smooth_5x5, smooth_7x7], \
+        clip_values=clip_values, model=classifier_.model, preprocessing_defences=[smooth_3x3, smooth_5x5, smooth_7x7],
         loss=criterion, input_shape=(1, 28, 28), nb_classes=10, device_type=device_type,
     )
     assert len(classifier.preprocessing_defences) == 3

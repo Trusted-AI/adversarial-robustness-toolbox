@@ -67,8 +67,10 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             # Half-pad the input so that the output keeps the same shape.
             # * center pixel located lower right
             half_pad = [k % 2 == 0 for k in kernel_size]
-            self.p2d = (self.padding[-1] + half_pad[-1], self.padding[-1],
-                        self.padding[-2] + half_pad[-2], self.padding[-2])
+            self.p2d = (self.padding[-1] + half_pad[-1],
+                        self.padding[-1],
+                        self.padding[-2] + half_pad[-2],
+                        self.padding[-2])
             # PyTorch requires Padding size should be less than the corresponding input dimension,
 
         def forward(self, input: torch.Tensor):  # type: ignore
@@ -199,7 +201,9 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         return x, y
 
-    def estimate_forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def estimate_forward(self,
+                         x: torch.Tensor,
+                         y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
         No need to estimate, since the forward pass is differentiable.
         """
