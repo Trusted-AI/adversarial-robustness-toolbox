@@ -35,6 +35,7 @@ from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_im
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
 from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt
+from tests.utils import get_attack_classifier_pt
 
 logger = logging.getLogger(__name__)
 
@@ -100,6 +101,7 @@ def image_dl_estimator_defended(framework):
         if classifier is None:
             raise ARTTestFixtureNotImplemented("no defended image estimator", image_dl_estimator_defended.__name__,
                                                framework, {"defenses": defenses})
+
         return classifier, sess
 
     return _image_dl_estimator_defended
