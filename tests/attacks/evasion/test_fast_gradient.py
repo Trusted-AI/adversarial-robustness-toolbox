@@ -180,18 +180,14 @@ def test_norm_images(norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
 @pytest.mark.framework_agnostic
 def test_tabular(tabular_dl_estimator, framework, get_iris_dataset, targeted, clipped):
     try:
-        classifier_list = tabular_dl_estimator(FastGradientMethod, clipped=clipped)
+        classifier = tabular_dl_estimator(FastGradientMethod, clipped=clipped)
 
-        if classifier_list is None:
-            logging.warning("Couldn't perform  this test because no classifier is defined")
-            return
-        for classifier in classifier_list:
-            if targeted:
-                attack = FastGradientMethod(classifier, targeted=True, eps=0.1, batch_size=128)
-                backend_targeted_tabular(attack, get_iris_dataset)
-            else:
-                attack = FastGradientMethod(classifier, eps=0.1)
-                backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
+        if targeted:
+            attack = FastGradientMethod(classifier, targeted=True, eps=0.1, batch_size=128)
+            backend_targeted_tabular(attack, get_iris_dataset)
+        else:
+            attack = FastGradientMethod(classifier, eps=0.1)
+            backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
     except Exception as e:
         add_warning(e)
 

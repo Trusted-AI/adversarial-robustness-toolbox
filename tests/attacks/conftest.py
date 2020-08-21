@@ -22,16 +22,15 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def get_tabular_classifier_list(get_tabular_classifier_list):
-    def _tabular_classifier_list(attack, clipped=True):
-        classifier_list = get_tabular_classifier_list(clipped)
-        if classifier_list is None:
-            return None
+def tabular_dl_estimator(framework, tabular_dl_estimator):
+    def _tabular_dl_estimator(attack, clipped=True):
+        classifier = tabular_dl_estimator(clipped)
 
-        return [
-            potential_classifier
-            for potential_classifier in classifier_list
-            if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
-        ]
+        if all(t in type(classifier).__mro__ for t in attack._estimator_requirements):
+            return classifier
 
-    return _tabular_classifier_list
+        raise NotImplementedError(
+            "Framework {} does not have an estimator with such requirements defined yet ".format(framework))
+
+
+    return _tabular_dl_estimator
