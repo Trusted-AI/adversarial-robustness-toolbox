@@ -534,8 +534,8 @@ def tabular_dl_estimator(framework):
 
 
 @pytest.fixture
-def get_attack_classifier_list(framework):
-    def _get_attack_classifier_list(one_classifier=False, **kwargs):
+def tabular_dl_estimator(framework):
+    def _tabular_dl_estimator(one_classifier=False, **kwargs):
         if framework == "keras":
             logging.warning("{0} doesn't have an image attack defined yet".format(framework))
             classifier_list = None
@@ -545,18 +545,15 @@ def get_attack_classifier_list(framework):
         if framework == "pytorch":
             classifier_list = [get_attack_classifier_pt(**kwargs)]
         if framework == "scikitlearn":
-            logging.warning("{0} doesn't have an image attack defined yet".format(framework))
-            classifier_list = None
+            classifier = get_tabular_classifier_scikit_list(clipped=False)
 
-        if classifier_list is None:
-            return None
+        if classifier is None:
+            raise NotImplementedError(
+                "framework {0} doesn't have a test deep learning tabular estimator with "
+                "these parameters defined yet".format(framework))
+        return classifier
 
-        if one_classifier:
-            return classifier_list[0]
-
-        return classifier_list
-
-    return _get_attack_classifier_list
+    return _tabular_dl_estimator
 
 
 @pytest.fixture(scope="function")
