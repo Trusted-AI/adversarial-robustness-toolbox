@@ -26,69 +26,21 @@ This module implements the local spatial smoothing defence in `SpatialSmoothing`
     https://arxiv.org/abs/1902.06705
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
-from kornia.filters.kernels import get_binary_kernel2d
-import torch.nn.functional as F
-import torch.nn as nn
 
 import logging
 from typing import Optional, Tuple
 
 import numpy as np
-import torch
-from kornia.filters import MedianBlur
 
+from art.config import CLIP_VALUES_TYPE
+from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
 from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
 
-class MedianBlurCustom(MedianBlur):
-    """
-    An ongoing effort to reproduce the median blur function in SciPy.
-    """
-
-    def __init__(self, kernel_size: Tuple[int, int]) -> None:
-        super().__init__(kernel_size)
-
-        # Half-pad the input so that the output keeps the same shape.
-        # * center pixel located lower right
-        half_pad = [k % 2 == 0 for k in kernel_size]
-        self.p2d = (self.padding[-1] + half_pad[-1], self.padding[-1],
-                    self.padding[-2] + half_pad[-2], self.padding[-2])
-        # PyTorch requires Padding size should be less than the corresponding input dimension,
-
-    def forward(self, input: torch.Tensor):  # type: ignore
-        if not torch.is_tensor(input):
-            raise TypeError("Input type is not a torch.Tensor. Got {}".format(type(input)))
-        if not len(input.shape) == 4:
-            raise ValueError("Invalid input shape, we expect BxCxHxW. Got: {}".format(input.shape))
-        # prepare kernel
-        b, c, h, w = input.shape
-        kernel: torch.Tensor = self.kernel.to(input.device).to(input.dtype)
-        # map the local window to single vector
-
-        _input = input.reshape(b * c, 1, h, w)
-        if input.dtype == torch.int64:
-            # "reflection_pad2d" not implemented for 'Long'
-            # "reflect" in scipy.ndimage.median_filter has no equivalance in F.pad.
-            # "reflect" in PyTorch maps to "mirror" in scipy.ndimage.median_filter.
-            _input = _input.to(torch.float32)
-            _input = F.pad(_input, self.p2d, "reflect")
-            _input = _input.to(torch.int64)
-        else:
-            _input = F.pad(_input, self.p2d, "reflect")
-
-        features: torch.Tensor = F.conv2d(_input, kernel, stride=1)
-        features = features.view(b, c, -1, h, w)  # BxCx(K_h * K_w)xHxW
-
-        # compute the median along the feature axis
-        # * torch.median(), if window size even, use smaller value (e.g. median(4,5)=4)
-        median: torch.Tensor = torch.median(features, dim=2)[0]
-        return median
-
-
-class SpatialSmoothingPyTorch(SpatialSmoothing):
+class SpatialSmoothingPyTorch(PreprocessorPyTorch):
     """
     Implement the local spatial smoothing defence approach in PyTorch.
 
@@ -99,10 +51,67 @@ class SpatialSmoothingPyTorch(SpatialSmoothing):
         https://arxiv.org/abs/1902.06705
     """
 
+    import torch
+    from kornia.filters import MedianBlur
+
+    class MedianBlurCustom(MedianBlur):
+        """
+        An ongoing effort to reproduce the median blur function in SciPy.
+        """
+
+        import torch
+
+        def __init__(self, kernel_size: Tuple[int, int]) -> None:
+            super().__init__(kernel_size)
+
+            # Half-pad the input so that the output keeps the same shape.
+            # * center pixel located lower right
+            half_pad = [k % 2 == 0 for k in kernel_size]
+            self.p2d = (self.padding[-1] + half_pad[-1], self.padding[-1],
+                        self.padding[-2] + half_pad[-2], self.padding[-2])
+            # PyTorch requires Padding size should be less than the corresponding input dimension,
+
+        def forward(self, input: torch.Tensor):  # type: ignore
+            import torch
+            from kornia.filters.kernels import get_binary_kernel2d
+            import torch.nn.functional as F
+
+            if not torch.is_tensor(input):
+                raise TypeError("Input type is not a torch.Tensor. Got {}".format(type(input)))
+            if not len(input.shape) == 4:
+                raise ValueError("Invalid input shape, we expect BxCxHxW. Got: {}".format(input.shape))
+            # prepare kernel
+            b, c, h, w = input.shape
+            kernel: torch.Tensor = self.kernel.to(input.device).to(input.dtype)
+            # map the local window to single vector
+
+            _input = input.reshape(b * c, 1, h, w)
+            if input.dtype == torch.int64:
+                # "reflection_pad2d" not implemented for 'Long'
+                # "reflect" in scipy.ndimage.median_filter has no equivalance in F.pad.
+                # "reflect" in PyTorch maps to "mirror" in scipy.ndimage.median_filter.
+                _input = _input.to(torch.float32)
+                _input = F.pad(_input, self.p2d, "reflect")
+                _input = _input.to(torch.int64)
+            else:
+                _input = F.pad(_input, self.p2d, "reflect")
+
+            features: torch.Tensor = F.conv2d(_input, kernel, stride=1)
+            features = features.view(b, c, -1, h, w)  # BxCx(K_h * K_w)xHxW
+
+            # compute the median along the feature axis
+            # * torch.median(), if window size even, use smaller value (e.g. median(4,5)=4)
+            median: torch.Tensor = torch.median(features, dim=2)[0]
+            return median
+
     def __init__(
         self,
+        window_size: int = 3,
+        channels_first: bool = False,
+        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        apply_fit: bool = False,
+        apply_predict: bool = True,
         device_type: str = "gpu",
-        **kwargs,
     ) -> None:
         """
         Create an instance of local spatial smoothing.
@@ -110,11 +119,19 @@ class SpatialSmoothingPyTorch(SpatialSmoothing):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param **kwargs: Parameters from the parent.
         """
-        super().__init__(**kwargs)
+        super().__init__()
 
-        self.median_blur = MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
+        self._apply_fit = apply_fit
+        self._apply_predict = apply_predict
+        self.channels_first = channels_first
+        self.window_size = window_size
+        self.clip_values = clip_values
+        self._check_params()
+
+        self.median_blur = self.MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
 
         # Set device
+        import torch
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
         else:
@@ -123,6 +140,14 @@ class SpatialSmoothingPyTorch(SpatialSmoothing):
 
         if self.clip_values is not None:
             self.clip_values = torch.tensor(self.clip_values, device=self._device)
+
+    @property
+    def apply_fit(self) -> bool:
+        return self._apply_fit
+
+    @property
+    def apply_predict(self) -> bool:
+        return self._apply_predict
 
     def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
@@ -188,6 +213,7 @@ class SpatialSmoothingPyTorch(SpatialSmoothing):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Smoothed sample.
         """
+        import torch
         x = torch.tensor(x, device=self._device)
         if y is not None:
             y = torch.tensor(y, device=self._device)
@@ -202,6 +228,7 @@ class SpatialSmoothingPyTorch(SpatialSmoothing):
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        import torch
         x = torch.tensor(x, device=self._device, requires_grad=True)
         grad = torch.tensor(grad, device=self._device)
 
@@ -211,3 +238,19 @@ class SpatialSmoothingPyTorch(SpatialSmoothing):
         if x_grad.shape != x.shape:
             raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
         return x_grad
+
+    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
+        """
+        No parameters to learn for this method; do nothing.
+        """
+        pass
+
+    def _check_params(self) -> None:
+        if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
+            raise ValueError("Sliding window size must be a positive integer.")
+
+        if self.clip_values is not None and len(self.clip_values) != 2:
+            raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")
+
+        if self.clip_values is not None and np.array(self.clip_values[0] >= self.clip_values[1]).any():
+            raise ValueError("Invalid 'clip_values': min >= max.")

@@ -37,6 +37,7 @@ from art.estimators.classification.classifier import (
     ClassifierMixin,
 )
 from art.estimators.pytorch import PyTorchEstimator
+from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -736,8 +737,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             # Check if all defences are implemented in PyTorch.
             for defence in self.preprocessing_defences:
-                if not hasattr(defence, "forward"):
-                    raise NotImplementedError(f"{defence.__class__} doesn't have method forward().")
+                if not isinstance(defence, PreprocessorPyTorch):
+                    raise NotImplementedError(f"{defence.__class__} is not PyTorch-specific.")
 
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device)
@@ -792,8 +793,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             # Check if all defences are implemented in PyTorch.
             for defence in self.preprocessing_defences:
-                if not hasattr(defence, "estimate_forward"):
-                    raise NotImplementedError(f"{defence.__class__} doesn't have method estimate_forward().")
+                if not isinstance(defence, PreprocessorPyTorch):
+                    raise NotImplementedError(f"{defence.__class__} is not PyTorch-specific.")
 
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device, requires_grad=True)
