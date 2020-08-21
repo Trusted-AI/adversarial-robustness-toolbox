@@ -17,7 +17,7 @@
 # SOFTWARE.
 """
 This module implements the adversarial patch attack `AdversarialPatch`. This attack generates an adversarial patch that
-can be printed into the physical world with a common printer. The patch can be used to fool image classifiers.
+can be printed into the physical world with a common printer. The patch can be used to fool image and video classifiers.
 
 | Paper link: https://arxiv.org/abs/1712.09665
 """
@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import math
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 import random
 import numpy as np
@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 
 class AdversarialPatchNumpy(EvasionAttack):
     """
-    Implementation of the adversarial patch attack.
+    Implementation of the adversarial patch attack for square and rectangular images and videos in Numpy.
 
     | Paper link: https://arxiv.org/abs/1712.09665
     """
@@ -145,13 +145,13 @@ class AdversarialPatchNumpy(EvasionAttack):
         ]
         self.patch = np.ones(shape=self.patch_shape).astype(np.float32) * mean_value
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Generate adversarial samples and return them in an array.
+        Generate an adversarial patch and return the patch and its mask in arrays.
 
-        :param x: An array with the original inputs. `x` is expected to have spatial dimensions.
-        :param y: An array with the original labels to be predicted.
-        :return: An array holding the adversarial patch.
+        :param x: An array with the original input images of shape NHWC or NCHW or input videos of shape NFHWC or NFCHW.
+        :param y: An array with the original true labels.
+        :return: An array with adversarial patch and an array of the patch mask.
         """
         logger.info("Creating adversarial patch.")
 
@@ -191,7 +191,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def apply_patch(self, x: np.ndarray, scale: float, patch_external: np.ndarray = None) -> np.ndarray:
         """
-        A function to apply the learned adversarial patch to images.
+        A function to apply the learned adversarial patch to images or videos.
 
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the classifier input shape.
