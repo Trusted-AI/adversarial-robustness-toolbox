@@ -28,11 +28,6 @@ from typing import Optional
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-import torch
-import torch.nn as nn
-import torch.optim as optim
-from torch.utils.data.dataset import Dataset
-from torch.utils.data import DataLoader
 
 from art.attacks import InferenceAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -40,75 +35,6 @@ from art.estimators.classification.classifier import ClassifierMixin, Classifier
 from art.utils import check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
-
-use_cuda = torch.cuda.is_available()
-
-
-def to_cuda(x):
-    if use_cuda:
-        x = x.cuda()
-    return x
-
-
-class AttackDataset(Dataset):
-    def __init__(self, x1, x2, y=None):
-        self.x1 = torch.from_numpy(x1.astype(np.float64)).type(torch.FloatTensor)
-        self.x2 = torch.from_numpy(x2.astype(np.int32)).type(torch.FloatTensor)
-
-        if y is not None:
-            self.y = torch.from_numpy(y.astype(np.int8)).type(torch.FloatTensor)
-        else:
-            self.y = torch.zeros(x1.shape[0])
-
-    def __len__(self):
-        return len(self.x1)
-
-    def __getitem__(self, idx):
-        if idx >= len(self.x1):
-            raise IndexError("Invalid Index")
-
-        return self.x1[idx], self.x2[idx], self.y[idx]
-
-
-class MembershipInferenceAttackModel(nn.Module):
-
-    def __init__(self, num_classes, num_features=None):
-
-        self.num_classes = num_classes
-        if num_features:
-            self.num_features = num_features
-        else:
-            self.num_features = num_classes
-
-        super(MembershipInferenceAttackModel, self).__init__()
-
-        self.features = nn.Sequential(
-            nn.Linear(self.num_features, 512),
-            nn.ReLU(),
-            nn.Linear(512, 100),
-            nn.ReLU(),
-            nn.Linear(100, 64),
-            nn.ReLU(),
-        )
-
-        self.labels = nn.Sequential(
-            nn.Linear(self.num_classes, 256),
-            nn.ReLU(),
-            nn.Linear(256, 64),
-            nn.ReLU(),
-        )
-
-        self.combine = nn.Sequential(
-            nn.Linear(64 * 2, 1),
-        )
-
-        self.output = nn.Sigmoid()
-
-    def forward(self, x1, l):
-        out_x1 = self.features(x1)
-        out_l = self.labels(l)
-        is_member = self.combine(torch.cat((out_x1, out_l), 1))
-        return self.output(is_member)
 
 
 class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
@@ -136,7 +62,6 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         :param y: True labels for `x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
-
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
 
@@ -192,6 +117,49 @@ class MembershipInferenceBlackBox(InferenceAttack):
         else:
             self.default_model = True
             if self.attack_model_type == 'nn':
+                import torch  # lgtm [py/repeated-import]
+                import torch.nn as nn  # lgtm [py/repeated-import]
+
+                class MembershipInferenceAttackModel(nn.Module):
+
+                    def __init__(self, num_classes, num_features=None):
+
+                        self.num_classes = num_classes
+                        if num_features:
+                            self.num_features = num_features
+                        else:
+                            self.num_features = num_classes
+
+                        super(MembershipInferenceAttackModel, self).__init__()
+
+                        self.features = nn.Sequential(
+                                nn.Linear(self.num_features, 512),
+                                nn.ReLU(),
+                                nn.Linear(512, 100),
+                                nn.ReLU(),
+                                nn.Linear(100, 64),
+                                nn.ReLU(),
+                        )
+
+                        self.labels = nn.Sequential(
+                                nn.Linear(self.num_classes, 256),
+                                nn.ReLU(),
+                                nn.Linear(256, 64),
+                                nn.ReLU(),
+                        )
+
+                        self.combine = nn.Sequential(
+                                nn.Linear(64 * 2, 1),
+                        )
+
+                        self.output = nn.Sigmoid()
+
+                    def forward(self, x1, l):
+                        out_x1 = self.features(x1)
+                        out_l = self.labels(l)
+                        is_member = self.combine(torch.cat((out_x1, out_l), 1))
+                        return self.output(is_member)
+
                 if self.input_type == 'prediction':
                     self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
                 else:
@@ -214,7 +182,6 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param test_y: True labels for `test_x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
-
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
         if self.estimator.input_shape[0] != test_x.shape[1]:
@@ -256,10 +223,22 @@ class MembershipInferenceBlackBox(InferenceAttack):
         y_new = np.concatenate((labels, test_labels))
 
         if self.default_model and self.attack_model_type == 'nn':
+            import torch  # lgtm [py/repeated-import]
+            import torch.nn as nn  # lgtm [py/repeated-import]
+            import torch.optim as optim  # lgtm [py/repeated-import]
+            from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
+
+            use_cuda = torch.cuda.is_available()
+
+            def to_cuda(x):
+                if use_cuda:
+                    x = x.cuda()
+                return x
+
             loss_fn = nn.BCELoss()
             optimizer = optim.Adam(self.attack_model.parameters(), lr=self.lr)
 
-            attack_train_set = AttackDataset(x1=x1, x2=x2, y=y_new)
+            attack_train_set = self._get_attack_dataset(x1=x1, x2=x2, y=y_new)
             train_loader = DataLoader(attack_train_set, batch_size=self.bs, shuffle=True, num_workers=0)
 
             self.attack_model = to_cuda(self.attack_model)
@@ -306,9 +285,12 @@ class MembershipInferenceBlackBox(InferenceAttack):
             features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == 'nn':
+            import torch  # lgtm [py/repeated-import]
+            from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
+
             self.attack_model.eval()
             inferred = None
-            test_set = AttackDataset(x1=features, x2=y)
+            test_set = self._get_attack_dataset(x1=features, x2=y)
             test_loader = DataLoader(test_set, batch_size=self.bs, shuffle=True, num_workers=0)
             for input1, input2, targets in test_loader:
                 outputs = self.attack_model(input1, input2)
@@ -320,6 +302,32 @@ class MembershipInferenceBlackBox(InferenceAttack):
         else:
             inferred = np.array([np.argmax(arr) for arr in self.attack_model.predict(np.c_[features, y])])
         return inferred
+
+    def _get_attack_dataset(self, f1, f2, l=None):
+        from torch.utils.data.dataset import Dataset
+
+        class AttackDataset(Dataset):
+            def __init__(self, x1, x2, y=None):
+                import torch  # lgtm [py/repeated-import]
+
+                self.x1 = torch.from_numpy(x1.astype(np.float64)).type(torch.FloatTensor)
+                self.x2 = torch.from_numpy(x2.astype(np.int32)).type(torch.FloatTensor)
+
+                if y is not None:
+                    self.y = torch.from_numpy(y.astype(np.int8)).type(torch.FloatTensor)
+                else:
+                    self.y = torch.zeros(x1.shape[0])
+
+            def __len__(self):
+                return len(self.x1)
+
+            def __getitem__(self, idx):
+                if idx >= len(self.x1):
+                    raise IndexError("Invalid Index")
+
+                return self.x1[idx], self.x2[idx], self.y[idx]
+
+        return AttackDataset(x1=f1, x2=f2, y=l)
 
     def _check_params(self) -> None:
         if self.input_type not in ['prediction', 'loss']:
