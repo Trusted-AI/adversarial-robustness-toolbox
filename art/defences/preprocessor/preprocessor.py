@@ -27,6 +27,7 @@ import numpy as np
 
 if TYPE_CHECKING:
     import torch
+    import tensorflow as tf
 
 
 class Preprocessor(abc.ABC):
@@ -124,8 +125,6 @@ class PreprocessorPyTorch(Preprocessor):
     Abstract base class for preprocessing defences implemented in PyTorch that support efficient preprocessor-chaining.
     """
 
-    import torch
-
     @abc.abstractmethod
     def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
@@ -138,9 +137,39 @@ class PreprocessorPyTorch(Preprocessor):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def estimate_forward(self,
-                         x: torch.Tensor,
-                         y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def estimate_forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
+        """
+        Provide a differentiable estimate of the forward function, so that autograd can calculate gradients
+        of the defence for the backward pass. If the defence is differentiable, just call `self.forward()`.
+        If the defence is not differentiable and a differentiable estimate is not available, replace with
+        an identity function.
+
+        :param x: Dataset to be preprocessed.
+        :param y: Labels to be preprocessed.
+        :return: Preprocessed data.
+        """
+        raise NotImplementedError
+
+
+class PreprocessorTensorFlowV2(Preprocessor):
+    """
+    Abstract base class for preprocessing defences implemented in TensorFlow v2 that support efficient
+    preprocessor-chaining.
+    """
+
+    @abc.abstractmethod
+    def forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
+        """
+        Perform data preprocessing in TensorFlow v2 and return preprocessed data as tuple.
+
+        :param x: Dataset to be preprocessed.
+        :param y: Labels to be preprocessed.
+        :return: Preprocessed data.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def estimate_forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
         """
         Provide a differentiable estimate of the forward function, so that autograd can calculate gradients
         of the defence for the backward pass. If the defence is differentiable, just call `self.forward()`.
