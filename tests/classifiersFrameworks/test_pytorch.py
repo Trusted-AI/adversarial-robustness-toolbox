@@ -30,11 +30,11 @@ from tests.attacks.utils import backend_test_defended_images
 
 
 # A generic test for various preprocessing_defences, forward pass.
-def _test_preprocessing_defences_forward(get_default_mnist_subset, get_image_classifier_list, device_type,
+def _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
                                          preprocessing_defences):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_, _ = get_image_classifier_list(one_classifier=True)
+    classifier_, _ = image_dl_estimator(one_classifier=True)
 
     clip_values = (0, 1)
     criterion = nn.CrossEntropyLoss()
@@ -61,11 +61,11 @@ def _test_preprocessing_defences_forward(get_default_mnist_subset, get_image_cla
 
 
 # A generic test for various preprocessing_defences, backward pass.
-def _test_preprocessing_defences_backward(get_default_mnist_subset, get_image_classifier_list, device_type,
+def _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
                                           preprocessing_defences):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_, _ = get_image_classifier_list(one_classifier=True)
+    classifier_, _ = image_dl_estimator(one_classifier=True)
 
     clip_values = (0, 1)
     criterion = nn.CrossEntropyLoss()
@@ -94,72 +94,72 @@ def _test_preprocessing_defences_backward(get_default_mnist_subset, get_image_cl
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
-def test_nodefence(get_default_mnist_subset, get_image_classifier_list, device_type):
+def test_nodefence(get_default_mnist_subset, image_dl_estimator, device_type):
     preprocessing_defences = []
-    _test_preprocessing_defences_forward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
                                          preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
                                           preprocessing_defences)
 
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
-def test_defence_pytorch(get_default_mnist_subset, get_image_classifier_list, device_type):
+def test_defence_pytorch(get_default_mnist_subset, image_dl_estimator, device_type):
     smooth_3x3 = SpatialSmoothingPyTorch(window_size=3, channels_first=True, device_type=device_type)
     preprocessing_defences = [smooth_3x3]
-    _test_preprocessing_defences_forward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
                                          preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
                                           preprocessing_defences)
 
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
-def test_defence_non_pytorch(get_default_mnist_subset, get_image_classifier_list, device_type):
+def test_defence_non_pytorch(get_default_mnist_subset, image_dl_estimator, device_type):
     smooth_3x3 = SpatialSmoothing(window_size=3, channels_first=True)
     preprocessing_defences = [smooth_3x3]
-    _test_preprocessing_defences_forward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
                                          preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
                                           preprocessing_defences)
 
 
 @pytest.mark.xfail(reason="Preprocessing-defence chaining only supports defences implemented in PyTorch.")
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
-def test_defences_pytorch_and_nonpytorch(get_default_mnist_subset, get_image_classifier_list, device_type):
+def test_defences_pytorch_and_nonpytorch(get_default_mnist_subset, image_dl_estimator, device_type):
     smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=True)
     smooth_3x3_pth = SpatialSmoothingPyTorch(window_size=3, channels_first=True, device_type=device_type)
     preprocessing_defences = [smooth_3x3_nonpth, smooth_3x3_pth]
-    _test_preprocessing_defences_forward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
                                          preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
                                           preprocessing_defences)
 
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
-def test_defences_chaining(get_default_mnist_subset, get_image_classifier_list, device_type):
+def test_defences_chaining(get_default_mnist_subset, image_dl_estimator, device_type):
     smooth_3x3 = SpatialSmoothingPyTorch(window_size=3, channels_first=True, device_type=device_type)
     smooth_5x5 = SpatialSmoothingPyTorch(window_size=5, channels_first=True, device_type=device_type)
     smooth_7x7 = SpatialSmoothingPyTorch(window_size=7, channels_first=True, device_type=device_type)
     preprocessing_defences = [smooth_3x3, smooth_5x5, smooth_7x7]
-    _test_preprocessing_defences_forward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
                                          preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, get_image_classifier_list, device_type,
+    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
                                           preprocessing_defences)
 
 
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
-def test_fgsm_defences(fix_get_mnist_subset, get_image_classifier_list, device_type):
+def test_fgsm_defences(fix_get_mnist_subset, image_dl_estimator, device_type):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     clip_values = (0, 1)
     smooth_3x3 = SpatialSmoothingPyTorch(window_size=3, channels_first=True, device_type=device_type)
     smooth_5x5 = SpatialSmoothingPyTorch(window_size=5, channels_first=True, device_type=device_type)
     smooth_7x7 = SpatialSmoothingPyTorch(window_size=7, channels_first=True, device_type=device_type)
-    classifier_, _ = get_image_classifier_list(one_classifier=True)
+    classifier_, _ = image_dl_estimator(one_classifier=True)
 
     criterion = nn.CrossEntropyLoss()
     classifier = PyTorchClassifier(

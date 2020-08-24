@@ -27,6 +27,8 @@ done
 pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
 
+pytest -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework="pytorch" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_pytorch.py tests"; fi
 
 
 #NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
