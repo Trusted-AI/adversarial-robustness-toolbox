@@ -944,7 +944,6 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         if tf.executing_eagerly():
             x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
-            # tape.watch(x_preprocessed_tf)
             predictions = self._model(x_preprocessed_tf)
             if self._reduce_labels:
                 loss = self._loss_object(np.argmax(y, axis=1), predictions)
