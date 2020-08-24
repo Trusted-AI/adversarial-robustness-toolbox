@@ -157,7 +157,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         This implementation can use as input to the learning process probabilities/logits or losses,
         depending on the type of model and provided configuration.
     """
-    _estimator_requirements = [BaseEstimator]
+    _estimator_requirements = [BaseEstimator, ClassifierMixin]
 
     def __init__(self, classifier: Classifier, input_type: Optional[str] = 'prediction',
                  attack_model_type: Optional[str] = 'nn', attack_model: Optional[Classifier] = None):
