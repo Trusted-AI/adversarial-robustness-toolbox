@@ -111,6 +111,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
+            device_type=device_type,
         )
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -121,13 +122,6 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Get the internal layers
         self._layer_names = self._model.get_layers
-
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
 
         self._model.to(self._device)
 

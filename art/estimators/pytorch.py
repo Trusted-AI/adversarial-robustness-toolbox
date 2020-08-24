@@ -38,11 +38,32 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     Estimator class for PyTorch models.
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, device_type: str = "gpu", **kwargs) -> None:
         """
         Estimator class for PyTorch models.
+
+        :param channels_first: Set channels first or last.
+        :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
+               maximum values allowed for features. If floats are provided, these will be used as the range of all
+               features. If arrays are provided, each value will be considered the bound for a feature, thus
+               the shape of clip values needs to match the total number of features.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
+        import torch
+
         super().__init__(**kwargs)
+
+        # Set device
+        if device_type == "cpu" or not torch.cuda.is_available():
+            self._device = torch.device("cpu")
+        else:
+            cuda_idx = torch.cuda.current_device()
+            self._device = torch.device("cuda:{}".format(cuda_idx))
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """

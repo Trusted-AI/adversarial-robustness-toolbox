@@ -125,6 +125,8 @@ class PreprocessorPyTorch(Preprocessor):
     Abstract base class for preprocessing defences implemented in PyTorch that support efficient preprocessor-chaining.
     """
 
+    import torch
+
     @abc.abstractmethod
     def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
@@ -137,7 +139,9 @@ class PreprocessorPyTorch(Preprocessor):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def estimate_forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
+    def estimate_forward(
+        self, x: torch.Tensor, y: Optional[torch.Tensor] = None
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
         Provide a differentiable estimate of the forward function, so that autograd can calculate gradients
         of the defence for the backward pass. If the defence is differentiable, just call `self.forward()`.
@@ -156,6 +160,8 @@ class PreprocessorTensorFlowV2(Preprocessor):
     Abstract base class for preprocessing defences implemented in TensorFlow v2 that support efficient
     preprocessor-chaining.
     """
+
+    import tensorflow as tf
 
     @abc.abstractmethod
     def forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
