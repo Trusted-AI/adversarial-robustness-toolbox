@@ -943,7 +943,6 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
         if tf.executing_eagerly():
-            # with tf.GradientTape() as tape:
             x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
             # tape.watch(x_preprocessed_tf)
             predictions = self._model(x_preprocessed_tf)
