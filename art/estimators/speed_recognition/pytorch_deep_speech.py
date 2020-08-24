@@ -180,7 +180,9 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
 
-    def _transform_model_input(self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False):
+    def _transform_model_input(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False
+    ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
         """
         Transform the user input space into the model input space.
 
@@ -190,10 +192,18 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
-        :return:
+        :return: A tuple of inputs and targets in the model space with the original index
+                 `(inputs, targets, input_percentages, target_sizes, batch_idx)`, where:
+                    - inputs: model inputs of shape (nb_samples, nb_frequencies, seq_length).
+                    - targets: ground truth targets of shape (sum over nb_samples of real seq_lengths).
+                    - input_percentages: percentages of real inputs in inputs.
+                    - target_sizes: list of real seq_lengths.
+                    - batch_idx: original index of inputs.
         """
         import torch
         import torchaudio
+
+        from deepspeech_pytorch.loader.data_loader import _collate_fn
 
         x = x.astype(ART_NUMPY_DTYPE)
 
@@ -231,6 +241,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         label_map = dict([(self._model.labels[i], i) for i in range(len(self._model.labels))])
 
         # We must process each sequence separately due to the diversity of their length
+        batch = []
         for i in range(len(x)):
             # First process the target
             if y is None:
@@ -256,9 +267,20 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             spectrogram = spectrogram - mean
             spectrogram = spectrogram / std
 
+            # Then form the batch
+            batch.append((spectrogram, target))
+
+        # We must keep the order of the batch for later use as the following function will change its order
+        batch_idx = sorted(range(len(batch)), key=lambda i: batch[i][0].size(1), reverse=True)
+
+        # The collate function is important to convert input into model space
+        inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
+
+        return inputs, targets, input_percentages, target_sizes, batch_idx
 
 
-In[295]: batch = [(spect_1, l1), (spect_2, l2)]
+
+
 
 
 def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
