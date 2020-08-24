@@ -27,6 +27,7 @@ import logging
 from typing import Optional
 
 import numpy as np
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -37,7 +38,6 @@ from art.attacks import InferenceAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin, Classifier
 from art.utils import check_and_transform_label_format
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -173,36 +173,36 @@ class MembershipInferenceBlackBox(InferenceAttack):
                            of the model.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         """
+        attack_params = InferenceAttack.attack_params + [
+            "input_type",
+            "attack_model_type",
+            "attack_model",
+        ]
+
         super(MembershipInferenceBlackBox, self).__init__(estimator=classifier)
-
-        if input_type not in ['prediction', 'loss']:
-            raise ValueError("Illegal value for parameter `input_type`.")
-
         self.input_type = input_type
+        self.attack_model_type = attack_model_type
+        self.attack_model = attack_model
 
-        if attack_model:
-            if ClassifierMixin not in type(attack_model).__mro__:
-                raise TypeError("Attack model must be of type Classifier.")
-            self.attack_model = attack_model
+        self._check_params()
+
+        if self.attack_model:
             self.default_model = False
             self.attack_model_type = None
         else:
             self.default_model = True
-            self.attack_model_type = attack_model_type
-            if attack_model_type == 'nn':
-                if input_type == 'prediction':
+            if self.attack_model_type == 'nn':
+                if self.input_type == 'prediction':
                     self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
                 else:
                     self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes, 1)
                 self.epochs = 100
                 self.bs = 100
                 self.lr = 0.0001
-            elif attack_model_type == 'rf':
+            elif self.attack_model_type == 'rf':
                 self.attack_model = RandomForestClassifier()
-            elif attack_model_type == 'gb':
+            elif self.attack_model_type == 'gb':
                 self.attack_model = GradientBoostingClassifier()
-            else:
-                raise ValueError("Illegal value for parameter `attack_model_type`.")
 
     def fit(self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -320,6 +320,17 @@ class MembershipInferenceBlackBox(InferenceAttack):
         else:
             inferred = np.array([np.argmax(arr) for arr in self.attack_model.predict(np.c_[features, y])])
         return inferred
+
+    def _check_params(self) -> None:
+        if self.input_type not in ['prediction', 'loss']:
+            raise ValueError("Illegal value for parameter `input_type`.")
+
+        if self.attack_model_type not in ['nn', 'rf', 'gb']:
+            raise ValueError("Illegal value for parameter `attack_model_type`.")
+
+        if self.attack_model:
+            if ClassifierMixin not in type(self.attack_model).__mro__:
+                raise TypeError("Attack model must be of type Classifier.")
 
 
 class MembershipInferenceWhiteBoxNeuralNetwork(InferenceAttack):
