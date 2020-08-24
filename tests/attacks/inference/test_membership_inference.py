@@ -20,16 +20,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import pytest
 
-import torch.nn as nn
-import torch.optim as optim
-
 import keras
 
 from art.attacks.inference import (
     MembershipInferenceBlackBoxRuleBased,
     MembershipInferenceBlackBox,
 )
-from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator
 
@@ -152,36 +148,23 @@ def test_black_box_tabular_gb(get_tabular_classifier_list, get_iris_dataset):
         backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.03)
 
 
-class AttackModel(nn.Module):
-    def __init__(self, num_features):
-        super(AttackModel, self).__init__()
-        self.layer = nn.Linear(num_features, 1)
-        self.output = nn.Sigmoid()
-
-    def forward(self, x):
-        return self.output(self.layer(x))
-
-
-# @pytest.mark.skipMlFramework("scikitlearn")
-def test_black_box_with_model(get_tabular_classifier_list, get_iris_dataset):
+@pytest.mark.only_with_platform("pytorch")
+def test_black_box_with_model(get_tabular_classifier_list, get_attack_classifier_list, get_iris_dataset):
     classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
     if not classifier_list:
         logging.warning("Couldn't perform this test because no classifier is defined")
         return
 
-    model = AttackModel(2 * num_classes_iris)
-
-    # Define a loss function and optimizer
-    loss_fn = nn.BCELoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.0001)
-    attack_model = PyTorchClassifier(
-        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(2 * num_classes_iris,), nb_classes=1
-    )
+    attack_model_list = get_attack_classifier_list(num_features=2 * num_classes_iris)
+    if not attack_model_list:
+        logging.warning("Couldn't perform this test because no attack model is defined")
+        return
 
     for classifier in classifier_list:
-        print(type(classifier).__name__)
-        attack = MembershipInferenceBlackBox(classifier, attack_model=attack_model)
-        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.03)
+        for attack_model in attack_model_list:
+            print(type(attack_model).__name__)
+            attack = MembershipInferenceBlackBox(classifier, attack_model=attack_model)
+            backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.03)
 
 
 def test_errors(get_tabular_classifier_list, get_iris_dataset):
