@@ -160,7 +160,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
     def predict(
         self, x: np.ndarray, batch_size: int = 128, **kwargs
-    ) -> Union[Tuple[np.ndarray, np.ndarray], List[str]]:
+    ) -> Union[Tuple[np.ndarray, np.ndarray], List[List[str]]]:
         """
         Perform prediction for a batch of inputs.
 
@@ -198,7 +198,13 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         :param lm_workers: Number of language model processes to use. This parameter is only used when users want
                            transcription outputs. Default to 4.
         :type lm_workers: `int`
-        :return: Probability or transcription predictions.
+        :return: Probability (if transcription_output is None or False) or transcription (if transcription_output is
+                 True) predictions:
+                    - Probability return is a tuple of (probs, sizes), where:
+                        - probs is the probability of characters of shape (nb_samples, seq_length, nb_classes).
+                        - sizes is the real sequence length of shape (nb_samples,).
+                    - Transcription return is list of characters. A possible example of a transcription return is
+                      [['ENTER SIXTY'], ['HELLO']].
         """
         import torch  # lgtm [py/repeated-import]
 
@@ -315,12 +321,9 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         decoded_output, _ = decoder.decode(
             torch.tensor(result_outputs, device=self._device), torch.tensor(result_output_sizes, device=self._device)
         )
+        decoded_output = np.array(decoded_output)
 
-
-
-
-
-
+        return decoded_output
 
     def _transform_model_input(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False
@@ -431,10 +434,14 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         # Put the model in the evaluation status
         self._model.eval()
 
+        # TODO
+
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         # Put the model in the training status
         self._model.train()
+
+        # TODO
 
 
     def get_activations(
@@ -444,130 +451,4 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
     def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError
-
-
-
-
-
-
-from deepspeech_pytorch.configs.inference_config import EvalConfig
-from deepspeech_pytorch.decoder import GreedyDecoder
-from deepspeech_pytorch.loader.data_loader import SpectrogramDataset, AudioDataLoader
-from deepspeech_pytorch.utils import load_model, load_decoder
-
-from art.utils import get_file
-from art.config import ART_DATA_PATH
-
-from deepspeech_pytorch.loader.data_loader import SpectrogramParser
-
-from deepspeech_pytorch.loader.data_loader import load_audio
-
-from scipy.io import wavfile
-
-from deepspeech_pytorch.configs.inference_config import LMConfig
-
-device = torch.device("cpu")
-
-path = get_file(filename='librispeech_pretrained_v2.pth', path=ART_DATA_PATH, url='https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/librispeech_pretrained_v2.pth', extract=False)
-
-model = load_model(device=device, model_path=path, use_half=False)
-
-lm = LMConfig()
-
-decoder = load_decoder(labels=model.labels, cfg=lm)
-target_decoder = GreedyDecoder(model.labels, blank_index=model.labels.index('_'))
-
-
-sample_rate = model.audio_conf.sample_rate
-
-window_size = model.audio_conf.window_size
-
-window_stride = model.audio_conf.window_stride
-
-window = model.audio_conf.window.value
-
-n_fft = int(sample_rate * window_size)
-
-win_length = n_fft
-
-hop_length = int(sample_rate * window_stride)
-
-import librosa
-
-D = librosa.stft(y, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window)
-
-
-
-transformer = torchaudio.transforms.Spectrogram(n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=torch.hamming_window, power=None)
-D_ = transformer(torch.tensor(x))
-spect_1x, phase_ = torchaudio.functional.magphase(D_)
-spect_1 = torch.log1p(spect_1x)
-mean1 = spect_1.mean()
-std1 = spect_1.std()
-spect_1.add_(-mean1)
-spect_1.div_(std1)
-
-
-from deepspeech_pytorch.loader.data_loader import _collate_fn
-
-
-batch = [(spect_1, l1), (spect_2, l2)]
-
-batch_idx = sorted(range(len(batch)), key=lambda i: batch[i][0].size(1), reverse=True)
-
-inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
-input_sizes = input_percentages.mul_(int(inputs.size(3))).int()
-out, output_sizes = model(inputs, input_sizes)
-output_sizes[batch_idx] = output_sizes
-out[batch_idx] = out
-
-
-
-from warpctc_pytorch import CTCLoss
-criterion = CTCLoss()
-
-out = out.transpose(0, 1)
-float_out = out.float()
-targets = torch.tensor(l1 + l2)
-loss = criterion(float_out, targets, output_sizes, target_sizes).to(device)
-loss = loss / inputs.size(0)
-
-
-model.zero_grad()
-loss.backward()
-
-decoder = load_decoder(labels=model.labels, cfg=lm)
-decoded_output, _ = decoder.decode(out, output_sizes)   ## Nho batch_idx
-
-
-
-
-In [297]: out = out.transpose(0, 1)
-     ...: float_out = out.float()
-     ...: targets = torch.tensor(l1 + l2)
-     ...: loss = criterion(float_out, targets, output_sizes, target_sizes).to(device)
-     ...: loss = loss / inputs.size(0)
-
-In [298]: model.zero_grad()
-
-In [299]: loss.backward()
-
-In [300]: x[0].grad
-Out[300]: tensor([-0.0110, -0.1356,  0.2700,  ..., -2.5302, -1.2972, -1.1815])
-
-
-
-In [463]: out, output_sizes = model(inputs, input_sizes)
-
-In [464]: decoded_output, off = decoder.decode(out, output_sizes)
-
-In [465]: decoded_output[0][0]
-Out[465]: 'ENTER SIXTY'
-
-In [466]: decoded_output[1][0]
-Out[466]: 'ONE FIFTY'
-
-
-
-
 
