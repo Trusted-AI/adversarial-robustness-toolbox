@@ -170,7 +170,34 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         :param batch_size: Batch size.
         :param transcription_output: Indicate whether the function will produce probability or transcription as
                                      prediction output.
-        :type transcription_output: bool
+        :type transcription_output: `bool`
+        :param decoder_type: Decoder type. Either `greedy` or `beam`. This parameter is only used when users want
+                             transcription outputs. Default to `greedy`.
+        :type decoder_type: `str`
+        :param lm_path: Path to an (optional) kenlm language model for use with beam search. This parameter is only
+                        used when users want transcription outputs. Default to `''`.
+        :type lm_path: `str`
+        :param top_paths: Number of beams to return. This parameter is only used when users want transcription outputs.
+                          Default to 1.
+        :type top_paths: `int`
+        :param alpha: Language model weight. This parameter is only used when users want transcription outputs.
+                      Default to 0.0.
+        :type alpha: `float`
+        :param beta: Language model word bonus (all words). This parameter is only used when users want transcription
+                     outputs. Default to 0.0.
+        :type beta: `float`
+        :param cutoff_top_n: Cutoff_top_n characters with highest probs in vocabulary will be used in beam search. This
+                             parameter is only used when users want transcription outputs. Default to 40.
+        :type cutoff_top_n: `float`
+        :param cutoff_prob: Cutoff probability in pruning. This parameter is only used when users want transcription
+                            outputs. Default to 1.0.
+        :type cutoff_prob: `float`
+        :param beam_width: Beam width to use. This parameter is only used when users want transcription outputs.
+                           Default to 10.
+        :type beam_width: `int`
+        :param lm_workers: Number of language model processes to use. This parameter is only used when users want
+                           transcription outputs. Default to 4.
+        :type lm_workers: `int`
         :return: Probability or transcription predictions.
         """
         import torch  # lgtm [py/repeated-import]
@@ -220,16 +247,79 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             result_outputs[begin : end, : results[m].shape[1], : results[m].shape[-1]] = results[m]
 
         # Rearrange to the original order
-        result_output_sizes[batch_idx] = result_output_sizes
-        result_outputs[batch_idx] = result_outputs
+        result_output_sizes_ = result_output_sizes.copy()
+        result_outputs_ = result_outputs.copy()
+        result_output_sizes[batch_idx] = result_output_sizes_
+        result_outputs[batch_idx] = result_outputs_
 
         # Check if users want transcription outputs
         transcription_output = kwargs.get("transcription_output")
 
         if transcription_output is None or transcription_output == False:
-            return outputs, output_sizes
+            return result_outputs, result_output_sizes
 
-        if not tran
+        # Now users want transcription outputs
+        # Hence first create a decoder
+        from deepspeech_pytorch.configs.inference_config import LMConfig
+        from deepspeech_pytorch.enums import DecoderType
+        from deepspeech_pytorch.utils import load_decoder
+
+        # Create the language model config
+        lm_config = LMConfig()
+
+        decoder_type = kwargs.get("decoder_type")
+        if decoder_type is not None:
+            if decoder_type == 'greedy':
+                lm_config.decoder_type = DecoderType.greedy
+            elif decoder_type == 'beam':
+                lm_config.decoder_type = DecoderType.beam
+            else:
+                raise ValueError("Decoder type %s currently not supported." % decoder_type)
+
+        lm_path = kwargs.get("lm_path")
+        if lm_path is not None:
+            lm_config.lm_path = lm_path
+
+        top_paths = kwargs.get("top_paths")
+        if top_paths is not None:
+            lm_config.top_paths = top_paths
+
+        alpha = kwargs.get("alpha")
+        if alpha is not None:
+            lm_config.alpha = alpha
+
+        beta = kwargs.get("beta")
+        if beta is not None:
+            lm_config.beta = beta
+
+        cutoff_top_n = kwargs.get("cutoff_top_n")
+        if cutoff_top_n is not None:
+            lm_config.cutoff_top_n = cutoff_top_n
+
+        cutoff_prob = kwargs.get("cutoff_prob")
+        if cutoff_prob is not None:
+            lm_config.cutoff_prob = cutoff_prob
+
+        beam_width = kwargs.get("beam_width")
+        if beam_width is not None:
+            lm_config.beam_width = beam_width
+
+        lm_workers = kwargs.get("lm_workers")
+        if lm_workers is not None:
+            lm_config.lm_workers = lm_workers
+
+        # Create the decoder with the lm config
+        decoder = load_decoder(labels=self._model.labels, cfg=lm_config)
+
+        # Compute transcription
+        decoded_output, _ = decoder.decode(
+            torch.tensor(result_outputs, device=self._device), torch.tensor(result_output_sizes, device=self._device)
+        )
+
+
+
+
+
 
 
     def _transform_model_input(
@@ -330,23 +420,12 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
         return inputs, targets, input_percentages, target_sizes, batch_idx
 
-
-
-
-
-
-def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :param y: Target values of format `List[Dict[Tensor]]`, one for each input image. The
-                  fields of the Dict are as follows:
-
-                  - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
-                    between 0 and H and 0 and W
-                  - labels (Int64Tensor[N]): the predicted labels for each image
-                  - scores (Tensor[N]): the scores or each prediction.
+        :param y:
         :return: Loss gradients of the same shape as `x`.
         """
         # Put the model in the evaluation status
