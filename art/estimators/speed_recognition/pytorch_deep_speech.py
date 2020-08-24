@@ -179,6 +179,24 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
+        # Transform x into the model input space
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(x=x)
+
+        # Call to DeepSpeech model for prediction
+        input_sizes = input_rates.mul_(inputs.size(-1)).int()
+        outputs, output_sizes = self._model(inputs, input_sizes)
+
+        # Rearrange to the original order
+        output_sizes[batch_idx] = output_sizes
+        outputs[batch_idx] = outputs
+
+        transcription_output = kwargs.get("transcription_output")
+
+        if transcription_output is None or transcription_output == False:
+            return outputs, output_sizes
+
+        if not tran
+
 
     def _transform_model_input(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False
@@ -387,8 +405,8 @@ batch_idx = sorted(range(len(batch)), key=lambda i: batch[i][0].size(1), reverse
 inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
 input_sizes = input_percentages.mul_(int(inputs.size(3))).int()
 out, output_sizes = model(inputs, input_sizes)
-output_sizes = output_sizes[batch_idx]
-out = out[batch_idx]
+output_sizes[batch_idx] = output_sizes
+out[batch_idx] = out
 
 
 
