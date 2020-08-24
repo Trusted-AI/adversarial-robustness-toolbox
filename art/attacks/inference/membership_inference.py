@@ -331,27 +331,3 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if self.attack_model:
             if ClassifierMixin not in type(self.attack_model).__mro__:
                 raise TypeError("Attack model must be of type Classifier.")
-
-
-class MembershipInferenceWhiteBoxNeuralNetwork(InferenceAttack):
-    """
-        Implementation of a learned white-box membership inference attack.
-
-        This implementation can use as input to the learning process activations and/or gradients of one or more layers,
-        depending on the provided configuration.
-    """
-    def __init__(self, classifier: Classifier):
-        raise NotImplementedError
-
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
-        """
-        Infer sensitive properties (attributes, membership training records) from the targeted estimator. This method
-        should be overridden by all concrete inference attack implementations.
-
-        :param x: An array with reference inputs to be used in the attack.
-        :param y: Labels for `x`. This parameter is only used by some of the attacks.
-        :return: An array holding the inferred properties.
-        """
-        raise NotImplementedError
-        # if NeuralNetworkMixin in type(self.estimator).__mro__:
-        #     activations = self.estimator.get_activations(x, self.estimator.layer_names[-1], batch_size=self.bs)
