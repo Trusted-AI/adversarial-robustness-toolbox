@@ -243,7 +243,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
             loss_fn = nn.BCELoss()
             optimizer = optim.Adam(self.attack_model.parameters(), lr=self.lr)
 
-            attack_train_set = self._get_attack_dataset(x1=x1, x2=x2, y=y_new)
+            attack_train_set = self._get_attack_dataset(f1=x1, f2=x2, l=y_new)
             train_loader = DataLoader(attack_train_set, batch_size=self.bs, shuffle=True, num_workers=0)
 
             self.attack_model = to_cuda(self.attack_model)
@@ -295,7 +295,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
             self.attack_model.eval()
             inferred = None
-            test_set = self._get_attack_dataset(x1=features, x2=y)
+            test_set = self._get_attack_dataset(f1=features, f2=y)
             test_loader = DataLoader(test_set, batch_size=self.bs, shuffle=True, num_workers=0)
             for input1, input2, targets in test_loader:
                 outputs = self.attack_model(input1, input2)

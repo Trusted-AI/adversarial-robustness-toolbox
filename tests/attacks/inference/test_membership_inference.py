@@ -38,8 +38,8 @@ num_classes_iris = 3
 num_classes_mnist = 10
 
 
-def test_rule_based_image(get_default_mnist_subset, get_image_classifier_list_for_attack):
-    classifier_list = get_image_classifier_list_for_attack(MembershipInferenceBlackBoxRuleBased)
+def test_rule_based_image(get_default_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(MembershipInferenceBlackBoxRuleBased)
     if not classifier_list:
         logging.warning("Couldn't perform this test because no classifier is defined")
         return
@@ -60,8 +60,8 @@ def test_rule_based_tabular(get_iris_dataset, get_tabular_classifier_list):
         backend_check_membership_accuracy_no_fit(attack, get_iris_dataset, 0.06)
 
 
-def test_black_box_image(get_default_mnist_subset, get_image_classifier_list_for_attack):
-    classifier_list = get_image_classifier_list_for_attack(MembershipInferenceBlackBox)
+def test_black_box_image(get_default_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(MembershipInferenceBlackBox)
     if not classifier_list:
         logging.warning("Couldn't perform this test because no classifier is defined")
         return
