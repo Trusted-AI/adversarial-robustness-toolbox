@@ -173,23 +173,57 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         :type transcription_output: bool
         :return: Probability or transcription predictions.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # Put the model in the evaluation status
         self._model.eval()
 
         # Apply preprocessing
-        x, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Transform x into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(x=x)
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(x=x_preprocessed)
 
-        # Call to DeepSpeech model for prediction
+        # Compute real input sizes
         input_sizes = input_rates.mul_(inputs.size(-1)).int()
-        outputs, output_sizes = self._model(inputs, input_sizes)
+
+        # Run prediction with batch processing
+        results = []
+        result_output_sizes = np.zeros(x_preprocessed.shape[0], dtype=np.int)
+        num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
+
+            # Call to DeepSpeech model for prediction
+            with torch.no_grad():
+                outputs, output_sizes = self._model(inputs[begin : end], input_sizes[begin : end])
+
+            results.append(outputs)
+            result_output_sizes[begin : end] = output_sizes.detach().cpu().numpy()
+
+        # Aggregate results
+        result_outputs = np.zeros(
+            (x_preprocessed.shape[0], result_output_sizes.max(), results[0].shape[-1]), dtype=np.float32
+        )
+        for m in range(num_batch):
+            # Batch indexes
+            begin, end = (
+                m * batch_size,
+                min((m + 1) * batch_size, x_preprocessed.shape[0]),
+            )
+
+            # Overwrite results
+            result_outputs[begin : end, : results[m].shape[1], : results[m].shape[-1]] = results[m]
 
         # Rearrange to the original order
-        output_sizes[batch_idx] = output_sizes
-        outputs[batch_idx] = outputs
+        result_output_sizes[batch_idx] = result_output_sizes
+        result_outputs[batch_idx] = result_outputs
 
+        # Check if users want transcription outputs
         transcription_output = kwargs.get("transcription_output")
 
         if transcription_output is None or transcription_output == False:
@@ -429,49 +463,6 @@ decoded_output, _ = decoder.decode(out, output_sizes)   ## Nho batch_idx
 
 
 
-In [281]: x[0].grad
-
-In [282]: x[1].grad
-
-In [283]:
-
-In [283]: D_1 = transformer(x[0])
-
-In [284]: D_2 = transformer(x[1])
-
-In [285]: spect_1, phase_1 = torchaudio.functional.magphase(D_1)
-
-In [286]: spect_2, phase_2 = torchaudio.functional.magphase(D_2)
-
-In [287]: spect_1 = torch.log1p(spect_1)
-
-In [288]: spect_2 = torch.log1p(spect_2)
-
-In [289]: mean1 = spect_1.mean()
-     ...: std1 = spect_1.std()
-
-In [290]: mean2 = spect_2.mean()
-     ...: std2 = spect_2.std()
-
-In [291]:
-
-In [291]: spect_1 = spect_1 - mean1
-
-In [292]: spect_2 = spect_2 - mean2
-
-In [293]: spect_1 = spect_1 / std1
-
-In [294]: spect_2 = spect_2 / std2
-
-In [295]: batch = [(spect_1, l1), (spect_2, l2)]
-
-In [296]: inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
-     ...: input_sizes = input_percentages.mul_(int(inputs.size(3))).int()
-     ...: out, output_sizes = model(inputs, input_sizes)
-     ...: output_sizes = output_sizes[batch_idx]
-     ...: out = out[batch_idx]
-     ...:
-
 In [297]: out = out.transpose(0, 1)
      ...: float_out = out.float()
      ...: targets = torch.tensor(l1 + l2)
@@ -485,111 +476,7 @@ In [299]: loss.backward()
 In [300]: x[0].grad
 Out[300]: tensor([-0.0110, -0.1356,  0.2700,  ..., -2.5302, -1.2972, -1.1815])
 
-In [301]: x[1].grad
-Out[301]: tensor([ 0.2616,  0.3763,  0.3973,  ..., -0.0391, -0.1326, -0.0944])
 
-In [302]: x[1].grad.size()
-Out[302]: torch.Size([18800])
-
-In [303]: x[0].grad.size()
-Out[303]: torch.Size([17040])
-
-
-
-
-
-In [433]: x1 = load_audio('/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/an4_dataset/val/an4/wav/cen3-mwhw-b.wav')
-
-In [434]: x2 = load_audio('/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/an4_dataset/val/an4/wav/an3-mblw-b.wav')
-
-In [435]: x = np.array([x1, x2])
-
-In [436]: for i in range(len(x)):
-     ...:     x[i] = torch.from_numpy(x[i]).to(device)
-     ...:     x[i].requires_grad = True
-     ...:
-
-In [437]: x[0].grad.shape
----------------------------------------------------------------------------
-AttributeError                            Traceback (most recent call last)
-<ipython-input-437-ec61ee59a159> in <module>
-----> 1 x[0].grad.shape
-
-AttributeError: 'NoneType' object has no attribute 'shape'
-
-In [438]: path = get_file(filename='an4_pretrained_v2.pth', path=ART_DATA_PATH, url='https://github.com/SeanNaren/deepspeech.p
-     ...: ytorch/releases/download/v2.0/an4_pretrained_v2.pth', extract=False)
-
-In [439]: path
-Out[439]: '/home/minhtn/.art/data/an4_pretrained_v2.pth'
-
-In [440]: model = load_model(device=device, model_path=path, use_half=False)
-
-In [441]: path
-Out[441]: '/home/minhtn/.art/data/an4_pretrained_v2.pth'
-
-In [442]: D_1 = transformer(x[0])
-
-In [443]: D_2 = transformer(x[1])
-
-In [444]: spect_1, phase_1 = torchaudio.functional.magphase(D_1)
-
-In [445]: spect_2, phase_2 = torchaudio.functional.magphase(D_2)
-
-In [446]: spect_1 = torch.log1p(spect_1)
-
-In [447]: spect_2 = torch.log1p(spect_2)
-
-In [448]: mean1 = spect_1.mean()
-     ...: std1 = spect_1.std()
-
-In [449]: mean2 = spect_2.mean()
-     ...: std2 = spect_2.std()
-
-In [450]: spect_1 = spect_1 - mean1
-
-In [451]: spect_2 = spect_2 - mean2
-
-In [452]: spect_1 = spect_1 / std1
-
-In [453]: spect_2 = spect_2 / std2
-
-In [454]: batch = [(spect_1, l1), (spect_2, l2)]
-     ...:
-     ...: batch_idx = sorted(range(len(batch)), key=lambda i: batch[i][0].size(1), reverse=True)
-     ...:
-
-In [455]: inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
-     ...: input_sizes = input_percentages.mul_(int(inputs.size(3))).int()
-     ...: out, output_sizes = model(inputs, input_sizes)
-     ...: output_sizes = output_sizes[batch_idx]
-     ...: out = out[batch_idx]
-     ...:
-
-In [456]: out = out.transpose(0, 1)
-     ...: float_out = out.float()
-     ...: targets = torch.tensor(l1 + l2)
-     ...: loss = criterion(float_out, targets, output_sizes, target_sizes).to(device)
-     ...: loss = loss / inputs.size(0)
-     ...:
-
-In [457]: model.zero_grad()
-
-In [458]: loss.backward()
-
-In [459]: x[0].grad.shape
-Out[459]: torch.Size([17600])
-
-In [460]: x[0].grad
-Out[460]:
-tensor([-9.3802e-03, -4.9995e-04, -5.0607e-03,  ..., -4.9801e-01,
-         8.0346e-01, -2.0202e-01])
-
-In [461]: x[1].grad
-Out[461]: tensor([ 0.0198,  0.0770, -0.0957,  ..., -0.0147, -0.0134, -0.0083])
-
-In [462]: x[1].grad.shape
-Out[462]: torch.Size([20800])
 
 In [463]: out, output_sizes = model(inputs, input_sizes)
 
