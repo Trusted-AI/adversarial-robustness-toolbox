@@ -121,7 +121,12 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 import torch.nn as nn  # lgtm [py/repeated-import]
 
                 class MembershipInferenceAttackModel(nn.Module):
+                    """
+                        Implementation of a pytorch model for learning a membership inference attack.
 
+                        The features used are probabilities/logits or losses for the attack training data along with
+                        its true labels.
+                    """
                     def __init__(self, num_classes, num_features=None):
 
                         self.num_classes = num_classes
@@ -307,6 +312,12 @@ class MembershipInferenceBlackBox(InferenceAttack):
         from torch.utils.data.dataset import Dataset
 
         class AttackDataset(Dataset):
+            """
+                Implementation of a pytorch dataset for membership inference attack.
+
+                The features are probabilities/logits or losses for the attack training data (`x1`) along with
+                its true labels (`x2`). The labels (`y`) are a boolean representing whether this is a member.
+            """
             def __init__(self, x1, x2, y=None):
                 import torch  # lgtm [py/repeated-import]
 
