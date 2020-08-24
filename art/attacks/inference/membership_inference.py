@@ -118,7 +118,7 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         This implementation uses the simple rule: if the model's prediction for a sample is correct, then it is a
         member. Otherwise, it is not a member.
     """
-    _estimator_requirements = [BaseEstimator]
+    _estimator_requirements = [BaseEstimator, ClassifierMixin]
 
     def __init__(self, classifier: Classifier):
         """
