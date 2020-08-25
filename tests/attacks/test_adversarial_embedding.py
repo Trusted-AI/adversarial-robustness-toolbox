@@ -142,5 +142,6 @@ class TestAdversarialEmbedding(unittest.TestCase):
             emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, [(target, target2)],
                                                              pp_poison=[-1])
 
+
 if __name__ == "__main__":
     unittest.main()
