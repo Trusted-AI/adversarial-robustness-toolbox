@@ -337,10 +337,40 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
         """
+        import torch  # lgtm [py/repeated-import]
+
+        from warpctc_pytorch import CTCLoss
+
         # Put the model in the evaluation status
         self._model.eval()
 
-        # TODO
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+
+        # Transform x into the model input space
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
+            x=x_preprocessed, y=y, compute_gradient=True
+        )
+
+        # Compute real input sizes
+        input_sizes = input_rates.mul_(inputs.size(-1)).int()
+
+        # Call to DeepSpeech model for prediction
+        outputs, output_sizes = self._model(inputs, input_sizes)
+        outputs = outputs.transpose(0, 1)
+        float_outputs = outputs.float()
+
+        # Loss function
+        criterion = CTCLoss()
+        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self._device)
+        loss = loss / inputs.size(0)
+
+        # Compute gradients
+        with amp.scale_loss(loss, optimizer) as scaled_loss:
+            scaled_loss.backward()
+
+
+
 
     def _transform_model_input(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False
@@ -396,8 +426,9 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             hop_length=hop_length,
             win_length=win_length,
             window_fn=window_fn,
-            power = None
+            power=None
         )
+        transformer.to(self._device)
 
         # Create a label map
         label_map = dict([(self._model.labels[i], i) for i in range(len(self._model.labels))])
@@ -456,3 +487,80 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
     def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError
+
+
+
+
+
+
+
+import numpy as np
+import torch
+import torchaudio
+from warpctc_pytorch import CTCLoss
+from deepspeech_pytorch.loader.data_loader import _collate_fn
+from deepspeech_pytorch.utils import load_model
+from art.utils import get_file
+from art.config import ART_DATA_PATH
+from deepspeech_pytorch.loader.data_loader import load_audio
+
+x1 = load_audio('/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/LibriSpeech_dataset/val/wav/1651-136854-0012.wav')
+x2 = load_audio('/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/an4_dataset/val/an4/wav/an3-mblw-b.wav')
+x = np.array([x1, x2])
+device = torch.device("cuda:1")
+
+for i in range(len(x)):
+    x[i] = torch.from_numpy(x[i]).to(device)
+    x[i].requires_grad = True
+
+path = get_file(filename='librispeech_pretrained_v2.pth', path=ART_DATA_PATH, url='https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/librispeech_pretrained_v2.pth', extract=False)
+model = load_model(device=device, model_path=path, use_half=False)
+sample_rate = model.audio_conf.sample_rate
+window_size = model.audio_conf.window_size
+window_stride = model.audio_conf.window_stride
+window = model.audio_conf.window.value
+n_fft = int(sample_rate * window_size)
+win_length = n_fft
+hop_length = int(sample_rate * window_stride)
+transformer = torchaudio.transforms.Spectrogram(n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=torch.hamming_window, power=None).to(device)
+
+D_1 = transformer(x[0])
+D_2 = transformer(x[1])
+spect_1, phase_1 = torchaudio.functional.magphase(D_1)
+spect_2, phase_2 = torchaudio.functional.magphase(D_2)
+
+labels_map = dict([(model.labels[i], i) for i in range(len(model.labels))])
+def parse_transcript(transcript_path):
+    with open(transcript_path, 'r', encoding='utf8') as transcript_file:
+        transcript = transcript_file.read().replace('\n', '')
+        transcript = list(filter(None, [labels_map.get(x) for x in list(transcript)]))
+        return transcript
+
+l1 = parse_transcript('/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/TEDLIUM_dataset/TEDLIUM_release2/dev/converted/txt/ElizabethGilbert_2009_81.txt')
+l2 = parse_transcript("/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/LibriSpeech_dataset/val/txt/1686-142278-0008.txt")
+
+
+parameters = model.parameters()
+optimizer = torch.optim.SGD(parameters, lr=0.01)
+from apex import amp
+model, optimizer = amp.initialize(model, optimizer, enabled=True).to(device)
+
+
+batch = [(spect_1, l1), (spect_2, l2)]
+inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
+input_sizes = input_percentages.mul_(inputs.size(-1)).int()
+out, output_sizes = model(inputs.to(device), input_sizes.to(device))
+outputs = out.transpose(0, 1)
+float_outputs = outputs.float()
+
+criterion = CTCLoss()
+loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(device)
+loss = loss / inputs.size(0)
+
+
+with amp.scale_loss(loss, optimizer) as scaled_loss:
+    scaled_loss.backward()
+
+#loss.backward()
+
+x[0].grad
