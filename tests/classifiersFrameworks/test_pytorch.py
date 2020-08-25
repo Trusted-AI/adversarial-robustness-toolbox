@@ -30,8 +30,9 @@ from tests.attacks.utils import backend_test_defended_images
 
 
 # A generic test for various preprocessing_defences, forward pass.
-def _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                         preprocessing_defences):
+def _test_preprocessing_defences_forward(
+    get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier_, _ = image_dl_estimator(one_classifier=True)
@@ -39,8 +40,13 @@ def _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_esti
     clip_values = (0, 1)
     criterion = nn.CrossEntropyLoss()
     classifier = PyTorchClassifier(
-        clip_values=clip_values, model=classifier_.model, preprocessing_defences=preprocessing_defences,
-        loss=criterion, input_shape=(1, 28, 28), nb_classes=10, device_type=device_type,
+        clip_values=clip_values,
+        model=classifier_.model,
+        preprocessing_defences=preprocessing_defences,
+        loss=criterion,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+        device_type=device_type,
     )
 
     with torch.no_grad():
@@ -61,8 +67,9 @@ def _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_esti
 
 
 # A generic test for various preprocessing_defences, backward pass.
-def _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                          preprocessing_defences):
+def _test_preprocessing_defences_backward(
+    get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier_, _ = image_dl_estimator(one_classifier=True)
@@ -70,8 +77,13 @@ def _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_est
     clip_values = (0, 1)
     criterion = nn.CrossEntropyLoss()
     classifier = PyTorchClassifier(
-        clip_values=clip_values, model=classifier_.model, preprocessing_defences=preprocessing_defences,
-        loss=criterion, input_shape=(1, 28, 28), nb_classes=10, device_type=device_type,
+        clip_values=clip_values,
+        model=classifier_.model,
+        preprocessing_defences=preprocessing_defences,
+        loss=criterion,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+        device_type=device_type,
     )
 
     # The efficient defence-chaining.
@@ -96,10 +108,12 @@ def _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_est
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_nodefence(get_default_mnist_subset, image_dl_estimator, device_type):
     preprocessing_defences = []
-    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                         preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                          preprocessing_defences)
+    _test_preprocessing_defences_forward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
+    _test_preprocessing_defences_backward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -107,10 +121,12 @@ def test_nodefence(get_default_mnist_subset, image_dl_estimator, device_type):
 def test_defence_pytorch(get_default_mnist_subset, image_dl_estimator, device_type):
     smooth_3x3 = SpatialSmoothingPyTorch(window_size=3, channels_first=True, device_type=device_type)
     preprocessing_defences = [smooth_3x3]
-    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                         preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                          preprocessing_defences)
+    _test_preprocessing_defences_forward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
+    _test_preprocessing_defences_backward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -118,10 +134,12 @@ def test_defence_pytorch(get_default_mnist_subset, image_dl_estimator, device_ty
 def test_defence_non_pytorch(get_default_mnist_subset, image_dl_estimator, device_type):
     smooth_3x3 = SpatialSmoothing(window_size=3, channels_first=True)
     preprocessing_defences = [smooth_3x3]
-    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                         preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                          preprocessing_defences)
+    _test_preprocessing_defences_forward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
+    _test_preprocessing_defences_backward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
 
 
 @pytest.mark.xfail(reason="Preprocessing-defence chaining only supports defences implemented in PyTorch.")
@@ -131,10 +149,12 @@ def test_defences_pytorch_and_nonpytorch(get_default_mnist_subset, image_dl_esti
     smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=True)
     smooth_3x3_pth = SpatialSmoothingPyTorch(window_size=3, channels_first=True, device_type=device_type)
     preprocessing_defences = [smooth_3x3_nonpth, smooth_3x3_pth]
-    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                         preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                          preprocessing_defences)
+    _test_preprocessing_defences_forward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
+    _test_preprocessing_defences_backward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -144,10 +164,12 @@ def test_defences_chaining(get_default_mnist_subset, image_dl_estimator, device_
     smooth_5x5 = SpatialSmoothingPyTorch(window_size=5, channels_first=True, device_type=device_type)
     smooth_7x7 = SpatialSmoothingPyTorch(window_size=7, channels_first=True, device_type=device_type)
     preprocessing_defences = [smooth_3x3, smooth_5x5, smooth_7x7]
-    _test_preprocessing_defences_forward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                         preprocessing_defences)
-    _test_preprocessing_defences_backward(get_default_mnist_subset, image_dl_estimator, device_type,
-                                          preprocessing_defences)
+    _test_preprocessing_defences_forward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
+    _test_preprocessing_defences_backward(
+        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    )
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -163,8 +185,13 @@ def test_fgsm_defences(fix_get_mnist_subset, image_dl_estimator, device_type):
 
     criterion = nn.CrossEntropyLoss()
     classifier = PyTorchClassifier(
-        clip_values=clip_values, model=classifier_.model, preprocessing_defences=[smooth_3x3, smooth_5x5, smooth_7x7],
-        loss=criterion, input_shape=(1, 28, 28), nb_classes=10, device_type=device_type,
+        clip_values=clip_values,
+        model=classifier_.model,
+        preprocessing_defences=[smooth_3x3, smooth_5x5, smooth_7x7],
+        loss=criterion,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+        device_type=device_type,
     )
     assert len(classifier.preprocessing_defences) == 3
 
