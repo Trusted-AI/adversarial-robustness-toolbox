@@ -44,6 +44,7 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         This implementation uses the simple rule: if the model's prediction for a sample is correct, then it is a
         member. Otherwise, it is not a member.
     """
+
     _estimator_requirements = [BaseEstimator, ClassifierMixin]
 
     def __init__(self, classifier: Classifier):
@@ -82,10 +83,16 @@ class MembershipInferenceBlackBox(InferenceAttack):
         This implementation can use as input to the learning process probabilities/logits or losses,
         depending on the type of model and provided configuration.
     """
+
     _estimator_requirements = [BaseEstimator, ClassifierMixin]
 
-    def __init__(self, classifier: Classifier, input_type: Optional[str] = 'prediction',
-                 attack_model_type: Optional[str] = 'nn', attack_model: Optional[Classifier] = None):
+    def __init__(
+        self,
+        classifier: Classifier,
+        input_type: Optional[str] = "prediction",
+        attack_model_type: Optional[str] = "nn",
+        attack_model: Optional[Classifier] = None,
+    ):
         """
         Create a MembershipInferenceBlackBox attack instance.
 
@@ -116,7 +123,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
             self.attack_model_type = None
         else:
             self.default_model = True
-            if self.attack_model_type == 'nn':
+            if self.attack_model_type == "nn":
                 import torch  # lgtm [py/repeated-import]
                 import torch.nn as nn  # lgtm [py/repeated-import]
 
@@ -127,6 +134,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                         The features used are probabilities/logits or losses for the attack training data along with
                         its true labels.
                     """
+
                     def __init__(self, num_classes, num_features=None):
 
                         self.num_classes = num_classes
@@ -138,24 +146,19 @@ class MembershipInferenceBlackBox(InferenceAttack):
                         super(MembershipInferenceAttackModel, self).__init__()
 
                         self.features = nn.Sequential(
-                                nn.Linear(self.num_features, 512),
-                                nn.ReLU(),
-                                nn.Linear(512, 100),
-                                nn.ReLU(),
-                                nn.Linear(100, 64),
-                                nn.ReLU(),
+                            nn.Linear(self.num_features, 512),
+                            nn.ReLU(),
+                            nn.Linear(512, 100),
+                            nn.ReLU(),
+                            nn.Linear(100, 64),
+                            nn.ReLU(),
                         )
 
                         self.labels = nn.Sequential(
-                                nn.Linear(self.num_classes, 256),
-                                nn.ReLU(),
-                                nn.Linear(256, 64),
-                                nn.ReLU(),
+                            nn.Linear(self.num_classes, 256), nn.ReLU(), nn.Linear(256, 64), nn.ReLU(),
                         )
 
-                        self.combine = nn.Sequential(
-                                nn.Linear(64 * 2, 1),
-                        )
+                        self.combine = nn.Sequential(nn.Linear(64 * 2, 1),)
 
                         self.output = nn.Sigmoid()
 
@@ -165,16 +168,16 @@ class MembershipInferenceBlackBox(InferenceAttack):
                         is_member = self.combine(torch.cat((out_x1, out_l), 1))
                         return self.output(is_member)
 
-                if self.input_type == 'prediction':
+                if self.input_type == "prediction":
                     self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
                 else:
                     self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes, 1)
                 self.epochs = 100
                 self.bs = 100
                 self.lr = 0.0001
-            elif self.attack_model_type == 'rf':
+            elif self.attack_model_type == "rf":
                 self.attack_model = RandomForestClassifier()
-            elif self.attack_model_type == 'gb':
+            elif self.attack_model_type == "gb":
                 self.attack_model = GradientBoostingClassifier()
 
     def fit(self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs) -> np.ndarray:
@@ -202,13 +205,13 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
         # Create attack dataset
         # uses final probabilities/logits
-        if self.input_type == 'prediction':
+        if self.input_type == "prediction":
             # members
             features = self.estimator.predict(x).astype(np.float32)
             # non-members
             test_features = self.estimator.predict(test_x).astype(np.float32)
         # only for models with loss
-        elif self.input_type == 'loss':
+        elif self.input_type == "loss":
             if NeuralNetworkMixin not in type(self.estimator).__mro__:
                 raise TypeError("loss input_type can only be used with neural networks")
             # members
@@ -227,7 +230,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         x2 = np.concatenate((y, test_y))
         y_new = np.concatenate((labels, test_labels))
 
-        if self.default_model and self.attack_model_type == 'nn':
+        if self.default_model and self.attack_model_type == "nn":
             import torch  # lgtm [py/repeated-import]
             import torch.nn as nn  # lgtm [py/repeated-import]
             import torch.optim as optim  # lgtm [py/repeated-import]
@@ -262,7 +265,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                     loss.backward()
                     optimizer.step()
         else:
-            if self.attack_model_type == 'gb':
+            if self.attack_model_type == "gb":
                 y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
             else:
                 y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
@@ -284,12 +287,12 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
 
-        if self.input_type == 'prediction':
+        if self.input_type == "prediction":
             features = self.estimator.predict(x).astype(np.float32)
-        elif self.input_type == 'loss':
+        elif self.input_type == "loss":
             features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
 
-        if self.default_model and self.attack_model_type == 'nn':
+        if self.default_model and self.attack_model_type == "nn":
             import torch  # lgtm [py/repeated-import]
             from torch.utils.data import DataLoader  # lgtm [py/repeated-import]
 
@@ -318,6 +321,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 The features are probabilities/logits or losses for the attack training data (`x1`) along with
                 its true labels (`x2`). The labels (`y`) are a boolean representing whether this is a member.
             """
+
             def __init__(self, x1, x2, y=None):
                 import torch  # lgtm [py/repeated-import]
 
@@ -341,10 +345,10 @@ class MembershipInferenceBlackBox(InferenceAttack):
         return AttackDataset(x1=f1, x2=f2, y=l)
 
     def _check_params(self) -> None:
-        if self.input_type not in ['prediction', 'loss']:
+        if self.input_type not in ["prediction", "loss"]:
             raise ValueError("Illegal value for parameter `input_type`.")
 
-        if self.attack_model_type not in ['nn', 'rf', 'gb']:
+        if self.attack_model_type not in ["nn", "rf", "gb"]:
             raise ValueError("Illegal value for parameter `attack_model_type`.")
 
         if self.attack_model:
