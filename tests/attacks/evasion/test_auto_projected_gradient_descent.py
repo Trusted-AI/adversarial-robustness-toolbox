@@ -38,10 +38,10 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_generate(is_tf_version_2, fix_get_mnist_subset, get_image_classifier_list_for_attack):
+def test_generate(is_tf_version_2, fix_get_mnist_subset, image_dl_estimator_for_attack):
 
     if is_tf_version_2:
-        classifier_list = get_image_classifier_list_for_attack(AutoProjectedGradientDescent)
+        classifier_list = image_dl_estimator_for_attack(AutoProjectedGradientDescent)
 
         if classifier_list is None:
             logging.warning("Couldn't perform this test because no classifier is defined")

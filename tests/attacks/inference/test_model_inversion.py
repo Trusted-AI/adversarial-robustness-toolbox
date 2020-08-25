@@ -63,8 +63,8 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
 
 
 @pytest.mark.skipMlFramework("pytorch")
-def test_miface(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-    classifier_list = get_image_classifier_list_for_attack(MIFace)
+def test_miface(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(MIFace)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")

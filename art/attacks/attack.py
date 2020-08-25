@@ -126,6 +126,7 @@ class EvasionAttack(Attack):
     """
     Abstract base class for evasion attack classes.
     """
+
     def __init__(self, **kwargs) -> None:
         self._targeted = None
         super(EvasionAttack, self).__init__(**kwargs)

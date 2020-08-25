@@ -25,7 +25,7 @@ from art.defences.trainer import AdversarialTrainerFBFPyTorch
 
 
 @pytest.fixture()
-def get_adv_trainer(framework, get_image_classifier_list):
+def get_adv_trainer(framework, image_dl_estimator):
     def _get_adv_trainer(**kwargs):
 
         if framework == "keras":
@@ -33,7 +33,7 @@ def get_adv_trainer(framework, get_image_classifier_list):
         if framework == "tensorflow":
             trainer = None
         if framework == "pytorch":
-            classifier = get_image_classifier_list()[0][0]
+            classifier = image_dl_estimator()[0][0]
             trainer = AdversarialTrainerFBFPyTorch(classifier)
         if framework == "scikitlearn":
             trainer = None

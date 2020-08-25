@@ -34,6 +34,7 @@ docs_require = [
     "six==1.13.0",
     "scikit-learn==0.23.2",
     "Pillow>=6.0.0",
+    "kornia==0.3.1",
 ]
 
 
