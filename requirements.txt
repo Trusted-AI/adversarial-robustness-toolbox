@@ -25,7 +25,7 @@ torchvision==0.7.0
 catboost==0.24
 GPy==1.9.9
 lightgbm==2.3.1
-xgboost==1.1.1
+xgboost==1.2.0
 
 # other
 pytest==5.4.1
