@@ -112,9 +112,11 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch
 
-        if not hasattr(self, "preprocessing_defences") or \
-           self.preprocessing_defences is None or \
-           len(self.preprocessing_defences) == 0:
+        if (
+            not hasattr(self, "preprocessing_defences")
+            or self.preprocessing_defences is None
+            or len(self.preprocessing_defences) == 0
+        ):
             return x, y
 
         if len(self.preprocessing_defences) == 1:
@@ -170,9 +172,11 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch
 
-        if not hasattr(self, "preprocessing_defences") or \
-           self.preprocessing_defences is None or \
-           len(self.preprocessing_defences) == 0:
+        if (
+            not hasattr(self, "preprocessing_defences")
+            or self.preprocessing_defences is None
+            or len(self.preprocessing_defences) == 0
+        ):
             return gradients
 
         if len(self.preprocessing_defences) == 1:
@@ -203,6 +207,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             # Convert torch tensors back to np arrays.
             gradients = x_orig.grad.detach().cpu().numpy()
             if gradients.shape != x_orig.shape:
-                raise ValueError("The input shape is {} while the gradient shape is {}".format(
-                    x.shape, gradients.shape))
+                raise ValueError(
+                    "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
+                )
         return gradients
