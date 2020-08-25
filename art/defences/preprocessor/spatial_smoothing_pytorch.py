@@ -52,6 +52,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         https://arxiv.org/abs/1902.06705
     """
 
+    import torch
     from kornia.filters import MedianBlur
 
     class MedianBlurCustom(MedianBlur):
@@ -122,6 +123,8 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param **kwargs: Parameters from the parent.
         """
+        import torch
+
         super().__init__()
 
         self._apply_fit = apply_fit
@@ -134,8 +137,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         self.median_blur = self.MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
 
         # Set device
-        import torch
-
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
         else:

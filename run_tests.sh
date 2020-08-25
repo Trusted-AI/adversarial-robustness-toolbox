@@ -30,6 +30,9 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spa
 pytest -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework="pytorch" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_pytorch.py tests"; fi
 
+pytest -q tests/classifiersFrameworks/test_tensorflow.py  --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_tensorflow.py tests"; fi
+
 
 #NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
 # made framework independent to be incorporated within this loop
