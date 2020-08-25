@@ -203,8 +203,8 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                     - Probability return is a tuple of (probs, sizes), where:
                         - probs is the probability of characters of shape (nb_samples, seq_length, nb_classes).
                         - sizes is the real sequence length of shape (nb_samples,).
-                    - Transcription return is list of characters. A possible example of a transcription return is
-                      [['ENTER SIXTY'], ['HELLO']].
+                    - Transcription return is a numpy array of characters. A possible example of a transcription return
+                      is `np.array(['SIXTY ONE', 'HELLO'])`.
         """
         import torch  # lgtm [py/repeated-import]
 
@@ -321,9 +321,26 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         decoded_output, _ = decoder.decode(
             torch.tensor(result_outputs, device=self._device), torch.tensor(result_output_sizes, device=self._device)
         )
+        decoded_output = [do[0] for do in decoded_output]
         decoded_output = np.array(decoded_output)
 
         return decoded_output
+
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the gradient of the loss function w.r.t. `x`.
+
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
+        :return: Loss gradients of the same shape as `x`.
+        """
+        # Put the model in the evaluation status
+        self._model.eval()
+
+        # TODO
 
     def _transform_model_input(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False
@@ -423,18 +440,6 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
         return inputs, targets, input_percentages, target_sizes, batch_idx
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Samples of shape (nb_samples, height, width, nb_channels).
-        :param y:
-        :return: Loss gradients of the same shape as `x`.
-        """
-        # Put the model in the evaluation status
-        self._model.eval()
-
-        # TODO
 
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
@@ -451,4 +456,3 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
     def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError
-
