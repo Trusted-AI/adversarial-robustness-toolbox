@@ -34,8 +34,6 @@ import numpy as np
 
 from art.config import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
-from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
-from art.utils import Deprecated, deprecated_keyword_arg
 
 logger = logging.getLogger(__name__)
 
