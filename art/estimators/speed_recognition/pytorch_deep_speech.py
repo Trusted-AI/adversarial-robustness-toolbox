@@ -160,7 +160,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
     def predict(
         self, x: np.ndarray, batch_size: int = 128, **kwargs
-    ) -> Union[Tuple[np.ndarray, np.ndarray], List[List[str]]]:
+    ) -> Union[Tuple[np.ndarray, np.ndarray], np.ndarray]:
         """
         Perform prediction for a batch of inputs.
 
