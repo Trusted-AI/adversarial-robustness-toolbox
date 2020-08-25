@@ -169,8 +169,34 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         else:
             self._model = model
 
-        # Push model to the corresponding device
-        self._model.to(self._device)
+            # Push model to the corresponding device
+            self._model.to(self._device)
+
+        # Save first version of the optimizer
+        self._optimizer = optimizer
+        self._use_amp = use_amp
+
+        # Setup for AMP use
+        if self._use_amp:
+            from apex import amp
+
+            if self._optimizer is None:
+                raise ValueError(
+                    "An optimizer is needed to use the automatic mixed precision tool, but none for provided."
+                )
+
+            if self._device.type == 'cpu':
+                enabled = False
+            else:
+                enabled = True
+
+            self._model, self._optimizer = amp.initialize(
+                model=self._model,
+                optimizer=self._optimizer,
+                enabled=enabled,
+                opt_level=opt_level,
+                loss_scale=loss_scale
+            )
 
     def predict(
         self, x: np.ndarray, batch_size: int = 128, **kwargs
@@ -351,19 +377,17 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch  # lgtm [py/repeated-import]
-
         from warpctc_pytorch import CTCLoss
 
-        # Put the model in the evaluation status
-        self._model.eval()
+        # Put the model in the training mode
+        self._model.train()
 
         # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Transform x into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
-            x=x_preprocessed, y=y, compute_gradient=True
+            x=x_preprocessed, y=y_preprocessed, compute_gradient=True
         )
 
         # Compute real input sizes
@@ -380,11 +404,24 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         loss = loss / inputs.size(0)
 
         # Compute gradients
-        with amp.scale_loss(loss, optimizer) as scaled_loss:
-            scaled_loss.backward()
+        if self._use_amp:
+            from apex import amp
 
+            with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                scaled_loss.backward()
 
+        else:
+            loss.backward()
 
+        # Get results
+        results = []
+        for i in range(len(x_preprocessed)):
+            results.append(x_preprocessed[i].grad.cpu().numpy().copy())
+
+        results = np.array(results)
+        results = self._apply_preprocessing_gradient(x, results)
+
+        return results
 
     def _transform_model_input(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False
