@@ -699,43 +699,45 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     )
 
     # load data
-    features = ['parents', 'has_nurs', 'form', 'children', 'housing', 'finance', 'social', 'health', 'label']
-    categorical_features = ['parents', 'has_nurs', 'form', 'housing', 'finance', 'social', 'health']
-    data = pd.read_csv(path, sep=',', names=features, engine='python')
+    features = ["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health", "label"]
+    categorical_features = ["parents", "has_nurs", "form", "housing", "finance", "social", "health"]
+    data = pd.read_csv(path, sep=",", names=features, engine="python")
     # remove rows with missing label or too sparse label
-    data = data.dropna(subset=['label'])
-    data.drop(data.loc[data['label'] == 'recommend'].index, axis=0, inplace=True)
+    data = data.dropna(subset=["label"])
+    data.drop(data.loc[data["label"] == "recommend"].index, axis=0, inplace=True)
 
     # fill missing values
-    data['children'] = data['children'].fillna(0)
+    data["children"] = data["children"].fillna(0)
 
-    for col in ['parents', 'has_nurs', 'form', 'housing', 'finance', 'social', 'health']:
-        data[col] = data[col].fillna('other')
+    for col in ["parents", "has_nurs", "form", "housing", "finance", "social", "health"]:
+        data[col] = data[col].fillna("other")
 
     # make categorical label
     def modify_label(value):  # 5 classes
-        if value == 'not_recom':
+        if value == "not_recom":
             return 0
-        elif value == 'very_recom':
+        elif value == "very_recom":
             return 1
-        elif value == 'priority':
+        elif value == "priority":
             return 2
-        elif value == 'spec_prior':
+        elif value == "spec_prior":
             return 3
         else:
-            raise Exception('Bad label value: %s' % value)
+            raise Exception("Bad label value: %s" % value)
 
-    data['label'] = data['label'].apply(modify_label)
-    data['children'] = data['children'].apply(lambda x: 4 if x == 'more' else x)
+    data["label"] = data["label"].apply(modify_label)
+    data["children"] = data["children"].apply(lambda x: 4 if x == "more" else x)
 
     if transform_social:
+
         def modify_social(value):
-            if value == 'problematic':
+            if value == "problematic":
                 return 1
             else:
                 return 0
-        data['social'] = data['social'].apply(modify_social)
-        categorical_features.remove('social')
+
+        data["social"] = data["social"].apply(modify_social)
+        categorical_features.remove("social")
 
     if not raw:
         # one-hot-encode categorical features
@@ -750,27 +752,27 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
         data = data.drop(features_to_remove, axis=1)
 
         # normalize data
-        label = data.loc[:, 'label']
-        features = data.drop(['label'], axis=1)
+        label = data.loc[:, "label"]
+        features = data.drop(["label"], axis=1)
         scaler = sklearn.preprocessing.StandardScaler()
         scaler.fit(features)
         scaled_features = pd.DataFrame(scaler.transform(features), columns=features.columns)
 
-        data = pd.concat([label, scaled_features], axis=1, join='inner')
+        data = pd.concat([label, scaled_features], axis=1, join="inner")
 
-    features = data.drop(['label'], axis=1)
+    features = data.drop(["label"], axis=1)
     # print(features.columns)
     min_, max_ = np.amin(features.to_numpy()), np.amax(features.to_numpy())
 
     # Split training and test sets
     stratified = sklearn.model_selection.StratifiedShuffleSplit(n_splits=1, test_size=test_set, random_state=18)
-    for train_set, test_set in stratified.split(data, data['label']):
+    for train_set, test_set in stratified.split(data, data["label"]):
         train = data.iloc[train_set]
         test = data.iloc[test_set]
-    x_train = train.drop(['label'], axis=1).to_numpy()
-    y_train = train.loc[:, 'label'].to_numpy()
-    x_test = test.drop(['label'], axis=1).to_numpy()
-    y_test = test.loc[:, 'label'].to_numpy()
+    x_train = train.drop(["label"], axis=1).to_numpy()
+    y_train = train.loc[:, "label"].to_numpy()
+    x_test = test.drop(["label"], axis=1).to_numpy()
+    y_test = test.loc[:, "label"].to_numpy()
 
     return (x_train, y_train), (x_test, y_test), min_, max_
 

@@ -1472,10 +1472,11 @@ def get_attack_classifier_pt(num_features):
     loss_fn = nn.BCELoss()
     optimizer = optim.Adam(model.parameters(), lr=0.0001)
     attack_model = PyTorchClassifier(
-            model=model, loss=loss_fn, optimizer=optimizer, input_shape=(num_features,), nb_classes=1
+        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(num_features,), nb_classes=1
     )
 
     return attack_model
+
 
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS
 

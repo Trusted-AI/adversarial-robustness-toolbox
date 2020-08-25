@@ -67,10 +67,12 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             # Half-pad the input so that the output keeps the same shape.
             # * center pixel located lower right
             half_pad = [k % 2 == 0 for k in kernel_size]
-            self.p2d = (self.padding[-1] + half_pad[-1],
-                        self.padding[-1],
-                        self.padding[-2] + half_pad[-2],
-                        self.padding[-2])
+            self.p2d = (
+                self.padding[-1] + half_pad[-1],
+                self.padding[-1],
+                self.padding[-2] + half_pad[-2],
+                self.padding[-2],
+            )
             # PyTorch requires Padding size should be less than the corresponding input dimension,
 
         def forward(self, input: torch.Tensor):  # type: ignore
@@ -134,6 +136,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         # Set device
         import torch
+
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
         else:
@@ -175,7 +178,8 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 x_nchw = x.reshape(nb_clips * clip_size, h, w, c).permute(0, 3, 1, 2)
         else:
             raise ValueError(
-                "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data.")
+                "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data."
+            )
 
         x_nchw = self.median_blur(x_nchw)
 
@@ -201,9 +205,9 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         return x, y
 
-    def estimate_forward(self,
-                         x: torch.Tensor,
-                         y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def estimate_forward(
+        self, x: torch.Tensor, y: Optional[torch.Tensor] = None
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
         """
         No need to estimate, since the forward pass is differentiable.
         """
@@ -218,6 +222,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         :return: Smoothed sample.
         """
         import torch
+
         x = torch.tensor(x, device=self._device)
         if y is not None:
             y = torch.tensor(y, device=self._device)
@@ -233,6 +238,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         import torch
+
         x = torch.tensor(x, device=self._device, requires_grad=True)
         grad = torch.tensor(grad, device=self._device)
 

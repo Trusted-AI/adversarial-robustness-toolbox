@@ -153,11 +153,13 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 raise ValueError("TensorFlow is executing eagerly. Please disable eager execution.")
             import tensorflow.keras as keras
             import tensorflow.keras.backend as k
+
             self._losses = keras.losses
         else:
             import keras  # lgtm [py/repeated-import]
             import keras.backend as k
-            if hasattr(keras.utils, 'losses_utils'):
+
+            if hasattr(keras.utils, "losses_utils"):
                 self._losses = keras.utils.losses_utils
             else:
                 self._losses = None
@@ -308,7 +310,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :rtype: Format as expected by the `model`
         """
         if not self._losses:
-            raise NotImplementedError('loss method is only supported for keras versions >= 2.3.1')
+            raise NotImplementedError("loss method is only supported for keras versions >= 2.3.1")
 
         if self.is_tensorflow:
             import tensorflow.keras.backend as k
@@ -329,7 +331,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         predictions = self._model.predict(x_preprocessed)
 
-        if self._orig_loss and hasattr(self._orig_loss, 'reduction'):
+        if self._orig_loss and hasattr(self._orig_loss, "reduction"):
             prev_reduction = self._orig_loss.reduction
             self._orig_loss.reduction = self._losses.Reduction.NONE
             loss = self._orig_loss(y_preprocessed, predictions)

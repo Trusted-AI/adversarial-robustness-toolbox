@@ -136,10 +136,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        if isinstance(self._loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss), ):
+        if isinstance(self._loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),):
             self._reduce_labels = True
             self._int_labels = True
-        elif isinstance(self._loss, (torch.nn.BCELoss), ):
+        elif isinstance(self._loss, (torch.nn.BCELoss),):
             self._reduce_labels = True
             self._int_labels = False
         else:
@@ -170,6 +170,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def reduce_labels_framework(self, y: "torch.Tensor"):
         import torch  # lgtm [py/repeated-import]
+
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if self._reduce_labels and self._int_labels:
             return torch.argmax(y, dim=1)
@@ -428,7 +429,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         model_outputs = self._model(inputs_t)
         prev_reduction = self._loss.reduction
         # return individual loss values
-        self._loss.reduction = 'none'
+        self._loss.reduction = "none"
         loss = self._loss(model_outputs[-1], labels_t)
         self._loss.reduction = prev_reduction
         return loss.detach().numpy()
@@ -777,9 +778,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :rtype: Format as expected by the `model`
         """
 
-        if not hasattr(self, "preprocessing_defences") or \
-           self.preprocessing_defences is None or \
-           len(self.preprocessing_defences) == 0:
+        if (
+            not hasattr(self, "preprocessing_defences")
+            or self.preprocessing_defences is None
+            or len(self.preprocessing_defences) == 0
+        ):
             return x, y
 
         if len(self.preprocessing_defences) == 1:
@@ -833,9 +836,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        if not hasattr(self, "preprocessing_defences") or \
-           self.preprocessing_defences is None or \
-           len(self.preprocessing_defences) == 0:
+        if (
+            not hasattr(self, "preprocessing_defences")
+            or self.preprocessing_defences is None
+            or len(self.preprocessing_defences) == 0
+        ):
             return gradients
 
         if len(self.preprocessing_defences) == 1:
@@ -866,6 +871,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             # Convert torch tensors back to np arrays.
             gradients = x_orig.grad.detach().cpu().numpy()
             if gradients.shape != x_orig.shape:
-                raise ValueError("The input shape is {} while the gradient shape is {}".format(
-                    x.shape, gradients.shape))
+                raise ValueError(
+                    "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
+                )
         return gradients
