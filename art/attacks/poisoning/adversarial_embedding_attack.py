@@ -71,6 +71,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             discriminator_layer_2: int = 128,
             regularization: float = 10,
             learning_rate: float = 1e-4,
+            clone=True,
     ):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
@@ -84,6 +85,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         :param discriminator_layer_2: The size of the second discriminator layer
         :param regularization: The regularization constant for the backdoor recognition part of the loss function
         :param learning_rate: The learning rate of clean-label attack optimization.
+        :param clone: Whether or not to clone the model or apply the attack on the original model
         """
         super().__init__(classifier=classifier)
         self.backdoor = backdoor
@@ -112,7 +114,10 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 from keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
                 from keras.optimizers import Adam
 
-            self.orig_model = clone_model(self.estimator.model, input_tensors=self.estimator.model.inputs)
+            if clone:
+                self.orig_model = clone_model(self.estimator.model, input_tensors=self.estimator.model.inputs)
+            else:
+                self.orig_model = self.estimator.model
             model_input = self.orig_model.input
             init_model_output = self.orig_model(model_input)
 
@@ -212,7 +217,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             for src, tgt in self.target:
                 poison_mask = np.logical_and(selected_indices, np.all(y == src, axis=1))
                 to_be_poisoned = train_data[poison_mask]
-                src_poison_data, src_poison_labels = self.poison(to_be_poisoned, y=tgt.squeeze(axis=0), broadcast=True)
+                src_poison_data, src_poison_labels = self.poison(to_be_poisoned, y=shape_labels(tgt), broadcast=True)
                 train_data[poison_mask] = src_poison_data
                 train_labels[poison_mask] = src_poison_labels
 
@@ -263,8 +268,10 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             self._check_valid_label_shape(self.target)
         else:
             for source, target in self.target:
-                self._check_valid_label_shape(source.squeeze(axis=0))
-                self._check_valid_label_shape(target.squeeze(axis=0))
+                print(source.shape)
+                print(target.shape)
+                self._check_valid_label_shape(shape_labels(source))
+                self._check_valid_label_shape(shape_labels(target))
 
         if type(self.pp_poison) is float:
             _check_pp_poison(self.pp_poison)
@@ -294,3 +301,15 @@ def _check_pp_poison(pp_poison) -> None:
     """
     if 1 < pp_poison < 0:
         raise ValueError("pp_poison must be between 0 and 1")
+
+
+def shape_labels(lbl: np.ndarray):
+    """
+    Reshape a labels array
+
+    :param lbl: a label array
+    :return:
+    """
+    if lbl.shape[0] == 1:
+        return lbl.squeeze(axis=0)
+    return lbl
