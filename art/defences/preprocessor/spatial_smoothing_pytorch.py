@@ -73,7 +73,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         def forward(self, input: torch.Tensor):  # type: ignore
             import torch
-            from kornia.filters.kernels import get_binary_kernel2d
             import torch.nn.functional as F
 
             if not torch.is_tensor(input):
@@ -88,7 +87,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             _input = input.reshape(b * c, 1, h, w)
             if input.dtype == torch.int64:
                 # "reflection_pad2d" not implemented for 'Long'
-                # "reflect" in scipy.ndimage.median_filter has no equivalance in F.pad.
+                # "reflect" in scipy.ndimage.median_filter has no equivalence in F.pad.
                 # "reflect" in PyTorch maps to "mirror" in scipy.ndimage.median_filter.
                 _input = _input.to(torch.float32)
                 _input = F.pad(_input, self.p2d, "reflect")
