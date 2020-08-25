@@ -33,6 +33,8 @@ from art.utils import get_file
 from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
+    import torch
+
     from deepspeech_pytorch.model import DeepSpeech
 
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
@@ -57,6 +59,10 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         filename: Optional[str] = None,
         url: Optional[str] = None,
         use_half: bool = False,
+        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        use_amp: bool = False,
+        opt_level: str = 'O1',
+        loss_scale: int = 1,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -73,6 +79,14 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         :param filename: Name of the file.
         :param url: Download URL.
         :param use_half: Whether to use FP16 for pretrained model.
+        :param optimizer: The optimizer used to train the estimator.
+        :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
+                        gradient computation, e.g. with loss gradient computation. When set to True, this option is
+                        only triggered if there are GPUs available.
+        :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
+                          values are `O0`, `O1`, `O2`, and `O3`.
+        :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1 due to warp-ctc not supporting
+                           scaling of gradients.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -504,10 +518,11 @@ from art.utils import get_file
 from art.config import ART_DATA_PATH
 from deepspeech_pytorch.loader.data_loader import load_audio
 
+
 x1 = load_audio('/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/LibriSpeech_dataset/val/wav/1651-136854-0012.wav')
 x2 = load_audio('/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/an4_dataset/val/an4/wav/an3-mblw-b.wav')
 x = np.array([x1, x2])
-device = torch.device("cuda:1")
+device = torch.device("cuda:0")
 
 for i in range(len(x)):
     x[i] = torch.from_numpy(x[i]).to(device)
@@ -515,6 +530,7 @@ for i in range(len(x)):
 
 path = get_file(filename='librispeech_pretrained_v2.pth', path=ART_DATA_PATH, url='https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/librispeech_pretrained_v2.pth', extract=False)
 model = load_model(device=device, model_path=path, use_half=False)
+model.train()
 sample_rate = model.audio_conf.sample_rate
 window_size = model.audio_conf.window_size
 window_stride = model.audio_conf.window_stride
@@ -528,6 +544,18 @@ D_1 = transformer(x[0])
 D_2 = transformer(x[1])
 spect_1, phase_1 = torchaudio.functional.magphase(D_1)
 spect_2, phase_2 = torchaudio.functional.magphase(D_2)
+spect_1 = torch.log1p(spect_1)
+spect_2 = torch.log1p(spect_2)
+
+mean1 = spect_1.mean()
+std1 = spect_1.std()
+mean2 = spect_2.mean()
+std2 = spect_2.std()
+
+spect_1 = spect_1 - mean1
+spect_1 = spect_1 / std1
+spect_2 = spect_2 - mean2
+spect_2 = spect_2 / std2
 
 labels_map = dict([(model.labels[i], i) for i in range(len(model.labels))])
 def parse_transcript(transcript_path):
@@ -540,10 +568,10 @@ l1 = parse_transcript('/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/TED
 l2 = parse_transcript("/home/minhtn/ibm/projects/tmp/deepspeech.pytorch/data/LibriSpeech_dataset/val/txt/1686-142278-0008.txt")
 
 
-parameters = model.parameters()
-optimizer = torch.optim.SGD(parameters, lr=0.01)
-from apex import amp
-model, optimizer = amp.initialize(model, optimizer, enabled=True).to(device)
+#parameters = model.parameters()
+#optimizer = torch.optim.SGD(parameters, lr=0.01)
+#from apex import amp
+#model, optimizer = amp.initialize(model, optimizer, enabled=True)
 
 
 batch = [(spect_1, l1), (spect_2, l2)]
@@ -558,9 +586,11 @@ loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(device)
 loss = loss / inputs.size(0)
 
 
-with amp.scale_loss(loss, optimizer) as scaled_loss:
-    scaled_loss.backward()
+#with amp.scale_loss(loss, optimizer) as scaled_loss:
+    #torch.backends.cudnn.enabled = False
+#    scaled_loss.backward()
+    #torch.backends.cudnn.enabled = True
 
-#loss.backward()
+loss.backward()
 
 x[0].grad
