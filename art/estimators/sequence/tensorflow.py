@@ -48,6 +48,16 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
 
     | Paper link: http://proceedings.mlr.press/v97/qin19a.html
     |             https://arxiv.org/abs/1902.08295
+
+    .. warning::
+
+    In order to calculate loss gradients, this estimator requires a user-patched Lingvo module. Please
+    apply the following additions to the file `<PYTHON_SITE_PACKAGES>/lingvo/tasks/asr/decoder.py` as
+    outlined in the following commit diff:
+
+    * https://github.com/yaq007/lingvo/commit/414e035b2c60372de732c9d67db14d1003be6dd6
+
+    Run `python -m site` to obtain a list of possible candidates where to find the `site-packages` folder.
     """
 
     _LINGVO_CFG = {
@@ -134,8 +144,9 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
         self._task = task
         self._metrics = None
 
-        # add prediction op to graph
+        # add prediction and loss gradient ops to graph
         self._predict_batch_op = self._predict_batch(self._x_padded, self._y_target, self._mask_frequency)
+        self._loss_gradient_op = self._loss_gradient(self._x_padded, self._y_target, self._mask_frequency)
 
     def _check_and_download_params(self) -> str:
         """Check and download the `params/librispeech.py` file from the official Lingvo repository."""
@@ -347,18 +358,85 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
         y_decoded = [item.decode("utf-8") for item in y]
         return np.array(y_decoded, dtype=str)
 
-    def loss_gradient(self, x, y, **kwargs):
+    def _loss_gradient(self, x: "Tensor", y: "Tensor", mask: "Tensor") -> "Tensor":
+        """Define loss gradients computation operation for a batch of padded inputs."""
+        import tensorflow.compat.v1 as tf1
+
+        # create decoder inputs
+        decoder_inputs = self._create_decoder_input(x, y, mask)
+
+        # call decoder
+        if not self._metrics:
+            self._metrics = self._task.FPropDefaultTheta(decoder_inputs)
+
+        # compute loss gradient
+        loss = tf1.get_collection("per_loss")[0]
+        loss_gradient = tf1.gradients(loss, [x])[0]
+        return loss_gradient
+
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, batch_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
-        :param x: Samples.
-        :type x: Format as expected by the `model`
-        :param y: Target values.
-        :type y: Format as expected by the `model`
-        :return: Loss gradients w.r.t. `x` in the same format as `x`.
-        :rtype: Format as expected by the `model`
+        :param x: Samples of shape `(nb_samples)`. Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param batch_mode: If `True` calculate gradient per batch or otherwise per sequence.
+        :return: Loss gradients of the same shape as `x`.
         """
-        raise NotImplementedError
+        if batch_mode:
+            gradients = self._loss_gradient_per_batch(x, y)
+        else:
+            gradients = self._loss_gradient_per_sequence(x, y)
+        return gradients
+
+    def _loss_gradient_per_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Compute the gradient of the loss function w.r.t. `x` per batch.
+        """
+        assert x.shape[0] == y.shape[0], "Number of samples in x and y differ."
+
+        # pad input
+        x_padded, mask, mask_frequency = self._pad_audio_input(x)
+
+        # get loss gradients
+        feed_dict = {
+            self._x_padded: x_padded,
+            self._y_target: y,
+            self._mask_frequency: mask_frequency,
+        }
+        gradients_padded = self._sess.run(self._loss_gradient_op, feed_dict)
+
+        # undo padding, i.e. change gradients shape from (nb_samples, max_length) to (nb_samples)
+        lengths = mask.sum(axis=1)
+        gradients = list()
+        for gradient_padded, length in zip(gradients_padded, lengths):
+            gradient = gradient_padded[:length]
+            gradients.append(gradient)
+
+        return np.array(gradients)
+
+    def _loss_gradient_per_sequence(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Compute the gradient of the loss function w.r.t. `x` per sequence.
+        """
+        assert x.shape[0] == y.shape[0], "Number of samples in x and y differ."
+
+        gradients = list()
+        for x_i, y_i in zip(x, y):
+            _, _, mask_frequency = self._pad_audio_input(np.array([x_i]))
+            feed_dict = {
+                self._x_padded: np.expand_dims(x_i, 0),
+                self._y_target: np.array([y_i]),
+                self._mask_frequency: mask_frequency,
+            }
+            # get loss gradient
+            gradient = self._sess.run(self._loss_gradient_op, feed_dict)
+            gradients.append(np.squeeze(gradient))
+
+        return np.array(gradients)
 
     def set_learning_phase(self) -> None:
         raise NotImplementedError

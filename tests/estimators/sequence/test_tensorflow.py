@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 import tensorflow.compat.v1 as tf1
 from lingvo.core.hyperparams import Params
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_allclose, assert_array_equal
 
 from art.estimators.sequence.sequence import SequenceNetworkMixin
 from art.estimators.sequence.tensorflow import LingvoAsr
@@ -181,3 +181,51 @@ class TestLingvoAsr:
         predictions = lingvo.predict(test_input, batch_size=2)
         assert predictions.shape[0] == test_input.shape[0]
         assert isinstance(predictions[0], np.str_)
+
+    def test_loss_gradient_tensor(self, audio_batch_padded):
+        tf1.reset_default_graph()
+
+        test_input, test_mask_frequency = audio_batch_padded
+        test_target_dummy = np.array(["DUMMY"] * test_input.shape[0])
+
+        lingvo = LingvoAsr()
+        feed_dict = {
+            lingvo._x_padded: test_input,
+            lingvo._y_target: test_target_dummy,
+            lingvo._mask_frequency: test_mask_frequency,
+        }
+        loss_gradient = lingvo._sess.run(lingvo._loss_gradient_op, feed_dict)
+        assert test_input.shape == loss_gradient.shape
+        assert loss_gradient.sum() == 0.0
+
+    def test_loss_gradient_per_batch(self, audio_data):
+        tf1.reset_default_graph()
+
+        test_input = audio_data
+        test_target = np.array(["This", "is", "a dummy", "a dummy"])
+
+        lingvo = LingvoAsr()
+
+        gradients = lingvo._loss_gradient_per_batch(test_input, test_target)
+        gradients_abs_sum = np.array([np.abs(g).sum() for g in gradients])
+
+        # test shape, equal inputs have equal gradients, non-zero inputs have non-zero gradient sums
+        assert test_input.shape == gradients.shape
+        assert_allclose(np.abs(gradients[2]).sum(), np.abs(gradients[3]).sum(), rtol=1e-01)
+        assert_array_equal(gradients_abs_sum > 0, [False, True, True, True])
+
+    def test_loss_gradient_per_sequence(self, audio_data):
+        tf1.reset_default_graph()
+
+        test_input = audio_data
+        test_target = np.array(["This", "is", "a dummy", "a dummy"])
+
+        lingvo = LingvoAsr()
+
+        gradients = lingvo._loss_gradient_per_sequence(test_input, test_target)
+        gradients_abs_sum = np.array([np.abs(g).sum() for g in gradients])
+
+        # test shape, equal inputs have equal gradients, non-zero inputs have non-zero gradient sums
+        assert test_input.shape == gradients.shape
+        assert_allclose(np.abs(gradients[2]).sum(), np.abs(gradients[3]).sum(), rtol=1e-01)
+        assert_array_equal(gradients_abs_sum > 0, [False, True, True, True])
