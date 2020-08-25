@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 BATCH_SIZE = 100
 NB_TRAIN = 5000
 NB_TEST = 10
+NB_EPOCHS = 1
 
 
 class TestAdversarialEmbedding(unittest.TestCase):
@@ -74,7 +75,7 @@ class TestAdversarialEmbedding(unittest.TestCase):
         backdoor = PoisoningAttackBackdoor(add_pattern_bd)
 
         emb_attack = PoisoningAttackAdversarialEmbedding(krc, backdoor, 2, target)
-        classifier = emb_attack.poison_estimator(x_train, y_train, nb_epochs=3)
+        classifier = emb_attack.poison_estimator(x_train, y_train, nb_epochs=NB_EPOCHS)
 
         data, labels, bd = emb_attack.get_training_data()
         self.assertEqual(x_train.shape, data.shape)
@@ -85,7 +86,7 @@ class TestAdversarialEmbedding(unittest.TestCase):
         self.assertTrue(classifier is not krc)
 
         emb_attack2 = PoisoningAttackAdversarialEmbedding(krc, backdoor, 2, [(target, target2)])
-        classifier2 = emb_attack2.poison_estimator(x_train, y_train, nb_epochs=3)
+        classifier2 = emb_attack2.poison_estimator(x_train, y_train, nb_epochs=NB_EPOCHS)
 
         data, labels, bd = emb_attack2.get_training_data()
         self.assertEqual(x_train.shape, data.shape)
