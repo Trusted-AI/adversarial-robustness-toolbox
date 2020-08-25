@@ -268,8 +268,6 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             self._check_valid_label_shape(self.target)
         else:
             for source, target in self.target:
-                print(source.shape)
-                print(target.shape)
                 self._check_valid_label_shape(shape_labels(source))
                 self._check_valid_label_shape(shape_labels(target))
 
