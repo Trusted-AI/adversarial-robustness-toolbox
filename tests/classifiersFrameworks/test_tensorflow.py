@@ -108,93 +108,99 @@ def _test_preprocessing_defences_backward(
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_nodefence(get_default_mnist_subset, image_dl_estimator):
-    preprocessing_defences = []
-    device_type = None
-    _test_preprocessing_defences_forward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
-    _test_preprocessing_defences_backward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
+def test_nodefence(get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
+    if is_tf_version_2:
+        preprocessing_defences = []
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_defence_tensorflow(get_default_mnist_subset, image_dl_estimator):
-    smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
-    preprocessing_defences = [smooth_3x3]
-    device_type = None
-    _test_preprocessing_defences_forward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
-    _test_preprocessing_defences_backward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
+def test_defence_tensorflow(get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
+    if is_tf_version_2:
+        smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        preprocessing_defences = [smooth_3x3]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_defence_non_tensorflow(get_default_mnist_subset, image_dl_estimator):
-    smooth_3x3 = SpatialSmoothing(window_size=3, channels_first=False)
-    preprocessing_defences = [smooth_3x3]
-    device_type = None
-    _test_preprocessing_defences_forward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
-    _test_preprocessing_defences_backward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
+def test_defence_non_tensorflow(get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
+    if is_tf_version_2:
+        smooth_3x3 = SpatialSmoothing(window_size=3, channels_first=False)
+        preprocessing_defences = [smooth_3x3]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
 
 
 @pytest.mark.xfail(reason="Preprocessing-defence chaining only supports defences implemented in TensorFlow v2.")
 @pytest.mark.only_with_platform("tensorflow")
-def test_defences_tensorflow_and_nontensorflow(get_default_mnist_subset, image_dl_estimator, device_type):
-    smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=False)
-    smooth_3x3_pth = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
-    preprocessing_defences = [smooth_3x3_nonpth, smooth_3x3_pth]
-    device_type = None
-    _test_preprocessing_defences_forward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
-    _test_preprocessing_defences_backward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
+def test_defences_tensorflow_and_nontensorflow(get_default_mnist_subset, image_dl_estimator, device_type, is_tf_version_2):
+    if is_tf_version_2:
+        smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=False)
+        smooth_3x3_pth = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        preprocessing_defences = [smooth_3x3_nonpth, smooth_3x3_pth]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_defences_chaining(get_default_mnist_subset, image_dl_estimator):
-    smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
-    smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
-    smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
-    preprocessing_defences = [smooth_3x3, smooth_5x5, smooth_7x7]
-    device_type = None
-    _test_preprocessing_defences_forward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
-    _test_preprocessing_defences_backward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-    )
+def test_defences_chaining(get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
+    if is_tf_version_2:
+        smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
+        smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
+        preprocessing_defences = [smooth_3x3, smooth_5x5, smooth_7x7]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_fgsm_defences(fix_get_mnist_subset, image_dl_estimator):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+def test_fgsm_defences(fix_get_mnist_subset, image_dl_estimator, is_tf_version_2):
+    if is_tf_version_2:
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    clip_values = (0, 1)
-    smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
-    smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
-    smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
-    classifier_, _ = image_dl_estimator(one_classifier=True)
+        clip_values = (0, 1)
+        smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
+        smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
+        classifier_, _ = image_dl_estimator(one_classifier=True)
 
-    loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-    classifier = TensorFlowV2Classifier(
-        clip_values=clip_values,
-        model=classifier_.model,
-        preprocessing_defences=[smooth_3x3, smooth_5x5, smooth_7x7],
-        loss_object=loss_object,
-        input_shape=(28, 28, 1),
-        nb_classes=10,
-    )
-    assert len(classifier.preprocessing_defences) == 3
+        loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+        classifier = TensorFlowV2Classifier(
+            clip_values=clip_values,
+            model=classifier_.model,
+            preprocessing_defences=[smooth_3x3, smooth_5x5, smooth_7x7],
+            loss_object=loss_object,
+            input_shape=(28, 28, 1),
+            nb_classes=10,
+        )
+        assert len(classifier.preprocessing_defences) == 3
 
-    attack = FastGradientMethod(classifier, eps=1, batch_size=128)
-    backend_test_defended_images(attack, fix_get_mnist_subset)
+        attack = FastGradientMethod(classifier, eps=1, batch_size=128)
+        backend_test_defended_images(attack, fix_get_mnist_subset)
