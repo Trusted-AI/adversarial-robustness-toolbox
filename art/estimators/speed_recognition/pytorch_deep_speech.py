@@ -248,11 +248,13 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
+        x_ = x.copy()
+
         # Put the model in the evaluation status
         self._model.eval()
 
         # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x_preprocessed, _ = self._apply_preprocessing(x_, y=None, fit=False)
 
         # Transform x into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(x=x_preprocessed)
@@ -381,11 +383,13 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         """
         from warpctc_pytorch import CTCLoss
 
+        x_ = x.copy()
+
         # Put the model in the training mode
         self._model.train()
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x_, y, fit=False)
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
@@ -421,7 +425,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             results.append(x_preprocessed[i].grad.cpu().numpy().copy())
 
         results = np.array(results)
-        results = self._apply_preprocessing_gradient(x, results)
+        results = self._apply_preprocessing_gradient(x_, results)
 
         return results
 
@@ -473,8 +477,8 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                 )
 
                 # Extract random batch
-                i_batch = x_preprocessed[ind[begin : end]]
-                o_batch = y_preprocessed[ind[begin : end]]
+                i_batch = x_preprocessed[ind[begin : end]].copy()
+                o_batch = y_preprocessed[ind[begin : end]].copy()
 
                 # Transform data into the model input space
                 inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
@@ -533,8 +537,6 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
         from deepspeech_pytorch.loader.data_loader import _collate_fn
 
-        x = x.astype(ART_NUMPY_DTYPE)
-
         # These parameters are needed for the transformation
         sample_rate = self._model.audio_conf.sample_rate
         window_size = self._model.audio_conf.window_size
@@ -579,6 +581,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                 target = list(filter(None, [label_map.get(letter) for letter in list(y[i])]))
 
             # Push the sequence to device
+            x[i] = x[i].astype(ART_NUMPY_DTYPE)
             x[i] = torch.tensor(x[i]).to(self._device)
 
             # Set gradient computation permission
