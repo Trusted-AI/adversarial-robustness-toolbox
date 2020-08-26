@@ -150,7 +150,9 @@ def test_defence_non_tensorflow(get_default_mnist_subset, image_dl_estimator, is
 
 @pytest.mark.xfail(reason="Preprocessing-defence chaining only supports defences implemented in TensorFlow v2.")
 @pytest.mark.only_with_platform("tensorflow")
-def test_defences_tensorflow_and_nontensorflow(get_default_mnist_subset, image_dl_estimator, device_type, is_tf_version_2):
+def test_defences_tensorflow_and_nontensorflow(
+    get_default_mnist_subset, image_dl_estimator, device_type, is_tf_version_2
+):
     if is_tf_version_2:
         smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=False)
         smooth_3x3_pth = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
