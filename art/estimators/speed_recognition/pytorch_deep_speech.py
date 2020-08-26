@@ -423,6 +423,30 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
         return results
 
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
+        """
+        Fit the estimator on the training set `(x, y)`.
+
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param batch_size: Size of batches.
+        :param nb_epochs: Number of epochs to use for training.
+        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
+               and providing it takes no effect.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # Put the model in the training mode
+        self._model.train()
+
+        if self._optimizer is None:
+            raise ValueError("An optimizer is needed to train the model, but none for provided.")
+
+
+
     def _transform_model_input(
         self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
@@ -521,15 +545,6 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
 
         return inputs, targets, input_percentages, target_sizes, batch_idx
-
-
-
-    def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
-        # Put the model in the training status
-        self._model.train()
-
-        # TODO
-
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
