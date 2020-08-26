@@ -23,7 +23,6 @@ import importlib
 
 import numpy as np
 
-from tests.utils import TestBase, master_seed
 
 deepspeech_pytorch_spec = importlib.util.find_spec("deepspeech_pytorch")
 deepspeech_pytorch_found = deepspeech_pytorch_spec is not None
@@ -35,17 +34,16 @@ logger = logging.getLogger(__name__)
     not deepspeech_pytorch_found,
     reason="Skip unittests if deep speech module is not found because of pre-trained model."
 )
-class TestPyTorchDeepSpeech(TestBase):
+class TestPyTorchDeepSpeech(unittest.TestCase):
     """
     This class tests the PyTorchDeepSpeech estimator.
     """
 
     @classmethod
     def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=True)
-        super().setUpClass()
-
         # Only import if deep speech module is available
+        import torch
+
         from art.estimators.speed_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Small data for testing
@@ -109,6 +107,10 @@ class TestPyTorchDeepSpeech(TestBase):
 
         # Define deep speech estimator
         cls.speed_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech')
+
+        # Create the optimizer
+        parameters = cls.speed_recognizer.model.parameters()
+        cls.speed_recognizer._optimizer = torch.optim.SGD(parameters, lr=0.01)
 
     def test_predict(self):
         # Test probability outputs
@@ -246,6 +248,24 @@ class TestPyTorchDeepSpeech(TestBase):
             ]
         )
         np.testing.assert_array_almost_equal(grads[2][0: 20], expected_gradients3, decimal=2)
+
+    def test_fit(self):
+        # Create labels
+        y = np.array(['SIX', 'HI', 'GOOD'])
+
+        # Before train
+        transcriptions1 = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+
+        # Train the estimator
+        self.speed_recognizer.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
+
+        # After train
+        transcriptions2 = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+
+        print(transcriptions1, transcriptions2)
+
+        self.assertFalse((transcriptions1 == transcriptions2).all())
+        self.assertFalse(True)
 
 
 if __name__ == "__main__":
