@@ -106,7 +106,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         cls.x = np.array([x1, x2, x3])
 
         # Define deep speech estimator
-        cls.speed_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech')
+        cls.speed_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech', device_type='cpu')
 
         # Create the optimizer
         parameters = cls.speed_recognizer.model.parameters()
@@ -117,42 +117,42 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         probs, sizes = self.speed_recognizer.predict(self.x, batch_size=2)
 
         expected_sizes = np.asarray([5, 5, 5])
-        np.testing.assert_array_almost_equal(sizes.cpu().numpy(), expected_sizes)
+        np.testing.assert_array_almost_equal(sizes, expected_sizes)
 
         expected_probs = np.asarray(
             [
-                1.0000e+00,
-                7.0155e-14,
-                1.9171e-13,
-                8.2195e-13,
-                8.9967e-13,
-                1.8518e-12,
-                1.7883e-10,
-                1.8952e-12,
-                1.8818e-13,
-                3.2807e-12,
-                3.5665e-16,
-                3.3147e-14,
-                2.3439e-13,
-                8.4845e-12,
-                1.2018e-13,
-                1.1180e-12,
-                6.5572e-15,
-                3.0195e-12,
-                4.9065e-15,
-                1.9765e-13,
-                4.1670e-11,
-                2.6884e-12,
-                1.1437e-13,
-                7.1932e-15,
-                2.8135e-11,
-                4.5599e-14,
-                6.4588e-13,
-                2.4159e-15,
-                4.6668e-13
+                9.9992490e-01,
+                5.6676822e-23,
+                3.9130475e-07,
+                1.9610961e-18,
+                4.4049504e-21,
+                2.4876512e-17,
+                2.7967793e-11,
+                7.7903489e-20,
+                5.1193400e-26,
+                1.2637422e-25,
+                1.1681875e-16,
+                2.2417779e-19,
+                2.0199957e-23,
+                8.5335135e-17,
+                1.0881066e-12,
+                7.4728101e-05,
+                9.5411921e-11,
+                2.8458338e-18,
+                1.2048823e-18,
+                5.7043537e-18,
+                3.1257310e-16,
+                3.0971430e-13,
+                2.8484861e-09,
+                2.2766614e-21,
+                7.3805555e-23,
+                9.4372818e-23,
+                1.0754367e-18,
+                3.9642380e-21,
+                2.7693408e-15,
             ]
         )
-        np.testing.assert_array_almost_equal(probs[1][1].cpu().numpy(), expected_probs, decimal=6)
+        np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=2)
 
         # Test transcription outputs
         transcriptions = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
@@ -166,10 +166,10 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
         # Compute gradients
         grads = self.speed_recognizer.loss_gradient(self.x, y)
-
-        self.assertTrue(grads[0].shape == (1300))
-        self.assertTrue(grads[1].shape == (1500))
-        self.assertTrue(grads[2].shape == (1400))
+        print(grads[0].shape, grads[1].shape, grads[2].shape)
+        self.assertTrue(grads[0].shape == (1300,))
+        self.assertTrue(grads[1].shape == (1500,))
+        self.assertTrue(grads[2].shape == (1400,))
 
         expected_gradients1 = np.asarray(
             [
@@ -262,10 +262,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         # After train
         transcriptions2 = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
-        print(transcriptions1, transcriptions2)
-
         self.assertFalse((transcriptions1 == transcriptions2).all())
-        self.assertFalse(True)
 
 
 if __name__ == "__main__":
