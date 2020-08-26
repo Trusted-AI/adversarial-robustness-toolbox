@@ -22,27 +22,22 @@ import unittest
 import importlib
 
 import numpy as np
-import tensorflow as tf
 
 from tests.utils import TestBase, master_seed
 
-object_detection_spec = importlib.util.find_spec("object_detection")
-object_detection_found = object_detection_spec is not None
+deepspeech_pytorch_spec = importlib.util.find_spec("deepspeech_pytorch")
+deepspeech_pytorch_found = deepspeech_pytorch_spec is not None
 
 logger = logging.getLogger(__name__)
 
 
 @unittest.skipIf(
-    not object_detection_found,
-    reason="Skip unittests if object detection module is not found because of pre-trained model."
+    not deepspeech_pytorch_found,
+    reason="Skip unittests if deep speech module is not found because of pre-trained model."
 )
-@unittest.skipIf(
-    tf.__version__[0] == "2" or (tf.__version__[0] == "1" and tf.__version__.split(".")[1] != "15"),
-    reason="Skip unittests if not TensorFlow v1.15 because of pre-trained model.",
-)
-class TestTensorFlowFasterRCNN(TestBase):
+class TestPyTorchDeepSpeech(TestBase):
     """
-    This class tests the TensorFlowFasterRCNN object detector.
+    This class tests the PyTorchDeepSpeech estimator.
     """
 
     @classmethod
@@ -50,183 +45,168 @@ class TestTensorFlowFasterRCNN(TestBase):
         master_seed(seed=1234, set_tensorflow=True)
         super().setUpClass()
 
-        cls.n_test = 10
-        cls.x_test_mnist = cls.x_test_mnist[0: cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0: cls.n_test]
+        # Only import if deep speech module is available
+        from art.estimators.speed_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
-        # Only import if object detection module is available
-        from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+        # Small data for testing
+        x1 = np.array(
+            [
+                -1.0376293e-03,
+                -1.0681478e-03,
+                -1.0986663e-03,
+                -1.1291848e-03,
+                -1.1291848e-03,
+                -1.1291848e-03,
+                -1.1902219e-03,
+                -1.1597034e-03,
+                -1.1902219e-03,
+                -1.1291848e-03,
+                -1.1291848e-03,
+                -1.0681478e-03,
+                -9.1555528e-04,
+            ] * 100
+        )
 
-        # Define object detector
-        images = tf.placeholder(tf.float32, shape=[2, 28, 28, 1])
-        cls.obj_dec = TensorFlowFasterRCNN(images=images)
+        x2 = np.array(
+            [
+                -1.8311106e-04,
+                -1.2207404e-04,
+                -6.1037019e-05,
+                0.0000000e+00,
+                3.0518509e-05,
+                0.0000000e+00,
+                -3.0518509e-05,
+                0.0000000e+00,
+                0.0000000e+00,
+                9.1555528e-05,
+                2.1362957e-04,
+                3.3570360e-04,
+                4.2725913e-04,
+                4.5777764e-04,
+                -1.8311106e-04,
+            ] * 100
+        )
+
+        x3 = np.array(
+            [
+                -8.2399976e-04,
+                -7.0192572e-04,
+                -5.4933317e-04,
+                -4.2725913e-04,
+                -3.6622211e-04,
+                -2.7466659e-04,
+                -2.1362957e-04,
+                5.4933317e-04,
+                5.7985168e-04,
+                6.1037019e-04,
+                6.7140721e-04,
+                7.0192572e-04,
+                6.7140721e-04,
+                -1.5259255e-04,
+            ] * 100
+        )
+        cls.x = np.array([x1, x2, x3])
+
+        # Define deep speech estimator
+        cls.speed_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech')
 
     def test_predict(self):
-        result = self.obj_dec.predict(self.x_test_mnist)
+        # Test probability outputs
+        probs, sizes = self.speed_recognizer.predict(self.x, batch_size=2)
 
-        self.assertTrue(list(result.keys()) == [
-            'detection_boxes',
-            'detection_scores',
-            'detection_classes',
-            'detection_multiclass_scores',
-            'detection_anchor_indices',
-            'num_detections',
-            'raw_detection_boxes',
-            'raw_detection_scores'
-        ])
+        expected_sizes = np.asarray([5, 5, 5])
+        np.testing.assert_array_almost_equal(sizes.cpu().numpy(), expected_sizes)
 
-        self.assertTrue(result['detection_boxes'].shape == (10, 300, 4))
-        expected_detection_boxes = np.asarray([0.65566427, 0., 1., 0.9642794])
-        np.testing.assert_array_almost_equal(result['detection_boxes'][0, 2, :], expected_detection_boxes, decimal=6)
-
-        self.assertTrue(result['detection_scores'].shape == (10, 300))
-        expected_detection_scores = np.asarray([
-            6.02739106e-04,
-            3.72770795e-04,
-            2.96768820e-04,
-            2.12859799e-04,
-            1.72638058e-04,
-            1.51401327e-04,
-            1.47289087e-04,
-            1.25616702e-04,
-            1.19876706e-04,
-            1.06633954e-04
-        ])
-        np.testing.assert_array_almost_equal(result['detection_scores'][0, :10], expected_detection_scores, decimal=6)
-
-        self.assertTrue(result['detection_classes'].shape == (10, 300))
-        expected_detection_classes = np.asarray([81., 71., 66., 15., 63., 71., 66., 84., 64., 37.])
-        np.testing.assert_array_almost_equal(result['detection_classes'][0, :10], expected_detection_classes, decimal=6)
-
-        self.assertTrue(result['detection_multiclass_scores'].shape == (10, 300, 91))
-        expected_detection_multiclass_scores = np.asarray([
-            9.9915493e-01,
-            1.5380951e-05,
-            3.2381786e-06,
-            2.3546692e-05,
-            1.0490003e-06,
-            2.9198272e-05,
-            1.9808563e-06,
-            6.0102529e-06,
-            8.9344621e-06,
-            2.8579292e-05
-        ])
-        np.testing.assert_array_almost_equal(
-            result['detection_multiclass_scores'][0, 2, :10], expected_detection_multiclass_scores, decimal=6
+        expected_probs = np.asarray(
+            [
+                1.0000e+00,
+                7.0155e-14,
+                1.9171e-13,
+                8.2195e-13,
+                8.9967e-13,
+                1.8518e-12,
+                1.7883e-10,
+                1.8952e-12,
+                1.8818e-13,
+                3.2807e-12,
+                3.5665e-16,
+                3.3147e-14,
+                2.3439e-13,
+                8.4845e-12,
+                1.2018e-13,
+                1.1180e-12,
+                6.5572e-15,
+                3.0195e-12,
+                4.9065e-15,
+                1.9765e-13,
+                4.1670e-11,
+                2.6884e-12,
+                1.1437e-13,
+                7.1932e-15,
+                2.8135e-11,
+                4.5599e-14,
+                6.4588e-13,
+                2.4159e-15,
+                4.6668e-13
+            ]
         )
+        np.testing.assert_array_almost_equal(probs[1][1].cpu().numpy(), expected_probs, decimal=6)
 
-        self.assertTrue(result['detection_anchor_indices'].shape == (10, 300))
-        expected_detection_anchor_indices = np.asarray([22., 22., 4., 35., 61., 49., 16., 22., 16., 61.])
-        np.testing.assert_array_almost_equal(
-            result['detection_anchor_indices'][0, :10], expected_detection_anchor_indices, decimal=6
-        )
+        # Test transcription outputs
+        transcriptions = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
-        self.assertTrue(result['num_detections'].shape == (10,))
-        expected_num_detections = np.asarray([300., 300., 300., 300., 300., 300., 300., 300., 300., 300.])
-        np.testing.assert_array_almost_equal(result['num_detections'], expected_num_detections, decimal=6)
-
-        self.assertTrue(result['raw_detection_boxes'].shape == (10, 300, 4))
-        expected_raw_detection_boxes = np.asarray([0.05784893, 0.05130966, 0.41411403, 0.95867515])
-        np.testing.assert_array_almost_equal(
-            result['raw_detection_boxes'][0, 2, :], expected_raw_detection_boxes, decimal=6
-        )
-
-        self.assertTrue(result['raw_detection_scores'].shape == (10, 300, 91))
-        expected_raw_detection_scores = np.asarray([
-            9.9981636e-01,
-            2.3866653e-06,
-            2.2101715e-06,
-            1.3920785e-05,
-            9.3873712e-07,
-            4.0993282e-06,
-            3.3591269e-07,
-            6.7879691e-06,
-            2.8425752e-06,
-            9.0685753e-06
-        ])
-        np.testing.assert_array_almost_equal(
-            result['raw_detection_scores'][0, 2, :10], expected_raw_detection_scores, decimal=6
-        )
+        expected_transcriptions = np.array(['', '', ''])
+        self.assertTrue((expected_transcriptions == transcriptions).all())
 
     def test_loss_gradient(self):
         # Create labels
-        result = self.obj_dec.predict(self.x_test_mnist[:2])
-
-        groundtruth_boxes_list = [result['detection_boxes'][i] for i in range(2)]
-        groundtruth_classes_list = [result['detection_classes'][i] for i in range(2)]
-        groundtruth_weights_list = [np.ones_like(r) for r in groundtruth_classes_list]
-
-        y = {}
-        y['groundtruth_boxes_list'] = groundtruth_boxes_list
-        y['groundtruth_classes_list'] = groundtruth_classes_list
-        y['groundtruth_weights_list'] = groundtruth_weights_list
+        y = np.array(['SIX', 'HI', 'GOOD'])
 
         # Compute gradients
-        grads = self.obj_dec.loss_gradient(self.x_test_mnist[:2], y)
+        grads = self.speed_recognizer.loss_gradient(self.x, y)
 
-        self.assertTrue(grads.shape == (2, 28, 28, 1))
+        self.assertTrue(grads[0].shape == (1300))
+        self.assertTrue(grads[1].shape == (1500))
+        self.assertTrue(grads[2].shape == (1400))
 
-        expected_gradients1 = np.asarray([
-            [-6.1982083e-03],
-            [9.2188769e-04],
-            [2.2715484e-03],
-            [3.0439291e-03],
-            [3.9350586e-03],
-            [1.3214475e-03],
-            [-1.9790903e-03],
-            [-1.8616641e-03],
-            [-1.7762191e-03],
-            [-2.4208077e-03],
-            [-2.1795963e-03],
-            [-1.3475846e-03],
-            [-1.7141351e-04],
-            [5.3379539e-04],
-            [6.1705662e-04],
-            [9.1885449e-05],
-            [-2.4936342e-04],
-            [-7.8056828e-04],
-            [-2.4509570e-04],
-            [-1.3246380e-04],
-            [-6.9344416e-04],
-            [-2.8356430e-04],
-            [1.1605137e-03],
-            [2.7452575e-03],
-            [2.9905243e-03],
-            [2.2033940e-03],
-            [1.7121597e-03],
-            [8.4455572e-03]
-        ])
-        np.testing.assert_array_almost_equal(grads[0, 0, :, :], expected_gradients1, decimal=2)
+        expected_gradients1 = np.asarray(
+            [
+                -3482.77892371,
+                665.64673575,
+                -116.24408896,
+                265.93803869,
+                1667.02236699,
+                688.33557577,
+                1455.14911883,
+                -3524.90476617,
+                -4082.06471587,
+                -8802.39419605,
+                -277.74274789,
+                2034.54679277,
+                -428.53153241,
+                4114.63683848,
+                1722.53840709,
+                -513.68916798,
+                1159.88786568,
+                7072.47761446,
+                -1963.71829047,
+                382.65287411
+            ]
+        )
+        np.testing.assert_array_almost_equal(grads[0][0 : 20], expected_gradients1, decimal=2)
 
-        expected_gradients2 = np.asarray([
-            [-8.14103708e-03],
-            [-5.78497676e-03],
-            [-1.93702651e-03],
-            [-1.10854053e-04],
-            [-3.13712610e-03],
-            [-2.40660645e-03],
-            [-2.33814842e-03],
-            [-1.18874465e-04],
-            [-8.61960289e-05],
-            [-8.44302267e-05],
-            [1.16928865e-03],
-            [8.52172205e-04],
-            [1.50172669e-03],
-            [9.76039213e-04],
-            [6.99639553e-04],
-            [1.55441079e-03],
-            [1.99828879e-03],
-            [2.53868615e-03],
-            [3.47398920e-03],
-            [3.55495396e-03],
-            [3.40546807e-03],
-            [5.23657538e-03],
-            [9.50821862e-03],
-            [8.31787288e-03],
-            [4.75075701e-03],
-            [8.02019704e-03],
-            [1.00337435e-02],
-            [6.10247999e-03]
+        expected_gradients2 = np.asarray(
+            [
+                20992.44844133,
+                3048.78701634,
+                -7849.13725934,
+                15557.59663939,
+                -15760.10725159,
+                -18422.9438386,
+                19132.22699435, 6508.51437337,
+                 26292.5249963, 4232.62414548, -31128.82664215, -2894.85284984,
+                 13008.74538039, 13845.08921681, 17657.67725957, 8807.42144017,
+                 -16477.89414508, -6977.8092622, -17914.22352666, 4086.51150059]
         ])
         np.testing.assert_array_almost_equal(grads[1, :, 0, :], expected_gradients2, decimal=2)
 
