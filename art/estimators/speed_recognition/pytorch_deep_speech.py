@@ -264,6 +264,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         results = []
         result_output_sizes = np.zeros(x_preprocessed.shape[0], dtype=np.int)
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
+
         for m in range(num_batch):
             # Batch indexes
             begin, end = (
@@ -282,6 +283,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         result_outputs = np.zeros(
             (x_preprocessed.shape[0], result_output_sizes.max(), results[0].shape[-1]), dtype=np.float32
         )
+
         for m in range(num_batch):
             # Batch indexes
             begin, end = (
@@ -605,6 +607,10 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
         return inputs, targets, input_percentages, target_sizes, batch_idx
 
+    @property
+    def model(self) -> "DeepSpeech":
+        return self._model
+
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
@@ -686,6 +692,99 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 # outputs = out.transpose(0, 1)
 # float_outputs = outputs.float()
 #
+# criterion = CTCLoss()
+# loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(device)
+# loss = loss / inputs.size(0)
+#
+#
+# #with amp.scale_loss(loss, optimizer) as scaled_loss:
+#     #torch.backends.cudnn.enabled = False
+# #    scaled_loss.backward()
+#     #torch.backends.cudnn.enabled = True
+#
+# loss.backward()
+#
+# x[0].grad
+#
+#
+#
+#
+#
+# import numpy as np
+# import torch
+# import torchaudio
+# from warpctc_pytorch import CTCLoss
+# from deepspeech_pytorch.loader.data_loader import _collate_fn
+# from deepspeech_pytorch.utils import load_model
+# from art.utils import get_file
+# from art.config import ART_DATA_PATH
+#
+#
+# device = torch.device("cpu")
+#
+# for i in range(len(x)):
+#     x[i] = torch.from_numpy(x[i]).to(device)
+#     x[i].requires_grad = True
+#
+# path = get_file(filename='librispeech_pretrained_v2.pth', path=ART_DATA_PATH, url='https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/librispeech_pretrained_v2.pth', extract=False)
+# model = load_model(device=device, model_path=path, use_half=False)
+# #model.train()
+# sample_rate = model.audio_conf.sample_rate
+# window_size = model.audio_conf.window_size
+# window_stride = model.audio_conf.window_stride
+# window = model.audio_conf.window.value
+# n_fft = int(sample_rate * window_size)
+# win_length = n_fft
+# hop_length = int(sample_rate * window_stride)
+# transformer = torchaudio.transforms.Spectrogram(n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=torch.hamming_window, power=None).to(device)
+#
+# D_1 = transformer(x[0])
+# D_2 = transformer(x[1])
+# D_3 = transformer(x[2])
+# spect_1, phase_1 = torchaudio.functional.magphase(D_1)
+# spect_2, phase_2 = torchaudio.functional.magphase(D_2)
+# spect_3, phase_3 = torchaudio.functional.magphase(D_3)
+# spect_1 = torch.log1p(spect_1)
+# spect_2 = torch.log1p(spect_2)
+# spect_3 = torch.log1p(spect_3)
+#
+# mean1 = spect_1.mean()
+# std1 = spect_1.std()
+# mean2 = spect_2.mean()
+# std2 = spect_2.std()
+# mean3 = spect_3.mean()
+# std3 = spect_3.std()
+#
+# spect_1 = spect_1 - mean1
+# spect_1 = spect_1 / std1
+# spect_2 = spect_2 - mean2
+# spect_2 = spect_2 / std2
+# spect_3 = spect_3 - mean3
+# spect_3 = spect_3 / std3
+#
+#
+# labels_map = dict([(model.labels[i], i) for i in range(len(model.labels))])
+# def parse_transcript(transcript_path):
+#     with open(transcript_path, 'r', encoding='utf8') as transcript_file:
+#         transcript = transcript_file.read().replace('\n', '')
+#         transcript = list(filter(None, [labels_map.get(x) for x in list(transcript)]))
+#         return transcript
+#
+# l1 = []
+# l2 = []
+# l3 = []
+#
+#
+# batch = [(spect_1, l1), (spect_2, l2), (spect_3, l3)]
+# batch_idx = sorted(range(len(batch)), key=lambda i: batch[i][0].size(1), reverse=True)
+# inputs, targets, input_percentages, target_sizes = _collate_fn(batch)
+# input_sizes = input_percentages.mul_(inputs.size(-1)).int()
+# out, output_sizes = model(inputs.to(device), input_sizes.to(device))
+#
+#
+#
+# print (batch_idx, output_sizes, out.shape, out)
+# print(target_sizes, targets.shape)
 # criterion = CTCLoss()
 # loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(device)
 # loss = loss / inputs.size(0)
