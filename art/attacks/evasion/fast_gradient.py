@@ -24,7 +24,7 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 
@@ -69,7 +69,7 @@ class FastGradientMethod(EvasionAttack):
     def __init__(
         self,
         estimator: ClassifierGradients,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         targeted: bool = False,
@@ -81,7 +81,7 @@ class FastGradientMethod(EvasionAttack):
         Create a :class:`.FastGradientMethod` instance.
 
         :param estimator: A trained classifier.
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Attack step size (input variation).
         :param eps_step: Step size of input variation for minimal perturbation computation.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
@@ -250,8 +250,8 @@ class FastGradientMethod(EvasionAttack):
 
     def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
-        if self.norm not in [np.inf, int(1), int(2)]:
-            raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
+        if self.norm not in ["inf", np.inf, int(1), int(2)]:
+            raise ValueError("Norm order must be either \"inf\", `np.inf`, 1, or 2.")
 
         if self.eps <= 0:
             raise ValueError("The perturbation size `eps` has to be positive.")
@@ -282,7 +282,7 @@ class FastGradientMethod(EvasionAttack):
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
-        if self.norm == np.inf:
+        if self.norm in [np.inf, "inf"]:
             grad = np.sign(grad)
         elif self.norm == 1:
             ind = tuple(range(1, len(batch.shape)))

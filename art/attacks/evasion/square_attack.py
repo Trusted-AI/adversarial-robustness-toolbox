@@ -53,7 +53,7 @@ class SquareAttack(EvasionAttack):
     def __init__(
         self,
         estimator: ClassifierGradients,
-        norm: Union[float, int] = np.inf,
+        norm: Union[int, float, str] = np.inf,
         max_iter: int = 100,
         eps: float = 0.3,
         p_init: float = 0.8,
@@ -130,7 +130,7 @@ class SquareAttack(EvasionAttack):
             y_robust = y[sample_is_robust]
             sample_logits_diff_init = self._get_logits_diff(x_robust, y_robust)
 
-            if self.norm == np.inf:
+            if self.norm in [np.inf, "inf"]:
 
                 if self.estimator.channels_first:
                     size = (x_robust.shape[0], channels, 1, width)
@@ -440,8 +440,8 @@ class SquareAttack(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if self.norm not in [1, 2, np.inf]:
-            raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError("The argument norm has to be either 1, 2, np.inf, or \"inf\".")
 
         if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The argument max_iter has to be of type int and larger than zero.")

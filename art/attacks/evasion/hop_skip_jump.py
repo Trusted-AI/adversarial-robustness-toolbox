@@ -65,7 +65,7 @@ class HopSkipJump(EvasionAttack):
         self,
         classifier: "Classifier",
         targeted: bool = False,
-        norm: int = 2,
+        norm: Union[int, float, str] = 2,
         max_iter: int = 50,
         max_eval: int = 10000,
         init_eval: int = 100,
@@ -76,7 +76,7 @@ class HopSkipJump(EvasionAttack):
 
         :param classifier: A trained classifier.
         :param targeted: Should the attack target one specific class.
-        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :param norm: Order of the norm. Possible values: "inf", np.inf or 2.
         :param max_iter: Maximum number of iterations.
         :param max_eval: Maximum number of evaluations for estimating gradient.
         :param init_eval: Initial number of evaluations for estimating gradient.
@@ -368,7 +368,7 @@ class HopSkipJump(EvasionAttack):
         current_sample: np.ndarray,
         original_sample: np.ndarray,
         target: int,
-        norm: int,
+        norm: Union[int, float, str],
         clip_min: float,
         clip_max: float,
         threshold: Optional[float] = None,
@@ -379,7 +379,7 @@ class HopSkipJump(EvasionAttack):
         :param current_sample: Current adversarial example.
         :param original_sample: The original input.
         :param target: The target label.
-        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :param norm: Order of the norm. Possible values: "inf", np.inf or 2.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :param threshold: The upper threshold in binary search.
@@ -523,14 +523,16 @@ class HopSkipJump(EvasionAttack):
         return result
 
     @staticmethod
-    def _interpolate(current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: int) -> np.ndarray:
+    def _interpolate(
+        current_sample: np.ndarray, original_sample: np.ndarray, alpha: float, norm: Union[int, float, str]
+    ) -> np.ndarray:
         """
         Interpolate a new sample based on the original and the current samples.
 
         :param current_sample: Current adversarial example.
         :param original_sample: The original input.
         :param alpha: The coefficient of interpolation.
-        :param norm: Order of the norm. Possible values: np.inf or 2.
+        :param norm: Order of the norm. Possible values: "inf", np.inf or 2.
         :return: An adversarial example.
         """
         if norm == 2:
@@ -542,8 +544,8 @@ class HopSkipJump(EvasionAttack):
 
     def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
-        if self.norm not in [np.inf, int(2)]:
-            raise ValueError("Norm order must be either `np.inf` or 2.")
+        if self.norm not in ["inf", np.inf, int(2)]:
+            raise ValueError('Norm order must be either "inf", `np.inf` or 2.')
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")
