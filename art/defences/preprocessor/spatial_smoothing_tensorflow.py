@@ -53,7 +53,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    import tensorflow as tf
+    import tensorflow as tf  # lgtm [py/repeated-import]
 
     def __init__(
         self,
@@ -68,7 +68,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
 
         :param **kwargs: Parameters from the parent.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         super().__init__()
 
@@ -116,7 +116,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
 
         if x_ndim == 4:
             x = x_nhwc
-        elif x_ndim == 5:
+        elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             # NFHWC <-- NHWC
             x = x_nhwc.reshape(nb_clips, clip_size, h, w, c)
 
@@ -139,7 +139,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Smoothed sample.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         x = tf.convert_to_tensor(x)
         if y is not None:
@@ -154,7 +154,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         with tf.GradientTape() as tape:
             x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)

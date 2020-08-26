@@ -52,7 +52,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         https://arxiv.org/abs/1902.06705
     """
 
-    import torch
+    import torch  # lgtm [py/repeated-import]
     from kornia.filters import MedianBlur
 
     class MedianBlurCustom(MedianBlur):
@@ -60,7 +60,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         An ongoing effort to reproduce the median blur function in SciPy.
         """
 
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         def __init__(self, kernel_size: Tuple[int, int]) -> None:
             super().__init__(kernel_size)
@@ -77,7 +77,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             # PyTorch requires Padding size should be less than the corresponding input dimension,
 
         def forward(self, input: torch.Tensor):  # type: ignore
-            import torch
+            import torch  # lgtm [py/repeated-import]
             import torch.nn.functional as F
 
             if not torch.is_tensor(input):
@@ -123,7 +123,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         :param **kwargs: Parameters from the parent.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         super().__init__()
 
@@ -221,7 +221,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Smoothed sample.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         x = torch.tensor(x, device=self._device)
         if y is not None:
@@ -237,7 +237,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         x = torch.tensor(x, device=self._device, requires_grad=True)
         grad = torch.tensor(grad, device=self._device)
