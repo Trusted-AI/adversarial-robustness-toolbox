@@ -108,21 +108,23 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         )
         cls.x = np.array([x1, x2, x3])
 
-        # Define deep speech estimator
+        # Define deep speech estimators
         cls.speed_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech', device_type='cpu')
+        cls.speed_recognizer_amp = PyTorchDeepSpeech(pretrained_model='librispeech', device_type='gpu', use_amp=True)
 
-        # Create the optimizer
-        parameters = cls.speed_recognizer.model.parameters()
-        cls.speed_recognizer._optimizer = torch.optim.SGD(parameters, lr=0.01)
+    def _test_all(self):
+        self._test_predict()
+        self._test_loss_gradient()
+        self._test_fit()
 
-    def test_all(self):
+    def test_all_amp(self):
         self._test_predict()
         self._test_loss_gradient()
         self._test_fit()
 
     def _test_predict(self):
         # Test probability outputs
-        probs, sizes = self.speed_recognizer.predict(self.x, batch_size=2)
+        probs, sizes = self.speed_recognizer_amp.predict(self.x, batch_size=2)
 
         expected_sizes = np.asarray([5, 5, 5])
         np.testing.assert_array_almost_equal(sizes, expected_sizes)
@@ -163,7 +165,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=6)
 
         # Test transcription outputs
-        transcriptions = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+        transcriptions = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
         expected_transcriptions = np.array(['', '', ''])
         self.assertTrue((expected_transcriptions == transcriptions).all())
@@ -173,7 +175,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         y = np.array(['SIX', 'HI', 'GOOD'])
 
         # Compute gradients
-        grads = self.speed_recognizer.loss_gradient(self.x, y)
+        grads = self.speed_recognizer_amp.loss_gradient(self.x, y)
 
         self.assertTrue(grads[0].shape == (1300,))
         self.assertTrue(grads[1].shape == (1500,))
@@ -262,13 +264,13 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         y = np.array(['SIX', 'HI', 'GOOD'])
 
         # Before train
-        transcriptions1 = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+        transcriptions1 = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
         # Train the estimator
         self.speed_recognizer.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
 
         # After train
-        transcriptions2 = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+        transcriptions2 = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
         self.assertFalse((transcriptions1 == transcriptions2).all())
 
