@@ -124,6 +124,8 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
 
         # placeholders
         self._x_padded = tf1.placeholder(tf1.float32, shape=[None, None], name="art_x_padded")
+        self._y_target = tf1.placeholder(tf1.string, name="art_y_target")
+        self._mask_frequency = tf1.placeholder(tf1.float32, shape=[None, None, 80], name="art_mask_frequency")
 
         # init Lingvo computation graph
         self._sess = tf1.Session()
@@ -202,6 +204,31 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
         saver.restore(self._sess, os.path.splitext(model_index_path)[0])
 
         return model, task
+
+    def _create_decoder_input(self, x: "Tensor", y: "Tensor", mask_frequency: "Tensor") -> "Tensor":
+        """Create decoder input per batch."""
+        import tensorflow.compat.v1 as tf1
+        from lingvo.core.py_utils import NestedMap
+
+        # prepare model input source, i.e. input features
+        # note: paddings have values 0/1, where 1 represents a padded timestep
+        source_features = self._create_log_mel_features(x)
+        source_features *= tf1.expand_dims(mask_frequency, dim=-1)
+        source_paddings = 1.0 - mask_frequency[:, :, 0]
+
+        # prepare model input target, i.e. transcription target
+        target = self._task.input_generator.StringsToIds(y)
+
+        # create decoder input
+        decoder_inputs = NestedMap(
+            {
+                "src": NestedMap({"src_inputs": source_features, "paddings": source_paddings}),
+                "sample_ids": tf1.zeros(tf1.shape(source_features)[0]),
+                "tgt": NestedMap(zip(("ids", "labels", "paddings"), target)),
+            }
+        )
+        decoder_inputs.tgt["weights"] = 1.0 - decoder_inputs.tgt["paddings"]
+        return decoder_inputs
 
     def _create_log_mel_features(self, x: "Tensor") -> "Tensor":
         """Extract Log-Mel features from audio samples of shape (batch_size, max_length)."""
