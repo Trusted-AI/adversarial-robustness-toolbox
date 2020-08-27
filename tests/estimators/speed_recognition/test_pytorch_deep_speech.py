@@ -115,7 +115,12 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         parameters = cls.speed_recognizer.model.parameters()
         cls.speed_recognizer._optimizer = torch.optim.SGD(parameters, lr=0.01)
 
-    def test_predict(self):
+    def test_all(self):
+        self._test_predict()
+        self._test_loss_gradient()
+        self._test_fit()
+
+    def _test_predict(self):
         # Test probability outputs
         probs, sizes = self.speed_recognizer.predict(self.x, batch_size=2)
 
@@ -124,38 +129,38 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
         expected_probs = np.asarray(
             [
-                9.9992490e-01,
-                5.6676822e-23,
-                3.9130475e-07,
-                1.9610961e-18,
-                4.4049504e-21,
-                2.4876512e-17,
-                2.7967793e-11,
-                7.7903489e-20,
-                5.1193400e-26,
-                1.2637422e-25,
-                1.1681875e-16,
-                2.2417779e-19,
-                2.0199957e-23,
-                8.5335135e-17,
-                1.0881066e-12,
-                7.4728101e-05,
-                9.5411921e-11,
-                2.8458338e-18,
-                1.2048823e-18,
-                5.7043537e-18,
-                3.1257310e-16,
-                3.0971430e-13,
-                2.8484861e-09,
-                2.2766614e-21,
-                7.3805555e-23,
-                9.4372818e-23,
-                1.0754367e-18,
-                3.9642380e-21,
-                2.7693408e-15,
+                1.0000000e+00,
+                7.0154901e-14,
+                1.9170589e-13,
+                8.2194836e-13,
+                8.9967915e-13,
+                1.8518193e-12,
+                1.7883164e-10,
+                1.8951663e-12,
+                1.8818237e-13,
+                3.2806991e-12,
+                3.5664666e-16,
+                3.3147299e-14,
+                2.3439516e-13,
+                8.4845603e-12,
+                1.2017718e-13,
+                1.1180213e-12,
+                6.5572378e-15,
+                3.0194697e-12,
+                4.9065188e-15,
+                1.9765363e-13,
+                4.1670646e-11,
+                2.6884213e-12,
+                1.1436632e-13,
+                7.1931783e-15,
+                2.8135227e-11,
+                4.5599673e-14,
+                6.4587983e-13,
+                2.4159567e-15,
+                4.6668241e-13,
             ]
         )
-        np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=2)
+        np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=6)
 
         # Test transcription outputs
         transcriptions = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
@@ -163,7 +168,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         expected_transcriptions = np.array(['', '', ''])
         self.assertTrue((expected_transcriptions == transcriptions).all())
 
-    def test_loss_gradient(self):
+    def _test_loss_gradient(self):
         # Create labels
         y = np.array(['SIX', 'HI', 'GOOD'])
 
@@ -198,7 +203,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                 382.65287411
             ]
         )
-        np.testing.assert_array_almost_equal(grads[0][0 : 20], expected_gradients1, decimal=2)
+        np.testing.assert_array_almost_equal(grads[0][0 : 20], expected_gradients1, decimal=1)
 
         expected_gradients2 = np.asarray(
             [
@@ -224,7 +229,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                 4086.51150059
             ]
         )
-        np.testing.assert_array_almost_equal(grads[1][0: 20], expected_gradients2, decimal=2)
+        np.testing.assert_array_almost_equal(grads[1][0: 20], expected_gradients2, decimal=1)
 
         expected_gradients3 = np.asarray(
             [
@@ -250,9 +255,9 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                 -11129.57632319
             ]
         )
-        np.testing.assert_array_almost_equal(grads[2][0: 20], expected_gradients3, decimal=2)
+        np.testing.assert_array_almost_equal(grads[2][0: 20], expected_gradients3, decimal=1)
 
-    def test_fit(self):
+    def _test_fit(self):
         # Create labels
         y = np.array(['SIX', 'HI', 'GOOD'])
 
