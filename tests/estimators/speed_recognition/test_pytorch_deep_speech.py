@@ -23,6 +23,7 @@ import importlib
 
 import numpy as np
 
+from tests.utils import master_seed
 
 deepspeech_pytorch_spec = importlib.util.find_spec("deepspeech_pytorch")
 deepspeech_pytorch_found = deepspeech_pytorch_spec is not None
@@ -41,6 +42,8 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        master_seed(seed=1234)
+
         # Only import if deep speech module is available
         import torch
 
@@ -166,7 +169,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
         # Compute gradients
         grads = self.speed_recognizer.loss_gradient(self.x, y)
-        print(grads[0].shape, grads[1].shape, grads[2].shape)
+
         self.assertTrue(grads[0].shape == (1300,))
         self.assertTrue(grads[1].shape == (1500,))
         self.assertTrue(grads[2].shape == (1400,))
