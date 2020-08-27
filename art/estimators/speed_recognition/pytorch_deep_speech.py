@@ -181,9 +181,14 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             from apex import amp
 
             if self._optimizer is None:
-                raise ValueError(
-                    "An optimizer is needed to use the automatic mixed precision tool, but none for provided."
+                logger.warning(
+                    "An optimizer is needed to use the automatic mixed precision tool, but none for provided. "
+                    "A default optimizer is used."
                 )
+
+                # Create the optimizers
+                parameters = self._model.parameters()
+                self._optimizer = torch.optim.SGD(parameters, lr=0.01)
 
             if self._device.type == 'cpu':
                 enabled = False
@@ -191,8 +196,8 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                 enabled = True
 
             self._model, self._optimizer = amp.initialize(
-                model=self._model,
-                optimizer=self._optimizer,
+                models=self._model,
+                optimizers=self._optimizer,
                 enabled=enabled,
                 opt_level=opt_level,
                 loss_scale=loss_scale
@@ -276,7 +281,9 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
 
             # Call to DeepSpeech model for prediction
             with torch.no_grad():
-                outputs, output_sizes = self._model(inputs[begin : end], input_sizes[begin : end])
+                outputs, output_sizes = self._model(
+                    inputs[begin : end].to(self._device), input_sizes[begin : end].to(self._device)
+                )
 
             results.append(outputs)
             result_output_sizes[begin : end] = output_sizes.detach().cpu().numpy()
@@ -294,7 +301,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
             )
 
             # Overwrite results
-            result_outputs[begin : end, : results[m].shape[1], : results[m].shape[-1]] = results[m]
+            result_outputs[begin : end, : results[m].shape[1], : results[m].shape[-1]] = results[m].cpu().numpy()
 
         # Rearrange to the original order
         result_output_sizes_ = result_output_sizes.copy()
@@ -400,7 +407,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         input_sizes = input_rates.mul_(inputs.size(-1)).int()
 
         # Call to DeepSpeech model for prediction
-        outputs, output_sizes = self._model(inputs, input_sizes)
+        outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
         outputs = outputs.transpose(0, 1)
         float_outputs = outputs.float()
 
@@ -451,7 +458,14 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         self._model.train()
 
         if self._optimizer is None:
-            raise ValueError("An optimizer is needed to train the model, but none for provided.")
+            logger.warning(
+                "An optimizer is needed to use the automatic mixed precision tool, but none for provided. "
+                "A default optimizer is used."
+            )
+
+            # Create the optimizers
+            parameters = self._model.parameters()
+            self._optimizer = torch.optim.SGD(parameters, lr=0.01)
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -492,7 +506,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                 self._optimizer.zero_grad()
 
                 # Call to DeepSpeech model for prediction
-                outputs, output_sizes = self._model(inputs, input_sizes)
+                outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
                 outputs = outputs.transpose(0, 1)
                 float_outputs = outputs.float()
 
