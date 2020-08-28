@@ -22,7 +22,7 @@ mxnet==1.6.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==1.5.0+cpu
 torchvision==0.7.0
-catboost==0.24
+catboost==0.24.1
 GPy==1.9.9
 lightgbm==2.3.1
 xgboost==1.2.0
