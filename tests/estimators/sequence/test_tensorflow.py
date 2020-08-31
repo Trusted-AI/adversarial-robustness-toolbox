@@ -19,6 +19,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
+import numpy as np
 import pytest
 import tensorflow.compat.v1 as tf1
 from lingvo.core.hyperparams import Params
@@ -28,6 +29,16 @@ from art.estimators.sequence.tensorflow import LingvoAsr
 from art.estimators.tensorflow import TensorFlowV2Estimator
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def audio_batch_padded():
+    """
+    Create audio fixtures of shape (batch_size=2,) with elements of variable length.
+    """
+    sample_rate = 16000
+    test_input = np.zeros((2, sample_rate))
+    return test_input
 
 
 class TestLingvoAsr:
@@ -66,3 +77,14 @@ class TestLingvoAsr:
         LingvoAsr()
         graph = tf1.get_default_graph()
         assert graph.get_operations()
+
+    def test_create_log_mel_features(self, audio_batch_padded):
+        tf1.reset_default_graph()
+
+        test_input = audio_batch_padded
+        lingvo = LingvoAsr()
+        features_tf = lingvo._create_log_mel_features(lingvo._x_padded)
+
+        features = lingvo._sess.run(features_tf, {lingvo._x_padded: test_input})
+        assert features.shape[2] == 80
+        assert len(features.shape) == 4

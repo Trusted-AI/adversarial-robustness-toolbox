@@ -37,6 +37,8 @@ if TYPE_CHECKING:
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
 
+    from tensorflow.compat.v1 import Tensor
+
 logger = logging.getLogger(__name__)
 
 
@@ -120,6 +122,9 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
         # check and download additional Lingvo ASR params file
         _ = self._check_and_download_params()
 
+        # placeholders
+        self._x_padded = tf1.placeholder(tf1.float32, shape=[None, None], name="art_x_padded")
+
         # init Lingvo computation graph
         self._sess = tf1.Session()
         model, task = self._load_model()
@@ -197,6 +202,43 @@ class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
         saver.restore(self._sess, os.path.splitext(model_index_path)[0])
 
         return model, task
+
+    def _create_log_mel_features(self, x: "Tensor") -> "Tensor":
+        """Extract Log-Mel features from audio samples of shape (batch_size, max_length)."""
+        from lingvo.core.py_utils import NestedMap
+        import tensorflow.compat.v1 as tf1
+
+        def _create_asr_frontend():
+            """Parameters corresponding to default ASR frontend."""
+            from lingvo.tasks.asr import frontend
+
+            params = frontend.MelAsrFrontend.Params()
+            # default params from Lingvo
+            params.sample_rate = 16000.0
+            params.frame_size_ms = 25.0
+            params.frame_step_ms = 10.0
+            params.num_bins = 80
+            params.lower_edge_hertz = 125.0
+            params.upper_edge_hertz = 7600.0
+            params.preemph = 0.97
+            params.noise_scale = 0.0
+            params.pad_end = False
+            # additional params from Qin et al.
+            params.stack_left_context = 2
+            params.frame_stride = 3
+            return params.Instantiate()
+
+        # init Lingvo ASR frontend
+        mel_frontend = _create_asr_frontend()
+
+        # extract log-mel features
+        log_mel = mel_frontend.FPropDefaultTheta(NestedMap(src_inputs=x, paddings=tf1.zeros_like(x)))
+        features = log_mel.src_inputs
+
+        # reshape features to shape (batch_size, n_frames, n_features, channels) in compliance with Qin et al.
+        features_shape = (tf1.shape(x)[0], -1, 80, features.shape[-1])
+        features = tf1.reshape(features, features_shape)
+        return features
 
     def loss_gradient(self, x, y, **kwargs):
         """
