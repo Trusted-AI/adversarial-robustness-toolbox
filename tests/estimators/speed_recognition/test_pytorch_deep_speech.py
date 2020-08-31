@@ -28,6 +28,13 @@ from tests.utils import master_seed
 deepspeech_pytorch_spec = importlib.util.find_spec("deepspeech_pytorch")
 deepspeech_pytorch_found = deepspeech_pytorch_spec is not None
 
+apex_spec = importlib.util.find_spec("apex")
+if apex_spec is not None:
+    amp_spec = importlib.util.find_spec("apex.amp")
+else:
+    amp_spec = None
+amp_found = amp_spec is not None
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,11 +50,6 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234)
-
-        # Only import if deep speech module is available
-        import torch
-
-        from art.estimators.speed_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Small data for testing
         x1 = np.array(
@@ -108,23 +110,40 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         )
         cls.x = np.array([x1, x2, x3])
 
-        # Define deep speech estimators
-        cls.speed_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech', device_type='cpu')
-        cls.speed_recognizer_amp = PyTorchDeepSpeech(pretrained_model='librispeech', device_type='gpu', use_amp=True)
+    def test_all(self):
+        # Only import if deep speech module is available
+        from art.estimators.speed_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
-    def _test_all(self):
+        # Define deep speech estimator
+        self.speed_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech')
+
+        # All tests
         self._test_predict()
         self._test_loss_gradient()
         self._test_fit()
 
+    @unittest.skipIf(
+        not amp_found,
+        reason="Skip unittests if apex module is not found."
+    )
     def test_all_amp(self):
-        self._test_predict()
-        self._test_loss_gradient()
-        self._test_fit()
+        # Only import if deep speech module is available
+        from art.estimators.speed_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
-    def _test_predict(self):
+        # Define deep speech estimator
+        self.speed_recognizer_amp = PyTorchDeepSpeech(pretrained_model='librispeech', device_type='gpu', use_amp=True)
+
+        # All tests
+        self._test_predict(use_amp=True)
+        self._test_loss_gradient(use_amp=True)
+        self._test_fit(use_amp=True)
+
+    def _test_predict(self, use_amp=False):
         # Test probability outputs
-        probs, sizes = self.speed_recognizer_amp.predict(self.x, batch_size=2)
+        if use_amp:
+            probs, sizes = self.speed_recognizer_amp.predict(self.x, batch_size=2)
+        else:
+            probs, sizes = self.speed_recognizer.predict(self.x, batch_size=2)
 
         expected_sizes = np.asarray([5, 5, 5])
         np.testing.assert_array_almost_equal(sizes, expected_sizes)
@@ -159,118 +178,216 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                 4.5599673e-14,
                 6.4587983e-13,
                 2.4159567e-15,
-                4.6668241e-13,
+                4.6668241e-13
             ]
         )
-        np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=6)
+        np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
 
         # Test transcription outputs
-        transcriptions = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+        if use_amp:
+            transcriptions = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+        else:
+            transcriptions = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
         expected_transcriptions = np.array(['', '', ''])
         self.assertTrue((expected_transcriptions == transcriptions).all())
 
-    def _test_loss_gradient(self):
+    def _test_loss_gradient(self, use_amp=False):
         # Create labels
         y = np.array(['SIX', 'HI', 'GOOD'])
 
         # Compute gradients
-        grads = self.speed_recognizer_amp.loss_gradient(self.x, y)
+        if use_amp:
+            grads = self.speed_recognizer_amp.loss_gradient(self.x, y)
+        else:
+            grads = self.speed_recognizer.loss_gradient(self.x, y)
 
         self.assertTrue(grads[0].shape == (1300,))
         self.assertTrue(grads[1].shape == (1500,))
         self.assertTrue(grads[2].shape == (1400,))
 
-        expected_gradients1 = np.asarray(
-            [
-                -3482.77892371,
-                665.64673575,
-                -116.24408896,
-                265.93803869,
-                1667.02236699,
-                688.33557577,
-                1455.14911883,
-                -3524.90476617,
-                -4082.06471587,
-                -8802.39419605,
-                -277.74274789,
-                2034.54679277,
-                -428.53153241,
-                4114.63683848,
-                1722.53840709,
-                -513.68916798,
-                1159.88786568,
-                7072.47761446,
-                -1963.71829047,
-                382.65287411
-            ]
-        )
-        np.testing.assert_array_almost_equal(grads[0][0 : 20], expected_gradients1, decimal=1)
+        if use_amp:
+            expected_gradients1 = np.asarray(
+                [
+                    -3485.7,
+                    659.,
+                    -111.7,
+                    283.6,
+                    1691.9,
+                    715.,
+                    1480.4,
+                    -3522.3,
+                    -4087.9,
+                    -8824.2,
+                    -304.7,
+                    2013.4,
+                    -445.1,
+                    4125.,
+                    1754.1,
+                    -503.6,
+                    1160.,
+                    7051.7,
+                    -1992.2,
+                    350.4
+                ]
+            )
 
-        expected_gradients2 = np.asarray(
-            [
-                20992.44844133,
-                3048.78701634,
-                -7849.13725934,
-                15557.59663939,
-                -15760.10725159,
-                -18422.9438386,
-                19132.22699435,
-                6508.51437337,
-                26292.5249963,
-                4232.62414548,
-                -31128.82664215,
-                -2894.85284984,
-                13008.74538039,
-                13845.08921681,
-                17657.67725957,
-                8807.42144017,
-                -16477.89414508,
-                -6977.8092622,
-                -17914.22352666,
-                4086.51150059
-            ]
-        )
-        np.testing.assert_array_almost_equal(grads[1][0: 20], expected_gradients2, decimal=1)
+        else:
+            expected_gradients1 = np.asarray(
+                [
+                    -3482.77892371,
+                    665.64673575,
+                    -116.24408896,
+                    265.93803869,
+                    1667.02236699,
+                    688.33557577,
+                    1455.14911883,
+                    -3524.90476617,
+                    -4082.06471587,
+                    -8802.39419605,
+                    -277.74274789,
+                    2034.54679277,
+                    -428.53153241,
+                    4114.63683848,
+                    1722.53840709,
+                    -513.68916798,
+                    1159.88786568,
+                    7072.47761446,
+                    -1963.71829047,
+                    382.65287411
+                ]
+            )
+        np.testing.assert_array_almost_equal(grads[0][0 : 20], expected_gradients1, decimal=0)
 
-        expected_gradients3 = np.asarray(
-            [
-                -1693.10472689,
-                6711.39788693,
-                16480.14166546,
-                -3786.95541286,
-                16448.3969823,
-                -15702.45621671,
-                -26162.89260564,
-                -8979.81601681,
-                9657.87483965,
-                13955.78845296,
-                -7552.01438108,
-                14170.60635269,
-                -24434.37243957,
-                5502.81163675,
-                7171.56926943,
-                -6154.06511686,
-                2483.93980406,
-                -7244.24618697,
-                -10798.70438903,
-                -11129.57632319
-            ]
-        )
-        np.testing.assert_array_almost_equal(grads[2][0: 20], expected_gradients3, decimal=1)
+        if use_amp:
+            expected_gradients2 = np.asarray(
+                [
+                    20924.5,
+                    3046.3,
+                    -7872.5,
+                    15525.1,
+                    -15766.9,
+                    -18494.1,
+                    19139.6,
+                    6446.2,
+                    26323.1,
+                    4230.,
+                    -31122.4,
+                    -2890.9,
+                    12936.7,
+                    13834.1,
+                    17649.9,
+                    8866.1,
+                    -16454.6,
+                    -6953.1,
+                    -17899.6,
+                    4100.7
+                ]
+            )
 
-    def _test_fit(self):
+        else:
+            expected_gradients2 = np.asarray(
+                [
+                    20992.44844133,
+                    3048.78701634,
+                    -7849.13725934,
+                    15557.59663939,
+                    -15760.10725159,
+                    -18422.9438386,
+                    19132.22699435,
+                    6508.51437337,
+                    26292.5249963,
+                    4232.62414548,
+                    -31128.82664215,
+                    -2894.85284984,
+                    13008.74538039,
+                    13845.08921681,
+                    17657.67725957,
+                    8807.42144017,
+                    -16477.89414508,
+                    -6977.8092622,
+                    -17914.22352666,
+                    4086.51150059
+                ]
+            )
+        np.testing.assert_array_almost_equal(grads[1][0: 20], expected_gradients2, decimal=0)
+
+        if use_amp:
+            expected_gradients3 = np.asarray(
+                [
+                    -1687.3,
+                    6715.,
+                    16448.4,
+                    -3848.9,
+                    16521.1,
+                    -15736.1,
+                    -26204.,
+                    -8992.2,
+                    9697.9,
+                    13999.6,
+                    -7595.3,
+                    14181.,
+                    -24507.2,
+                    5481.9,
+                    7166.7,
+                    -6182.3,
+                    2510.3,
+                    -7229.,
+                    -10821.9,
+                    -11134.2
+                ]
+            )
+
+        else:
+            expected_gradients3 = np.asarray(
+                [
+                    -1693.10472689,
+                    6711.39788693,
+                    16480.14166546,
+                    -3786.95541286,
+                    16448.3969823,
+                    -15702.45621671,
+                    -26162.89260564,
+                    -8979.81601681,
+                    9657.87483965,
+                    13955.78845296,
+                    -7552.01438108,
+                    14170.60635269,
+                    -24434.37243957,
+                    5502.81163675,
+                    7171.56926943,
+                    -6154.06511686,
+                    2483.93980406,
+                    -7244.24618697,
+                    -10798.70438903,
+                    -11129.57632319
+                ]
+            )
+        np.testing.assert_array_almost_equal(grads[2][0: 20], expected_gradients3, decimal=0)
+
+    def _test_fit(self, use_amp=False):
         # Create labels
         y = np.array(['SIX', 'HI', 'GOOD'])
 
-        # Before train
-        transcriptions1 = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+        if use_amp:
+            # Before train
+            transcriptions1 = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
-        # Train the estimator
-        self.speed_recognizer.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
+            # Train the estimator
+            self.speed_recognizer_amp.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
 
-        # After train
-        transcriptions2 = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+            # After train
+            transcriptions2 = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+
+        else:
+            # Before train
+            transcriptions1 = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+
+            # Train the estimator
+            self.speed_recognizer.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
+
+            # After train
+            transcriptions2 = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
         self.assertFalse((transcriptions1 == transcriptions2).all())
 
