@@ -78,7 +78,7 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
 
         :return: The current TensorFlow session.
         """
-        if hasattr(self, '_sess'):
+        if hasattr(self, "_sess"):
             return self._sess
         else:
             raise NotImplementedError("A valid TensorFlow session is not available.")

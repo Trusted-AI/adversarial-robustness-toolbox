@@ -1,24 +1,30 @@
 import json
 import logging
-import pytest
-import numpy as np
-import tensorflow as tf
+import os
+import shutil
+import tempfile
+
 import keras
 from keras.preprocessing.image import ImageDataGenerator
-import os
+from mxnet import gluon
+import numpy as np
+import pytest
 import requests
-import tempfile
+import tensorflow as tf
 from torch.utils.data import DataLoader
 import torch
-import shutil
+
+from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
+from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from art.estimators.classification import KerasClassifier
 from tests.utils import master_seed, get_image_classifier_kr, get_image_classifier_tf, get_image_classifier_pt
 from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, get_tabular_classifier_pt
-from tests.utils import get_tabular_classifier_scikit_list, load_dataset
-from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator
-from art.estimators.classification import KerasClassifier
+from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
+from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
+from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
 
 logger = logging.getLogger(__name__)
-art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
+art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
 
 master_seed(1234)
 
@@ -34,15 +40,32 @@ def pytest_addoption(parser):
 
 
 @pytest.fixture
-def get_image_classifier_list_defended(framework):
-    def _get_image_classifier_list_defended(one_classifier=False, **kwargs):
+def image_dl_estimator_defended(framework):
+    def _image_dl_estimator_defended(one_classifier=False, **kwargs):
         sess = None
         classifier_list = None
+
+        clip_values = (0, 1)
+        fs = FeatureSqueezing(bit_depth=2, clip_values=clip_values)
+
+        defenses = []
+        if kwargs.get("defenses") is None:
+            defenses.append(fs)
+        else:
+            if "FeatureSqueezing" in kwargs.get("defenses"):
+                defenses.append(fs)
+            if "JpegCompression" in kwargs.get("defenses"):
+                defenses.append(JpegCompression(clip_values=clip_values, apply_predict=True))
+            if "SpatialSmoothing" in kwargs.get("defenses"):
+                defenses.append(SpatialSmoothing())
+            del kwargs["defenses"]
+
         if framework == "keras":
-            classifier = utils.get_image_classifier_kr()
+            classifier = get_image_classifier_kr(**kwargs)
             # Get the ready-trained Keras model
-            fs = FeatureSqueezing(bit_depth=1, clip_values=(0, 1))
-            classifier_list = [KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=fs)]
+
+            classifier_list = [
+                KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=defenses)]
 
         if framework == "tensorflow":
             logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
@@ -53,6 +76,11 @@ def get_image_classifier_list_defended(framework):
         if framework == "scikitlearn":
             logging.warning("{0} doesn't have a defended image classifier defined yet".format(framework))
 
+        if framework == "kerastf":
+            classifier = get_image_classifier_kr_tf(**kwargs)
+            classifier_list = [
+                KerasClassifier(model=classifier._model, clip_values=(0, 1), preprocessing_defences=defenses)]
+
         if classifier_list is None:
             return None, None
 
@@ -61,16 +89,16 @@ def get_image_classifier_list_defended(framework):
 
         return classifier_list, sess
 
-    return _get_image_classifier_list_defended
+    return _image_dl_estimator_defended
 
 
 @pytest.fixture
-def get_image_classifier_list_for_attack(get_image_classifier_list, get_image_classifier_list_defended):
-    def get_image_classifier_list_for_attack(attack, defended=False, **kwargs):
+def image_dl_estimator_for_attack(image_dl_estimator, image_dl_estimator_defended):
+    def _image_dl_estimator_for_attack(attack, defended=False, **kwargs):
         if defended:
-            classifier_list, _ = get_image_classifier_list_defended(kwargs)
+            classifier_list, _ = image_dl_estimator_defended(kwargs)
         else:
-            classifier_list, _ = get_image_classifier_list()
+            classifier_list, _ = image_dl_estimator()
         if classifier_list is None:
             return None
 
@@ -80,7 +108,7 @@ def get_image_classifier_list_for_attack(get_image_classifier_list, get_image_cl
             if all(t in type(potential_classifier).__mro__ for t in attack._estimator_requirements)
         ]
 
-    return get_image_classifier_list_for_attack
+    return _image_dl_estimator_for_attack
 
 
 @pytest.fixture(autouse=True)
@@ -113,7 +141,7 @@ def setup_tear_down_framework(framework):
 def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
-    if framework == "keras":
+    if framework == "keras" or framework == "kerastf":
         keras_gen = ImageDataGenerator(
             width_shift_range=0.075,
             height_shift_range=0.075,
@@ -143,6 +171,10 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
         dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
         return DataLoader(dataset=dataset, batch_size=default_batch_size, shuffle=True)
 
+    if framework == "mxnet":
+        dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
+        return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
+
     return None
 
 
@@ -151,7 +183,7 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
     def _image_data_generator(**kwargs):
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
-        if framework == "keras":
+        if framework == "keras" or framework == "kerastf":
             return KerasDataGenerator(
                 iterator=image_iterator,
                 size=x_train_mnist.shape[0],
@@ -170,6 +202,9 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
             return PyTorchDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0],
                                         batch_size=default_batch_size)
 
+        if framework == "mxnet":
+            return MXDataGenerator(iterator=image_iterator, size=x_train_mnist.shape[0], batch_size=default_batch_size)
+
     return _image_data_generator
 
 
@@ -177,6 +212,9 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
 def store_expected_values(request, is_tf_version_2):
     '''
     Stores expected values to be retrieved by the expected_values fixture
+    Note1: Numpy arrays MUST be converted to list before being stored as json
+    Note2: It's possible to store both a framework independent and framework specific value. If both are stored the
+    framework specific value will be used
     :param request:
     :return:
     '''
@@ -206,7 +244,7 @@ def store_expected_values(request, is_tf_version_2):
 
         with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name),
                   "w") as f:
-            json.dump(expected_values, f)
+            json.dump(expected_values, f, indent=4)
 
     return _store_expected_values
 
@@ -230,29 +268,194 @@ def expected_values(framework, request, is_tf_version_2):
     if framework_name is not "":
         framework_name = "_" + framework_name
 
-    with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r") as f:
-        expected_values = json.load(f)
+    def _expected_values():
+        with open(os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name),
+                  "r") as f:
+            expected_values = json.load(f)
 
-        test_name = request.node.name
-        if request.node.name not in expected_values:
-            test_name = request.node.name + framework_name
-        return expected_values[test_name]
+            # searching first for any framework specific expected value
+            framework_specific_values = request.node.name + framework_name
+            if framework_specific_values in expected_values:
+                return expected_values[framework_specific_values]
+            elif request.node.name in expected_values:
+                return expected_values[request.node.name]
+            else:
+                raise NotImplementedError(
+                    "Couldn't find any expected values for test {0} and framework {1}".format(request.node.name,
+                                                                                              framework_name))
+
+    return _expected_values
+
+
+@pytest.fixture(scope="session")
+def get_image_classifier_mx_model():
+    from mxnet.gluon import nn
+
+    # TODO needs to be made parameterizable once Mxnet allows multiple identical models to be created in one session
+    from_logits = True
+
+    class Model(nn.Block):
+        def __init__(self, **kwargs):
+            super(Model, self).__init__(**kwargs)
+            self.model = nn.Sequential()
+            self.model.add(
+                nn.Conv2D(channels=1, kernel_size=7, activation="relu", ),
+                nn.MaxPool2D(pool_size=4, strides=4),
+                nn.Flatten(),
+                nn.Dense(10, activation=None, ),
+            )
+
+        def forward(self, x):
+            y = self.model(x)
+            if from_logits:
+                return y
+
+            return y.softmax()
+
+    model = Model()
+    custom_init = get_image_classifier_mxnet_custom_ini()
+    model.initialize(init=custom_init)
+    return model
 
 
 @pytest.fixture
-def get_image_classifier_list(framework):
-    def _get_image_classifier_list(one_classifier=False, **kwargs):
-        sess = None
+def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape):
+    import mxnet
+    from art.estimators.classification import MXClassifier
+
+    model = get_image_classifier_mx_model
+
+    def _get_image_classifier_mx_instance(from_logits=True):
+        if from_logits is False:
+            # due to the fact that only 1 instance of get_image_classifier_mx_model can be created in one session
+            # this will be resolved once Mxnet allows for 2 models with identical weights to be created in 1 session
+            raise NotImplementedError("Currently only supporting Mxnet classifier with from_logit set to True")
+
+        loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
+        trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
+
+        # Get classifier
+        mxc = MXClassifier(
+            model=model,
+            loss=loss,
+            input_shape=mnist_shape,
+            # input_shape=(28, 28, 1),
+            nb_classes=10,
+            optimizer=trainer,
+            ctx=None,
+            channels_first=True,
+            clip_values=(0, 1),
+            preprocessing_defences=None,
+            postprocessing_defences=None,
+            preprocessing=(0, 1)
+        )
+
+        return mxc
+
+    return _get_image_classifier_mx_instance
+
+
+@pytest.fixture
+def supported_losses_types(framework):
+    def supported_losses_types():
         if framework == "keras":
-            classifier_list = [get_image_classifier_kr(**kwargs)]
+            return ["label", "function_losses", "function_backend"]
+        if framework == "kerastf":
+            # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
+            return ["label", "function", "class"]
+
+        raise NotImplementedError("Could not find  supported_losses_types for framework {0}".format(framework))
+
+    return supported_losses_types
+
+
+@pytest.fixture
+def supported_losses_logit(framework):
+    def _supported_losses_logit():
+        if framework == "keras":
+            return ["categorical_crossentropy_function_backend",
+                    "sparse_categorical_crossentropy_function_backend"]
+        if framework == "kerastf":
+            # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
+            return ["categorical_crossentropy_function",
+                    "categorical_crossentropy_class",
+                    "sparse_categorical_crossentropy_function",
+                    "sparse_categorical_crossentropy_class"]
+        raise NotImplementedError("Could not find  supported_losses_logit for framework {0}".format(framework))
+
+    return _supported_losses_logit
+
+
+@pytest.fixture
+def supported_losses_proba(framework):
+    def _supported_losses_proba():
+        if framework == "keras":
+            return ["categorical_hinge_function_losses",
+                    "categorical_crossentropy_label",
+                    "categorical_crossentropy_function_losses",
+                    "categorical_crossentropy_function_backend",
+                    "sparse_categorical_crossentropy_label",
+                    "sparse_categorical_crossentropy_function_losses",
+                    "sparse_categorical_crossentropy_function_backend",
+                    "kullback_leibler_divergence_function_losses"
+                    ]
+        if framework == "kerastf":
+            return ["categorical_hinge_function",
+                    "categorical_hinge_class",
+                    "categorical_crossentropy_label",
+                    "categorical_crossentropy_function",
+                    "categorical_crossentropy_class",
+                    "sparse_categorical_crossentropy_label",
+                    "sparse_categorical_crossentropy_function",
+                    "sparse_categorical_crossentropy_class",
+                    "kullback_leibler_divergence_function",
+                    "kullback_leibler_divergence_class"]
+
+        raise NotImplementedError("Could not find  supported_losses_proba for framework {0}".format(framework))
+
+    return _supported_losses_proba
+
+
+@pytest.fixture
+def image_dl_estimator(framework, get_image_classifier_mx_instance):
+    def _image_dl_estimator(one_classifier=False, functional=False, **kwargs):
+        sess = None
+        wildcard = False
+        classifier_list = None
+
+        if kwargs.get("wildcard") is not None:
+            if kwargs.get("wildcard") is True:
+                wildcard = True
+            del kwargs["wildcard"]
+
+        if framework == "keras":
+            if wildcard is False and functional is False:
+                if functional:
+                    classifier_list = [get_image_classifier_kr_functional(**kwargs)]
+                else:
+                    classifier_list = [get_image_classifier_kr(**kwargs)]
         if framework == "tensorflow":
-            classifier, sess = get_image_classifier_tf(**kwargs)
-            classifier_list = [classifier]
+            if wildcard is False and functional is False:
+                classifier, sess = get_image_classifier_tf(**kwargs)
+                classifier_list = [classifier]
         if framework == "pytorch":
-            classifier_list = [get_image_classifier_pt(**kwargs)]
+            if wildcard is False and functional is False:
+                classifier_list = [get_image_classifier_pt(**kwargs)]
         if framework == "scikitlearn":
             logging.warning("{0} doesn't have an image classifier defined yet".format(framework))
             classifier_list = None
+        if framework == "kerastf":
+            if wildcard:
+                classifier_list = [get_image_classifier_kr_tf_with_wildcard(**kwargs)]
+            else:
+                if functional:
+                    classifier_list = [get_image_classifier_kr_tf_functional(**kwargs)]
+                else:
+                    classifier_list = [get_image_classifier_kr_tf(**kwargs)]
+
+        if framework == "mxnet":
+            if wildcard is False and functional is False:
+                classifier_list = [get_image_classifier_mx_instance(**kwargs)]
 
         if classifier_list is None:
             return None, None
@@ -262,7 +465,7 @@ def get_image_classifier_list(framework):
 
         return classifier_list, sess
 
-    return _get_image_classifier_list
+    return _image_dl_estimator
 
 
 @pytest.fixture
@@ -372,7 +575,7 @@ def default_dataset_subset_sizes():
 
 @pytest.fixture()
 def mnist_shape(framework):
-    if framework == "pytorch":
+    if framework == "pytorch" or framework == "mxnet":
         return (1, 28, 28)
     else:
         return (28, 28, 1)

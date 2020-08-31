@@ -27,6 +27,7 @@ import random
 from typing import Union
 
 import numpy as np
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
@@ -115,7 +116,7 @@ class SquareAttack(EvasionAttack):
             width = x.shape[2]
             channels = x.shape[3]
 
-        for i_restart in range(self.nb_restarts):
+        for i_restart in trange(self.nb_restarts, desc="SquareAttack - restarts"):
 
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
@@ -150,7 +151,7 @@ class SquareAttack(EvasionAttack):
 
                 x_adv[sample_is_robust] = x_robust
 
-                for i_iter in range(self.max_iter):
+                for i_iter in trange(self.max_iter, desc="SquareAttack - iterations", leave=False):
 
                     percentage_of_elements = self._get_percentage_of_elements(i_iter)
 
@@ -274,7 +275,7 @@ class SquareAttack(EvasionAttack):
 
                 x_adv[sample_is_robust] = x_robust
 
-                for i_iter in range(self.max_iter):
+                for i_iter in trange(self.max_iter, desc="SquareAttack - iterations", leave=False):
 
                     percentage_of_elements = self._get_percentage_of_elements(i_iter)
 

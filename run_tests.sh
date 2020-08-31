@@ -24,16 +24,18 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
 done
 
+pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
+
+
 
 #NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
 # made framework independent to be incorporated within this loop
-mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn")
+mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
-  pytest -q tests/estimators/classification/test_common_deeplearning.py --mlFramework=$mlFramework --durations=0
-  pytest -q tests/estimators/classification/test_keras.py --mlFramework=$mlFramework --durations=0
-  pytest -q tests/estimators/classification/test_pytorch.py --mlFramework=$mlFramework --durations=0
-  pytest -q tests/estimators/classification/test_tensorflow.py --mlFramework=$mlFramework --durations=0
+  pytest -q tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --durations=0
+  pytest -q tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
 done
 
@@ -75,9 +77,7 @@ declare -a classifiers=("tests/estimators/certification/test_randomized_smoothin
                         "tests/estimators/classification/test_ensemble.py" \
                         "tests/estimators/classification/test_GPy.py" \
                         "tests/estimators/classification/test_input_filter.py" \
-                        "tests/estimators/classification/test_keras_tf.py" \
                         "tests/estimators/classification/test_lightgbm.py" \
-                        "tests/estimators/classification/test_mxnet.py" \
                         "tests/estimators/classification/test_scikitlearn.py" \
                         "tests/estimators/classification/test_xgboost.py" )
 
