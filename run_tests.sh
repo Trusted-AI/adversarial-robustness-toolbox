@@ -83,6 +83,8 @@ declare -a classifiers=("tests/estimators/certification/test_randomized_smoothin
 
 declare -a object_detectors=("tests/estimators/object_detection/test_tensorflow_faster_rcnn.py")
 
+declare -a speed_recognizers=("tests/estimators/speed_recognition/test_pytorch_deep_speech.py")
+
 declare -a defences=("tests/defences/test_adversarial_trainer.py" \
                      "tests/defences/test_adversarial_trainer_madry_pgd.py" \
                      "tests/defences/test_class_labels.py" \
@@ -121,6 +123,7 @@ declare -a art=("tests/test_data_generators.py" \
 tests_modules=("attacks" \
                "classifiers" \
                "object_detectors" \
+               "speed_recognizers" \
                "defences" \
                "metrics" \
                "wrappers" \
