@@ -13,6 +13,7 @@ RUN pip3 install pandas==1.1.1
 RUN pip3 install jupyter==1.0.0 && pip3 install jupyterlab==2.1.0
 # https://stackoverflow.com/questions/49024624/how-to-dockerize-jupyter-lab
 
+RUN pip3 install lingvo==0.7.2
 RUN pip3 install h5py==2.10.0
 RUN pip3 install tensorflow-addons==0.11.1
 RUN pip3 install mxnet==1.6.0
