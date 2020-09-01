@@ -313,7 +313,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
         # Check if users want transcription outputs
         transcription_output = kwargs.get("transcription_output")
 
-        if transcription_output is None or transcription_output == False:
+        if transcription_output is None or transcription_output is False:
             return result_outputs, result_output_sizes
 
         # Now users want transcription outputs
