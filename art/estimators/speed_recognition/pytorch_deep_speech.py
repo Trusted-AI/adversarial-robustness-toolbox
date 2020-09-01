@@ -25,7 +25,6 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from deepspeech_pytorch.utils import load_model
 
 from art.estimators.speed_recognition.speed_recognizer import SpeedRecognizerMixin
 from art.estimators.pytorch import PyTorchEstimator
@@ -100,6 +99,8 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                             if available otherwise run on CPU.
         """
         import torch
+
+        from deepspeech_pytorch.utils import load_model
 
         # Super initialization
         super().__init__(
