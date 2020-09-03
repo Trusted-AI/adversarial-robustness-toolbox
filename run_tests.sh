@@ -23,6 +23,9 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/evasion/ --mlFramework=$mlFramework  --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
+  pytest -q tests/estimators/sequence/ --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/sequence tests"; fi
+
   pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference"; fi
 
