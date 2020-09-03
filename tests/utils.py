@@ -1236,19 +1236,20 @@ def get_tabular_classifier_tf_v2():
     return tfc
 
 
-def get_tabular_classifier_scikit_list(clipped=False):
-    model_list_names = [
-        "decisionTreeClassifier",
-        "extraTreeClassifier",
-        "adaBoostClassifier",
-        "baggingClassifier",
-        "extraTreesClassifier",
-        "gradientBoostingClassifier",
-        "randomForestClassifier",
-        "logisticRegression",
-        "svc",
-        "linearSVC",
-    ]
+def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
+    if model_list_names is None:
+        model_list_names = [
+            "decisionTreeClassifier",
+            "extraTreeClassifier",
+            "adaBoostClassifier",
+            "baggingClassifier",
+            "extraTreesClassifier",
+            "gradientBoostingClassifier",
+            "randomForestClassifier",
+            "logisticRegression",
+            "svc",
+            "linearSVC",
+        ]
     if clipped:
         classifier_list = [
             # os.path.join(os.path.dirname(os.path.dirname(__file__)),'utils/resources/models', 'W_DENSE3_IRIS.npy')
@@ -1340,7 +1341,11 @@ def get_tabular_classifier_kr(load_init=True):
     return krc
 
 
-class ARTTestFixtureNotImplemented(Exception):
+class ARTTestException(Exception):
+    pass
+
+
+class ARTTestFixtureNotImplemented(ARTTestException):
     pass
 
 

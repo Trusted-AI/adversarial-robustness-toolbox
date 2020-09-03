@@ -494,6 +494,19 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
 
 
 @pytest.fixture
+def decision_tree_estimator(framework):
+    def _decision_tree_estimator(clipped=True):
+        if framework == "scikitlearn":
+            return get_tabular_classifier_scikit_list(clipped=clipped, model_list_names=["decisionTreeClassifier"])[0]
+
+        raise ARTTestFixtureNotImplemented(
+            "framework {0} doesn't have a test decision_tree_classifier with "
+            "these parameters defined yet".format(framework))
+
+    return _decision_tree_estimator
+
+
+@pytest.fixture
 def tabular_dl_estimator(framework):
     def _tabular_dl_estimator(clipped=True):
         classifier = None
