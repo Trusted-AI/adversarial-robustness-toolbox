@@ -1348,13 +1348,10 @@ class ARTTestException(Exception):
 
 
 class ARTTestFixtureNotImplemented(ARTTestException):
-    pass
-
-
-class ARTTestFixtureNotImplemented2(ARTTestException):
-    def __init__(self, fixture_name, framework, attack):
-        super().__init__("Fixture {0}, doesn't have an estimator for framework {1} and attack {2} defined yet".format(
-            fixture_name, framework, attack))
+    def __init__(self, message, fixture_name, framework, parameters_dict=""):
+        super().__init__(
+            "Could NOT run test for framework: {0} due to fixture: {1}. Message was: '"
+            "{2}' for the following parameters: {3}".format(framework, fixture_name, message, parameters_dict))
 
 
 def add_warning(exception):

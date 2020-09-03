@@ -37,7 +37,6 @@ from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, ge
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
-from tests.utils import get_attack_classifier_pt
 from tests.utils import ARTTestFixtureNotImplemented
 
 logger = logging.getLogger(__name__)
@@ -92,8 +91,8 @@ def image_dl_estimator_defended(framework):
                                          preprocessing_defences=defenses)
 
         if classifier is None:
-            raise ARTTestFixtureNotImplemented(
-                "{0} doesn't have a defended image classifier defined yet".format(framework))
+            raise ARTTestFixtureNotImplemented("no defended image estimator", image_dl_estimator_defended.__name__,
+                                               framework, {"defenses": defenses})
         return classifier, sess
 
     return _image_dl_estimator_defended
@@ -112,12 +111,8 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
             classifier = potential_classifier
 
         if classifier is None:
-            raise ARTTestFixtureNotImplemented2(image_dl_estimator_for_attack.__name__, framework, attack)
-            # raise ValidationError("message", 5)
-            # raise ARTTestException("message")
-            # raise ARTTestFixtureNotImplemented(
-            #     "Fixture {0}, doesn't have an estimator for framework {1} and attack {2} defined yet".format(
-            #         image_dl_estimator_for_attack.__name__, framework, attack))
+            raise ARTTestFixtureNotImplemented("no estimator available", image_dl_estimator_for_attack.__name__,
+                                               framework, {"attack": attack})
         return classifier
 
     return _image_dl_estimator_for_attack
@@ -278,24 +273,6 @@ def store_expected_values(request, is_tf_version_2):
             json.dump(expected_values, f, indent=4)
 
     return _store_expected_values
-
-
-@pytest.fixture
-def add_warningFix(framework, request):
-    test_name = request.node.location[0][:-2] + request.node.location[2]
-
-    def _add_warningFix(exception):
-        tmp = ""
-        if type(exception) is ARTTestFixtureNotImplemented2:
-            # NotImplementedErrors are raised in ART whenever a test model does not exist for a specific model/framework
-            # combination. By catching there here, we can provide a report at the end of each pytest run list all models
-            # requiring to be implemented.
-            # warnings.warn(UserWarning(test_name))
-            warnings.warn(UserWarning(exception))
-        else:
-            raise exception
-
-    return _add_warningFix
 
 
 @pytest.fixture
@@ -548,9 +525,8 @@ def tabular_dl_estimator(framework):
                 classifier = get_tabular_classifier_pt()
 
         if classifier is None:
-            raise ARTTestFixtureNotImplemented(
-                "framework {0} doesn't have a test deep learning tabular estimator with "
-                "these parameters defined yet".format(framework))
+            raise ARTTestFixtureNotImplemented("no deep learning tabular estimator available",
+                                               tabular_dl_estimator.__name__, framework)
         return classifier
 
     return _tabular_dl_estimator

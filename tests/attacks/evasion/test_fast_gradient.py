@@ -52,14 +52,13 @@ def test_classifier_defended_images(fix_get_mnist_subset, image_dl_estimator_for
 
 
 @pytest.mark.framework_agnostic
-def test_random_initialisation_images(fix_get_mnist_subset, image_dl_estimator_for_attack, add_warningFix):
+def test_random_initialisation_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier= image_dl_estimator_for_attack(FastGradientMethod)
         attack = FastGradientMethod(classifier, num_random_init=3)
         backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
-        add_warningFix(e)
-        # add_warning(e)
+        add_warning(e)
 
 
 @pytest.mark.framework_agnostic
