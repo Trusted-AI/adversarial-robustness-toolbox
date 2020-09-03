@@ -20,6 +20,7 @@ import logging
 import os
 import shutil
 import tempfile
+import warnings
 
 from mxnet import gluon
 import numpy as np
@@ -111,8 +112,12 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
             classifier = potential_classifier
 
         if classifier is None:
-            raise ARTTestFixtureNotImplemented(
-                "{0} doesn't have an estimator for this type of attack defined yet".format(framework))
+            raise ARTTestFixtureNotImplemented2(image_dl_estimator_for_attack.__name__, framework, attack)
+            # raise ValidationError("message", 5)
+            # raise ARTTestException("message")
+            # raise ARTTestFixtureNotImplemented(
+            #     "Fixture {0}, doesn't have an estimator for framework {1} and attack {2} defined yet".format(
+            #         image_dl_estimator_for_attack.__name__, framework, attack))
         return classifier
 
     return _image_dl_estimator_for_attack
@@ -273,6 +278,24 @@ def store_expected_values(request, is_tf_version_2):
             json.dump(expected_values, f, indent=4)
 
     return _store_expected_values
+
+
+@pytest.fixture
+def add_warningFix(framework, request):
+    test_name = request.node.location[0][:-2] + request.node.location[2]
+
+    def _add_warningFix(exception):
+        tmp = ""
+        if type(exception) is ARTTestFixtureNotImplemented2:
+            # NotImplementedErrors are raised in ART whenever a test model does not exist for a specific model/framework
+            # combination. By catching there here, we can provide a report at the end of each pytest run list all models
+            # requiring to be implemented.
+            # warnings.warn(UserWarning(test_name))
+            warnings.warn(UserWarning(exception))
+        else:
+            raise exception
+
+    return _add_warningFix
 
 
 @pytest.fixture

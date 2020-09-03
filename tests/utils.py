@@ -1342,11 +1342,19 @@ def get_tabular_classifier_kr(load_init=True):
 
 
 class ARTTestException(Exception):
-    pass
+    def __init__(self, message):
+        super().__init__(message)
+        # self.errors = errors
 
 
 class ARTTestFixtureNotImplemented(ARTTestException):
     pass
+
+
+class ARTTestFixtureNotImplemented2(ARTTestException):
+    def __init__(self, fixture_name, framework, attack):
+        super().__init__("Fixture {0}, doesn't have an estimator for framework {1} and attack {2} defined yet".format(
+            fixture_name, framework, attack))
 
 
 def add_warning(exception):
