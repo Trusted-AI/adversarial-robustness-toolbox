@@ -89,122 +89,115 @@ def test_black_box(decision_tree_estimator, get_iris_dataset):
         add_warning(e)
 
 
-def test_black_box_with_model(tabular_dl_estimator, get_iris_dataset):
-    classifier_list = tabular_dl_estimator(AttributeInferenceBlackBox)
-    if not classifier_list:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+def test_black_box_with_model(decision_tree_estimator, get_iris_dataset):
+    try:
+        attack_feature = 2  # petal length
 
-    attack_feature = 2  # petal length
+        # need to transform attacked feature into categorical
+        def transform_feature(x):
+            x[x > 0.5] = 2.0
+            x[(x > 0.2) & (x <= 0.5)] = 1.0
+            x[x <= 0.2] = 0.0
 
-    # need to transform attacked feature into categorical
-    def transform_feature(x):
-        x[x > 0.5] = 2.0
-        x[(x > 0.2) & (x <= 0.5)] = 1.0
-        x[x <= 0.2] = 0.0
+        values = [0.0, 1.0, 2.0]
 
-    values = [0.0, 1.0, 2.0]
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        # training data without attacked feature
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        # only attacked feature
+        x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_train_feature)
+        # training data with attacked feature (after transformation)
+        x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
+        x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
 
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
-    # training data without attacked feature
-    x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
-    # only attacked feature
-    x_train_feature = x_train_iris[:, attack_feature].copy().reshape(-1, 1)
-    transform_feature(x_train_feature)
-    # training data with attacked feature (after transformation)
-    x_train = np.concatenate((x_train_for_attack[:, :attack_feature], x_train_feature), axis=1)
-    x_train = np.concatenate((x_train, x_train_for_attack[:, attack_feature:]), axis=1)
+        # test data without attacked feature
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        # only attacked feature
+        x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
+        transform_feature(x_test_feature)
 
-    # test data without attacked feature
-    x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
-    # only attacked feature
-    x_test_feature = x_test_iris[:, attack_feature].copy().reshape(-1, 1)
-    transform_feature(x_test_feature)
+        model = nn.Linear(4, 3)
 
-    model = nn.Linear(4, 3)
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        attack_model = PyTorchClassifier(
+            model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=3
+        )
 
-    # Define a loss function and optimizer
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    attack_model = PyTorchClassifier(
-        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(4,), nb_classes=3
-    )
+        classifier = decision_tree_estimator()
 
-    for classifier in classifier_list:
-        if type(classifier).__name__ == "ScikitlearnDecisionTreeClassifier":
-            attack = AttributeInferenceBlackBox(classifier, attack_model=attack_model, attack_feature=attack_feature)
-            # get original model's predictions
-            x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
-            x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
-            # train attack model
-            attack.fit(x_train)
-            # infer attacked feature
-            inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
-            inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
-            # check accuracy
-            train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
-            test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
-            # assert train_acc == pytest.approx(0.5523, abs=0.03)
-            # assert test_acc == pytest.approx(0.5777, abs=0.03)
+        attack = AttributeInferenceBlackBox(classifier, attack_model=attack_model, attack_feature=attack_feature)
+        # get original model's predictions
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+        # train attack model
+        attack.fit(x_train)
+        # infer attacked feature
+        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values)
+        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values)
+        # check accuracy
+        train_acc = np.sum(inferred_train == x_train_feature.reshape(1, -1)) / len(inferred_train)
+        test_acc = np.sum(inferred_test == x_test_feature.reshape(1, -1)) / len(inferred_test)
+        # assert train_acc == pytest.approx(0.5523, abs=0.03)
+        # assert test_acc == pytest.approx(0.5777, abs=0.03)
+    except ARTTestException as e:
+        add_warning(e)
 
 
-def test_white_box(tabular_dl_estimator, get_iris_dataset):
-    classifier_list = tabular_dl_estimator(AttributeInferenceWhiteBoxDecisionTree)
-    if not classifier_list:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+def test_white_box(decision_tree_estimator, get_iris_dataset):
+    try:
+        attack_feature = 2  # petal length
+        values = [0.14, 0.42, 0.71]  # rounded down
+        priors = [50 / 150, 54 / 150, 46 / 150]
 
-    attack_feature = 2  # petal length
-    values = [0.14, 0.42, 0.71]  # rounded down
-    priors = [50 / 150, 54 / 150, 46 / 150]
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        x_train_feature = x_train_iris[:, attack_feature]
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        x_test_feature = x_test_iris[:, attack_feature]
 
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
-    x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
-    x_train_feature = x_train_iris[:, attack_feature]
-    x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
-    x_test_feature = x_test_iris[:, attack_feature]
+        classifier = decision_tree_estimator()
 
-    for classifier in classifier_list:
-        if type(classifier).__name__ == "ScikitlearnDecisionTreeClassifier":
-            attack = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=attack_feature)
-            x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
-            x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
-            inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
-            inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
-            train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
-            test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
-            assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.2108, abs=0.03)
-            assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.1988, abs=0.03)
+        attack = AttributeInferenceWhiteBoxDecisionTree(classifier, attack_feature=attack_feature)
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
+        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
+        train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
+        test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
+        assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.2108, abs=0.03)
+        assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.1988, abs=0.03)
+    except ARTTestException as e:
+        add_warning(e)
 
 
-def test_white_box_lifestyle(tabular_dl_estimator, get_iris_dataset):
-    classifier_list = tabular_dl_estimator(AttributeInferenceWhiteBoxLifestyleDecisionTree)
-    if not classifier_list:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+def test_white_box_lifestyle(decision_tree_estimator, get_iris_dataset):
+    try:
+        attack_feature = 2  # petal length
+        values = [0.14, 0.42, 0.71]  # rounded down
+        priors = [50 / 150, 54 / 150, 46 / 150]
 
-    attack_feature = 2  # petal length
-    values = [0.14, 0.42, 0.71]  # rounded down
-    priors = [50 / 150, 54 / 150, 46 / 150]
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
+        x_train_feature = x_train_iris[:, attack_feature]
+        x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
+        x_test_feature = x_test_iris[:, attack_feature]
 
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
-    x_train_for_attack = np.delete(x_train_iris, attack_feature, 1)
-    x_train_feature = x_train_iris[:, attack_feature]
-    x_test_for_attack = np.delete(x_test_iris, attack_feature, 1)
-    x_test_feature = x_test_iris[:, attack_feature]
-
-    for classifier in classifier_list:
-        if type(classifier).__name__ == "ScikitlearnDecisionTreeClassifier":
-            attack = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=attack_feature)
-            x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
-            x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
-            inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
-            inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
-            train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
-            test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
-            assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.3357, abs=0.03)
-            assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.3149, abs=0.03)
-            # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
+        classifier = decision_tree_estimator()
+        attack = AttributeInferenceWhiteBoxLifestyleDecisionTree(classifier, attack_feature=attack_feature)
+        x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train_iris)]).reshape(-1, 1)
+        x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test_iris)]).reshape(-1, 1)
+        inferred_train = attack.infer(x_train_for_attack, x_train_predictions, values=values, priors=priors)
+        inferred_test = attack.infer(x_test_for_attack, x_test_predictions, values=values, priors=priors)
+        train_diff = np.abs(inferred_train - x_train_feature.reshape(1, -1))
+        test_diff = np.abs(inferred_test - x_test_feature.reshape(1, -1))
+        assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.3357, abs=0.03)
+        assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.3149, abs=0.03)
+        # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_classifier_type_check_fail():
