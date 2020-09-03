@@ -164,7 +164,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         print("output tensor shape")
         print(output_tensor.shape)
         # y_true_tensor = K.placeholder(model.output_shape)
-        y_true_tensor = K.placeholder(model.output_shape)
+        y_true_tensor = K.placeholder(model.outputs[0].shape.as_list())
 
         self.loss_acc = categorical_accuracy(output_tensor, y_true_tensor)
         self.loss_ce = categorical_crossentropy(output_tensor, y_true_tensor)
@@ -186,8 +186,17 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         # print(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
         print(K.gradients(self.loss, [self.pattern_tensor]))
         print("Loss value:")
-        print(K.eval(self.loss))
-        # print(K.gradients(self.loss, [reverse_mask_tensor, input_tensor]))
+
+        #print(K.eval(self.loss))
+        with K.get_session().as_default():
+            print(self.loss.eval(feed_dict={y_true_tensor:np.asarray([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])}))
+
+        # This will not allow to compute loss gradient
+        print(K.gradients(self.loss, [reverse_mask_tensor, input_tensor]))
+
+        # This will allow to compute loss gradient
+        print(K.gradients(self.loss, [self.pattern_tensor_raw, self.pattern_tensor]))
+
         # self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss)
         self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw], loss=self.loss)
         self.train = K.function([input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss, self.loss_acc])
