@@ -20,6 +20,8 @@ import pytest
 
 from tests.utils import ARTTestFixtureNotImplemented
 
+from tests.utils import ARTTestFixtureNotImplemented
+
 logger = logging.getLogger(__name__)
 
 
