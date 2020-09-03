@@ -20,6 +20,7 @@ import logging
 import os
 import shutil
 import tempfile
+import warnings
 
 import numpy as np
 import pytest
@@ -298,6 +299,24 @@ def store_expected_values(request, is_tf_version_2):
             json.dump(expected_values, f, indent=4)
 
     return _store_expected_values
+
+
+@pytest.fixture
+def add_warningFix(framework, request):
+    test_name = request.node.location[0][:-2] + request.node.location[2]
+
+    def _add_warningFix(exception):
+        tmp = ""
+        if type(exception) is ARTTestFixtureNotImplemented2:
+            # NotImplementedErrors are raised in ART whenever a test model does not exist for a specific model/framework
+            # combination. By catching there here, we can provide a report at the end of each pytest run list all models
+            # requiring to be implemented.
+            # warnings.warn(UserWarning(test_name))
+            warnings.warn(UserWarning(exception))
+        else:
+            raise exception
+
+    return _add_warningFix
 
 
 @pytest.fixture
