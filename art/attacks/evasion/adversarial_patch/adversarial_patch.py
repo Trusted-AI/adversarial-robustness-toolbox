@@ -116,7 +116,7 @@ class AdversarialPatch(EvasionAttack):
             )
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate adversarial samples and return them in an array.
 

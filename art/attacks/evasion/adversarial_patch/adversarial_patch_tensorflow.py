@@ -52,6 +52,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1712.09665
     """
 
+    import tensorflow as tf
+
     attack_params = EvasionAttack.attack_params + [
         "rotation_max",
         "scale_min",
@@ -134,7 +136,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
         )
 
-    def _train_step(self, images: Optional[np.ndarray] = None, target: Optional[np.ndarray] = None) -> "tf.Tensor":
+    def _train_step(self, images: tf.Tensor = None, target: Optional[tf.Tensor] = None) -> tf.Tensor:
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         if target is None:
@@ -145,6 +147,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         with tf.GradientTape() as tape:
             tape.watch(self._patch)
+            print('type(images)')
+            print(type(images))
+            print('type(target)')
+            print(type(target))
             loss = self._loss(images, target)
 
         gradients = tape.gradient(loss, [self._patch])
@@ -156,7 +162,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _probabilities(self, images: "tf.Tensor") -> "tf.Tensor":
+    def _probabilities(self, images: tf.Tensor) -> tf.Tensor:
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         patched_input = self._random_overlay(images, self._patch)
@@ -169,7 +175,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return probabilities
 
-    def _loss(self, images: "tf.Tensor", target: "tf.Tensor") -> "tf.Tensor":
+    def _loss(self, images: tf.Tensor, target: tf.Tensor) -> tf.Tensor:
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         probabilities = self._probabilities(images)
@@ -182,7 +188,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _get_circular_patch_mask(self, nb_images: int, sharpness: int = 40) -> "tf.Tensor":
+    def _get_circular_patch_mask(self, nb_images: int, sharpness: int = 40) -> tf.Tensor:
         """
         Return a circular patch mask.
         """
@@ -201,7 +207,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         image_mask = tf.stack([image_mask] * nb_images)
         return image_mask
 
-    def _random_overlay(self, images: np.ndarray, patch: np.ndarray, scale: Optional[float] = None) -> "tf.Tensor":
+    def _random_overlay(self, images: Union[np.ndarray, tf.Tensor], patch: Union[np.ndarray, tf.Variable], scale: Optional[float] = None) -> tf.Tensor:
         import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
@@ -243,11 +249,11 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             a2 = x_origin_delta - (x_shift / (2 * im_scale))
             b2 = y_origin_delta - (y_shift / (2 * im_scale))
 
-            transform_vectors.append(np.array([a0, a1, a2, b0, b1, b2, 0, 0]).astype(np.float32))
+            transform_vectors.append([a0, a1, a2, b0, b1, b2, 0, 0])
 
         image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR")
         padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR")
-        inverted_mask = 1 - image_mask
+        inverted_mask = tf.constant(1, dtype=image_mask.dtype) - image_mask
 
         return images * inverted_mask + padded_patch * image_mask
 
