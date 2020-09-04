@@ -311,7 +311,7 @@ class FastGradientMethod(EvasionAttack):
         x: np.ndarray,
         x_init: np.ndarray,
         y: np.ndarray,
-        mask: np.ndarray,
+        mask: Optional[np.ndarray],
         eps: float,
         eps_step: float,
         project: bool,
