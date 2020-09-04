@@ -24,7 +24,7 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, Tuple
 
 import random
 import numpy as np
@@ -106,7 +106,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.patch = np.ones(shape=self.estimator.input_shape).astype(np.float32) * mean_value
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate adversarial samples and return them in an array.
 
