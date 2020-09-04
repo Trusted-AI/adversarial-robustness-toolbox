@@ -11,6 +11,7 @@ import pytest
 from tensorflow.keras.callbacks import LearningRateScheduler
 
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
+from tests.utils import add_warning, ARTTestException, ARTTestFixtureNotImplemented
 
 logger = logging.getLogger(__name__)
 
@@ -23,27 +24,26 @@ def is_keras_2_3():
 
 def test_layers(get_default_mnist_subset, framework, is_tf_version_2, image_dl_estimator):
     try:
-        classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
-        if classifier is not None:
-            (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        classifier, _ = image_dl_estimator(from_logits=True)
 
-            if framework == "tensorflow" and is_tf_version_2:
-                raise NotImplementedError(
-                    "fw_agnostic_backend_test_layers not implemented for framework {0}".format(framework)
-                )
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-            batch_size = 128
-            for i, name in enumerate(classifier.layer_names):
-                activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
-                activation_name = classifier.get_activations(x_test_mnist, name, batch_size=batch_size)
-                np.testing.assert_array_equal(activation_name, activation_i)
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+        if framework == "tensorflow" and is_tf_version_2:
+            raise ARTTestFixtureNotImplemented(
+                "fw_agnostic_backend_test_layers not implemented", test_layers.__name__, framework)
+
+        batch_size = 128
+        for i, name in enumerate(classifier.layer_names):
+            activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
+            activation_name = classifier.get_activations(x_test_mnist, name, batch_size=batch_size)
+            np.testing.assert_array_equal(activation_name, activation_i)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_loss_gradient_with_wildcard(image_dl_estimator):
-    classifier, _ = image_dl_estimator(one_classifier=True, wildcard=True)
-    if classifier is not None:
+    try:
+        classifier, _ = image_dl_estimator(wildcard=True)
         shapes = [(1, 10, 1), (1, 20, 1)]
         for shape in shapes:
             x = np.random.normal(size=shape)
@@ -52,6 +52,9 @@ def test_loss_gradient_with_wildcard(image_dl_estimator):
 
             class_gradient = classifier.class_gradient(x, 0)
             assert class_gradient[0].shape == shape
+
+    except ARTTestException as e:
+        add_warning(e)
 
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
@@ -62,53 +65,54 @@ def test_fit(get_default_mnist_subset, default_batch_size, image_dl_estimator):
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         labels = np.argmax(y_test_mnist, axis=1)
-        classifier, sess = image_dl_estimator(one_classifier=True, from_logits=True)
-        if classifier is not None:
-            accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-            np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=2)
+        classifier, sess = image_dl_estimator(from_logits=True)
 
-            classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
-            accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-            assert accuracy_2 == pytest.approx(0.73, abs=0.06)
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+        accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
+        np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.06)
+
+        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
+        accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
+        np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_predict(
-    request, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
+        request, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
 ):
-    if framework == "keras" and is_keras_2_3() is False:
-        # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
-        return
+    try:
+        if framework == "keras" and is_keras_2_3() is False:
+            # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
+            return
 
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
+        classifier, _ = image_dl_estimator(from_logits=True)
 
-    if classifier is not None:
         y_predicted = classifier.predict(x_test_mnist[0:1])
         np.testing.assert_array_almost_equal(y_predicted, expected_values(), decimal=4)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_shapes(get_default_mnist_subset, image_dl_estimator):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-        classifier, sess = image_dl_estimator(one_classifier=True, from_logits=True)
+        classifier, sess = image_dl_estimator(from_logits=True)
 
-        if classifier is not None:
-            predictions = classifier.predict(x_test_mnist)
-            assert predictions.shape == y_test_mnist.shape
+        predictions = classifier.predict(x_test_mnist)
+        assert predictions.shape == y_test_mnist.shape
 
-            assert classifier.nb_classes == 10
+        assert classifier.nb_classes == 10
 
-            class_gradients = classifier.class_gradient(x_test_mnist[:11])
-            assert class_gradients.shape == tuple([11, 10] + list(x_test_mnist[1].shape))
+        class_gradients = classifier.class_gradient(x_test_mnist[:11])
+        assert class_gradients.shape == tuple([11, 10] + list(x_test_mnist[1].shape))
 
-            loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
-            assert loss_gradients.shape == x_test_mnist[:11].shape
+        loss_gradients = classifier.loss_gradient(x_test_mnist[:11], y_test_mnist[:11])
+        assert loss_gradients.shape == x_test_mnist[:11].shape
 
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+    except ARTTestException as e:
+        add_warning(e)
 
 
 # TODO skipping with kerastf because overall tests are taking too long to run - unskip once tests run under limit time
@@ -119,15 +123,15 @@ def test_shapes(get_default_mnist_subset, image_dl_estimator):
     ["categorical_crossentropy", "categorical_hinge", "sparse_categorical_crossentropy", "kullback_leibler_divergence"],
 )
 def test_loss_functions(
-    image_dl_estimator,
-    get_default_mnist_subset,
-    loss_name,
-    supported_losses_proba,
-    supported_losses_logit,
-    store_expected_values,
-    supported_losses_types,
-    from_logits,
-    expected_values,
+        image_dl_estimator,
+        get_default_mnist_subset,
+        loss_name,
+        supported_losses_proba,
+        supported_losses_logit,
+        store_expected_values,
+        supported_losses_types,
+        from_logits,
+        expected_values,
 ):
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
@@ -144,9 +148,7 @@ def test_loss_functions(
             # store_expected_values(expected_values)
 
             if loss_name + "_" + loss_type in supported_losses:
-                classifier, _ = image_dl_estimator(
-                    one_classifier=True, loss_name=loss_name, loss_type=loss_type, from_logits=from_logits
-                )
+                classifier, _ = image_dl_estimator(loss_name=loss_name, loss_type=loss_type, from_logits=from_logits)
 
                 y_test_pred_exp = np.argmax(classifier.predict(x=x_test_mnist), axis=1)
                 np.testing.assert_array_equal(y_test_pred_exp, y_test_pred_exp)
@@ -158,15 +160,15 @@ def test_loss_functions(
                 loss_gradient_value = classifier.loss_gradient(x=x_test_mnist, y=y_test_mnist)
                 np.testing.assert_array_almost_equal(loss_gradient_value[99, 14, :, 0], loss_grad_exp[loss_name])
 
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_pickle(image_dl_estimator, image_dl_estimator_defended, tmp_path):
-    full_path = os.path.join(tmp_path, "my_classifier.p")
+    try:
+        full_path = os.path.join(tmp_path, "my_classifier.p")
 
-    classifier, _ = image_dl_estimator(one_classifier=True, functional=True)
-    if classifier is not None:
+        classifier, _ = image_dl_estimator(functional=True)
         with open(full_path, "wb") as save_file:
             pickle.dump(classifier, save_file)
 
@@ -177,19 +179,22 @@ def test_pickle(image_dl_estimator, image_dl_estimator_defended, tmp_path):
         assert classifier._channel_index == loaded._channel_index
         assert classifier._use_logits == loaded._use_logits
         assert classifier._input_layer == loaded._input_layer
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_functional_model(image_dl_estimator):
-    # Need to update the functional_model code to produce a model with more than one input and output layers...
-    classifier, _ = image_dl_estimator(one_classifier=True, functional=True, input_layer=1, output_layer=1)
-    if classifier is not None:
+    try:
+        # Need to update the functional_model code to produce a model with more than one input and output layers...
+        classifier, _ = image_dl_estimator(functional=True, input_layer=1, output_layer=1)
         assert "input1" in classifier._input.name
         assert "output1" in classifier._output.name
 
-    classifier, _ = image_dl_estimator(one_classifier=True, functional=True, input_layer=0, output_layer=0)
-    if classifier is not None:
+        classifier, _ = image_dl_estimator(functional=True, input_layer=0, output_layer=0)
         assert "input0" in classifier._input.name
         assert "output0" in classifier._output.name
+    except ARTTestException as e:
+        add_warning(e)
 
 
 @pytest.mark.skipMlFramework("mxnet", "tensorflow", "pytorch")
@@ -201,29 +206,27 @@ def test_fit_kwargs(image_dl_estimator, get_default_mnist_subset, default_batch_
             return 0.01
 
         # Test a valid callback
-        classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
-        if classifier is not None:
-            kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
+        classifier, _ = image_dl_estimator(from_logits=True)
+        kwargs = {"callbacks": [LearningRateScheduler(get_lr)]}
+        classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
+
+        # Test failure for invalid parameters
+        kwargs = {"epochs": 1}
+        with pytest.raises(TypeError) as exception:
             classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
 
-            # Test failure for invalid parameters
-            kwargs = {"epochs": 1}
-            with pytest.raises(TypeError) as exception:
-                classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=1, **kwargs)
+        assert "multiple values for keyword argument" in str(exception)
 
-            assert "multiple values for keyword argument" in str(exception)
-
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended, image_dl_estimator):
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    try:
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = image_dl_estimator_defended(
-        one_classifier=True, defenses=["FeatureSqueezing", "JpegCompression", "SpatialSmoothing"]
-    )
-    if classifier is not None:
+        classifier, _ = image_dl_estimator_defended(
+            defenses=["FeatureSqueezing", "JpegCompression", "SpatialSmoothing"])
         assert len(classifier.preprocessing_defences) == 3
 
         predictions_classifier = classifier.predict(x_test_mnist)
@@ -238,66 +241,66 @@ def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended,
         smooth = SpatialSmoothing()
         x_test_defense, _ = smooth(x_test_defense, y_test_mnist)
         # classifier, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-        classifier, _ = image_dl_estimator(one_classifier=True)
+        classifier, _ = image_dl_estimator()
         predictions_check = classifier._model.predict(x_test_defense)
 
         # Check that the prediction results match
         np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
 @pytest.mark.skipMlFramework("mxnet")
 def test_fit_image_generator(
-    framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
+        framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
 ):
     try:
         if framework == "tensorflow" and is_tf_version_2:
             return
 
-        classifier, sess = image_dl_estimator(one_classifier=True, from_logits=True)
-        if classifier is not None:
-            (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        classifier, sess = image_dl_estimator(from_logits=True)
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-            true_class = np.argmax(y_test_mnist, axis=1)
+        true_class = np.argmax(y_test_mnist, axis=1)
 
-            predictions = classifier.predict(x_test_mnist)
-            prediction_class = np.argmax(predictions, axis=1)
-            pre_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
+        predictions = classifier.predict(x_test_mnist)
+        prediction_class = np.argmax(predictions, axis=1)
+        pre_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-            assert pre_fit_accuracy == pytest.approx(0.32, abs=0.01)
+        assert pre_fit_accuracy == pytest.approx(0.32, abs=0.01)
 
-            data_gen = image_data_generator(sess=sess)
-            classifier.fit_generator(generator=data_gen, nb_epochs=2)
-            predictions = classifier.predict(x_test_mnist)
-            prediction_class = np.argmax(predictions, axis=1)
-            post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
+        data_gen = image_data_generator(sess=sess)
+        classifier.fit_generator(generator=data_gen, nb_epochs=2)
+        predictions = classifier.predict(x_test_mnist)
+        prediction_class = np.argmax(predictions, axis=1)
+        post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-            assert post_fit_accuracy == pytest.approx(0.75, abs=0.08)
-
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+        np.testing.assert_array_almost_equal(post_fit_accuracy, 0.68, decimal=0.06)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_loss_gradient(
-    framework,
-    is_tf_version_2,
-    get_default_mnist_subset,
-    image_dl_estimator,
-    expected_values,
-    mnist_shape,
-    store_expected_values,
+        framework,
+        is_tf_version_2,
+        get_default_mnist_subset,
+        image_dl_estimator,
+        expected_values,
+        mnist_shape,
+        store_expected_values,
 ):
-    if framework == "keras" and is_keras_2_3() is False:
-        # Keras 2.2 does not support creating classifiers with logits=True so skipping this test d
-        return
+    try:
+        if framework == "keras" and is_keras_2_3() is False:
+            # Keras 2.2 does not support creating classifiers with logits=True so skipping this test d
+            return
 
-    (expected_gradients_1, expected_gradients_2) = expected_values()
+        (expected_gradients_1, expected_gradients_2) = expected_values()
 
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        classifier, _ = image_dl_estimator(from_logits=True)
 
-    if classifier is not None:
         gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
 
         assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
@@ -319,90 +322,87 @@ def test_loss_gradient(
         np.testing.assert_array_almost_equal(
             sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
         )
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_nb_classes(image_dl_estimator):
     try:
-        classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
-        if classifier is not None:
-            assert classifier.nb_classes == 10
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+        classifier, _ = image_dl_estimator(from_logits=True)
+        assert classifier.nb_classes == 10
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_input_shape(image_dl_estimator, mnist_shape):
     try:
-        classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
-        if classifier is not None:
-            assert classifier.input_shape == mnist_shape
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+        classifier, _ = image_dl_estimator(from_logits=True)
+        assert classifier.input_shape == mnist_shape
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_save(image_dl_estimator):
     try:
-        classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
-        if classifier is not None:
-            t_file = tempfile.NamedTemporaryFile()
-            model_path = t_file.name
-            t_file.close()
-            filename = "model_to_save"
-            classifier.save(filename, path=model_path)
+        classifier, _ = image_dl_estimator(from_logits=True)
+        t_file = tempfile.NamedTemporaryFile()
+        model_path = t_file.name
+        t_file.close()
+        filename = "model_to_save"
+        classifier.save(filename, path=model_path)
 
-            assert path.exists(model_path)
+        assert path.exists(model_path)
 
-            created_model = False
+        created_model = False
 
-            for file in listdir(model_path):
-                if filename in file:
-                    created_model = True
-            assert created_model
+        for file in listdir(model_path):
+            if filename in file:
+                created_model = True
+        assert created_model
 
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_repr(image_dl_estimator, framework, expected_values, store_expected_values):
     try:
-        classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
-        if classifier is not None:
+        classifier, _ = image_dl_estimator(from_logits=True)
+        repr_ = repr(classifier)
+        for message in expected_values():
+            assert message in repr_, "{0}: was not contained within repr".format(message)
 
-            repr_ = repr(classifier)
-            for message in expected_values():
-                assert message in repr_, "{0}: was not contained within repr".format(message)
-
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+    except ARTTestException as e:
+        add_warning(e)
 
 
+@pytest.mark.skipMlFramework("tensorflow")
 def test_save(image_dl_estimator, get_default_mnist_subset, tmp_path):
     try:
-        classifier, _ = image_dl_estimator(one_classifier=True)
-        if classifier is not None:
-            (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
-            classifier.fit(x_train_mnist, y_train_mnist, batch_size=128, nb_epochs=2)
-            full_path = tmp_path / "sub"
-            full_path.mkdir()
+        classifier, _ = image_dl_estimator()
+        (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
+        classifier.fit(x_train_mnist, y_train_mnist, batch_size=128, nb_epochs=2)
+        full_path = tmp_path / "sub"
+        full_path.mkdir()
 
-            assert not os.listdir(full_path._str)
-            classifier.save("modelFile", path=full_path._str)
-            assert os.listdir(full_path._str)
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+        assert not os.listdir(full_path._str)
+        classifier.save("modelFile", path=full_path._str)
+        assert os.listdir(full_path._str)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 @pytest.mark.skipMlFramework("mxnet")
 def test_class_gradient(
-    framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
+        framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
 ):
-    if framework == "keras" and is_keras_2_3() is False:
-        # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
-        return
+    try:
+        if framework == "keras" and is_keras_2_3() is False:
+            # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
+            return
 
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
-    if classifier is not None:
+        classifier, _ = image_dl_estimator(from_logits=True)
 
         (
             grad_1_all_labels,
@@ -482,16 +482,18 @@ def test_class_gradient(
         np.testing.assert_array_almost_equal(
             sub_gradients6, grad_2_labelArray[0], decimal=4,
         )
+    except ARTTestException as e:
+        add_warning(e)
 
 
+@pytest.mark.skipMlFramework("tensorflow")
 def test_learning_phase(image_dl_estimator):
     try:
-        classifier, _ = image_dl_estimator(one_classifier=True)
-        if classifier is not None:
-            classifier.set_learning_phase(False)
-            assert classifier.learning_phase is False
-            classifier.set_learning_phase(True)
-            assert classifier.learning_phase
-            assert hasattr(classifier, "_learning_phase")
-    except NotImplementedError as e:
-        warnings.warn(UserWarning(e))
+        classifier, _ = image_dl_estimator()
+        classifier.set_learning_phase(False)
+        assert classifier.learning_phase is False
+        classifier.set_learning_phase(True)
+        assert classifier.learning_phase
+        assert hasattr(classifier, "_learning_phase")
+    except ARTTestException as e:
+        add_warning(e)
