@@ -27,6 +27,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -57,34 +58,37 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     x_train_infer_from_noisy = attack.infer(x_noisy, y=y_train_mnist[:10])
 
     diff_noisy = np.mean(np.reshape(np.abs(x_original - x_noisy), (len(x_original), -1)), axis=1)
-    diff_inferred = np.mean(np.reshape(np.abs(x_original - x_train_infer_from_noisy), (len(x_original), -1)), axis=1)
+    diff_inferred = np.mean(np.reshape(np.abs(x_original - x_train_infer_from_noisy), (len(x_original), -1)),
+                            axis=1)
 
     np.testing.assert_array_less(diff_noisy, diff_inferred)
 
 
-@pytest.mark.skipMlFramework("pytorch")
+@pytest.mark.framework_agnostic
 def test_miface(fix_get_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(MIFace)
-    # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+    try:
+        classifier = image_dl_estimator_for_attack(MIFace)
 
-    # for the one-shot method, frame saliency attack should resort to plain FastGradientMethod
-    # expected_values = {
-    #     "x_test_mean": ExpectedValue(0.2346725, 0.002),
-    #     "x_test_min": ExpectedValue(-1.0, 0.00001),
-    #     "x_test_max": ExpectedValue(1.0, 0.00001),
-    #     "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 4, 4, 7, 7, 4, 7, 2, 2, 3, 0]), 2),
-    # }
+        # for the one-shot method, frame saliency attack should resort to plain FastGradientMethod
+        # expected_values = {
+        #     "x_test_mean": ExpectedValue(0.2346725, 0.002),
+        #     "x_test_min": ExpectedValue(-1.0, 0.00001),
+        #     "x_test_max": ExpectedValue(1.0, 0.00001),
+        #     "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 4, 4, 7, 7, 4, 7, 2, 2, 3, 0]), 2),
+        # }
 
-    for classifier in classifier_list:
         attack = MIFace(classifier, max_iter=150, batch_size=3)
         backend_check_inferred_values(attack, fix_get_mnist_subset, classifier)
+    except ARTTestException as e:
+        add_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(MIFace, (BaseEstimator, ClassifierMixin, ClassGradientsMixin))
+    try:
+        backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassGradientsMixin])
+    except ARTTestException as e:
+        add_warning(e)
 
 
 if __name__ == "__main__":

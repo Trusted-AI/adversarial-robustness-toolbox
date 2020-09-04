@@ -25,6 +25,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -37,15 +38,11 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.only_with_platform("tensorflow")
+@pytest.mark.framework_agnostic
 def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(SquareAttack)
+    try:
+        classifier = image_dl_estimator_for_attack(SquareAttack)
 
-    if classifier_list is None:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
-
-    for classifier in classifier_list:
         attack = SquareAttack(estimator=classifier, norm=np.inf, max_iter=5, eps=0.3, p_init=0.8, nb_restarts=1)
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
@@ -54,11 +51,13 @@ def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
 
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.053533513, abs=0.015)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
+    except ARTTestException as e:
+        add_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(SquareAttack, [BaseEstimator, ClassifierMixin])
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
+    try:
+        backend_test_classifier_type_check_fail(SquareAttack, [BaseEstimator, ClassifierMixin])
+    except ARTTestException as e:
+        add_warning(e)
