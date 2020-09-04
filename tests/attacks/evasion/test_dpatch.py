@@ -25,6 +25,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import master_seed
+from tests.utils import add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -39,132 +40,109 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 @pytest.mark.parametrize("random_location", [True, False])
 @pytest.mark.parametrize("image_format", ["NHWC", "NCHW"])
+@pytest.mark.framework_agnostic
 def test_augment_images_with_patch(random_location, image_format, fix_get_mnist_subset):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+    try:
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    master_seed()
+        # TODO this master_seed should be removed as it is already set in conftest.py. expected values will
+        # need to be updated accordingly
+        master_seed()
 
-    if image_format == "NHWC":
-        patch = np.ones(shape=(4, 4, 1)) * 0.5
-        x = x_train_mnist[0:3]
-        channels_first = False
-    elif image_format == "NCHW":
-        patch = np.ones(shape=(1, 4, 4)) * 0.5
-        x = np.transpose(x_train_mnist[0:3], (0, 3, 1, 2))
-        channels_first = True
+        if image_format == "NHWC":
+            patch = np.ones(shape=(4, 4, 1)) * 0.5
+            x = x_train_mnist[0:3]
+            channels_first = False
+        elif image_format == "NCHW":
+            patch = np.ones(shape=(1, 4, 4)) * 0.5
+            x = np.transpose(x_train_mnist[0:3], (0, 3, 1, 2))
+            channels_first = True
 
-    patched_images, transformations = DPatch._augment_images_with_patch(
-        x=x, patch=patch, random_location=random_location, channels_first=channels_first
-    )
+        patched_images, transformations = DPatch._augment_images_with_patch(
+            x=x, patch=patch, random_location=random_location, channels_first=channels_first
+        )
 
-    if random_location:
-        transformation_expected = {"i_x_1": 0, "i_y_1": 2, "i_x_2": 4, "i_y_2": 6}
-        patched_images_column = [
-            0.0,
-            0.0,
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ]
-    else:
-        transformation_expected = {"i_x_1": 0, "i_y_1": 0, "i_x_2": 4, "i_y_2": 4}
-        patched_images_column = [
-            0.5,
-            0.5,
-            0.5,
-            0.5,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-        ]
+        if random_location:
+            transformation_expected = {"i_x_1": 0, "i_y_1": 2, "i_x_2": 4, "i_y_2": 6}
+            patched_images_column = [
+                0.0,
+                0.0,
+                0.5,
+                0.5,
+                0.5,
+                0.5,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ]
+        else:
+            transformation_expected = {"i_x_1": 0, "i_y_1": 0, "i_x_2": 4, "i_y_2": 4}
+            patched_images_column = [
+                0.5,
+                0.5,
+                0.5,
+                0.5,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+                0.0,
+            ]
 
-    assert transformations[1] == transformation_expected
+        assert transformations[1] == transformation_expected
 
-    if image_format == "NCHW":
-        patched_images = np.transpose(patched_images, (0, 2, 3, 1))
+        if image_format == "NCHW":
+            patched_images = np.transpose(patched_images, (0, 2, 3, 1))
 
-    np.testing.assert_array_equal(patched_images[1, 2, :, 0], patched_images_column)
-
-
-def test_exceptions(get_default_mnist_subset, image_dl_estimator):
-    class ObjectDetector(BaseEstimator, LossGradientsMixin, ObjectDetectorMixin):
-
-        clip_values = (0, 1)
-        channels_first = False
-
-        def fit(self):
-            pass
-
-        def loss_gradient(self, x, y, **kwargs):
-            pass
-
-        def predict(self, x, **kwargs):
-            pass
-
-    estimator = ObjectDetector()
-
-    (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
-
-    attack = DPatch(estimator=estimator, patch_shape=(4, 4, 1), learning_rate=5.0, max_iter=5, batch_size=16,)
-
-    with pytest.raises(ValueError, match="The DPatch attack does not use target labels."):
-        attack.generate(x=x_train_mnist, y=y_train_mnist)
-
-    with pytest.raises(
-        ValueError, match="The target_label as list of integers needs to of length number of images in" " `x`."
-    ):
-        attack.generate(x=x_train_mnist, y=None, target_label=[1, 2, 3])
-
-    with pytest.raises(ValueError, match="The target_label has to be a 1-dimensional array."):
-        attack.generate(x=x_train_mnist, y=None, target_label=np.asarray([[1, 2, 3], [4, 5, 6]]))
+        np.testing.assert_array_equal(patched_images[1, 2, :, 0], patched_images_column)
+    except ARTTestException as e:
+        add_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(DPatch, [BaseEstimator, LossGradientsMixin, ObjectDetectorMixin])
+    try:
+        backend_test_classifier_type_check_fail(DPatch, [BaseEstimator, LossGradientsMixin, ObjectDetectorMixin])
+    except ARTTestException as e:
+        add_warning(e)
 
 
 if __name__ == "__main__":
