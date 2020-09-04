@@ -112,10 +112,10 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
     def test_all(self):
         # Only import if deep speech module is available
-        from art.estimators.speed_recognition.pytorch_deep_speech import PyTorchDeepSpeech
+        from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Define deep speech estimator
-        self.speed_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech')
+        self.speech_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech')
 
         # All tests
         self._test_predict()
@@ -128,10 +128,10 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
     )
     def test_all_amp(self):
         # Only import if deep speech module is available
-        from art.estimators.speed_recognition.pytorch_deep_speech import PyTorchDeepSpeech
+        from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Define deep speech estimator
-        self.speed_recognizer_amp = PyTorchDeepSpeech(pretrained_model='librispeech', device_type='gpu', use_amp=True)
+        self.speech_recognizer_amp = PyTorchDeepSpeech(pretrained_model='librispeech', device_type='gpu', use_amp=True)
 
         # All tests
         self._test_predict(use_amp=True)
@@ -141,9 +141,9 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
     def _test_predict(self, use_amp=False):
         # Test probability outputs
         if use_amp:
-            probs, sizes = self.speed_recognizer_amp.predict(self.x, batch_size=2)
+            probs, sizes = self.speech_recognizer_amp.predict(self.x, batch_size=2)
         else:
-            probs, sizes = self.speed_recognizer.predict(self.x, batch_size=2)
+            probs, sizes = self.speech_recognizer.predict(self.x, batch_size=2)
 
         expected_sizes = np.asarray([5, 5, 5])
         np.testing.assert_array_almost_equal(sizes, expected_sizes)
@@ -185,9 +185,9 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
         # Test transcription outputs
         if use_amp:
-            transcriptions = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+            transcriptions = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
         else:
-            transcriptions = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+            transcriptions = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
         expected_transcriptions = np.array(['', '', ''])
         self.assertTrue((expected_transcriptions == transcriptions).all())
@@ -198,9 +198,9 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
         # Compute gradients
         if use_amp:
-            grads = self.speed_recognizer_amp.loss_gradient(self.x, y)
+            grads = self.speech_recognizer_amp.loss_gradient(self.x, y)
         else:
-            grads = self.speed_recognizer.loss_gradient(self.x, y)
+            grads = self.speech_recognizer.loss_gradient(self.x, y)
 
         self.assertTrue(grads[0].shape == (1300,))
         self.assertTrue(grads[1].shape == (1500,))
@@ -371,23 +371,23 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
         if use_amp:
             # Before train
-            transcriptions1 = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+            transcriptions1 = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
             # Train the estimator
-            self.speed_recognizer_amp.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
+            self.speech_recognizer_amp.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
 
             # After train
-            transcriptions2 = self.speed_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+            transcriptions2 = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
         else:
             # Before train
-            transcriptions1 = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+            transcriptions1 = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
             # Train the estimator
-            self.speed_recognizer.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
+            self.speech_recognizer.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
 
             # After train
-            transcriptions2 = self.speed_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+            transcriptions2 = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
         self.assertFalse((transcriptions1 == transcriptions2).all())
 

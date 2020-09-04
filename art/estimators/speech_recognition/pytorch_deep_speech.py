@@ -26,7 +26,7 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.speed_recognition.speed_recognizer import SpeedRecognizerMixin
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.pytorch import PyTorchEstimator
 from art.utils import get_file
 from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
@@ -43,9 +43,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
+class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
     """
-    This class implements a model-specific automatic speed recognizer using the end-to-end speech recognizer
+    This class implements a model-specific automatic speech recognizer using the end-to-end speech recognizer
     DeepSpeech and PyTorch.
 
     | Paper link: https://arxiv.org/abs/1512.02595
@@ -151,7 +151,7 @@ class PyTorchDeepSpeech(SpeedRecognizerMixin, PyTorchEstimator):
                 )
             elif pretrained_model is None:
                 # If model is None and no pretrained model is selected, then we need to have parameters filename and
-                # url to download, extract and load the automatic speed recognition model
+                # url to download, extract and load the automatic speech recognition model
                 if filename is None or url is None:
                     filename, url = (
                         "librispeech_pretrained_v2.pth",

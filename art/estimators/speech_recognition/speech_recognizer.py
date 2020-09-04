@@ -16,13 +16,13 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements mixin abstract base class for all speed recognizers in ART.
+This module implements mixin abstract base class for all speech recognizers in ART.
 """
 
 from abc import ABC
 
 
-class SpeedRecognizerMixin(ABC):
+class SpeechRecognizerMixin(ABC):
     """
-    Mix-in Base class for ART speed recognizers.
+    Mix-in Base class for ART speech recognizers.
     """
