@@ -110,7 +110,6 @@ def test_jpeg_compress(art_warning, image_batch, channels_first):
     try:
         test_input, test_output = image_batch
         jpeg_compression = JpegCompression(clip_values=(0, 255))
-
         image_mode = "RGB" if test_input.shape[-1] == 3 else "L"
         test_single_input = np.squeeze(test_input[0]).astype(np.uint8)
         test_single_output = np.squeeze(test_output[0]).astype(np.uint8)
