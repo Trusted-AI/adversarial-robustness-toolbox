@@ -23,6 +23,7 @@ from art.attacks.evasion import FeatureAdversaries
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -36,24 +37,27 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skipMlFramework("pytorch")
+@pytest.mark.framework_agnostic
 def test_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(FeatureAdversaries)
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+    try:
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+        classifier = image_dl_estimator_for_attack(FeatureAdversaries)
 
-    for classifier in classifier_list:
         attack = FeatureAdversaries(classifier, delta=0.2, layer=1, batch_size=32)
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:3], maxiter=1)
         assert np.mean(x_train_mnist[0:3]) == pytest.approx(0.13015706282513004, 0.01)
         assert np.mean(x_train_mnist_adv) == pytest.approx(0.1592448561261751, 0.01)
+    except ARTTestException as e:
+        add_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(FeatureAdversaries, [BaseEstimator, NeuralNetworkMixin])
+    try:
+        backend_test_classifier_type_check_fail(FeatureAdversaries, [BaseEstimator, NeuralNetworkMixin])
+    except ARTTestException as e:
+        add_warning(e)
 
 
 if __name__ == "__main__":
