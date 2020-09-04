@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 from scipy.stats import truncnorm
@@ -63,7 +63,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
     def __init__(
         self,
         estimator: ClassifierGradients,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -76,7 +76,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         Create a :class:`.ProjectedGradientDescentCommon` instance.
 
         :param estimator: A trained classifier.
-        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -202,41 +202,32 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        max_iter=100,
-        targeted=False,
-        num_random_init=0,
-        batch_size=32,
-        random_eps=False,
-    ):
+        estimator: ClassifierGradients,
+        norm: Union[int, float, str] = np.inf,
+        eps: float = 0.3,
+        eps_step: float = 0.1,
+        max_iter: int = 100,
+        targeted: bool = False,
+        num_random_init: int = 0,
+        batch_size: int = 32,
+        random_eps: bool = False,
+    ) -> None:
         """
         Create a :class:`.ProjectedGradientDescentNumpy` instance.
 
         :param estimator: An trained estimator.
-        :type estimator: :class:`.BaseEstimator`
-        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
-        :type norm: `int`
+        :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
                            suggests this for FGSM based training to generalize across different epsilons. eps_step
                            is modified to preserve the ratio of eps / eps_step. The effectiveness of this method with
                            PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
-        :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
-        :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
         super(ProjectedGradientDescentNumpy, self).__init__(
             estimator=estimator,

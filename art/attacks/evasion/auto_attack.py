@@ -53,7 +53,7 @@ class AutoAttack(EvasionAttack):
     def __init__(
         self,
         estimator: ClassifierGradients,
-        norm: Union[int, float] = np.inf,
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         attacks: Optional[List[EvasionAttack]] = None,
@@ -65,7 +65,7 @@ class AutoAttack(EvasionAttack):
         Create a :class:`.ProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param attacks: The list of `art.attacks.EvasionAttack` attacks to be used for AutoAttack. If it is `None` or
@@ -206,8 +206,9 @@ class AutoAttack(EvasionAttack):
 
         # Check and update successful examples
         rel_acc = 1e-4
+        order = np.inf if self.norm == "inf" else self.norm
         norm_is_smaller_eps = (1 - rel_acc) * np.linalg.norm(
-            (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm
+            (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=order
         ) <= self.eps
 
         if attack.targeted:
@@ -227,8 +228,8 @@ class AutoAttack(EvasionAttack):
         return x, sample_is_robust
 
     def _check_params(self) -> None:
-        if self.norm not in [1, 2, np.inf]:
-            raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError("The argument norm has to be either 1, 2, np.inf, \"inf\".")
 
         if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
             raise ValueError("The argument eps has to be either of type int or float and larger than zero.")
