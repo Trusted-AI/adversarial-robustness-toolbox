@@ -83,7 +83,7 @@ class UniversalPerturbation(EvasionAttack):
         delta: float = 0.2,
         max_iter: int = 20,
         eps: float = 10.0,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
         batch_size: int = 32,
     ) -> None:
         """
@@ -95,7 +95,7 @@ class UniversalPerturbation(EvasionAttack):
         :param delta: desired accuracy
         :param max_iter: The maximum number of iterations for computing universal perturbation.
         :param eps: Attack step size (input variation).
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 2.
         :param batch_size: Batch size for model evaluations in UniversalPerturbation.
         """
         super(UniversalPerturbation, self).__init__(estimator=classifier)

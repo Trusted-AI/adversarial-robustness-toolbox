@@ -162,13 +162,13 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
-def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.ndarray:
+def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -> np.ndarray:
     """
     Project `values` on the L_p norm ball of size `eps`.
 
     :param values: Array of perturbations to clip.
     :param eps: Maximum norm allowed.
-    :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+    :param norm_p: L_p norm to use for clipping. Only 1, 2, `np.Inf` and "inf" supported for now.
     :return: Values of `values` after projection.
     """
     # Pick a small scalar to avoid division by 0
@@ -183,23 +183,24 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.
         values_tmp = values_tmp * np.expand_dims(
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
         )
-    elif norm_p == np.inf:
+    elif norm_p in [np.inf, "inf"]:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
-        raise NotImplementedError("Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
+        raise NotImplementedError("Values of `norm_p` different from 1, 2, `np.inf` and \"inf\" are currently not "
+                                  "supported.")
 
     values = values_tmp.reshape(values.shape)
     return values
 
 
-def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, float]) -> np.ndarray:
+def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, float, str]) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
 
     :param nb_points: Number of random data points.
     :param nb_dims: Dimensionality of the sphere.
     :param radius: Radius of the sphere.
-    :param norm: Current support: 1, 2, np.inf.
+    :param norm: Current support: 1, 2, np.inf, "inf".
     :return: The generated random sphere.
     """
     if norm == 1:
@@ -215,7 +216,7 @@ def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, 
         s_2 = np.sum(a_tmp ** 2, axis=1)
         base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
         res = a_tmp * (np.tile(base, (nb_dims, 1))).T
-    elif norm == np.inf:
+    elif norm in [np.inf, "inf"]:
         res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))

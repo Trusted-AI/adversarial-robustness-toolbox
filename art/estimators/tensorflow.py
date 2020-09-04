@@ -19,15 +19,17 @@
 This module implements the abstract estimators `TensorFlowEstimator` and `TensorFlowV2Estimator` for TensorFlow models.
 """
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Tuple
 
 import numpy as np
 
+from art.utils import ART_NUMPY_DTYPE
 from art.estimators.estimator import (
     BaseEstimator,
     LossGradientsMixin,
     NeuralNetworkMixin,
 )
+from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
     from tensorflow.python.client.session import Session
@@ -145,3 +147,126 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
+
+    def _apply_preprocessing_defences(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
+        """
+        Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
+        only be called from function `_apply_preprocessing`.
+
+        The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing_defences().
+        It requires all defenses to have a method `forward()`.
+        It converts numpy arrays to TensorFlow tensors first, then chains a series of defenses by calling
+        defence.forward() which contains TensorFlow operations. At the end, it converts TensorFlow tensors
+        back to numpy arrays.
+
+        :param x: Samples.
+        :type x: Format as expected by the `model`
+        :param y: Target values.
+        :type y: Format as expected by the `model`
+        :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
+                    predict operation.
+        :return: Tuple of `x` and `y` after applying the defences and standardisation.
+        :rtype: Format as expected by the `model`
+        """
+        import tensorflow as tf
+
+        if (
+            not hasattr(self, "preprocessing_defences")
+            or self.preprocessing_defences is None
+            or len(self.preprocessing_defences) == 0
+        ):
+            return x, y
+
+        if len(self.preprocessing_defences) == 1:
+            # Compatible with non-TensorFlow defences if no chaining.
+            defence = self.preprocessing_defences[0]
+            x, y = defence(x, y)
+        else:
+            # Check if all defences are implemented in TensorFlow.
+            for defence in self.preprocessing_defences:
+                if not isinstance(defence, PreprocessorTensorFlowV2):
+                    raise NotImplementedError(f"{defence.__class__} is not TensorFlow-specific.")
+
+            # Convert np arrays to torch tensors.
+            x = tf.convert_to_tensor(x)
+            if y is not None:
+                y = tf.convert_to_tensor(y)
+
+            for defence in self.preprocessing_defences:
+                if fit:
+                    if defence.apply_fit:
+                        x, y = defence.forward(x, y)
+                else:
+                    if defence.apply_predict:
+                        x, y = defence.forward(x, y)
+
+            # Convert torch tensors back to np arrays.
+            x = x.numpy()
+            if y is not None:
+                y = y.numpy()
+
+        return x, y
+
+    def _apply_preprocessing_defences_gradient(self, x, gradients, fit=False):
+        """
+        Apply the backward pass to the gradients through all preprocessing defences that have been applied to `x`
+        and `y` in the forward pass. This function is should only be called from function
+        `_apply_preprocessing_gradient`.
+
+        The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_defences_gradient().
+        It requires all defenses to have a method estimate_forward().
+        It converts numpy arrays to TensorFlow tensors first, then chains a series of defenses by calling
+        defence.estimate_forward() which contains differentiable estimate of the operations. At the end,
+        it converts TensorFlow tensors back to numpy arrays.
+
+        :param x: Samples.
+        :type x: Format as expected by the `model`
+        :param gradients: Gradients before backward pass through preprocessing defences.
+        :type gradients: Format as expected by the `model`
+        :param fit: `True` if the gradients are computed during training.
+        :return: Gradients after backward pass through preprocessing defences.
+        :rtype: Format as expected by the `model`
+        """
+        import tensorflow as tf
+
+        if (
+            not hasattr(self, "preprocessing_defences")
+            or self.preprocessing_defences is None
+            or len(self.preprocessing_defences) == 0
+        ):
+            return gradients
+
+        if len(self.preprocessing_defences) == 1:
+            # Compatible with non-TensorFlow defences if no chaining.
+            defence = self.preprocessing_defences[0]
+            gradients = defence.estimate_gradient(x, gradients)
+        else:
+            # Check if all defences are implemented in TensorFlow.
+            for defence in self.preprocessing_defences:
+                if not isinstance(defence, PreprocessorTensorFlowV2):
+                    raise NotImplementedError(f"{defence.__class__} is not TensorFlowV2-specific.")
+
+            with tf.GradientTape() as tape:
+                # Convert np arrays to TensorFlow tensors.
+                x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
+                tape.watch(x)
+                gradients = tf.convert_to_tensor(gradients, dtype=ART_NUMPY_DTYPE)
+                x_orig = x
+
+                for defence in self.preprocessing_defences:
+                    if fit:
+                        if defence.apply_fit:
+                            x = defence.estimate_forward(x)
+                    else:
+                        if defence.apply_predict:
+                            x = defence.estimate_forward(x)
+
+            x_grad = tape.gradient(target=x, sources=x_orig, output_gradients=gradients)
+
+            # Convert torch tensors back to np arrays.
+            gradients = x_grad.numpy()
+            if gradients.shape != x_orig.shape:
+                raise ValueError(
+                    "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
+                )
+        return gradients
