@@ -84,6 +84,12 @@ class MembershipInferenceBlackBox(InferenceAttack):
         depending on the type of model and provided configuration.
     """
 
+    attack_params = InferenceAttack.attack_params + [
+        "input_type",
+        "attack_model_type",
+        "attack_model",
+    ]
+    
     _estimator_requirements = [BaseEstimator, ClassifierMixin]
 
     def __init__(
@@ -105,11 +111,6 @@ class MembershipInferenceBlackBox(InferenceAttack):
                            of the model.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         """
-        attack_params = InferenceAttack.attack_params + [
-            "input_type",
-            "attack_model_type",
-            "attack_model",
-        ]
 
         super(MembershipInferenceBlackBox, self).__init__(estimator=classifier)
         self.input_type = input_type
