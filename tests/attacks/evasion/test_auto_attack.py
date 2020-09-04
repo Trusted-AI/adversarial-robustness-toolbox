@@ -27,6 +27,7 @@ from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
+from tests.utils import add_warning, ARTTestException
 from tests.utils import get_image_classifier_tf
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
@@ -41,101 +42,110 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_generate_default(fix_get_mnist_subset):
+@pytest.mark.framework_agnostic
+def test_generate_default(fix_get_mnist_subset, image_dl_estimator):
+    try:
+        classifier, _ = image_dl_estimator(from_logits=True)
 
-    classifier, _ = get_image_classifier_tf(from_logits=True)
-
-    attack = AutoAttack(
-        estimator=classifier, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, batch_size=32, estimator_orig=None,
-    )
-
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
-    x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
-
-    assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0292, abs=0.105)
-    assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_generate_attacks_and_targeted(fix_get_mnist_subset):
-
-    classifier, _ = get_image_classifier_tf(from_logits=True)
-    norm = np.inf
-    eps = 0.3
-    eps_step = 0.1
-    batch_size = 32
-
-    attacks = list()
-    attacks.append(
-        AutoProjectedGradientDescent(
-            estimator=classifier,
-            norm=norm,
-            eps=eps,
-            eps_step=eps_step,
-            max_iter=100,
-            targeted=True,
-            nb_random_init=5,
-            batch_size=batch_size,
-            loss_type="cross_entropy",
+        attack = AutoAttack(
+            estimator=classifier, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, batch_size=32, estimator_orig=None,
         )
-    )
-    attacks.append(
-        AutoProjectedGradientDescent(
+
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0292, abs=0.105)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
+    except ARTTestException as e:
+        add_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_generate_attacks_and_targeted(fix_get_mnist_subset, image_dl_estimator):
+    try:
+        classifier, _ = image_dl_estimator(from_logits=True)
+
+        norm = np.inf
+        eps = 0.3
+        eps_step = 0.1
+        batch_size = 32
+
+        attacks = list()
+        attacks.append(
+            AutoProjectedGradientDescent(
+                estimator=classifier,
+                norm=norm,
+                eps=eps,
+                eps_step=eps_step,
+                max_iter=100,
+                targeted=True,
+                nb_random_init=5,
+                batch_size=batch_size,
+                loss_type="cross_entropy",
+            )
+        )
+        attacks.append(
+            AutoProjectedGradientDescent(
+                estimator=classifier,
+                norm=norm,
+                eps=eps,
+                eps_step=eps_step,
+                max_iter=100,
+                targeted=False,
+                nb_random_init=5,
+                batch_size=batch_size,
+                loss_type="difference_logits_ratio",
+            )
+        )
+        attacks.append(DeepFool(classifier=classifier, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size))
+        attacks.append(SquareAttack(estimator=classifier, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5))
+
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+        # First test with defined_attack_only=False
+        attack = AutoAttack(
             estimator=classifier,
             norm=norm,
             eps=eps,
             eps_step=eps_step,
-            max_iter=100,
+            attacks=attacks,
+            batch_size=batch_size,
+            estimator_orig=None,
             targeted=False,
-            nb_random_init=5,
-            batch_size=batch_size,
-            loss_type="difference_logits_ratio",
         )
-    )
-    attacks.append(DeepFool(classifier=classifier, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size))
-    attacks.append(SquareAttack(estimator=classifier, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5))
 
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-    # First test with defined_attack_only=False
-    attack = AutoAttack(
-        estimator=classifier,
-        norm=norm,
-        eps=eps,
-        eps_step=eps_step,
-        attacks=attacks,
-        batch_size=batch_size,
-        estimator_orig=None,
-        targeted=False,
-    )
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0182, abs=0.105)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
 
-    x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+        # Then test with defined_attack_only=True
+        attack = AutoAttack(
+            estimator=classifier,
+            norm=norm,
+            eps=eps,
+            eps_step=eps_step,
+            attacks=attacks,
+            batch_size=batch_size,
+            estimator_orig=None,
+            targeted=True,
+        )
 
-    assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0182, abs=0.105)
-    assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-    # Then test with defined_attack_only=True
-    attack = AutoAttack(
-        estimator=classifier,
-        norm=norm,
-        eps=eps,
-        eps_step=eps_step,
-        attacks=attacks,
-        batch_size=batch_size,
-        estimator_orig=None,
-        targeted=True,
-    )
-
-    x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
-
-    assert np.mean(x_train_mnist_adv - x_train_mnist) == pytest.approx(0.0179, abs=0.0075)
-    assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(eps, abs=0.005)
+        assert np.mean(x_train_mnist_adv - x_train_mnist) == pytest.approx(0.0179, abs=0.0075)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(eps, abs=0.005)
+    except ARTTestException as e:
+        add_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(AutoAttack, [BaseEstimator, ClassifierMixin])
+    try:
+        backend_test_classifier_type_check_fail(AutoAttack, [BaseEstimator, ClassifierMixin])
+    except ARTTestException as e:
+        add_warning(e)
 
 
 if __name__ == "__main__":
