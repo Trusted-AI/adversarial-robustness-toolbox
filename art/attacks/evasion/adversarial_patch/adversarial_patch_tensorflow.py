@@ -147,10 +147,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         with tf.GradientTape() as tape:
             tape.watch(self._patch)
-            print('type(images)')
-            print(type(images))
-            print('type(target)')
-            print(type(target))
             loss = self._loss(images, target)
 
         gradients = tape.gradient(loss, [self._patch])
@@ -207,7 +203,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         image_mask = tf.stack([image_mask] * nb_images)
         return image_mask
 
-    def _random_overlay(self, images: Union[np.ndarray, tf.Tensor], patch: Union[np.ndarray, tf.Variable], scale: Optional[float] = None) -> tf.Tensor:
+    def _random_overlay(
+        self, images: Union[np.ndarray, tf.Tensor], patch: Union[np.ndarray, tf.Variable], scale: Optional[float] = None
+    ) -> tf.Tensor:
         import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
