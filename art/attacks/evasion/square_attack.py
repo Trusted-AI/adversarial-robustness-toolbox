@@ -308,7 +308,7 @@ class SquareAttack(EvasionAttack):
                         new_deltas_mask[
                             :, :, height_start : height_start + height_tile, width_start : width_start + height_tile
                         ] = 1.0
-                        W_1_norm = np.sqrt(
+                        w_1_norm = np.sqrt(
                             np.sum(
                                 delta_x_robust_init[
                                     :,
@@ -325,7 +325,7 @@ class SquareAttack(EvasionAttack):
                         new_deltas_mask[
                             :, height_start : height_start + height_tile, width_start : width_start + height_tile, :
                         ] = 1.0
-                        W_1_norm = np.sqrt(
+                        w_1_norm = np.sqrt(
                             np.sum(
                                 delta_x_robust_init[
                                     :,
@@ -359,7 +359,7 @@ class SquareAttack(EvasionAttack):
                         ] = 1.0
 
                     norms_x_robust = np.sqrt(np.sum((x_robust - x_init) ** 2, axis=(1, 2, 3), keepdims=True))
-                    W_norm = np.sqrt(
+                    w_norm = np.sqrt(
                         np.sum(
                             (delta_x_robust_init * np.maximum(new_deltas_mask, new_deltas_mask_2)) ** 2,
                             axis=(1, 2, 3),
@@ -385,18 +385,18 @@ class SquareAttack(EvasionAttack):
                     if self.estimator.channels_first:
                         delta_new += delta_x_robust_init[
                             :, :, height_start : height_start + height_tile, width_start : width_start + height_tile
-                        ] / (np.maximum(1e-9, W_1_norm))
+                        ] / (np.maximum(1e-9, w_1_norm))
                     else:
                         delta_new += delta_x_robust_init[
                             :, height_start : height_start + height_tile, width_start : width_start + height_tile, :
-                        ] / (np.maximum(1e-9, W_1_norm))
+                        ] / (np.maximum(1e-9, w_1_norm))
 
                     diff_norm = (self.eps * np.ones(delta_new.shape)) ** 2 - norms_x_robust ** 2
                     diff_norm[diff_norm < 0.0] = 0.0
 
                     if self.estimator.channels_first:
                         delta_new /= np.sqrt(np.sum(delta_new ** 2, axis=(2, 3), keepdims=True)) * np.sqrt(
-                            diff_norm / channels + W_norm ** 2
+                            diff_norm / channels + w_norm ** 2
                         )
                         delta_x_robust_init[
                             :,
@@ -409,7 +409,7 @@ class SquareAttack(EvasionAttack):
                         ] = delta_new
                     else:
                         delta_new /= np.sqrt(np.sum(delta_new ** 2, axis=(1, 2), keepdims=True)) * np.sqrt(
-                            diff_norm / channels + W_norm ** 2
+                            diff_norm / channels + w_norm ** 2
                         )
                         delta_x_robust_init[
                             :,
