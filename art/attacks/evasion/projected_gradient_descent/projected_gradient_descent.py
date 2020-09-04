@@ -73,7 +73,7 @@ class ProjectedGradientDescent(EvasionAttack):
     def __init__(
         self,
         estimator,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -86,7 +86,7 @@ class ProjectedGradientDescent(EvasionAttack):
         Create a :class:`.ProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -112,7 +112,7 @@ class ProjectedGradientDescent(EvasionAttack):
         ProjectedGradientDescent._check_params(self)
 
         no_preprocessing = self.estimator.preprocessing is None or (
-            np.all(self.estimator.preprocessing[0] == 0) and np.all(self.estimator.preprocessing[1] == 0)
+            np.all(self.estimator.preprocessing[0] == 0) and np.all(self.estimator.preprocessing[1] == 1)
         )
         no_defences = not self.estimator.preprocessing_defences and not self.estimator.postprocessing_defences
 
@@ -172,10 +172,14 @@ class ProjectedGradientDescent(EvasionAttack):
         logger.info("Creating adversarial samples.")
         return self._attack.generate(x=x, y=y, **kwargs)
 
+    def set_params(self, **kwargs) -> None:
+        super().set_params(**kwargs)
+        self._attack.set_params(**kwargs)
+
     def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
-        if self.norm not in [np.inf, int(1), int(2)]:
-            raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError("Norm order must be either 1, 2, `np.inf` or \"inf\".")
 
         if self.eps <= 0:
             raise ValueError("The perturbation size `eps` has to be positive.")
@@ -187,7 +191,7 @@ class ProjectedGradientDescent(EvasionAttack):
             raise ValueError("The flag `targeted` has to be of type bool.")
 
         if not isinstance(self.num_random_init, (int, np.int)):
-            raise TypeError("The number of random initialisations has to be of type integer")
+            raise TypeError("The number of random initialisations has to be of type integer.")
 
         if self.num_random_init < 0:
             raise ValueError("The number of random initialisations `random_init` has to be greater than or equal to 0.")
@@ -195,7 +199,7 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-        if self.eps_step > self.eps:
+        if self.norm in ["inf", np.inf] and self.eps_step > self.eps:
             raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         if self.max_iter <= 0:

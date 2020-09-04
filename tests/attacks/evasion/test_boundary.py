@@ -54,8 +54,8 @@ def test_tabular(get_tabular_classifier_list, framework, get_iris_dataset, clipp
 
 
 @pytest.mark.parametrize("targeted", [True, False])
-def test_images(fix_get_mnist_subset, get_image_classifier_list_for_attack, framework, targeted):
-    classifier_list = get_image_classifier_list_for_attack(BoundaryAttack)
+def test_images(fix_get_mnist_subset, image_dl_estimator_for_attack, framework, targeted):
+    classifier_list = image_dl_estimator_for_attack(BoundaryAttack)
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
         return

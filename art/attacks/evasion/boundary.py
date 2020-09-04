@@ -87,7 +87,7 @@ class BoundaryAttack(EvasionAttack):
         """
         super(BoundaryAttack, self).__init__(estimator=estimator)
 
-        self.targeted = targeted
+        self._targeted = targeted
         self.delta = delta
         self.epsilon = epsilon
         self.step_adapt = step_adapt

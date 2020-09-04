@@ -99,6 +99,16 @@ class TestPGD(TestBase):
 
         self._test_backend_mnist(classifier, x_train_mnist, self.y_train_mnist, x_test_mnist, self.y_test_mnist)
 
+        # Test with clip values of array type
+        classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0]), np.ones_like(x_test_mnist[0])))
+        self._test_backend_mnist(classifier, x_train_mnist, self.y_train_mnist, x_test_mnist, self.y_test_mnist)
+
+        classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0]), np.ones_like(x_test_mnist[0][0])))
+        self._test_backend_mnist(classifier, x_train_mnist, self.y_train_mnist, x_test_mnist, self.y_test_mnist)
+
+        classifier.set_params(clip_values=(np.zeros_like(x_test_mnist[0][0][0]), np.ones_like(x_test_mnist[0][0][0])))
+        self._test_backend_mnist(classifier, x_train_mnist, self.y_train_mnist, x_test_mnist, self.y_test_mnist)
+
     def _test_backend_mnist(self, classifier, x_train, y_train, x_test, y_test):
         x_test_original = x_test.copy()
 

@@ -65,6 +65,7 @@ class TestResample:
         with pytest.raises(ValueError, match=exc_msg):
             resample(test_input)
 
+    @pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn")
     def test_resample(self, audio_batch, mocker):
         test_input, test_output, sr_orig, sr_new = audio_batch
 

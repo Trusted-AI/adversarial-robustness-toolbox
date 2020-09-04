@@ -54,7 +54,7 @@ def backend_test_defended_images(attack, mnist_dataset):
 
     check_adverse_example_x(x_train_adv, x_train_mnist)
 
-    y_train_pred_adv = get_labels_np_array(attack.classifier.predict(x_train_adv))
+    y_train_pred_adv = get_labels_np_array(attack.estimator.predict(x_train_adv))
     y_train_labels = get_labels_np_array(y_train_mnist)
 
     check_adverse_predicted_sample_y(y_train_pred_adv, y_train_labels)
@@ -62,7 +62,7 @@ def backend_test_defended_images(attack, mnist_dataset):
     x_test_adv = attack.generate(x_test_mnist)
     check_adverse_example_x(x_test_adv, x_test_mnist)
 
-    y_test_pred_adv = get_labels_np_array(attack.classifier.predict(x_test_adv))
+    y_test_pred_adv = get_labels_np_array(attack.estimator.predict(x_test_adv))
     check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
 
 

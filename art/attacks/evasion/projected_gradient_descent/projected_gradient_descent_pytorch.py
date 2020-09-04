@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -54,7 +54,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
     def __init__(
         self,
         estimator,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -68,7 +68,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         :param estimator: An trained estimator.
         :type estimator: :class:`.BaseEstimator`
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -242,7 +242,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         grad = self.estimator.loss_gradient_framework(x, y) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
-        if self.norm == np.inf:
+        if self.norm in ["inf", np.inf]:
             grad = grad.sign()
 
         elif self.norm == 1:
@@ -275,7 +275,10 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
-            x = torch.clamp(x, clip_min, clip_max)
+            x = torch.max(
+                torch.min(x, torch.tensor(clip_max).to(self.estimator.device)),
+                torch.tensor(clip_min).to(self.estimator.device),
+            )
 
         return x
 
@@ -323,7 +326,10 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
             if self.estimator.clip_values is not None:
                 clip_min, clip_max = self.estimator.clip_values
-                x_adv = torch.clamp(x_adv, clip_min, clip_max)
+                x_adv = torch.max(
+                    torch.min(x_adv, torch.tensor(clip_max).to(self.estimator.device)),
+                    torch.tensor(clip_min).to(self.estimator.device),
+                )
 
         else:
             x_adv = x
@@ -342,13 +348,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x_adv
 
-    def _projection(self, values: "torch.Tensor", eps: float, norm_p: int) -> "torch.Tensor":
+    def _projection(self, values: "torch.Tensor", eps: float, norm_p: Union[int, float, str]) -> "torch.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
         :param values: Values to clip.
         :param eps: Maximum norm allowed.
-        :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
+        :param norm_p: L_p norm to use for clipping supporting 1, 2, `np.Inf` and "inf".
         :return: Values of `values` after projection.
         """
         import torch  # lgtm [py/repeated-import]
@@ -369,7 +375,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                 eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
             ).unsqueeze_(-1)
 
-        elif norm_p == np.inf:
+        elif norm_p in [np.inf, "inf"]:
             values_tmp = values_tmp.sign() * torch.min(
                 values_tmp.abs(), torch.tensor([eps], dtype=torch.float32).to(self.estimator.device)
             )

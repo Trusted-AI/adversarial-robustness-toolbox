@@ -38,7 +38,7 @@ from art.estimators.classification.classifier import (
     ClassifierGradients,
     ClassifierNeuralNetwork,
 )
-from art.utils import projection
+from art.utils import projection, get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
 
@@ -58,10 +58,11 @@ class UniversalPerturbation(EvasionAttack):
         "ead": "art.attacks.evasion.elastic_net.ElasticNet",
         "fgsm": "art.attacks.evasion.fast_gradient.FastGradientMethod",
         "bim": "art.attacks.evasion.iterative_method.BasicIterativeMethod",
-        "pgd": "art.attacks.evasion.projected_gradient_descent.ProjectedGradientDescent",
+        "pgd": "art.attacks.evasion.projected_gradient_descent.projected_gradient_descent.ProjectedGradientDescent",
         "newtonfool": "art.attacks.evasion.newtonfool.NewtonFool",
         "jsma": "art.attacks.evasion.saliency_map.SaliencyMapMethod",
         "vat": "art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod",
+        "simba": "art.attacks.evasion.simba.SimBA",
     }
     attack_params = EvasionAttack.attack_params + [
         "attacker",
@@ -70,6 +71,7 @@ class UniversalPerturbation(EvasionAttack):
         "max_iter",
         "eps",
         "norm",
+        "batch_size",
     ]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
 
@@ -81,18 +83,20 @@ class UniversalPerturbation(EvasionAttack):
         delta: float = 0.2,
         max_iter: int = 20,
         eps: float = 10.0,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
+        batch_size: int = 32,
     ) -> None:
         """
         :param classifier: A trained classifier.
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
-                         'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
+                         'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat', 'simba'.
         :param attacker_params: Parameters specific to the adversarial attack. If this parameter is not specified,
                                 the default parameters of the chosen attack will be used.
         :param delta: desired accuracy
         :param max_iter: The maximum number of iterations for computing universal perturbation.
         :param eps: Attack step size (input variation).
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 2.
+        :param batch_size: Batch size for model evaluations in UniversalPerturbation.
         """
         super(UniversalPerturbation, self).__init__(estimator=classifier)
         self.attacker = attacker
@@ -101,6 +105,7 @@ class UniversalPerturbation(EvasionAttack):
         self.max_iter = max_iter
         self.eps = eps
         self.norm = norm
+        self.batch_size = batch_size
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -113,19 +118,27 @@ class UniversalPerturbation(EvasionAttack):
         """
         logger.info("Computing universal perturbation based on %s attack.", self.attacker)
 
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+
+        if y is None:
+            # Use model predictions as true labels
+            logger.info("Using model predictions as true labels.")
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
+
+        y_index = np.argmax(y, axis=1)
+
         # Init universal perturbation
         noise = 0
         fooling_rate = 0.0
         nb_instances = len(x)
 
-        # Instantiate the middle attacker and get the predicted labels
+        # Instantiate the middle attacker
         attacker = self._get_attack(self.attacker, self.attacker_params)
-        pred_y = self.estimator.predict(x, batch_size=1)
-        pred_y_max = np.argmax(pred_y, axis=1)
 
         # Generate the adversarial examples
         nb_iter = 0
         pbar = tqdm(self.max_iter, desc="Universal perturbation")
+
         while fooling_rate < 1.0 - self.delta and nb_iter < self.max_iter:
             # Go through all the examples randomly
             rnd_idx = random.sample(range(nb_instances), nb_instances)
@@ -135,11 +148,11 @@ class UniversalPerturbation(EvasionAttack):
                 x_i = ex[None, ...]
 
                 current_label = np.argmax(self.estimator.predict(x_i + noise)[0])
-                original_label = np.argmax(pred_y[rnd_idx][j])
+                original_label = y_index[rnd_idx][j]
 
                 if current_label == original_label:
                     # Compute adversarial perturbation
-                    adv_xi = attacker.generate(x_i + noise)
+                    adv_xi = attacker.generate(x_i + noise, y=y[rnd_idx][[j]])
                     new_label = np.argmax(self.estimator.predict(adv_xi)[0])
 
                     # If the class has changed, update v
@@ -159,7 +172,7 @@ class UniversalPerturbation(EvasionAttack):
 
             # Compute the error rate
             y_adv = np.argmax(self.estimator.predict(x_adv, batch_size=1), axis=1)
-            fooling_rate = np.sum(pred_y_max != y_adv) / nb_instances
+            fooling_rate = np.sum(y_index != y_adv) / nb_instances
 
         pbar.close()
         self.fooling_rate = fooling_rate
@@ -178,6 +191,9 @@ class UniversalPerturbation(EvasionAttack):
 
         if not isinstance(self.eps, (float, int)) or self.eps <= 0:
             raise ValueError("The eps coefficient must be a positive float.")
+
+        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
+            raise ValueError("The batch_size must be a positive integer.")
 
     def _get_attack(self, a_name: str, params: Optional[Dict[str, Any]] = None) -> EvasionAttack:
         """

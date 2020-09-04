@@ -34,7 +34,7 @@ from art.estimators.classification.classifier import (
     ClassifierGradients,
 )
 from art.attacks.attack import EvasionAttack
-from art.utils import compute_success
+from art.utils import compute_success, is_probability
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +51,7 @@ class DeepFool(EvasionAttack):
         "epsilon",
         "nb_grads",
         "batch_size",
+        "verbose",
     ]
     _estimator_requirements = (ClassGradientsMixin,)
 
@@ -61,6 +62,7 @@ class DeepFool(EvasionAttack):
         epsilon: float = 1e-6,
         nb_grads: int = 10,
         batch_size: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         Create a DeepFool attack instance.
@@ -77,7 +79,14 @@ class DeepFool(EvasionAttack):
         self.epsilon = epsilon
         self.nb_grads = nb_grads
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
+        if self.estimator.clip_values is None:
+            logger.warning(
+                "The `clip_values` attribute of the estimator is `None`, therefore this instance of DeepFool will by "
+                "default generate adversarial perturbations scaled for input values in the range [0, 1] but not clip "
+                "the adversarial example."
+            )
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -89,6 +98,12 @@ class DeepFool(EvasionAttack):
         """
         x_adv = x.astype(ART_NUMPY_DTYPE)
         preds = self.estimator.predict(x, batch_size=self.batch_size)
+
+        if is_probability(preds[0]):
+            logger.warning(
+                "It seems that the attacked model is predicting probabilities. DeepFool expects logits as model output "
+                "to achieve its full attack strength."
+            )
 
         # Determine the class labels for which to compute the gradients
         use_grads_subset = self.nb_grads < self.estimator.nb_classes
@@ -104,9 +119,11 @@ class DeepFool(EvasionAttack):
         tol = 10e-8
 
         # Compute perturbation with implicit batching
-        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="DeepFool"):
+        for batch_id in trange(
+            int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="DeepFool", disable=not self.verbose
+        ):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-            batch = x_adv[batch_index_1:batch_index_2]
+            batch = x_adv[batch_index_1:batch_index_2].copy()
 
             # Get predictions and gradients for batch
             f_batch = preds[batch_index_1:batch_index_2]
@@ -143,7 +160,8 @@ class DeepFool(EvasionAttack):
                 # Add perturbation and clip result
                 if self.estimator.clip_values is not None:
                     batch[active_indices] = np.clip(
-                        batch[active_indices] + r_var[active_indices],
+                        batch[active_indices]
+                        + r_var[active_indices] * (self.estimator.clip_values[1] - self.estimator.clip_values[0]),
                         self.estimator.clip_values[0],
                         self.estimator.clip_values[1],
                     )

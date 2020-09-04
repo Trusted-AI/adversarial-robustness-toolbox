@@ -38,9 +38,8 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-
-    classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
+def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(ShadowAttack)
 
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -70,9 +69,8 @@ def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-
-    classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
+def test_get_regularisation_loss_gradients(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(ShadowAttack)
 
     for classifier in classifier_list:
 
