@@ -129,8 +129,8 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing_defences().
         It requires all defenses to have a method `forward()`.
-        It converts numpy arrays to PyTorch tensors first, then chains a series of defenses by calling
-        defence.forward() which contains PyTorch operations. At the end, it converts PyTorch tensors
+        It converts numpy arrays to TensorFlow tensors first, then chains a series of defenses by calling
+        defence.forward() which contains TensorFlow operations. At the end, it converts TensorFlow tensors
         back to numpy arrays.
 
         :param x: Samples.
@@ -152,14 +152,14 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             return x, y
 
         if len(self.preprocessing_defences) == 1:
-            # Compatible with non-PyTorch defences if no chaining.
+            # Compatible with non-TensorFlow defences if no chaining.
             defence = self.preprocessing_defences[0]
             x, y = defence(x, y)
         else:
-            # Check if all defences are implemented in PyTorch.
+            # Check if all defences are implemented in TensorFlow.
             for defence in self.preprocessing_defences:
                 if not isinstance(defence, PreprocessorTensorFlowV2):
-                    raise NotImplementedError(f"{defence.__class__} is not PyTorch-specific.")
+                    raise NotImplementedError(f"{defence.__class__} is not TensorFlow-specific.")
 
             # Convert np arrays to torch tensors.
             x = tf.convert_to_tensor(x)
@@ -189,9 +189,9 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_defences_gradient().
         It requires all defenses to have a method estimate_forward().
-        It converts numpy arrays to PyTorch tensors first, then chains a series of defenses by calling
+        It converts numpy arrays to TensorFlow tensors first, then chains a series of defenses by calling
         defence.estimate_forward() which contains differentiable estimate of the operations. At the end,
-        it converts PyTorch tensors back to numpy arrays.
+        it converts TensorFlow tensors back to numpy arrays.
 
         :param x: Samples.
         :type x: Format as expected by the `model`
@@ -211,11 +211,11 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             return gradients
 
         if len(self.preprocessing_defences) == 1:
-            # Compatible with non-PyTorch defences if no chaining.
+            # Compatible with non-TensorFlow defences if no chaining.
             defence = self.preprocessing_defences[0]
             gradients = defence.estimate_gradient(x, gradients)
         else:
-            # Check if all defences are implemented in PyTorch.
+            # Check if all defences are implemented in TensorFlow.
             for defence in self.preprocessing_defences:
                 if not isinstance(defence, PreprocessorTensorFlowV2):
                     raise NotImplementedError(f"{defence.__class__} is not TensorFlowV2-specific.")
