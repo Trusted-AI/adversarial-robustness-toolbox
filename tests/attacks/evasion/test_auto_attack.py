@@ -27,9 +27,8 @@ from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
-from tests.utils import add_warning, ARTTestException
-from tests.utils import get_image_classifier_tf
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 

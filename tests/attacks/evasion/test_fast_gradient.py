@@ -24,11 +24,11 @@ import pytest
 from art.attacks.evasion import FastGradientMethod
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 
-from tests.utils import ExpectedValue, add_warning, ARTTestException
 from tests.attacks.utils import backend_check_adverse_values, backend_test_defended_images
 from tests.attacks.utils import backend_test_random_initialisation_images, backend_targeted_images
 from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_masked_images
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import ExpectedValue, add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 

@@ -25,6 +25,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -37,17 +38,12 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.only_with_platform("tensorflow")
+@pytest.mark.framework_agnostic
 def test_generate(is_tf_version_2, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        if is_tf_version_2:
+            classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent)
 
-    if is_tf_version_2:
-        classifier_list = image_dl_estimator_for_attack(AutoProjectedGradientDescent)
-
-        if classifier_list is None:
-            logging.warning("Couldn't perform this test because no classifier is defined")
-            return
-
-        for classifier in classifier_list:
             attack = AutoProjectedGradientDescent(
                 estimator=classifier,
                 norm=np.inf,
@@ -66,12 +62,18 @@ def test_generate(is_tf_version_2, fix_get_mnist_subset, image_dl_estimator_for_
 
             assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0329, abs=0.005)
             assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.01)
+    except ARTTestException as e:
+        add_warning(e)
 
 
+@pytest.mark.framework_agnostic
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(
-        AutoProjectedGradientDescent, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
-    )
+    try:
+        backend_test_classifier_type_check_fail(
+            AutoProjectedGradientDescent, [BaseEstimator, LossGradientsMixin, ClassifierMixin]
+        )
+    except ARTTestException as e:
+        add_warning(e)
 
 
 if __name__ == "__main__":
