@@ -337,8 +337,8 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
                     values[value_index] if row[value_index] == y[row_index] else 0 for value_index in range(n_values)
                 ]
             else:
-                matches = [0 for value_index in range(n_values)]
-                match_values = [0 for value_index in range(n_values)]
+                matches = [0 for _ in range(n_values)]
+                match_values = [0 for _ in range(n_values)]
             predicted_pred.append(sum(match_values) if sum(matches) == 1 else None)
 
         # Choose the value with highest probability for each sample

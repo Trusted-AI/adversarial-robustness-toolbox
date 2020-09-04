@@ -116,7 +116,7 @@ class SquareAttack(EvasionAttack):
             width = x.shape[2]
             channels = x.shape[3]
 
-        for i_restart in trange(self.nb_restarts, desc="SquareAttack - restarts"):
+        for _ in trange(self.nb_restarts, desc="SquareAttack - restarts"):
 
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
