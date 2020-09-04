@@ -22,6 +22,7 @@ import pytest
 import resampy
 
 from art.defences.preprocessor import Resample
+from tests.utils import add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -47,33 +48,48 @@ def image_batch():
 class TestResample:
     """Test Resample preprocessor defense."""
 
+    @pytest.mark.framework_agnostic
     def test_sample_rate_original_error(self):
-        exc_msg = "Original sampling rate be must a positive integer."
-        with pytest.raises(ValueError, match=exc_msg):
-            Resample(sr_original=0, sr_new=16000)
+        try:
+            exc_msg = "Original sampling rate be must a positive integer."
+            with pytest.raises(ValueError, match=exc_msg):
+                Resample(sr_original=0, sr_new=16000)
+        except ARTTestException as e:
+            add_warning(e)
 
+    @pytest.mark.framework_agnostic
     def test_sample_rate_new_error(self):
-        exc_msg = "New sampling rate be must a positive integer."
-        with pytest.raises(ValueError, match=exc_msg):
-            Resample(sr_original=16000, sr_new=0)
+        try:
+            exc_msg = "New sampling rate be must a positive integer."
+            with pytest.raises(ValueError, match=exc_msg):
+                Resample(sr_original=16000, sr_new=0)
+        except ARTTestException as e:
+            add_warning(e)
 
+    @pytest.mark.framework_agnostic
     def test_non_temporal_data_error(self, image_batch):
-        test_input = image_batch
-        resample = Resample(16000, 16000)
+        try:
+            test_input = image_batch
+            resample = Resample(16000, 16000)
 
-        exc_msg = "Resampling can only be applied to temporal data across at least one channel."
-        with pytest.raises(ValueError, match=exc_msg):
-            resample(test_input)
+            exc_msg = "Resampling can only be applied to temporal data across at least one channel."
+            with pytest.raises(ValueError, match=exc_msg):
+                resample(test_input)
+        except ARTTestException as e:
+            add_warning(e)
 
-    @pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn")
+    @pytest.mark.framework_agnostic
     def test_resample(self, audio_batch, mocker):
-        test_input, test_output, sr_orig, sr_new = audio_batch
+        try:
+            test_input, test_output, sr_orig, sr_new = audio_batch
 
-        mocker.patch("resampy.resample", autospec=True)
-        resampy.resample.return_value = test_input[:, :, :sr_new]
+            mocker.patch("resampy.resample", autospec=True)
+            resampy.resample.return_value = test_input[:, :, :sr_new]
 
-        resampler = Resample(sr_original=sr_orig, sr_new=sr_new, channels_first=True)
-        assert resampler(test_input)[0].shape == test_output.shape
+            resampler = Resample(sr_original=sr_orig, sr_new=sr_new, channels_first=True)
+            assert resampler(test_input)[0].shape == test_output.shape
+        except ARTTestException as e:
+            add_warning(e)
 
 
 if __name__ == "__main__":
