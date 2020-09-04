@@ -162,7 +162,7 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
-def projection(values: np.ndarray, eps: float, norm_p: Union[int, str]) -> np.ndarray:
+def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -> np.ndarray:
     """
     Project `values` on the L_p norm ball of size `eps`.
 
