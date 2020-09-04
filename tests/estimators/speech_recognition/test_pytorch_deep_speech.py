@@ -40,7 +40,7 @@ logger = logging.getLogger(__name__)
 
 @unittest.skipIf(
     not deepspeech_pytorch_found,
-    reason="Skip unittests if deep speech module is not found because of pre-trained model."
+    reason="Skip unittests if deep speech module is not found because of pre-trained model.",
 )
 class TestPyTorchDeepSpeech(unittest.TestCase):
     """
@@ -67,7 +67,8 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                 -1.1291848e-03,
                 -1.0681478e-03,
                 -9.1555528e-04,
-            ] * 100
+            ]
+            * 100
         )
 
         x2 = np.array(
@@ -75,19 +76,20 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                 -1.8311106e-04,
                 -1.2207404e-04,
                 -6.1037019e-05,
-                0.0000000e+00,
+                0.0000000e00,
                 3.0518509e-05,
-                0.0000000e+00,
+                0.0000000e00,
                 -3.0518509e-05,
-                0.0000000e+00,
-                0.0000000e+00,
+                0.0000000e00,
+                0.0000000e00,
                 9.1555528e-05,
                 2.1362957e-04,
                 3.3570360e-04,
                 4.2725913e-04,
                 4.5777764e-04,
                 -1.8311106e-04,
-            ] * 100
+            ]
+            * 100
         )
 
         x3 = np.array(
@@ -106,7 +108,8 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                 7.0192572e-04,
                 6.7140721e-04,
                 -1.5259255e-04,
-            ] * 100
+            ]
+            * 100
         )
         cls.x = np.array([x1, x2, x3])
 
@@ -115,23 +118,20 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Define deep speech estimator
-        self.speech_recognizer = PyTorchDeepSpeech(pretrained_model='librispeech')
+        self.speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
 
         # All tests
         self._test_predict()
         self._test_loss_gradient()
         self._test_fit()
 
-    @unittest.skipIf(
-        not amp_found,
-        reason="Skip unittests if apex module is not found."
-    )
+    @unittest.skipIf(not amp_found, reason="Skip unittests if apex module is not found.")
     def test_all_amp(self):
         # Only import if deep speech module is available
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Define deep speech estimator
-        self.speech_recognizer_amp = PyTorchDeepSpeech(pretrained_model='librispeech', device_type='gpu', use_amp=True)
+        self.speech_recognizer_amp = PyTorchDeepSpeech(pretrained_model="librispeech", device_type="gpu", use_amp=True)
 
         # All tests
         self._test_predict(use_amp=True)
@@ -150,7 +150,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
         expected_probs = np.asarray(
             [
-                1.0000000e+00,
+                1.0000000e00,
                 7.0154901e-14,
                 1.9170589e-13,
                 8.2194836e-13,
@@ -178,7 +178,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                 4.5599673e-14,
                 6.4587983e-13,
                 2.4159567e-15,
-                4.6668241e-13
+                4.6668241e-13,
             ]
         )
         np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
@@ -189,12 +189,12 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         else:
             transcriptions = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
-        expected_transcriptions = np.array(['', '', ''])
+        expected_transcriptions = np.array(["", "", ""])
         self.assertTrue((expected_transcriptions == transcriptions).all())
 
     def _test_loss_gradient(self, use_amp=False):
         # Create labels
-        y = np.array(['SIX', 'HI', 'GOOD'])
+        y = np.array(["SIX", "HI", "GOOD"])
 
         # Compute gradients
         if use_amp:
@@ -210,11 +210,11 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
             expected_gradients1 = np.asarray(
                 [
                     -3485.7,
-                    659.,
+                    659.0,
                     -111.7,
                     283.6,
                     1691.9,
-                    715.,
+                    715.0,
                     1480.4,
                     -3522.3,
                     -4087.9,
@@ -222,13 +222,13 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                     -304.7,
                     2013.4,
                     -445.1,
-                    4125.,
+                    4125.0,
                     1754.1,
                     -503.6,
-                    1160.,
+                    1160.0,
                     7051.7,
                     -1992.2,
-                    350.4
+                    350.4,
                 ]
             )
 
@@ -254,10 +254,10 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                     1159.88786568,
                     7072.47761446,
                     -1963.71829047,
-                    382.65287411
+                    382.65287411,
                 ]
             )
-        np.testing.assert_array_almost_equal(grads[0][0 : 20], expected_gradients1, decimal=0)
+        np.testing.assert_array_almost_equal(grads[0][0:20], expected_gradients1, decimal=0)
 
         if use_amp:
             expected_gradients2 = np.asarray(
@@ -271,7 +271,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                     19139.6,
                     6446.2,
                     26323.1,
-                    4230.,
+                    4230.0,
                     -31122.4,
                     -2890.9,
                     12936.7,
@@ -281,7 +281,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                     -16454.6,
                     -6953.1,
                     -17899.6,
-                    4100.7
+                    4100.7,
                 ]
             )
 
@@ -307,34 +307,34 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                     -16477.89414508,
                     -6977.8092622,
                     -17914.22352666,
-                    4086.51150059
+                    4086.51150059,
                 ]
             )
-        np.testing.assert_array_almost_equal(grads[1][0: 20], expected_gradients2, decimal=0)
+        np.testing.assert_array_almost_equal(grads[1][0:20], expected_gradients2, decimal=0)
 
         if use_amp:
             expected_gradients3 = np.asarray(
                 [
                     -1687.3,
-                    6715.,
+                    6715.0,
                     16448.4,
                     -3848.9,
                     16521.1,
                     -15736.1,
-                    -26204.,
+                    -26204.0,
                     -8992.2,
                     9697.9,
                     13999.6,
                     -7595.3,
-                    14181.,
+                    14181.0,
                     -24507.2,
                     5481.9,
                     7166.7,
                     -6182.3,
                     2510.3,
-                    -7229.,
+                    -7229.0,
                     -10821.9,
-                    -11134.2
+                    -11134.2,
                 ]
             )
 
@@ -360,14 +360,14 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
                     2483.93980406,
                     -7244.24618697,
                     -10798.70438903,
-                    -11129.57632319
+                    -11129.57632319,
                 ]
             )
-        np.testing.assert_array_almost_equal(grads[2][0: 20], expected_gradients3, decimal=0)
+        np.testing.assert_array_almost_equal(grads[2][0:20], expected_gradients3, decimal=0)
 
     def _test_fit(self, use_amp=False):
         # Create labels
-        y = np.array(['SIX', 'HI', 'GOOD'])
+        y = np.array(["SIX", "HI", "GOOD"])
 
         if use_amp:
             # Before train

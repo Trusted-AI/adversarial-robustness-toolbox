@@ -60,13 +60,13 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         use_half: bool = False,
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         use_amp: bool = False,
-        opt_level: str = 'O1',
+        opt_level: str = "O1",
         loss_scale: int = 1,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
-        device_type: str = "gpu"
+        device_type: str = "gpu",
     ):
         """
         Initialization of an instance PyTorchDeepSpeech.
@@ -107,7 +107,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
-            preprocessing=preprocessing
+            preprocessing=preprocessing,
         )
 
         # Check clip values
@@ -133,21 +133,21 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Load model
         if model is None:
-            if pretrained_model == 'an4':
+            if pretrained_model == "an4":
                 filename, url = (
                     "an4_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/an4_pretrained_v2.pth"
+                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/an4_pretrained_v2.pth",
                 )
-            elif pretrained_model == 'librispeech':
+            elif pretrained_model == "librispeech":
                 filename, url = (
                     "librispeech_pretrained_v2.pth",
                     "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
-                    "librispeech_pretrained_v2.pth"
+                    "librispeech_pretrained_v2.pth",
                 )
-            elif pretrained_model == 'tedlium':
+            elif pretrained_model == "tedlium":
                 filename, url = (
                     "ted_pretrained_v2.pth",
-                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/ted_pretrained_v2.pth"
+                    "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/ted_pretrained_v2.pth",
                 )
             elif pretrained_model is None:
                 # If model is None and no pretrained model is selected, then we need to have parameters filename and
@@ -156,7 +156,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                     filename, url = (
                         "librispeech_pretrained_v2.pth",
                         "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
-                        "librispeech_pretrained_v2.pth"
+                        "librispeech_pretrained_v2.pth",
                     )
             else:
                 raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
@@ -191,7 +191,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 parameters = self._model.parameters()
                 self._optimizer = torch.optim.SGD(parameters, lr=0.01)
 
-            if self._device.type == 'cpu':
+            if self._device.type == "cpu":
                 enabled = False
             else:
                 enabled = True
@@ -201,7 +201,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 optimizers=self._optimizer,
                 enabled=enabled,
                 opt_level=opt_level,
-                loss_scale=loss_scale
+                loss_scale=loss_scale,
             )
 
     def predict(
@@ -283,11 +283,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             # Call to DeepSpeech model for prediction
             with torch.no_grad():
                 outputs, output_sizes = self._model(
-                    inputs[begin : end].to(self._device), input_sizes[begin : end].to(self._device)
+                    inputs[begin:end].to(self._device), input_sizes[begin:end].to(self._device)
                 )
 
             results.append(outputs)
-            result_output_sizes[begin : end] = output_sizes.detach().cpu().numpy()
+            result_output_sizes[begin:end] = output_sizes.detach().cpu().numpy()
 
         # Aggregate results
         result_outputs = np.zeros(
@@ -302,7 +302,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             )
 
             # Overwrite results
-            result_outputs[begin : end, : results[m].shape[1], : results[m].shape[-1]] = results[m].cpu().numpy()
+            result_outputs[begin:end, : results[m].shape[1], : results[m].shape[-1]] = results[m].cpu().numpy()
 
         # Rearrange to the original order
         result_output_sizes_ = result_output_sizes.copy()
@@ -327,9 +327,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         decoder_type = kwargs.get("decoder_type")
         if decoder_type is not None:
-            if decoder_type == 'greedy':
+            if decoder_type == "greedy":
                 lm_config.decoder_type = DecoderType.greedy
-            elif decoder_type == 'beam':
+            elif decoder_type == "beam":
                 lm_config.decoder_type = DecoderType.beam
             else:
                 raise ValueError("Decoder type %s currently not supported." % decoder_type)
@@ -494,8 +494,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 )
 
                 # Extract random batch
-                i_batch = x_preprocessed[ind[begin : end]].copy()
-                o_batch = y_preprocessed[ind[begin : end]].copy()
+                i_batch = x_preprocessed[ind[begin:end]].copy()
+                o_batch = y_preprocessed[ind[begin:end]].copy()
 
                 # Transform data into the model input space
                 inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
@@ -564,24 +564,20 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         win_length = n_fft
 
         window = self._model.audio_conf.window.value
-        if window == 'hamming':
+        if window == "hamming":
             window_fn = torch.hamming_window
-        elif window == 'hann':
+        elif window == "hann":
             window_fn = torch.hann_window
-        elif window == 'blackman':
+        elif window == "blackman":
             window_fn = torch.blackman_window
-        elif window == 'bartlett':
+        elif window == "bartlett":
             window_fn = torch.bartlett_window
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
 
         # Create a transformer to transform between the two spaces
         transformer = torchaudio.transforms.Spectrogram(
-            n_fft=n_fft,
-            hop_length=hop_length,
-            win_length=win_length,
-            window_fn=window_fn,
-            power=None
+            n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=window_fn, power=None
         )
         transformer.to(self._device)
 
