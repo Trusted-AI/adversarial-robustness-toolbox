@@ -275,9 +275,8 @@ def test_fit_image_generator(
             prediction_class = np.argmax(predictions, axis=1)
             post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-            np.testing.assert_array_almost_equal(
-                post_fit_accuracy, 0.68, decimal=2,
-            )
+            assert post_fit_accuracy == pytest.approx(0.68, 0.08)
+
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
