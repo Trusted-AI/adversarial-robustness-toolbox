@@ -8,7 +8,6 @@ Fixes # (issue)
 
 Please check all relevant options.
 
-- [ ] Improvement (non-breaking)
 - [ ] Bug fix (non-breaking)
 - [ ] New feature (non-breaking)
 - [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
