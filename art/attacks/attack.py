@@ -22,14 +22,13 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import List, Optional, Tuple, TypeVar
 
 import numpy as np
 
 from art.exceptions import EstimatorError
 
-if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +163,33 @@ class PoisoningAttack(Attack):
     Abstract base class for poisoning attack classes
     """
 
-    def __init__(self, classifier) -> None:
+    def __init__(self, classifier: Optional[Classifier]) -> None:
+        """
+        :param classifier: A trained classifier (or none if no classifier is needed)
+        """
+        super().__init__(classifier)
+
+    @abc.abstractmethod
+    def poison(self, x: np.ndarray, y=Optional[np.ndarray], **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Generate poisoning examples and return them as an array. This method should be overridden by all concrete
+        poisoning attack implementations.
+
+        :param x: An array with the original inputs to be attacked.
+        :param y:  Target labels for `x`. Untargeted attacks set this value to None.
+        :return: An tuple holding the (poisoning examples, poisoning labels).
+        """
+        raise NotImplementedError
+
+
+class PoisoningAttackTransformer(PoisoningAttack):
+    """
+    Abstract base class for poisoning attack classes that return a transformed classifier.
+    These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
+    """
+    ClassifierType = TypeVar('ClassifierType', bound=Classifier)
+
+    def __init__(self, classifier: Optional[ClassifierType], **kwargs) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         :type classifier: `art.estimators.classification.Classifier` or `None`
@@ -172,17 +197,25 @@ class PoisoningAttack(Attack):
         super().__init__(classifier)
 
     @abc.abstractmethod
-    def poison(self, x, y=None, **kwargs):
+    def poison(self, x: np.ndarray, y=Optional[np.ndarray], **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generate poisoning examples and return them as an array. This method should be overridden by all concrete
         poisoning attack implementations.
 
         :param x: An array with the original inputs to be attacked.
-        :type x: `np.ndarray`
         :param y:  Target labels for `x`. Untargeted attacks set this value to None.
-        :type y: `np.ndarray`
         :return: An tuple holding the (poisoning examples, poisoning labels).
         :rtype: `(np.ndarray, np.ndarray)`
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> ClassifierType:
+        """
+        Returns a poisoned version of the classifier used to initialize the attack
+        :param x: Training data
+        :param y: Training labels
+        :return: A poisoned classifier
         """
         raise NotImplementedError
 
