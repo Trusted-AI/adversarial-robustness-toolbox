@@ -67,13 +67,13 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
             # Half-pad the input so that the output keeps the same shape.
             # * center pixel located lower right
-            half_pad = [k % 2 == 0 for k in kernel_size]
-            self.p2d = (
-                self.padding[-1] + half_pad[-1],
-                self.padding[-1],
-                self.padding[-2] + half_pad[-2],
-                self.padding[-2],
-            )
+            half_pad = [int(k % 2 == 0) for k in kernel_size]
+            self.p2d = [
+                int(self.padding[-1]) + half_pad[-1],
+                int(self.padding[-1]),
+                int(self.padding[-2]) + half_pad[-2],
+                int(self.padding[-2]),
+            ]
             # PyTorch requires Padding size should be less than the corresponding input dimension,
 
         def forward(self, input: torch.Tensor):  # type: ignore

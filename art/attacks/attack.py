@@ -129,7 +129,7 @@ class EvasionAttack(Attack):
     """
 
     def __init__(self, **kwargs) -> None:
-        self._targeted = None
+        self._targeted = False
         super(EvasionAttack, self).__init__(**kwargs)
 
     @abc.abstractmethod
@@ -148,7 +148,7 @@ class EvasionAttack(Attack):
         raise NotImplementedError
 
     @property
-    def targeted(self) -> Optional[bool]:
+    def targeted(self) -> bool:
         """
         Return Boolean if attack is targeted. Return None if not applicable.
         """

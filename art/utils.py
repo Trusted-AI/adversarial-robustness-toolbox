@@ -455,7 +455,6 @@ def compute_success(
            correct labels of the clean samples.
     :param batch_size: Batch size.
     :return: Percentage of successful adversarial samples.
-    :rtype: `float`
     """
     attack_success = compute_success_array(classifier, x_clean, labels, x_adv, targeted, batch_size)
     return np.sum(attack_success) / x_adv.shape[0]

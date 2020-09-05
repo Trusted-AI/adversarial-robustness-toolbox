@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -56,7 +56,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     def __init__(
         self,
         estimator,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -338,7 +338,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         return x_adv
 
     @staticmethod
-    def _projection(values: tf.Tensor, eps: float, norm_p: int) -> tf.Tensor:
+    def _projection(values: tf.Tensor, eps: float, norm_p: Union[int, float, str]) -> tf.Tensor:
         """
         Project `values` on the L_p norm ball of size `eps`.
 
@@ -363,12 +363,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                 tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=1, axis=1) + tol)), axis=1
             )
 
-        elif norm_p == np.inf:
+        elif norm_p in ["inf", np.inf]:
             values_tmp = tf.sign(values_tmp) * tf.minimum(tf.math.abs(values_tmp), eps)
 
         else:
             raise NotImplementedError(
-                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported."
+                "Values of `norm_p` different from 1, 2 \"inf\" and `np.inf` are currently not supported."
             )
 
         values = tf.reshape(values_tmp, values.shape)

@@ -62,7 +62,7 @@ class AutoAttack(EvasionAttack):
         targeted: bool = False,
     ):
         """
-        Create a :class:`.ProjectedGradientDescent` instance.
+        Create a :class:`.AutoAttack` instance.
 
         :param estimator: An trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
