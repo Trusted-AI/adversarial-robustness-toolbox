@@ -24,7 +24,7 @@ torch==1.5.0+cpu
 torchvision==0.7.0
 catboost==0.24.1
 GPy==1.9.9
-lightgbm==2.3.1
+lightgbm==3.0.0
 xgboost==1.2.0
 
 # other
