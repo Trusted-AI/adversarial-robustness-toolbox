@@ -89,7 +89,6 @@ class MembershipInferenceBlackBox(InferenceAttack):
         "attack_model_type",
         "attack_model",
     ]
-    
     _estimator_requirements = [BaseEstimator, ClassifierMixin]
 
     def __init__(
