@@ -985,7 +985,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         raise NotImplementedError
 
     @property
-    def layer_names(self) -> List[str]:
+    def layer_names(self) -> Optional[List[str]]:
         """
         Return the hidden layers in the model, if applicable.
 
@@ -1005,7 +1005,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
-    ) -> np.ndarray:
+    ) -> Optional[np.ndarray]:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by

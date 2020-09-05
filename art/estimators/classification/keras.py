@@ -321,7 +321,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return gradients
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -563,7 +563,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         outputs = self._custom_loss_func[name]
         return outputs(input_values)
 
-    def _init_class_gradients(self, label: Union[int, List[int], None] = None) -> None:
+    def _init_class_gradients(self, label: Optional[Union[int, List[int], np.ndarray]] = None) -> None:
         # pylint: disable=E0401
         if self.is_tensorflow:
             import tensorflow.keras.backend as k

@@ -203,7 +203,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
     def __init__(
         self,
-        model: Optional["sklearn.tree.DecisionTreeClassifier"],
+        model: "sklearn.tree.DecisionTreeClassifier",
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -223,7 +223,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         """
         import sklearn  # lgtm [py/repeated-import]
 
-        if not isinstance(model, sklearn.tree.DecisionTreeClassifier) and model is not None:
+        if not isinstance(model, sklearn.tree.DecisionTreeClassifier):
             raise TypeError("Model must be of type sklearn.tree.DecisionTreeClassifier.")
 
         super(ScikitlearnDecisionTreeClassifier, self).__init__(

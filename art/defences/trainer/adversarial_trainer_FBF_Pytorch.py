@@ -202,7 +202,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         import torch
 
         n = x_batch.shape[0]
-        m = np.prod(x_batch.shape[1:])
+        m = np.prod(x_batch.shape[1:]).item()
         delta = random_sphere(n, m, self._eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
         delta_grad = self._classifier.loss_gradient(x_batch + delta, y_batch)
         delta = np.clip(delta + 1.25 * self._eps * np.sign(delta_grad), -self._eps, +self._eps)

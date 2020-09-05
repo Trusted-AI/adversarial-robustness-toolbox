@@ -542,8 +542,8 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
     y_test = np.reshape(y_test, (len(y_test), 1))
 
     # Set channels last
-    x_train = x_train.transpose(0, 2, 3, 1)
-    x_test = x_test.transpose(0, 2, 3, 1)
+    x_train = x_train.transpose((0, 2, 3, 1))
+    x_test = x_test.transpose((0, 2, 3, 1))
 
     min_, max_ = 0.0, 255.0
     if not raw:
@@ -608,8 +608,8 @@ def load_stl() -> DATASET_TYPE:
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
     # Set channel last
-    x_train = x_train.transpose(0, 2, 3, 1)
-    x_test = x_test.transpose(0, 2, 3, 1)
+    x_train = x_train.transpose((0, 2, 3, 1))
+    x_test = x_test.transpose((0, 2, 3, 1))
 
     with open(os.path.join(path, "train_y.bin"), "rb") as f_numpy:
         y_train = np.fromfile(f_numpy, dtype=np.uint8)

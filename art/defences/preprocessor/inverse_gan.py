@@ -52,7 +52,7 @@ class InverseGAN(Preprocessor):
         self,
         sess: "tf.compat.v1.Session",
         gan: "TensorFlowGenerator",
-        inverse_gan: "TensorFlowEncoder",
+        inverse_gan: Optional["TensorFlowEncoder"],
         apply_fit: bool = False,
         apply_predict: bool = False,
     ):
@@ -193,7 +193,7 @@ class InverseGAN(Preprocessor):
 
     def _check_params(self) -> None:
         if self.inverse_gan is not None and self.gan.encoding_length != self.inverse_gan.encoding_length:
-            raise ValueError("Both GAN and inverseGan must use the same size encoding.")
+            raise ValueError("Both GAN and InverseGAN must use the same size encoding.")
 
 
 class DefenseGAN(InverseGAN):
