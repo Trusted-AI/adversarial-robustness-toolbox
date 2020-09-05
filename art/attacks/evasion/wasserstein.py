@@ -632,7 +632,7 @@ class Wasserstein(EvasionAttack):
         exp_beta: np.ndarray,
         psi: np.ndarray,
         K: np.ndarray,
-        eps: float,
+        eps: np.ndarray,
     ) -> np.ndarray:
         """
         Function to evaluate the objective of the projected sinkhorn optimizer.

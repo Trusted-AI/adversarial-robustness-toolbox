@@ -24,7 +24,7 @@ predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 from tqdm import tqdm
@@ -312,7 +312,7 @@ class BoundaryAttack(EvasionAttack):
 
     def _init_sample(
         self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
-    ) -> Optional[np.ndarray]:
+    ) -> Optional[Tuple[np.ndarray, int]]:
         """
         Find initial adversarial example for the attack.
 

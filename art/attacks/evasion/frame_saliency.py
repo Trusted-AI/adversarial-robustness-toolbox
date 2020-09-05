@@ -185,7 +185,7 @@ class FrameSaliencyAttack(EvasionAttack):
         return np.invert(attack_success)
 
     def _compute_frames_to_perturb(
-        self, x_adv: np.ndarray, targets: np.ndarray, disregard: Optional[float] = None
+        self, x_adv: np.ndarray, targets: np.ndarray, disregard: Optional[np.ndarray] = None
     ) -> np.ndarray:
         saliency_score = self.estimator.loss_gradient(x_adv, targets)
         saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)

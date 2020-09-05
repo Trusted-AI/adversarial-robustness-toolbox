@@ -381,7 +381,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             x_init = x[sample_is_robust]
 
             n = x_robust.shape[0]
-            m = np.prod(x_robust.shape[1:])
+            m = np.prod(x_robust.shape[1:]).item()
             random_perturbation = (
                 random_sphere(n, m, self.eps, self.norm).reshape(x_robust.shape).astype(ART_NUMPY_DTYPE)
             )

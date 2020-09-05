@@ -23,7 +23,7 @@ This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 from tqdm import trange
@@ -182,7 +182,7 @@ class SaliencyMapMethod(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-    def _saliency_map(self, x: np.ndarray, target: np.ndarray, search_space: np.ndarray) -> np.ndarray:
+    def _saliency_map(self, x: np.ndarray, target: Union[np.ndarray, int], search_space: np.ndarray) -> np.ndarray:
         """
         Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize
         the saliency map.

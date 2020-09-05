@@ -309,7 +309,7 @@ class SimBA(EvasionAttack):
         if self.estimator.channels_first:
             return order.reshape(1, -1).squeeze().argsort()
         else:
-            return order.transpose(1, 2, 0).reshape(1, -1).squeeze().argsort()
+            return order.transpose((1, 2, 0)).reshape(1, -1).squeeze().argsort()
 
     def _block_idct(self, x, block_size=8, masked=False, ratio=0.5):
         """
@@ -345,7 +345,7 @@ class SimBA(EvasionAttack):
         if self.estimator.channels_first:
             return z
         else:
-            return z.transpose(0, 2, 3, 1)
+            return z.transpose((0, 2, 3, 1))
 
     def diagonal_order(self, image_size, channels):
         """
@@ -377,4 +377,4 @@ class SimBA(EvasionAttack):
         if self.estimator.channels_first:
             return order.reshape(1, -1).squeeze().argsort()
         else:
-            return order.transpose(1, 2, 0).reshape(1, -1).squeeze().argsort()
+            return order.transpose((1, 2, 0)).reshape(1, -1).squeeze().argsort()

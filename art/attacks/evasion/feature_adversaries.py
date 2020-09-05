@@ -101,7 +101,7 @@ class FeatureAdversaries(EvasionAttack):
                            <= gtol`` where ``pg_i`` is the i-th component of the
                            projected gradient.
                        eps : float
-                           Step size used for numerical approximation of the jacobian.
+                           Step size used for numerical approximation of the Jacobian.
                        maxfun : int
                            Maximum number of function evaluations.
                        maxiter : int

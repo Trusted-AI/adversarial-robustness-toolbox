@@ -165,7 +165,7 @@ class ZooAttack(EvasionAttack):
         self.adam_epochs = None
 
     def _loss(
-        self, x: np.ndarray, x_adv: np.ndarray, target: np.ndarray, c_weight: float
+        self, x: np.ndarray, x_adv: np.ndarray, target: np.ndarray, c_weight: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the loss function values.
@@ -339,7 +339,7 @@ class ZooAttack(EvasionAttack):
             x_adv = x_orig.copy()
         else:
             x_orig = x_batch
-            self._reset_adam(np.prod(self.estimator.input_shape))
+            self._reset_adam(np.prod(self.estimator.input_shape).item())
             self._current_noise.fill(0)
             x_adv = x_orig.copy()
 
@@ -418,7 +418,7 @@ class ZooAttack(EvasionAttack):
 
         return best_dist, best_label, best_attack
 
-    def _optimizer(self, x: np.ndarray, targets: np.ndarray, c_batch: float) -> np.ndarray:
+    def _optimizer(self, x: np.ndarray, targets: np.ndarray, c_batch: np.ndarray) -> np.ndarray:
         # Variation of input for computing loss, same as in original implementation
         coord_batch = np.repeat(self._current_noise, 2 * self.nb_parallel, axis=0)
         coord_batch = coord_batch.reshape(2 * self.nb_parallel * self._current_noise.shape[0], -1)
@@ -477,7 +477,7 @@ class ZooAttack(EvasionAttack):
         mean: np.ndarray,
         var: np.ndarray,
         current_noise: np.ndarray,
-        learning_rate: np.ndarray,
+        learning_rate: float,
         adam_epochs: np.ndarray,
         proj: bool,
     ) -> np.ndarray:
@@ -527,7 +527,7 @@ class ZooAttack(EvasionAttack):
             dims = (x.shape[0], size_x, size_y, x.shape[-1])
         else:
             dims = (x.shape[0], x.shape[1], size_x, size_y)
-        nb_vars = np.prod(dims)
+        nb_vars = np.prod(dims).item()
 
         if reset:
             # Reset variables to original size and value
