@@ -143,7 +143,7 @@ class TestCarlini(TestBase):
 
         # First attack
         cl2m = CarliniL2Method(classifier=krc, targeted=True, max_iter=10)
-        y_target = [6, 6, 7, 4, 9, 7, 9, 0, 1, 0]
+        y_target = np.asarray([6, 6, 7, 4, 9, 7, 9, 0, 1, 0])
         x_test_adv = cl2m.generate(self.x_test_mnist, y=to_categorical(y_target, nb_classes=10))
         self.assertFalse((self.x_test_mnist == x_test_adv).all())
         self.assertLessEqual(np.amax(x_test_adv), 1.0)
