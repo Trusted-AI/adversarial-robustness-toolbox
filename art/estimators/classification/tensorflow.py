@@ -1021,6 +1021,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         if isinstance(self._model, tf.keras.models.Sequential):
             i_layer = None
+            if self.layer_names is None:
+                raise ValueError("No layer names identified.")
+
             if isinstance(layer, six.string_types):
                 if layer not in self.layer_names:
                     raise ValueError("Layer name %s is not part of the graph." % layer)

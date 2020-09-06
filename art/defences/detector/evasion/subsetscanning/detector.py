@@ -67,6 +67,9 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         self.bgd_data = bgd_data
 
         # Ensure that layer is well-defined
+        if classifier.layer_names is None:
+            raise ValueError("No layer names identified.")
+
         if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(

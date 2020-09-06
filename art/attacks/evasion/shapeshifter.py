@@ -513,7 +513,10 @@ class ShapeShifter(EvasionAttack):
             )
 
             # Create adversarial image
-            current_image = rendering_function(background_phd, image_frame_phd, current_texture)
+            if rendering_function is not None:
+                current_image = rendering_function(background_phd, image_frame_phd, current_texture)
+            else:
+                ValueError("Callable rendering_function is None.")
 
         else:
             # Create image variable

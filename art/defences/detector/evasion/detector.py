@@ -168,6 +168,9 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         self.detector = detector
 
         # Ensure that layer is well-defined:
+        if classifier.layer_names is None:
+            raise ValueError("No layer names identified.")
+
         if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(

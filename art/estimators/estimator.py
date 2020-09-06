@@ -540,7 +540,7 @@ class NeuralNetworkMixin(ABC):
         return self._learning_phase  # type: ignore
 
     @property
-    def layer_names(self) -> List[str]:
+    def layer_names(self) -> Optional[List[str]]:
         """
         Return the names of the hidden layers in the model, if applicable.
 

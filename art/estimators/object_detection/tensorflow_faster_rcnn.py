@@ -45,10 +45,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     """
     This class implements a model-specific object detector using Faster-RCNN and TensorFlow.
     """
+    import tensorflow as tf
 
     def __init__(
         self,
-        images: "Tensor",
+        images: tf.Tensor,
         model: Optional["FasterRCNNMetaArch"] = None,
         filename: Optional[str] = None,
         url: Optional[str] = None,
@@ -123,21 +124,21 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Create placeholders for groundtruth boxes
-        self._groundtruth_boxes_list: List["Tensor"]
+        self._groundtruth_boxes_list: List[tf.Tensor]
         self._groundtruth_boxes_list = [
             tf.placeholder(dtype=tf.float32, shape=(None, 4), name="groundtruth_boxes_{}".format(i))
             for i in range(images.shape[0])
         ]
 
         # Create placeholders for groundtruth classes
-        self._groundtruth_classes_list: List["Tensor"]
+        self._groundtruth_classes_list: List[tf.Tensor]
         self._groundtruth_classes_list = [
             tf.placeholder(dtype=tf.int32, shape=(None,), name="groundtruth_classes_{}".format(i))
             for i in range(images.shape[0])
         ]
 
         # Create placeholders for groundtruth weights
-        self._groundtruth_weights_list: List["Tensor"]
+        self._groundtruth_weights_list: List[tf.Tensor]
         self._groundtruth_weights_list = [
             tf.placeholder(dtype=tf.float32, shape=(None,), name="groundtruth_weights_{}".format(i))
             for i in range(images.shape[0])
@@ -180,7 +181,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Save new attributes
         self._input_shape = images.shape.as_list()[1:]
         self.is_training: bool = is_training
-        self.images: Optional["Tensor"] = images
+        self.images: Optional[tf.Tensor] = images
         self.attack_losses: Tuple[str, ...] = attack_losses
 
         # Assign session
@@ -196,15 +197,15 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
     @staticmethod
     def _load_model(
-        images: "Tensor",
+        images: tf.Tensor,
         filename: Optional[str] = None,
         url: Optional[str] = None,
         obj_detection_model: Optional["FasterRCNNMetaArch"] = None,
         is_training: bool = False,
-        groundtruth_boxes_list: Optional[List["Tensor"]] = None,
-        groundtruth_classes_list: Optional[List["Tensor"]] = None,
-        groundtruth_weights_list: Optional[List["Tensor"]] = None,
-    ) -> Tuple[Dict[str, "Tensor"], ...]:
+        groundtruth_boxes_list: Optional[List[tf.Tensor]] = None,
+        groundtruth_classes_list: Optional[List[tf.Tensor]] = None,
+        groundtruth_weights_list: Optional[List[tf.Tensor]] = None,
+    ) -> Tuple[Dict[str, tf.Tensor], ...]:
         """
         Download, extract and load a model from a URL if it not already in the cache. The file at indicated by `url`
         is downloaded to the path ~/.art/data and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip
@@ -265,10 +266,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             )
 
         # Provide groundtruth
-        groundtruth_classes_list = [
-            tf.one_hot(groundtruth_class, obj_detection_model.num_classes)
-            for groundtruth_class in groundtruth_classes_list
-        ]
+        if groundtruth_classes_list is not None:
+            groundtruth_classes_list = [
+                tf.one_hot(groundtruth_class, obj_detection_model.num_classes)
+                for groundtruth_class in groundtruth_classes_list
+            ]
 
         obj_detection_model.provide_groundtruth(
             groundtruth_boxes_list=groundtruth_boxes_list,
@@ -300,7 +302,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return predictions, losses, detections
 
-    def loss_gradient(self, x: np.ndarray, y: Dict[str, List["Tensor"]], **kwargs) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: Dict[str, List[tf.Tensor]], **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -386,7 +388,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Check if batch processing is appropriately set
-        if self.images.shape[0].value is not None:
+        if self.images is not None and self.images.shape[0].value is not None:
             if x.shape[0] % self.images.shape[0].value != 0:
                 raise ValueError("Number of prediction samples must be a multiple of input size.")
 
@@ -464,7 +466,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return results
 
     @property
-    def input_images(self) -> "Tensor":
+    def input_images(self) -> tf.Tensor:
         """
         Get the `images` attribute.
 
@@ -473,7 +475,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return self.images
 
     @property
-    def predictions(self) -> Dict[str, "Tensor"]:
+    def predictions(self) -> Dict[str, tf.Tensor]:
         """
         Get the `_predictions` attribute.
 
@@ -482,7 +484,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return self._predictions
 
     @property
-    def losses(self) -> Dict[str, "Tensor"]:
+    def losses(self) -> Dict[str, tf.Tensor]:
         """
         Get the `_losses` attribute.
 
@@ -493,7 +495,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         return self._losses
 
     @property
-    def detections(self) -> Dict[str, "Tensor"]:
+    def detections(self) -> Dict[str, tf.Tensor]:
         """
         Get the `_detections` attribute.
 
