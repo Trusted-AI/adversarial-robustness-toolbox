@@ -125,7 +125,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
 
         return x, y
 
-    def estimate_forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
+    def estimate_forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> tf.Tensor:
         """
         No need to estimate, since the forward pass is differentiable.
         """

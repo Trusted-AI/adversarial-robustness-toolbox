@@ -205,9 +205,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         return x, y
 
-    def estimate_forward(
-        self, x: torch.Tensor, y: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def estimate_forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
         No need to estimate, since the forward pass is differentiable.
         """

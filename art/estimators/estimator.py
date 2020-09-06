@@ -52,8 +52,8 @@ class BaseEstimator(ABC):
         self,
         model=None,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing_defences: Union[Preprocessor, List[Preprocessor], None] = None,
+        postprocessing_defences: Union[Postprocessor, List[Postprocessor], None] = None,
         preprocessing: PREPROCESSING_TYPE = (0, 1),
     ):
         """
@@ -164,13 +164,13 @@ class BaseEstimator(ABC):
             )
 
     @abstractmethod
-    def predict(self, x, *args, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def predict(self, x, **kwargs) -> Any:  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Perform prediction of the estimator for input `x`.
 
         :param x: Samples.
         :type x: Format as expected by the `model`
-        :return: Array of predictions by the model.
+        :return: Predictions by the model.
         :rtype: Format as produced by the `model`
         """
         raise NotImplementedError
