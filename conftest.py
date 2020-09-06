@@ -22,6 +22,7 @@ from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, ge
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
+from tests.utils import get_attack_classifier_pt
 
 logger = logging.getLogger(__name__)
 art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
@@ -499,6 +500,32 @@ def get_tabular_classifier_list(framework):
         return classifier_list
 
     return _get_tabular_classifier_list
+
+
+@pytest.fixture
+def get_attack_classifier_list(framework):
+    def _get_attack_classifier_list(one_classifier=False, **kwargs):
+        if framework == "keras":
+            logging.warning("{0} doesn't have an image attack defined yet".format(framework))
+            classifier_list = None
+        if framework == "tensorflow":
+            logging.warning("{0} doesn't have an image attack defined yet".format(framework))
+            classifier_list = None
+        if framework == "pytorch":
+            classifier_list = [get_attack_classifier_pt(**kwargs)]
+        if framework == "scikitlearn":
+            logging.warning("{0} doesn't have an image attack defined yet".format(framework))
+            classifier_list = None
+
+        if classifier_list is None:
+            return None
+
+        if one_classifier:
+            return classifier_list[0]
+
+        return classifier_list
+
+    return _get_attack_classifier_list
 
 
 @pytest.fixture(scope="function")
