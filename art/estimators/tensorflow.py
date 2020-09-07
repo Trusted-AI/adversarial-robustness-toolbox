@@ -45,7 +45,7 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         Estimator class for TensorFlow models.
         """
         import tensorflow as tf
-        self._sess: tf.python.client.session.Session = None
+        self._sess: "tf.python.client.session.Session" = None
         super().__init__(**kwargs)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
@@ -74,7 +74,7 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
 
     @property
-    def sess(self) -> tf.python.client.session.Session:
+    def sess(self) -> "tf.python.client.session.Session":
         """
         Get current TensorFlow session.
 
