@@ -33,7 +33,7 @@ from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin, ClassifierGradients
-from art.utils import check_and_transform_label_format
+from art.utils import check_and_transform_label_format, get_labels_np_array
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +106,11 @@ class SquareAttack(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
+
+        if y is None:
+            # Use model predictions as true labels
+            logger.info("Using model predictions as true labels.")
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         if self.estimator.channels_first:
             channels = x.shape[1]
