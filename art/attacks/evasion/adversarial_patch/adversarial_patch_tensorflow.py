@@ -312,11 +312,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
             transform_vectors.append([a0, a1, a2, b0, b1, b2, 0, 0])
 
-<<<<<<< HEAD
-        image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR")
-        padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR")
-        inverted_mask = tf.constant(1, dtype=image_mask.dtype) - image_mask
-=======
         image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR",)
         padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
 
@@ -327,8 +322,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             padded_patch = tf.stack([padded_patch] * images.shape[1], axis=1)
             padded_patch = tf.cast(padded_patch, images.dtype)
 
-        inverted_mask = 1 - image_mask
->>>>>>> origin/dev_1.4.0
+        inverted_mask = tf.constant(1, dtype=image_mask.dtype) - image_mask
 
         return images * inverted_mask + padded_patch * image_mask
 
