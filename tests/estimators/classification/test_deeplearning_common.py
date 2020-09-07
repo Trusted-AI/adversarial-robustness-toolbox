@@ -69,7 +69,7 @@ def test_fit(get_default_mnist_subset, default_batch_size, image_dl_estimator):
 
             classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
             accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-            np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=2)
+            assert accuracy_2 == pytest.approx(0.73, abs=0.04)
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
