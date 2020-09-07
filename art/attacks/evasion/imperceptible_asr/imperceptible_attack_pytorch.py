@@ -16,12 +16,11 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the Projected Gradient Descent attack `ProjectedGradientDescent` as an iterative method in which,
-after each iteration, the perturbation is projected on an lp-ball of specified radius (in addition to clipping the
-values of the adversarial sample so that it lies in the permitted data range). This is the attack proposed by Madry et
-al. for adversarial training.
+This module implements the imperceptible, robust, and targeted attack to generate adversarial examples for automatic
+speech recognition models. This attack will be implemented specifically for DeepSpeech model and is framework dependent,
+specifically for Pytorch.
 
-| Paper link: https://arxiv.org/abs/1706.06083
+| Paper link: https://arxiv.org/abs/1903.10346
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -31,10 +30,11 @@ from typing import Optional, TYPE_CHECKING
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
-    ProjectedGradientDescentCommon,
-)
-from art.utils import compute_success, random_sphere
+from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.pytorch import PyTorchEstimator
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
 if TYPE_CHECKING:
     import torch
@@ -42,26 +42,36 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
+class ImperceptibleAttackPytorch(EvasionAttack):
     """
-    The Projected Gradient Descent attack is an iterative method in which, after each iteration, the perturbation is
-    projected on an lp-ball of specified radius (in addition to clipping the values of the adversarial sample so that it
-    lies in the permitted data range). This is the attack proposed by Madry et al. for adversarial training.
+    This class implements the imperceptible, robust, and targeted attack to generate adversarial examples for automatic
+    speech recognition models. This attack will be implemented specifically for DeepSpeech model and is framework
+    dependent, specifically for Pytorch.
 
-    | Paper link: https://arxiv.org/abs/1706.06083
+    | Paper link: https://arxiv.org/abs/1903.10346
     """
+
+    attack_params = EvasionAttack.attack_params + [
+        "eps",
+        "max_iter",
+        "batch_size",
+    ]
+
+    _estimator_requirements = (
+        BaseEstimator,
+        LossGradientsMixin,
+        NeuralNetworkMixin,
+        SpeechRecognizerMixin,
+        PyTorchEstimator,
+        PyTorchDeepSpeech,
+    )
 
     def __init__(
         self,
-        estimator,
-        norm: int = np.inf,
+        estimator: PyTorchDeepSpeech,
         eps: float = 0.3,
-        eps_step: float = 0.1,
         max_iter: int = 100,
-        targeted: bool = False,
-        num_random_init: int = 0,
         batch_size: int = 32,
-        random_eps: bool = False,
     ):
         """
         Create a :class:`.ProjectedGradientDescentPytorch` instance.
