@@ -6,6 +6,12 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
+pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
+
+pytest -q -s tests/attacks/evasion/test_shadow_attack.py --mlFramework="pytorch" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
+
 mlFrameworkList=("tensorflow" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
