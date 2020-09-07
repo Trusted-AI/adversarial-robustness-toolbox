@@ -223,7 +223,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         """
         import sklearn  # lgtm [py/repeated-import]
 
-        if not isinstance(model, sklearn.tree.DecisionTreeClassifier):
+        if not isinstance(model, sklearn.tree.DecisionTreeClassifier) and model is not None:
             raise TypeError("Model must be of type sklearn.tree.DecisionTreeClassifier.")
 
         super().__init__(
