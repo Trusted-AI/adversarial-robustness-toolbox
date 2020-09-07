@@ -79,9 +79,6 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         self.clip_values = clip_values
         self._check_params()
 
-        if self.clip_values is not None:
-            self.clip_values = tf.constant(value=self.clip_values)
-
     @property
     def apply_fit(self) -> bool:
         return self._apply_fit

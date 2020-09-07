@@ -143,9 +143,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
-        if self.clip_values is not None:
-            self.clip_values = torch.tensor(self.clip_values, device=self._device)
-
     @property
     def apply_fit(self) -> bool:
         return self._apply_fit

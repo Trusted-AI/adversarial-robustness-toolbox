@@ -187,9 +187,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Assign session
         if sess is None:
             logger.warning("A session cannot be None, create a new session.")
-            self._sess: "Session" = tf.Session()
+            self._sess = tf.Session()
         else:
-            self._sess: "Session" = sess
+            self._sess = sess
 
         # Initialize variables
         self._sess.run(tf.global_variables_initializer())
