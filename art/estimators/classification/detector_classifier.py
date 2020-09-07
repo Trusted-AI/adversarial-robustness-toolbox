@@ -68,7 +68,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        super(DetectorClassifier, self).__init__(
+        super().__init__(
             clip_values=classifier.clip_values,
             preprocessing=preprocessing,
             channel_index=classifier.channel_index,

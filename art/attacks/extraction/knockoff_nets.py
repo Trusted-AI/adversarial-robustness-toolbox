@@ -78,7 +78,7 @@ class KnockoffNets(ExtractionAttack):
         :param sampling_strategy: Sampling strategy, either `random` or `adaptive`.
         :param reward: Reward type, in ['cert', 'div', 'loss', 'all'].
         """
-        super(KnockoffNets, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.batch_size_fit = batch_size_fit
         self.batch_size_query = batch_size_query

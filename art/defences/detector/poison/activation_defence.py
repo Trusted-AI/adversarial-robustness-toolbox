@@ -83,7 +83,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param y_train: Labels used to train the classifier.
         :param generator: A data generator to be used instead of `x_train` and `y_train`.
         """
-        super(ActivationDefence, self).__init__(classifier, x_train, y_train)
+        super().__init__(classifier, x_train, y_train)
         self.nb_clusters = 2
         self.clustering_method = "KMeans"
         self.nb_dims = 10

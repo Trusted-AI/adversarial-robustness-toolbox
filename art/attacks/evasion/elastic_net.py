@@ -96,7 +96,7 @@ class ElasticNet(EvasionAttack):
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :param decision_rule: Decision rule. 'EN' means Elastic Net rule, 'L1' means L1 rule, 'L2' means L2 rule.
         """
-        super(ElasticNet, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.confidence = confidence
         self._targeted = targeted
         self.learning_rate = learning_rate

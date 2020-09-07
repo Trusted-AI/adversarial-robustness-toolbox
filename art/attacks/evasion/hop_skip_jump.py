@@ -82,7 +82,7 @@ class HopSkipJump(EvasionAttack):
         :param init_eval: Initial number of evaluations for estimating gradient.
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         """
-        super(HopSkipJump, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self._targeted = targeted
         self.norm = norm
         self.max_iter = max_iter

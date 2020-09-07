@@ -99,7 +99,7 @@ class ProjectedGradientDescent(EvasionAttack):
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(ProjectedGradientDescent, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         self.norm = norm
         self.eps = eps

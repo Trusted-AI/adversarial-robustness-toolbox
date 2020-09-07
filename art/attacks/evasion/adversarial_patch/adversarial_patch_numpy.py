@@ -90,7 +90,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                [(float, float), (float, float), (float, float)].
         :param batch_size: The size of the training batch.
         """
-        super(AdversarialPatchNumpy, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.target = target
         self.rotation_max = rotation_max

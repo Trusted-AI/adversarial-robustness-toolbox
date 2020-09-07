@@ -154,7 +154,7 @@ class ShapeShifter(EvasionAttack):
         :param use_spectral: Whether to use spectral with textures.
         :param soft_clip: Whether to apply soft clipping on textures.
         """
-        super(ShapeShifter, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         # Set attack attributes
         self.random_transform = random_transform

@@ -281,7 +281,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     self._optimizer.step()
         else:
             # Fit a generic data generator through the API
-            super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super().fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
@@ -620,7 +620,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
                         :param model: PyTorch model. The forward function of the model must return the logit output.
                         """
-                        super(ModelWrapper, self).__init__()
+                        super().__init__()
                         self._model = model
 
                     # pylint: disable=W0221

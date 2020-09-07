@@ -84,7 +84,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         :param perf_func: performance function used to evaluate effectiveness of defense.
         :param pp_valid: The percent of training data to use as validation data (for defense without validation data).
         """
-        super(ProvenanceDefense, self).__init__(classifier, x_train, y_train)
+        super().__init__(classifier, x_train, y_train)
         self.p_train = p_train
         self.num_devices = self.p_train.shape[1]
         self.x_val = x_val

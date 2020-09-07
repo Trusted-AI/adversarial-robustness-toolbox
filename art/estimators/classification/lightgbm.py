@@ -69,7 +69,7 @@ class LightGBMClassifier(ClassifierDecisionTree):
         if not isinstance(model, Booster):
             raise TypeError("Model must be of type lightgbm.Booster")
 
-        super(LightGBMClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,

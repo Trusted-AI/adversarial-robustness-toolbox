@@ -81,7 +81,7 @@ class ThermometerEncoding(Preprocessor):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(ThermometerEncoding, self).__init__()
+        super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict

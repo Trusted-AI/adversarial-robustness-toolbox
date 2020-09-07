@@ -112,7 +112,7 @@ class ZooAttack(EvasionAttack):
                sample. The batch size is a multiplier of `nb_parallel` in terms of memory consumption.
         :param variable_h: Step size for numerical estimation of derivatives.
         """
-        super(ZooAttack, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         if len(classifier.input_shape) == 1:
             self.input_is_feature_vector = True

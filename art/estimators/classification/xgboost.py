@@ -77,7 +77,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         if not isinstance(model, Booster) and not isinstance(model, XGBClassifier):
             raise TypeError("Model must be of type xgboost.Booster or xgboost.XGBClassifier.")
 
-        super(XGBoostClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,

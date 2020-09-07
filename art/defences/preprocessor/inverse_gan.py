@@ -67,7 +67,7 @@ class InverseGAN(Preprocessor):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        super(InverseGAN, self).__init__()
+        super().__init__()
 
         self._is_fitted = True
         self._apply_fit = apply_fit

@@ -91,7 +91,7 @@ class FastGradientMethod(EvasionAttack):
         :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
                         the step size and eps for the maximum perturbation.
         """
-        super(FastGradientMethod, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step

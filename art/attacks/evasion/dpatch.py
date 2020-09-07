@@ -69,7 +69,7 @@ class DPatch(EvasionAttack):
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         """
-        super(DPatch, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         self.patch_shape = patch_shape
         self.learning_rate = learning_rate

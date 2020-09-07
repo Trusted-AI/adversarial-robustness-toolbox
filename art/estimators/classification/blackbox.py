@@ -66,7 +66,7 @@ class BlackBoxClassifier(Classifier):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        super(BlackBoxClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,

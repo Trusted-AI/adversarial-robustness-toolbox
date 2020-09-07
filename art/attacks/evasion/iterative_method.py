@@ -64,7 +64,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(BasicIterativeMethod, self).__init__(
+        super().__init__(
             estimator=estimator,
             norm=np.inf,
             eps=eps,

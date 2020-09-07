@@ -111,7 +111,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        super(ScikitlearnClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -226,7 +226,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         if not isinstance(model, sklearn.tree.DecisionTreeClassifier):
             raise TypeError("Model must be of type sklearn.tree.DecisionTreeClassifier.")
 
-        super(ScikitlearnDecisionTreeClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -463,7 +463,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
         if not isinstance(model, sklearn.tree.ExtraTreeClassifier):
             raise TypeError("Model must be of type sklearn.tree.ExtraTreeClassifier.")
 
-        super(ScikitlearnExtraTreeClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -503,7 +503,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         if not isinstance(model, sklearn.ensemble.AdaBoostClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.AdaBoostClassifier.")
 
-        super(ScikitlearnAdaBoostClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -544,7 +544,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         if not isinstance(model, sklearn.ensemble.BaggingClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.BaggingClassifier.")
 
-        super(ScikitlearnBaggingClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -585,7 +585,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
         if not isinstance(model, sklearn.ensemble.ExtraTreesClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.ExtraTreesClassifier.")
 
-        super(ScikitlearnExtraTreesClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -659,7 +659,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
         if not isinstance(model, sklearn.ensemble.GradientBoostingClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.GradientBoostingClassifier.")
 
-        super(ScikitlearnGradientBoostingClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -734,7 +734,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         if not isinstance(model, sklearn.ensemble.RandomForestClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.RandomForestClassifier.")
 
-        super(ScikitlearnRandomForestClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -802,7 +802,7 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        super(ScikitlearnLogisticRegression, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -997,7 +997,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                 "Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {}".format(type(model))
             )
 
-        super(ScikitlearnSVC, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,

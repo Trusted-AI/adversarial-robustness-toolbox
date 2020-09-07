@@ -130,7 +130,7 @@ class EvasionAttack(Attack):
 
     def __init__(self, **kwargs) -> None:
         self._targeted = False
-        super(EvasionAttack, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     @abc.abstractmethod
     def generate(  # lgtm [py/inheritance/incorrect-overridden-signature]
@@ -307,7 +307,7 @@ class AttributeInferenceAttack(InferenceAttack):
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
         """
         # Save attack-specific parameters
-        super(AttributeInferenceAttack, self).set_params(**kwargs)
+        super().set_params(**kwargs)
         self._check_params()
 
     def _check_params(self) -> None:

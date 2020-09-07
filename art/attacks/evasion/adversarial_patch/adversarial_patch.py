@@ -88,7 +88,7 @@ class AdversarialPatch(EvasionAttack):
                             Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
                             the `patch_shape` is set to the shape of the image samples.
         """
-        super(AdversarialPatch, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         if self.estimator.clip_values is None:
             raise ValueError("Adversarial Patch attack requires a classifier with clip_values.")
 

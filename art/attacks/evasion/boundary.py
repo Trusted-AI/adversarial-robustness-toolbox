@@ -85,7 +85,7 @@ class BoundaryAttack(EvasionAttack):
         :param sample_size: Number of samples per trial.
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         """
-        super(BoundaryAttack, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         self._targeted = targeted
         self.delta = delta

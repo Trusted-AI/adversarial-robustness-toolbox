@@ -111,7 +111,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(TensorFlowClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -258,7 +258,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
         else:
-            super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
@@ -701,7 +701,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(TensorFlowV2Classifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,

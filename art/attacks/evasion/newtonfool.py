@@ -61,7 +61,7 @@ class NewtonFool(EvasionAttack):
         :param eta: The eta coefficient.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(NewtonFool, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.max_iter = max_iter
         self.eta = eta
         self.batch_size = batch_size

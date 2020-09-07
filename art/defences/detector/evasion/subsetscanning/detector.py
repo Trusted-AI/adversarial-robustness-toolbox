@@ -56,7 +56,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         :param bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
         :param layer: The layer from which to extract activations to perform scan.
         """
-        super(SubsetScanningDetector, self).__init__(
+        super().__init__(
             clip_values=classifier.clip_values,
             channel_index=classifier.channel_index,
             channels_first=classifier.channels_first,

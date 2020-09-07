@@ -74,7 +74,7 @@ class SpatialTransformation(EvasionAttack):
                range `[0, 180]`.
         :param num_rotations: The number of rotations to search on grid spacing.
         """
-        super(SpatialTransformation, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.max_translation = max_translation
         self.num_translations = num_translations
         self.max_rotation = max_rotation

@@ -50,7 +50,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
         :param transformation: An iterator over transformations.
         :type transformation: :class:`.Classifier`
         """
-        super(ExpectationOverTransformations, self).__init__(classifier)
+        super().__init__(classifier)
         self.sample_size = sample_size
         self.transformation = transformation
         self._predict = self.classifier.predict

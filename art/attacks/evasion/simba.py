@@ -78,7 +78,7 @@ class SimBA(EvasionAttack):
         :param targeted: perform targeted attack
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         """
-        super(SimBA, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.attack = attack
         self.max_iter = max_iter

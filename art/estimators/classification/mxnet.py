@@ -105,7 +105,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(MXClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -224,7 +224,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                     self._optimizer.step(x_batch.shape[0])
         else:
             # Fit a generic data generator through the API
-            super(MXClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super().fit_generator(generator, nb_epochs=nb_epochs)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """

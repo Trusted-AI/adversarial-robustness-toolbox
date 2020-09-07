@@ -69,7 +69,7 @@ class CopycatCNN(ExtractionAttack):
         :param nb_epochs: Number of epochs to use for training.
         :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
         """
-        super(CopycatCNN, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.batch_size_fit = batch_size_fit
         self.batch_size_query = batch_size_query

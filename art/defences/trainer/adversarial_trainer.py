@@ -81,7 +81,7 @@ class AdversarialTrainer(Trainer):
         """
         from art.attacks.attack import EvasionAttack
 
-        super(AdversarialTrainer, self).__init__(classifier=classifier)
+        super().__init__(classifier=classifier)
         if isinstance(attacks, EvasionAttack):
             self.attacks = [attacks]
         elif isinstance(attacks, list):

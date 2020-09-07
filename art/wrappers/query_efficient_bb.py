@@ -53,7 +53,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to
                               disable.
         """
-        super(QueryEfficientBBGradientEstimation, self).__init__(classifier)
+        super().__init__(classifier)
         # self.predict refers to predict of classifier
         # pylint: disable=E0203
         self._predict = self.classifier.predict

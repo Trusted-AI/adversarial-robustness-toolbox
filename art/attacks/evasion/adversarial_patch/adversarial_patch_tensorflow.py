@@ -96,7 +96,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        super(AdversarialPatchTensorFlowV2, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.rotation_max = rotation_max
         self.scale_min = scale_min
         self.scale_max = scale_max

@@ -86,7 +86,7 @@ class RONIDefense(PoisonFilteringDefence):
         :param calibrated: True if using the calibrated form of RONI.
         :param eps: performance threshold if using uncalibrated RONI.
         """
-        super(RONIDefense, self).__init__(classifier, x_train, y_train)
+        super().__init__(classifier, x_train, y_train)
         n_points = len(x_train)
         quiz_idx = np.random.randint(n_points, size=int(pp_quiz * n_points))
         self.calibrated = calibrated

@@ -80,7 +80,7 @@ class PixelThreshold(EvasionAttack):
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Indicates whether to print verbose messages of ES used.
         """
-        super(PixelThreshold, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self._project = True
         self.type_attack = -1
@@ -319,7 +319,7 @@ class PixelAttack(PixelThreshold):
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Indicates whether to print verbose messages of ES used.
         """
-        super(PixelAttack, self).__init__(classifier, th, es, targeted, verbose)
+        super().__init__(classifier, th, es, targeted, verbose)
         self.type_attack = 0
 
     def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
@@ -400,7 +400,7 @@ class ThresholdAttack(PixelThreshold):
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Indicates whether to print verbose messages of ES used.
         """
-        super(ThresholdAttack, self).__init__(classifier, th, es, targeted, verbose)
+        super().__init__(classifier, th, es, targeted, verbose)
         self.type_attack = 1
 
     def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:

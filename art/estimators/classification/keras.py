@@ -111,7 +111,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(KerasClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -458,11 +458,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 logger.info("Unable to use data generator as Keras generator. Now treating as framework-independent.")
                 if "verbose" not in kwargs.keys():
                     kwargs["verbose"] = 0
-                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+                super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:
             if "verbose" not in kwargs.keys():
                 kwargs["verbose"] = 0
-            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False

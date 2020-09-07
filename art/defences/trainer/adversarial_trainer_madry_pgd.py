@@ -75,7 +75,7 @@ class AdversarialTrainerMadryPGD(Trainer):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         """
-        super(AdversarialTrainerMadryPGD, self).__init__(classifier=classifier)  # type: ignore
+        super().__init__(classifier=classifier)  # type: ignore
         self.batch_size = batch_size
         self.nb_epochs = nb_epochs
 

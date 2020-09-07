@@ -61,7 +61,7 @@ class SaliencyMapMethod(EvasionAttack):
         :param gamma: Maximum fraction of features being perturbed (between 0 and 1).
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(SaliencyMapMethod, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.theta = theta
         self.gamma = gamma
         self.batch_size = batch_size

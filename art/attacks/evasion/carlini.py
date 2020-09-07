@@ -110,7 +110,7 @@ class CarliniL2Method(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Indicates whether to print verbose messages.
         """
-        super(CarliniL2Method, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.confidence = confidence
         self._targeted = targeted
@@ -525,7 +525,7 @@ class CarliniLInfMethod(EvasionAttack):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Indicates whether to print verbose messages.
         """
-        super(CarliniLInfMethod, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.confidence = confidence
         self._targeted = targeted

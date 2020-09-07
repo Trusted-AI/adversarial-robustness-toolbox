@@ -98,7 +98,7 @@ class UniversalPerturbation(EvasionAttack):
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 2.
         :param batch_size: Batch size for model evaluations in UniversalPerturbation.
         """
-        super(UniversalPerturbation, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.attacker = attacker
         self.attacker_params = attacker_params
         self.delta = delta

@@ -72,7 +72,7 @@ class PixelDefend(Preprocessor):
         :param eps: Defense parameter 0-255.
         :param pixel_cnn: Pre-trained PixelCNN model.
         """
-        super(PixelDefend, self).__init__()
+        super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict

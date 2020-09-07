@@ -94,7 +94,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                 "preprocessing defences."
             )
 
-        super(ProjectedGradientDescentTensorFlowV2, self).__init__(
+        super().__init__(
             estimator=estimator,
             norm=norm,
             eps=eps,

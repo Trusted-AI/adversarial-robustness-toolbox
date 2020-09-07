@@ -57,7 +57,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked.
         """
-        super(AttributeInferenceBlackBox, self).__init__(estimator=classifier, attack_feature=attack_feature)
+        super().__init__(estimator=classifier, attack_feature=attack_feature)
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -160,7 +160,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         :param classifier: Target classifier.
         :param attack_feature: The index of the feature to be attacked.
         """
-        super(AttributeInferenceWhiteBoxLifestyleDecisionTree, self).__init__(
+        super().__init__(
             estimator=classifier, attack_feature=attack_feature
         )
 
@@ -264,7 +264,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         :type attack_feature: `int`
         """
-        super(AttributeInferenceWhiteBoxDecisionTree, self).__init__(
+        super().__init__(
             estimator=classifier, attack_feature=attack_feature
         )
 

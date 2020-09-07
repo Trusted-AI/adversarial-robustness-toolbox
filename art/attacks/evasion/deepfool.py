@@ -74,7 +74,7 @@ class DeepFool(EvasionAttack):
                          most likely classes are considered, speeding up the computation.
         :param batch_size: Batch size
         """
-        super(DeepFool, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.max_iter = max_iter
         self.epsilon = epsilon
         self.nb_grads = nb_grads

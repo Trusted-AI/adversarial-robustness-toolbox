@@ -89,7 +89,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             starting at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(ProjectedGradientDescentCommon, self).__init__(
+        super().__init__(
             estimator=estimator,
             norm=norm,
             eps=eps,
@@ -229,7 +229,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(ProjectedGradientDescentNumpy, self).__init__(
+        super().__init__(
             estimator=estimator,
             norm=norm,
             eps=eps,
