@@ -163,7 +163,8 @@ class TestWasserstein(TestBase):
         # test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
         #
         # train_success_rate = (
-        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
+        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1))
+        #     / y_train.shape[0]
         # )
         # self.assertGreaterEqual(train_success_rate, base_success_rate)
         #
@@ -198,7 +199,8 @@ class TestWasserstein(TestBase):
         # test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
         #
         # train_success_rate = (
-        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
+        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1))
+        #     / y_train.shape[0]
         # )
         # self.assertGreaterEqual(train_success_rate, base_success_rate)
         #
@@ -233,7 +235,8 @@ class TestWasserstein(TestBase):
         # test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
         #
         # train_success_rate = (
-        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
+        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1))
+        #     / y_train.shape[0]
         # )
         # self.assertGreaterEqual(train_success_rate, base_success_rate)
         #
@@ -268,7 +271,8 @@ class TestWasserstein(TestBase):
         # test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
         #
         # train_success_rate = (
-        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
+        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1))
+        #     / y_train.shape[0]
         # )
         # self.assertGreaterEqual(train_success_rate, 0)
         #
@@ -303,7 +307,8 @@ class TestWasserstein(TestBase):
         # test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
         #
         # train_success_rate = (
-        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
+        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1))
+        #     / y_train.shape[0]
         # )
         # self.assertGreaterEqual(train_success_rate, 0)
         #
@@ -338,7 +343,8 @@ class TestWasserstein(TestBase):
         # test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
         #
         # train_success_rate = (
-        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
+        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1))
+        #     / y_train.shape[0]
         # )
         # self.assertGreaterEqual(train_success_rate, base_success_rate)
         #
@@ -410,7 +416,8 @@ class TestWasserstein(TestBase):
         # test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
         #
         # train_success_rate = (
-        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) / y_train.shape[0]
+        #     np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1))
+        #     / y_train.shape[0]
         # )
         # self.assertTrue(train_success_rate >= base_success_rate)
         #
