@@ -77,6 +77,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         learning_rate_2nd_stage: float = 0.001,
         optimizer_1st_stage: "Optimizer" = torch.optim.SGD,
         optimizer_2nd_stage: "Optimizer" = torch.optim.SGD,
+        global_max_length: int = 10000,
         batch_size: int = 32,
     ):
         """
@@ -94,6 +95,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                                         the attack.
         :param optimizer_1st_stage: The optimizer applied for the first stage of the optimization of the attack.
         :param optimizer_2nd_stage: The optimizer applied for the second stage of the optimization of the attack.
+        :param global_max_length: The length of the longest audio signal allowed by this attack.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         if (
@@ -110,6 +112,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         super(ImperceptibleAttackPytorch, self).__init__(estimator=estimator)
 
+        # Set attack attributes
         self.initial_eps = initial_eps
         self.max_iter_1st_stage = max_iter_1st_stage
         self.max_iter_2nd_stage = max_iter_2nd_stage
@@ -117,7 +120,11 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         self.learning_rate_2nd_stage = learning_rate_2nd_stage
         self.optimizer_1st_stage = optimizer_1st_stage
         self.optimizer_2nd_stage = optimizer_2nd_stage
+        self.global_max_length = global_max_length
         self.batch_size = batch_size
+
+        # Check validity of attack attributes
+        self._check_params()
 
     def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -133,58 +140,23 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-        # Check whether random eps is enabled
-        self._random_eps()
-
-        # Set up targets
-        targets = self._set_targets(x, y)
-
-        # Get the mask
-        mask = self._get_mask(x, **kwargs)
-
-        # Create dataset
-        if mask is not None:
-            # Here we need to make a distinction: if the masks are different for each input, we need to index
-            # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
-            if len(mask.shape) == len(x.shape):
-                dataset = torch.utils.data.TensorDataset(
-                    torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
-                    torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
-                    torch.from_numpy(mask.astype(ART_NUMPY_DTYPE)),
-                )
-
-            else:
-                dataset = torch.utils.data.TensorDataset(
-                    torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
-                    torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
-                    torch.from_numpy(np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])),
-                )
-
-        else:
-            dataset = torch.utils.data.TensorDataset(
-                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)), torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
-            )
-
-        data_loader = torch.utils.data.DataLoader(
-            dataset=dataset, batch_size=self.batch_size, shuffle=False, drop_last=False
-        )
 
         # Start to compute adversarial examples
-        adv_x_best = None
-        rate_best = None
+        # adv_x_best = None
+        # rate_best = None
+        #
+        #     # Compute perturbation with batching
+        #     for (batch_id, batch_all) in enumerate(data_loader):
+        #         if mask is not None:
+        #             (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
+        #         else:
+        #             (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
+        #
+        #         batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+        #         adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
 
-            # Compute perturbation with batching
-            for (batch_id, batch_all) in enumerate(data_loader):
-                if mask is not None:
-                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
-                else:
-                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
 
-                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
-
-
-        return adv_x_best
+        return
 
     def _generate_batch(self, x: "torch.Tensor", targets: "torch.Tensor", mask: "torch.Tensor") -> np.ndarray:
         """
@@ -197,19 +169,25 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                      perturbed.
         :return: Adversarial examples.
         """
-        inputs = x.to(self.estimator.device)
-        targets = targets.to(self.estimator.device)
-        adv_x = inputs
+        return
 
-        if mask is not None:
-            mask = mask.to(self.estimator.device)
+    def _partial_forward(self, batch_size: int):
+        """
 
-        for i_max_iter in range(self.max_iter):
-            adv_x = self._compute_torch(
-                adv_x, inputs, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
-            )
+        :param global_max_length:
+        :return:
+        """
+        from torch.autograd import Variable
 
-        return adv_x.cpu().detach().numpy()
+        global_delta = Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
+                                       name='qq_delta')
+
+
+    def _attack_1st_stage(self):
+        return
+
+    def _attack_2nd_stage(self):
+        return
 
     def _check_params(self) -> None:
         """
@@ -237,6 +215,11 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             raise ValueError("The learning rate must be of type float.")
         if not self.learning_rate_2nd_stage > 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
+
+        if not isinstance(self.global_max_length, int):
+            raise ValueError("The length of the longest audio signal must be of type int.")
+        if not self.global_max_length > 0:
+            raise ValueError("The length of the longest audio signal must be greater than 0.")
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
