@@ -98,11 +98,9 @@ class ShadowAttack(EvasionAttack):
         self._check_params()
 
         self.framework: Optional[str]
-        if isinstance(self.estimator, TensorFlowV2Classifier) or isinstance(
-            self.estimator, TensorFlowV2RandomizedSmoothing
-        ):
+        if isinstance(self.estimator, (TensorFlowV2Classifier, TensorFlowV2RandomizedSmoothing)):
             self.framework = "tensorflow"
-        elif isinstance(self.estimator, PyTorchClassifier) or isinstance(self.estimator, PyTorchRandomizedSmoothing):
+        elif isinstance(self.estimator, (PyTorchClassifier, PyTorchRandomizedSmoothing)):
             self.framework = "pytorch"
         else:
             self.framework = None
@@ -182,9 +180,9 @@ class ShadowAttack(EvasionAttack):
                     perturbation_t = tf.convert_to_tensor(perturbation)
                     tape.watch(perturbation_t)
 
-                    x_ = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
-                    y_ = perturbation_t[:, :, 1:, :] - perturbation_t[:, :, :-1, :]
-                    loss_tv = tf.reduce_sum(x_ * x_, axis=(1, 2, 3)) + tf.reduce_sum(y_ * y_, axis=(1, 2, 3))
+                    x_t = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
+                    y_t = perturbation_t[:, :, 1:, :] - perturbation_t[:, :, :-1, :]
+                    loss_tv = tf.reduce_sum(x_t * x_t, axis=(1, 2, 3)) + tf.reduce_sum(y_t * y_t, axis=(1, 2, 3))
 
                     if perturbation_t.shape[1] == 1:
                         loss_s = 0.0
@@ -213,10 +211,10 @@ class ShadowAttack(EvasionAttack):
             perturbation_t = torch.from_numpy(perturbation).to("cpu")
             perturbation_t.requires_grad = True
 
-            x_ = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
-            y_ = perturbation_t[:, :, 1:, :] - perturbation_t[:, :, :-1, :]
+            x_t = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
+            y_t = perturbation_t[:, :, 1:, :] - perturbation_t[:, :, :-1, :]
 
-            loss_tv = (x_ * x_).sum(dim=(1, 2, 3)) + (y_ * y_).sum(dim=(1, 2, 3))
+            loss_tv = (x_t * x_t).sum(dim=(1, 2, 3)) + (y_t * y_t).sum(dim=(1, 2, 3))
 
             if perturbation_t.shape[1] == 1:
                 loss_s = 0.0

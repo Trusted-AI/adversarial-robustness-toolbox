@@ -232,15 +232,15 @@ class DPatch(EvasionAttack):
 
         if not isinstance(self.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate > 0.0:
+        if self.learning_rate <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.max_iter, int):
             raise ValueError("The number of optimization steps must be of type int.")
-        if not self.max_iter > 0:
+        if self.max_iter <= 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
         if not isinstance(self.batch_size, int):
             raise ValueError("The batch size must be of type int.")
-        if not self.batch_size > 0:
+        if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")

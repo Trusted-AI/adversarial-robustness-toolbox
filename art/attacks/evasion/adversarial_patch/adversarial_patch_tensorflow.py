@@ -275,7 +275,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         transform_vectors = list()
 
-        for i in range(nb_samples):
+        for _ in range(nb_samples):
             if scale is None:
                 im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
             else:

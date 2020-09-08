@@ -876,9 +876,9 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
 
                 urlretrieve(url, full_path)
             except HTTPError as exception:
-                raise Exception(error_msg.format(url, exception.code, exception.msg))  # type: ignore
+                raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
             except URLError as exception:
-                raise Exception(error_msg.format(url, exception.errno, exception.reason))
+                raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError
         except (Exception, KeyboardInterrupt):
             if os.path.exists(full_path):
                 os.remove(full_path)

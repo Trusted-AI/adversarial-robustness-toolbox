@@ -213,7 +213,7 @@ class UniversalPerturbation(EvasionAttack):
 
             return a_instance
         except KeyError:
-            raise NotImplementedError("{} attack not supported".format(a_name))
+            raise NotImplementedError("{} attack not supported".format(a_name)) from KeyError
 
     @staticmethod
     def _get_class(class_name: str) -> types.ModuleType:

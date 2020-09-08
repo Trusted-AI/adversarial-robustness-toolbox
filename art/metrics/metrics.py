@@ -63,7 +63,7 @@ def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
     except Exception:
-        raise NotImplementedError("{} crafting method not supported.".format(attack))
+        raise NotImplementedError("{} crafting method not supported.".format(attack)) from Exception
 
     if params:
         crafter.set_params(**params)
@@ -383,12 +383,12 @@ def wasserstein_distance(
         u_weights = u_weights.flatten().reshape(u_weights.shape[0], -1)
         v_weights = v_weights.flatten().reshape(v_weights.shape[0], -1)
 
-    wd = np.zeros(u_values.shape[0])
+    w_d = np.zeros(u_values.shape[0])
 
     for i in range(u_values.shape[0]):
         if u_weights is None and v_weights is None:
-            wd[i] = wasserstein_distance(u_values[i], v_values[i])
+            w_d[i] = wasserstein_distance(u_values[i], v_values[i])
         elif u_weights is not None and v_weights is not None:
-            wd[i] = wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
+            w_d[i] = wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
 
-    return wd
+    return w_d

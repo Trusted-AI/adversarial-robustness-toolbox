@@ -143,7 +143,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
                 raise NotImplementedError(
                     "Number of classes cannot be determined automatically. "
                     + "Please manually set argument nb_classes in XGBoostClassifier."
-                )
+                ) from AttributeError
 
         if isinstance(self._model, XGBClassifier):
             return self._model.n_classes_

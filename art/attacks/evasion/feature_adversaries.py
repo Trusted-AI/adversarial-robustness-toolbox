@@ -133,13 +133,13 @@ class FeatureAdversaries(EvasionAttack):
         from scipy.optimize import minimize, Bounds
         from scipy.linalg import norm
 
-        lb = x.flatten() - self.delta
-        lb[lb < self.estimator.clip_values[0]] = self.estimator.clip_values[0]
+        l_b = x.flatten() - self.delta
+        l_b[l_b < self.estimator.clip_values[0]] = self.estimator.clip_values[0]
 
-        ub = x.flatten() + self.delta
-        ub[ub > self.estimator.clip_values[1]] = self.estimator.clip_values[1]
+        u_b = x.flatten() + self.delta
+        u_b[u_b > self.estimator.clip_values[1]] = self.estimator.clip_values[1]
 
-        bound = Bounds(lb=lb, ub=ub, keep_feasible=False)
+        bound = Bounds(lb=l_b, ub=u_b, keep_feasible=False)
 
         guide_representation = self.estimator.get_activations(
             x=y.reshape(-1, *self.estimator.input_shape),  # type: ignore
