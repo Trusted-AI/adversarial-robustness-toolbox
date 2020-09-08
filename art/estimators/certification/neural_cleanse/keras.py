@@ -188,8 +188,17 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         print("Loss value:")
 
         #print(K.eval(self.loss))
-        with K.get_session().as_default():
-            print(self.loss.eval(feed_dict={y_true_tensor:np.asarray([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])}))
+        import tensorflow as tf
+        version = tf.version.VERSION[0]
+        if version == '2':
+            with tf.compat.v1.Session().as_default():
+                print(self.loss.eval(feed_dict={y_true_tensor: np.asarray([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])}))
+        elif version == '1':
+            with K.get_session().as_default():
+                print(self.loss.eval(feed_dict={y_true_tensor:np.asarray([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])}))
+        else:
+            raise NotImplementedError("Tensorflow version '{}' not supported".format(version))
+
 
         # This will not allow to compute loss gradient
         print(K.gradients(self.loss, [reverse_mask_tensor, input_tensor]))
