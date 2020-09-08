@@ -33,5 +33,5 @@ install:
   - pip install -q -r requirements.txt
   - pip list
 
-script:
-  - ./run_tests.sh
+#script:
+#  - ./run_tests.sh
