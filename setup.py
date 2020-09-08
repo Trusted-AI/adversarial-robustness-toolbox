@@ -10,7 +10,7 @@ install_requires = [
     "numpy",
     "scipy==1.4.1",
     "matplotlib",
-    "scikit-learn==0.23.2",
+    "scikit-learn==0.22.2",
     "six",
     "setuptools",
     "Pillow",
