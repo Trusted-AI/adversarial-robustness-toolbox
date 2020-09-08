@@ -38,6 +38,7 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
     """
     Estimator class for TensorFlow models.
     """
+
     import tensorflow as tf
 
     def __init__(self, **kwargs) -> None:

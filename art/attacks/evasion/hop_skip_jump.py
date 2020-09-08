@@ -545,7 +545,7 @@ class HopSkipJump(EvasionAttack):
     def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [2, np.inf, "inf"]:
-            raise ValueError('Norm order must be either 2, `np.inf` or \"inf\".')
+            raise ValueError('Norm order must be either 2, `np.inf` or "inf".')
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")

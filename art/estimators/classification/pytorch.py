@@ -52,6 +52,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     """
     This class implements a classifier with the PyTorch framework.
     """
+
     import torch
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")

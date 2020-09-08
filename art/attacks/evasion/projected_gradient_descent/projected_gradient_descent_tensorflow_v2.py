@@ -368,7 +368,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         else:
             raise NotImplementedError(
-                "Values of `norm_p` different from 1, 2 \"inf\" and `np.inf` are currently not supported."
+                'Values of `norm_p` different from 1, 2 "inf" and `np.inf` are currently not supported.'
             )
 
         values = tf.reshape(values_tmp, values.shape)

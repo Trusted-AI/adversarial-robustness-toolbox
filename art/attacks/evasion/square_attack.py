@@ -446,7 +446,7 @@ class SquareAttack(EvasionAttack):
 
     def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError("The argument norm has to be either 1, 2, np.inf, or \"inf\".")
+            raise ValueError('The argument norm has to be either 1, 2, np.inf, or "inf".')
 
         if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The argument max_iter has to be of type int and larger than zero.")

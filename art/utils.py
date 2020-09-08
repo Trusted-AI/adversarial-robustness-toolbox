@@ -186,8 +186,9 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -
     elif norm_p in [np.inf, "inf"]:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
-        raise NotImplementedError("Values of `norm_p` different from 1, 2, `np.inf` and \"inf\" are currently not "
-                                  "supported.")
+        raise NotImplementedError(
+            'Values of `norm_p` different from 1, 2, `np.inf` and "inf" are currently not ' "supported."
+        )
 
     values = values_tmp.reshape(values.shape)
     return values

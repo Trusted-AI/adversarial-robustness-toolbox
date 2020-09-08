@@ -533,7 +533,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
     def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError("The argument norm has to be either 1, 2, np.inf, or \"inf\".")
+            raise ValueError('The argument norm has to be either 1, 2, np.inf, or "inf".')
 
         if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
             raise ValueError("The argument eps has to be either of type int or float and larger than zero.")

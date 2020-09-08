@@ -251,7 +251,7 @@ class FastGradientMethod(EvasionAttack):
     def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError("Norm order must be either 1, 2, `np.inf` or \"inf\".")
+            raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
         if self.eps <= 0:
             raise ValueError("The perturbation size `eps` has to be positive.")

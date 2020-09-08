@@ -160,9 +160,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         :param classifier: Target classifier.
         :param attack_feature: The index of the feature to be attacked.
         """
-        super().__init__(
-            estimator=classifier, attack_feature=attack_feature
-        )
+        super().__init__(estimator=classifier, attack_feature=attack_feature)
 
     def infer(self, x, y=None, **kwargs):
         """
@@ -264,9 +262,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         :type attack_feature: `int`
         """
-        super().__init__(
-            estimator=classifier, attack_feature=attack_feature
-        )
+        super().__init__(estimator=classifier, attack_feature=attack_feature)
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
