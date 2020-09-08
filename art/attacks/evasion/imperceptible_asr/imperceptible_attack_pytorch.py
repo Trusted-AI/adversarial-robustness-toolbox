@@ -38,6 +38,7 @@ from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpe
 
 if TYPE_CHECKING:
     import torch
+    from torch.optim import Optimizer
 
 logger = logging.getLogger(__name__)
 
@@ -69,8 +70,13 @@ class ImperceptibleAttackPytorch(EvasionAttack):
     def __init__(
         self,
         estimator: PyTorchDeepSpeech,
-        initial_eps: float = 1000,
-        max_iter: int = 100,
+        initial_eps: float = 2000,
+        max_iter_1st_stage: int = 1000,
+        max_iter_2nd_stage: int = 4000,
+        learning_rate_1st_stage: float = 0.1,
+        learning_rate_2nd_stage: float = 0.001,
+        optimizer_1st_stage: "Optimizer" = torch.optim.SGD,
+        optimizer_2nd_stage: "Optimizer" = torch.optim.SGD,
         batch_size: int = 32,
     ):
         """
@@ -78,7 +84,16 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         :param estimator: A trained estimator.
         :param initial_eps: Initial maximum perturbation that the attacker can introduce.
-        :param max_iter: The maximum number of iterations.
+        :param max_iter_1st_stage: The maximum number of iterations applied for the first stage of the optimization of
+                                   the attack.
+        :param max_iter_2nd_stage: The maximum number of iterations applied for the second stage of the optimization of
+                                   the attack.
+        :param learning_rate_1st_stage: The initial learning rate applied for the first stage of the optimization of
+                                        the attack.
+        :param learning_rate_2nd_stage: The initial learning rate applied for the second stage of the optimization of
+                                        the attack.
+        :param optimizer_1st_stage: The optimizer applied for the first stage of the optimization of the attack.
+        :param optimizer_2nd_stage: The optimizer applied for the second stage of the optimization of the attack.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         if (
@@ -96,22 +111,24 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         super(ImperceptibleAttackPytorch, self).__init__(estimator=estimator)
 
         self.initial_eps = initial_eps
-        self.max_iter = max_iter
+        self.max_iter_1st_stage = max_iter_1st_stage
+        self.max_iter_2nd_stage = max_iter_2nd_stage
+        self.learning_rate_1st_stage = learning_rate_1st_stage
+        self.learning_rate_2nd_stage = learning_rate_2nd_stage
+        self.optimizer_1st_stage = optimizer_1st_stage
+        self.optimizer_2nd_stage = optimizer_2nd_stage
         self.batch_size = batch_size
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
-        :param x: An array with the original inputs.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
-                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
-                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :type mask: `np.ndarray`
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
+                  only supports targeted attack.
         :return: An array holding the adversarial examples.
         """
         import torch  # lgtm [py/repeated-import]
@@ -156,9 +173,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         adv_x_best = None
         rate_best = None
 
-        for _ in range(max(1, self.num_random_init)):
-            adv_x = x.astype(ART_NUMPY_DTYPE)
-
             # Compute perturbation with batching
             for (batch_id, batch_all) in enumerate(data_loader):
                 if mask is not None:
@@ -169,22 +183,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                 adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
 
-            if self.num_random_init > 1:
-                rate = 100 * compute_success(
-                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size
-                )
-                if rate_best is None or rate > rate_best or adv_x_best is None:
-                    rate_best = rate
-                    adv_x_best = adv_x
-            else:
-                adv_x_best = adv_x
-
-        logger.info(
-            "Success rate of attack: %.2f%%",
-            rate_best
-            if rate_best is not None
-            else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
-        )
 
         return adv_x_best
 
@@ -213,172 +211,32 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation(self, x: "torch.Tensor", y: "torch.Tensor", mask: "torch.Tensor") -> "torch.Tensor":
+    def _check_params(self) -> None:
         """
-        Compute perturbations.
-
-        :param x: Current adversarial examples.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
-                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
-                  (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :return: Perturbations.
+        Apply attack-specific checks.
         """
-        import torch  # lgtm [py/repeated-import]
+        if self.initial_eps <= 0:
+            raise ValueError("The perturbation size `initial_eps` has to be positive.")
 
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
+        if not isinstance(self.max_iter_1st_stage, int):
+            raise ValueError("The maximum number of iterations must be of type int.")
+        if not self.max_iter_1st_stage > 0:
+            raise ValueError("The maximum number of iterations must be greater than 0.")
 
-        # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient_framework(x, y) * (1 - 2 * int(self.targeted))
+        if not isinstance(self.max_iter_2nd_stage, int):
+            raise ValueError("The maximum number of iterations must be of type int.")
+        if not self.max_iter_2nd_stage > 0:
+            raise ValueError("The maximum number of iterations must be greater than 0.")
 
-        # Apply norm bound
-        if self.norm == np.inf:
-            grad = grad.sign()
+        if not isinstance(self.learning_rate_1st_stage, float):
+            raise ValueError("The learning rate must be of type float.")
+        if not self.learning_rate_1st_stage > 0.0:
+            raise ValueError("The learning rate must be greater than 0.0.")
 
-        elif self.norm == 1:
-            ind = tuple(range(1, len(x.shape)))
-            grad = grad / (torch.sum(grad.abs(), dim=ind, keepdims=True) + tol)  # type: ignore
+        if not isinstance(self.learning_rate_2nd_stage, float):
+            raise ValueError("The learning rate must be of type float.")
+        if not self.learning_rate_2nd_stage > 0.0:
+            raise ValueError("The learning rate must be greater than 0.0.")
 
-        elif self.norm == 2:
-            ind = tuple(range(1, len(x.shape)))
-            grad = grad / (torch.sqrt(torch.sum(grad * grad, axis=ind, keepdims=True)) + tol)  # type: ignore
-
-        assert x.shape == grad.shape
-
-        if mask is None:
-            return grad
-        else:
-            return grad * mask
-
-    def _apply_perturbation(self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: float) -> "torch.Tensor":
-        """
-        Apply perturbation on examples.
-
-        :param x: Current adversarial examples.
-        :param perturbation: Current perturbations.
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :return: Adversarial examples.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        x = x + eps_step * perturbation
-
-        if self.estimator.clip_values is not None:
-            clip_min, clip_max = self.estimator.clip_values
-            x = torch.max(
-                torch.min(x, torch.tensor(clip_max).to(self.estimator.device)),
-                torch.tensor(clip_min).to(self.estimator.device),
-            )
-
-        return x
-
-    def _compute_torch(
-        self,
-        x: "torch.Tensor",
-        x_init: "torch.Tensor",
-        y: "torch.Tensor",
-        mask: "torch.Tensor",
-        eps: float,
-        eps_step: float,
-        random_init: bool,
-    ) -> "torch.Tensor":
-        """
-        Compute adversarial examples for one iteration.
-
-        :param x: Current adversarial examples.
-        :param x_init: An array with the original inputs.
-        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
-                  (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
-                  samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
-                  (explained in this paper: https://arxiv.org/abs/1611.01236).
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :param eps: Maximum perturbation that the attacker can introduce.
-        :param eps_step: Attack step size (input variation) at each iteration.
-        :param random_init: Random initialisation within the epsilon ball. For random_init=False starting at the
-                            original input.
-        :return: Adversarial examples.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        if random_init:
-            n = x.shape[0]
-            m = np.prod(x.shape[1:])
-
-            random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
-            random_perturbation = torch.from_numpy(random_perturbation).to(self.estimator.device)
-
-            if mask is not None:
-                random_perturbation = random_perturbation * mask
-
-            x_adv = x + random_perturbation
-
-            if self.estimator.clip_values is not None:
-                clip_min, clip_max = self.estimator.clip_values
-                x_adv = torch.max(
-                    torch.min(x_adv, torch.tensor(clip_max).to(self.estimator.device)),
-                    torch.tensor(clip_min).to(self.estimator.device),
-                )
-
-        else:
-            x_adv = x
-
-        # Get perturbation
-        perturbation = self._compute_perturbation(x_adv, y, mask)
-
-        # Apply perturbation and clip
-        x_adv = self._apply_perturbation(x_adv, perturbation, eps_step)
-
-        # Do projection
-        perturbation = self._projection(x_adv - x_init, eps, self.norm)
-
-        # Recompute x_adv
-        x_adv = perturbation + x_init
-
-        return x_adv
-
-    def _projection(self, values: "torch.Tensor", eps: float, norm_p: int) -> "torch.Tensor":
-        """
-        Project `values` on the L_p norm ball of size `eps`.
-
-        :param values: Values to clip.
-        :param eps: Maximum norm allowed.
-        :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
-        :return: Values of `values` after projection.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        # Pick a small scalar to avoid division by 0
-        tol = 10e-8
-        values_tmp = values.reshape(values.shape[0], -1)
-
-        if norm_p == 2:
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
-            ).unsqueeze_(-1)
-
-        elif norm_p == 1:
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
-            ).unsqueeze_(-1)
-
-        elif norm_p == np.inf:
-            values_tmp = values_tmp.sign() * torch.min(
-                values_tmp.abs(), torch.tensor([eps], dtype=torch.float32).to(self.estimator.device)
-            )
-
-        else:
-            raise NotImplementedError(
-                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported."
-            )
-
-        values = values_tmp.reshape(values.shape)
-
-        return values
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")
