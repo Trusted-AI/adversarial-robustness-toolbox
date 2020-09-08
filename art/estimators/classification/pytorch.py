@@ -668,6 +668,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     """
                     This is a wrapper for the input model.
                     """
+                    import torch
 
                     def __init__(self, model: torch.nn.Module):
                         """
