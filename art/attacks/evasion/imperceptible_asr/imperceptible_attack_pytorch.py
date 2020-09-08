@@ -179,8 +179,11 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         """
         from torch.autograd import Variable
 
-        global_delta = Variable(np.zeros((batch_size, FLAGS.max_length_dataset), dtype=np.float32),
-                                       name='qq_delta')
+        self.global_delta = Variable(
+            x=torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor),
+            requires_grad=True
+        )
+        self.global_delta.to(self.estimator.device)
 
 
     def _attack_1st_stage(self):
