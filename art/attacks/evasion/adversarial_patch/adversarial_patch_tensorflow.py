@@ -101,7 +101,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
-        self.patch_shape = patch_shape
+        if patch_shape is None:
+            self.patch_shape = self.estimator.input_shape
+        else:
+            self.patch_shape = patch_shape
         self.image_shape = classifier.input_shape
         self._check_params()
 
@@ -118,9 +121,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         elif self.nb_dims == 4:
             self.i_h = 1
             self.i_w = 2
-
-        if self.patch_shape is None:
-            self.patch_shape = self.estimator.input_shape
 
         if self.patch_shape[0] != self.patch_shape[1]:
             raise ValueError("Patch height and width need to be the same.")

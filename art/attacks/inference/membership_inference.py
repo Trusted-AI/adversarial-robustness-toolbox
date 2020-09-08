@@ -18,7 +18,6 @@
 
 """
 This module implements membership inference attacks.
-
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -53,9 +52,9 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
 
         :param classifier: Target classifier.
         """
-        super(MembershipInferenceBlackBoxRuleBased, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
-    def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
@@ -63,6 +62,9 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         :param y: True labels for `x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
+        if y is None:
+            raise ValueError("MembershipInferenceBlackBoxRuleBased requires true labels `y`.")
+
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
 
@@ -73,7 +75,7 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
 
         # get model's predictions for x
         predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
-        return [1 if p == y[index] else 0 for index, p in enumerate(predictions)]
+        return np.asarray([1 if p == y[index] else 0 for index, p in enumerate(predictions)])
 
 
 class MembershipInferenceBlackBox(InferenceAttack):
@@ -94,8 +96,8 @@ class MembershipInferenceBlackBox(InferenceAttack):
     def __init__(
         self,
         classifier: Classifier,
-        input_type: Optional[str] = "prediction",
-        attack_model_type: Optional[str] = "nn",
+        input_type: str = "prediction",
+        attack_model_type: str = "nn",
         attack_model: Optional[Classifier] = None,
     ):
         """
@@ -120,7 +122,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
         if self.attack_model:
             self.default_model = False
-            self.attack_model_type = None
+            self.attack_model_type = "None"
         else:
             self.default_model = True
             if self.attack_model_type == "nn":
@@ -180,7 +182,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
             elif self.attack_model_type == "gb":
                 self.attack_model = GradientBoostingClassifier()
 
-    def fit(self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs) -> np.ndarray:
+    def fit(self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs):
         """
         Infer membership in the training set of the target estimator.
 
@@ -271,7 +273,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
             self.attack_model.fit(np.c_[x1, x2], y_ready)
 
-    def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
@@ -279,6 +281,9 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param y: True labels for `x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
+        if y is None:
+            raise ValueError("MembershipInferenceBlackBox requires true labels `y`.")
+
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
 

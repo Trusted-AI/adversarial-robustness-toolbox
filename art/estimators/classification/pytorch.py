@@ -52,15 +52,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     """
     This class implements a classifier with the PyTorch framework.
     """
+    import torch
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        model: "torch.nn.Module",
-        loss: "torch.nn.modules.loss._Loss",
+        model: torch.nn.Module,
+        loss: torch.nn.modules.loss._Loss,
         input_shape: Tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        optimizer: Optional[torch.optim.Optimizer] = None,  # type: ignore
         channel_index=Deprecated,
         channels_first: bool = True,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
@@ -139,7 +140,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             self._int_labels = False
 
     @property
-    def device(self) -> "torch.device":
+    def device(self) -> torch.device:
         """
         Get current used device.
 
@@ -148,10 +149,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return self._device
 
     @property
-    def model(self) -> "torch.nn.Module":
+    def model(self) -> torch.nn.Module:
         return self._model._model
 
-    def reduce_labels(self, y: np.ndarray):
+    def reduce_labels(self, y: np.ndarray) -> np.ndarray:
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if self._reduce_labels and self._int_labels:
             return np.argmax(y, axis=1)
@@ -160,7 +161,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             return y
 
-    def reduce_labels_framework(self, y: "torch.Tensor"):
+    def reduce_labels_framework(self, y: torch.Tensor) -> torch.Tensor:
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
@@ -465,7 +466,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def loss_gradient_framework(self, x: "torch.Tensor", y: "torch.Tensor", **kwargs) -> "torch.Tensor":
+    def loss_gradient_framework(self, x: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -654,7 +655,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return repr_
 
-    def _make_model_wrapper(self, model: "torch.nn.Module"):
+    def _make_model_wrapper(self, model: torch.nn.Module):
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
             import torch.nn as nn
@@ -667,7 +668,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     This is a wrapper for the input model.
                     """
 
-                    def __init__(self, model: "torch.nn.Module"):
+                    def __init__(self, model: torch.nn.Module):
                         """
                         Initialization by storing the input model.
 

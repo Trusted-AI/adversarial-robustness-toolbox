@@ -116,9 +116,6 @@ class ShadowAttack(EvasionAttack):
         :param y: An array of a single target label.
         :return: An array with the adversarial examples.
         """
-        if x.shape[0] > 1 or y.shape[0] > 1:
-            raise ValueError("This attack only accepts a single sample as input.")
-
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
@@ -130,6 +127,9 @@ class ShadowAttack(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
         else:
             self.targeted = True
+
+        if x.shape[0] > 1 or y.shape[0] > 1:
+            raise ValueError("This attack only accepts a single sample as input.")
 
         if x.ndim != 4:
             raise ValueError("Unrecognized input dimension. Shadow Attack can only be applied to image data.")
