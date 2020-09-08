@@ -146,6 +146,10 @@ class ThermometerEncoding(Preprocessor):
         :param grad: Gradient value so far.
         :return: The gradient (estimate) of the defence.
         """
+        if self.channels_first:
+            x = np.swapaxes(x, 1, -1)
+            grad = np.swapaxes(grad, 1, -1)
+
         thermometer_grad = np.zeros(x.shape[:-1] + (x.shape[-1] * self.num_space,))
         mask = np.array([x > k / self.num_space for k in range(self.num_space)])
         mask = np.moveaxis(mask, 0, -1)
@@ -155,6 +159,10 @@ class ThermometerEncoding(Preprocessor):
         grad = grad * thermometer_grad
         grad = np.reshape(grad, grad.shape[:-1] + (grad.shape[-1] // self.num_space, self.num_space))
         grad = np.sum(grad, -1)
+
+        if self.channels_first:
+            grad = np.swapaxes(grad, 1, -1)
+
         return grad / (self.clip_values[1] - self.clip_values[0])
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
