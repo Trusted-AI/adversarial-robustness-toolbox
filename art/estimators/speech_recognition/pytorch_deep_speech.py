@@ -405,7 +405,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         )
 
         # Compute real input sizes
-        input_sizes = input_rates.mul_(inputs.size(-1)).int()
+        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
 
         # Call to DeepSpeech model for prediction
         outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))
