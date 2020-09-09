@@ -103,8 +103,8 @@ class TestMetricsTrees(unittest.TestCase):
             x=self.x_test, y=self.y_test, eps_init=0.3, nb_search_steps=10, max_clique=2, max_level=2
         )
 
-        self.assertEqual(average_bound, 0.07634765624999999)
-        self.assertEqual(verified_error, 0.85)
+        self.assertEqual(average_bound, 0.047742187500000005)
+        self.assertEqual(verified_error, 0.94)
 
     def test_GradientBoosting(self):
         model = GradientBoostingClassifier(n_estimators=4, max_depth=6)
@@ -117,7 +117,7 @@ class TestMetricsTrees(unittest.TestCase):
             x=self.x_test, y=self.y_test, eps_init=0.3, nb_search_steps=10, max_clique=2, max_level=2
         )
 
-        self.assertEqual(average_bound, 0.009117187499999995)
+        self.assertAlmostEqual(average_bound, 0.009, delta=0.0002)
         self.assertEqual(verified_error, 1.0)
 
     def test_RandomForest(self):

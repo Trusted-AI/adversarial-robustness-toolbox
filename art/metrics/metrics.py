@@ -325,11 +325,13 @@ def clever_t(
         sample_xs = rand_pool[np.random.choice(pool_factor * batch_size, batch_size)]
 
         # Compute gradients
-        grads = classifier.class_gradient(sample_xs)
-        if np.isnan(grads).any():
+        grad_pred_class = classifier.class_gradient(sample_xs, label=pred_class)
+        grad_target_class = classifier.class_gradient(sample_xs, label=target_class)
+
+        if np.isnan(grad_pred_class).any() or np.isnan(grad_target_class).any():
             raise Exception("The classifier results NaN gradients.")
 
-        grad = grads[:, pred_class] - grads[:, target_class]
+        grad = grad_pred_class - grad_target_class
         grad = np.reshape(grad, (batch_size, -1))
         grad_norm = np.max(np.linalg.norm(grad, ord=norm, axis=1))
         grad_norm_set.append(grad_norm)
@@ -376,6 +378,10 @@ def wasserstein_distance(
 
     u_values = u_values.flatten().reshape(u_values.shape[0], -1)
     v_values = v_values.flatten().reshape(v_values.shape[0], -1)
+
+    if u_weights is not None and v_weights is not None:
+        u_weights = u_weights.flatten().reshape(u_weights.shape[0], -1)
+        v_weights = v_weights.flatten().reshape(v_weights.shape[0], -1)
 
     wd = np.zeros(u_values.shape[0])
 

@@ -19,6 +19,7 @@ import logging
 import pytest
 
 import numpy as np
+import tensorflow as tf
 
 from art.attacks.evasion import ShadowAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -41,10 +42,6 @@ def fix_get_mnist_subset(get_mnist_dataset):
 def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
     classifier_list = image_dl_estimator_for_attack(ShadowAttack)
 
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
-
     for classifier in classifier_list:
         attack = ShadowAttack(
             estimator=classifier,
@@ -60,12 +57,9 @@ def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        if attack.framework == "pytorch":
-            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
-
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
 
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, 0.06)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, abs=0.06)
 
 
 @pytest.mark.only_with_platform("pytorch")
@@ -87,9 +81,6 @@ def test_get_regularisation_loss_gradients(fix_get_mnist_subset, image_dl_estima
         )
 
         (x_train_mnist, _, _, _) = fix_get_mnist_subset
-
-        if attack.framework == "pytorch":
-            x_train_mnist = x_train_mnist.transpose((0, 3, 1, 2))
 
         gradients = attack._get_regularisation_loss_gradients(x_train_mnist[0:1])
 

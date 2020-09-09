@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import random
 import types
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union
 
 import numpy as np
 
@@ -64,7 +64,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         delta: float = 0.2,
         max_iter: int = 20,
         eps: float = 10.0,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
     ):
         """
         :param classifier: A trained classifier.
@@ -74,7 +74,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         :param delta: desired accuracy
         :param max_iter: The maximum number of iterations for computing universal perturbation.
         :param eps: Attack step size (input variation)
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 2
         """
         super(TargetedUniversalPerturbation, self).__init__(estimator=classifier)
 
