@@ -184,7 +184,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         # try apply_gradients or recompiling model
         # self._model.compile(self.opt, loss=self.loss)
         # print(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
-        print("Grads wrt pattern and mask are:   ", K.gradients(self.loss, [self.mask_tensor, self.pattern_tensor]))
+        print("Grads wrt pattern and mask are: 1212122223333  ", K.gradients(self.loss, [self.mask_tensor, self.pattern_tensor]))
         print("Loss value:")
 
         #print(K.eval(self.loss))
