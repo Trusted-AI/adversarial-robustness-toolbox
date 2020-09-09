@@ -60,7 +60,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
         nb_classes: int,
-        optimizer: Optional[torch.optim.Optimizer] = None,  # type: ignore
+        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         channel_index=Deprecated,
         channels_first: bool = True,
         clip_values: Optional[CLIP_VALUES_TYPE] = None,
@@ -475,13 +475,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: Gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
-        from torch.autograd import Variable
 
         # Check label shape
         y = self.reduce_labels_framework(y)
 
         # Convert the inputs to Variable
-        x = Variable(x, requires_grad=True)
+        x = torch.autograd.Variable(x, requires_grad=True)
 
         # Compute the gradient and return
         model_outputs = self._model(x)
@@ -654,7 +653,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return repr_
 
-    def _make_model_wrapper(self, model: torch.nn.Module):
+    def _make_model_wrapper(self, model: "torch.nn.Module"):
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
             import torch.nn as nn
