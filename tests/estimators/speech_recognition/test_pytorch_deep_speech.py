@@ -42,6 +42,7 @@ logger = logging.getLogger(__name__)
     not deepspeech_pytorch_found,
     reason="Skip unittests if deep speech module is not found because of pre-trained model.",
 )
+@pytest.mark.skipif(not amp_found, reason="Skip unittests if apex module is not found.")
 class TestPyTorchDeepSpeech:
     """
     This class tests the PyTorchDeepSpeech estimator.
@@ -113,17 +114,16 @@ class TestPyTorchDeepSpeech:
         )
         cls.x = np.array([x1, x2, x3])
 
-    @pytest.mark.skipif(not amp_found, reason="Skip unittests if apex module is not found.")
-    def test_all(self, _test_predict, _test_loss_gradient, _test_fit):
         # Only import if deep speech module is available
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Define deep speech estimator without amp
-        self.speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
+        cls.speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
 
         # Define deep speech estimator with amp
-        self.speech_recognizer_amp = PyTorchDeepSpeech(pretrained_model="librispeech", device_type="gpu", use_amp=True)
+        cls.speech_recognizer_amp = PyTorchDeepSpeech(pretrained_model="librispeech", device_type="gpu", use_amp=True)
 
+    def test_all(self, _test_predict, _test_loss_gradient, _test_fit):
         # All tests
         _test_predict
         _test_loss_gradient
