@@ -265,9 +265,7 @@ def test_fit_image_generator(
             prediction_class = np.argmax(predictions, axis=1)
             pre_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-            np.testing.assert_array_almost_equal(
-                pre_fit_accuracy, 0.32, decimal=2,
-            )
+            assert pre_fit_accuracy == pytest.approx(0.32, abs=0.01)
 
             data_gen = image_data_generator(sess=sess)
             classifier.fit_generator(generator=data_gen, nb_epochs=2)
@@ -275,7 +273,7 @@ def test_fit_image_generator(
             prediction_class = np.argmax(predictions, axis=1)
             post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-            assert post_fit_accuracy == pytest.approx(0.68, abs=0.08)
+            assert post_fit_accuracy == pytest.approx(0.8, abs=0.08)
 
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
