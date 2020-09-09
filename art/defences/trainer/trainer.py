@@ -35,7 +35,7 @@ class Trainer(abc.ABC):
     Abstract base class for training defences.
     """
 
-    def __init__(self, classifier: Union["ClassifierGradients", "PyTorchClassifier"], **kwargs) -> None:
+    def __init__(self, classifier: Union["ClassifierGradients", "PyTorchClassifier"]) -> None:
         """
         Create a adversarial training object
         """

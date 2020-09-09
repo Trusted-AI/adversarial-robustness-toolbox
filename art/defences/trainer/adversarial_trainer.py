@@ -178,7 +178,6 @@ class AdversarialTrainer(Trainer):
         self,
         x: np.ndarray,
         y: np.ndarray,
-        validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
         batch_size: int = 128,
         nb_epochs: int = 20,
         **kwargs
@@ -188,7 +187,6 @@ class AdversarialTrainer(Trainer):
 
         :param x: Training set.
         :param y: Labels for the training set.
-        :param validation_data: Validation data, not used.
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for trainings.
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of

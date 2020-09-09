@@ -37,6 +37,12 @@ logger = logging.getLogger(__name__)
 
 
 class AutoProjectedGradientDescent(EvasionAttack):
+    """
+    Implementation of the `Auto Projected Gradient Descent` attack.
+
+    | Paper link: https://arxiv.org/abs/2003.01690
+    """
+
     attack_params = EvasionAttack.attack_params + [
         "norm",
         "eps",
@@ -82,7 +88,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             if loss_type == "cross_entropy":
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                    raise NotImplementedError
+                    raise NotImplementedError("Cross-entropy loss is not implemented for probability output.")
                 else:
                     self._loss_object = tf.reduce_mean(
                         tf.keras.losses.categorical_crossentropy(

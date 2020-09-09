@@ -59,6 +59,16 @@ class SquareAttack(EvasionAttack):
         p_init: float = 0.8,
         nb_restarts: int = 1,
     ):
+        """
+        Create a :class:`.SquareAttack` instance.
+
+        :param estimator: An trained estimator.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
+        :param max_iter: Maximum number of iterations.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param p_init: Initial fraction of elements.
+        :param nb_restarts: Number of restarts.
+        """
         super().__init__(estimator=estimator)
 
         self.norm = norm

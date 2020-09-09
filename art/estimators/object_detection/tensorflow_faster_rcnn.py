@@ -31,6 +31,7 @@ from art.config import ART_DATA_PATH
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
+    import tensorflow as tf
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
     from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.client.session import Session
@@ -46,12 +47,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     """
     This class implements a model-specific object detector using Faster-RCNN and TensorFlow.
     """
-
-    import tensorflow as tf
-
     def __init__(
         self,
-        images: tf.Tensor,
+        images: "tf.Tensor",
         model: Optional["FasterRCNNMetaArch"] = None,
         filename: Optional[str] = None,
         url: Optional[str] = None,

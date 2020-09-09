@@ -69,7 +69,6 @@ class ProvenanceDefense(PoisonFilteringDefence):
         eps: float = 0.2,
         perf_func: str = "accuracy",
         pp_valid: float = 0.2,
-        **kwargs
     ) -> None:
         """
         Create an :class:`.ProvenanceDefense` object with the provided classifier.

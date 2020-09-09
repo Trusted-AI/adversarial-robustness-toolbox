@@ -140,7 +140,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
                 rel_change_val = np.linalg.norm(new_attack - old_attack) / np.linalg.norm(new_attack)
                 if rel_change_val < self.stopping_tol or self.obj_threshold and old_objective <= self.obj_threshold:
-                    logger.info("stopped after " + str(i) + " iterations due to small changes")
+                    logger.info("stopped after %d iterations due to small changes", i)
                     break
 
                 np.expand_dims(new_attack, axis=0)
@@ -175,7 +175,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             raise ValueError("Learning rate must be strictly positive")
         if self.max_iter < 1:
             raise ValueError("Value of max_iter at least 1")
-        if not (isinstance(self.feature_layer, str) or isinstance(self.feature_layer, int)):
+        if not isinstance(self.feature_layer, (str, int)):
             raise TypeError("Feature layer should be a string or int")
         if self.decay_coeff <= 0:
             raise ValueError("Decay coefficient must be positive")
@@ -249,10 +249,11 @@ def get_class_name(obj: object) -> str:
     :return: A qualified class name.
     """
     module = obj.__class__.__module__
+
     if module is None or module == str.__class__.__module__:
         return obj.__class__.__name__
-    else:
-        return module + "." + obj.__class__.__name__
+
+    return module + "." + obj.__class__.__name__
 
 
 def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):

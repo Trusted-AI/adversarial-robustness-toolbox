@@ -364,7 +364,7 @@ def wasserstein_distance(
     :param v_weights: Weight for each value. If None, equal weights will be used.
     :return: The Wasserstein distance between the two distributions.
     """
-    from scipy.stats import wasserstein_distance
+    import scipy
 
     assert u_values.shape == v_values.shape
     if u_weights is not None:
@@ -387,8 +387,8 @@ def wasserstein_distance(
 
     for i in range(u_values.shape[0]):
         if u_weights is None and v_weights is None:
-            w_d[i] = wasserstein_distance(u_values[i], v_values[i])
+            w_d[i] = scipy.stats.wasserstein_distance(u_values[i], v_values[i])
         elif u_weights is not None and v_weights is not None:
-            w_d[i] = wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
+            w_d[i] = scipy.stats.wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
 
     return w_d

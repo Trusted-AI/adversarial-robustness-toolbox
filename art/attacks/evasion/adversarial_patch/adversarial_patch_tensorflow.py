@@ -296,8 +296,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
             # Scale
             xform_matrix = rotation_matrix * (1.0 / im_scale)
-            a0, a1 = xform_matrix[0]
-            b0, b1 = xform_matrix[1]
+            a_0, a_1 = xform_matrix[0]
+            b_0, b_1 = xform_matrix[1]
 
             x_origin = float(self.image_shape[self.i_w]) / 2
             y_origin = float(self.image_shape[self.i_h]) / 2
@@ -307,10 +307,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             x_origin_delta = x_origin - x_origin_shifted
             y_origin_delta = y_origin - y_origin_shifted
 
-            a2 = x_origin_delta - (x_shift / (2 * im_scale))
-            b2 = y_origin_delta - (y_shift / (2 * im_scale))
+            a_2 = x_origin_delta - (x_shift / (2 * im_scale))
+            b_2 = y_origin_delta - (y_shift / (2 * im_scale))
 
-            transform_vectors.append([a0, a1, a2, b0, b1, b2, 0, 0])
+            transform_vectors.append([a_0, a_1, a_2, b_0, b_1, b_2, 0, 0])
 
         image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR",)
         padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
@@ -340,21 +340,21 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         shuffle = kwargs.get("shuffle", True)
         if shuffle:
-            ds = (
+            dataset = (
                 tf.data.Dataset.from_tensor_slices((x, y))
                 .shuffle(10000)
                 .batch(self.batch_size)
                 .repeat(math.ceil(x.shape[0] / self.batch_size))
             )
         else:
-            ds = (
+            dataset = (
                 tf.data.Dataset.from_tensor_slices((x, y))
                 .batch(self.batch_size)
                 .repeat(math.ceil(x.shape[0] / self.batch_size))
             )
 
         for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2"):
-            for images, target in ds:
+            for images, target in dataset:
                 _ = self._train_step(images=images, target=target)
 
         return (

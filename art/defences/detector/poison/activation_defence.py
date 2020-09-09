@@ -133,7 +133,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
             # calculate is_clean_by_class for each batch
             for batch_idx in range(num_samples // batch_size):  # type: ignore
-                x_batch, y_batch = self.generator.get_batch()
+                _, y_batch = self.generator.get_batch()
                 is_clean_batch = is_clean[batch_idx * batch_size : batch_idx * batch_size + batch_size]
                 clean_by_class_batch = self._segment_by_class(is_clean_batch, y_batch)
                 self.is_clean_by_class = [
@@ -187,7 +187,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
             # loop though the generator to generator a report
             for _ in range(num_samples // batch_size):  # type: ignore
-                x_batch, y_batch = self.generator.get_batch()
+                _, y_batch = self.generator.get_batch()
                 indices_by_class = self._segment_by_class(np.arange(batch_size), y_batch)
                 is_clean_lst = [0] * batch_size
                 for class_idx, idxs in enumerate(indices_by_class):
@@ -348,8 +348,6 @@ class ActivationDefence(PoisonFilteringDefence):
         n_train = int(len(x) * test_set_split)
         x_train, x_test = x[:n_train], x[n_train:]
         y_train, y_test = y_fix[:n_train], y_fix[n_train:]
-
-        import time
 
         filename = "original_classifier" + str(time.time()) + ".p"
         ActivationDefence._pickle_classifier(classifier, filename)

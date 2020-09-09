@@ -38,6 +38,12 @@ logger = logging.getLogger(__name__)
 
 
 class AutoAttack(EvasionAttack):
+    """
+    Implementation of the `AutoAttack` attack.
+
+    | Paper link: https://arxiv.org/abs/2003.01690
+    """
+
     attack_params = EvasionAttack.attack_params + [
         "norm",
         "eps",
@@ -160,11 +166,11 @@ class AutoAttack(EvasionAttack):
         # Targeted attacks
         if self.targeted:
             # Labels for targeted attacks
-            y_ = np.array([range(y.shape[1])] * y.shape[0])
+            y_t = np.array([range(y.shape[1])] * y.shape[0])
             y_idx = np.argmax(y, axis=1)
             y_idx = np.expand_dims(y_idx, 1)
-            y_ = y_[y_ != y_idx]
-            targeted_labels = np.reshape(y_, (y.shape[0], -1))
+            y_t = y_t[y_t != y_idx]
+            targeted_labels = np.reshape(y_t, (y.shape[0], -1))
 
             for attack in self.attacks:
 

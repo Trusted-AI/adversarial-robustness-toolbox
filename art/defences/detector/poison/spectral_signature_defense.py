@@ -25,8 +25,9 @@ This module implements methods performing backdoor poisoning detection based on 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
 from typing import List, Tuple, TYPE_CHECKING
+
+import numpy as np
 
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence

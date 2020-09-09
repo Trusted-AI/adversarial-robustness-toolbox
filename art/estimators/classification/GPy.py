@@ -21,11 +21,13 @@ This module implements a wrapper class for GPy Gaussian Process classification m
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import os
 from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.classification.classifier import ClassifierGradients
+from art.config import ART_DATA_PATH
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -202,4 +204,19 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
         raise NotImplementedError
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
-        self.model.save_model(filename, save_data=False)
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `ART_DATA_PATH`.
+        """
+        if path is None:
+            full_path = os.path.join(ART_DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        self.model.save_model(full_path, save_data=False)

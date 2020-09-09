@@ -95,8 +95,8 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
             x_nhwc = x
         elif x_ndim == 5:
             # NFHWC --> NHWC
-            nb_clips, clip_size, h, w, c = x.shape
-            x_nhwc = x.reshape(nb_clips * clip_size, h, w, c)
+            nb_clips, clip_size, height, width, channels = x.shape
+            x_nhwc = x.reshape(nb_clips * clip_size, height, width, channels)
         else:
             raise ValueError(
                 "Unrecognized input dimension. Spatial smoothing can only be applied to image (NHWC) and video (NFHWC) "
@@ -111,7 +111,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
             x = x_nhwc
         elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             # NFHWC <-- NHWC
-            x = x_nhwc.reshape(nb_clips, clip_size, h, w, c)
+            x = x_nhwc.reshape(nb_clips, clip_size, height, width, channels)
 
         if self.clip_values is not None:
             x = x.clip_by_value(min=self.clip_values[0], max=self.clip_values[1])

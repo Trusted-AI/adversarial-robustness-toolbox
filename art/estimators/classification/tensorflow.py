@@ -1049,10 +1049,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if isinstance(self._model, tf.keras.Model) or isinstance(self._model, tf.keras.model.Sequential):
+        if isinstance(self._model, (tf.keras.Model, tf.keras.model.Sequential)):
             return self._model.layers
-        else:
-            return None  # type: ignore
+
+        return None  # type: ignore
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
@@ -1109,8 +1109,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 activations[begin:end] = activation_model([x_preprocessed[begin:end]]).numpy()
 
             return activations
-        else:
-            return None
+
+        return None
 
     def set_learning_phase(self, train: bool) -> None:
         """

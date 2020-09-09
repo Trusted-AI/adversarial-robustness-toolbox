@@ -146,12 +146,12 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         if clean_size is None and advs_size is None:
             # Individual scan
             with tqdm(len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning") as pbar:
-                for j in range(len(clean_pvalranges)):
-                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
+                for j, c_p in enumerate(clean_pvalranges):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(c_p)
                     clean_scores.append(best_score)
                     pbar.update(1)
-                for j in range(len(adv_pvalranges)):
-                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(adv_pvalranges[j])
+                for j, a_p in enumerate(adv_pvalranges):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(a_p)
                     adv_scores.append(best_score)
                     pbar.update(1)
 
@@ -219,6 +219,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
+    @property
     def nb_classes(self) -> int:
         return self.detector.nb_classes
 

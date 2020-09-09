@@ -128,7 +128,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         logging.info("Projecting new sample from z value")
         feed_dict = {self._input_ph: x}
         if self._feed_dict is not None:
-            feed_dict = feed_dict.update(self._feed_dict)
+            feed_dict.update(self._feed_dict)
         y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 

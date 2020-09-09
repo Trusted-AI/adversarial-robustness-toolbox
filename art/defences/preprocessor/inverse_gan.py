@@ -151,17 +151,17 @@ class InverseGAN(Preprocessor):
 
         return y
 
-    def loss(self, z: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
+    def loss(self, z_encoding: np.ndarray, image_adv: np.ndarray) -> np.ndarray:
         """
         Given a encoding z, computes the loss between the projected sample and the original sample.
 
-        :param z: encoding z
-        :param image_adv:
+        :param z_encoding: The encoding z.
+        :param image_adv: The adversarial image.
         :return: The loss value
         """
         logging.info("Calculating Loss")
 
-        loss = self.sess.run(self._loss, feed_dict={self.gan.input_ph: z, self._image_adv: image_adv})
+        loss = self.sess.run(self._loss, feed_dict={self.gan.input_ph: z_encoding, self._image_adv: image_adv})
         return loss
 
     @property
@@ -177,7 +177,7 @@ class InverseGAN(Preprocessor):
         Compute the gradient of the loss function w.r.t. a `z_encoding` input within a GAN against a
         corresponding adversarial sample.
 
-        :param z_encoding:
+        :param z_encoding: The encoding z.
         :param y: Target values of shape `(nb_samples, nb_classes)`.
         :return: Array of gradients of the same shape as `z_encoding`.
         """
@@ -198,6 +198,10 @@ class InverseGAN(Preprocessor):
 
 
 class DefenseGAN(InverseGAN):
+    """
+    Implementation of DefenseGAN.
+    """
+
     def __init__(self, sess, gan):
         """
         Create an instance of DefenseGAN.

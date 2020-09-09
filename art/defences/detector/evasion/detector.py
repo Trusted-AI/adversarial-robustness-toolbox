@@ -102,6 +102,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
+    @property
     def nb_classes(self) -> int:
         return self.detector.nb_classes
 
@@ -241,6 +242,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
+    @property
     def nb_classes(self) -> int:
         return self.detector.nb_classes
 

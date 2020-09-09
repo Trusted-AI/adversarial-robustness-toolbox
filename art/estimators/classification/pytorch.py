@@ -749,4 +749,4 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             return self._model_wrapper(model)
 
         except ImportError:
-            raise ImportError("Could not find PyTorch (`torch`) installation.")
+            raise ImportError("Could not find PyTorch (`torch`) installation.") from ImportError

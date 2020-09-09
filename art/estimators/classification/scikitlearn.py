@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from copy import deepcopy
 import importlib
 import logging
+import os
 import pickle
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -34,7 +35,7 @@ from art.estimators.classification.classifier import (
     ClassifierMixin,
 )
 from art.estimators.scikitlearn import ScikitlearnEstimator
-from art.utils import to_categorical
+from art.config import to_categorical, ART_DATA_PATH
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -163,7 +164,22 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
         return predictions
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
-        with open(filename + ".pickle", "wb") as file_pickle:
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `ART_DATA_PATH`.
+        """
+        if path is None:
+            full_path = os.path.join(ART_DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
     def _get_input_shape(self, model) -> Optional[Tuple[int, ...]]:

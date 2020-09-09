@@ -118,9 +118,9 @@ class TargetedUniversalPerturbation(EvasionAttack):
             rnd_idx = random.sample(range(nb_instances), nb_instances)
 
             # Go through the data set and compute the perturbation increments sequentially
-            for j, (ex, ey) in enumerate(zip(x[rnd_idx], y[rnd_idx])):
-                x_i = ex[None, ...]
-                y_i = ey[None, ...]
+            for _, (e_x, e_y) in enumerate(zip(x[rnd_idx], y[rnd_idx])):
+                x_i = e_x[None, ...]
+                y_i = e_y[None, ...]
 
                 current_label = np.argmax(self.estimator.predict(x_i + noise)[0])
                 target_label = np.argmax(y_i)
@@ -188,7 +188,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
             return a_instance
 
         except KeyError:
-            raise NotImplementedError("{} attack not supported".format(a_name))
+            raise NotImplementedError("{} attack not supported".format(a_name)) from KeyError
 
     @staticmethod
     def _get_class(class_name: str) -> types.ModuleType:
