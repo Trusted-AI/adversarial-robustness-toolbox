@@ -157,8 +157,8 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         print("pattern tensor shape")
         print(self.pattern_tensor.shape)
         print(type(self.pattern_tensor))
-        x_adv_tensor = self.pattern_tensor
-        # x_adv_tensor = reverse_mask_tensor * input_tensor + self.mask_tensor * self.pattern_tensor
+        # x_adv_tensor = self.pattern_tensor
+        x_adv_tensor = reverse_mask_tensor * input_tensor + self.mask_tensor * self.pattern_tensor
 
         output_tensor = self.model(x_adv_tensor)
         print("output tensor shape")
@@ -184,12 +184,15 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         # try apply_gradients or recompiling model
         # self._model.compile(self.opt, loss=self.loss)
         # print(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
-        print(K.gradients(self.loss, [self.pattern_tensor]))
+        print("Grads wrt pattern and mask are:   ", K.gradients(self.loss, [self.mask_tensor, self.pattern_tensor]))
         print("Loss value:")
 
         #print(K.eval(self.loss))
         with K.get_session().as_default():
-            print(self.loss.eval(feed_dict={y_true_tensor:np.asarray([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])}))
+            print(self.loss.eval(feed_dict={
+                input_tensor: np.random.rand(1, 28, 28, 1),
+                y_true_tensor: np.asarray([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])
+            }))
 
         # This will not allow to compute loss gradient
         print(K.gradients(self.loss, [reverse_mask_tensor, input_tensor]))
