@@ -30,12 +30,11 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.trainer.adversarial_trainer_fbf import AdversarialTrainerFBF
-from art.estimators.classification.classifier import ClassifierGradients
-from art.estimators.classification.pytorch import PyTorchClassifier
 from art.utils import random_sphere
 
 if TYPE_CHECKING:
     from art.data_generators import DataGenerator
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +60,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         :param use_amp: Boolean that decides if apex should be used for mixed precision arithmetic during training
         """
         super().__init__(classifier, eps, **kwargs)
+        self._classifier: PyTorchClassifier
         self._use_amp = use_amp
 
     def fit(
@@ -155,7 +155,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         if size is not None:
             nb_batches = int(np.ceil(size / batch_size))
         else:
-            ValueError("Size is None.")
+            raise ValueError("Size is None.")
 
         def lr_schedule(t):
             return np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
@@ -199,12 +199,18 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         """
         import torch
 
+        if self._classifier._optimizer is None:
+            raise ValueError("Optimizer of classifier is currently None, but is required for adversarial training.")
+
         n = x_batch.shape[0]
         m = np.prod(x_batch.shape[1:]).item()
         delta = random_sphere(n, m, self._eps, np.inf).reshape(x_batch.shape).astype(ART_NUMPY_DTYPE)
         delta_grad = self._classifier.loss_gradient(x_batch + delta, y_batch)
         delta = np.clip(delta + 1.25 * self._eps * np.sign(delta_grad), -self._eps, +self._eps)
-        x_batch_pert = np.clip(x_batch + delta, self._classifier.clip_values[0], self._classifier.clip_values[1])
+        if self._classifier.clip_values is not None:
+            x_batch_pert = np.clip(x_batch + delta, self._classifier.clip_values[0], self._classifier.clip_values[1])
+        else:
+            x_batch_pert = x_batch + delta
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._classifier._apply_preprocessing(x_batch_pert, y_batch, fit=True)

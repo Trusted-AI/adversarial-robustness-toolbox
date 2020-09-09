@@ -53,8 +53,6 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    import tensorflow as tf  # lgtm [py/repeated-import]
-
     def __init__(
         self,
         window_size: int = 3,
@@ -68,8 +66,6 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
 
         :param **kwargs: Parameters from the parent.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
-
         super().__init__()
 
         self._apply_fit = apply_fit
@@ -87,7 +83,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
+    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
         Apply local spatial smoothing to sample `x`.
         """
@@ -122,7 +118,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
 
         return x, y
 
-    def estimate_forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> tf.Tensor:
+    def estimate_forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> "tf.Tensor":
         """
         No need to estimate, since the forward pass is differentiable.
         """

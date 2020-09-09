@@ -34,7 +34,7 @@ with their adversarial counterpart.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange, tqdm
@@ -69,7 +69,10 @@ class AdversarialTrainer(Trainer):
     """
 
     def __init__(
-        self, classifier: "ClassifierGradients", attacks: Union["EvasionAttack", List["EvasionAttack"]], ratio: float = 0.5,
+        self,
+        classifier: "ClassifierGradients",
+        attacks: Union["EvasionAttack", List["EvasionAttack"]],
+        ratio: float = 0.5,
     ) -> None:
         """
         Create an :class:`.AdversarialTrainer` instance.
@@ -175,7 +178,7 @@ class AdversarialTrainer(Trainer):
         self,
         x: np.ndarray,
         y: np.ndarray,
-        validation_data: Optional[np.ndarray] = None,
+        validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
         batch_size: int = 128,
         nb_epochs: int = 20,
         **kwargs

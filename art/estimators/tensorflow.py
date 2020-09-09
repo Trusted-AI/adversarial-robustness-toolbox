@@ -19,7 +19,7 @@
 This module implements the abstract estimators `TensorFlowEstimator` and `TensorFlowV2Estimator` for TensorFlow models.
 """
 import logging
-from typing import Any, Tuple
+from typing import Any, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -31,6 +31,9 @@ from art.estimators.estimator import (
 )
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
+if TYPE_CHECKING:
+    import tensorflow as tf
+
 logger = logging.getLogger(__name__)
 
 
@@ -38,8 +41,6 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
     """
     Estimator class for TensorFlow models.
     """
-
-    import tensorflow as tf
 
     def __init__(self, **kwargs) -> None:
         """

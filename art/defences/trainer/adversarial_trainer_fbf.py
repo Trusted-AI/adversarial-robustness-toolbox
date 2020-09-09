@@ -26,12 +26,16 @@ This module implements adversarial training with Fast is better than free protoc
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
 from art.defences.trainer.trainer import Trainer
-from art.estimators.classification.classifier import ClassifierGradients
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import ClassifierGradients
+    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.data_generators import DataGenerator
 
 
 class AdversarialTrainerFBF(Trainer, abc.ABC):
@@ -42,7 +46,9 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
     """
 
-    def __init__(self, classifier: "ClassifierGradients", eps: Union[int, float] = 8, **kwargs):
+    def __init__(
+        self, classifier: Union["ClassifierGradients", "PyTorchClassifier"], eps: Union[int, float] = 8, **kwargs
+    ):
         """
         Create an :class:`.AdversarialTrainerFBF` instance.
 

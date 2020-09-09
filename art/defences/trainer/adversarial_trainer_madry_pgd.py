@@ -29,13 +29,13 @@ from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.defences.trainer.trainer import Trainer
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
-from art.estimators.classification.classifier import Classifier
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier, ClassifierGradients
+    from art.estimators.classification.classifier import ClassifierGradients
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
 
 logger = logging.getLogger(__name__)
@@ -100,5 +100,5 @@ class AdversarialTrainerMadryPGD(Trainer):
             x, y, validation_data=validation_data, nb_epochs=self.nb_epochs, batch_size=self.batch_size, **kwargs
         )
 
-    def get_classifier(self) -> "Classifier":
+    def get_classifier(self) -> Union["ClassifierGradients", "PyTorchClassifier"]:
         return self.trainer.get_classifier()

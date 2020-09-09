@@ -53,13 +53,11 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     This class implements a classifier with the PyTorch framework.
     """
 
-    import torch
-
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        model: torch.nn.Module,
-        loss: torch.nn.modules.loss._Loss,
+        model: "torch.nn.Module",
+        loss: "torch.nn.modules.loss._Loss",
         input_shape: Tuple[int, ...],
         nb_classes: int,
         optimizer: Optional[torch.optim.Optimizer] = None,  # type: ignore
@@ -141,7 +139,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             self._int_labels = False
 
     @property
-    def device(self) -> torch.device:
+    def device(self) -> "torch.device":
         """
         Get current used device.
 
@@ -150,7 +148,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         return self._device
 
     @property
-    def model(self) -> torch.nn.Module:
+    def model(self) -> "torch.nn.Module":
         return self._model._model
 
     def reduce_labels(self, y: np.ndarray) -> np.ndarray:
@@ -162,14 +160,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             return y
 
-    def reduce_labels_framework(self, y: torch.Tensor) -> torch.Tensor:
+    def reduce_labels_framework(self, y: "torch.Tensor") -> "torch.Tensor":
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if self._reduce_labels and self._int_labels:
             return torch.argmax(y, dim=1)
         elif self._reduce_labels:  # float labels
-            return torch.argmax(y, dim=1).type(torch.FloatTensor)
+            return torch.argmax(y, dim=1).type("torch.FloatTensor")
         else:
             return y
 
@@ -467,7 +465,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def loss_gradient_framework(self, x: torch.Tensor, y: torch.Tensor, **kwargs) -> torch.Tensor:
+    def loss_gradient_framework(self, x: "torch.Tensor", y: "torch.Tensor", **kwargs) -> "torch.Tensor":
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -668,6 +666,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     """
                     This is a wrapper for the input model.
                     """
+
                     import torch
 
                     def __init__(self, model: torch.nn.Module):

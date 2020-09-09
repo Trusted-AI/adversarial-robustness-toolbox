@@ -21,12 +21,13 @@ This module implements the abstract base class for defences that adversarially t
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
-from typing import TYPE_CHECKING
+from typing import Union, TYPE_CHECKING
 
 import numpy as np
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import ClassifierGradients
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
 
 class Trainer(abc.ABC):
@@ -34,7 +35,7 @@ class Trainer(abc.ABC):
     Abstract base class for training defences.
     """
 
-    def __init__(self, classifier: "ClassifierGradients", **kwargs) -> None:
+    def __init__(self, classifier: Union["ClassifierGradients", "PyTorchClassifier"], **kwargs) -> None:
         """
         Create a adversarial training object
         """
@@ -53,7 +54,7 @@ class Trainer(abc.ABC):
         """
         raise NotImplementedError
 
-    def get_classifier(self) -> "Classifier":
+    def get_classifier(self) -> Union["ClassifierGradients", "PyTorchClassifier"]:
         """
         Return the classifier trained via adversarial training.
 

@@ -52,7 +52,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         https://arxiv.org/abs/1902.06705
     """
 
-    import torch  # lgtm [py/repeated-import]
     from kornia.filters import MedianBlur
 
     class MedianBlurCustom(MedianBlur):
@@ -76,7 +75,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             ]
             # PyTorch requires Padding size should be less than the corresponding input dimension,
 
-        def forward(self, input: torch.Tensor):  # type: ignore
+        def forward(self, input: "torch.Tensor"):  # type: ignore
             import torch  # lgtm [py/repeated-import]
             import torch.nn.functional as F
 
@@ -151,7 +150,9 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def forward(
+        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
+    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
         Apply local spatial smoothing to sample `x`.
         """
@@ -202,7 +203,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         return x, y
 
-    def estimate_forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> torch.Tensor:
+    def estimate_forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
         """
         No need to estimate, since the forward pass is differentiable.
         """
