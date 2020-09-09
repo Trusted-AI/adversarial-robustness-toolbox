@@ -266,7 +266,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(x=x_preprocessed)
 
         # Compute real input sizes
-        input_sizes = input_rates.mul_(inputs.size(-1)).int()
+        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
 
         # Run prediction with batch processing
         results = []
