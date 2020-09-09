@@ -124,7 +124,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Set cpu/gpu device
-        self._device: str
+        self._device: torch.device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
         else:
