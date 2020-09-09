@@ -46,8 +46,9 @@ mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
   pytest -q tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_common.py $mlFramework"; fi
   pytest -q tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_specific.py $mlFramework"; fi
 done
 
 

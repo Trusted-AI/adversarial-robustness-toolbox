@@ -1049,7 +1049,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if isinstance(self._model, (tf.keras.Model, tf.keras.model.Sequential)):
+        if isinstance(self._model, (tf.keras.Model, tf.keras.models.Sequential)):
             return self._model.layers
 
         return None  # type: ignore

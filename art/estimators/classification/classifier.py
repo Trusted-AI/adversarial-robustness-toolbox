@@ -135,6 +135,7 @@ class Classifier(ClassifierMixin, BaseEstimator, ABC):
     """
     Typing variable definition.
     """
+
     pass
 
 
@@ -144,6 +145,7 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
     """
     Typing variable definition.
     """
+
     @abstractmethod
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
@@ -161,6 +163,7 @@ class ClassifierGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
     """
     Typing variable definition.
     """
+
     pass
 
 
@@ -168,4 +171,5 @@ class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, 
     """
     Typing variable definition.
     """
+
     pass

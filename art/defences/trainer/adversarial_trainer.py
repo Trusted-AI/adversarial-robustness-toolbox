@@ -174,14 +174,7 @@ class AdversarialTrainer(Trainer):
                 self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        batch_size: int = 128,
-        nb_epochs: int = 20,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
 

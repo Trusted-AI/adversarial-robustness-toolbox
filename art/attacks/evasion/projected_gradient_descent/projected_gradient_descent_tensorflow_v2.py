@@ -51,8 +51,6 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
-    import tensorflow as tf
-
     def __init__(
         self,
         estimator,
@@ -192,7 +190,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return adv_x_best
 
-    def _generate_batch(self, x: tf.Tensor, targets: tf.Tensor, mask: tf.Tensor) -> tf.Tensor:
+    def _generate_batch(self, x: "tf.Tensor", targets: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
         """
         Generate a batch of adversarial samples and return them in an array.
 
@@ -211,7 +209,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return adv_x
 
-    def _compute_perturbation(self, x: tf.Tensor, y: tf.Tensor, mask: Optional[tf.Tensor]) -> tf.Tensor:
+    def _compute_perturbation(self, x: "tf.Tensor", y: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         """
         Compute perturbations.
 
@@ -256,7 +254,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         else:
             return grad * mask
 
-    def _apply_perturbation(self, x: tf.Tensor, perturbation: tf.Tensor, eps_step: float) -> tf.Tensor:
+    def _apply_perturbation(self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: float) -> "tf.Tensor":
         """
         Apply perturbation on examples.
 
@@ -277,14 +275,14 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     def _compute_tf(
         self,
-        x: tf.Tensor,
-        x_init: tf.Tensor,
-        y: tf.Tensor,
-        mask: tf.Tensor,
+        x: "tf.Tensor",
+        x_init: "tf.Tensor",
+        y: "tf.Tensor",
+        mask: "tf.Tensor",
         eps: float,
         eps_step: float,
         random_init: bool,
-    ) -> tf.Tensor:
+    ) -> "tf.Tensor":
         """
         Compute adversarial examples for one iteration.
 
@@ -338,7 +336,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         return x_adv
 
     @staticmethod
-    def _projection(values: tf.Tensor, eps: float, norm_p: Union[int, float, str]) -> tf.Tensor:
+    def _projection(values: "tf.Tensor", eps: float, norm_p: Union[int, float, str]) -> "tf.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 

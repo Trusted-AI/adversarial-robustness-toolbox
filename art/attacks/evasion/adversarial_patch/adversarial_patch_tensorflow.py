@@ -52,8 +52,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1712.09665
     """
 
-    import tensorflow as tf
-
     attack_params = EvasionAttack.attack_params + [
         "rotation_max",
         "scale_min",
@@ -146,7 +144,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
         )
 
-    def _train_step(self, images: tf.Tensor = None, target: Optional[tf.Tensor] = None) -> tf.Tensor:
+    def _train_step(self, images: "tf.Tensor", target: Optional["tf.Tensor"] = None) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         if target is None:
@@ -168,7 +166,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _probabilities(self, images: tf.Tensor) -> tf.Tensor:
+    def _probabilities(self, images: "tf.Tensor") -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         patched_input = self._random_overlay(images, self._patch)
@@ -181,7 +179,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return probabilities
 
-    def _loss(self, images: tf.Tensor, target: tf.Tensor) -> tf.Tensor:
+    def _loss(self, images: "tf.Tensor", target: "tf.Tensor") -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         probabilities = self._probabilities(images)
@@ -194,7 +192,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> tf.Tensor:
+    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> "tf.Tensor":
         """
         Return a circular patch mask.
         """
@@ -214,8 +212,11 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         return image_mask
 
     def _random_overlay(
-        self, images: Union[np.ndarray, tf.Tensor], patch: Union[np.ndarray, tf.Variable], scale: Optional[float] = None
-    ) -> tf.Tensor:
+        self,
+        images: Union[np.ndarray, "tf.Tensor"],
+        patch: Union[np.ndarray, "tf.Variable"],
+        scale: Optional[float] = None,
+    ) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 

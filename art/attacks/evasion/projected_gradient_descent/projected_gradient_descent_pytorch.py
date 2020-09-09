@@ -51,8 +51,6 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
-    import torch
-
     def __init__(
         self,
         estimator,
@@ -196,7 +194,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x_best
 
-    def _generate_batch(self, x: torch.Tensor, targets: torch.Tensor, mask: torch.Tensor) -> np.ndarray:
+    def _generate_batch(self, x: "torch.Tensor", targets: "torch.Tensor", mask: "torch.Tensor") -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in an array.
 
@@ -221,7 +219,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation(self, x: torch.Tensor, y: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    def _compute_perturbation(self, x: "torch.Tensor", y: "torch.Tensor", mask: "torch.Tensor") -> "torch.Tensor":
         """
         Compute perturbations.
 
@@ -262,7 +260,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         else:
             return grad * mask
 
-    def _apply_perturbation(self, x: torch.Tensor, perturbation: torch.Tensor, eps_step: float) -> torch.Tensor:
+    def _apply_perturbation(self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: float) -> "torch.Tensor":
         """
         Apply perturbation on examples.
 
@@ -286,14 +284,14 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
     def _compute_torch(
         self,
-        x: torch.Tensor,
-        x_init: torch.Tensor,
-        y: torch.Tensor,
-        mask: torch.Tensor,
+        x: "torch.Tensor",
+        x_init: "torch.Tensor",
+        y: "torch.Tensor",
+        mask: "torch.Tensor",
         eps: float,
         eps_step: float,
         random_init: bool,
-    ) -> torch.Tensor:
+    ) -> "torch.Tensor":
         """
         Compute adversarial examples for one iteration.
 
@@ -350,7 +348,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x_adv
 
-    def _projection(self, values: torch.Tensor, eps: float, norm_p: Union[int, float, str]) -> torch.Tensor:
+    def _projection(self, values: "torch.Tensor", eps: float, norm_p: Union[int, float, str]) -> "torch.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
