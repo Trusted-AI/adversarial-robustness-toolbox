@@ -37,6 +37,7 @@ amp_found = amp_spec is not None
 
 logger = logging.getLogger(__name__)
 
+master_seed(seed=1234)
 
 @pytest.mark.skipif(
     not deepspeech_pytorch_found,
@@ -50,8 +51,6 @@ class TestPyTorchDeepSpeech:
 
     @pytest.fixture
     def setup_class(self):
-        master_seed(seed=1234)
-
         # Small data for testing
         x1 = np.array(
             [
@@ -112,22 +111,27 @@ class TestPyTorchDeepSpeech:
             ]
             * 100
         )
-        self.x = np.array([x1, x2, x3])
+
+        if not hasattr(self, "x"):
+            self.x = np.array([x1, x2, x3])
 
         # Only import if deep speech module is available
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Define deep speech estimator without amp
-        self.speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
+        if not hasattr(self, "speech_recognizer"):
+            self.speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
 
         # Define deep speech estimator with amp
-        self.speech_recognizer_amp = PyTorchDeepSpeech(pretrained_model="librispeech", device_type="gpu", use_amp=True)
+        if not hasattr(self, "speech_recognizer_amp"):
+            self.speech_recognizer_amp = PyTorchDeepSpeech(
+                pretrained_model="librispeech", device_type="gpu", use_amp=True
+            )
 
-    def test_all(self, _test_predict, _test_loss_gradient, _test_fit):
+    def test_all(self, _test_predict, _test_loss_gradient):
         # All tests
         _test_predict
         _test_loss_gradient
-        _test_fit
 
     @pytest.fixture(params=[True, False])
     def _test_predict(self, request, setup_class):
@@ -135,7 +139,7 @@ class TestPyTorchDeepSpeech:
         setup_class
 
         # Test probability outputs
-        if request.param:
+        if request.param is True:
             probs, sizes = self.speech_recognizer_amp.predict(self.x, batch_size=2)
         else:
             probs, sizes = self.speech_recognizer.predict(self.x, batch_size=2)
@@ -179,7 +183,7 @@ class TestPyTorchDeepSpeech:
         np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
 
         # Test transcription outputs
-        if request.param:
+        if request.param is True:
             transcriptions = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
         else:
             transcriptions = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
@@ -196,7 +200,7 @@ class TestPyTorchDeepSpeech:
         y = np.array(["SIX", "HI", "GOOD"])
 
         # Compute gradients
-        if request.param:
+        if request.param is True:
             grads = self.speech_recognizer_amp.loss_gradient(self.x, y)
         else:
             grads = self.speech_recognizer.loss_gradient(self.x, y)
@@ -205,7 +209,7 @@ class TestPyTorchDeepSpeech:
         assert (grads[1].shape == (1500,))
         assert (grads[2].shape == (1400,))
 
-        if request.param:
+        if request.param is True:
             expected_gradients1 = np.asarray(
                 [
                     -3485.7,
@@ -258,7 +262,7 @@ class TestPyTorchDeepSpeech:
             )
         np.testing.assert_array_almost_equal(grads[0][0:20], expected_gradients1, decimal=0)
 
-        if request.param:
+        if request.param is True:
             expected_gradients2 = np.asarray(
                 [
                     20924.5,
@@ -311,7 +315,7 @@ class TestPyTorchDeepSpeech:
             )
         np.testing.assert_array_almost_equal(grads[1][0:20], expected_gradients2, decimal=0)
 
-        if request.param:
+        if request.param is True:
             expected_gradients3 = np.asarray(
                 [
                     -1687.3,
@@ -364,33 +368,34 @@ class TestPyTorchDeepSpeech:
             )
         np.testing.assert_array_almost_equal(grads[2][0:20], expected_gradients3, decimal=0)
 
-    @pytest.fixture(params=[True, False])
-    def _test_fit(self, request, setup_class):
+    def test_fit(self, setup_class):
         # Initialize
         setup_class
 
         # Create labels
         y = np.array(["SIX", "HI", "GOOD"])
 
-        if request.param:
-            # Before train
-            transcriptions1 = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+        # Test with amp
+        # Before train
+        transcriptions1 = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
-            # Train the estimator
-            self.speech_recognizer_amp.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
+        # Train the estimator
+        self.speech_recognizer_amp.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
 
-            # After train
-            transcriptions2 = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+        # After train
+        transcriptions2 = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
-        else:
-            # Before train
-            transcriptions1 = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+        assert not ((transcriptions1 == transcriptions2).all())
 
-            # Train the estimator
-            self.speech_recognizer.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
+        # Test without amp
+        # Before train
+        transcriptions1 = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
-            # After train
-            transcriptions2 = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
+        # Train the estimator
+        self.speech_recognizer.fit(x=self.x, y=y, batch_size=2, nb_epochs=5)
+
+        # After train
+        transcriptions2 = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
         assert not ((transcriptions1 == transcriptions2).all())
 
