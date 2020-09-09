@@ -29,7 +29,7 @@ import numpy as np
 from sklearn import metrics
 from tqdm import trange, tqdm
 
-from art.defences.detector.evasion import Scanner
+from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.utils import deprecated
 

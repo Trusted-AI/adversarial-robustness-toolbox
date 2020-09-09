@@ -70,7 +70,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: PREPROCESSING_TYPE = (0, 1),
-        feed_dict: Dict[Any, Any] = {},
+        feed_dict: Optional[Dict[Any, Any]] = None,
     ) -> None:
         """
         Initialization specific to TensorFlow models implementation.
@@ -129,7 +129,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         self._train = train
         self._loss = loss
         self._learning = learning
-        self._feed_dict = feed_dict
+        if feed_dict is None:
+            self._feed_dict = dict()
+        else:
+            self._feed_dict = feed_dict
 
         # Assign session
         if sess is None:

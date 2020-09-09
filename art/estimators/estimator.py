@@ -30,6 +30,7 @@ from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
+    # pylint: disable=R0401
     from art.data_generators import DataGenerator
     from art.metrics.verification_decisions_trees import Tree
 

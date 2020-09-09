@@ -33,11 +33,6 @@ from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassGradientsMixin, Classifier
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion import (
-    ProjectedGradientDescent,
-    BasicIterativeMethod,
-    FastGradientMethod,
-)
 from art.utils import (
     compute_success_array,
     get_labels_np_array,
@@ -198,14 +193,14 @@ class FrameSaliencyAttack(EvasionAttack):
         return np.argsort(-saliency_score, axis=1)
 
     def _check_params(self) -> None:
-        if (
-            not isinstance(self.attacker, ProjectedGradientDescent)
-            and not isinstance(self.attacker, BasicIterativeMethod)
-            and not isinstance(self.attacker, FastGradientMethod)
-        ):
+        from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+        from art.attacks.evasion.iterative_method import BasicIterativeMethod
+        from art.attacks.evasion.fast_gradient import FastGradientMethod
+
+        if not isinstance(self.attacker, (ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod)):
             raise ValueError(
-                "The attacker must be either of class 'ProjectedGradientDescent', \
-                              'BasicIterativeMethod' or 'FastGradientMethod'"
+                "The attacker must be either of class 'ProjectedGradientDescent', 'BasicIterativeMethod' or "
+                "'FastGradientMethod'"
             )
 
         if self.method not in self.method_list:

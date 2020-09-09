@@ -31,7 +31,7 @@ from scipy.optimize import minimize
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
-    # pylint: disable=C0412
+    # pylint: disable=C0412,R0401
     import tensorflow as tf
 
     from art.estimators.encoding.tensorflow import TensorFlowEncoder

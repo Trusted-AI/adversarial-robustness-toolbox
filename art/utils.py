@@ -39,6 +39,7 @@ import six
 from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE, DATASET_TYPE
 
 if TYPE_CHECKING:
+    # pylint: disable=R0401
     from art.config import CLIP_VALUES_TYPE
     from art.estimators.classification.classifier import Classifier
 

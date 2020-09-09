@@ -54,7 +54,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
-        feed_dict: Dict[Any, Any] = {},
+        feed_dict: Optional[Dict[Any, Any]] = None,
     ):
         """
         Initialization specific to TensorFlow generator implementations.
@@ -93,7 +93,10 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         self._loss = loss
         if self._loss is not None:
             self._grad = tf.gradients(self._loss, self._input_ph)
-        self._feed_dict = feed_dict
+        if feed_dict is None:
+            self._feed_dict = dict()
+        else:
+            self._feed_dict = feed_dict
 
         # Assign session
         if sess is None:
@@ -123,7 +126,10 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :return: Array of prediction projections of shape `(num_inputs, nb_classes)`.
         """
         logging.info("Projecting new sample from z value")
-        y = self._sess.run(self._model, feed_dict={self._input_ph: x})
+        feed_dict = {self._input_ph: x}
+        if self._feed_dict is not None:
+            feed_dict = feed_dict.update(self._feed_dict)
+        y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 
     def loss_gradient(self, x, y, **kwargs) -> "np.ndarray":
