@@ -24,6 +24,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import time
+from typing import Optional, Tuple
 
 import numpy as np
 
@@ -46,40 +47,37 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         time making this one of the fastest adversarial training protocol.
     """
 
-    def __init__(self, classifier, eps=8, use_amp=False, **kwargs):
+    def __init__(self, classifier: "Classifier", eps: float = 8.0, use_amp: bool = False, **kwargs):
         """
         Create an :class:`.AdversarialTrainerFBFPyTorch` instance.
 
         :param classifier: Model to train adversarially.
-        :type classifier: :class:`.Classifier`
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
         :param use_amp: Boolean that decides if apex should be used for mixed precision arithmetic during training
-        :type use_amp: `bool`
-
         """
         super().__init__(classifier, eps, **kwargs)
         self._use_amp = use_amp
 
-    def fit(self, x, y, validation_data=None, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
+        batch_size: int = 128,
+        nb_epochs: int = 20,
+        **kwargs
+    ):
         """
         Train a model adversarially with FBF protocol.
         See class documentation for more information on the exact procedure.
 
         :param x: Training set.
-        :type x: `np.ndarray`
         :param y: Labels for the training set.
-        :type y: `np.ndarray`
-        :param validation_data: Tuple consisting of validation data
-        :type validation_data: `np.ndarray`
+        :param validation_data: Tuple consisting of validation data, (x_val, y_val)
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for trainings.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                                   the target classifier.
-        :type kwargs: `dict`
-        :return: `None`
         """
         logger.info("Performing adversarial training with Fast is better than Free protocol")
 
@@ -136,19 +134,15 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                     )
                 )
 
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs):
         """
         Train a model adversarially with FBF protocol using a data generator.
         See class documentation for more information on the exact procedure.
 
         :param generator: Data generator.
-        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for trainings.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                                   the target classifier.
-        :type kwargs: `dict`
-        :return: `None`
         """
         logger.info("Performing adversarial training with Fast is better than Free protocol")
         size = generator.size
@@ -186,18 +180,14 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
                 )
             )
 
-    def _batch_process(self, x_batch, y_batch, lr):
+    def _batch_process(self, x_batch: np.ndarray, y_batch: np.ndarray, lr: float) -> Tuple[float, float, float]:
         """
         Perform the operations of FBF for a batch of data.
         See class documentation for more information on the exact procedure.
 
         :param x_batch: batch of x.
-        :type x_batch: `np.ndarray`
         :param y_batch: batch of y.
-        :type y_batch: `np.ndarray`
         :param lr: learning rate for the optimisation step.
-        :type lr: `float`
-        :return: `(float, float, float)`
         """
         import torch
 

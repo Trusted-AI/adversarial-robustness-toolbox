@@ -26,6 +26,9 @@ This module implements adversarial training with Fast is better than free protoc
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import abc
+from typing import Optional, Tuple
+
+import numpy as np
 
 from art.defences.trainer.trainer import Trainer
 
@@ -38,65 +41,58 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
     """
 
-    def __init__(self, classifier, eps=8, **kwargs):
+    def __init__(self, classifier: "Classifier", eps: float = 8.0, **kwargs):
         """
         Create an :class:`.AdversarialTrainerFBF` instance.
 
         :param classifier: Model to train adversarially.
-        :type classifier: :class:`.Classifier`
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
-
         """
         self._eps = eps
         super().__init__(classifier, **kwargs)
 
     @abc.abstractmethod
-    def fit(self, x, y, validation_data=None, batch_size=128, nb_epochs=20, **kwargs):
+    def fit(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        validation_data: Optional[Tuple[np.ndarray, np.ndarray]] = None,
+        batch_size: int = 128,
+        nb_epochs: int = 20,
+        **kwargs
+    ):
         """
         Train a model adversarially with FBF. See class documentation for more information on the exact procedure.
 
         :param x: Training set.
-        :type x: `np.ndarray`
         :param y: Labels for the training set.
-        :type y: `np.ndarray`
+        :param validation_data: Tuple consisting of validation data, (x_val, y_val)
         :param batch_size: Size of batches.
-        :type batch_size: `int`
         :param nb_epochs: Number of epochs to use for trainings.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                the target classifier.
-        :type kwargs: `dict`
-        :return: `None`
         """
         raise NotImplementedError
 
     @abc.abstractmethod
-    def fit_generator(self, generator, nb_epochs=20, **kwargs):
+    def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs):
         """
         Train a model adversarially using a data generator.
         See class documentation for more information on the exact procedure.
 
         :param generator: Data generator.
-        :type generator: :class:`.DataGenerator`
         :param nb_epochs: Number of epochs to use for trainings.
-        :type nb_epochs: `int`
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
                the target classifier.
-        :type kwargs: `dict`
-        :return: `None`
         """
         raise NotImplementedError
 
-    def predict(self, x, **kwargs):
+    def predict(self, x: np.ndarray, **kwargs) -> np.ndarray:
         """
         Perform prediction using the adversarially trained classifier.
 
         :param x: Test set.
-        :type x: `np.ndarray`
         :param kwargs: Other parameters to be passed on to the `predict` function of the classifier.
-        :type kwargs: `dict`
         :return: Predictions for test set.
-        :rtype: `np.ndarray`
         """
         return self._classifier.predict(x, **kwargs)
