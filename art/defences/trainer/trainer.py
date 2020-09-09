@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.estimators.classification.classifier import ClassifierGradients
 
 
 class Trainer(abc.ABC):
@@ -34,7 +34,7 @@ class Trainer(abc.ABC):
     Abstract base class for training defences.
     """
 
-    def __init__(self, classifier: "Classifier", **kwargs) -> None:
+    def __init__(self, classifier: "ClassifierGradients", **kwargs) -> None:
         """
         Create a adversarial training object
         """

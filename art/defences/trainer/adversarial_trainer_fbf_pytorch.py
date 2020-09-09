@@ -24,13 +24,18 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import time
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.trainer.adversarial_trainer_FBF import AdversarialTrainerFBF
+from art.defences.trainer.adversarial_trainer_fbf import AdversarialTrainerFBF
+from art.estimators.classification.classifier import ClassifierGradients
+from art.estimators.classification.pytorch import PyTorchClassifier
 from art.utils import random_sphere
+
+if TYPE_CHECKING:
+    from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +52,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         time making this one of the fastest adversarial training protocol.
     """
 
-    def __init__(self, classifier: "Classifier", eps: float = 8.0, use_amp: bool = False, **kwargs):
+    def __init__(self, classifier: "PyTorchClassifier", eps: Union[int, float] = 8, use_amp: bool = False, **kwargs):
         """
         Create an :class:`.AdversarialTrainerFBFPyTorch` instance.
 
@@ -93,9 +98,9 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
             # Shuffle the examples
             np.random.shuffle(ind)
             start_time = time.time()
-            train_loss = 0
-            train_acc = 0
-            train_n = 0
+            train_loss = 0.0
+            train_acc = 0.0
+            train_n = 0.0
 
             for batch_id in range(nb_batches):
                 lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)
@@ -147,7 +152,10 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         logger.info("Performing adversarial training with Fast is better than Free protocol")
         size = generator.size
         batch_size = generator.batch_size
-        nb_batches = int(np.ceil(size / batch_size))
+        if size is not None:
+            nb_batches = int(np.ceil(size / batch_size))
+        else:
+            ValueError("Size is None.")
 
         def lr_schedule(t):
             return np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
@@ -156,9 +164,9 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
 
         for i_epoch in range(nb_epochs):
             start_time = time.time()
-            train_loss = 0
-            train_acc = 0
-            train_n = 0
+            train_loss = 0.0
+            train_acc = 0.0
+            train_n = 0.0
 
             for batch_id in range(nb_batches):
                 lr = lr_schedule(i_epoch + (batch_id + 1) / nb_batches)

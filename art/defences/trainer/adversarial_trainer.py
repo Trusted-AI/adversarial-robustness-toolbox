@@ -43,7 +43,7 @@ from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
     from art.attacks.attack import EvasionAttack
-    from art.estimators.classification.classifier import Classifier
+    from art.estimators.classification.classifier import ClassifierGradients
     from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ class AdversarialTrainer(Trainer):
     """
 
     def __init__(
-        self, classifier: "Classifier", attacks: Union["EvasionAttack", List["EvasionAttack"]], ratio: float = 0.5,
+        self, classifier: "ClassifierGradients", attacks: Union["EvasionAttack", List["EvasionAttack"]], ratio: float = 0.5,
     ) -> None:
         """
         Create an :class:`.AdversarialTrainer` instance.
