@@ -155,6 +155,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
         """
         raise NotImplementedError
 
+    @property
     def nb_classes(self) -> int:
         """
         Return the number of output classes.

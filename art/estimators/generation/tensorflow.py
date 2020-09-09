@@ -27,6 +27,7 @@ from art.estimators.generation.generator import GeneratorMixin
 from art.estimators.tensorflow import TensorFlowEstimator
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import numpy as np
     import tensorflow as tf
 

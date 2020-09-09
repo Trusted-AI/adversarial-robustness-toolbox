@@ -41,6 +41,7 @@ from art.estimators.classification.classifier import (
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import mxnet as mx
 
     from art.data_generators import DataGenerator

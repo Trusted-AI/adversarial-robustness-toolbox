@@ -31,6 +31,7 @@ from scipy.optimize import minimize
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
 
     from art.estimators.encoding.tensorflow import TensorFlowEncoder
@@ -115,7 +116,7 @@ class InverseGAN(Preprocessor):
         def func_loss(z_i):
             nonlocal iteration_count
             iteration_count += 1
-            logging.info("Iteration: {0}".format(iteration_count))
+            logging.info("Iteration: %d", iteration_count)
             z_i_reshaped = np.reshape(z_i, [batch_size, self.gan.encoding_length])
             loss = self.loss(z_i_reshaped, x)
 

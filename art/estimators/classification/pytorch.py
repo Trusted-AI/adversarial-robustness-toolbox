@@ -39,6 +39,7 @@ from art.estimators.pytorch import PyTorchEstimator
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
 
     from art.data_generators import DataGenerator

@@ -31,6 +31,7 @@ from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
 
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE

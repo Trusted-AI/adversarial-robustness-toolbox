@@ -28,6 +28,7 @@ import numpy as np
 from art.estimators.classification.classifier import ClassifierDecisionTree
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     from catboost.core import CatBoostClassifier
 
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE

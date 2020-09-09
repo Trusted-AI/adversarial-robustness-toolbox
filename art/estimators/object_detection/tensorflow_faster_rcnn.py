@@ -30,6 +30,7 @@ from art.utils import get_file
 from art.config import ART_DATA_PATH
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
     from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.client.session import Session

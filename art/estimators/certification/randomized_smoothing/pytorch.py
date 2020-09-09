@@ -32,6 +32,7 @@ from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
 
     from art.defences.preprocessor import Preprocessor

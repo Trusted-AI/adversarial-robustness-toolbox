@@ -28,6 +28,7 @@ from art.estimators.pytorch import PyTorchEstimator
 from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torchvision
 
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE

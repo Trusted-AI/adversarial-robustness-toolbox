@@ -28,6 +28,7 @@ import numpy as np
 from art.estimators.classification.classifier import ClassifierGradients
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     from GPy.models import GPClassification
 
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE

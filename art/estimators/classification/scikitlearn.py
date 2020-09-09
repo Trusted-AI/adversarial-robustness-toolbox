@@ -37,6 +37,7 @@ from art.estimators.scikitlearn import ScikitlearnEstimator
 from art.utils import to_categorical
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import sklearn
 
     from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE

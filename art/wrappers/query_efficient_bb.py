@@ -71,7 +71,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return self._wrap_predict(x, **kwargs)
+        return self._wrap_predict(x, batch_size=batch_size)
 
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
