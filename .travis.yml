@@ -10,12 +10,12 @@ jobs:
         - ./run_tests.sh
 
     - python: 3.7
-      env: TENSORFLOW_V=2.2.0 KERAS_V=2.3.1
+      env: TENSORFLOW_V=2.3.0 KERAS_V=2.3.1
       script:
         - ./run_tests.sh
 
     - python: 3.7
-      env: TENSORFLOW_V=2.2.0 KERAS_V=2.3.1
+      env: TENSORFLOW_V=2.3.0 KERAS_V=2.3.1
       script:
         - (pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art || exit 0)
         - (pylint --disable=C0330,C0415,E203,E1136 -rn art || exit 0)
