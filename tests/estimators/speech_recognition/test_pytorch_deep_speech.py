@@ -185,7 +185,7 @@ class TestPyTorchDeepSpeech:
             transcriptions = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
         expected_transcriptions = np.array(["", "", ""])
-        self.assertTrue((expected_transcriptions == transcriptions).all())
+        assert ((expected_transcriptions == transcriptions).all())
 
     @pytest.fixture(params=[True, False])
     def _test_loss_gradient(self, request, setup_class):
@@ -201,9 +201,9 @@ class TestPyTorchDeepSpeech:
         else:
             grads = self.speech_recognizer.loss_gradient(self.x, y)
 
-        self.assertTrue(grads[0].shape == (1300,))
-        self.assertTrue(grads[1].shape == (1500,))
-        self.assertTrue(grads[2].shape == (1400,))
+        assert (grads[0].shape == (1300,))
+        assert (grads[1].shape == (1500,))
+        assert (grads[2].shape == (1400,))
 
         if request.param:
             expected_gradients1 = np.asarray(
@@ -392,7 +392,7 @@ class TestPyTorchDeepSpeech:
             # After train
             transcriptions2 = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
-        self.assertFalse((transcriptions1 == transcriptions2).all())
+        assert not ((transcriptions1 == transcriptions2).all())
 
 
 if __name__ == "__main__":
