@@ -23,14 +23,15 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from copy import deepcopy
 import json
 import logging
-import os
+import osART_DATA_PATH
 import pickle
 from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.classification.classifier import ClassifierDecisionTree
-from art.config import to_categorical, ART_DATA_PATH
+from art.utils import to_categorical
+from art.config import ART_DATA_PATH
 
 if TYPE_CHECKING:
     # pylint: disable=C0412

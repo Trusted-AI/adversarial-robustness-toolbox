@@ -35,7 +35,8 @@ from art.estimators.classification.classifier import (
     ClassifierMixin,
 )
 from art.estimators.scikitlearn import ScikitlearnEstimator
-from art.config import to_categorical, ART_DATA_PATH
+from art.utils import to_categorical
+from art.config import ART_DATA_PATH
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
