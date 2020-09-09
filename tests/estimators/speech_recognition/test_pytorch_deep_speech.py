@@ -48,8 +48,8 @@ class TestPyTorchDeepSpeech:
     This class tests the PyTorchDeepSpeech estimator.
     """
 
-    @classmethod
-    def setUpClass(cls):
+    @pytest.fixture
+    def setup_class(self):
         master_seed(seed=1234)
 
         # Small data for testing
@@ -112,16 +112,16 @@ class TestPyTorchDeepSpeech:
             ]
             * 100
         )
-        cls.x = np.array([x1, x2, x3])
+        self.x = np.array([x1, x2, x3])
 
         # Only import if deep speech module is available
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Define deep speech estimator without amp
-        cls.speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
+        self.speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
 
         # Define deep speech estimator with amp
-        cls.speech_recognizer_amp = PyTorchDeepSpeech(pretrained_model="librispeech", device_type="gpu", use_amp=True)
+        self.speech_recognizer_amp = PyTorchDeepSpeech(pretrained_model="librispeech", device_type="gpu", use_amp=True)
 
     def test_all(self, _test_predict, _test_loss_gradient, _test_fit):
         # All tests
@@ -130,7 +130,10 @@ class TestPyTorchDeepSpeech:
         _test_fit
 
     @pytest.fixture(params=[True, False])
-    def _test_predict(self, request):
+    def _test_predict(self, request, setup_class):
+        # Initialize
+        setup_class
+
         # Test probability outputs
         if request.param:
             probs, sizes = self.speech_recognizer_amp.predict(self.x, batch_size=2)
@@ -185,7 +188,10 @@ class TestPyTorchDeepSpeech:
         self.assertTrue((expected_transcriptions == transcriptions).all())
 
     @pytest.fixture(params=[True, False])
-    def _test_loss_gradient(self, request):
+    def _test_loss_gradient(self, request, setup_class):
+        # Initialize
+        setup_class
+
         # Create labels
         y = np.array(["SIX", "HI", "GOOD"])
 
@@ -359,7 +365,10 @@ class TestPyTorchDeepSpeech:
         np.testing.assert_array_almost_equal(grads[2][0:20], expected_gradients3, decimal=0)
 
     @pytest.fixture(params=[True, False])
-    def _test_fit(self, request):
+    def _test_fit(self, request, setup_class):
+        # Initialize
+        setup_class
+
         # Create labels
         y = np.array(["SIX", "HI", "GOOD"])
 
