@@ -312,5 +312,45 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         if not self.global_max_length > 0:
             raise ValueError("The length of the longest audio signal must be greater than 0.")
 
+        if not isinstance(self.initial_rescale, float):
+            raise ValueError("The initial rescale coefficient must be of type float.")
+        if not self.initial_rescale > 0.0:
+            raise ValueError("The initial rescale coefficient must be greater than 0.0.")
+
+        if not isinstance(self.rescale_factor, float):
+            raise ValueError("The rescale factor must be of type float.")
+        if not self.rescale_factor > 0.0:
+            raise ValueError("The rescale factor must be greater than 0.0.")
+
+        if not isinstance(self.num_iter_adjust_rescale, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if not self.num_iter_adjust_rescale > 0:
+            raise ValueError("The number of iterations must be greater than 0.")
+
+        if not isinstance(self.initial_alpha, float):
+            raise ValueError("The initial alpha must be of type float.")
+        if not self.initial_alpha > 0.0:
+            raise ValueError("The initial alpha must be greater than 0.0.")
+
+        if not isinstance(self.increase_factor_alpha, float):
+            raise ValueError("The factor to increase alpha must be of type float.")
+        if not self.increase_factor_alpha > 0.0:
+            raise ValueError("The factor to increase alpha must be greater than 0.0.")
+
+        if not isinstance(self.num_iter_increase_alpha, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if not self.num_iter_increase_alpha > 0:
+            raise ValueError("The number of iterations must be greater than 0.")
+
+        if not isinstance(self.decrease_factor_alpha, float):
+            raise ValueError("The factor to decrease alpha must be of type float.")
+        if not self.decrease_factor_alpha > 0.0:
+            raise ValueError("The factor to decrease alpha must be greater than 0.0.")
+
+        if not isinstance(self.num_iter_decrease_alpha, int):
+            raise ValueError("The number of iterations must be of type int.")
+        if not self.num_iter_decrease_alpha > 0:
+            raise ValueError("The number of iterations must be greater than 0.")
+
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
