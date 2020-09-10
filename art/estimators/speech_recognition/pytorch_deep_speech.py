@@ -62,6 +62,15 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         use_amp: bool = False,
         opt_level: str = "O1",
         loss_scale: int = 1,
+        decoder_type: str = "greedy",
+        lm_path: str = "",
+        top_paths: int = 1,
+        alpha: float = 0.0,
+        beta: float = 0.0,
+        cutoff_top_n: int = 40,
+        cutoff_prob: float = 1.0,
+        beam_width: int = 10,
+        lm_workers: int = 4,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -86,6 +95,24 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                           values are `O0`, `O1`, `O2`, and `O3`.
         :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1 due to warp-ctc not supporting
                            scaling of gradients.
+        :param decoder_type: Decoder type. Either `greedy` or `beam`. This parameter is only used when users want
+                             transcription outputs.
+        :param lm_path: Path to an (optional) kenlm language model for use with beam search. This parameter is only
+                        used when users want transcription outputs.
+        :param top_paths: Number of beams to be returned. This parameter is only used when users want transcription
+                          outputs.
+        :param alpha: The weight used for the language model. This parameter is only used when users want transcription
+                      outputs.
+        :param beta: Language model word bonus (all words). This parameter is only used when users want transcription
+                     outputs.
+        :param cutoff_top_n: Cutoff_top_n characters with highest probs in vocabulary will be used in beam search. This
+                             parameter is only used when users want transcription outputs.
+        :param cutoff_prob: Cutoff probability in pruning. This parameter is only used when users want transcription
+                            outputs.
+        :param beam_width: The width of beam to be used. This parameter is only used when users want transcription
+                           outputs.
+        :param lm_workers: Number of language model processes to use. This parameter is only used when users want
+                           transcription outputs.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
                features. If arrays are provided, each value will be considered the bound for a feature, thus
@@ -100,7 +127,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         import torch
 
-        from deepspeech_pytorch.utils import load_model
+        from deepspeech_pytorch.configs.inference_config import LMConfig
+        from deepspeech_pytorch.enums import DecoderType
+        from deepspeech_pytorch.utils import load_decoder, load_model
 
         # Super initialization
         super().__init__(
@@ -124,7 +153,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # Set cpu/gpu device
-        self._device: str
+        self._device: torch.device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
         else:
@@ -138,17 +167,20 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                     "an4_pretrained_v2.pth",
                     "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/an4_pretrained_v2.pth",
                 )
+
             elif pretrained_model == "librispeech":
                 filename, url = (
                     "librispeech_pretrained_v2.pth",
                     "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
                     "librispeech_pretrained_v2.pth",
                 )
+
             elif pretrained_model == "tedlium":
                 filename, url = (
                     "ted_pretrained_v2.pth",
                     "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/ted_pretrained_v2.pth",
                 )
+
             elif pretrained_model is None:
                 # If model is None and no pretrained model is selected, then we need to have parameters filename and
                 # url to download, extract and load the automatic speech recognition model
@@ -158,6 +190,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                         "https://github.com/SeanNaren/deepspeech.pytorch/releases/download/v2.0/"
                         "librispeech_pretrained_v2.pth",
                     )
+
             else:
                 raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
 
@@ -176,6 +209,30 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         # Save first version of the optimizer
         self._optimizer = optimizer
         self._use_amp = use_amp
+
+        # Now create a decoder
+        # Create the language model config first
+        lm_config = LMConfig()
+
+        # Then setup the config
+        if decoder_type == "greedy":
+            lm_config.decoder_type = DecoderType.greedy
+        elif decoder_type == "beam":
+            lm_config.decoder_type = DecoderType.beam
+        else:
+            raise ValueError("Decoder type %s currently not supported." % decoder_type)
+
+        lm_config.lm_path = lm_path
+        lm_config.top_paths = top_paths
+        lm_config.alpha = alpha
+        lm_config.beta = beta
+        lm_config.cutoff_top_n = cutoff_top_n
+        lm_config.cutoff_prob = cutoff_prob
+        lm_config.beam_width = beam_width
+        lm_config.lm_workers = lm_workers
+
+        # Create the decoder with the lm config
+        self.decoder = load_decoder(labels=self._model.labels, cfg=lm_config)
 
         # Setup for AMP use
         if self._use_amp:
@@ -215,35 +272,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                   `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
         :param batch_size: Batch size.
         :param transcription_output: Indicate whether the function will produce probability or transcription as
-                                     prediction output.
+                                     prediction output. If transcription_output is not available, then probability
+                                     output is returned.
         :type transcription_output: `bool`
-        :param decoder_type: Decoder type. Either `greedy` or `beam`. This parameter is only used when users want
-                             transcription outputs. Default to `greedy`.
-        :type decoder_type: `str`
-        :param lm_path: Path to an (optional) kenlm language model for use with beam search. This parameter is only
-                        used when users want transcription outputs. Default to `''`.
-        :type lm_path: `str`
-        :param top_paths: Number of beams to return. This parameter is only used when users want transcription outputs.
-                          Default to 1.
-        :type top_paths: `int`
-        :param alpha: Language model weight. This parameter is only used when users want transcription outputs.
-                      Default to 0.0.
-        :type alpha: `float`
-        :param beta: Language model word bonus (all words). This parameter is only used when users want transcription
-                     outputs. Default to 0.0.
-        :type beta: `float`
-        :param cutoff_top_n: Cutoff_top_n characters with highest probs in vocabulary will be used in beam search. This
-                             parameter is only used when users want transcription outputs. Default to 40.
-        :type cutoff_top_n: `float`
-        :param cutoff_prob: Cutoff probability in pruning. This parameter is only used when users want transcription
-                            outputs. Default to 1.0.
-        :type cutoff_prob: `float`
-        :param beam_width: Beam width to use. This parameter is only used when users want transcription outputs.
-                           Default to 10.
-        :type beam_width: `int`
-        :param lm_workers: Number of language model processes to use. This parameter is only used when users want
-                           transcription outputs. Default to 4.
-        :type lm_workers: `int`
         :return: Probability (if transcription_output is None or False) or transcription (if transcription_output is
                  True) predictions:
                     - Probability return is a tuple of (probs, sizes), where:
@@ -266,7 +297,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(x=x_preprocessed)
 
         # Compute real input sizes
-        input_sizes = input_rates.mul_(inputs.size(-1)).int()
+        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
 
         # Run prediction with batch processing
         results = []
@@ -317,60 +348,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             return result_outputs, result_output_sizes
 
         # Now users want transcription outputs
-        # Hence first create a decoder
-        from deepspeech_pytorch.configs.inference_config import LMConfig
-        from deepspeech_pytorch.enums import DecoderType
-        from deepspeech_pytorch.utils import load_decoder
-
-        # Create the language model config
-        lm_config = LMConfig()
-
-        decoder_type = kwargs.get("decoder_type")
-        if decoder_type is not None:
-            if decoder_type == "greedy":
-                lm_config.decoder_type = DecoderType.greedy
-            elif decoder_type == "beam":
-                lm_config.decoder_type = DecoderType.beam
-            else:
-                raise ValueError("Decoder type %s currently not supported." % decoder_type)
-
-        lm_path = kwargs.get("lm_path")
-        if lm_path is not None:
-            lm_config.lm_path = lm_path
-
-        top_paths = kwargs.get("top_paths")
-        if top_paths is not None:
-            lm_config.top_paths = top_paths
-
-        alpha = kwargs.get("alpha")
-        if alpha is not None:
-            lm_config.alpha = alpha
-
-        beta = kwargs.get("beta")
-        if beta is not None:
-            lm_config.beta = beta
-
-        cutoff_top_n = kwargs.get("cutoff_top_n")
-        if cutoff_top_n is not None:
-            lm_config.cutoff_top_n = cutoff_top_n
-
-        cutoff_prob = kwargs.get("cutoff_prob")
-        if cutoff_prob is not None:
-            lm_config.cutoff_prob = cutoff_prob
-
-        beam_width = kwargs.get("beam_width")
-        if beam_width is not None:
-            lm_config.beam_width = beam_width
-
-        lm_workers = kwargs.get("lm_workers")
-        if lm_workers is not None:
-            lm_config.lm_workers = lm_workers
-
-        # Create the decoder with the lm config
-        decoder = load_decoder(labels=self._model.labels, cfg=lm_config)
-
         # Compute transcription
-        decoded_output, _ = decoder.decode(
+        decoded_output, _ = self.decoder.decode(
             torch.tensor(result_outputs, device=self._device), torch.tensor(result_output_sizes, device=self._device)
         )
         decoded_output = [do[0] for do in decoded_output]
@@ -405,7 +384,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         )
 
         # Compute real input sizes
-        input_sizes = input_rates.mul_(inputs.size(-1)).int()
+        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
 
         # Call to DeepSpeech model for prediction
         outputs, output_sizes = self._model(inputs.to(self._device), input_sizes.to(self._device))

@@ -18,10 +18,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import unittest
 import importlib
 
 import numpy as np
+import pytest
 
 from tests.utils import master_seed
 
@@ -38,17 +38,18 @@ amp_found = amp_spec is not None
 logger = logging.getLogger(__name__)
 
 
-@unittest.skipIf(
+@pytest.mark.skipif(
     not deepspeech_pytorch_found,
     reason="Skip unittests if deep speech module is not found because of pre-trained model.",
 )
-class TestPyTorchDeepSpeech(unittest.TestCase):
+@pytest.mark.skipif(not amp_found, reason="Skip unittests if apex module is not found.")
+class TestPyTorchDeepSpeech:
     """
     This class tests the PyTorchDeepSpeech estimator.
     """
 
-    @classmethod
-    def setUpClass(cls):
+    @pytest.fixture
+    def setup_class(self):
         master_seed(seed=1234)
 
         # Small data for testing
@@ -111,38 +112,26 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
             ]
             * 100
         )
-        cls.x = np.array([x1, x2, x3])
 
-    def test_all(self):
+        self.x = np.array([x1, x2, x3])
+
+    def test_all(self, _test_all):
+        pass
+
+    @pytest.fixture(params=[False, True])
+    def _test_all(self, request, setup_class):
         # Only import if deep speech module is available
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
-        # Define deep speech estimator
-        self.speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
-
-        # All tests
-        self._test_predict()
-        self._test_loss_gradient()
-        self._test_fit()
-
-    @unittest.skipIf(not amp_found, reason="Skip unittests if apex module is not found.")
-    def test_all_amp(self):
-        # Only import if deep speech module is available
-        from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-
-        # Define deep speech estimator
-        self.speech_recognizer_amp = PyTorchDeepSpeech(pretrained_model="librispeech", device_type="gpu", use_amp=True)
-
-        # All tests
-        self._test_predict(use_amp=True)
-        self._test_loss_gradient(use_amp=True)
-        self._test_fit(use_amp=True)
-
-    def _test_predict(self, use_amp=False):
         # Test probability outputs
-        if use_amp:
+        if request.param is True:
+            self.speech_recognizer_amp = PyTorchDeepSpeech(
+                pretrained_model="librispeech", device_type="gpu", use_amp=True
+            )
             probs, sizes = self.speech_recognizer_amp.predict(self.x, batch_size=2)
+
         else:
+            self.speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
             probs, sizes = self.speech_recognizer.predict(self.x, batch_size=2)
 
         expected_sizes = np.asarray([5, 5, 5])
@@ -184,29 +173,29 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
         np.testing.assert_array_almost_equal(probs[1][1], expected_probs, decimal=3)
 
         # Test transcription outputs
-        if use_amp:
+        if request.param is True:
             transcriptions = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
         else:
             transcriptions = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
         expected_transcriptions = np.array(["", "", ""])
-        self.assertTrue((expected_transcriptions == transcriptions).all())
+        assert (expected_transcriptions == transcriptions).all()
 
-    def _test_loss_gradient(self, use_amp=False):
+        # Now test loss gradients
         # Create labels
         y = np.array(["SIX", "HI", "GOOD"])
 
         # Compute gradients
-        if use_amp:
+        if request.param is True:
             grads = self.speech_recognizer_amp.loss_gradient(self.x, y)
         else:
             grads = self.speech_recognizer.loss_gradient(self.x, y)
 
-        self.assertTrue(grads[0].shape == (1300,))
-        self.assertTrue(grads[1].shape == (1500,))
-        self.assertTrue(grads[2].shape == (1400,))
+        assert grads[0].shape == (1300,)
+        assert grads[1].shape == (1500,)
+        assert grads[2].shape == (1400,)
 
-        if use_amp:
+        if request.param is True:
             expected_gradients1 = np.asarray(
                 [
                     -3485.7,
@@ -259,7 +248,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
             )
         np.testing.assert_array_almost_equal(grads[0][0:20], expected_gradients1, decimal=0)
 
-        if use_amp:
+        if request.param is True:
             expected_gradients2 = np.asarray(
                 [
                     20924.5,
@@ -312,7 +301,7 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
             )
         np.testing.assert_array_almost_equal(grads[1][0:20], expected_gradients2, decimal=0)
 
-        if use_amp:
+        if request.param is True:
             expected_gradients3 = np.asarray(
                 [
                     -1687.3,
@@ -365,11 +354,8 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
             )
         np.testing.assert_array_almost_equal(grads[2][0:20], expected_gradients3, decimal=0)
 
-    def _test_fit(self, use_amp=False):
-        # Create labels
-        y = np.array(["SIX", "HI", "GOOD"])
-
-        if use_amp:
+        # Now test fit function
+        if request.param is True:
             # Before train
             transcriptions1 = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
@@ -378,6 +364,8 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
 
             # After train
             transcriptions2 = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
+
+            assert not ((transcriptions1 == transcriptions2).all())
 
         else:
             # Before train
@@ -389,8 +377,8 @@ class TestPyTorchDeepSpeech(unittest.TestCase):
             # After train
             transcriptions2 = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
-        self.assertFalse((transcriptions1 == transcriptions2).all())
+            assert not ((transcriptions1 == transcriptions2).all())
 
 
 if __name__ == "__main__":
-    unittest.main()
+    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
