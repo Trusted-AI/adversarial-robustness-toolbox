@@ -179,7 +179,7 @@ class TestPyTorchDeepSpeech:
             transcriptions = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
         expected_transcriptions = np.array(["", "", ""])
-        assert ((expected_transcriptions == transcriptions).all())
+        assert (expected_transcriptions == transcriptions).all()
 
         # Now test loss gradients
         # Create labels
@@ -191,9 +191,9 @@ class TestPyTorchDeepSpeech:
         else:
             grads = self.speech_recognizer.loss_gradient(self.x, y)
 
-        assert (grads[0].shape == (1300,))
-        assert (grads[1].shape == (1500,))
-        assert (grads[2].shape == (1400,))
+        assert grads[0].shape == (1300,)
+        assert grads[1].shape == (1500,)
+        assert grads[2].shape == (1400,)
 
         if request.param is True:
             expected_gradients1 = np.asarray(
