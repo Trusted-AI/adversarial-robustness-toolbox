@@ -22,13 +22,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import logging
-from typing import List, Optional, Tuple, TypeVar
+from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
 from art.exceptions import EstimatorError
 
-from art.estimators.classification.classifier import Classifier
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +164,7 @@ class PoisoningAttack(Attack):
     Abstract base class for poisoning attack classes
     """
 
-    def __init__(self, classifier: Optional[Classifier]) -> None:
+    def __init__(self, classifier: Optional["Classifier"]) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         """
@@ -187,9 +188,8 @@ class PoisoningAttackTransformer(PoisoningAttack):
     Abstract base class for poisoning attack classes that return a transformed classifier.
     These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
     """
-    ClassifierType = TypeVar('ClassifierType', bound=Classifier)
 
-    def __init__(self, classifier: Optional[ClassifierType], **kwargs) -> None:
+    def __init__(self, classifier: Optional["Classifier"], **kwargs) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         :type classifier: `art.estimators.classification.Classifier` or `None`
@@ -210,7 +210,7 @@ class PoisoningAttackTransformer(PoisoningAttack):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> ClassifierType:
+    def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "Classifier":
         """
         Returns a poisoned version of the classifier used to initialize the attack
         :param x: Training data

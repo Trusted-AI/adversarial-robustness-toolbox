@@ -21,15 +21,16 @@ This module implements clean-label attacks on Neural Networks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Tuple, Union, List, TypeVar, Optional
+from typing import Tuple, Union, List, Optional, TYPE_CHECKING
 
 import numpy as np
 
 from art.attacks.attack import PoisoningAttackTransformer
 from art.attacks.poisoning import PoisoningAttackBackdoor
-from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierNeuralNetwork, ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
+
+if TYPE_CHECKING:
+    from art.estimators.classification.classifier import Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
     Implementation of Adversarial Embedding attack by Tan, Shokri (2019).
     "Bypassing Backdoor Detection Algorithms in Deep Learning"
 
-    This attack trains a classifier with an additional disciminator and loss function that aims
+    This attack trains a classifier with an additional discriminator and loss function that aims
     to create non-differentiable latent representations between backdoored and benign examples.
 
     | Paper link: https://arxiv.org/abs/1905.13409
@@ -56,22 +57,20 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         "learning_rate",
     ]
 
-    # Currently only supporting Keras
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
-    ClassifierType = TypeVar('ClassifierType', bound=ClassifierNeuralNetwork)
+    _estimator_requirements = (KerasClassifier,)
 
     def __init__(
-            self,
-            classifier: ClassifierType,
-            backdoor: PoisoningAttackBackdoor,
-            feature_layer: Union[int, str],
-            target: Union[np.ndarray, List[Tuple[np.ndarray, np.ndarray]]],
-            pp_poison: Union[float, List[float]] = 0.05,
-            discriminator_layer_1: int = 256,
-            discriminator_layer_2: int = 128,
-            regularization: float = 10,
-            learning_rate: float = 1e-4,
-            clone=True,
+        self,
+        classifier: "Classifier",
+        backdoor: PoisoningAttackBackdoor,
+        feature_layer: Union[int, str],
+        target: Union[np.ndarray, List[Tuple[np.ndarray, np.ndarray]]],
+        pp_poison: Union[float, List[float]] = 0.05,
+        discriminator_layer_1: int = 256,
+        discriminator_layer_2: int = 128,
+        regularization: float = 10,
+        learning_rate: float = 1e-4,
+        clone=True,
     ):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
@@ -102,7 +101,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         self._check_params()
 
         if isinstance(self.estimator, KerasClassifier):
-            using_tf_keras = 'tensorflow.python.keras' in str(type(self.estimator.model))
+            using_tf_keras = "tensorflow.python.keras" in str(type(self.estimator.model))
             if using_tf_keras:
                 from tensorflow.keras.models import Model, clone_model
                 from tensorflow.keras.layers import GaussianNoise, Dense, BatchNormalization, LeakyReLU
@@ -137,7 +136,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             dense_layer_2 = Dense(self.discriminator_layer_2)(leaky_layer_1)
             norm_2_layer = BatchNormalization()(dense_layer_2)
             leaky_layer_2 = LeakyReLU(alpha=0.2)(norm_2_layer)
-            backdoor_detect = Dense(2, activation='softmax', name='backdoor_detect')(leaky_layer_2)
+            backdoor_detect = Dense(2, activation="softmax", name="backdoor_detect")(leaky_layer_2)
 
             # Creating embedded model
             self.embed_model = Model(inputs=self.orig_model.inputs, outputs=[init_model_output, backdoor_detect])
@@ -145,8 +144,8 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
             # Add backdoor detection loss
             model_name = self.orig_model.name
             model_loss = self.estimator.model.loss
-            loss_name = 'backdoor_detect'
-            loss_type = 'binary_crossentropy'
+            loss_name = "backdoor_detect"
+            loss_type = "binary_crossentropy"
             if type(model_loss) is str:
                 losses = {model_name: model_loss, loss_name: loss_type}
                 loss_weights = {model_name: 1.0, loss_name: -self.regularization}
@@ -159,24 +158,26 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 raise TypeError("Cannot read model loss value of type {}".format(type(model_loss)))
 
             opt = Adam(lr=self.learning_rate)
-            self.embed_model.compile(optimizer=opt, loss=losses, loss_weights=loss_weights, metrics=['accuracy'])
+            self.embed_model.compile(optimizer=opt, loss=losses, loss_weights=loss_weights, metrics=["accuracy"])
         else:
             raise NotImplementedError("This attack currently only supports Keras.")
 
-    def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs) -> \
-            Tuple[np.ndarray, np.ndarray]:
+    def poison(
+        self, x: np.ndarray, y: Optional[np.ndarray] = None, broadcast=False, **kwargs
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Calls perturbation function on input x and target labels y
 
         :param x: An array with the points that initialize attack points.
         :param y: The target labels for the attack.
-        :param broadcast: whether or not to brodcast single target label
+        :param broadcast: whether or not to broadcast single target label
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         return self.backdoor.poison(x, y, broadcast=broadcast)
 
-    def poison_estimator(self, x: np.ndarray, y: np.ndarray, batch_size: int = 64, nb_epochs: int = 10,
-                         **kwargs) -> ClassifierType:
+    def poison_estimator(
+        self, x: np.ndarray, y: np.ndarray, batch_size: int = 64, nb_epochs: int = 10, **kwargs
+    ) -> KerasClassifier:
         """
         Train a poisoned model and return it
         :param x: Training data
@@ -234,10 +235,11 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
         if isinstance(self.estimator, KerasClassifier):
             # Call fit with both y and is_backdoor labels
-            self.embed_model.fit(train_data, y=[train_labels, is_backdoor], batch_size=batch_size, epochs=nb_epochs,
-                                 **kwargs)
+            self.embed_model.fit(
+                train_data, y=[train_labels, is_backdoor], batch_size=batch_size, epochs=nb_epochs, **kwargs
+            )
             params = self.estimator.get_params()
-            del params['model']
+            del params["model"]
             return KerasClassifier(self.orig_model, **params)
         else:
             raise NotImplementedError("Currently only Keras is supported")
@@ -261,8 +263,11 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         elif type(self.feature_layer) is int:
             num_layers = len(self.estimator.model.layers)
             if abs(self.feature_layer) >= num_layers:
-                raise ValueError("Feature layer {} is out of range. Network only has {} layers".format(
-                    self.feature_layer, num_layers))
+                raise ValueError(
+                    "Feature layer {} is out of range. Network only has {} layers".format(
+                        self.feature_layer, num_layers
+                    )
+                )
 
         if type(self.target) is np.ndarray:
             self._check_valid_label_shape(self.target)
@@ -289,11 +294,14 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
     def _check_valid_label_shape(self, label: np.ndarray) -> None:
         if label.shape != self.estimator.model.output_shape[1:]:
-            raise ValueError("Invalid shape for target array. Should be {} received {}".format(
-                self.estimator.model.output_shape[1:], label.shape))
+            raise ValueError(
+                "Invalid shape for target array. Should be {} received {}".format(
+                    self.estimator.model.output_shape[1:], label.shape
+                )
+            )
 
 
-def _check_pp_poison(pp_poison) -> None:
+def _check_pp_poison(pp_poison: float) -> None:
     """
     Return an error when a poison value is invalid
     """
@@ -301,7 +309,7 @@ def _check_pp_poison(pp_poison) -> None:
         raise ValueError("pp_poison must be between 0 and 1")
 
 
-def shape_labels(lbl: np.ndarray):
+def shape_labels(lbl: np.ndarray) -> np.ndarray:
     """
     Reshape a labels array
 
