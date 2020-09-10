@@ -53,8 +53,22 @@ class ImperceptibleAttackPytorch(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
-        "eps",
-        "max_iter",
+        "initial_eps",
+        "max_iter_1st_stage",
+        "max_iter_2nd_stage",
+        "learning_rate_1st_stage",
+        "learning_rate_2nd_stage",
+        "optimizer_1st_stage",
+        "optimizer_2nd_stage",
+        "global_max_length",
+        "initial_rescale",
+        "rescale_factor",
+        "num_iter_adjust_rescale",
+        "initial_alpha",
+        "increase_factor_alpha",
+        "num_iter_increase_alpha",
+        "decrease_factor_alpha",
+        "num_iter_decrease_alpha",
         "batch_size",
     ]
 
@@ -119,6 +133,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :param num_iter_decrease_alpha: Number of iterations to decrease alpha.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
+        import torch
+        from torch.autograd import Variable
+
         if (
             hasattr(estimator, "preprocessing")
             and (estimator.preprocessing is not None and estimator.preprocessing != (0, 1))
@@ -139,8 +156,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         self.max_iter_2nd_stage = max_iter_2nd_stage
         self.learning_rate_1st_stage = learning_rate_1st_stage
         self.learning_rate_2nd_stage = learning_rate_2nd_stage
-        self.optimizer_1st_stage = optimizer_1st_stage
-        self.optimizer_2nd_stage = optimizer_2nd_stage
         self.global_max_length = global_max_length
         self.initial_rescale = initial_rescale
         self.rescale_factor = rescale_factor
@@ -152,6 +167,20 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         self.num_iter_decrease_alpha = num_iter_decrease_alpha
         self.batch_size = batch_size
 
+        # Create the main variable to optimize
+        self.global_optimal_delta = Variable(
+            torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor), requires_grad=True
+        )
+        self.global_optimal_delta.to(self.estimator.device)
+
+        # Create the optimizers
+        self.optimizer_1st_stage = optimizer_1st_stage(
+            params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
+        )
+        self.optimizer_2nd_stage = optimizer_2nd_stage(
+            params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
+        )
+
         # Check validity of attack attributes
         self._check_params()
 
@@ -161,10 +190,10 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
-                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
         :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
-                  only supports targeted attack.
+                  class only supports targeted attack.
         :return: An array holding the adversarial examples.
         """
         import torch  # lgtm [py/repeated-import]
@@ -201,16 +230,11 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         import torch
         from torch.autograd import Variable
 
-        self.global_delta = Variable(
-            x=torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor),
-            requires_grad=True
-        )
-        self.global_delta.to(self.estimator.device)
 
 
         return
 
-    def _partial_forward(self, local_batch_size: int, local_max_length: int, rescale: float, input_mask: np.ndarray):
+    def _partial_forward(self, original_input: np.ndarray, local_batch_size: int, local_max_length: int, rescale: float, input_mask: np.ndarray):
         """
 
         :param global_max_length:
@@ -222,21 +246,10 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         local_delta = self.global_delta[ : local_batch_size, : local_max_length]
         local_delta = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
+        adv_input = local_delta + original_input
+        masked_adv_input = adv_input * input_mask
 
 
-
-        _input = self.apply_delta * self.mask + self.input_tf
-        self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2 ** 15, 2 ** 15 - 1)
-
-        # generate the inputs that are needed for the lingvo model
-        self.features = create_features(self.pass_in, self.sample_rate_tf, self.mask_freq)
-        self.inputs = create_inputs(model, self.features, self.tgt_tf, self.batch_size, self.mask_freq)
-
-        task = model.GetTask()
-        metrics = task.FPropDefaultTheta(self.inputs)
-        # self.celoss with the shape (batch_size)
-        self.celoss = tf.get_collection("per_loss")[0]
-        self.decoded = task.Decode(self.inputs)
 
 
 
@@ -245,12 +258,21 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         rescale = self.initial_rescale
         local_batch_size = len(x)
-        local_max_length = np.max([x_ for x_ in x])
+        local_max_length = np.max([x_.shape[0] for x_ in x])
+
+        input_mask = np.zeros([local_batch_size, local_max_length])
+        for local_batch_size_idx in range(local_batch_size):
+            input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
+
+        for iter_1st_stage_idx in range(self.max_iter_1st_stage):
+            loss = self._partial_forward(
+                local_batch_size=local_batch_size,
+                local_max_length=local_max_length,
+                rescale=rescale,
+                input_mask=input_mask
+            )
 
 
-
-
-        for i in range(self.max_iter_1st_stage):
 
 
         return
