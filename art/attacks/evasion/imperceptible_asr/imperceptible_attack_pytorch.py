@@ -78,6 +78,14 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         optimizer_1st_stage: "Optimizer" = torch.optim.SGD,
         optimizer_2nd_stage: "Optimizer" = torch.optim.SGD,
         global_max_length: int = 10000,
+        initial_rescale: float = 1.0,
+        rescale_factor: float = 0.8,
+        num_iter_adjust_rescale: int = 10,
+        initial_alpha: float = 0.05,
+        increase_factor_alpha: float = 1.2,
+        num_iter_increase_alpha: int = 20,
+        decrease_factor_alpha: float = 0.8,
+        num_iter_decrease_alpha: int = 50,
         batch_size: int = 32,
     ):
         """
@@ -96,6 +104,19 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :param optimizer_1st_stage: The optimizer applied for the first stage of the optimization of the attack.
         :param optimizer_2nd_stage: The optimizer applied for the second stage of the optimization of the attack.
         :param global_max_length: The length of the longest audio signal allowed by this attack.
+        :param initial_rescale: Initial rescale coefficient to speedup the decrease of the perturbation size during
+                                the first stage of the optimization of the attack.
+        :param rescale_factor: The factor to adjust the rescale coefficient during the first stage of the optimization
+                               of the attack.
+        :param num_iter_adjust_rescale: Number of iterations to adjust the rescale coefficient.
+        :param initial_alpha: The initial value of the alpha coefficient used in the second stage of the optimization
+                              of the attack.
+        :param increase_factor_alpha: The factor to increase the alpha coefficient used in the second stage of the
+                                      optimization of the attack.
+        :param num_iter_increase_alpha: Number of iterations to increase alpha.
+        :param decrease_factor_alpha: The factor to decrease the alpha coefficient used in the second stage of the
+                                      optimization of the attack.
+        :param num_iter_decrease_alpha: Number of iterations to decrease alpha.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         if (
@@ -171,12 +192,13 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         """
         return
 
-    def _partial_forward(self, batch_size: int):
+    def _partial_forward(self, local_batch_size: int, local_max_length: int):
         """
 
         :param global_max_length:
         :return:
         """
+        import torch
         from torch.autograd import Variable
 
         self.global_delta = Variable(
@@ -184,6 +206,28 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             requires_grad=True
         )
         self.global_delta.to(self.estimator.device)
+
+        local_delta = self.global_delta[ : local_batch_size, : local_max_length]
+        local_delta = torch.clamp(local_delta, -self.initial_eps, self.initial_eps)
+
+
+
+
+        self.apply_delta = tf.clip_by_value(self.delta, -FLAGS.initial_bound, FLAGS.initial_bound) * self.rescale
+        self.new_input = self.apply_delta * self.mask + self.input_tf
+        self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2 ** 15, 2 ** 15 - 1)
+
+        # generate the inputs that are needed for the lingvo model
+        self.features = create_features(self.pass_in, self.sample_rate_tf, self.mask_freq)
+        self.inputs = create_inputs(model, self.features, self.tgt_tf, self.batch_size, self.mask_freq)
+
+        task = model.GetTask()
+        metrics = task.FPropDefaultTheta(self.inputs)
+        # self.celoss with the shape (batch_size)
+        self.celoss = tf.get_collection("per_loss")[0]
+        self.decoded = task.Decode(self.inputs)
+
+
 
 
     def _attack_1st_stage(self):
