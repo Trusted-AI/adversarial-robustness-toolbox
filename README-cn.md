@@ -43,3 +43,9 @@
 [citing]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Contributing#citing-art
 
 该图书馆正在不断发展中。 欢迎反馈，错误报告和贡献！
+
+# 致谢
+
+本材料部分基于国防高级研究计划局（DARPA）支持的工作
+合同编号HR001120C0013。本材料中表达的任何意见，发现和结论或建议均为
+作者的观点，并不一定反映国防高级研究计划局（DARPA）的观点。

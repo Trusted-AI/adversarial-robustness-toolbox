@@ -48,3 +48,8 @@ certification, etc.).
 [citing]: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/Contributing#citing-art
 
 The library is under continuous development. Feedback, bug reports and contributions are very welcome!
+
+# Acknowledgment
+This material is partially based upon work supported by the Defense Advanced Research Projects Agency (DARPA) under
+Contract No. HR001120C0013. Any opinions, findings and conclusions or recommendations expressed in this material are
+those of the author(s) and do not necessarily reflect the views of the Defense Advanced Research Projects Agency (DARPA).
