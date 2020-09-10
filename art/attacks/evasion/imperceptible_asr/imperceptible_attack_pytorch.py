@@ -142,6 +142,14 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         self.optimizer_1st_stage = optimizer_1st_stage
         self.optimizer_2nd_stage = optimizer_2nd_stage
         self.global_max_length = global_max_length
+        self.initial_rescale = initial_rescale
+        self.rescale_factor = rescale_factor
+        self.num_iter_adjust_rescale = num_iter_adjust_rescale
+        self.initial_alpha = initial_alpha
+        self.increase_factor_alpha = increase_factor_alpha
+        self.num_iter_increase_alpha = num_iter_increase_alpha
+        self.decrease_factor_alpha = decrease_factor_alpha
+        self.num_iter_decrease_alpha = num_iter_decrease_alpha
         self.batch_size = batch_size
 
         # Check validity of attack attributes
@@ -190,14 +198,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                      perturbed.
         :return: Adversarial examples.
         """
-        return
-
-    def _partial_forward(self, local_batch_size: int, local_max_length: int):
-        """
-
-        :param global_max_length:
-        :return:
-        """
         import torch
         from torch.autograd import Variable
 
@@ -207,14 +207,25 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         )
         self.global_delta.to(self.estimator.device)
 
+
+        return
+
+    def _partial_forward(self, local_batch_size: int, local_max_length: int, rescale: float, input_mask: np.ndarray):
+        """
+
+        :param global_max_length:
+        :return:
+        """
+        import torch
+        from torch.autograd import Variable
+
+
         local_delta = self.global_delta[ : local_batch_size, : local_max_length]
-        local_delta = torch.clamp(local_delta, -self.initial_eps, self.initial_eps)
+        local_delta = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
 
 
 
-
-        self.apply_delta = tf.clip_by_value(self.delta, -FLAGS.initial_bound, FLAGS.initial_bound) * self.rescale
-        self.new_input = self.apply_delta * self.mask + self.input_tf
+        _input = self.apply_delta * self.mask + self.input_tf
         self.pass_in = tf.clip_by_value(self.new_input + self.noise, -2 ** 15, 2 ** 15 - 1)
 
         # generate the inputs that are needed for the lingvo model
@@ -230,7 +241,18 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
 
 
-    def _attack_1st_stage(self):
+    def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray):
+
+        rescale = self.initial_rescale
+        local_batch_size = len(x)
+        local_max_length = np.max([x_ for x_ in x])
+
+
+
+
+        for i in range(self.max_iter_1st_stage):
+
+
         return
 
     def _attack_2nd_stage(self):
