@@ -14,23 +14,23 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_at
 
 mlFrameworkList=("tensorflow" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
+  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 done
 
 mlFrameworkList=("tensorflow")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q tests/defences/preprocessor --mlFramework=$mlFramework --durations=0
+  pytest -q tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
-  pytest -q tests/utils --mlFramework=$mlFramework --durations=0
+  pytest -q tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
-  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
+  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
 done
 
-pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --durations=0
+pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --skip_travis=True --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
 
 pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="tensorflow" --durations=0
@@ -48,10 +48,10 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_ten
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
-  pytest -q tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --durations=0
+  pytest -q tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_common.py $mlFramework"; fi
-  pytest -q tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_specific.py $mlFramework"; fi
+  pytest -q tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
 done
 
 
