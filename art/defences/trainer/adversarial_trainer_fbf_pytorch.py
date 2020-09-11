@@ -60,7 +60,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         :param use_amp: Boolean that decides if apex should be used for mixed precision arithmetic during training
         """
         super().__init__(classifier, eps)
-        self._classifier: PyTorchClassifier
+        self._classifier: "PyTorchClassifier"
         self._use_amp = use_amp
 
     def fit(

@@ -126,7 +126,6 @@ if TYPE_CHECKING:
         TensorFlowV2Classifier,
     ]
 
-
     CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[
         ClassifierClassLossGradients,
         EnsembleClassifier,

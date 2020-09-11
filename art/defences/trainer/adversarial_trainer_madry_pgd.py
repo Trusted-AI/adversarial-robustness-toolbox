@@ -99,5 +99,5 @@ class AdversarialTrainerMadryPGD(Trainer):
             x, y, validation_data=validation_data, nb_epochs=self.nb_epochs, batch_size=self.batch_size, **kwargs
         )
 
-    def get_classifier(self) -> CLASSIFIER_LOSS_GRADIENTS_TYPE:
+    def get_classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
         return self.trainer.get_classifier()

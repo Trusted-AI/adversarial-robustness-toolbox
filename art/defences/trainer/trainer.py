@@ -34,7 +34,7 @@ class Trainer(abc.ABC):
     Abstract base class for training defences.
     """
 
-    def __init__(self, classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE) -> None:
+    def __init__(self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE") -> None:
         """
         Create a adversarial training object
         """
@@ -53,7 +53,7 @@ class Trainer(abc.ABC):
         """
         raise NotImplementedError
 
-    def get_classifier(self) -> CLASSIFIER_LOSS_GRADIENTS_TYPE:
+    def get_classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
         """
         Return the classifier trained via adversarial training.
 
