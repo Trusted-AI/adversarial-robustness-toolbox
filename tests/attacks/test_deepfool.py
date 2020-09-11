@@ -24,6 +24,7 @@ import keras
 import numpy as np
 
 from art.attacks.evasion.deepfool import DeepFool
+from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.estimators.classification.keras import KerasClassifier
 from art.utils import get_labels_np_array
@@ -191,7 +192,7 @@ class TestDeepFool(TestBase):
         logger.info("Accuracy on adversarial test examples: %.2f%%", (accuracy * 100))
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(DeepFool, [ClassGradientsMixin])
+        backend_test_classifier_type_check_fail(DeepFool, [BaseEstimator, ClassGradientsMixin])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()

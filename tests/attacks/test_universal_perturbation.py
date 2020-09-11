@@ -23,9 +23,9 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import (
     TestBase,
@@ -204,7 +204,7 @@ class TestUniversalPerturbation(TestBase):
 
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(
-            UniversalPerturbation, [BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin]
+            UniversalPerturbation, [BaseEstimator, ClassifierMixin]
         )
 
 
