@@ -23,15 +23,18 @@ This module implements membership inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Any, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
 from art.attacks import InferenceAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin, Classifier
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +47,9 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         member. Otherwise, it is not a member.
     """
 
-    _estimator_requirements = [BaseEstimator, ClassifierMixin]
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
-    def __init__(self, classifier: Classifier):
+    def __init__(self, classifier: "CLASSIFIER_TYPE"):
         """
         Create a MembershipInferenceBlackBoxRuleBased attack instance.
 
@@ -91,14 +94,14 @@ class MembershipInferenceBlackBox(InferenceAttack):
         "attack_model_type",
         "attack_model",
     ]
-    _estimator_requirements = [BaseEstimator, ClassifierMixin]
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: Union["CLASSIFIER_TYPE"],
         input_type: str = "prediction",
         attack_model_type: str = "nn",
-        attack_model: Optional[Classifier] = None,
+        attack_model: Optional[Any] = None,
     ):
         """
         Create a MembershipInferenceBlackBox attack instance.
@@ -173,7 +176,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 if self.input_type == "prediction":
                     self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
                 else:
-                    self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes, 1)
+                    self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes, num_features=1)
                 self.epochs = 100
                 self.batch_size = 100
                 self.learning_rate = 0.0001
