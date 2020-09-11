@@ -33,7 +33,7 @@ from typing import Optional, Tuple
 import numpy as np
 from scipy.ndimage.filters import median_filter
 
-from art.config import CLIP_VALUES_TYPE
+from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg
 

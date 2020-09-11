@@ -29,11 +29,11 @@ from tqdm import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierNeuralNetwork, ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +66,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: np.ndarray,
         feature_layer: Union[str, int],
         learning_rate: float = 500 * 255.0,

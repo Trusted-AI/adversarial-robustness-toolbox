@@ -42,7 +42,7 @@ from tqdm import trange, tqdm
 from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
     from art.attacks.attack import EvasionAttack
     from art.data_generators import DataGenerator
 

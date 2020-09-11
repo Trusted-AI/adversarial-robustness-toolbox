@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.client.session import Session
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
 

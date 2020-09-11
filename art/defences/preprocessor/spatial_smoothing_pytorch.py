@@ -32,7 +32,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import CLIP_VALUES_TYPE
+from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:

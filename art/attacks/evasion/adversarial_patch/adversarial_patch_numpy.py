@@ -38,7 +38,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def __init__(
         self,
-        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: int = 0,
         rotation_max: float = 22.5,
         scale_min: float = 0.1,

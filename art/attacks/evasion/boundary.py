@@ -24,16 +24,19 @@ predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
-from art.config import ART_NUMPY_DTYPE, CLASSIFIER_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +65,7 @@ class BoundaryAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: CLASSIFIER_TYPE,
+        estimator: "CLASSIFIER_TYPE",
         targeted: bool = True,
         delta: float = 0.01,
         epsilon: float = 0.01,

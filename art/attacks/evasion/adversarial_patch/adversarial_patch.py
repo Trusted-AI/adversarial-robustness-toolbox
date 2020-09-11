@@ -37,7 +37,7 @@ from art.estimators.classification import TensorFlowV2Classifier
 from art.attacks.attack import EvasionAttack
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 

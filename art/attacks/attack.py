@@ -29,7 +29,7 @@ import numpy as np
 from art.exceptions import EstimatorError
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 

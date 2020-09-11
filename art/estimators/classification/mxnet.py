@@ -27,23 +27,16 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import six
 
-from art.config import (
-    ART_NUMPY_DTYPE,
-    ART_DATA_PATH,
-    CLIP_VALUES_TYPE,
-    PREPROCESSING_TYPE,
-)
+from art.config import ART_NUMPY_DTYPE, ART_DATA_PATH
 from art.estimators.mxnet import MXEstimator
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierMixin,
-)
+from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import mxnet as mx
 
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -67,10 +60,10 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         ctx: Optional["mx.context.Context"] = None,
         channel_index=Deprecated,
         channels_first: bool = True,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Initialize an `MXClassifier` object. Assumes the `model` passed as parameter is a Gluon model.

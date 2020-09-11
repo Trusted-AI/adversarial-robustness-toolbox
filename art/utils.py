@@ -28,7 +28,7 @@ import os
 import shutil
 import sys
 import tarfile
-from typing import Callable, List, Optional, Tuple, Union, TypeVar, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 import warnings
 import zipfile
 
@@ -36,14 +36,135 @@ import numpy as np
 from scipy.special import gammainc
 import six
 
-from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE, DATASET_TYPE
+from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
+
+logger = logging.getLogger(__name__)
+
+
+# ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
+
+
+DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
+PREPROCESSING_TYPE = Optional[Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]]
 
 if TYPE_CHECKING:
     # pylint: disable=R0401
-    from art.config import CLIP_VALUES_TYPE
-    from art.estimators.classification.classifier import Classifier
+    from art.estimators.classification.classifier import (
+        Classifier,
+        ClassifierLossGradients,
+        ClassifierClassLossGradients,
+        ClassifierNeuralNetwork,
+        ClassifierDecisionTree,
+    )
+    from art.estimators.classification.blackbox import BlackBoxClassifier
+    from art.estimators.classification.catboost import CatBoostARTClassifier
+    from art.estimators.classification.detector_classifier import DetectorClassifier
+    from art.estimators.classification.ensemble import EnsembleClassifier
+    from art.estimators.classification.GPy import GPyGaussianProcessClassifier
+    from art.estimators.classification.keras import KerasClassifier
+    from art.estimators.classification.lightgbm import LightGBMClassifier
+    from art.estimators.classification.mxnet import MXClassifier
+    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.classification.scikitlearn import (
+        ScikitlearnClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+    )
+    from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
+    from art.estimators.classification.xgboost import XGBoostClassifier
 
-logger = logging.getLogger(__name__)
+    from art.estimators.object_detection.object_detector import ObjectDetector
+    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+    from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+
+    CLASSIFIER_TYPE = Union[
+        Classifier,
+        BlackBoxClassifier,
+        CatBoostARTClassifier,
+        DetectorClassifier,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        LightGBMClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+        XGBoostClassifier,
+    ]
+
+    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[
+        ClassifierLossGradients,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+    ]
+
+
+    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[
+        ClassifierClassLossGradients,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+    ]
+
+    CLASSIFIER_NEURALNETWORK_TYPE = Union[
+        ClassifierNeuralNetwork,
+        DetectorClassifier,
+        EnsembleClassifier,
+        KerasClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+    ]
+
+    CLASSIFIER_DECISION_TREE_TYPE = Union[
+        ClassifierDecisionTree,
+        LightGBMClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        XGBoostClassifier,
+    ]
+
+    OBJECT_DETECTOR_TYPE = Union[
+        ObjectDetector, PyTorchFasterRCNN, TensorFlowFasterRCNN,
+    ]
 
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION

@@ -28,7 +28,7 @@ import numpy as np
 from art.estimators.classification.classifier import Classifier
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 

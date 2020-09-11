@@ -42,7 +42,7 @@ from art.utils import (
 )
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
     def __init__(
         self,
-        estimator: Union[CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE],
+        estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
@@ -202,7 +202,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator: Union[CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE],
+        estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,

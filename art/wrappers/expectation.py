@@ -31,7 +31,7 @@ from art.wrappers.wrapper import ClassifierWrapper
 from art.estimators.classification.classifier import ClassifierClassLossGradients
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradi
     | Paper link: https://arxiv.org/abs/1707.07397
     """
 
-    def __init__(self, classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE, sample_size: int, transformation) -> None:
+    def __init__(self, classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE", sample_size: int, transformation) -> None:
         """
         Create an expectation over transformations wrapper.
 

@@ -31,7 +31,7 @@ import numpy as np
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 
 if TYPE_CHECKING:
-    from art.config import PREPROCESSING_TYPE
+    from art.utils import PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor

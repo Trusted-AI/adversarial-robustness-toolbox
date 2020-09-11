@@ -41,7 +41,7 @@ from art.utils import (
 )
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 

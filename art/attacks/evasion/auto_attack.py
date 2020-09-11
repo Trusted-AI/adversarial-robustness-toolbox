@@ -21,11 +21,11 @@ This module implements the `AutoAttack` attack.
 | Paper link: https://arxiv.org/abs/2003.01690
 """
 import logging
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE, CLASSIFIER_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
 from art.attacks.evasion.deepfool import DeepFool
@@ -33,6 +33,9 @@ from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array, check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -58,13 +61,13 @@ class AutoAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: CLASSIFIER_TYPE,
+        estimator: "CLASSIFIER_TYPE",
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         attacks: Optional[List[EvasionAttack]] = None,
         batch_size: int = 32,
-        estimator_orig: Optional[CLASSIFIER_TYPE] = None,
+        estimator_orig: Optional["CLASSIFIER_TYPE"] = None,
         targeted: bool = False,
     ):
         """

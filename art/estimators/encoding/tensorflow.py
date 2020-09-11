@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     import numpy as np
     import tensorflow as tf
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 

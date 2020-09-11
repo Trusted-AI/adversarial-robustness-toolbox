@@ -33,11 +33,13 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE
     from art.estimators.classification.classifier import ClassifierNeuralNetwork
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +59,7 @@ class PixelDefend(Preprocessor):
 
     def __init__(
         self,
-        clip_values: CLIP_VALUES_TYPE = (0.0, 1.0),
+        clip_values: "CLIP_VALUES_TYPE" = (0.0, 1.0),
         eps: int = 16,
         pixel_cnn: Optional["ClassifierNeuralNetwork"] = None,
         batch_size: int = 128,

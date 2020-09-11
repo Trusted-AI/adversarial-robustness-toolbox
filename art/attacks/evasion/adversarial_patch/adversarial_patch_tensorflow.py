@@ -38,7 +38,7 @@ from art.utils import check_and_transform_label_format
 if TYPE_CHECKING:
     import tensorflow as tf
 
-    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 

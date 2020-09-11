@@ -26,7 +26,7 @@ from typing import Tuple, Union, List, Optional, TYPE_CHECKING
 import numpy as np
 
 from art.attacks.attack import PoisoningAttackTransformer
-from art.attacks.poisoning import PoisoningAttackBackdoor
+from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators.classification.keras import KerasClassifier
 
 if TYPE_CHECKING:
@@ -265,7 +265,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 raise ValueError("Layer {} not found in model".format(self.feature_layer))
         elif type(self.feature_layer) is int:
             num_layers = len(self.estimator.model.layers)
-            if num_layers <= int(self.feature_layer) < 0:
+            if num_layers <= int(self.feature_layer) or int(self.feature_layer) < 0:
                 raise ValueError(
                     "Feature layer {} is out of range. Network only has {} layers".format(
                         self.feature_layer, num_layers

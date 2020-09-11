@@ -28,14 +28,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from io import BytesIO
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg
+
+if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +60,7 @@ class JpegCompression(Preprocessor):
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        clip_values: CLIP_VALUES_TYPE,
+        clip_values: "CLIP_VALUES_TYPE",
         quality: int = 50,
         channel_index=Deprecated,
         channels_first: bool = False,

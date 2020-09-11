@@ -31,7 +31,7 @@ from art.utils import clip_and_round
 from art.wrappers.wrapper import ClassifierWrapper
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
 
     def __init__(
         self,
-        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
         num_basis: int,
         sigma: float,
         round_samples: float = 0.0,

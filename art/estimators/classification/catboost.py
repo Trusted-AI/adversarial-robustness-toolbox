@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     # pylint: disable=C0412
     from catboost.core import CatBoostClassifier
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 

@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.config import ART_DATA_PATH
 from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
@@ -42,6 +42,7 @@ if TYPE_CHECKING:
     # pylint: disable=C0412
     import torch
 
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -64,10 +65,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         channel_index=Deprecated,
         channels_first: bool = True,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
         device_type: str = "gpu",
     ) -> None:
         """

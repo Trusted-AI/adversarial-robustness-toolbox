@@ -51,7 +51,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 

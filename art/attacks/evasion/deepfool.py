@@ -35,7 +35,7 @@ from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, is_probability
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +58,7 @@ class DeepFool(EvasionAttack):
 
     def __init__(
         self,
-        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
         max_iter: int = 100,
         epsilon: float = 1e-6,
         nb_grads: int = 10,

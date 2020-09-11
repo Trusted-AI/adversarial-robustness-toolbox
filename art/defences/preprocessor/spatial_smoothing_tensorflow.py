@@ -33,7 +33,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 
 from art.utils import ART_NUMPY_DTYPE
-from art.config import CLIP_VALUES_TYPE
+from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:

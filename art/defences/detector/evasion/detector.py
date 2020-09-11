@@ -30,7 +30,7 @@ from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.utils import deprecated
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE
+    from art.utils import CLIP_VALUES_TYPE
     from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)

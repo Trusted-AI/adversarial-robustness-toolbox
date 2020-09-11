@@ -27,14 +27,17 @@ This module implements the total variance minimization defence `TotalVarMin`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from scipy.optimize import minimize
 from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
+
+if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +62,7 @@ class TotalVarMin(Preprocessor):
         lamb: float = 0.5,
         solver: str = "L-BFGS-B",
         max_iter: int = 10,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
     ):

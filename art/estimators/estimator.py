@@ -24,13 +24,14 @@ from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 from tqdm import trange
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.postprocessor.postprocessor import Postprocessor
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     # pylint: disable=R0401
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.metrics.verification_decisions_trees import Tree
 
@@ -52,10 +53,10 @@ class BaseEstimator(ABC):
     def __init__(
         self,
         model=None,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union[Preprocessor, List[Preprocessor], None] = None,
         postprocessing_defences: Union[Postprocessor, List[Postprocessor], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ):
         """
         Initialize a `BaseEstimator` object.
@@ -207,7 +208,7 @@ class BaseEstimator(ABC):
         return self._input_shape  # type: ignore
 
     @property
-    def clip_values(self) -> Optional[CLIP_VALUES_TYPE]:
+    def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         """
         Return the clip values of the input samples.
 

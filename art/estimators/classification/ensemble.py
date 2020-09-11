@@ -30,7 +30,7 @@ from art.estimators.estimator import NeuralNetworkMixin
 from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor

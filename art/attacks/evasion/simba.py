@@ -34,7 +34,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_TYPE
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 

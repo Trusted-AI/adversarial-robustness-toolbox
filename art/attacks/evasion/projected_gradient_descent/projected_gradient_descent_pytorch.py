@@ -55,7 +55,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator: Union[PyTorchClassifier, PyTorchFasterRCNN],
+        estimator: Union["PyTorchClassifier", "PyTorchFasterRCNN"],
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,

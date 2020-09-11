@@ -27,13 +27,16 @@ This module implements the thermometer encoding defence `ThermometerEncoding`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg, to_categorical
+
+if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +57,7 @@ class ThermometerEncoding(Preprocessor):
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
         self,
-        clip_values: CLIP_VALUES_TYPE,
+        clip_values: "CLIP_VALUES_TYPE",
         num_space: int = 10,
         channel_index=Deprecated,
         channels_first: bool = False,

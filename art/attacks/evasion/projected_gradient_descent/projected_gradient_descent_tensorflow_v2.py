@@ -54,7 +54,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator: TensorFlowV2Classifier,
+        estimator: "TensorFlowV2Classifier",
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,

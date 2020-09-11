@@ -23,13 +23,12 @@ import unittest
 
 import numpy as np
 
-from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.attacks.poisoning import PoisoningAttackBackdoor, PoisoningAttackAdversarialEmbedding
+from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
+from art.attacks.poisoning.adversarial_embedding_attack import PoisoningAttackAdversarialEmbedding
 from art.attacks.poisoning.perturbations import add_pattern_bd
-from art.utils import load_dataset, random_targets, compute_accuracy, to_categorical
-from art.estimators.certification.randomized_smoothing import PyTorchRandomizedSmoothing
+from art.utils import load_dataset
 
-from tests.utils import master_seed, get_image_classifier_kr_tf, get_image_classifier_kr_tf_with_wildcard
+from tests.utils import master_seed, get_image_classifier_kr_tf
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
@@ -117,7 +116,7 @@ class TestAdversarialEmbedding(unittest.TestCase):
         with self.assertRaises(ValueError):
             emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target)
 
-        # Taregt mishaped
+        # target misshaped
         with self.assertRaises(ValueError):
             emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, np.expand_dims(target, axis=0))
 

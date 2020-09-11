@@ -34,7 +34,7 @@ from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
-    from art.config import OBJECT_DETECTOR_TYPE
+    from art.utils import OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +57,7 @@ class DPatch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: OBJECT_DETECTOR_TYPE,
+        estimator: "OBJECT_DETECTOR_TYPE",
         patch_shape: Tuple[int, int, int] = (40, 40, 3),
         learning_rate: float = 5.0,
         max_iter: int = 500,

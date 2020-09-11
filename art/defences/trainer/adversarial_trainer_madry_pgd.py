@@ -34,7 +34,7 @@ from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
-    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 logger = logging.getLogger(__name__)
