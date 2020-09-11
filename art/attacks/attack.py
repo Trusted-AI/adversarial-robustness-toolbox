@@ -29,7 +29,7 @@ import numpy as np
 from art.exceptions import EstimatorError
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.config import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -168,7 +168,7 @@ class PoisoningAttack(Attack):
     Abstract base class for poisoning attack classes
     """
 
-    def __init__(self, classifier: Optional["Classifier"]) -> None:
+    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"]) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         """
@@ -193,7 +193,7 @@ class PoisoningAttackTransformer(PoisoningAttack):
     These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
     """
 
-    def __init__(self, classifier: Optional["Classifier"], **kwargs) -> None:
+    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"], **kwargs) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         :type classifier: `art.estimators.classification.Classifier` or `None`
@@ -214,7 +214,7 @@ class PoisoningAttackTransformer(PoisoningAttack):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "Classifier":
+    def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Returns a poisoned version of the classifier used to initialize the attack
         :param x: Training data
@@ -273,7 +273,7 @@ class ExtractionAttack(Attack):
     """
 
     @abc.abstractmethod
-    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "Classifier":
+    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Extract models and return them as an ART classifier. This method should be overridden by all concrete extraction
         attack implementations.

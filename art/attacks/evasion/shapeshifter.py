@@ -28,10 +28,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
-from art.estimators.tensorflow import TensorFlowEstimator
 from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
-from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
 if TYPE_CHECKING:
     from tensorflow.python.framework.ops import Tensor
@@ -79,14 +76,7 @@ class ShapeShifter(EvasionAttack):
         "soft_clip",
     ]
 
-    _estimator_requirements = (
-        BaseEstimator,
-        LossGradientsMixin,
-        NeuralNetworkMixin,
-        ObjectDetectorMixin,
-        TensorFlowEstimator,
-        TensorFlowFasterRCNN,
-    )
+    _estimator_requirements = (TensorFlowFasterRCNN,)
 
     def __init__(
         self,

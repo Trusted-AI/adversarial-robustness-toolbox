@@ -25,13 +25,13 @@ from typing import List, Optional, Union, Tuple
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
+from art.config import ART_NUMPY_DTYPE, CLASSIFIER_TYPE
 from art.attacks.attack import EvasionAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, ClassifierGradients
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array, check_and_transform_label_format
 
 logger = logging.getLogger(__name__)
@@ -58,13 +58,13 @@ class AutoAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
+        estimator: CLASSIFIER_TYPE,
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         attacks: Optional[List[EvasionAttack]] = None,
         batch_size: int = 32,
-        estimator_orig: Optional[BaseEstimator] = None,
+        estimator_orig: Optional[CLASSIFIER_TYPE] = None,
         targeted: bool = False,
     ):
         """
@@ -83,14 +83,11 @@ class AutoAttack(EvasionAttack):
         """
         super().__init__(estimator=estimator)
 
-        if estimator_orig is None:
-            estimator_orig = estimator
-
         if attacks is None or not attacks:
             attacks = list()
             attacks.append(
                 AutoProjectedGradientDescent(
-                    estimator=estimator,
+                    estimator=estimator,  # type: ignore
                     norm=norm,
                     eps=eps,
                     eps_step=eps_step,
@@ -103,7 +100,7 @@ class AutoAttack(EvasionAttack):
             )
             attacks.append(
                 AutoProjectedGradientDescent(
-                    estimator=estimator,
+                    estimator=estimator,  # type: ignore
                     norm=norm,
                     eps=eps,
                     eps_step=eps_step,
@@ -115,7 +112,7 @@ class AutoAttack(EvasionAttack):
                 )
             )
             attacks.append(
-                DeepFool(classifier=estimator, max_iter=100, epsilon=1e-3, nb_grads=10, batch_size=batch_size)
+                DeepFool(classifier=estimator, max_iter=100, epsilon=1e-3, nb_grads=10, batch_size=batch_size)  # type: ignore
             )
             attacks.append(
                 SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5)
@@ -126,7 +123,11 @@ class AutoAttack(EvasionAttack):
         self.eps_step = eps_step
         self.attacks = attacks
         self.batch_size = batch_size
-        self.estimator_orig = estimator_orig
+        if estimator_orig is not None:
+            self.estimator_orig = estimator_orig
+        else:
+            self.estimator_orig = estimator
+
         self._targeted = targeted
         self._check_params()
 

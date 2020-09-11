@@ -23,20 +23,19 @@ This module implements the virtual adversarial attack. It was originally used fo
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-    ClassifierNeuralNetwork,
-)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +53,11 @@ class VirtualAdversarialMethod(EvasionAttack):
         "max_iter",
         "batch_size",
     ]
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: Union[ClassifierGradients, ClassifierNeuralNetwork],
+        classifier: CLASSIFIER_TYPE,
         max_iter: int = 10,
         finite_diff: float = 1e-6,
         eps: float = 0.1,

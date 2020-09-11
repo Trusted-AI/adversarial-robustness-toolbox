@@ -51,7 +51,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class PixelThreshold(EvasionAttack):
     attack_params = EvasionAttack.attack_params + ["th", "es", "targeted", "verbose"]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
-    def __init__(self, classifier: "Classifier", th: Optional[int], es: int, targeted: bool, verbose: bool,) -> None:
+    def __init__(self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", th: Optional[int], es: int, targeted: bool, verbose: bool,) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
 
@@ -304,7 +304,7 @@ class PixelAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         th: Optional[int] = None,
         es: int = 0,
         targeted: bool = False,
@@ -385,7 +385,7 @@ class ThresholdAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         th: Optional[int] = None,
         es: int = 0,
         targeted: bool = False,

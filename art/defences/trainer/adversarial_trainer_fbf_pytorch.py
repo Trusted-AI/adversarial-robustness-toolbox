@@ -51,7 +51,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         time making this one of the fastest adversarial training protocol.
     """
 
-    def __init__(self, classifier: "PyTorchClassifier", eps: Union[int, float] = 8, use_amp: bool = False, **kwargs):
+    def __init__(self, classifier: "PyTorchClassifier", eps: Union[int, float] = 8, use_amp: bool = False):
         """
         Create an :class:`.AdversarialTrainerFBFPyTorch` instance.
 
@@ -59,7 +59,7 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         :param eps: Maximum perturbation that the attacker can introduce.
         :param use_amp: Boolean that decides if apex should be used for mixed precision arithmetic during training
         """
-        super().__init__(classifier, eps, **kwargs)
+        super().__init__(classifier, eps)
         self._classifier: PyTorchClassifier
         self._use_amp = use_amp
 

@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from functools import reduce
 import logging
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -31,6 +31,9 @@ from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierNeuralNetwork, ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +66,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: ClassifierNeuralNetwork,
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         target: np.ndarray,
         feature_layer: Union[str, int],
         learning_rate: float = 500 * 255.0,
@@ -90,7 +93,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param similarity_coeff: The maximum number of iterations for the attack.
         :param watermark: Whether The opacity of the watermarked target image.
         """
-        super().__init__(classifier)
+        super().__init__(classifier=classifier)  # type: ignore
         self.target = target
         self.feature_layer = feature_layer
         self.learning_rate = learning_rate

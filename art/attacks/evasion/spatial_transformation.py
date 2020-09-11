@@ -35,7 +35,7 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +59,7 @@ class SpatialTransformation(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         max_translation: float = 0.0,
         num_translations: int = 1,
         max_rotation: float = 0.0,

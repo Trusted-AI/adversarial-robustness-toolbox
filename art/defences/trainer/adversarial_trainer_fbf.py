@@ -33,8 +33,7 @@ import numpy as np
 from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import ClassifierGradients
-    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE
     from art.data_generators import DataGenerator
 
 
@@ -46,9 +45,7 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
     """
 
-    def __init__(
-        self, classifier: Union["ClassifierGradients", "PyTorchClassifier"], eps: Union[int, float] = 8, **kwargs
-    ):
+    def __init__(self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", eps: Union[int, float] = 8,):
         """
         Create an :class:`.AdversarialTrainerFBF` instance.
 
@@ -56,7 +53,7 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
         :param eps: Maximum perturbation that the attacker can introduce.
         """
         self._eps = eps
-        super().__init__(classifier, **kwargs)
+        super().__init__(classifier)
 
     @abc.abstractmethod
     def fit(

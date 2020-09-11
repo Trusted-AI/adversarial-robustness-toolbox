@@ -21,19 +21,22 @@ Provides black-box gradient estimation using NES.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from scipy.stats import entropy
 
-from art.estimators.classification.classifier import ClassifierGradients
+from art.estimators.classification.classifier import ClassifierClassLossGradients
 from art.utils import clip_and_round
 from art.wrappers.wrapper import ClassifierWrapper
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients):
+class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossGradients):
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
@@ -44,7 +47,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
     attack_params = ["num_basis", "sigma", "round_samples"]
 
     def __init__(
-        self, classifier: ClassifierGradients, num_basis: int, sigma: float, round_samples: float = 0.0,
+        self, classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE, num_basis: int, sigma: float, round_samples: float = 0.0,
     ) -> None:
         """
         :param classifier: An instance of a `Classifier` whose loss_gradient is being approximated.

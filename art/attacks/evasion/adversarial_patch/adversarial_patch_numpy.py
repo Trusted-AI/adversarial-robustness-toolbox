@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import math
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, TYPE_CHECKING
 
 import random
 import numpy as np
@@ -34,12 +34,11 @@ from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import (
-    ClassifierMixin,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +63,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Union[ClassifierNeuralNetwork, ClassifierGradients],
+        classifier: CLASSIFIER_NEURALNETWORK_TYPE,
         target: int = 0,
         rotation_max: float = 22.5,
         scale_min: float = 0.1,

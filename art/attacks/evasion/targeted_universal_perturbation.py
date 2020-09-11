@@ -25,17 +25,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import random
 import types
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
-from art.estimators.classification.classifier import (
-    ClassifierGradients,
-    ClassGradientsMixin,
-)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import projection
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -54,11 +54,11 @@ class TargetedUniversalPerturbation(EvasionAttack):
     }
     attack_params = EvasionAttack.attack_params + ["attacker", "attacker_params", "delta", "max_iter", "eps", "norm"]
 
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin, LossGradientsMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: "CLASSIFIER_TYPE",
         attacker: str = "fgsm",
         attacker_params: Optional[Dict[str, Any]] = None,
         delta: float = 0.2,

@@ -38,6 +38,8 @@ from art.utils import compute_success, random_sphere
 
 if TYPE_CHECKING:
     import torch
+    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +55,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator,
+        estimator: Union[PyTorchClassifier, PyTorchFasterRCNN],
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,

@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -43,6 +43,9 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_p
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import (
     ProjectedGradientDescentTensorFlowV2,
 )
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +75,7 @@ class ProjectedGradientDescent(EvasionAttack):
 
     def __init__(
         self,
-        estimator,
+        estimator: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
@@ -121,7 +124,7 @@ class ProjectedGradientDescent(EvasionAttack):
         ]
         if isinstance(self.estimator, PyTorchClassifier) and no_preprocessing and no_defences:
             self._attack = ProjectedGradientDescentPyTorch(
-                estimator=estimator,
+                estimator=estimator,  # type: ignore
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
@@ -134,7 +137,7 @@ class ProjectedGradientDescent(EvasionAttack):
 
         elif isinstance(self.estimator, TensorFlowV2Classifier) and no_preprocessing and no_defences:
             self._attack = ProjectedGradientDescentTensorFlowV2(
-                estimator=estimator,
+                estimator=estimator,  # type: ignore
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,

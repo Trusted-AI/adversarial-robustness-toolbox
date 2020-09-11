@@ -26,7 +26,7 @@ from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierGradients
+from art.estimators.classification.classifier import ClassifierClassLossGradients
 from art.config import ART_DATA_PATH
 
 if TYPE_CHECKING:
@@ -41,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=C0103
-class GPyGaussianProcessClassifier(ClassifierGradients):
+class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
     """
     Wrapper class for GPy Gaussian Process classification models.
     """

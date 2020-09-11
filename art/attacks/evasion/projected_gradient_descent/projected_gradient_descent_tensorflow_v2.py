@@ -38,6 +38,7 @@ from art.utils import compute_success, random_sphere
 
 if TYPE_CHECKING:
     import tensorflow as tf
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +54,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator,
+        estimator: TensorFlowV2Classifier,
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,

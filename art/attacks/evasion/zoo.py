@@ -42,7 +42,7 @@ from art.utils import (
 )
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.config import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ class ZooAttack(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_TYPE",
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 1e-2,

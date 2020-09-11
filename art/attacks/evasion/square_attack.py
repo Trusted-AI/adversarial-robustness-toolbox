@@ -24,7 +24,7 @@ import bisect
 import logging
 import math
 import random
-from typing import Union
+from typing import Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -32,8 +32,11 @@ from tqdm.auto import trange
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, ClassifierGradients
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, get_labels_np_array
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +55,7 @@ class SquareAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
+        estimator: "CLASSIFIER_TYPE",
         norm: Union[int, float, str] = np.inf,
         max_iter: int = 100,
         eps: float = 0.3,

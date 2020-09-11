@@ -24,20 +24,23 @@ prioritize which parts of a sequential input should be perturbed based on salien
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassGradientsMixin, Classifier
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import (
     compute_success_array,
     get_labels_np_array,
     check_and_transform_label_format,
 )
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +64,7 @@ class FrameSaliencyAttack(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         attacker: EvasionAttack,
         method: str = "iterative_saliency",
         frame_index: int = 1,

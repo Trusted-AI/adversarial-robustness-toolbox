@@ -139,6 +139,22 @@ class Classifier(ClassifierMixin, BaseEstimator, ABC):
     pass
 
 
+class ClassifierLossGradients(ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
+    pass
+
+
+class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
+    pass
+
+
 class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
     ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator, ABC
 ):
@@ -157,14 +173,6 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
                      the default data location of the library `ART_DATA_PATH`.
         """
         raise NotImplementedError
-
-
-class ClassifierGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
-    """
-    Typing variable definition.
-    """
-
-    pass
 
 
 class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, ABC):

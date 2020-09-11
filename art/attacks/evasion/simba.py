@@ -23,18 +23,18 @@ This module implements the black-box attack `SimBA`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from scipy.fftpack import idct
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.config import ART_NUMPY_DTYPE
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,11 @@ class SimBA(EvasionAttack):
         "batch_size",
     ]
 
-    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: "CLASSIFIER_TYPE",
         attack: str = "dct",
         max_iter: int = 3000,
         order: str = "random",

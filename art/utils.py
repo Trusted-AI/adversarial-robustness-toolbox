@@ -28,7 +28,7 @@ import os
 import shutil
 import sys
 import tarfile
-from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, Union, TypeVar, TYPE_CHECKING
 import warnings
 import zipfile
 
@@ -46,7 +46,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-# ------------------------------------------------------------------------------------------------- DEPRECATION
+# --------------------------------------------------------------------------------------------------------- DEPRECATION
 
 
 class _Deprecated:

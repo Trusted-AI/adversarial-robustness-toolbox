@@ -38,7 +38,7 @@ from art.utils import random_sphere
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
-    from art.estimators.classification.classifier import Classifier, ClassifierGradients
+    from art.config import CLASSIFIER_TYPE, CLASSIFIER_LOSS_GRADIENTS_TYPE, CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
 }
 
 
-def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
+def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
     """
     Create an attack instance to craft adversarial samples.
 
@@ -72,7 +72,7 @@ def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str
 
 
 def empirical_robustness(
-    classifier: "Classifier", x: np.ndarray, attack_name: str, attack_params: Optional[Dict[str, Any]] = None,
+    classifier: "CLASSIFIER_TYPE", x: np.ndarray, attack_name: str, attack_params: Optional[Dict[str, Any]] = None,
 ) -> Union[float, np.ndarray]:
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
@@ -149,7 +149,7 @@ def empirical_robustness(
 #     return avg_nn_dist
 
 
-def loss_sensitivity(classifier: "ClassifierGradients", x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def loss_sensitivity(classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
 
@@ -167,7 +167,7 @@ def loss_sensitivity(classifier: "ClassifierGradients", x: np.ndarray, y: np.nda
 
 
 def clever(
-    classifier: "ClassifierGradients",
+    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -221,7 +221,7 @@ def clever(
 
 
 def clever_u(
-    classifier: "ClassifierGradients",
+    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -260,7 +260,7 @@ def clever_u(
 
 
 def clever_t(
-    classifier: "ClassifierGradients",
+    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
     x: np.ndarray,
     target_class: int,
     nb_batches: int,

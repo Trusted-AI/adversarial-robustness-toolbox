@@ -21,14 +21,14 @@ This module implements the evasion attack `ShadowAttack`.
 | Paper link: https://arxiv.org/abs/2003.08937
 """
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin, Classifier
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 from art.estimators.certification.randomized_smoothing import (
     TensorFlowV2RandomizedSmoothing,
@@ -62,7 +62,7 @@ class ShadowAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: Classifier,
+        estimator: Union[TensorFlowV2Classifier, TensorFlowV2RandomizedSmoothing, PyTorchClassifier, PyTorchRandomizedSmoothing],
         sigma: float = 0.5,
         nb_steps: int = 300,
         learning_rate: float = 0.1,

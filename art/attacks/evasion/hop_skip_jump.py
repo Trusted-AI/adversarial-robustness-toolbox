@@ -36,7 +36,7 @@ from art.estimators.classification import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.config import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class HopSkipJump(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_TYPE",
         targeted: bool = False,
         norm: Union[int, float, str] = 2,
         max_iter: int = 50,

@@ -23,7 +23,7 @@ This module implements the elastic net attack `ElasticNet`. This is a white-box 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import six
@@ -31,15 +31,16 @@ from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import (
     compute_success,
     get_labels_np_array,
     check_and_transform_label_format,
 )
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -63,11 +64,11 @@ class ElasticNet(EvasionAttack):
         "decision_rule",
     ]
 
-    _estimator_requirements = (ClassGradientsMixin,)
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 1e-2,

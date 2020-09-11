@@ -24,20 +24,20 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import (
-    ClassifierMixin,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassifierMixin
+
 from art.estimators.classification import TensorFlowV2Classifier
 from art.attacks.attack import EvasionAttack
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class AdversarialPatch(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Union[ClassifierNeuralNetwork, ClassifierGradients],
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
         scale_max: float = 1.0,

@@ -34,7 +34,7 @@ with their adversarial counterpart.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union, Tuple, TYPE_CHECKING
+from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange, tqdm
@@ -42,8 +42,8 @@ from tqdm import trange, tqdm
 from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
+    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE
     from art.attacks.attack import EvasionAttack
-    from art.estimators.classification.classifier import ClassifierGradients
     from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
@@ -70,7 +70,7 @@ class AdversarialTrainer(Trainer):
 
     def __init__(
         self,
-        classifier: "ClassifierGradients",
+        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         attacks: Union["EvasionAttack", List["EvasionAttack"]],
         ratio: float = 0.5,
     ) -> None:

@@ -21,13 +21,15 @@ This module implements the Feature Adversaries attack.
 | Paper link: https://arxiv.org/abs/1511.05122
 """
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +51,7 @@ class FeatureAdversaries(EvasionAttack):
 
     def __init__(
         self,
-        classifier: ClassifierNeuralNetwork,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         delta: Optional[float] = None,
         layer: Optional[int] = None,
         batch_size: int = 32,

@@ -32,15 +32,13 @@ from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import (
-    ClassifierMixin,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     import tensorflow as tf
+
+    from art.config import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +64,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Union[ClassifierNeuralNetwork, ClassifierGradients],
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
         scale_max: float = 1.0,

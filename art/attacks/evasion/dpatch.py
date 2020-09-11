@@ -23,7 +23,7 @@ This module implements the adversarial patch attack `DPatch` for object detector
 import logging
 import math
 import random
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -32,6 +32,9 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.utils import Deprecated, deprecated_keyword_arg
+
+if TYPE_CHECKING:
+    from art.config import OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +57,7 @@ class DPatch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: ObjectDetectorMixin,
+        estimator: OBJECT_DETECTOR_TYPE,
         patch_shape: Tuple[int, int, int] = (40, 40, 3),
         learning_rate: float = 5.0,
         max_iter: int = 500,

@@ -23,17 +23,20 @@ This module implements the Expectation Over Transformation applied to classifier
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierGradients
 from art.wrappers.wrapper import ClassifierWrapper
+from art.estimators.classification.classifier import ClassifierClassLossGradients
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
+class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradients):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
@@ -41,7 +44,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
     | Paper link: https://arxiv.org/abs/1707.07397
     """
 
-    def __init__(self, classifier: ClassifierGradients, sample_size: int, transformation) -> None:
+    def __init__(self, classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE, sample_size: int, transformation) -> None:
         """
         Create an expectation over transformations wrapper.
 

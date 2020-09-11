@@ -26,23 +26,23 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from scipy.stats import truncnorm
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classification.classifier import (
-    ClassifierMixin,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import (
     compute_success,
     get_labels_np_array,
     check_and_transform_label_format,
 )
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
+        estimator: Union[CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE],
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
@@ -90,7 +90,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
         super().__init__(
-            estimator=estimator,
+            estimator=estimator,  # type: ignore
             norm=norm,
             eps=eps,
             eps_step=eps_step,
@@ -202,7 +202,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
+        estimator: Union[CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE],
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,

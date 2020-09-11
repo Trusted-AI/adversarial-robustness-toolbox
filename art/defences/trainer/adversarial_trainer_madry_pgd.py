@@ -34,8 +34,7 @@ from art.defences.trainer.adversarial_trainer import AdversarialTrainer
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import ClassifierGradients
-    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 logger = logging.getLogger(__name__)
@@ -54,7 +53,7 @@ class AdversarialTrainerMadryPGD(Trainer):
 
     def __init__(
         self,
-        classifier: "ClassifierGradients",
+        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         nb_epochs: int = 391,
         batch_size: int = 128,
         eps: Union[int, float] = 8,
@@ -100,5 +99,5 @@ class AdversarialTrainerMadryPGD(Trainer):
             x, y, validation_data=validation_data, nb_epochs=self.nb_epochs, batch_size=self.batch_size, **kwargs
         )
 
-    def get_classifier(self) -> Union["ClassifierGradients", "PyTorchClassifier"]:
+    def get_classifier(self) -> CLASSIFIER_LOSS_GRADIENTS_TYPE:
         return self.trainer.get_classifier()

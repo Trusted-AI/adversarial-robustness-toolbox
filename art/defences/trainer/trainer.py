@@ -26,8 +26,7 @@ from typing import Union, TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import ClassifierGradients
-    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 class Trainer(abc.ABC):
@@ -35,7 +34,7 @@ class Trainer(abc.ABC):
     Abstract base class for training defences.
     """
 
-    def __init__(self, classifier: Union["ClassifierGradients", "PyTorchClassifier"]) -> None:
+    def __init__(self, classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE) -> None:
         """
         Create a adversarial training object
         """
@@ -54,7 +53,7 @@ class Trainer(abc.ABC):
         """
         raise NotImplementedError
 
-    def get_classifier(self) -> Union["ClassifierGradients", "PyTorchClassifier"]:
+    def get_classifier(self) -> CLASSIFIER_LOSS_GRADIENTS_TYPE:
         """
         Return the classifier trained via adversarial training.
 

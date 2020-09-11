@@ -24,17 +24,14 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classification.classifier import (
-    ClassifierGradients,
-    ClassifierMixin,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import (
     compute_success,
     get_labels_np_array,
@@ -42,6 +39,9 @@ from art.utils import (
     projection,
     check_and_transform_label_format,
 )
+
+if TYPE_CHECKING:
+    from art.config import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class FastGradientMethod(EvasionAttack):
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
