@@ -106,7 +106,6 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_dl_estimator_f
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
 @pytest.mark.skipMlFramework("pytorch")  # temporarily skipping for pytorch until find bug fix in bounded test
 @pytest.mark.framework_agnostic
-@pytest.mark.skip_travis
 def test_norm_images(norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
