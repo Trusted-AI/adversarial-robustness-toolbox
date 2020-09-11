@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, List, Optional, Tuple, Union
 import numpy as np
 
 from art.config import ART_DATA_PATH
-from art.estimators.sequence.sequence import SequenceNetworkMixin
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import get_file, make_directory
 
@@ -42,7 +42,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LingvoAsr(SequenceNetworkMixin, TensorFlowV2Estimator):
+class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
     """
     This class implements the task-specific Lingvo ASR model of Qin et al. (2019).
 

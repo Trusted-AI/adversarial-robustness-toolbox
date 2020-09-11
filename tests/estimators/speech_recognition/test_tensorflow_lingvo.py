@@ -25,8 +25,8 @@ import tensorflow.compat.v1 as tf1
 from lingvo.core.hyperparams import Params
 from numpy.testing import assert_allclose, assert_array_equal
 
-from art.estimators.sequence.sequence import SequenceNetworkMixin
-from art.estimators.sequence.tensorflow import LingvoAsr
+from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
+from art.estimators.speech_recognition.tensorflow_lingvo import LingvoAsr
 from art.estimators.tensorflow import TensorFlowV2Estimator
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ class TestLingvoAsr:
     """
 
     def test_is_subclass(self):
-        assert issubclass(LingvoAsr, (SequenceNetworkMixin, TensorFlowV2Estimator))
+        assert issubclass(LingvoAsr, (SpeechRecognizerMixin, TensorFlowV2Estimator))
 
     def test_implements_abstract_methods(self):
         tf1.reset_default_graph()
