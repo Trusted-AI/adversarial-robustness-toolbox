@@ -96,7 +96,7 @@ class Attack(abc.ABC, metaclass=input_filter):
         """
         :param estimator: An estimator.
         """
-        if self.estimator is None:
+        if self.estimator_requirements is None:
             raise ValueError("Estimator requirements have not been defined in `_estimator_requirements`.")
 
         if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
