@@ -45,7 +45,9 @@ class AdversarialTrainerFBF(Trainer, abc.ABC):
     | Paper link: https://openreview.net/forum?id=BJx040EFvH
     """
 
-    def __init__(self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", eps: Union[int, float] = 8,):
+    def __init__(
+        self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", eps: Union[int, float] = 8,
+    ):
         """
         Create an :class:`.AdversarialTrainerFBF` instance.
 

@@ -62,7 +62,9 @@ class ShadowAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: Union[TensorFlowV2Classifier, TensorFlowV2RandomizedSmoothing, PyTorchClassifier, PyTorchRandomizedSmoothing],
+        estimator: Union[
+            TensorFlowV2Classifier, TensorFlowV2RandomizedSmoothing, PyTorchClassifier, PyTorchRandomizedSmoothing
+        ],
         sigma: float = 0.5,
         nb_steps: int = 300,
         learning_rate: float = 0.1,

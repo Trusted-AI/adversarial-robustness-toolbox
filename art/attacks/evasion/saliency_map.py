@@ -51,7 +51,11 @@ class SaliencyMapMethod(EvasionAttack):
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-        self, classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE", theta: float = 0.1, gamma: float = 1.0, batch_size: int = 1,
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        theta: float = 0.1,
+        gamma: float = 1.0,
+        batch_size: int = 1,
     ) -> None:
         """
         Create a SaliencyMapMethod instance.

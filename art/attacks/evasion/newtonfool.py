@@ -51,7 +51,11 @@ class NewtonFool(EvasionAttack):
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-        self, classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE", max_iter: int = 100, eta: float = 0.01, batch_size: int = 1,
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        max_iter: int = 100,
+        eta: float = 0.01,
+        batch_size: int = 1,
     ) -> None:
         """
         Create a NewtonFool attack instance.

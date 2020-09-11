@@ -70,7 +70,9 @@ class PixelThreshold(EvasionAttack):
     attack_params = EvasionAttack.attack_params + ["th", "es", "targeted", "verbose"]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
-    def __init__(self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", th: Optional[int], es: int, targeted: bool, verbose: bool,) -> None:
+    def __init__(
+        self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", th: Optional[int], es: int, targeted: bool, verbose: bool,
+    ) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
 

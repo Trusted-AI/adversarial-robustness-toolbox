@@ -47,7 +47,11 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
     attack_params = ["num_basis", "sigma", "round_samples"]
 
     def __init__(
-        self, classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE, num_basis: int, sigma: float, round_samples: float = 0.0,
+        self,
+        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
+        num_basis: int,
+        sigma: float,
+        round_samples: float = 0.0,
     ) -> None:
         """
         :param classifier: An instance of a `Classifier` whose loss_gradient is being approximated.
