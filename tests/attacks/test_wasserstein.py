@@ -424,9 +424,7 @@ class TestWasserstein(TestBase):
         # self.assertTrue(test_success_rate >= base_success_rate)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            Wasserstein, (BaseEstimator, LossGradientsMixin, ClassifierMixin)
-        )
+        backend_test_classifier_type_check_fail(Wasserstein, (BaseEstimator, LossGradientsMixin, ClassifierMixin))
 
     def test_unsquared_images(self):
         from art.estimators.estimator import (

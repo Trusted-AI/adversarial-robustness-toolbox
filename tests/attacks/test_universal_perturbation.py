@@ -203,9 +203,7 @@ class TestUniversalPerturbation(TestBase):
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            UniversalPerturbation, [BaseEstimator, ClassifierMixin]
-        )
+        backend_test_classifier_type_check_fail(UniversalPerturbation, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":

@@ -161,9 +161,7 @@ class TestTargetedUniversalPerturbation(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            TargetedUniversalPerturbation, (BaseEstimator, ClassifierMixin)
-        )
+        backend_test_classifier_type_check_fail(TargetedUniversalPerturbation, (BaseEstimator, ClassifierMixin))
 
 
 if __name__ == "__main__":

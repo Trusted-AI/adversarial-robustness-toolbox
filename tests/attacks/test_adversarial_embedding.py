@@ -61,7 +61,7 @@ class TestAdversarialEmbedding(unittest.TestCase):
         :return:
         """
         # Build KerasClassifier
-        krc = get_image_classifier_kr_tf(loss_type='label')
+        krc = get_image_classifier_kr_tf(loss_type="label")
 
         # Get MNIST
         (x_train, y_train), (x_test, y_test) = self.mnist
@@ -95,7 +95,7 @@ class TestAdversarialEmbedding(unittest.TestCase):
         emb_attack3 = PoisoningAttackAdversarialEmbedding(krc, backdoor, 2, [(target, target2)], pp_poison=[0.4])
 
     def test_errors(self):
-        krc = get_image_classifier_kr_tf(loss_type='function')
+        krc = get_image_classifier_kr_tf(loss_type="function")
         krc_valid = get_image_classifier_kr_tf(loss_type="label")
         backdoor = PoisoningAttackBackdoor(add_pattern_bd)
         target_idx = 9
@@ -139,8 +139,9 @@ class TestAdversarialEmbedding(unittest.TestCase):
             emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, [(target, target2)], pp_poison=[])
 
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, [(target, target2)],
-                                                             pp_poison=[-1])
+            emb_attack = PoisoningAttackAdversarialEmbedding(
+                krc_valid, backdoor, 20, [(target, target2)], pp_poison=[-1]
+            )
 
 
 if __name__ == "__main__":

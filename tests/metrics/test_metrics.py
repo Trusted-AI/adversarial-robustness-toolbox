@@ -377,8 +377,9 @@ class TestWassersteinDistance(unittest.TestCase):
 
         wd_0 = wasserstein_distance(x_train[:batch_size], x_train[:batch_size])
         wd_1 = wasserstein_distance(x_train[:batch_size], x_test[:batch_size])
-        wd_2 = wasserstein_distance(x_train[:batch_size], x_train[:batch_size], weights[:batch_size],
-                                    weights[:batch_size])
+        wd_2 = wasserstein_distance(
+            x_train[:batch_size], x_train[:batch_size], weights[:batch_size], weights[:batch_size]
+        )
 
         np.testing.assert_array_equal(wd_0, np.asarray([0.0, 0.0, 0.0]))
         np.testing.assert_array_almost_equal(wd_1, np.asarray([0.04564, 0.01235, 0.04787]), decimal=4)
@@ -387,6 +388,7 @@ class TestWassersteinDistance(unittest.TestCase):
         np.testing.assert_array_equal(x_test.shape, np.asarray([nb_test, 28, 28, 1]))
 
         np.testing.assert_array_equal(wd_2, np.asarray([0.0, 0.0, 0.0]))
+
 
 if __name__ == "__main__":
     unittest.main()

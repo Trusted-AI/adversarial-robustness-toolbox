@@ -194,9 +194,7 @@ class TestVirtualAdversarial(TestBase):
         )
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            VirtualAdversarialMethod, [BaseEstimator, ClassifierMixin]
-        )
+        backend_test_classifier_type_check_fail(VirtualAdversarialMethod, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":

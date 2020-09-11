@@ -115,8 +115,15 @@ class AutoAttack(EvasionAttack):
                 )
             )
             attacks.append(
-                (DeepFool(classifier=estimator, max_iter=100, epsilon=1e-3, nb_grads=10,   # type: ignore
-                          batch_size=batch_size))
+                (
+                    DeepFool(
+                        classifier=estimator,
+                        max_iter=100,
+                        epsilon=1e-3,
+                        nb_grads=10,  # type: ignore
+                        batch_size=batch_size,
+                    )
+                )
             )
             attacks.append(
                 SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5)

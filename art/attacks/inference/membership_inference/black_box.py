@@ -39,48 +39,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
-    """
-        Implementation of a simple, rule-based black-box membership inference attack.
-
-        This implementation uses the simple rule: if the model's prediction for a sample is correct, then it is a
-        member. Otherwise, it is not a member.
-    """
-
-    _estimator_requirements = (BaseEstimator, ClassifierMixin)
-
-    def __init__(self, classifier: "CLASSIFIER_TYPE"):
-        """
-        Create a MembershipInferenceBlackBoxRuleBased attack instance.
-
-        :param classifier: Target classifier.
-        """
-        super().__init__(estimator=classifier)
-
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
-        """
-        Infer membership in the training set of the target estimator.
-
-        :param x: Input records to attack.
-        :param y: True labels for `x`.
-        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
-        """
-        if y is None:
-            raise ValueError("MembershipInferenceBlackBoxRuleBased requires true labels `y`.")
-
-        if self.estimator.input_shape[0] != x.shape[1]:
-            raise ValueError("Shape of x does not match input_shape of classifier")
-
-        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
-        y = np.array([np.argmax(arr) for arr in y]).reshape(-1, 1)
-        if y.shape[0] != x.shape[0]:
-            raise ValueError("Number of rows in x and y do not match")
-
-        # get model's predictions for x
-        predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
-        return np.asarray([1 if p == y[index] else 0 for index, p in enumerate(predictions)])
-
-
 class MembershipInferenceBlackBox(InferenceAttack):
     """
         Implementation of a learned black-box membership inference attack.

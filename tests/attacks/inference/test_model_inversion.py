@@ -22,9 +22,9 @@ import pytest
 
 import numpy as np
 
-from art.attacks.inference import MIFace
+from art.attacks.inference.model_inversion import MIFace
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
@@ -84,7 +84,7 @@ def test_miface(fix_get_mnist_subset, image_dl_estimator_for_attack):
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassGradientsMixin])
+    backend_test_classifier_type_check_fail(MIFace, (BaseEstimator, ClassifierMixin, ClassGradientsMixin))
 
 
 if __name__ == "__main__":
