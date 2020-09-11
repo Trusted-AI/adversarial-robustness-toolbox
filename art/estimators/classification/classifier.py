@@ -94,7 +94,7 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self._nb_classes: int = None
+        self._nb_classes: int = -1
 
     @property
     def nb_classes(self) -> int:

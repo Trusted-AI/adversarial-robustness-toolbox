@@ -129,7 +129,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         return y_prediction
 
-    def _get_nb_classes(self, nb_classes) -> Optional[int]:
+    def _get_nb_classes(self, nb_classes: Optional[int]) -> int:
         """
         Return the number of output classes.
 
@@ -151,7 +151,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
         if isinstance(self._model, XGBClassifier):
             return self._model.n_classes_
 
-        return None
+        return -1
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

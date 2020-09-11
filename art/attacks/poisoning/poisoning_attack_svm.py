@@ -79,7 +79,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         # pylint: disable=W0212
         from sklearn.svm import LinearSVC, SVC
 
-        super().__init__(classifier)
+        super().__init__(classifier=classifier)
 
         if isinstance(self.estimator.model, LinearSVC):
             self._estimator = ScikitlearnSVC(

@@ -261,14 +261,14 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         if self.estimator.channels_first:
             if self.nb_dims == 3:
-                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))
+                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))  # type: ignore
             elif self.nb_dims == 4:
-                pad_width = ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))
+                pad_width = ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))  # type: ignore
         else:
             if self.nb_dims == 3:
-                pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))
+                pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
             elif self.nb_dims == 4:
-                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))
+                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
 
         mask = np.pad(mask, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
 

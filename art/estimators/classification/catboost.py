@@ -118,7 +118,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
 
         return predictions
 
-    def _get_nb_classes(self) -> Optional[int]:
+    def _get_nb_classes(self) -> int:
         """
         Return the number of output classes.
 
@@ -127,7 +127,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         if self._model.classes_ is not None:
             return len(self._model.classes_)
 
-        return None
+        return -1
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """

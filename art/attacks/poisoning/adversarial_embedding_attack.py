@@ -90,7 +90,10 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         self.backdoor = backdoor
         self.feature_layer = feature_layer
         self.target = target
-        self.pp_poison = pp_poison
+        if isinstance(pp_poison, float):
+            self.pp_poison = [pp_poison]
+        else:
+            self.pp_poison = pp_poison
         self.discriminator_layer_1 = discriminator_layer_1
         self.discriminator_layer_2 = discriminator_layer_2
         self.regularization = regularization
@@ -177,7 +180,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
     def poison_estimator(
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 64, nb_epochs: int = 10, **kwargs
-    ) -> KerasClassifier:
+    ) -> "Classifier":
         """
         Train a poisoned model and return it
         :param x: Training data
@@ -192,14 +195,14 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
         # Select indices to poison
         selected_indices = np.zeros(len(x)).astype(bool)
 
-        if type(self.pp_poison) is float:
+        if len(self.pp_poison) == 1:
             if type(self.target) is np.ndarray:
                 not_target = np.logical_not(np.all(y == self.target, axis=1))
-                selected_indices[not_target] = np.random.uniform(size=sum(not_target)) < self.pp_poison
+                selected_indices[not_target] = np.random.uniform(size=sum(not_target)) < self.pp_poison[0]
             else:
                 for src, _ in self.target:
                     all_src = np.all(y == src, axis=1)
-                    selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < self.pp_poison
+                    selected_indices[all_src] = np.random.uniform(size=sum(all_src)) < self.pp_poison[0]
         else:
             for pp, (src, _) in zip(self.pp_poison, self.target):
                 all_src = np.all(y == src, axis=1)
@@ -262,7 +265,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 raise ValueError("Layer {} not found in model".format(self.feature_layer))
         elif type(self.feature_layer) is int:
             num_layers = len(self.estimator.model.layers)
-            if abs(self.feature_layer) >= num_layers:
+            if num_layers <= int(self.feature_layer) < 0:
                 raise ValueError(
                     "Feature layer {} is out of range. Network only has {} layers".format(
                         self.feature_layer, num_layers
@@ -276,8 +279,8 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
                 self._check_valid_label_shape(shape_labels(source))
                 self._check_valid_label_shape(shape_labels(target))
 
-        if type(self.pp_poison) is float:
-            _check_pp_poison(self.pp_poison)
+        if len(self.pp_poison) == 1:
+            _check_pp_poison(self.pp_poison[0])
         else:
             if type(self.target) is not list:
                 raise ValueError("Target should be list of source label pairs")

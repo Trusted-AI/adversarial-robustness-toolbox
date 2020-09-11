@@ -22,7 +22,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -90,7 +90,7 @@ class Attack(abc.ABC, metaclass=input_filter):
     """
 
     attack_params: List[str] = list()
-    _estimator_requirements = None
+    _estimator_requirements: Optional[Union[Tuple[Any, ...], Tuple[()]]] = None
 
     def __init__(self, estimator):
         """

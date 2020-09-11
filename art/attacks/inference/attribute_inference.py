@@ -47,7 +47,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     used as a proxy.
     """
 
-    _estimator_requirements = [BaseEstimator]
+    _estimator_requirements = (BaseEstimator,)
 
     def __init__(self, classifier: Classifier, attack_model: Optional[Classifier] = None, attack_feature: int = 0):
         """
