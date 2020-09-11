@@ -71,7 +71,8 @@ def test_iterative_saliency(fix_get_mnist_subset, image_dl_estimator_for_attack)
             "nb_perturbed_frames": ExpectedValue(np.asarray([10, 1, 2, 12, 16, 1, 2, 7, 4, 11, 5]), 2)
         }
 
-        expected_values_axis_2 = {"nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)}
+        expected_values_axis_2 = {
+            "nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)}
 
         attacker = FastGradientMethod(classifier, eps=0.3, batch_size=128)
         attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency")
@@ -90,9 +91,11 @@ def test_iterative_saliency_refresh(fix_get_mnist_subset, image_dl_estimator_for
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
 
-        expected_values_axis_1 = {"nb_perturbed_frames": ExpectedValue(np.asarray([5, 1, 3, 10, 8, 1, 3, 8, 4, 7, 7]), 2)}
+        expected_values_axis_1 = {
+            "nb_perturbed_frames": ExpectedValue(np.asarray([5, 1, 3, 10, 8, 1, 3, 8, 4, 7, 7]), 2)}
 
-        expected_values_axis_2 = {"nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)}
+        expected_values_axis_2 = {
+            "nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)}
 
         attacker = FastGradientMethod(classifier, eps=0.3, batch_size=128)
         attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency_refresh")
