@@ -53,7 +53,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
     def __init__(
         self,
         estimator: BaseEstimator,
-        norm: Union[float, int] = np.inf,
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -66,7 +66,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         Create a :class:`.AutoProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param max_iter: The maximum number of iterations.
@@ -429,7 +429,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     grad = self.estimator.loss_gradient(x_k, y_batch) * (1 - 2 * int(self.targeted))
 
                     # Apply norm bound
-                    if self.norm == np.inf:
+                    if self.norm in [np.inf, "inf"]:
                         grad = np.sign(grad)
                     elif self.norm == 1:
                         ind = tuple(range(1, len(x_k.shape)))
@@ -532,8 +532,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if self.norm not in [1, 2, np.inf]:
-            raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError("The argument norm has to be either 1, 2, np.inf, or \"inf\".")
 
         if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
             raise ValueError("The argument eps has to be either of type int or float and larger than zero.")

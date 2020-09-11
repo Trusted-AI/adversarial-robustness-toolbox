@@ -11,6 +11,8 @@ from art.defences.preprocessor.pixel_defend import PixelDefend
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.defences.preprocessor.resample import Resample
 from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
+from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
+from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2
 from art.defences.preprocessor.thermometer_encoding import ThermometerEncoding
 from art.defences.preprocessor.variance_minimization import TotalVarMin
 from art.defences.preprocessor.video_compression import VideoCompression

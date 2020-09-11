@@ -162,13 +162,13 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
-def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.ndarray:
+def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -> np.ndarray:
     """
     Project `values` on the L_p norm ball of size `eps`.
 
     :param values: Array of perturbations to clip.
     :param eps: Maximum norm allowed.
-    :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+    :param norm_p: L_p norm to use for clipping. Only 1, 2, `np.Inf` and "inf" supported for now.
     :return: Values of `values` after projection.
     """
     # Pick a small scalar to avoid division by 0
@@ -183,23 +183,24 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.
         values_tmp = values_tmp * np.expand_dims(
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
         )
-    elif norm_p == np.inf:
+    elif norm_p in [np.inf, "inf"]:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
-        raise NotImplementedError("Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
+        raise NotImplementedError("Values of `norm_p` different from 1, 2, `np.inf` and \"inf\" are currently not "
+                                  "supported.")
 
     values = values_tmp.reshape(values.shape)
     return values
 
 
-def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, float]) -> np.ndarray:
+def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, float, str]) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
 
     :param nb_points: Number of random data points.
     :param nb_dims: Dimensionality of the sphere.
     :param radius: Radius of the sphere.
-    :param norm: Current support: 1, 2, np.inf.
+    :param norm: Current support: 1, 2, np.inf, "inf".
     :return: The generated random sphere.
     """
     if norm == 1:
@@ -215,7 +216,7 @@ def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, 
         s_2 = np.sum(a_tmp ** 2, axis=1)
         base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
         res = a_tmp * (np.tile(base, (nb_dims, 1))).T
-    elif norm == np.inf:
+    elif norm in [np.inf, "inf"]:
         res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))
@@ -674,6 +675,109 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
+def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: bool = False) -> DATASET_TYPE:
+    """
+    Loads the UCI Nursery dataset from `ART_DATA_PATH` or downloads it if necessary.
+
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, categorical data is one-hot
+                encoded and data is scaled using sklearn's StandardScaler.
+    :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
+    :param transform_social: If `True`, transforms the social feature to be binary for the purpose of attribute
+                             inference. This is done by assigning the original value 'problematic' the new value 1, and
+                             the other original values are assigned the new value 0.
+    :return: Entire dataset and labels.
+    """
+    import pandas as pd
+    import sklearn.model_selection
+    import sklearn.preprocessing
+
+    # Download data if needed
+    path = get_file(
+        "nursery.data",
+        path=ART_DATA_PATH,
+        extract=False,
+        url="https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
+    )
+
+    # load data
+    features = ["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health", "label"]
+    categorical_features = ["parents", "has_nurs", "form", "housing", "finance", "social", "health"]
+    data = pd.read_csv(path, sep=",", names=features, engine="python")
+    # remove rows with missing label or too sparse label
+    data = data.dropna(subset=["label"])
+    data.drop(data.loc[data["label"] == "recommend"].index, axis=0, inplace=True)
+
+    # fill missing values
+    data["children"] = data["children"].fillna(0)
+
+    for col in ["parents", "has_nurs", "form", "housing", "finance", "social", "health"]:
+        data[col] = data[col].fillna("other")
+
+    # make categorical label
+    def modify_label(value):  # 5 classes
+        if value == "not_recom":
+            return 0
+        elif value == "very_recom":
+            return 1
+        elif value == "priority":
+            return 2
+        elif value == "spec_prior":
+            return 3
+        else:
+            raise Exception("Bad label value: %s" % value)
+
+    data["label"] = data["label"].apply(modify_label)
+    data["children"] = data["children"].apply(lambda x: 4 if x == "more" else x)
+
+    if transform_social:
+
+        def modify_social(value):
+            if value == "problematic":
+                return 1
+            else:
+                return 0
+
+        data["social"] = data["social"].apply(modify_social)
+        categorical_features.remove("social")
+
+    if not raw:
+        # one-hot-encode categorical features
+        features_to_remove = []
+        for feature in categorical_features:
+            all_values = data.loc[:, feature]
+            values = list(all_values.unique())
+            data[feature] = pd.Categorical(data.loc[:, feature], categories=values, ordered=False)
+            one_hot_vector = pd.get_dummies(data[feature], prefix=feature)
+            data = pd.concat([data, one_hot_vector], axis=1)
+            features_to_remove.append(feature)
+        data = data.drop(features_to_remove, axis=1)
+
+        # normalize data
+        label = data.loc[:, "label"]
+        features = data.drop(["label"], axis=1)
+        scaler = sklearn.preprocessing.StandardScaler()
+        scaler.fit(features)
+        scaled_features = pd.DataFrame(scaler.transform(features), columns=features.columns)
+
+        data = pd.concat([label, scaled_features], axis=1, join="inner")
+
+    features = data.drop(["label"], axis=1)
+    # print(features.columns)
+    min_, max_ = np.amin(features.to_numpy()), np.amax(features.to_numpy())
+
+    # Split training and test sets
+    stratified = sklearn.model_selection.StratifiedShuffleSplit(n_splits=1, test_size=test_set, random_state=18)
+    for train_set, test_set in stratified.split(data, data["label"]):
+        train = data.iloc[train_set]
+        test = data.iloc[test_set]
+    x_train = train.drop(["label"], axis=1).to_numpy()
+    y_train = train.loc[:, "label"].to_numpy()
+    x_test = test.drop(["label"], axis=1).to_numpy()
+    y_test = test.loc[:, "label"].to_numpy()
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
 def load_dataset(name: str,) -> DATASET_TYPE:
     """
     Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
@@ -690,6 +794,8 @@ def load_dataset(name: str,) -> DATASET_TYPE:
         return load_stl()
     if "iris" in name:
         return load_iris()
+    if "nursery" in name:
+        return load_nursery()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 

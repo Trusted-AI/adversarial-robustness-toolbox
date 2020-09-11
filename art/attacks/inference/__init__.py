@@ -7,3 +7,4 @@ from art.attacks.inference.attribute_inference import (
     AttributeInferenceWhiteBoxLifestyleDecisionTree,
     AttributeInferenceWhiteBoxDecisionTree,
 )
+from art.attacks.inference.membership_inference import MembershipInferenceBlackBoxRuleBased, MembershipInferenceBlackBox
