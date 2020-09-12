@@ -35,8 +35,6 @@ from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.estimators.estimator import NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, CLASSIFIER_NEURALNETWORK_TYPE
@@ -159,6 +157,8 @@ class PixelDefend(Preprocessor):
         if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
+        from art.estimators.classification.classifier import ClassifierMixin
+        from art.estimators.estimator import NeuralNetworkMixin
         if hasattr(self, "pixel_cnn") and not (
             isinstance(self.pixel_cnn, ClassifierMixin) and isinstance(self.pixel_cnn, NeuralNetworkMixin)
         ):
