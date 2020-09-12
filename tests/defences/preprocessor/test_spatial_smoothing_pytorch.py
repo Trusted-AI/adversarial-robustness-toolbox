@@ -37,7 +37,7 @@ class TestLocalSpatialSmoothingPyTorch:
     """
 
     @pytest.mark.xfail(
-        reason="""a) SciPy's "reflect" padding mode is not supported in PyTorch. The "reflect" model in PyTorch maps 
+        reason="""a) SciPy's "reflect" padding mode is not supported in PyTorch. The "reflect" model in PyTorch maps
         to the "mirror" mode in SciPy; b) torch.median() takes the smaller value when the window size is even."""
     )
     def test_spatial_smoothing_median_filter_call(self):
