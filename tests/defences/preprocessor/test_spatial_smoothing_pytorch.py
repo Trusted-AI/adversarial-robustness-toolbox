@@ -64,7 +64,7 @@ class TestLocalSpatialSmoothingPyTorch:
                 10,
                 marks=pytest.mark.xfail(
                     reason="Window size of 10 fails, because PyTorch requires that Padding size should be less than "
-                           "the corresponding input dimension."
+                    "the corresponding input dimension."
                 ),
             ),
         ],
