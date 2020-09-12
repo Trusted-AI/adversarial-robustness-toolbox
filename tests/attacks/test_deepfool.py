@@ -82,13 +82,13 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_train_mnist == train_y_pred).all())
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
-        sum = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1))
-        accuracy = sum / self.y_train_mnist.shape[0]
-        logger.info("Accuracy on adversarial train examples: %.2f%%", (accuracy * 100))
+        sum_0 = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1))
+        accuracy_0 = sum_0 / self.y_train_mnist.shape[0]
+        logger.info("Accuracy on adversarial train examples: %.2f%%", (accuracy_0 * 100))
 
-        sum1 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1))
-        accuracy = sum1 / self.y_test_mnist.shape[0]
-        logger.info("Accuracy on adversarial test examples: %.2f%%", (accuracy * 100))
+        sum_1 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1))
+        accuracy_1 = sum_1 / self.y_test_mnist.shape[0]
+        logger.info("Accuracy on adversarial test examples: %.2f%%", (accuracy_1 * 100))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)

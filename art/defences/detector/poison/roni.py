@@ -35,7 +35,7 @@ from art.defences.detector.poison.poison_filtering_defence import PoisonFilterin
 from art.utils import performance_diff
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class RONIDefense(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_TYPE",
         x_train: np.ndarray,
         y_train: np.ndarray,
         x_val: np.ndarray,
@@ -73,7 +73,7 @@ class RONIDefense(PoisonFilteringDefence):
         eps: float = 0.1,
     ):
         """
-        Create an :class:`.ActivationDefence` object with the provided classifier.
+        Create an :class:`.RONIDefense` object with the provided classifier.
 
         :param classifier: Model evaluated for poison.
         :param x_train: Dataset used to train the classifier.
@@ -164,7 +164,7 @@ class RONIDefense(PoisonFilteringDefence):
 
         return report, self.is_clean_lst
 
-    def is_suspicious(self, before_classifier: "Classifier", perf_shift: float) -> bool:
+    def is_suspicious(self, before_classifier: "CLASSIFIER_TYPE", perf_shift: float) -> bool:
         """
         Returns True if a given performance shift is suspicious
 
@@ -178,7 +178,7 @@ class RONIDefense(PoisonFilteringDefence):
 
         return perf_shift < -self.eps
 
-    def get_calibration_info(self, before_classifier: "Classifier") -> Tuple[np.ndarray, np.ndarray]:
+    def get_calibration_info(self, before_classifier: "CLASSIFIER_TYPE") -> Tuple[np.ndarray, np.ndarray]:
         """
         Calculate the median and standard deviation of the accuracy shifts caused
         by the calibration set.

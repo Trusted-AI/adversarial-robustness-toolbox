@@ -476,7 +476,7 @@ def random_targets(labels: np.ndarray, nb_classes: int) -> np.ndarray:
     return to_categorical(result, nb_classes)
 
 
-def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
+def least_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np.ndarray:
     """
     Compute the least likely class predictions for sample `x`. This strategy for choosing attack targets was used in
     (Kurakin et al., 2016).
@@ -490,7 +490,7 @@ def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
     return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
-def second_most_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
+def second_most_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np.ndarray:
     """
     Compute the second most likely class predictions for sample `x`. This strategy can be used for choosing target
     labels for an attack to improve its chances to succeed.
@@ -529,7 +529,7 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
 
 
 def compute_success_array(
-    classifier: "Classifier",
+    classifier: "CLASSIFIER_TYPE",
     x_clean: np.ndarray,
     labels: np.ndarray,
     x_adv: np.ndarray,
@@ -559,7 +559,7 @@ def compute_success_array(
 
 
 def compute_success(
-    classifier: "Classifier",
+    classifier: "CLASSIFIER_TYPE",
     x_clean: np.ndarray,
     labels: np.ndarray,
     x_adv: np.ndarray,
@@ -1091,8 +1091,8 @@ def segment_by_class(data: np.ndarray, classes: np.ndarray, num_classes: int) ->
 
 
 def performance_diff(
-    model1: "Classifier",
-    model2: "Classifier",
+    model1: "CLASSIFIER_TYPE",
+    model2: "CLASSIFIER_TYPE",
     test_data: np.ndarray,
     test_labels: np.ndarray,
     perf_function: Union[str, Callable] = "accuracy",

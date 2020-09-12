@@ -145,7 +145,7 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
 
 
 def backend_targeted_tabular(attack, fix_get_iris):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
+    (_, _), (x_test_iris, y_test_iris) = fix_get_iris
 
     targets = random_targets(y_test_iris, nb_classes=3)
     x_test_adv = attack.generate(x_test_iris, **{"y": targets})
@@ -176,7 +176,7 @@ def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_mlFramework):
 
 
 def backend_untargeted_tabular(attack, iris_dataset, clipped):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = iris_dataset
+    (_, _), (x_test_iris, y_test_iris) = iris_dataset
 
     x_test_adv = attack.generate(x_test_iris)
 

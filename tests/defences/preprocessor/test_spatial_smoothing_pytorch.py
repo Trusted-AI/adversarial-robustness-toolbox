@@ -16,14 +16,12 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
-from tests.defences.preprocessor.test_spatial_smoothing import image_batch, video_batch, tabular_batch
 
 import logging
 
 import numpy as np
-import pytest
-import unittest
 from numpy.testing import assert_array_equal
+import pytest
 
 from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
 

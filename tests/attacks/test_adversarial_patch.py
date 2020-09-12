@@ -154,14 +154,6 @@ class TestAdversarialPatch(TestBase):
         self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
 
     def test_failure_feature_vectors(self):
-        attack_params = {
-            "rotation_max": 22.5,
-            "scale_min": 0.1,
-            "scale_max": 1.0,
-            "learning_rate": 5.0,
-            "number_of_steps": 5,
-            "batch_size": 10,
-        }
         classifier = get_tabular_classifier_kr()
         classifier._clip_values = (0, 1)
 

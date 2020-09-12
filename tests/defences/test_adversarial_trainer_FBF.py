@@ -26,7 +26,7 @@ from art.defences.trainer import AdversarialTrainerFBFPyTorch
 
 @pytest.fixture()
 def get_adv_trainer(framework, image_dl_estimator):
-    def _get_adv_trainer(**kwargs):
+    def _get_adv_trainer():
 
         if framework == "keras":
             trainer = None
@@ -51,7 +51,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def test_adversarial_trainer_FBF_Pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset):
+def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     x_test_mnist_original = x_test_mnist.copy()
 

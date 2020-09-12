@@ -64,7 +64,7 @@ class TestAdversarialEmbedding(unittest.TestCase):
         krc = get_image_classifier_kr_tf(loss_type="label")
 
         # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
+        (x_train, y_train), (_, _) = self.mnist
         target_idx = 9
         target = np.zeros(10)
         target[target_idx] = 1
@@ -85,14 +85,14 @@ class TestAdversarialEmbedding(unittest.TestCase):
         self.assertTrue(classifier is not krc)
 
         emb_attack2 = PoisoningAttackAdversarialEmbedding(krc, backdoor, 2, [(target, target2)])
-        classifier2 = emb_attack2.poison_estimator(x_train, y_train, nb_epochs=NB_EPOCHS)
+        _ = emb_attack2.poison_estimator(x_train, y_train, nb_epochs=NB_EPOCHS)
 
         data, labels, bd = emb_attack2.get_training_data()
         self.assertEqual(x_train.shape, data.shape)
         self.assertEqual(y_train.shape, labels.shape)
         self.assertEqual(bd.shape, (len(x_train), 2))
 
-        emb_attack3 = PoisoningAttackAdversarialEmbedding(krc, backdoor, 2, [(target, target2)], pp_poison=[0.4])
+        _ = PoisoningAttackAdversarialEmbedding(krc, backdoor, 2, [(target, target2)], pp_poison=[0.4])
 
     def test_errors(self):
         krc = get_image_classifier_kr_tf(loss_type="function")
@@ -106,42 +106,40 @@ class TestAdversarialEmbedding(unittest.TestCase):
 
         # invalid loss function
         with self.assertRaises(TypeError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc, backdoor, 2, target)
+            _ = PoisoningAttackAdversarialEmbedding(krc, backdoor, 2, target)
 
         # feature layer not real name
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, "not a layer", target)
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, "not a layer", target)
 
         # feature layer out of range
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target)
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target)
 
         # target misshaped
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, np.expand_dims(target, axis=0))
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, np.expand_dims(target, axis=0))
 
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, [target])
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, [target])
 
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target, regularization=-1)
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target, regularization=-1)
 
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target, discriminator_layer_1=-1)
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target, discriminator_layer_1=-1)
 
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target, discriminator_layer_2=-1)
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target, discriminator_layer_2=-1)
 
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target, pp_poison=-1)
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, target, pp_poison=-1)
 
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, [(target, target2)], pp_poison=[])
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, [(target, target2)], pp_poison=[])
 
         with self.assertRaises(ValueError):
-            emb_attack = PoisoningAttackAdversarialEmbedding(
-                krc_valid, backdoor, 20, [(target, target2)], pp_poison=[-1]
-            )
+            _ = PoisoningAttackAdversarialEmbedding(krc_valid, backdoor, 20, [(target, target2)], pp_poison=[-1])
 
 
 if __name__ == "__main__":

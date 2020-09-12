@@ -30,7 +30,7 @@ from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.estimators.classification.keras import KerasClassifier
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_TYPE",
         backdoor: PoisoningAttackBackdoor,
         feature_layer: Union[int, str],
         target: Union[np.ndarray, List[Tuple[np.ndarray, np.ndarray]]],
@@ -180,7 +180,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
 
     def poison_estimator(
         self, x: np.ndarray, y: np.ndarray, batch_size: int = 64, nb_epochs: int = 10, **kwargs
-    ) -> "Classifier":
+    ) -> "CLASSIFIER_TYPE":
         """
         Train a poisoned model and return it
         :param x: Training data

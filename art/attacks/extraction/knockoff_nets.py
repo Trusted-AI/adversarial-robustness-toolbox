@@ -23,7 +23,7 @@ This module implements the Knockoff Nets attack `KnockoffNets`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -31,9 +31,11 @@ from tqdm import trange
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, Classifier
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import to_categorical
 
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +60,7 @@ class KnockoffNets(ExtractionAttack):
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: "CLASSIFIER_TYPE",
         batch_size_fit: int = 1,
         batch_size_query: int = 1,
         nb_epochs: int = 10,
@@ -88,7 +90,7 @@ class KnockoffNets(ExtractionAttack):
         self.reward = reward
         self._check_params()
 
-    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Classifier:
+    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Extract a thieved classifier.
 
@@ -96,7 +98,6 @@ class KnockoffNets(ExtractionAttack):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   `(nb_samples,)`.
         :param thieved_classifier: A thieved classifier to be stolen.
-        :type thieved_classifier: :class:`.Classifier`
         :return: The stolen classifier.
         """
         # Check prerequisite for random strategy
@@ -127,7 +128,7 @@ class KnockoffNets(ExtractionAttack):
 
         return thieved_classifier
 
-    def _random_extraction(self, x: np.ndarray, thieved_classifier: Classifier) -> Classifier:
+    def _random_extraction(self, x: np.ndarray, thieved_classifier: "CLASSIFIER_TYPE") -> "CLASSIFIER_TYPE":
         """
         Extract with the random sampling strategy.
 
@@ -173,7 +174,9 @@ class KnockoffNets(ExtractionAttack):
 
         return labels
 
-    def _adaptive_extraction(self, x: np.ndarray, y: np.ndarray, thieved_classifier: Classifier) -> Classifier:
+    def _adaptive_extraction(
+        self, x: np.ndarray, y: np.ndarray, thieved_classifier: "CLASSIFIER_TYPE"
+    ) -> "CLASSIFIER_TYPE":
         """
         Extract with the adaptive sampling strategy.
 

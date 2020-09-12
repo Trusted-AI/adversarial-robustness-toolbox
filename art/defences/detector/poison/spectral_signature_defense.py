@@ -33,7 +33,7 @@ from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvalu
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 
 class SpectralSignatureDefense(PoisonFilteringDefence):
@@ -52,7 +52,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x_train: np.ndarray,
         y_train: np.ndarray,
         batch_size: int,
