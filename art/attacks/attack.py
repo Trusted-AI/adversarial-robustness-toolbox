@@ -196,7 +196,6 @@ class PoisoningAttackTransformer(PoisoningAttack):
     def __init__(self, classifier: Optional["CLASSIFIER_TYPE"], **kwargs) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
-        :type classifier: `art.estimators.classification.Classifier` or `None`
         """
         super().__init__(classifier)
 

@@ -117,10 +117,10 @@ class AutoAttack(EvasionAttack):
             attacks.append(
                 (
                     DeepFool(
-                        classifier=estimator,
+                        classifier=estimator,  # type: ignore
                         max_iter=100,
                         epsilon=1e-3,
-                        nb_grads=10,  # type: ignore
+                        nb_grads=10,
                         batch_size=batch_size,
                     )
                 )

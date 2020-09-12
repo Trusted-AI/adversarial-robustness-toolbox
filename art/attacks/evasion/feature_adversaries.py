@@ -60,7 +60,6 @@ class FeatureAdversaries(EvasionAttack):
         Create a :class:`.FeatureAdversaries` instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param delta: The maximum deviation between source and guide images.
         :param layer: Index of the representation layer.
         :param batch_size: Batch size.

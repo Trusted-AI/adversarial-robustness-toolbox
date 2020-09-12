@@ -117,21 +117,17 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
             self.eps_step = ratio * self.eps
 
-    def _set_targets(self, x, y, classifier_mixin=True):
+    def _set_targets(self, x: np.ndarray, y: np.ndarray, classifier_mixin: bool = True) -> np.ndarray:
         """
         Check and set up targets.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `np.ndarray`
         :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
-        :type classifier_mixin: `bool`
         :return: The targets.
-        :rtype: `np.ndarray`
         """
         if classifier_mixin:
             y = check_and_transform_label_format(y, self.estimator.nb_classes)
@@ -153,20 +149,17 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         return targets
 
     @staticmethod
-    def _get_mask(x, classifier_mixin=True, **kwargs):
+    def _get_mask(x: np.ndarray, classifier_mixin: bool = True, **kwargs) -> np.ndarray:
         """
         Get the mask from the kwargs.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
-        :type classifier_mixin: `bool`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :type mask: `np.ndarray`
         :return: The mask.
-        :rtype: `np.ndarray`
         """
         mask = kwargs.get("mask")
 

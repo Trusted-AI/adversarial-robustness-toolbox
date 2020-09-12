@@ -22,7 +22,7 @@ This module implements attribute inference attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 
@@ -56,12 +56,12 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
 
-    def infer(self, x, y=None, **kwargs):
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
         :param x: Input to attack. Includes all features except the attacked feature.
-        :type x: `np.ndarray`
+        :param y: Not used.
         :param values: Possible values for attacked feature.
         :type values: `np.ndarray`
         :param priors: Prior distributions of attacked feature values. Same size array as `values`.
