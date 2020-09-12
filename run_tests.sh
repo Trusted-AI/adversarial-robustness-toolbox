@@ -33,6 +33,9 @@ done
 pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
 
+pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="tensorflow" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_tensorflow.py tests"; fi
+
 pytest -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework="pytorch" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_pytorch.py tests"; fi
 
