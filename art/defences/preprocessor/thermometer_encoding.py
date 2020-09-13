@@ -163,8 +163,8 @@ class ThermometerEncoding(Preprocessor):
         grad = np.sum(grad, -1)
 
         if self.channels_first:
-            x = np.transpose(x, (0,) + (len(x.shape)-1, ) + tuple(range(1, len(x.shape)-1)))
-            grad = np.transpose(grad, (0,) + (len(x.shape)-1, ) + tuple(range(1, len(x.shape)-1)))
+            x = np.transpose(x, (0,) + (len(x.shape) - 1,) + tuple(range(1, len(x.shape) - 1)))
+            grad = np.transpose(grad, (0,) + (len(x.shape) - 1,) + tuple(range(1, len(x.shape) - 1)))
 
         return grad / (self.clip_values[1] - self.clip_values[0])
 
