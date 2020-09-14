@@ -141,18 +141,13 @@ def test_black_box_tabular_gb(tabular_dl_estimator_for_attack, get_iris_dataset)
 
 
 @pytest.mark.skipMlFramework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
-def test_black_box_with_model(tabular_dl_estimator_for_attack, get_attack_classifier_list, get_iris_dataset):
+def test_black_box_with_model(tabular_dl_estimator_for_attack, estimator_for_attack, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
-        attack_model_list = get_attack_classifier_list(num_features=2 * num_classes_iris)
-        if not attack_model_list:
-            logging.warning("Couldn't perform this test because no attack model is defined")
-            return
-
-        for attack_model in attack_model_list:
-            print(type(attack_model).__name__)
-            attack = MembershipInferenceBlackBox(classifier, attack_model=attack_model)
-            backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.03)
+        attack_model = estimator_for_attack(num_features=2 * num_classes_iris)
+        print(type(attack_model).__name__)
+        attack = MembershipInferenceBlackBox(classifier, attack_model=attack_model)
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.03)
     except ARTTestException as e:
         add_warning(e)
 
