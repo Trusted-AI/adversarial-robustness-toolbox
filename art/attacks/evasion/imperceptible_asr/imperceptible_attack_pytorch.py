@@ -25,7 +25,7 @@ specifically for Pytorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -273,24 +273,35 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         local_max_length: int,
         rescale: np.ndarray,
         input_mask: np.ndarray
-    ):
+    ) -> Tuple["torch.Tensor", "torch.Tensor", np.ndarray, "torch.Tensor"]:
         """
         The forward pass of the first stage of the attack.
 
-        :param global_max_length:
-        :return:
+        :param original_input: Samples of shape (nb_samples, seq_length). Note that, sequences in the batch must have
+                               equal lengths. A possible example of `original_input` could be:
+                               `original_input = np.array([np.array([0.1, 0.2, 0.1]), np.array([0.3, 0.1, 0.0])])`.
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+                                it may possess different lengths. A possible example of `original_output` could be:
+                                `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param local_batch_size: Current batch size.
+        :param local_max_length: Max length of the current batch.
+        :param rescale: Current rescale coefficients.
+        :param input_mask: Masks of true inputs.
+        :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input)
+                    - loss: The loss tensor of the first stage of the attack.
+                    - local_delta: The delta of the current batch.
+                    - decoded_output: Transcription output.
+                    - masked_adv_input: Perturbed inputs.
         """
         import torch  # lgtm [py/repeated-import]
 
         from warpctc_pytorch import CTCLoss
 
-
+        # Compute perturbed inputs
         local_delta = self.global_optimal_delta[ : local_batch_size, : local_max_length]
         local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
         adv_input = local_delta_rescale + original_input
         masked_adv_input = adv_input * input_mask
-
-#        probability_output, transcripted_output = self.estimator.predict_framework(masked_adv_input)
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
@@ -335,7 +346,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                   class only supports targeted attack.
         :return: An array holding the candidate adversarial examples.
         """
-
         # Compute local shape
         local_batch_size = len(x)
         local_max_length = np.max([x_.shape[0] for x_ in x])
