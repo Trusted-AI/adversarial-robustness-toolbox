@@ -42,7 +42,7 @@ def _test_preprocessing_defences_forward(
 ):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_, _ = image_dl_estimator(one_classifier=True)
+    classifier_, _ = image_dl_estimator()
 
     clip_values = (0, 1)
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
@@ -76,7 +76,7 @@ def _test_preprocessing_defences_backward(
 ):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_, _ = image_dl_estimator(one_classifier=True)
+    classifier_, _ = image_dl_estimator()
 
     clip_values = (0, 1)
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
@@ -185,12 +185,11 @@ def test_defences_chaining(get_default_mnist_subset, image_dl_estimator, is_tf_v
 @pytest.mark.only_with_platform("tensorflow")
 def test_fgsm_defences(fix_get_mnist_subset, image_dl_estimator, is_tf_version_2):
     if is_tf_version_2:
-
         clip_values = (0, 1)
         smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
         smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
         smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
-        classifier_, _ = image_dl_estimator(one_classifier=True)
+        classifier_, _ = image_dl_estimator()
 
         loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
         classifier = TensorFlowV2Classifier(

@@ -42,7 +42,7 @@ def _test_preprocessing_defences_forward(
 ):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_, _ = image_dl_estimator(one_classifier=True)
+    classifier_, _ = image_dl_estimator()
 
     clip_values = (0, 1)
     criterion = nn.CrossEntropyLoss()
@@ -79,7 +79,7 @@ def _test_preprocessing_defences_backward(
 ):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_, _ = image_dl_estimator(one_classifier=True)
+    classifier_, _ = image_dl_estimator()
 
     clip_values = (0, 1)
     criterion = nn.CrossEntropyLoss()
@@ -187,7 +187,7 @@ def test_fgsm_defences(fix_get_mnist_subset, image_dl_estimator, device_type):
     smooth_3x3 = SpatialSmoothingPyTorch(window_size=3, channels_first=True, device_type=device_type)
     smooth_5x5 = SpatialSmoothingPyTorch(window_size=5, channels_first=True, device_type=device_type)
     smooth_7x7 = SpatialSmoothingPyTorch(window_size=7, channels_first=True, device_type=device_type)
-    classifier_, _ = image_dl_estimator(one_classifier=True)
+    classifier_, _ = image_dl_estimator()
 
     criterion = nn.CrossEntropyLoss()
     classifier = PyTorchClassifier(
