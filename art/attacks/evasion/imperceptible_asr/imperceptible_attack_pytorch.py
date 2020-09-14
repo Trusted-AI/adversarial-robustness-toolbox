@@ -265,21 +265,24 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         return
 
-    def _partial_forward(
+    def _forward_1st_stage(
         self,
         original_input: np.ndarray,
         original_output: np.ndarray,
         local_batch_size: int,
         local_max_length: int,
-        rescale: float,
+        rescale: np.ndarray,
         input_mask: np.ndarray
     ):
         """
+        The forward pass of the first stage of the attack.
 
         :param global_max_length:
         :return:
         """
         import torch  # lgtm [py/repeated-import]
+
+        from warpctc_pytorch import CTCLoss
 
 
         local_delta = self.global_optimal_delta[ : local_batch_size, : local_max_length]
@@ -287,16 +290,60 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         adv_input = local_delta_rescale + original_input
         masked_adv_input = adv_input * input_mask
 
-        return loss, local_delta, transcripted_output, masked_adv_input
+#        probability_output, transcripted_output = self.estimator.predict_framework(masked_adv_input)
+
+        # Transform data into the model input space
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
+            x=masked_adv_input, y=original_output, compute_gradient=False
+        )
+
+        # Compute real input sizes
+        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
+
+        # Call to DeepSpeech model for prediction
+        outputs, output_sizes = self.estimator.model(
+            inputs.to(self.estimator.device), input_sizes.to(self.estimator.device)
+        )
+        outputs_ = outputs.transpose(0, 1)
+        float_outputs = outputs_.float()
+
+        # Loss function
+        criterion = CTCLoss()
+        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.estimator.device)
+        loss = loss / inputs.size(0)
+
+        # Compute transcription
+        decoded_output, _ = self.estimator.decoder.decode(outputs, output_sizes)
+        decoded_output = [do[0] for do in decoded_output]
+        decoded_output = np.array(decoded_output)
+
+        # Rearrange to the original order
+        decoded_output_ = decoded_output.copy()
+        decoded_output[batch_idx] = decoded_output_
+
+        return loss, local_delta, decoded_output, masked_adv_input
 
     def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray):
+        """
+        The first stage of the attack.
 
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
+                  class only supports targeted attack.
+        :return: An array holding the candidate adversarial examples.
+        """
 
+        # Compute local shape
         local_batch_size = len(x)
         local_max_length = np.max([x_.shape[0] for x_ in x])
 
+        # Initialize rescale
         rescale = np.array([self.initial_rescale] * local_batch_size)
 
+        # Reformat input
         input_mask = np.zeros([local_batch_size, local_max_length])
         original_input = np.zeros([local_batch_size, local_max_length])
 
@@ -306,9 +353,13 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         # Optimization loop
         successful_adv_input = [None] * local_batch_size
+
         for iter_1st_stage_idx in range(self.max_iter_1st_stage):
+            # Zero the parameter gradients
+            self.optimizer_1st_stage.zero_grad()
+
             # Call to forward pass
-            loss, local_delta, transcript_output, masked_adv_input = self._partial_forward(
+            loss, local_delta, decoded_output, masked_adv_input = self._partial_forward(
                 original_input=original_input,
                 original_output=y,
                 local_batch_size=local_batch_size,
@@ -327,15 +378,19 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             else:
                 loss.backward()
 
+            # Get sign of the gradients
+            self.global_optimal_delta.grad = torch.sign(self.global_optimal_delta.grad)
+
             # Do optimization
             self.optimizer_1st_stage.step()
 
             # Save the best adversarial example and adjust the rescale coefficient if successful
             if iter_1st_stage_idx % self.num_iter_adjust_rescale == 0:
                 for local_batch_size_idx in range(local_batch_size):
-                    if transcript_output[local_batch_size_idx] == y[local_batch_size_idx]:
+                    if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
                         # Adjust the rescale coefficient
                         max_local_delta = np.max(np.abs(local_delta[local_batch_size_idx]))
+
                         if rescale[local_batch_size_idx] * self.initial_eps > max_local_delta:
                             rescale[local_batch_size_idx] = max_local_delta / self.initial_eps
                         rescale[local_batch_size_idx] *= self.rescale_factor
