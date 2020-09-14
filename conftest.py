@@ -22,10 +22,12 @@ import shutil
 import tempfile
 import warnings
 
+from keras.preprocessing.image import ImageDataGenerator
 from mxnet import gluon
 import numpy as np
 import pytest
 import requests
+from torch.utils.data import DataLoader
 import torch
 import tensorflow as tf
 
@@ -562,11 +564,8 @@ def create_test_image(create_test_dir):
 def framework(request):
     mlFramework = request.config.getoption("--mlFramework")
     if mlFramework not in art_supported_frameworks:
-        raise Exception(
-            "mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
-                mlFramework, " ".join(art_supported_frameworks)
-            )
-        )
+        raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+                mlFramework, " ".join(art_supported_frameworks)))
     # if utils_test.is_valid_framework(mlFramework):
     #     raise Exception("The mlFramework specified was incorrect. Valid options available
     #     are {0}".format(art_supported_frameworks))
