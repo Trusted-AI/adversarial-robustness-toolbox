@@ -39,14 +39,9 @@ num_classes_mnist = 10
 
 def test_rule_based_image(get_default_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier_list = image_dl_estimator_for_attack(MembershipInferenceBlackBoxRuleBased)
-        if not classifier_list:
-            logging.warning("Couldn't perform this test because no classifier is defined")
-            return
-
-        for classifier in classifier_list:
-            attack = MembershipInferenceBlackBoxRuleBased(classifier)
-            backend_check_membership_accuracy_no_fit(attack, get_default_mnist_subset, 0.8)
+        classifier = image_dl_estimator_for_attack(MembershipInferenceBlackBoxRuleBased)
+        attack = MembershipInferenceBlackBoxRuleBased(classifier)
+        backend_check_membership_accuracy_no_fit(attack, get_default_mnist_subset, 0.8)
     except ARTTestException as e:
         add_warning(e)
 
