@@ -134,8 +134,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
             cost_multiplier=cost_multiplier,
             batch_size=batch_size,
         )
-        # TODO: swtich to np zeros
-        mask = np.zeros(super().input_shape)  # np.random.uniform(size=super().input_shape)
+        mask = np.random.uniform(size=super().input_shape)
         pattern = np.random.uniform(size=super().input_shape)
         self.epsilon = K.epsilon()
 
@@ -151,14 +150,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
 
         reverse_mask_tensor = K.ones_like(self.mask_tensor) - self.mask_tensor
         input_tensor = K.placeholder(model.input_shape)
-        print("mask tensor shape")
-        print(self.mask_tensor.shape)
-        print(type(self.mask_tensor))
-        print("pattern tensor shape")
-        print(self.pattern_tensor.shape)
-        print(type(self.pattern_tensor))
-        x_adv_tensor = self.pattern_tensor
-        # x_adv_tensor = reverse_mask_tensor * input_tensor + self.mask_tensor * self.pattern_tensor
+        x_adv_tensor = reverse_mask_tensor * input_tensor + self.mask_tensor * self.pattern_tensor
 
         output_tensor = self.model(x_adv_tensor)
         print("output tensor shape")
@@ -177,40 +169,12 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
 
         self.cost = self.init_cost
         self.cost_tensor = K.variable(self.cost)
-        # TODO: investigate loss tensors
         self.loss = self.loss_ce + self.loss_reg * self.cost_tensor
         self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
-        # self.opt.apply_gradients(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
-        # try apply_gradients or recompiling model
-        # self._model.compile(self.opt, loss=self.loss)
-        # print(K.gradients(self.loss, [self.pattern_tensor, self.mask_tensor]))
-        print(K.gradients(self.loss, [self.pattern_tensor]))
-        print("Loss value:")
 
-        #print(K.eval(self.loss))
-        import tensorflow as tf
-        version = tf.version.VERSION[0]
-        if version == '2':
-            with tf.compat.v1.Session().as_default():
-                print(self.loss.eval(feed_dict={y_true_tensor: np.asarray([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])}))
-        elif version == '1':
-            with K.get_session().as_default():
-                print(self.loss.eval(feed_dict={y_true_tensor:np.asarray([[0, 0, 0, 0, 0, 0, 1, 0, 0, 0]])}))
-        else:
-            raise NotImplementedError("Tensorflow version '{}' not supported".format(version))
-
-
-        # This will not allow to compute loss gradient
-        print(K.gradients(self.loss, [reverse_mask_tensor, input_tensor]))
-
-        # This will allow to compute loss gradient
-        print(K.gradients(self.loss, [self.pattern_tensor_raw, self.pattern_tensor]))
-
-        # self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss)
-        self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw], loss=self.loss)
-        self.train = K.function([input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss, self.loss_acc])
-        # ,
-        # updates=self.updates)
+        self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw,  self.mask_tensor_raw], loss=self.loss)
+        self.train = K.function([input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss, self.loss_acc],
+                                updates=self.updates)
 
     def reset(self):
         """
