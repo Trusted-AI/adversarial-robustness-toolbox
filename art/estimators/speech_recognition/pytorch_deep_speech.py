@@ -125,7 +125,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         from deepspeech_pytorch.configs.inference_config import LMConfig
         from deepspeech_pytorch.enums import DecoderType
@@ -269,7 +269,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
-                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
         :param batch_size: Batch size.
         :param transcription_output: Indicate whether the function will produce probability or transcription as
                                      prediction output. If transcription_output is not available, then probability
@@ -363,7 +363,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
-                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
         :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: Loss gradients of the same shape as `x`.
@@ -422,7 +422,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
-                  `x = np.ndarray([[0.1, 0.2, 0.1, 0.4], [0.3, 0.1]])`.
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
         :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param batch_size: Size of batches.
@@ -432,7 +432,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         import random
 
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         from warpctc_pytorch import CTCLoss
 
@@ -528,7 +528,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                     - target_sizes: list of real seq_lengths.
                     - batch_idx: original index of inputs.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
         import torchaudio
 
         from deepspeech_pytorch.loader.data_loader import _collate_fn

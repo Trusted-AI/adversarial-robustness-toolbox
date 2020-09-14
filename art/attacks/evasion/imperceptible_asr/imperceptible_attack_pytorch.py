@@ -70,6 +70,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         "decrease_factor_alpha",
         "num_iter_decrease_alpha",
         "batch_size",
+        "use_amp",
     ]
 
     _estimator_requirements = (
@@ -101,6 +102,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         decrease_factor_alpha: float = 0.8,
         num_iter_decrease_alpha: int = 50,
         batch_size: int = 32,
+        use_amp: bool = False,
     ):
         """
         Create a :class:`.ImperceptibleAttackPytorch` instance.
@@ -132,8 +134,11 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                                       optimization of the attack.
         :param num_iter_decrease_alpha: Number of iterations to decrease alpha.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
+                        gradient computation, e.g. with loss gradient computation. When set to True, this option is
+                        only triggered if there are GPUs available.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
         from torch.autograd import Variable
 
         if (
@@ -166,6 +171,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         self.decrease_factor_alpha = decrease_factor_alpha
         self.num_iter_decrease_alpha = num_iter_decrease_alpha
         self.batch_size = batch_size
+        self._use_amp = use_amp
 
         # Create the main variable to optimize
         self.global_optimal_delta = Variable(
@@ -180,6 +186,23 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         self.optimizer_2nd_stage = optimizer_2nd_stage(
             params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
         )
+
+        # Setup for AMP use
+        if self._use_amp:
+            from apex import amp
+
+            if self.estimator.device.type == "cpu":
+                enabled = False
+            else:
+                enabled = True
+
+            self._model, self._optimizer = amp.initialize(
+                models=self._model,
+                optimizers=self._optimizer,
+                enabled=enabled,
+                opt_level=opt_level,
+                loss_scale=loss_scale,
+            )
 
         # Check validity of attack attributes
         self._check_params()
@@ -234,25 +257,29 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         return
 
-    def _partial_forward(self, original_input: np.ndarray, local_batch_size: int, local_max_length: int, rescale: float, input_mask: np.ndarray):
+    def _partial_forward(
+        self,
+        original_input: np.ndarray,
+        original_output: np.ndarray,
+        local_batch_size: int,
+        local_max_length: int,
+        rescale: float,
+        input_mask: np.ndarray
+    ):
         """
 
         :param global_max_length:
         :return:
         """
-        import torch
-        from torch.autograd import Variable
+        import torch  # lgtm [py/repeated-import]
 
 
-        local_delta = self.global_delta[ : local_batch_size, : local_max_length]
+        local_delta = self.global_optimal_delta[ : local_batch_size, : local_max_length]
         local_delta = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
         adv_input = local_delta + original_input
         masked_adv_input = adv_input * input_mask
 
-
-
-
-
+        return 0
 
     def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray):
 
@@ -261,19 +288,33 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         local_max_length = np.max([x_.shape[0] for x_ in x])
 
         input_mask = np.zeros([local_batch_size, local_max_length])
+        original_input = np.zeros([local_batch_size, local_max_length])
+
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
+            original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
 
         for iter_1st_stage_idx in range(self.max_iter_1st_stage):
             loss = self._partial_forward(
+                original_input=original_input,
+                original_output=y,
                 local_batch_size=local_batch_size,
                 local_max_length=local_max_length,
                 rescale=rescale,
                 input_mask=input_mask
             )
 
+            # Actual training
+            if self._use_amp:
+                from apex import amp
 
+                with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                    scaled_loss.backward()
 
+            else:
+                loss.backward()
+
+            self._optimizer.step()
 
         return
 
