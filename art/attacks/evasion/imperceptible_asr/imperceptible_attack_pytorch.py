@@ -71,6 +71,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         "num_iter_decrease_alpha",
         "batch_size",
         "use_amp",
+        "opt_level",
+        "loss_scale",
     ]
 
     _estimator_requirements = (
@@ -103,6 +105,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         num_iter_decrease_alpha: int = 50,
         batch_size: int = 32,
         use_amp: bool = False,
+        opt_level: str = "O1",
+        loss_scale: int = 1,
     ):
         """
         Create a :class:`.ImperceptibleAttackPytorch` instance.
@@ -137,6 +141,10 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
                         gradient computation, e.g. with loss gradient computation. When set to True, this option is
                         only triggered if there are GPUs available.
+        :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
+                          values are `O0`, `O1`, `O2`, and `O3`.
+        :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1 due to warp-ctc not supporting
+                           scaling of gradients.
         """
         import torch  # lgtm [py/repeated-import]
         from torch.autograd import Variable
@@ -196,9 +204,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             else:
                 enabled = True
 
-            self._model, self._optimizer = amp.initialize(
-                models=self._model,
-                optimizers=self._optimizer,
+            self.estimator._model, [self.optimizer_1st_stage, self.optimizer_2nd_stage] = amp.initialize(
+                models=self.estimator._model,
+                optimizers=[self.optimizer_1st_stage, self.optimizer_2nd_stage],
                 enabled=enabled,
                 opt_level=opt_level,
                 loss_scale=loss_scale,
@@ -275,17 +283,19 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
 
         local_delta = self.global_optimal_delta[ : local_batch_size, : local_max_length]
-        local_delta = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
-        adv_input = local_delta + original_input
+        local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
+        adv_input = local_delta_rescale + original_input
         masked_adv_input = adv_input * input_mask
 
-        return 0
+        return loss, local_delta, transcripted_output, masked_adv_input
 
     def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray):
 
-        rescale = self.initial_rescale
+
         local_batch_size = len(x)
         local_max_length = np.max([x_.shape[0] for x_ in x])
+
+        rescale = np.array([self.initial_rescale] * local_batch_size)
 
         input_mask = np.zeros([local_batch_size, local_max_length])
         original_input = np.zeros([local_batch_size, local_max_length])
@@ -294,8 +304,11 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
             original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
 
+        # Optimization loop
+        successful_adv_input = [None] * local_batch_size
         for iter_1st_stage_idx in range(self.max_iter_1st_stage):
-            loss = self._partial_forward(
+            # Call to forward pass
+            loss, local_delta, transcript_output, masked_adv_input = self._partial_forward(
                 original_input=original_input,
                 original_output=y,
                 local_batch_size=local_batch_size,
@@ -308,15 +321,35 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             if self._use_amp:
                 from apex import amp
 
-                with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                with amp.scale_loss(loss, self.optimizer_1st_stage) as scaled_loss:
                     scaled_loss.backward()
 
             else:
                 loss.backward()
 
-            self._optimizer.step()
+            # Do optimization
+            self.optimizer_1st_stage.step()
 
-        return
+            # Save the best adversarial example and adjust the rescale coefficient if successful
+            if iter_1st_stage_idx % self.num_iter_adjust_rescale == 0:
+                for local_batch_size_idx in range(local_batch_size):
+                    if transcript_output[local_batch_size_idx] == y[local_batch_size_idx]:
+                        # Adjust the rescale coefficient
+                        max_local_delta = np.max(np.abs(local_delta[local_batch_size_idx]))
+                        if rescale[local_batch_size_idx] * self.initial_eps > max_local_delta:
+                            rescale[local_batch_size_idx] = max_local_delta / self.initial_eps
+                        rescale[local_batch_size_idx] *= self.rescale_factor
+
+                        # Save the best adversarial example
+                        successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
+
+            # If attack is unsuccessful
+            if iter_1st_stage_idx == self.max_iter_1st_stage - 1:
+                for local_batch_size_idx in range(local_batch_size):
+                    if successful_adv_input[local_batch_size_idx] is None:
+                        successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
+
+        return successful_adv_input
 
     def _attack_2nd_stage(self):
         return
