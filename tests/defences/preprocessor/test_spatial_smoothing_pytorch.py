@@ -16,16 +16,16 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
-from tests.defences.preprocessor.test_spatial_smoothing import image_batch, video_batch, tabular_batch
 
 import logging
 
 import numpy as np
-import pytest
-import unittest
 from numpy.testing import assert_array_equal
+import pytest
 
 from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
+
+from tests.defences.preprocessor.test_spatial_smoothing import image_batch, video_batch, tabular_batch
 
 logger = logging.getLogger(__name__)
 
@@ -33,13 +33,12 @@ logger = logging.getLogger(__name__)
 @pytest.mark.only_with_platform("pytorch")
 class TestLocalSpatialSmoothingPyTorch:
     """
-    Test SpatialSmoothingPyTorchPyTorch.
+    Test SpatialSmoothingPyTorch.
     """
 
     @pytest.mark.xfail(
-        reason="""a) SciPy's "reflect" padding mode is not supported in PyTorch.
-        The "reflect" model in PyTorch maps to the "mirror" mode in SciPy;
-    b) torch.median() takes the smaller value when the window size is even."""
+        reason="""a) SciPy's "reflect" padding mode is not supported in PyTorch. The "reflect" model in PyTorch maps
+        to the "mirror" mode in SciPy; b) torch.median() takes the smaller value when the window size is even."""
     )
     def test_spatial_smoothing_median_filter_call(self):
         test_input = np.array([[[[1, 2], [3, 4]]]])
@@ -64,8 +63,8 @@ class TestLocalSpatialSmoothingPyTorch:
             pytest.param(
                 10,
                 marks=pytest.mark.xfail(
-                    reason="Window size of 10 fails, because PyTorch \
-        requires that Padding size should be less than the corresponding input dimension."
+                    reason="Window size of 10 fails, because PyTorch requires that Padding size should be less than "
+                    "the corresponding input dimension."
                 ),
             ),
         ],

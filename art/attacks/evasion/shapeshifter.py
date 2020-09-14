@@ -28,10 +28,7 @@ import numpy as np
 import tensorflow as tf
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
-from art.estimators.tensorflow import TensorFlowEstimator
 from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
-from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
 if TYPE_CHECKING:
     from tensorflow.python.framework.ops import Tensor
@@ -79,14 +76,7 @@ class ShapeShifter(EvasionAttack):
         "soft_clip",
     ]
 
-    _estimator_requirements = (
-        BaseEstimator,
-        LossGradientsMixin,
-        NeuralNetworkMixin,
-        ObjectDetectorMixin,
-        TensorFlowEstimator,
-        TensorFlowFasterRCNN,
-    )
+    _estimator_requirements = (TensorFlowFasterRCNN,)
 
     def __init__(
         self,
@@ -154,7 +144,7 @@ class ShapeShifter(EvasionAttack):
         :param use_spectral: Whether to use spectral with textures.
         :param soft_clip: Whether to apply soft clipping on textures.
         """
-        super(ShapeShifter, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         # Set attack attributes
         self.random_transform = random_transform
@@ -513,7 +503,10 @@ class ShapeShifter(EvasionAttack):
             )
 
             # Create adversarial image
-            current_image = rendering_function(background_phd, image_frame_phd, current_texture)
+            if rendering_function is not None:
+                current_image = rendering_function(background_phd, image_frame_phd, current_texture)
+            else:
+                ValueError("Callable rendering_function is None.")
 
         else:
             # Create image variable
@@ -913,92 +906,92 @@ class ShapeShifter(EvasionAttack):
 
         if not isinstance(self.box_classifier_weight, float):
             raise ValueError("The weight of box classifier loss must be of type float.")
-        if not self.box_classifier_weight >= 0.0:
+        if self.box_classifier_weight < 0.0:
             raise ValueError("The weight of box classifier loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.box_localizer_weight, float):
             raise ValueError("The weight of box localizer loss must be of type float.")
-        if not self.box_localizer_weight >= 0.0:
+        if self.box_localizer_weight < 0.0:
             raise ValueError("The weight of box localizer loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.rpn_classifier_weight, float):
             raise ValueError("The weight of RPN classifier loss must be of type float.")
-        if not self.rpn_classifier_weight >= 0.0:
+        if self.rpn_classifier_weight < 0.0:
             raise ValueError("The weight of RPN classifier loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.rpn_localizer_weight, float):
             raise ValueError("The weight of RPN localizer loss must be of type float.")
-        if not self.rpn_localizer_weight >= 0.0:
+        if self.rpn_localizer_weight < 0.0:
             raise ValueError("The weight of RPN localizer loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.box_iou_threshold, float):
             raise ValueError("The box intersection over union threshold must be of type float.")
-        if not self.box_iou_threshold >= 0.0:
+        if self.box_iou_threshold < 0.0:
             raise ValueError("The box intersection over union threshold must be greater than or equal to 0.0.")
 
         if not isinstance(self.box_victim_weight, float):
             raise ValueError("The weight of box victim loss must be of type float.")
-        if not self.box_victim_weight >= 0.0:
+        if self.box_victim_weight < 0.0:
             raise ValueError("The weight of box victim loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.box_target_weight, float):
             raise ValueError("The weight of box target loss must be of type float.")
-        if not self.box_target_weight >= 0.0:
+        if self.box_target_weight < 0.0:
             raise ValueError("The weight of box target loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.box_victim_cw_weight, float):
             raise ValueError("The weight of box victim CW loss must be of type float.")
-        if not self.box_victim_cw_weight >= 0.0:
+        if self.box_victim_cw_weight < 0.0:
             raise ValueError("The weight of box victim CW loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.box_victim_cw_confidence, float):
             raise ValueError("The confidence of box victim CW loss must be of type float.")
-        if not self.box_victim_cw_confidence >= 0.0:
+        if self.box_victim_cw_confidence < 0.0:
             raise ValueError("The confidence of box victim CW loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.box_target_cw_weight, float):
             raise ValueError("The weight of box target CW loss must be of type float.")
-        if not self.box_target_cw_weight >= 0.0:
+        if self.box_target_cw_weight < 0.0:
             raise ValueError("The weight of box target CW loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.box_target_cw_confidence, float):
             raise ValueError("The confidence of box target CW loss must be of type float.")
-        if not self.box_target_cw_confidence >= 0.0:
+        if self.box_target_cw_confidence < 0.0:
             raise ValueError("The confidence of box target CW loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.rpn_iou_threshold, float):
             raise ValueError("The RPN intersection over union threshold must be of type float.")
-        if not self.rpn_iou_threshold >= 0.0:
+        if self.rpn_iou_threshold < 0.0:
             raise ValueError("The RPN intersection over union threshold must be greater than or equal to 0.0.")
 
         if not isinstance(self.rpn_background_weight, float):
             raise ValueError("The weight of RPN background loss must be of type float.")
-        if not self.rpn_background_weight >= 0.0:
+        if self.rpn_background_weight < 0.0:
             raise ValueError("The weight of RPN background loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.rpn_foreground_weight, float):
             raise ValueError("The weight of RPN foreground loss must be of type float.")
-        if not self.rpn_foreground_weight >= 0.0:
+        if self.rpn_foreground_weight < 0.0:
             raise ValueError("The weight of RPN foreground loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.rpn_cw_weight, float):
             raise ValueError("The weight of RPN CW loss must be of type float.")
-        if not self.rpn_cw_weight >= 0.0:
+        if self.rpn_cw_weight < 0.0:
             raise ValueError("The weight of RPN CW loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.rpn_cw_confidence, float):
             raise ValueError("The confidence of RPN CW loss must be of type float.")
-        if not self.rpn_cw_confidence >= 0.0:
+        if self.rpn_cw_confidence < 0.0:
             raise ValueError("The confidence of RPN CW loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.similarity_weight, float):
             raise ValueError("The weight of similarity loss must be of type float.")
-        if not self.similarity_weight >= 0.0:
+        if self.similarity_weight < 0.0:
             raise ValueError("The weight of similarity loss must be greater than or equal to 0.0.")
 
         if not isinstance(self.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate > 0.0:
+        if self.learning_rate <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if self.optimizer not in ["RMSPropOptimizer", "MomentumOptimizer", "GradientDescentOptimizer", "AdamOptimizer"]:
@@ -1010,15 +1003,15 @@ class ShapeShifter(EvasionAttack):
         if self.optimizer in ["RMSPropOptimizer", "MomentumOptimizer"]:
             if not isinstance(self.momentum, float):
                 raise ValueError("The momentum must be of type float.")
-            if not self.momentum > 0.0:
+            if self.momentum <= 0.0:
                 raise ValueError("The momentum must be greater than 0.0.")
 
         if self.optimizer == "RMSPropOptimizer":
             if not isinstance(self.decay, float):
                 raise ValueError("The learning rate decay must be of type float.")
-            if not self.decay > 0.0:
+            if self.decay <= 0.0:
                 raise ValueError("The learning rate decay must be greater than 0.0.")
-            if not self.decay < 1.0:
+            if self.decay >= 1.0:
                 raise ValueError("The learning rate decay must be smaller than 1.0.")
 
         if not isinstance(self.sign_gradients, bool):
@@ -1028,12 +1021,12 @@ class ShapeShifter(EvasionAttack):
 
         if not isinstance(self.random_size, int):
             raise ValueError("The random sample size must be of type int.")
-        if not self.random_size > 0:
+        if self.random_size <= 0:
             raise ValueError("The random sample size must be greater than 0.")
 
         if not isinstance(self.max_iter, int):
             raise ValueError("The maximum number of iterations must be of type int.")
-        if not self.max_iter > 0:
+        if self.max_iter <= 0:
             raise ValueError("The maximum number of iterations must be greater than 0.")
 
         if not isinstance(self.texture_as_input, bool):

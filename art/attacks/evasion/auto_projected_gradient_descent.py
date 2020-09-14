@@ -22,7 +22,7 @@ This module implements the `Auto Projected Gradient Descent` attack.
 """
 import logging
 import math
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm.auto import trange
@@ -33,10 +33,19 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, projection, random_sphere, is_probability, get_labels_np_array
 
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+
 logger = logging.getLogger(__name__)
 
 
 class AutoProjectedGradientDescent(EvasionAttack):
+    """
+    Implementation of the `Auto Projected Gradient Descent` attack.
+
+    | Paper link: https://arxiv.org/abs/2003.01690
+    """
+
     attack_params = EvasionAttack.attack_params + [
         "norm",
         "eps",
@@ -52,7 +61,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
     def __init__(
         self,
-        estimator: BaseEstimator,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
@@ -82,7 +91,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             if loss_type == "cross_entropy":
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                    raise NotImplementedError
+                    raise NotImplementedError("Cross-entropy loss is not implemented for probability output.")
                 else:
                     self._loss_object = tf.reduce_mean(
                         tf.keras.losses.categorical_crossentropy(
@@ -381,7 +390,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             x_init = x[sample_is_robust]
 
             n = x_robust.shape[0]
-            m = np.prod(x_robust.shape[1:])
+            m = np.prod(x_robust.shape[1:]).item()
             random_perturbation = (
                 random_sphere(n, m, self.eps, self.norm).reshape(x_robust.shape).astype(ART_NUMPY_DTYPE)
             )
@@ -533,7 +542,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
     def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError("The argument norm has to be either 1, 2, np.inf, or \"inf\".")
+            raise ValueError('The argument norm has to be either 1, 2, np.inf, or "inf".')
 
         if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
             raise ValueError("The argument eps has to be either of type int or float and larger than zero.")

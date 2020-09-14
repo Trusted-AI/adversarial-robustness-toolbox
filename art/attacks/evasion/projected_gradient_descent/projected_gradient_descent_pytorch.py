@@ -38,6 +38,8 @@ from art.utils import compute_success, random_sphere
 
 if TYPE_CHECKING:
     import torch
+    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +55,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator,
+        estimator: Union["PyTorchClassifier", "PyTorchFasterRCNN"],
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
@@ -67,7 +69,6 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         Create a :class:`.ProjectedGradientDescentPytorch` instance.
 
         :param estimator: An trained estimator.
-        :type estimator: :class:`.BaseEstimator`
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
@@ -314,7 +315,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         if random_init:
             n = x.shape[0]
-            m = np.prod(x.shape[1:])
+            m = np.prod(x.shape[1:]).item()
 
             random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             random_perturbation = torch.from_numpy(random_perturbation).to(self.estimator.device)

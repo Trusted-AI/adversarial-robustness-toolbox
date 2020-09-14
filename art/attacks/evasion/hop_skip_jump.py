@@ -36,7 +36,7 @@ from art.estimators.classification import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +63,7 @@ class HopSkipJump(EvasionAttack):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_TYPE",
         targeted: bool = False,
         norm: Union[int, float, str] = 2,
         max_iter: int = 50,
@@ -82,7 +82,7 @@ class HopSkipJump(EvasionAttack):
         :param init_eval: Initial number of evaluations for estimating gradient.
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         """
-        super(HopSkipJump, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self._targeted = targeted
         self.norm = norm
         self.max_iter = max_iter
@@ -545,7 +545,7 @@ class HopSkipJump(EvasionAttack):
     def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [2, np.inf, "inf"]:
-            raise ValueError('Norm order must be either 2, `np.inf` or \"inf\".')
+            raise ValueError('Norm order must be either 2, `np.inf` or "inf".')
 
         if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
             raise ValueError("The number of iterations must be a non-negative integer.")

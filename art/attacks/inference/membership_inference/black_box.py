@@ -18,62 +18,25 @@
 
 """
 This module implements membership inference attacks.
-
 """
 
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Any, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
 from art.attacks import InferenceAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierMixin, Classifier
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
 
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
+
 logger = logging.getLogger(__name__)
-
-
-class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
-    """
-        Implementation of a simple, rule-based black-box membership inference attack.
-
-        This implementation uses the simple rule: if the model's prediction for a sample is correct, then it is a
-        member. Otherwise, it is not a member.
-    """
-
-    _estimator_requirements = [BaseEstimator, ClassifierMixin]
-
-    def __init__(self, classifier: Classifier):
-        """
-        Create a MembershipInferenceBlackBoxRuleBased attack instance.
-
-        :param classifier: Target classifier.
-        """
-        super(MembershipInferenceBlackBoxRuleBased, self).__init__(estimator=classifier)
-
-    def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Infer membership in the training set of the target estimator.
-
-        :param x: Input records to attack.
-        :param y: True labels for `x`.
-        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
-        """
-        if self.estimator.input_shape[0] != x.shape[1]:
-            raise ValueError("Shape of x does not match input_shape of classifier")
-
-        y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
-        y = np.array([np.argmax(arr) for arr in y]).reshape(-1, 1)
-        if y.shape[0] != x.shape[0]:
-            raise ValueError("Number of rows in x and y do not match")
-
-        # get model's predictions for x
-        predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
-        return [1 if p == y[index] else 0 for index, p in enumerate(predictions)]
 
 
 class MembershipInferenceBlackBox(InferenceAttack):
@@ -89,14 +52,14 @@ class MembershipInferenceBlackBox(InferenceAttack):
         "attack_model_type",
         "attack_model",
     ]
-    _estimator_requirements = [BaseEstimator, ClassifierMixin]
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: Classifier,
-        input_type: Optional[str] = "prediction",
-        attack_model_type: Optional[str] = "nn",
-        attack_model: Optional[Classifier] = None,
+        classifier: Union["CLASSIFIER_TYPE"],
+        input_type: str = "prediction",
+        attack_model_type: str = "nn",
+        attack_model: Optional[Any] = None,
     ):
         """
         Create a MembershipInferenceBlackBox attack instance.
@@ -111,7 +74,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         """
 
-        super(MembershipInferenceBlackBox, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.input_type = input_type
         self.attack_model_type = attack_model_type
         self.attack_model = attack_model
@@ -120,7 +83,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
         if self.attack_model:
             self.default_model = False
-            self.attack_model_type = None
+            self.attack_model_type = "None"
         else:
             self.default_model = True
             if self.attack_model_type == "nn":
@@ -143,7 +106,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                         else:
                             self.num_features = num_classes
 
-                        super(MembershipInferenceAttackModel, self).__init__()
+                        super().__init__()
 
                         self.features = nn.Sequential(
                             nn.Linear(self.num_features, 512),
@@ -162,25 +125,25 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
                         self.output = nn.Sigmoid()
 
-                    def forward(self, x1, l):
-                        out_x1 = self.features(x1)
-                        out_l = self.labels(l)
+                    def forward(self, x_1, label):
+                        out_x1 = self.features(x_1)
+                        out_l = self.labels(label)
                         is_member = self.combine(torch.cat((out_x1, out_l), 1))
                         return self.output(is_member)
 
                 if self.input_type == "prediction":
                     self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes)
                 else:
-                    self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes, 1)
+                    self.attack_model = MembershipInferenceAttackModel(classifier.nb_classes, num_features=1)
                 self.epochs = 100
-                self.bs = 100
-                self.lr = 0.0001
+                self.batch_size = 100
+                self.learning_rate = 0.0001
             elif self.attack_model_type == "rf":
                 self.attack_model = RandomForestClassifier()
             elif self.attack_model_type == "gb":
                 self.attack_model = GradientBoostingClassifier()
 
-    def fit(self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs) -> np.ndarray:
+    def fit(self, x: np.ndarray, y: np.ndarray, test_x: np.ndarray, test_y: np.ndarray, **kwargs):
         """
         Infer membership in the training set of the target estimator.
 
@@ -226,8 +189,8 @@ class MembershipInferenceBlackBox(InferenceAttack):
         # non-members
         test_labels = np.zeros(test_x.shape[0])
 
-        x1 = np.concatenate((features, test_features))
-        x2 = np.concatenate((y, test_y))
+        x_1 = np.concatenate((features, test_features))
+        x_2 = np.concatenate((y, test_y))
         y_new = np.concatenate((labels, test_labels))
 
         if self.default_model and self.attack_model_type == "nn":
@@ -244,18 +207,18 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 return x
 
             loss_fn = nn.BCELoss()
-            optimizer = optim.Adam(self.attack_model.parameters(), lr=self.lr)
+            optimizer = optim.Adam(self.attack_model.parameters(), lr=self.learning_rate)
 
-            attack_train_set = self._get_attack_dataset(f1=x1, f2=x2, l=y_new)
-            train_loader = DataLoader(attack_train_set, batch_size=self.bs, shuffle=True, num_workers=0)
+            attack_train_set = self._get_attack_dataset(f_1=x_1, f_2=x_2, label=y_new)
+            train_loader = DataLoader(attack_train_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
 
             self.attack_model = to_cuda(self.attack_model)
             self.attack_model.train()
 
-            for epoch in range(self.epochs):
+            for _ in range(self.epochs):
                 for (input1, input2, targets) in train_loader:
                     input1, input2, targets = to_cuda(input1), to_cuda(input2), to_cuda(targets)
-                    inputs1, input2 = torch.autograd.Variable(input1), torch.autograd.Variable(input2)
+                    _, input2 = torch.autograd.Variable(input1), torch.autograd.Variable(input2)
                     targets = torch.autograd.Variable(targets)
 
                     optimizer.zero_grad()
@@ -269,9 +232,9 @@ class MembershipInferenceBlackBox(InferenceAttack):
                 y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=False)
             else:
                 y_ready = check_and_transform_label_format(y_new, len(np.unique(y_new)), return_one_hot=True)
-            self.attack_model.fit(np.c_[x1, x2], y_ready)
+            self.attack_model.fit(np.c_[x_1, x_2], y_ready)
 
-    def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Infer membership in the training set of the target estimator.
 
@@ -279,6 +242,9 @@ class MembershipInferenceBlackBox(InferenceAttack):
         :param y: True labels for `x`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
+        if y is None:
+            raise ValueError("MembershipInferenceBlackBox requires true labels `y`.")
+
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
 
@@ -298,9 +264,9 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
             self.attack_model.eval()
             inferred = None
-            test_set = self._get_attack_dataset(f1=features, f2=y)
-            test_loader = DataLoader(test_set, batch_size=self.bs, shuffle=True, num_workers=0)
-            for input1, input2, targets in test_loader:
+            test_set = self._get_attack_dataset(f_1=features, f_2=y)
+            test_loader = DataLoader(test_set, batch_size=self.batch_size, shuffle=True, num_workers=0)
+            for input1, input2, _ in test_loader:
                 outputs = self.attack_model(input1, input2)
                 predicted = torch.round(outputs)
                 if inferred is None:
@@ -311,38 +277,38 @@ class MembershipInferenceBlackBox(InferenceAttack):
             inferred = np.array([np.argmax(arr) for arr in self.attack_model.predict(np.c_[features, y])])
         return inferred
 
-    def _get_attack_dataset(self, f1, f2, l=None):
+    def _get_attack_dataset(self, f_1, f_2, label=None):
         from torch.utils.data.dataset import Dataset
 
         class AttackDataset(Dataset):
             """
                 Implementation of a pytorch dataset for membership inference attack.
 
-                The features are probabilities/logits or losses for the attack training data (`x1`) along with
-                its true labels (`x2`). The labels (`y`) are a boolean representing whether this is a member.
+                The features are probabilities/logits or losses for the attack training data (`x_1`) along with
+                its true labels (`x_2`). The labels (`y`) are a boolean representing whether this is a member.
             """
 
-            def __init__(self, x1, x2, y=None):
+            def __init__(self, x_1, x_2, y=None):
                 import torch  # lgtm [py/repeated-import]
 
-                self.x1 = torch.from_numpy(x1.astype(np.float64)).type(torch.FloatTensor)
-                self.x2 = torch.from_numpy(x2.astype(np.int32)).type(torch.FloatTensor)
+                self.x_1 = torch.from_numpy(x_1.astype(np.float64)).type(torch.FloatTensor)
+                self.x_2 = torch.from_numpy(x_2.astype(np.int32)).type(torch.FloatTensor)
 
                 if y is not None:
                     self.y = torch.from_numpy(y.astype(np.int8)).type(torch.FloatTensor)
                 else:
-                    self.y = torch.zeros(x1.shape[0])
+                    self.y = torch.zeros(x_1.shape[0])
 
             def __len__(self):
-                return len(self.x1)
+                return len(self.x_1)
 
             def __getitem__(self, idx):
-                if idx >= len(self.x1):
+                if idx >= len(self.x_1):
                     raise IndexError("Invalid Index")
 
-                return self.x1[idx], self.x2[idx], self.y[idx]
+                return self.x_1[idx], self.x_2[idx], self.y[idx]
 
-        return AttackDataset(x1=f1, x2=f2, y=l)
+        return AttackDataset(x_1=f_1, x_2=f_2, y=label)
 
     def _check_params(self) -> None:
         if self.input_type not in ["prediction", "loss"]:

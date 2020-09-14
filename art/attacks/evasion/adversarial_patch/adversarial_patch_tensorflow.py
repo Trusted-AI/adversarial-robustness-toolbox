@@ -32,15 +32,13 @@ from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import (
-    ClassifierMixin,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     import tensorflow as tf
+
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -66,7 +64,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Union[ClassifierNeuralNetwork, ClassifierGradients],
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
         scale_max: float = 1.0,
@@ -92,14 +90,17 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        super(AdversarialPatchTensorFlowV2, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.rotation_max = rotation_max
         self.scale_min = scale_min
         self.scale_max = scale_max
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
-        self.patch_shape = patch_shape
+        if patch_shape is None:
+            self.patch_shape = self.estimator.input_shape
+        else:
+            self.patch_shape = patch_shape
         self.image_shape = classifier.input_shape
         self._check_params()
 
@@ -116,9 +117,6 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         elif self.nb_dims == 4:
             self.i_h = 1
             self.i_w = 2
-
-        if self.patch_shape is None:
-            self.patch_shape = self.estimator.input_shape
 
         if self.patch_shape[0] != self.patch_shape[1]:
             raise ValueError("Patch height and width need to be the same.")
@@ -144,7 +142,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
         )
 
-    def _train_step(self, images: Optional[np.ndarray] = None, target: Optional[np.ndarray] = None) -> "tf.Tensor":
+    def _train_step(self, images: "tf.Tensor", target: Optional["tf.Tensor"] = None) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         if target is None:
@@ -211,7 +209,12 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         image_mask = tf.stack([image_mask] * nb_samples)
         return image_mask
 
-    def _random_overlay(self, images: np.ndarray, patch: np.ndarray, scale: Optional[float] = None) -> "tf.Tensor":
+    def _random_overlay(
+        self,
+        images: Union[np.ndarray, "tf.Tensor"],
+        patch: Union[np.ndarray, "tf.Variable"],
+        scale: Optional[float] = None,
+    ) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
@@ -271,7 +274,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         transform_vectors = list()
 
-        for i in range(nb_samples):
+        for _ in range(nb_samples):
             if scale is None:
                 im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
             else:
@@ -292,8 +295,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
             # Scale
             xform_matrix = rotation_matrix * (1.0 / im_scale)
-            a0, a1 = xform_matrix[0]
-            b0, b1 = xform_matrix[1]
+            a_0, a_1 = xform_matrix[0]
+            b_0, b_1 = xform_matrix[1]
 
             x_origin = float(self.image_shape[self.i_w]) / 2
             y_origin = float(self.image_shape[self.i_h]) / 2
@@ -303,10 +306,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             x_origin_delta = x_origin - x_origin_shifted
             y_origin_delta = y_origin - y_origin_shifted
 
-            a2 = x_origin_delta - (x_shift / (2 * im_scale))
-            b2 = y_origin_delta - (y_shift / (2 * im_scale))
+            a_2 = x_origin_delta - (x_shift / (2 * im_scale))
+            b_2 = y_origin_delta - (y_shift / (2 * im_scale))
 
-            transform_vectors.append(np.array([a0, a1, a2, b0, b1, b2, 0, 0]).astype(np.float32))
+            transform_vectors.append([a_0, a_1, a_2, b_0, b_1, b_2, 0, 0])
 
         image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR",)
         padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
@@ -318,7 +321,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             padded_patch = tf.stack([padded_patch] * images.shape[1], axis=1)
             padded_patch = tf.cast(padded_patch, images.dtype)
 
-        inverted_mask = 1 - image_mask
+        inverted_mask = tf.constant(1, dtype=image_mask.dtype) - image_mask
 
         return images * inverted_mask + padded_patch * image_mask
 
@@ -336,21 +339,21 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         shuffle = kwargs.get("shuffle", True)
         if shuffle:
-            ds = (
+            dataset = (
                 tf.data.Dataset.from_tensor_slices((x, y))
                 .shuffle(10000)
                 .batch(self.batch_size)
                 .repeat(math.ceil(x.shape[0] / self.batch_size))
             )
         else:
-            ds = (
+            dataset = (
                 tf.data.Dataset.from_tensor_slices((x, y))
                 .batch(self.batch_size)
                 .repeat(math.ceil(x.shape[0] / self.batch_size))
             )
 
         for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2"):
-            for images, target in ds:
+            for images, target in dataset:
                 _ = self._train_step(images=images, target=target)
 
         return (

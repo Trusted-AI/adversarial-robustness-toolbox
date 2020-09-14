@@ -22,15 +22,14 @@ import pytest
 
 import keras
 
-from art.attacks.inference import (
-    MembershipInferenceBlackBoxRuleBased,
-    MembershipInferenceBlackBox,
-)
+from art.attacks.inference.membership_inference.black_box import MembershipInferenceBlackBox
+from art.attacks.inference.membership_inference.black_box_rule_based import MembershipInferenceBlackBoxRuleBased
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from art.estimators.classification.classifier import ClassifierMixin
+
 
 logger = logging.getLogger(__name__)
 attack_train_ratio = 0.5

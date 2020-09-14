@@ -19,7 +19,6 @@ import logging
 import pytest
 
 import numpy as np
-import tensorflow as tf
 
 from art.attacks.evasion import ShadowAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin

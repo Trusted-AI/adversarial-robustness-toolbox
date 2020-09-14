@@ -19,7 +19,7 @@
 This module implements the abstract estimators `TensorFlowEstimator` and `TensorFlowV2Estimator` for TensorFlow models.
 """
 import logging
-from typing import TYPE_CHECKING, Any, Tuple
+from typing import Any, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -32,7 +32,7 @@ from art.estimators.estimator import (
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
-    from tensorflow.python.client.session import Session
+    import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +46,7 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         """
         Estimator class for TensorFlow models.
         """
+        self._sess: "tf.python.client.session.Session" = None
         super().__init__(**kwargs)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
@@ -74,13 +75,13 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
 
     @property
-    def sess(self) -> "Session":
+    def sess(self) -> "tf.python.client.session.Session":
         """
         Get current TensorFlow session.
 
         :return: The current TensorFlow session.
         """
-        if hasattr(self, "_sess"):
+        if self._sess is not None:
             return self._sess
         else:
             raise NotImplementedError("A valid TensorFlow session is not available.")
@@ -168,7 +169,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if (
             not hasattr(self, "preprocessing_defences")
@@ -227,7 +228,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         if (
             not hasattr(self, "preprocessing_defences")

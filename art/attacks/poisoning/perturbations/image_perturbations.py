@@ -18,9 +18,9 @@
 """
 Adversarial perturbations designed to work for images.
 """
-import numpy as np
 from typing import Optional, Tuple
 
+import numpy as np
 from PIL import Image
 
 
@@ -110,7 +110,8 @@ def insert_image(
     """
     if len(x.shape) == 3:
         return np.array([insert_image(single_img, backdoor_path, random, x_shift, y_shift, size) for single_img in x])
-    elif len(x.shape) != 2:
+
+    if len(x.shape) != 2:
         raise ValueError("Invalid array shape " + str(x.shape))
 
     backdoor = Image.open(backdoor_path)

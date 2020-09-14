@@ -38,7 +38,7 @@ from typing import (
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.config import ART_DATA_PATH
 from art.estimators.keras import KerasEstimator
 from art.estimators.classification.classifier import (
     ClassifierMixin,
@@ -47,9 +47,11 @@ from art.estimators.classification.classifier import (
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import keras
     import tensorflow as tf
 
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -71,10 +73,10 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         use_logits: bool = False,
         channel_index=Deprecated,
         channels_first: bool = False,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
         input_layer: int = 0,
         output_layer: int = 0,
     ) -> None:
@@ -111,7 +113,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(KerasClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -379,7 +381,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         return gradients
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Optional[Union[int, List[int]]] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -516,11 +518,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 logger.info("Unable to use data generator as Keras generator. Now treating as framework-independent.")
                 if "verbose" not in kwargs.keys():
                     kwargs["verbose"] = 0
-                super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+                super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
         else:
             if "verbose" not in kwargs.keys():
                 kwargs["verbose"] = 0
-            super(KerasClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
@@ -621,7 +623,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         outputs = self._custom_loss_func[name]
         return outputs(input_values)
 
-    def _init_class_gradients(self, label: Union[int, List[int], None] = None) -> None:
+    def _init_class_gradients(self, label: Optional[Union[int, List[int], np.ndarray]] = None) -> None:
         # pylint: disable=E0401
         if self.is_tensorflow:
             import tensorflow.keras.backend as k
@@ -696,8 +698,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                      the default data location of the library `ART_DATA_PATH`.
         """
         if path is None:
-            from art.config import ART_DATA_PATH
-
             full_path = os.path.join(ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)

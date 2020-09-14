@@ -45,7 +45,7 @@ from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x_train: Optional[np.ndarray],
         y_train: Optional[np.ndarray],
         generator: Optional[DataGenerator] = None,
@@ -83,7 +83,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param y_train: Labels used to train the classifier.
         :param generator: A data generator to be used instead of `x_train` and `y_train`.
         """
-        super(ActivationDefence, self).__init__(classifier, x_train, y_train)
+        super().__init__(classifier, x_train, y_train)
         self.nb_clusters = 2
         self.clustering_method = "KMeans"
         self.nb_dims = 10
@@ -133,7 +133,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
             # calculate is_clean_by_class for each batch
             for batch_idx in range(num_samples // batch_size):  # type: ignore
-                x_batch, y_batch = self.generator.get_batch()
+                _, y_batch = self.generator.get_batch()
                 is_clean_batch = is_clean[batch_idx * batch_size : batch_idx * batch_size + batch_size]
                 clean_by_class_batch = self._segment_by_class(is_clean_batch, y_batch)
                 self.is_clean_by_class = [
@@ -187,7 +187,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
             # loop though the generator to generator a report
             for _ in range(num_samples // batch_size):  # type: ignore
-                x_batch, y_batch = self.generator.get_batch()
+                _, y_batch = self.generator.get_batch()
                 indices_by_class = self._segment_by_class(np.arange(batch_size), y_batch)
                 is_clean_lst = [0] * batch_size
                 for class_idx, idxs in enumerate(indices_by_class):
@@ -320,14 +320,14 @@ class ActivationDefence(PoisonFilteringDefence):
 
     @staticmethod
     def relabel_poison_ground_truth(
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x: np.ndarray,
         y_fix: np.ndarray,
         test_set_split: float = 0.7,
         tolerable_backdoor: float = 0.01,
         max_epochs: int = 50,
         batch_epochs: int = 10,
-    ) -> Tuple[float, "Classifier"]:
+    ) -> Tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `test_set_split` determines
         the percentage in x that will be used as training set, while `1-test_set_split` determines how many data points
@@ -348,8 +348,6 @@ class ActivationDefence(PoisonFilteringDefence):
         n_train = int(len(x) * test_set_split)
         x_train, x_test = x[:n_train], x[n_train:]
         y_train, y_test = y_fix[:n_train], y_fix[n_train:]
-
-        import time
 
         filename = "original_classifier" + str(time.time()) + ".p"
         ActivationDefence._pickle_classifier(classifier, filename)
@@ -376,14 +374,14 @@ class ActivationDefence(PoisonFilteringDefence):
 
     @staticmethod
     def relabel_poison_cross_validation(
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x: np.ndarray,
         y_fix: np.ndarray,
         n_splits: int = 10,
         tolerable_backdoor: float = 0.01,
         max_epochs: int = 50,
         batch_epochs: int = 10,
-    ) -> Tuple[float, "Classifier"]:
+    ) -> Tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `n_splits` determines the
         number of cross validation splits.
@@ -434,7 +432,7 @@ class ActivationDefence(PoisonFilteringDefence):
         return curr_improvement, classifier
 
     @staticmethod
-    def _pickle_classifier(classifier: "Classifier", file_name: str) -> None:
+    def _pickle_classifier(classifier: "CLASSIFIER_NEURALNETWORK_TYPE", file_name: str) -> None:
         """
         Pickles the self.classifier and stores it using the provided file_name in folder `art.ART_DATA_PATH`.
 
@@ -450,7 +448,7 @@ class ActivationDefence(PoisonFilteringDefence):
             pickle.dump(classifier, f_classifier)
 
     @staticmethod
-    def _unpickle_classifier(file_name: str) -> "Classifier":
+    def _unpickle_classifier(file_name: str) -> "CLASSIFIER_NEURALNETWORK_TYPE":
         """
         Unpickles classifier using the filename provided. Function assumes that the pickle is in `art.ART_DATA_PATH`.
 
@@ -599,7 +597,9 @@ class ActivationDefence(PoisonFilteringDefence):
         return segment_by_class(data, features, n_classes)
 
 
-def measure_misclassification(classifier: "Classifier", x_test: np.ndarray, y_test: np.ndarray) -> float:
+def measure_misclassification(
+    classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_test: np.ndarray, y_test: np.ndarray
+) -> float:
     """
     Computes 1-accuracy given x_test and y_test
 
@@ -613,7 +613,7 @@ def measure_misclassification(classifier: "Classifier", x_test: np.ndarray, y_te
 
 
 def train_remove_backdoor(
-    classifier: "Classifier",
+    classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,

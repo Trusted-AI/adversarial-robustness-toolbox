@@ -62,7 +62,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         :param min_val: minimal value any feature can take.
         :param max_val: maximal value any feature can take.
         """
-        super(HighConfidenceLowUncertainty, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.conf = conf
         self.unc_increase = unc_increase
         self.min_val = min_val

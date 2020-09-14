@@ -33,11 +33,12 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import ClassifierNeuralNetwork
+    from art.utils import CLIP_VALUES_TYPE, CLASSIFIER_NEURALNETWORK_TYPE
+
 
 logger = logging.getLogger(__name__)
 
@@ -57,9 +58,9 @@ class PixelDefend(Preprocessor):
 
     def __init__(
         self,
-        clip_values: CLIP_VALUES_TYPE = (0.0, 1.0),
+        clip_values: "CLIP_VALUES_TYPE" = (0.0, 1.0),
         eps: int = 16,
-        pixel_cnn: Optional["ClassifierNeuralNetwork"] = None,
+        pixel_cnn: Optional["CLASSIFIER_NEURALNETWORK_TYPE"] = None,
         batch_size: int = 128,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -72,7 +73,7 @@ class PixelDefend(Preprocessor):
         :param eps: Defense parameter 0-255.
         :param pixel_cnn: Pre-trained PixelCNN model.
         """
-        super(PixelDefend, self).__init__()
+        super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
@@ -152,12 +153,15 @@ class PixelDefend(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        from art.estimators.classification.classifier import ClassifierMixin
 
         if not isinstance(self.eps, (int, np.int)) or self.eps < 0 or self.eps > 255:
             raise ValueError("The defense parameter must be between 0 and 255.")
 
-        if hasattr(self, "pixel_cnn") and not isinstance(self.pixel_cnn, ClassifierMixin):
+        from art.estimators.classification.classifier import ClassifierMixin
+        from art.estimators.estimator import NeuralNetworkMixin
+        if hasattr(self, "pixel_cnn") and not (
+            isinstance(self.pixel_cnn, ClassifierMixin) and isinstance(self.pixel_cnn, NeuralNetworkMixin)
+        ):
             raise TypeError("PixelCNN model must be of type Classifier.")
 
         if np.array(self.clip_values[0] >= self.clip_values[1]).any():

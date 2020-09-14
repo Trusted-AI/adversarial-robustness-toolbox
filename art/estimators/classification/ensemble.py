@@ -30,7 +30,7 @@ from art.estimators.estimator import NeuralNetworkMixin
 from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -88,7 +88,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(EnsembleClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,

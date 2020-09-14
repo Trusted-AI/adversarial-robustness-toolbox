@@ -21,7 +21,7 @@ This module implements the `AutoAttack` attack.
 | Paper link: https://arxiv.org/abs/2003.01690
 """
 import logging
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -31,13 +31,22 @@ from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGra
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, ClassifierGradients
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array, check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
 
 class AutoAttack(EvasionAttack):
+    """
+    Implementation of the `AutoAttack` attack.
+
+    | Paper link: https://arxiv.org/abs/2003.01690
+    """
+
     attack_params = EvasionAttack.attack_params + [
         "norm",
         "eps",
@@ -52,17 +61,17 @@ class AutoAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
+        estimator: "CLASSIFIER_TYPE",
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         attacks: Optional[List[EvasionAttack]] = None,
         batch_size: int = 32,
-        estimator_orig: Optional[BaseEstimator] = None,
+        estimator_orig: Optional["CLASSIFIER_TYPE"] = None,
         targeted: bool = False,
     ):
         """
-        Create a :class:`.ProjectedGradientDescent` instance.
+        Create a :class:`.AutoAttack` instance.
 
         :param estimator: An trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
@@ -77,14 +86,11 @@ class AutoAttack(EvasionAttack):
         """
         super().__init__(estimator=estimator)
 
-        if estimator_orig is None:
-            estimator_orig = estimator
-
         if attacks is None or not attacks:
             attacks = list()
             attacks.append(
                 AutoProjectedGradientDescent(
-                    estimator=estimator,
+                    estimator=estimator,  # type: ignore
                     norm=norm,
                     eps=eps,
                     eps_step=eps_step,
@@ -97,7 +103,7 @@ class AutoAttack(EvasionAttack):
             )
             attacks.append(
                 AutoProjectedGradientDescent(
-                    estimator=estimator,
+                    estimator=estimator,  # type: ignore
                     norm=norm,
                     eps=eps,
                     eps_step=eps_step,
@@ -109,7 +115,15 @@ class AutoAttack(EvasionAttack):
                 )
             )
             attacks.append(
-                DeepFool(classifier=estimator, max_iter=100, epsilon=1e-3, nb_grads=10, batch_size=batch_size)
+                (
+                    DeepFool(
+                        classifier=estimator,  # type: ignore
+                        max_iter=100,
+                        epsilon=1e-3,
+                        nb_grads=10,
+                        batch_size=batch_size,
+                    )
+                )
             )
             attacks.append(
                 SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5)
@@ -120,7 +134,11 @@ class AutoAttack(EvasionAttack):
         self.eps_step = eps_step
         self.attacks = attacks
         self.batch_size = batch_size
-        self.estimator_orig = estimator_orig
+        if estimator_orig is not None:
+            self.estimator_orig = estimator_orig
+        else:
+            self.estimator_orig = estimator
+
         self._targeted = targeted
         self._check_params()
 
@@ -160,11 +178,11 @@ class AutoAttack(EvasionAttack):
         # Targeted attacks
         if self.targeted:
             # Labels for targeted attacks
-            y_ = np.array([range(y.shape[1])] * y.shape[0])
+            y_t = np.array([range(y.shape[1])] * y.shape[0])
             y_idx = np.argmax(y, axis=1)
             y_idx = np.expand_dims(y_idx, 1)
-            y_ = y_[y_ != y_idx]
-            targeted_labels = np.reshape(y_, (y.shape[0], -1))
+            y_t = y_t[y_t != y_idx]
+            targeted_labels = np.reshape(y_t, (y.shape[0], -1))
 
             for attack in self.attacks:
 
@@ -229,7 +247,7 @@ class AutoAttack(EvasionAttack):
 
     def _check_params(self) -> None:
         if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError("The argument norm has to be either 1, 2, np.inf, \"inf\".")
+            raise ValueError('The argument norm has to be either 1, 2, np.inf, "inf".')
 
         if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
             raise ValueError("The argument eps has to be either of type int or float and larger than zero.")

@@ -24,17 +24,14 @@ Method attack and extends it to other norms, therefore it is called the Fast Gra
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classification.classifier import (
-    ClassifierGradients,
-    ClassifierMixin,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import (
     compute_success,
     get_labels_np_array,
@@ -42,6 +39,9 @@ from art.utils import (
     projection,
     check_and_transform_label_format,
 )
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,7 @@ class FastGradientMethod(EvasionAttack):
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
@@ -91,7 +91,7 @@ class FastGradientMethod(EvasionAttack):
         :param minimal: Indicates if computing the minimal perturbation (True). If True, also define `eps_step` for
                         the step size and eps for the maximum perturbation.
         """
-        super(FastGradientMethod, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
         self.norm = norm
         self.eps = eps
         self.eps_step = eps_step
@@ -251,7 +251,7 @@ class FastGradientMethod(EvasionAttack):
     def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
         if self.norm not in [1, 2, np.inf, "inf"]:
-            raise ValueError("Norm order must be either 1, 2, `np.inf` or \"inf\".")
+            raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
         if self.eps <= 0:
             raise ValueError("The perturbation size `eps` has to be positive.")
@@ -311,7 +311,7 @@ class FastGradientMethod(EvasionAttack):
         x: np.ndarray,
         x_init: np.ndarray,
         y: np.ndarray,
-        mask: np.ndarray,
+        mask: Optional[np.ndarray],
         eps: float,
         eps_step: float,
         project: bool,
@@ -319,7 +319,7 @@ class FastGradientMethod(EvasionAttack):
     ) -> np.ndarray:
         if random_init:
             n = x.shape[0]
-            m = np.prod(x.shape[1:])
+            m = np.prod(x.shape[1:]).item()
             random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             if mask is not None:
                 random_perturbation = random_perturbation * (mask.astype(ART_NUMPY_DTYPE))

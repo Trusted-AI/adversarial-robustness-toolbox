@@ -32,7 +32,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import CLIP_VALUES_TYPE
+from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:
@@ -52,7 +52,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         https://arxiv.org/abs/1902.06705
     """
 
-    import torch  # lgtm [py/repeated-import]
     from kornia.filters import MedianBlur
 
     class MedianBlurCustom(MedianBlur):
@@ -67,16 +66,16 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
             # Half-pad the input so that the output keeps the same shape.
             # * center pixel located lower right
-            half_pad = [k % 2 == 0 for k in kernel_size]
-            self.p2d = (
-                self.padding[-1] + half_pad[-1],
-                self.padding[-1],
-                self.padding[-2] + half_pad[-2],
-                self.padding[-2],
-            )
+            half_pad = [int(k % 2 == 0) for k in kernel_size]
+            self.p2d = [
+                int(self.padding[-1]) + half_pad[-1],
+                int(self.padding[-1]),
+                int(self.padding[-2]) + half_pad[-2],
+                int(self.padding[-2]),
+            ]
             # PyTorch requires Padding size should be less than the corresponding input dimension,
 
-        def forward(self, input: torch.Tensor):  # type: ignore
+        def forward(self, input: "torch.Tensor"):  # type: ignore
             import torch  # lgtm [py/repeated-import]
             import torch.nn.functional as F
 
@@ -85,11 +84,11 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             if not len(input.shape) == 4:
                 raise ValueError("Invalid input shape, we expect BxCxHxW. Got: {}".format(input.shape))
             # prepare kernel
-            b, c, h, w = input.shape
+            batch_size, channels, height, width = input.shape
             kernel: torch.Tensor = self.kernel.to(input.device).to(input.dtype)
             # map the local window to single vector
 
-            _input = input.reshape(b * c, 1, h, w)
+            _input = input.reshape(batch_size * channels, 1, height, width)
             if input.dtype == torch.int64:
                 # "reflection_pad2d" not implemented for 'Long'
                 # "reflect" in scipy.ndimage.median_filter has no equivalence in F.pad.
@@ -101,7 +100,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 _input = F.pad(_input, self.p2d, "reflect")
 
             features: torch.Tensor = F.conv2d(_input, kernel, stride=1)
-            features = features.view(b, c, -1, h, w)  # BxCx(K_h * K_w)xHxW
+            features = features.view(batch_size, channels, -1, height, width)  # BxCx(K_h * K_w)xHxW
 
             # compute the median along the feature axis
             # * torch.median(), if window size even, use smaller value (e.g. median(4,5)=4)
@@ -143,9 +142,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
-        if self.clip_values is not None:
-            self.clip_values = torch.tensor(self.clip_values, device=self._device)
-
     @property
     def apply_fit(self) -> bool:
         return self._apply_fit
@@ -154,7 +150,9 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def forward(self, x: torch.Tensor, y: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def forward(
+        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
+    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
         Apply local spatial smoothing to sample `x`.
         """
@@ -170,12 +168,12 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         elif x_ndim == 5:
             if self.channels_first:
                 # NCFHW --> NFCHW --> NCHW
-                nb_clips, c, clip_size, h, w = x.shape
-                x_nchw = x.permute(0, 2, 1, 3, 4).reshape(nb_clips * clip_size, c, h, w)
+                nb_clips, channels, clip_size, height, width = x.shape
+                x_nchw = x.permute(0, 2, 1, 3, 4).reshape(nb_clips * clip_size, channels, height, width)
             else:
                 # NFHWC --> NHWC --> NCHW
-                nb_clips, clip_size, h, w, c = x.shape
-                x_nchw = x.reshape(nb_clips * clip_size, h, w, c).permute(0, 3, 1, 2)
+                nb_clips, clip_size, height, width, channels = x.shape
+                x_nchw = x.reshape(nb_clips * clip_size, height, width, channels).permute(0, 3, 1, 2)
         else:
             raise ValueError(
                 "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data."
@@ -193,21 +191,19 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         elif x_ndim == 5:
             if self.channels_first:
                 # NCFHW <-- NFCHW <-- NCHW
-                x_nfchw = x_nchw.reshape(nb_clips, clip_size, c, h, w)
+                x_nfchw = x_nchw.reshape(nb_clips, clip_size, channels, height, width)
                 x = x_nfchw.permute(0, 2, 1, 3, 4)
             else:
                 # NFHWC <-- NHWC <-- NCHW
                 x_nhwc = x_nchw.permute(0, 2, 3, 1)
-                x = x_nhwc.reshape(nb_clips, clip_size, h, w, c)
+                x = x_nhwc.reshape(nb_clips, clip_size, height, width, channels)
 
         if self.clip_values is not None:
             x = x.clamp(min=self.clip_values[0], max=self.clip_values[1])
 
         return x, y
 
-    def estimate_forward(
-        self, x: torch.Tensor, y: Optional[torch.Tensor] = None
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    def estimate_forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
         """
         No need to estimate, since the forward pass is differentiable.
         """

@@ -36,16 +36,137 @@ import numpy as np
 from scipy.special import gammainc
 import six
 
-from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE, DATASET_TYPE
-
-if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE
-    from art.estimators.classification.classifier import Classifier
+from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
 
 logger = logging.getLogger(__name__)
 
 
-# ------------------------------------------------------------------------------------------------- DEPRECATION
+# ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
+
+
+DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
+PREPROCESSING_TYPE = Optional[Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]]
+
+if TYPE_CHECKING:
+    # pylint: disable=R0401
+    from art.estimators.classification.classifier import (
+        Classifier,
+        ClassifierLossGradients,
+        ClassifierClassLossGradients,
+        ClassifierNeuralNetwork,
+        ClassifierDecisionTree,
+    )
+    from art.estimators.classification.blackbox import BlackBoxClassifier
+    from art.estimators.classification.catboost import CatBoostARTClassifier
+    from art.estimators.classification.detector_classifier import DetectorClassifier
+    from art.estimators.classification.ensemble import EnsembleClassifier
+    from art.estimators.classification.GPy import GPyGaussianProcessClassifier
+    from art.estimators.classification.keras import KerasClassifier
+    from art.estimators.classification.lightgbm import LightGBMClassifier
+    from art.estimators.classification.mxnet import MXClassifier
+    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.classification.scikitlearn import (
+        ScikitlearnClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+    )
+    from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
+    from art.estimators.classification.xgboost import XGBoostClassifier
+
+    from art.estimators.object_detection.object_detector import ObjectDetector
+    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+    from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+
+    CLASSIFIER_TYPE = Union[
+        Classifier,
+        BlackBoxClassifier,
+        CatBoostARTClassifier,
+        DetectorClassifier,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        LightGBMClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+        XGBoostClassifier,
+    ]
+
+    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[
+        ClassifierLossGradients,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+    ]
+
+    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[
+        ClassifierClassLossGradients,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+    ]
+
+    CLASSIFIER_NEURALNETWORK_TYPE = Union[
+        ClassifierNeuralNetwork,
+        DetectorClassifier,
+        EnsembleClassifier,
+        KerasClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+    ]
+
+    CLASSIFIER_DECISION_TREE_TYPE = Union[
+        ClassifierDecisionTree,
+        LightGBMClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        XGBoostClassifier,
+    ]
+
+    OBJECT_DETECTOR_TYPE = Union[
+        ObjectDetector, PyTorchFasterRCNN, TensorFlowFasterRCNN,
+    ]
+
+
+# --------------------------------------------------------------------------------------------------------- DEPRECATION
 
 
 class _Deprecated:
@@ -186,8 +307,9 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -
     elif norm_p in [np.inf, "inf"]:
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
     else:
-        raise NotImplementedError("Values of `norm_p` different from 1, 2, `np.inf` and \"inf\" are currently not "
-                                  "supported.")
+        raise NotImplementedError(
+            'Values of `norm_p` different from 1, 2, `np.inf` and "inf" are currently not ' "supported."
+        )
 
     values = values_tmp.reshape(values.shape)
     return values
@@ -354,7 +476,7 @@ def random_targets(labels: np.ndarray, nb_classes: int) -> np.ndarray:
     return to_categorical(result, nb_classes)
 
 
-def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
+def least_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np.ndarray:
     """
     Compute the least likely class predictions for sample `x`. This strategy for choosing attack targets was used in
     (Kurakin et al., 2016).
@@ -368,7 +490,7 @@ def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
     return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
-def second_most_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
+def second_most_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np.ndarray:
     """
     Compute the second most likely class predictions for sample `x`. This strategy can be used for choosing target
     labels for an attack to improve its chances to succeed.
@@ -407,7 +529,7 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
 
 
 def compute_success_array(
-    classifier: "Classifier",
+    classifier: "CLASSIFIER_TYPE",
     x_clean: np.ndarray,
     labels: np.ndarray,
     x_adv: np.ndarray,
@@ -437,7 +559,7 @@ def compute_success_array(
 
 
 def compute_success(
-    classifier: "Classifier",
+    classifier: "CLASSIFIER_TYPE",
     x_clean: np.ndarray,
     labels: np.ndarray,
     x_adv: np.ndarray,
@@ -455,7 +577,6 @@ def compute_success(
            correct labels of the clean samples.
     :param batch_size: Batch size.
     :return: Percentage of successful adversarial samples.
-    :rtype: `float`
     """
     attack_success = compute_success_array(classifier, x_clean, labels, x_adv, targeted, batch_size)
     return np.sum(attack_success) / x_adv.shape[0]
@@ -542,8 +663,8 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
     y_test = np.reshape(y_test, (len(y_test), 1))
 
     # Set channels last
-    x_train = x_train.transpose(0, 2, 3, 1)
-    x_test = x_test.transpose(0, 2, 3, 1)
+    x_train = x_train.transpose((0, 2, 3, 1))
+    x_test = x_test.transpose((0, 2, 3, 1))
 
     min_, max_ = 0.0, 255.0
     if not raw:
@@ -608,8 +729,8 @@ def load_stl() -> DATASET_TYPE:
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
     # Set channel last
-    x_train = x_train.transpose(0, 2, 3, 1)
-    x_test = x_test.transpose(0, 2, 3, 1)
+    x_train = x_train.transpose((0, 2, 3, 1))
+    x_test = x_test.transpose((0, 2, 3, 1))
 
     with open(os.path.join(path, "train_y.bin"), "rb") as f_numpy:
         y_train = np.fromfile(f_numpy, dtype=np.uint8)
@@ -877,9 +998,9 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
 
                 urlretrieve(url, full_path)
             except HTTPError as exception:
-                raise Exception(error_msg.format(url, exception.code, exception.msg))  # type: ignore
+                raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
             except URLError as exception:
-                raise Exception(error_msg.format(url, exception.errno, exception.reason))
+                raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError
         except (Exception, KeyboardInterrupt):
             if os.path.exists(full_path):
                 os.remove(full_path)
@@ -970,8 +1091,8 @@ def segment_by_class(data: np.ndarray, classes: np.ndarray, num_classes: int) ->
 
 
 def performance_diff(
-    model1: "Classifier",
-    model2: "Classifier",
+    model1: "CLASSIFIER_TYPE",
+    model2: "CLASSIFIER_TYPE",
     test_data: np.ndarray,
     test_labels: np.ndarray,
     perf_function: Union[str, Callable] = "accuracy",

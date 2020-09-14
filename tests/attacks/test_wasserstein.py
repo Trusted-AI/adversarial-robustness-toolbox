@@ -23,15 +23,12 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.wasserstein import Wasserstein
-from art.estimators.estimator import BaseEstimator
-from art.estimators.estimator import LossGradientsMixin
-from art.estimators.estimator import NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import get_labels_np_array, random_targets
+from art.utils import get_labels_np_array
 
 from tests.utils import TestBase
-from tests.utils import master_seed
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_image_classifier_tf
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
@@ -427,9 +424,7 @@ class TestWasserstein(TestBase):
         # self.assertTrue(test_success_rate >= base_success_rate)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            Wasserstein, (BaseEstimator, LossGradientsMixin, NeuralNetworkMixin, ClassifierMixin)
-        )
+        backend_test_classifier_type_check_fail(Wasserstein, (BaseEstimator, LossGradientsMixin, ClassifierMixin))
 
     def test_unsquared_images(self):
         from art.estimators.estimator import (

@@ -165,10 +165,11 @@ class TestTensorFlowFasterRCNN(TestBase):
         groundtruth_classes_list = [result["detection_classes"][i] for i in range(2)]
         groundtruth_weights_list = [np.ones_like(r) for r in groundtruth_classes_list]
 
-        y = {}
-        y["groundtruth_boxes_list"] = groundtruth_boxes_list
-        y["groundtruth_classes_list"] = groundtruth_classes_list
-        y["groundtruth_weights_list"] = groundtruth_weights_list
+        y = {
+            "groundtruth_boxes_list": groundtruth_boxes_list,
+            "groundtruth_classes_list": groundtruth_classes_list,
+            "groundtruth_weights_list": groundtruth_weights_list,
+        }
 
         # Compute gradients
         grads = self.obj_dec.loss_gradient(self.x_test_mnist[:2], y)

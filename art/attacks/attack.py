@@ -22,14 +22,14 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import abc
 import logging
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.exceptions import EstimatorError
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -90,11 +90,15 @@ class Attack(abc.ABC, metaclass=input_filter):
     """
 
     attack_params: List[str] = list()
+    _estimator_requirements: Optional[Union[Tuple[Any, ...], Tuple[()]]] = None
 
     def __init__(self, estimator):
         """
         :param estimator: An estimator.
         """
+        if self.estimator_requirements is None:
+            raise ValueError("Estimator requirements have not been defined in `_estimator_requirements`.")
+
         if not all(t in type(estimator).__mro__ for t in self.estimator_requirements):
             raise EstimatorError(self.__class__, self.estimator_requirements, estimator)
 
@@ -129,8 +133,8 @@ class EvasionAttack(Attack):
     """
 
     def __init__(self, **kwargs) -> None:
-        self._targeted = None
-        super(EvasionAttack, self).__init__(**kwargs)
+        self._targeted = False
+        super().__init__(**kwargs)
 
     @abc.abstractmethod
     def generate(  # lgtm [py/inheritance/incorrect-overridden-signature]
@@ -148,7 +152,7 @@ class EvasionAttack(Attack):
         raise NotImplementedError
 
     @property
-    def targeted(self) -> Optional[bool]:
+    def targeted(self) -> bool:
         """
         Return Boolean if attack is targeted. Return None if not applicable.
         """
@@ -164,7 +168,7 @@ class PoisoningAttack(Attack):
     Abstract base class for poisoning attack classes
     """
 
-    def __init__(self, classifier: Optional["Classifier"]) -> None:
+    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"]) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
         """
@@ -189,10 +193,9 @@ class PoisoningAttackTransformer(PoisoningAttack):
     These attacks have an additional method, `poison_estimator`, that returns the poisoned classifier.
     """
 
-    def __init__(self, classifier: Optional["Classifier"], **kwargs) -> None:
+    def __init__(self, classifier: Optional["CLASSIFIER_TYPE"], **kwargs) -> None:
         """
         :param classifier: A trained classifier (or none if no classifier is needed)
-        :type classifier: `art.estimators.classification.Classifier` or `None`
         """
         super().__init__(classifier)
 
@@ -210,7 +213,7 @@ class PoisoningAttackTransformer(PoisoningAttack):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "Classifier":
+    def poison_estimator(self, x: np.ndarray, y: np.ndarray, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Returns a poisoned version of the classifier used to initialize the attack
         :param x: Training data
@@ -269,7 +272,7 @@ class ExtractionAttack(Attack):
     """
 
     @abc.abstractmethod
-    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "Classifier":
+    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Extract models and return them as an ART classifier. This method should be overridden by all concrete extraction
         attack implementations.
@@ -340,7 +343,7 @@ class AttributeInferenceAttack(InferenceAttack):
         Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
         """
         # Save attack-specific parameters
-        super(AttributeInferenceAttack, self).set_params(**kwargs)
+        super().set_params(**kwargs)
         self._check_params()
 
     def _check_params(self) -> None:

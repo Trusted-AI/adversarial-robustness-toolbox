@@ -27,10 +27,11 @@ from art.estimators.encoding.encoder import EncoderMixin
 from art.estimators.tensorflow import TensorFlowEstimator
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import numpy as np
     import tensorflow as tf
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
@@ -53,7 +54,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
-        feed_dict: Dict[Any, Any] = {},
+        feed_dict: Optional[Dict[Any, Any]] = None,
     ):
         """
         Initialization specific to encoder estimator implementation in TensorFlow.
@@ -92,7 +93,10 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         self._model = model
         self._encoding_length = self._model.shape[1]
         self._loss = loss
-        self._feed_dict = feed_dict
+        if feed_dict is None:
+            self._feed_dict = dict()
+        else:
+            self._feed_dict = feed_dict
 
         # Assign session
         if sess is None:
@@ -112,7 +116,10 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         :return: Array of encoding predictions of shape `(num_inputs, encoding_length)`.
         """
         logger.info("Encoding input")
-        y = self._sess.run(self._model, feed_dict={self._input_ph: x})
+        feed_dict = {self._input_ph: x}
+        if self._feed_dict is not None:
+            feed_dict.update(self._feed_dict)
+        y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 
     def fit(self, x: "np.ndarray", y: "np.ndarray", batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:

@@ -121,7 +121,7 @@ class KerasDataGenerator(DataGenerator):
         :param size: Total size of the dataset.
         :param batch_size: Size of the minibatches.
         """
-        super(KerasDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         self._iterator = iterator
 
     def get_batch(self) -> tuple:
@@ -153,7 +153,7 @@ class PyTorchDataGenerator(DataGenerator):
         """
         from torch.utils.data import DataLoader
 
-        super(PyTorchDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, DataLoader):
             raise TypeError("Expected instance of PyTorch `DataLoader, received %s instead.`" % str(type(iterator)))
 
@@ -191,7 +191,7 @@ class MXDataGenerator(DataGenerator):
         """
         import mxnet  # lgtm [py/repeated-import]
 
-        super(MXDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         if not isinstance(iterator, mxnet.gluon.data.DataLoader):
             raise TypeError("Expected instance of Gluon `DataLoader, received %s instead.`" % str(type(iterator)))
 
@@ -242,7 +242,7 @@ class TensorFlowDataGenerator(DataGenerator):
         # pylint: disable=E0401
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        super(TensorFlowDataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         self.sess = sess
         self._iterator = iterator
         self.iterator_type = iterator_type
@@ -311,7 +311,7 @@ class TensorFlowV2DataGenerator(DataGenerator):
         # pylint: disable=E0401
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        super(TensorFlowV2DataGenerator, self).__init__(size=size, batch_size=batch_size)
+        super().__init__(size=size, batch_size=batch_size)
         self._iterator = iterator
         self._iterator_iter = iter(iterator)
 

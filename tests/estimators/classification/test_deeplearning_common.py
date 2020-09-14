@@ -65,11 +65,11 @@ def test_fit(get_default_mnist_subset, default_batch_size, image_dl_estimator):
         classifier, sess = image_dl_estimator(one_classifier=True, from_logits=True)
         if classifier is not None:
             accuracy = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-            np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.06)
+            np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=2)
 
             classifier.fit(x_train_mnist, y_train_mnist, batch_size=default_batch_size, nb_epochs=2)
             accuracy_2 = np.sum(np.argmax(classifier.predict(x_test_mnist), axis=1) == labels) / x_test_mnist.shape[0]
-            np.testing.assert_array_almost_equal(accuracy_2, 0.73, decimal=0.06)
+            assert accuracy_2 == pytest.approx(0.73, abs=0.06)
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 
@@ -265,9 +265,7 @@ def test_fit_image_generator(
             prediction_class = np.argmax(predictions, axis=1)
             pre_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-            np.testing.assert_array_almost_equal(
-                pre_fit_accuracy, 0.32, decimal=0.06,
-            )
+            assert pre_fit_accuracy == pytest.approx(0.32, abs=0.01)
 
             data_gen = image_data_generator(sess=sess)
             classifier.fit_generator(generator=data_gen, nb_epochs=2)
@@ -275,9 +273,8 @@ def test_fit_image_generator(
             prediction_class = np.argmax(predictions, axis=1)
             post_fit_accuracy = np.sum(prediction_class == true_class) / x_test_mnist.shape[0]
 
-            np.testing.assert_array_almost_equal(
-                post_fit_accuracy, 0.68, decimal=0.06,
-            )
+            assert post_fit_accuracy == pytest.approx(0.75, abs=0.08)
+
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
 

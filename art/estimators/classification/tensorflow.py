@@ -30,17 +30,16 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, TYPE_CHECK
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierMixin,
-)
+from art.config import ART_DATA_PATH
+from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
 
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -65,11 +64,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         sess: Optional["tf.Session"] = None,
         channel_index=Deprecated,
         channels_first: bool = False,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
-        feed_dict: Dict[Any, Any] = {},
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        feed_dict: Optional[Dict[Any, Any]] = None,
     ) -> None:
         """
         Initialization specific to TensorFlow models implementation.
@@ -111,7 +110,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(TensorFlowClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -128,7 +127,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         self._train = train
         self._loss = loss
         self._learning = learning
-        self._feed_dict = feed_dict
+        if feed_dict is None:
+            self._feed_dict = dict()
+        else:
+            self._feed_dict = feed_dict
 
         # Assign session
         if sess is None:
@@ -258,7 +260,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
         else:
-            super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
@@ -675,10 +677,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         train_step: Optional[Callable] = None,
         channel_index=Deprecated,
         channels_first: bool = False,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Initialization specific to TensorFlow v2 models.
@@ -714,7 +716,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(TensorFlowV2Classifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -1032,7 +1034,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         raise NotImplementedError
 
     @property
-    def layer_names(self) -> List[str]:
+    def layer_names(self) -> Optional[List[str]]:
         """
         Return the hidden layers in the model, if applicable.
 
@@ -1045,14 +1047,14 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if isinstance(self._model, tf.keras.Model) or isinstance(self._model, tf.keras.model.Sequential):
+        if isinstance(self._model, (tf.keras.Model, tf.keras.models.Sequential)):
             return self._model.layers
-        else:
-            return None  # type: ignore
+
+        return None  # type: ignore
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
-    ) -> np.ndarray:
+    ) -> Optional[np.ndarray]:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -1068,6 +1070,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         if isinstance(self._model, tf.keras.models.Sequential):
             i_layer = None
+            if self.layer_names is None:
+                raise ValueError("No layer names identified.")
+
             if isinstance(layer, six.string_types):
                 if layer not in self.layer_names:
                     raise ValueError("Layer name %s is not part of the graph." % layer)
@@ -1102,8 +1107,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 activations[begin:end] = activation_model([x_preprocessed[begin:end]]).numpy()
 
             return activations
-        else:
-            return None
+
+        return None
 
     def set_learning_phase(self, train: bool) -> None:
         """

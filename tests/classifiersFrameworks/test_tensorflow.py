@@ -40,7 +40,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 def _test_preprocessing_defences_forward(
     get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
 ):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier_, _ = image_dl_estimator(one_classifier=True)
 
@@ -74,7 +74,7 @@ def _test_preprocessing_defences_forward(
 def _test_preprocessing_defences_backward(
     get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
 ):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier_, _ = image_dl_estimator(one_classifier=True)
 
@@ -185,7 +185,6 @@ def test_defences_chaining(get_default_mnist_subset, image_dl_estimator, is_tf_v
 @pytest.mark.only_with_platform("tensorflow")
 def test_fgsm_defences(fix_get_mnist_subset, image_dl_estimator, is_tf_version_2):
     if is_tf_version_2:
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
         clip_values = (0, 1)
         smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)

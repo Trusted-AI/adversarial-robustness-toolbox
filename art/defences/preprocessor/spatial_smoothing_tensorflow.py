@@ -33,7 +33,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 
 from art.utils import ART_NUMPY_DTYPE
-from art.config import CLIP_VALUES_TYPE
+from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
@@ -53,8 +53,6 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         https://arxiv.org/abs/1902.06705
     """
 
-    import tensorflow as tf  # lgtm [py/repeated-import]
-
     def __init__(
         self,
         window_size: int = 3,
@@ -68,8 +66,6 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
 
         :param **kwargs: Parameters from the parent.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
-
         super().__init__()
 
         self._apply_fit = apply_fit
@@ -79,9 +75,6 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         self.clip_values = clip_values
         self._check_params()
 
-        if self.clip_values is not None:
-            self.clip_values = tf.constant(value=self.clip_values)
-
     @property
     def apply_fit(self) -> bool:
         return self._apply_fit
@@ -90,10 +83,11 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
     def apply_predict(self) -> bool:
         return self._apply_predict
 
-    def forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
+    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
         Apply local spatial smoothing to sample `x`.
         """
+        import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
         x_ndim = x.ndim
@@ -102,8 +96,8 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
             x_nhwc = x
         elif x_ndim == 5:
             # NFHWC --> NHWC
-            nb_clips, clip_size, h, w, c = x.shape
-            x_nhwc = x.reshape(nb_clips * clip_size, h, w, c)
+            nb_clips, clip_size, height, width, channels = x.shape
+            x_nhwc = tf.reshape(x, (nb_clips * clip_size, height, width, channels))
         else:
             raise ValueError(
                 "Unrecognized input dimension. Spatial smoothing can only be applied to image (NHWC) and video (NFHWC) "
@@ -118,14 +112,14 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
             x = x_nhwc
         elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             # NFHWC <-- NHWC
-            x = x_nhwc.reshape(nb_clips, clip_size, h, w, c)
+            x = tf.reshape(x_nhwc, (nb_clips, clip_size, height, width, channels))
 
         if self.clip_values is not None:
             x = x.clip_by_value(min=self.clip_values[0], max=self.clip_values[1])
 
         return x, y
 
-    def estimate_forward(self, x: tf.Tensor, y: Optional[tf.Tensor] = None) -> Tuple[tf.Tensor, Optional[tf.Tensor]]:
+    def estimate_forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> "tf.Tensor":
         """
         No need to estimate, since the forward pass is differentiable.
         """

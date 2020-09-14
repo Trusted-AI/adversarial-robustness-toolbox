@@ -31,7 +31,7 @@ import numpy as np
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 
 if TYPE_CHECKING:
-    from art.config import PREPROCESSING_TYPE
+    from art.utils import PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -68,7 +68,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        super(DetectorClassifier, self).__init__(
+        super().__init__(
             clip_values=classifier.clip_values,
             preprocessing=preprocessing,
             channel_index=classifier.channel_index,

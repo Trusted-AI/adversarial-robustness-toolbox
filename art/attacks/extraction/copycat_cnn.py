@@ -23,16 +23,18 @@ This module implements the copycat cnn attack `CopycatCNN`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, Classifier
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import to_categorical
 
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +56,7 @@ class CopycatCNN(ExtractionAttack):
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: "CLASSIFIER_TYPE",
         batch_size_fit: int = 1,
         batch_size_query: int = 1,
         nb_epochs: int = 10,
@@ -69,7 +71,7 @@ class CopycatCNN(ExtractionAttack):
         :param nb_epochs: Number of epochs to use for training.
         :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
         """
-        super(CopycatCNN, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.batch_size_fit = batch_size_fit
         self.batch_size_query = batch_size_query
@@ -77,7 +79,7 @@ class CopycatCNN(ExtractionAttack):
         self.nb_stolen = nb_stolen
         self._check_params()
 
-    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Classifier:
+    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Extract a thieved classifier.
 
