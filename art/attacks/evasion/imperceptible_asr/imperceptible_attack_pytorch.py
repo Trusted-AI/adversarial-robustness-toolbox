@@ -265,75 +265,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         return
 
-    def _forward_1st_stage(
-        self,
-        original_input: np.ndarray,
-        original_output: np.ndarray,
-        local_batch_size: int,
-        local_max_length: int,
-        rescale: np.ndarray,
-        input_mask: np.ndarray
-    ) -> Tuple["torch.Tensor", "torch.Tensor", np.ndarray, "torch.Tensor"]:
-        """
-        The forward pass of the first stage of the attack.
-
-        :param original_input: Samples of shape (nb_samples, seq_length). Note that, sequences in the batch must have
-                               equal lengths. A possible example of `original_input` could be:
-                               `original_input = np.array([np.array([0.1, 0.2, 0.1]), np.array([0.3, 0.1, 0.0])])`.
-        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
-                                it may possess different lengths. A possible example of `original_output` could be:
-                                `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
-        :param local_batch_size: Current batch size.
-        :param local_max_length: Max length of the current batch.
-        :param rescale: Current rescale coefficients.
-        :param input_mask: Masks of true inputs.
-        :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input)
-                    - loss: The loss tensor of the first stage of the attack.
-                    - local_delta: The delta of the current batch.
-                    - decoded_output: Transcription output.
-                    - masked_adv_input: Perturbed inputs.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        from warpctc_pytorch import CTCLoss
-
-        # Compute perturbed inputs
-        local_delta = self.global_optimal_delta[ : local_batch_size, : local_max_length]
-        local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
-        adv_input = local_delta_rescale + original_input
-        masked_adv_input = adv_input * input_mask
-
-        # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
-            x=masked_adv_input, y=original_output, compute_gradient=False
-        )
-
-        # Compute real input sizes
-        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
-
-        # Call to DeepSpeech model for prediction
-        outputs, output_sizes = self.estimator.model(
-            inputs.to(self.estimator.device), input_sizes.to(self.estimator.device)
-        )
-        outputs_ = outputs.transpose(0, 1)
-        float_outputs = outputs_.float()
-
-        # Loss function
-        criterion = CTCLoss()
-        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.estimator.device)
-        loss = loss / inputs.size(0)
-
-        # Compute transcription
-        decoded_output, _ = self.estimator.decoder.decode(outputs, output_sizes)
-        decoded_output = [do[0] for do in decoded_output]
-        decoded_output = np.array(decoded_output)
-
-        # Rearrange to the original order
-        decoded_output_ = decoded_output.copy()
-        decoded_output[batch_idx] = decoded_output_
-
-        return loss, local_delta, decoded_output, masked_adv_input
-
     def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray):
         """
         The first stage of the attack.
@@ -415,6 +346,75 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
 
         return successful_adv_input
+
+    def _forward_1st_stage(
+        self,
+        original_input: np.ndarray,
+        original_output: np.ndarray,
+        local_batch_size: int,
+        local_max_length: int,
+        rescale: np.ndarray,
+        input_mask: np.ndarray
+    ) -> Tuple["torch.Tensor", "torch.Tensor", np.ndarray, "torch.Tensor"]:
+        """
+        The forward pass of the first stage of the attack.
+
+        :param original_input: Samples of shape (nb_samples, seq_length). Note that, sequences in the batch must have
+                               equal lengths. A possible example of `original_input` could be:
+                               `original_input = np.array([np.array([0.1, 0.2, 0.1]), np.array([0.3, 0.1, 0.0])])`.
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+                                it may possess different lengths. A possible example of `original_output` could be:
+                                `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param local_batch_size: Current batch size.
+        :param local_max_length: Max length of the current batch.
+        :param rescale: Current rescale coefficients.
+        :param input_mask: Masks of true inputs.
+        :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input)
+                    - loss: The loss tensor of the first stage of the attack.
+                    - local_delta: The delta of the current batch.
+                    - decoded_output: Transcription output.
+                    - masked_adv_input: Perturbed inputs.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        from warpctc_pytorch import CTCLoss
+
+        # Compute perturbed inputs
+        local_delta = self.global_optimal_delta[ : local_batch_size, : local_max_length]
+        local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
+        adv_input = local_delta_rescale + original_input
+        masked_adv_input = adv_input * input_mask
+
+        # Transform data into the model input space
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
+            x=masked_adv_input, y=original_output, compute_gradient=False
+        )
+
+        # Compute real input sizes
+        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
+
+        # Call to DeepSpeech model for prediction
+        outputs, output_sizes = self.estimator.model(
+            inputs.to(self.estimator.device), input_sizes.to(self.estimator.device)
+        )
+        outputs_ = outputs.transpose(0, 1)
+        float_outputs = outputs_.float()
+
+        # Loss function
+        criterion = CTCLoss()
+        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.estimator.device)
+        loss = loss / inputs.size(0)
+
+        # Compute transcription
+        decoded_output, _ = self.estimator.decoder.decode(outputs, output_sizes)
+        decoded_output = [do[0] for do in decoded_output]
+        decoded_output = np.array(decoded_output)
+
+        # Rearrange to the original order
+        decoded_output_ = decoded_output.copy()
+        decoded_output[batch_idx] = decoded_output_
+
+        return loss, local_delta, decoded_output, masked_adv_input
 
     def _attack_2nd_stage(self):
         return
