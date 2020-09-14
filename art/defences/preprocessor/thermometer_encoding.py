@@ -151,11 +151,9 @@ class ThermometerEncoding(Preprocessor):
             grad = np.transpose(grad, (0,) + tuple(range(2, len(x.shape))) + (1,))
 
         thermometer_grad = np.zeros(x.shape[:-1] + (x.shape[-1] * self.num_space,))
-        print("thermometer_grad.shape", thermometer_grad.shape)
         mask = np.array([x > k / self.num_space for k in range(self.num_space)])
         mask = np.moveaxis(mask, 0, -1)
         mask = mask.reshape(thermometer_grad.shape)
-        print("mask.shape", mask.shape)
         thermometer_grad[mask] = 1
 
         grad = grad * thermometer_grad
