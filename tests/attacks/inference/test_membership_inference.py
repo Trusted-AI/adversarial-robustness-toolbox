@@ -29,7 +29,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-
+from tests.utils import add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 attack_train_ratio = 0.5
@@ -38,156 +38,151 @@ num_classes_mnist = 10
 
 
 def test_rule_based_image(get_default_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(MembershipInferenceBlackBoxRuleBased)
-    if not classifier_list:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
+    try:
+        classifier_list = image_dl_estimator_for_attack(MembershipInferenceBlackBoxRuleBased)
+        if not classifier_list:
+            logging.warning("Couldn't perform this test because no classifier is defined")
+            return
 
-    for classifier in classifier_list:
-        attack = MembershipInferenceBlackBoxRuleBased(classifier)
-        backend_check_membership_accuracy_no_fit(attack, get_default_mnist_subset, 0.8)
+        for classifier in classifier_list:
+            attack = MembershipInferenceBlackBoxRuleBased(classifier)
+            backend_check_membership_accuracy_no_fit(attack, get_default_mnist_subset, 0.8)
+    except ARTTestException as e:
+        add_warning(e)
 
 
-def test_rule_based_tabular(get_iris_dataset, get_tabular_classifier_list):
-    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBoxRuleBased)
-    if not classifier_list:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
-
-    for classifier in classifier_list:
+def test_rule_based_tabular(get_iris_dataset, tabular_dl_estimator_for_attack):
+    try:
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBoxRuleBased)
         attack = MembershipInferenceBlackBoxRuleBased(classifier)
         backend_check_membership_accuracy_no_fit(attack, get_iris_dataset, 0.06)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_black_box_image(get_default_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(MembershipInferenceBlackBox)
-    if not classifier_list:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
-
-    for classifier in classifier_list:
+    try:
+        classifier = image_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier)
         backend_check_membership_accuracy(attack, get_default_mnist_subset, attack_train_ratio, 0.03)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
-def test_black_box_tabular(model_type, get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
-    if not classifier_list:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
-
-    for classifier in classifier_list:
+def test_black_box_tabular(model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier, attack_model_type=model_type)
         backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.08)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 @pytest.mark.parametrize("model_type", ["nn", "rf", "gb"])
-def test_black_box_loss_tabular(model_type, get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
-    if not classifier_list:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
-
-    for classifier in classifier_list:
+def test_black_box_loss_tabular(model_type, tabular_dl_estimator_for_attack, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         if type(classifier).__name__ == "PyTorchClassifier" or type(classifier).__name__ == "TensorFlowV2Classifier":
             attack = MembershipInferenceBlackBox(classifier, input_type="loss", attack_model_type=model_type)
             backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.15)
+    except ARTTestException as e:
+        add_warning(e)
 
 
-@pytest.mark.only_with_platform("keras")
+@pytest.mark.skipMlFramework("tensorflow", "pytorch", "scikitlearn", "mxnet", "kerastf")
 @pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
 def test_black_box_keras_loss(get_iris_dataset):
-    (x_train, y_train), (_, _) = get_iris_dataset
+    try:
+        (x_train, y_train), (_, _) = get_iris_dataset
 
-    # This test creates a framework-specific (keras) model because it needs to check both the case of a string-based
-    # loss and a class-based loss, and therefore cannot use the generic fixture get_tabular_classifier_list
-    model = keras.models.Sequential()
-    model.add(keras.layers.Dense(8, input_dim=4, activation="relu"))
-    model.add(keras.layers.Dense(3, activation="softmax"))
-    model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
-    model.fit(x_train, y_train, epochs=150, batch_size=10)
+        # This test creates a framework-specific (keras) model because it needs to check both the case of a string-based
+        # loss and a class-based loss, and therefore cannot use the generic fixture get_tabular_classifier_list
+        model = keras.models.Sequential()
+        model.add(keras.layers.Dense(8, input_dim=4, activation="relu"))
+        model.add(keras.layers.Dense(3, activation="softmax"))
+        model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accuracy"])
+        model.fit(x_train, y_train, epochs=150, batch_size=10)
 
-    classifier = KerasClassifier(model)
-    attack = MembershipInferenceBlackBox(classifier, input_type="loss")
-    backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.15)
+        classifier = KerasClassifier(model)
+        attack = MembershipInferenceBlackBox(classifier, input_type="loss")
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.15)
 
-    model2 = keras.models.Sequential()
-    model2.add(keras.layers.Dense(12, input_dim=4, activation="relu"))
-    model2.add(keras.layers.Dense(3, activation="softmax"))
-    model2.compile(loss=keras.losses.CategoricalCrossentropy(), optimizer="adam", metrics=["accuracy"])
-    model2.fit(x_train, y_train, epochs=150, batch_size=10)
+        model2 = keras.models.Sequential()
+        model2.add(keras.layers.Dense(12, input_dim=4, activation="relu"))
+        model2.add(keras.layers.Dense(3, activation="softmax"))
+        model2.compile(loss=keras.losses.CategoricalCrossentropy(), optimizer="adam", metrics=["accuracy"])
+        model2.fit(x_train, y_train, epochs=150, batch_size=10)
 
-    classifier = KerasClassifier(model2)
-    attack = MembershipInferenceBlackBox(classifier, input_type="loss")
-    backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.15)
+        classifier = KerasClassifier(model2)
+        attack = MembershipInferenceBlackBox(classifier, input_type="loss")
+        backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.15)
+    except ARTTestException as e:
+        add_warning(e)
 
 
-def test_black_box_tabular_rf(get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
-    if not classifier_list:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
-
-    for classifier in classifier_list:
+def test_black_box_tabular_rf(tabular_dl_estimator_for_attack, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier, attack_model_type="rf")
         backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.1)
+    except ARTTestException as e:
+        add_warning(e)
 
 
-def test_black_box_tabular_gb(get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
-    if not classifier_list:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
-
-    for classifier in classifier_list:
+def test_black_box_tabular_gb(tabular_dl_estimator_for_attack, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier, attack_model_type="gb")
         # train attack model using only attack_train_ratio of data
         backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.03)
+    except ARTTestException as e:
+        add_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch")
-def test_black_box_with_model(get_tabular_classifier_list, get_attack_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
-    if not classifier_list:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
+@pytest.mark.skipMlFramework("tensorflow", "keras", "scikitlearn", "mxnet", "kerastf")
+def test_black_box_with_model(tabular_dl_estimator_for_attack, get_attack_classifier_list, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
+        attack_model_list = get_attack_classifier_list(num_features=2 * num_classes_iris)
+        if not attack_model_list:
+            logging.warning("Couldn't perform this test because no attack model is defined")
+            return
 
-    attack_model_list = get_attack_classifier_list(num_features=2 * num_classes_iris)
-    if not attack_model_list:
-        logging.warning("Couldn't perform this test because no attack model is defined")
-        return
-
-    for classifier in classifier_list:
         for attack_model in attack_model_list:
             print(type(attack_model).__name__)
             attack = MembershipInferenceBlackBox(classifier, attack_model=attack_model)
             backend_check_membership_accuracy(attack, get_iris_dataset, attack_train_ratio, 0.03)
+    except ARTTestException as e:
+        add_warning(e)
 
 
-def test_errors(get_tabular_classifier_list, get_iris_dataset):
-    classifier_list = get_tabular_classifier_list(MembershipInferenceBlackBox)
-    if not classifier_list:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
-    (x_train, y_train), (x_test, y_test) = get_iris_dataset
+def test_errors(tabular_dl_estimator_for_attack, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBox)
+        (x_train, y_train), (x_test, y_test) = get_iris_dataset
 
-    with pytest.raises(ValueError):
-        MembershipInferenceBlackBox(classifier_list[0], attack_model_type="a")
-    with pytest.raises(ValueError):
-        MembershipInferenceBlackBox(classifier_list[0], input_type="a")
-    attack = MembershipInferenceBlackBox(classifier_list[0])
-    with pytest.raises(ValueError):
-        attack.fit(x_train, y_test, x_test, y_test)
-    with pytest.raises(ValueError):
-        attack.fit(x_train, y_train, x_test, y_train)
-    with pytest.raises(ValueError):
-        attack.infer(x_train, y_test)
+        with pytest.raises(ValueError):
+            MembershipInferenceBlackBox(classifier, attack_model_type="a")
+        with pytest.raises(ValueError):
+            MembershipInferenceBlackBox(classifier, input_type="a")
+        attack = MembershipInferenceBlackBox(classifier)
+        with pytest.raises(ValueError):
+            attack.fit(x_train, y_test, x_test, y_test)
+        with pytest.raises(ValueError):
+            attack.fit(x_train, y_train, x_test, y_train)
+        with pytest.raises(ValueError):
+            attack.infer(x_train, y_test)
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(MembershipInferenceBlackBoxRuleBased, [BaseEstimator, ClassifierMixin])
-    backend_test_classifier_type_check_fail(MembershipInferenceBlackBox, [BaseEstimator, ClassifierMixin])
+    try:
+        backend_test_classifier_type_check_fail(MembershipInferenceBlackBoxRuleBased, [BaseEstimator, ClassifierMixin])
+        backend_test_classifier_type_check_fail(MembershipInferenceBlackBox, [BaseEstimator, ClassifierMixin])
+    except ARTTestException as e:
+        add_warning(e)
 
 
 def backend_check_membership_accuracy_no_fit(attack, dataset, approx):
@@ -221,7 +216,3 @@ def backend_check_accuracy(inferred_train, inferred_test, approx):
     train_pos = sum(inferred_train) / len(inferred_train)
     test_pos = sum(inferred_test) / len(inferred_test)
     assert train_pos > test_pos or train_pos == pytest.approx(test_pos, abs=approx) or test_pos == 1
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
