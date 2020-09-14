@@ -6,10 +6,10 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
-pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
+pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --skip_travis=True --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
 
-pytest -q -s tests/attacks/evasion/test_shadow_attack.py --mlFramework="pytorch" --durations=0
+pytest -q -s tests/attacks/evasion/test_shadow_attack.py --mlFramework="pytorch" --skip_travis=True --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
 mlFrameworkList=("tensorflow" "scikitlearn")
@@ -33,13 +33,13 @@ done
 pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --skip_travis=True --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
 
-pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="tensorflow" --durations=0
+pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="tensorflow" --skip_travis=True --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_tensorflow.py tests"; fi
 
-pytest -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework="pytorch" --durations=0
+pytest -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework="pytorch" --skip_travis=True --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_pytorch.py tests"; fi
 
-pytest -q tests/classifiersFrameworks/test_tensorflow.py  --mlFramework="tensorflow" --durations=0
+pytest -q tests/classifiersFrameworks/test_tensorflow.py  --mlFramework="tensorflow" --skip_travis=True --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_tensorflow.py tests"; fi
 
 

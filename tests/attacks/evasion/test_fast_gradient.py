@@ -54,7 +54,7 @@ def test_classifier_defended_images(fix_get_mnist_subset, image_dl_estimator_for
 @pytest.mark.framework_agnostic
 def test_random_initialisation_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier= image_dl_estimator_for_attack(FastGradientMethod)
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
         attack = FastGradientMethod(classifier, num_random_init=3)
         backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
@@ -163,7 +163,3 @@ def test_classifier_type_check_fail():
         backend_test_classifier_type_check_fail(FastGradientMethod, [BaseEstimator, LossGradientsMixin])
     except ARTTestException as e:
         add_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

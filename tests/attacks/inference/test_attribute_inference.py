@@ -208,7 +208,3 @@ def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(
         AttributeInferenceWhiteBoxDecisionTree, (ScikitlearnDecisionTreeClassifier,)
     )
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=scikitlearn --durations=0".format(__file__).split(" "))

@@ -130,14 +130,15 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
 
 @pytest.fixture
 def estimator_for_attack(framework):
-    #TODO DO NOT USE THIS FIXTURE this needs to be refactored into image_dl_estimator_for_attack
+    # TODO DO NOT USE THIS FIXTURE this needs to be refactored into image_dl_estimator_for_attack
     def _get_attack_classifier_list(**kwargs):
         if framework == "pytorch":
             return get_attack_classifier_pt(**kwargs)
 
-        raise ARTTestFixtureNotImplemented("no estimator available", image_dl_estimator_for_attack.__name__,framework)
+        raise ARTTestFixtureNotImplemented("no estimator available", image_dl_estimator_for_attack.__name__, framework)
 
     return _get_attack_classifier_list
+
 
 @pytest.fixture(autouse=True)
 def setup_tear_down_framework(framework):
@@ -576,7 +577,7 @@ def framework(request):
     mlFramework = request.config.getoption("--mlFramework")
     if mlFramework not in art_supported_frameworks:
         raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
-                mlFramework, " ".join(art_supported_frameworks)))
+            mlFramework, " ".join(art_supported_frameworks)))
     # if utils_test.is_valid_framework(mlFramework):
     #     raise Exception("The mlFramework specified was incorrect. Valid options available
     #     are {0}".format(art_supported_frameworks))

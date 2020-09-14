@@ -114,7 +114,3 @@ def test_classifier_type_check_fail():
         backend_test_classifier_type_check_fail(FastGradientMethod, [LossGradientsMixin, BaseEstimator])
     except ARTTestException as e:
         add_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

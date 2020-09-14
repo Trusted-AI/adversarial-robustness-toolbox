@@ -74,7 +74,3 @@ def test_classifier_type_check_fail():
         )
     except ARTTestException as e:
         add_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
