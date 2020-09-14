@@ -23,7 +23,7 @@ This module implements the virtual adversarial attack. It was originally used fo
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union, TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange

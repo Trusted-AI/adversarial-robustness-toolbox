@@ -89,7 +89,7 @@ def SklearnClassifier(
     return ScikitlearnClassifier(model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing,)
 
 
-class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
+class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/missing-call-to-init]
     """
     Wrapper class for scikit-learn classifier models.
     """

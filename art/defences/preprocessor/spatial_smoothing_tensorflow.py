@@ -87,7 +87,7 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         """
         Apply local spatial smoothing to sample `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
 
         x_ndim = x.ndim
