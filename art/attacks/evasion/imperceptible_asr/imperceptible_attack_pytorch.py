@@ -248,8 +248,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             ).type(torch.FloatTensor)
 
             # Then compute the batch
-            adv_x[batch_index_1 : batch_index_2] = self._generate_batch(
-                adv_x[batch_index_1 : batch_index_2], y[batch_index_1 : batch_index_2]
+            adv_x[batch_index_1: batch_index_2] = self._generate_batch(
+                adv_x[batch_index_1: batch_index_2], y[batch_index_1: batch_index_2]
             )
 
         return adv_x
@@ -268,16 +268,30 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
+        # Compute original masking threshold and maximum psd
+        theta_batch = []
+        original_max_psd_batch = []
+
+        for i in range(len(x)):
+            theta, original_max_psd = self._compute_masking_threshold(x[i])
+            theta_batch.append(theta)
+            original_max_psd_batch.append(original_max_psd)
+
+        theta_batch = np.array(theta_batch)
+        original_max_psd_batch = np.array(original_max_psd_batch)
+
         # First stage of attack
-        successful_adv_input_1st_stage = self._attack_1st_stage(x, y)
+        successful_adv_input_1st_stage = self._attack_1st_stage(x=x, y=y)
 
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
         self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor)
-        self.global_optimal_delta.data[ : local_batch_shape[0], : local_batch_shape[1]] = successful_adv_input_1st_stage
+        self.global_optimal_delta.data[: local_batch_shape[0], : local_batch_shape[1]] = successful_adv_input_1st_stage
 
         # Second stage of attack
-        successful_adv_input_2nd_stage = self._attack_2nd_stage(x, y)
+        successful_adv_input_2nd_stage = self._attack_2nd_stage(
+            x=x, y=y, theta_batch=theta_batch, original_max_psd_batch=original_max_psd_batch
+        )
 
         results = successful_adv_input_2nd_stage.cpu().numpy()
 
@@ -434,7 +448,13 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         return loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale
 
-    def _attack_2nd_stage(self, x: np.ndarray, y: np.ndarray) -> "torch.Tensor":
+    def _attack_2nd_stage(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        theta_batch: np.ndarray,
+        original_max_psd_batch: np.ndarray
+    ) -> "torch.Tensor":
         """
         The second stage of the attack.
 
@@ -444,6 +464,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
                   class only supports targeted attack.
+        :param theta_batch: Original thresholds.
+        :param original_max_psd_batch: Original maximum psd.
         :return: An array holding the candidate adversarial examples.
         """
         # Compute local shape
@@ -481,7 +503,11 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             )
 
             # Call to forward pass of the first stage
-            loss_2nd_stage = self._forward_2nd_stage(local_delta_rescale=local_delta_rescale)
+            loss_2nd_stage = self._forward_2nd_stage(
+                local_delta_rescale=local_delta_rescale,
+                theta_batch=theta_batch,
+                original_max_psd_batch=original_max_psd_batch
+            )
 
             # Total loss
             loss = loss_1st_stage + alpha * loss_2nd_stage
@@ -529,29 +555,34 @@ class ImperceptibleAttackPytorch(EvasionAttack):
     def _forward_2nd_stage(
         self,
         local_delta_rescale: "torch.Tensor",
-        psd_max_ori: np.ndarray,
-        global_threshold: np.ndarray,
+        theta_batch: np.ndarray,
+        original_max_psd_batch: np.ndarray,
     ) -> "torch.Tensor":
         """
         The forward pass of the second stage of the attack.
 
-        :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input)
-                    - loss: The loss tensor of the first stage of the attack.
+        :param local_delta_rescale: Local delta after rescaled.
+        :param theta_batch: Original thresholds.
+        :param original_max_psd_batch: Original maximum psd.
+        :return: The loss tensor of the second stage of the attack.
         """
         import torch  # lgtm [py/repeated-import]
 
+        # Compute loss for masking threshold
+        losses = []
 
-        # compute the loss for masking threshold
-        self.loss_th_list = []
-        self.transform = Transform(FLAGS.window_size)
-        for i in range(self.batch_size):
-            logits_delta = self.transform((self.apply_delta[i, :]), (self.psd_max_ori)[i])
-            loss_th =  tf.reduce_mean(tf.nn.relu(logits_delta - (self.th)[i]))
-            loss_th = tf.expand_dims(loss_th, dim=0)
-            self.loss_th_list.append(loss_th)
-        self.loss_th = tf.concat(self.loss_th_list, axis=0)
+        for i in range(len(theta_batch)):
+            psd_transform_delta = self._psd_transform(
+                delta=local_delta_rescale[i, :], original_max_psd=original_max_psd_batch[i]
+            )
 
-        return loss
+            loss = torch.mean(torch.nn.ReLU(psd_transform_delta - theta_batch[i]))
+            loss = loss.expand(1, -1)
+            losses.append(loss)
+
+        losses = torch.cat(losses, dim=0)
+
+        return losses
 
     def _compute_masking_threshold(self, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -561,7 +592,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :return: A tuple of the masking threshold and the maximum psd.
         """
         import scipy
-
         import librosa
 
         # First compute the psd matrix
