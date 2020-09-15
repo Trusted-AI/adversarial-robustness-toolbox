@@ -42,7 +42,13 @@ from tests.utils import get_image_classifier_kr_tf_functional, get_image_classif
 from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt
 
 logger = logging.getLogger(__name__)
-art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn", "kerastf", "mxnet"]
+
+deep_learning_frameworks = ["keras", "tensorflow", "pytorch", "kerastf", "mxnet"]
+non_deep_learning_frameworks = ["scikitlearn"]
+
+art_supported_frameworks = []
+art_supported_frameworks.extend(deep_learning_frameworks)
+art_supported_frameworks.extend(non_deep_learning_frameworks)
 
 master_seed(1234)
 
@@ -699,7 +705,14 @@ def only_with_platform(request, framework):
 @pytest.fixture(autouse=True)
 def skip_by_platform(request, framework):
     if request.node.get_closest_marker("skipMlFramework"):
-        if framework in request.node.get_closest_marker("skipMlFramework").args:
+        framework_to_skip_list = list(request.node.get_closest_marker("skipMlFramework").args)
+        if "dl_frameworks" in framework_to_skip_list:
+            framework_to_skip_list.extend(deep_learning_frameworks)
+
+        if "non_dl_frameworks" in framework_to_skip_list:
+            framework_to_skip_list.extend(non_deep_learning_frameworks)
+
+        if framework in framework_to_skip_list:
             pytest.skip("skipped on this platform: {}".format(framework))
 
 

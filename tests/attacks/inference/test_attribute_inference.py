@@ -40,6 +40,7 @@ from tests.utils import add_warning, ARTTestException
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.skipMlFramework("dl_frameworks")
 def test_black_box(decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
@@ -89,6 +90,7 @@ def test_black_box(decision_tree_estimator, get_iris_dataset):
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("dl_frameworks")
 def test_black_box_with_model(decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
@@ -146,6 +148,7 @@ def test_black_box_with_model(decision_tree_estimator, get_iris_dataset):
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("dl_frameworks")
 def test_white_box(decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
@@ -173,6 +176,7 @@ def test_white_box(decision_tree_estimator, get_iris_dataset):
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("dl_frameworks")
 def test_white_box_lifestyle(decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
