@@ -32,11 +32,11 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:
     import torch
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         self,
         window_size: int = 3,
         channels_first: bool = False,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
         device_type: str = "gpu",
@@ -119,8 +119,13 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         """
         Create an instance of local spatial smoothing.
 
+        :window_size: Size of spatial smoothing window.
+        :param channels_first: Set channels first or last.
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :param apply_fit: True if applied during fitting/training.
+        :param apply_predict: True if applied during predicting.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
-        :param **kwargs: Parameters from the parent.
         """
         import torch  # lgtm [py/repeated-import]
 

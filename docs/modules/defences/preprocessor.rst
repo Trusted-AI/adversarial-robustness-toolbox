@@ -68,6 +68,18 @@ Spatial Smoothing
    :members:
    :special-members:
 
+Spatial Smoothing - PyTorch
+---------------------------
+.. autoclass:: SpatialSmoothingPyTorch
+   :members:
+   :special-members:
+
+Spatial Smoothing - TensorFlow v2
+---------------------------------
+.. autoclass:: SpatialSmoothingTensorFlowV2
+   :members:
+   :special-members:
+
 Thermometer Encoding
 --------------------
 .. autoclass:: ThermometerEncoding
