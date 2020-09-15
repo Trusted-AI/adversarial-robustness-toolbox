@@ -22,6 +22,7 @@ def is_keras_2_3():
     return False
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_layers(get_default_mnist_subset, framework, is_tf_version_2, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -41,6 +42,7 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, image_dl_e
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_loss_gradient_with_wildcard(image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(wildcard=True)
@@ -59,7 +61,7 @@ def test_loss_gradient_with_wildcard(image_dl_estimator):
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skipMlFramework("mxnet")
+@pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
 def test_fit(get_default_mnist_subset, default_batch_size, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -77,6 +79,7 @@ def test_fit(get_default_mnist_subset, default_batch_size, image_dl_estimator):
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_predict(
         request, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
 ):
@@ -95,6 +98,7 @@ def test_predict(
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_shapes(get_default_mnist_subset, image_dl_estimator):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -116,7 +120,7 @@ def test_shapes(get_default_mnist_subset, image_dl_estimator):
 
 
 # TODO skipping with kerastf because overall tests are taking too long to run - unskip once tests run under limit time
-@pytest.mark.skipMlFramework("kerastf")
+@pytest.mark.skipMlFramework("kerastf", "non_dl_frameworks")
 @pytest.mark.parametrize("from_logits", [True, False])
 @pytest.mark.parametrize(
     "loss_name",
@@ -164,6 +168,7 @@ def test_loss_functions(
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_pickle(image_dl_estimator, image_dl_estimator_defended, tmp_path):
     try:
         full_path = os.path.join(tmp_path, "my_classifier.p")
@@ -183,6 +188,7 @@ def test_pickle(image_dl_estimator, image_dl_estimator_defended, tmp_path):
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_functional_model(image_dl_estimator):
     try:
         # Need to update the functional_model code to produce a model with more than one input and output layers...
@@ -197,7 +203,7 @@ def test_functional_model(image_dl_estimator):
         add_warning(e)
 
 
-@pytest.mark.skipMlFramework("mxnet", "tensorflow", "pytorch")
+@pytest.mark.skipMlFramework("mxnet", "tensorflow", "pytorch", "non_dl_frameworks")
 def test_fit_kwargs(image_dl_estimator, get_default_mnist_subset, default_batch_size):
     try:
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
@@ -221,6 +227,7 @@ def test_fit_kwargs(image_dl_estimator, get_default_mnist_subset, default_batch_
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended, image_dl_estimator):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -252,7 +259,7 @@ def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended,
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
-@pytest.mark.skipMlFramework("mxnet")
+@pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
 def test_fit_image_generator(
         framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
 ):
@@ -282,6 +289,7 @@ def test_fit_image_generator(
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_loss_gradient(
         framework,
         is_tf_version_2,
@@ -326,6 +334,7 @@ def test_loss_gradient(
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_nb_classes(image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -334,6 +343,7 @@ def test_nb_classes(image_dl_estimator):
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_input_shape(image_dl_estimator, mnist_shape):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -342,6 +352,7 @@ def test_input_shape(image_dl_estimator, mnist_shape):
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_save(image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -364,6 +375,7 @@ def test_save(image_dl_estimator):
         add_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_repr(image_dl_estimator, framework, expected_values, store_expected_values):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -375,7 +387,7 @@ def test_repr(image_dl_estimator, framework, expected_values, store_expected_val
         add_warning(e)
 
 
-@pytest.mark.skipMlFramework("tensorflow")
+@pytest.mark.skipMlFramework("tensorflow", "non_dl_frameworks")
 def test_save(image_dl_estimator, get_default_mnist_subset, tmp_path):
     try:
         classifier, _ = image_dl_estimator()
@@ -391,7 +403,7 @@ def test_save(image_dl_estimator, get_default_mnist_subset, tmp_path):
         add_warning(e)
 
 
-@pytest.mark.skipMlFramework("mxnet")
+@pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
 def test_class_gradient(
         framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
 ):
@@ -486,7 +498,7 @@ def test_class_gradient(
         add_warning(e)
 
 
-@pytest.mark.skipMlFramework("tensorflow")
+@pytest.mark.skipMlFramework("tensorflow", "non_dl_frameworks")
 def test_learning_phase(image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator()
