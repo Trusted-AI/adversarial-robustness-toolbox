@@ -318,7 +318,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             self.optimizer_1st_stage.zero_grad()
 
             # Call to forward pass
-            loss, local_delta, decoded_output, masked_adv_input = self._partial_forward(
+            loss, local_delta, decoded_output, masked_adv_input = self._forward_1st_stage(
                 original_input=original_input,
                 original_output=y,
                 local_batch_size=local_batch_size,
@@ -434,8 +434,158 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         return loss, local_delta, decoded_output, masked_adv_input
 
-    def _attack_2nd_stage(self):
-        return
+    def _attack_2nd_stage(self, x: np.ndarray, y: np.ndarray) -> "torch.Tensor":
+        """
+        The second stage of the attack.
+
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
+                  class only supports targeted attack.
+        :return: An array holding the candidate adversarial examples.
+        """
+        # Compute local shape
+        local_batch_size = len(x)
+        local_max_length = np.max([x_.shape[0] for x_ in x])
+
+        # Initialize alpha and rescale
+        alpha = np.array([self.initial_alpha] * local_batch_size)
+        rescale = np.array([self.initial_rescale] * local_batch_size)
+
+        # Reformat input
+        input_mask = np.zeros([local_batch_size, local_max_length])
+        original_input = np.zeros([local_batch_size, local_max_length])
+
+        for local_batch_size_idx in range(local_batch_size):
+            input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
+            original_input[local_batch_size_idx, : len(x[local_batch_size_idx])] = x[local_batch_size_idx]
+
+        # Optimization loop
+        successful_adv_input = [None] * local_batch_size
+        best_loss_2nd_stage = [np.inf] * local_batch_size
+
+        for iter_2nd_stage_idx in range(self.max_iter_2nd_stage):
+            # Zero the parameter gradients
+            self.optimizer_2nd_stage.zero_grad()
+
+            # Call to forward pass of the first stage
+            loss_1st_stage, local_delta, decoded_output, masked_adv_input = self._forward_1st_stage(
+                original_input=original_input,
+                original_output=y,
+                local_batch_size=local_batch_size,
+                local_max_length=local_max_length,
+                rescale=rescale,
+                input_mask=input_mask
+            )
+
+            # Call to forward pass of the first stage
+            loss_2nd_stage = self._forward_2nd_stage()
+
+            # Total loss
+            loss = loss_1st_stage + alpha * loss_2nd_stage
+
+            # Actual training
+            if self._use_amp:
+                from apex import amp
+
+                with amp.scale_loss(loss, self.optimizer_2nd_stage) as scaled_loss:
+                    scaled_loss.backward()
+
+            else:
+                loss.backward()
+
+            # Do optimization
+            self.optimizer_2nd_stage.step()
+
+            # Save the best adversarial example and adjust the alpha coefficient
+            for local_batch_size_idx in range(local_batch_size):
+                if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
+                    if loss_2nd_stage[local_batch_size_idx] < best_loss_2nd_stage[local_batch_size_idx]:
+                        # Update best loss at 2nd stage
+                        best_loss_2nd_stage[local_batch_size_idx] = loss_2nd_stage[local_batch_size_idx]
+
+                        # Save the best adversarial example
+                        successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
+
+                    # Adjust to increase the alpha coefficient
+                    if iter_2nd_stage_idx % self.num_iter_increase_alpha == 0:
+                        alpha[local_batch_size_idx] *= self.increase_factor_alpha
+
+                # Adjust to decrease the alpha coefficient
+                elif iter_2nd_stage_idx % self.num_iter_decrease_alpha == 0:
+                    alpha[local_batch_size_idx] *= self.decrease_factor_alpha
+                    alpha[local_batch_size_idx] = max(alpha[local_batch_size_idx], 0.0005)
+
+            # If attack is unsuccessful
+            if iter_2nd_stage_idx == self.max_iter_2nd_stage - 1:
+                for local_batch_size_idx in range(local_batch_size):
+                    if successful_adv_input[local_batch_size_idx] is None:
+                        successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
+
+        return torch.tensor(successful_adv_input)
+
+
+
+    def _forward_2nd_stage(
+        self,
+        original_input: np.ndarray,
+        original_output: np.ndarray,
+        local_batch_size: int,
+        local_max_length: int,
+        rescale: np.ndarray,
+        input_mask: np.ndarray
+    ) -> Tuple["torch.Tensor", "torch.Tensor", np.ndarray, "torch.Tensor"]:
+        """
+        The forward pass of the second stage of the attack.
+
+        :param original_input: Samples of shape (nb_samples, seq_length). Note that, sequences in the batch must have
+                               equal lengths. A possible example of `original_input` could be:
+                               `original_input = np.array([np.array([0.1, 0.2, 0.1]), np.array([0.3, 0.1, 0.0])])`.
+        :param original_output: Target values of shape (nb_samples). Each sample in `original_output` is a string and
+                                it may possess different lengths. A possible example of `original_output` could be:
+                                `original_output = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param local_batch_size: Current batch size.
+        :param local_max_length: Max length of the current batch.
+        :param rescale: Current rescale coefficients.
+        :param input_mask: Masks of true inputs.
+        :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input)
+                    - loss: The loss tensor of the first stage of the attack.
+                    - local_delta: The delta of the current batch.
+                    - decoded_output: Transcription output.
+                    - masked_adv_input: Perturbed inputs.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        from warpctc_pytorch import CTCLoss
+
+        # Compute perturbed inputs
+        local_delta = self.global_optimal_delta[ : local_batch_size, : local_max_length]
+        local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
+        adv_input = local_delta_rescale + original_input
+        masked_adv_input = adv_input * input_mask
+
+        # Transform data into the model input space
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
+            x=masked_adv_input, y=original_output, compute_gradient=False
+        )
+
+        # Compute real input sizes
+        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
+
+        # Call to DeepSpeech model for prediction
+        outputs, output_sizes = self.estimator.model(
+            inputs.to(self.estimator.device), input_sizes.to(self.estimator.device)
+        )
+        outputs_ = outputs.transpose(0, 1)
+        float_outputs = outputs_.float()
+
+        # Loss function
+        criterion = CTCLoss()
+        loss = criterion(float_outputs, targets, output_sizes, target_sizes).to(self.estimator.device)
+        loss = loss / inputs.size(0)
+
 
     def _check_params(self) -> None:
         """
