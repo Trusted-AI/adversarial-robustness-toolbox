@@ -509,7 +509,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 self._optimizer.step()
 
     def _transform_model_input(
-        self, x: np.ndarray, y: Optional[np.ndarray] = None, compute_gradient: bool = False
+        self,
+        x: Optional[np.ndarray, "torch.Tensor"],
+        y: Optional[np.ndarray] = None,
+        compute_gradient: bool = False,
+        tensor_input: bool = False,
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
         """
         Transform the user input space into the model input space.
@@ -520,6 +524,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
+        :param tensor_input: Indicate whether input is tensor.
         :return: A tuple of inputs and targets in the model space with the original index
                  `(inputs, targets, input_percentages, target_sizes, batch_idx)`, where:
                     - inputs: model inputs of shape (nb_samples, nb_frequencies, seq_length).
@@ -573,8 +578,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 target = list(filter(None, [label_map.get(letter) for letter in list(y[i])]))
 
             # Push the sequence to device
-            x[i] = x[i].astype(ART_NUMPY_DTYPE)
-            x[i] = torch.tensor(x[i]).to(self._device)
+            if not tensor_input:
+                x[i] = x[i].astype(ART_NUMPY_DTYPE)
+                x[i] = torch.tensor(x[i]).to(self._device)
 
             # Set gradient computation permission
             if compute_gradient:

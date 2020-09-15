@@ -25,11 +25,10 @@ specifically for Pytorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
 from art.estimators.pytorch import PyTorchEstimator
@@ -412,14 +411,14 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         from warpctc_pytorch import CTCLoss
 
         # Compute perturbed inputs
-        local_delta = self.global_optimal_delta[ : local_batch_size, : local_max_length]
+        local_delta = self.global_optimal_delta[: local_batch_size, : local_max_length]
         local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps) * rescale
         adv_input = local_delta_rescale + original_input
         masked_adv_input = adv_input * input_mask
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
-            x=masked_adv_input, y=original_output, compute_gradient=False
+            x=masked_adv_input, y=original_output, compute_gradient=False, tensor_input=True
         )
 
         # Compute real input sizes
