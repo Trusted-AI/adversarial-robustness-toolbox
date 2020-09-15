@@ -229,43 +229,61 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
 
-
         # Start to compute adversarial examples
-        # adv_x_best = None
-        # rate_best = None
-        #
-        #     # Compute perturbation with batching
-        #     for (batch_id, batch_all) in enumerate(data_loader):
-        #         if mask is not None:
-        #             (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
-        #         else:
-        #             (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
-        #
-        #         batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-        #         adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
+        adv_x = x.copy()
 
+        # Compute perturbation with batching
+        num_batch = int(np.ceil(len(x) / float(self.batch_size)))
 
-        return
+        for m in range(num_batch):
+            # Batch indexes
+            batch_index_1, batch_index_2 = (
+                m * self.batch_size,
+                min((m + 1) * self.batch_size, len(x)),
+            )
 
-    def _generate_batch(self, x: "torch.Tensor", targets: "torch.Tensor", mask: "torch.Tensor") -> np.ndarray:
+            # First reset delta
+            self.global_optimal_delta.data = torch.zeros(
+                self.batch_size, self.global_max_length
+            ).type(torch.FloatTensor)
+
+            # Then compute the batch
+            adv_x[batch_index_1 : batch_index_2] = self._generate_batch(
+                adv_x[batch_index_1 : batch_index_2], y[batch_index_1 : batch_index_2]
+            )
+
+        return adv_x
+
+    def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in an array.
 
-        :param x: An array with the original inputs.
-        :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :return: Adversarial examples.
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
+                  class only supports targeted attack.
+        :return: A batch of adversarial examples.
         """
-        import torch
-        from torch.autograd import Variable
+        import torch  # lgtm [py/repeated-import]
 
+        # First stage of attack
+        successful_adv_input_1st_stage = self._attack_1st_stage(x, y)
 
+        # Reset delta with new result
+        local_batch_shape = successful_adv_input_1st_stage.shape
+        self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor)
+        self.global_optimal_delta.data[ : local_batch_shape[0], : local_batch_shape[1]] = successful_adv_input_1st_stage
 
-        return
+        # Second stage of attack
+        successful_adv_input_2nd_stage = self._attack_2nd_stage(x, y)
 
-    def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray):
+        results = successful_adv_input_2nd_stage.cpu().numpy()
+
+        return results
+
+    def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray) -> "torch.Tensor":
         """
         The first stage of the attack.
 
@@ -345,7 +363,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
 
-        return successful_adv_input
+        return torch.tensor(successful_adv_input)
 
     def _forward_1st_stage(
         self,
