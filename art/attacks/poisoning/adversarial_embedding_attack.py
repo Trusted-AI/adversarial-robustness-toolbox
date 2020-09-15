@@ -250,6 +250,7 @@ class PoisoningAttackAdversarialEmbedding(PoisoningAttackTransformer):
     def get_training_data(self) -> Optional[Tuple[np.ndarray, np.ndarray, np.ndarray]]:
         """
         Returns the training data generated from the last call to fit
+
         :return: If fit has been called, return the last data, labels, and backdoor labels used to train model
                  otherwise return None
         """

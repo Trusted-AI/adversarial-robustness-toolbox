@@ -39,7 +39,7 @@ import numpy as np
 # In the meantime, the modified implementation is used which is defined in the
 # lines `453-1457`.
 
-from scipy._lib.six import xrange, string_types
+from six import string_types
 from scipy._lib._util import check_random_state
 from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
@@ -1129,7 +1129,7 @@ class DifferentialEvolutionSolver:
             self._calculate_population_energies()
 
         # do the optimisation.
-        for nit in xrange(1, self.maxiter + 1):
+        for nit in range(1, self.maxiter + 1):
             # evolve the population by a generation
             try:
                 next(self)
