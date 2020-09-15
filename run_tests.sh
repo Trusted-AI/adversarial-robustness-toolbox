@@ -6,41 +6,41 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
-pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --skip_travis=True --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
-
-pytest -q -s tests/attacks/evasion/test_shadow_attack.py --mlFramework="pytorch" --skip_travis=True --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
-
-mlFrameworkList=("tensorflow" "scikitlearn")
-for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
-done
-
-mlFrameworkList=("tensorflow")
-for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
-
-  pytest -q tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
-
-  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --skip_travis=True --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
-done
-
-pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --skip_travis=True --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
-
-pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="tensorflow" --skip_travis=True --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_tensorflow.py tests"; fi
-
-pytest -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework="pytorch" --skip_travis=True --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_pytorch.py tests"; fi
-
-pytest -q tests/classifiersFrameworks/test_tensorflow.py  --mlFramework="tensorflow" --skip_travis=True --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_tensorflow.py tests"; fi
+#pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --skip_travis=True --durations=0
+#if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
+#
+#pytest -q -s tests/attacks/evasion/test_shadow_attack.py --mlFramework="pytorch" --skip_travis=True --durations=0
+#if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
+#
+#mlFrameworkList=("tensorflow" "scikitlearn")
+#for mlFramework in "${mlFrameworkList[@]}"; do
+#  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
+#  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
+#done
+#
+#mlFrameworkList=("tensorflow")
+#for mlFramework in "${mlFrameworkList[@]}"; do
+#  pytest -q tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
+#  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
+#
+#  pytest -q tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
+#  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
+#
+#  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --skip_travis=True --durations=0
+#  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
+#done
+#
+#pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --skip_travis=True --durations=0
+#if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
+#
+#pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="tensorflow" --skip_travis=True --durations=0
+#if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_tensorflow.py tests"; fi
+#
+#pytest -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework="pytorch" --skip_travis=True --durations=0
+#if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_pytorch.py tests"; fi
+#
+#pytest -q tests/classifiersFrameworks/test_tensorflow.py  --mlFramework="tensorflow" --skip_travis=True --durations=0
+#if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_tensorflow.py tests"; fi
 
 
 #NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
