@@ -23,7 +23,7 @@ This module implements the adversarial patch attack `DPatch` for object detector
 import logging
 import math
 import random
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -81,12 +81,21 @@ class DPatch(EvasionAttack):
         self._patch = np.ones(shape=patch_shape) * (self.estimator.clip_values[1] + self.estimator.clip_values[0]) / 2.0
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+        self.target_label = []
+
+    def generate(
+        self,
+        x: np.ndarray,
+        y: Optional[np.ndarray] = None,
+        target_label: Union[int, List[int], np.ndarray] = 0,
+        **kwargs
+    ) -> np.ndarray:
         """
         Generate DPatch.
 
         :param x: Sample images.
         :param y: Target labels for object detector.
+        :param target_label: The target label of the DPatch attack.
         :return: Adversarial patch.
         """
         channel_index = 1 if self.estimator.channels_first else x.ndim - 1
@@ -96,6 +105,16 @@ class DPatch(EvasionAttack):
             raise ValueError("The DPatch attack does not use target labels.")
         if x.ndim != 4:
             raise ValueError("The adversarial patch can only be applied to images.")
+        if isinstance(target_label, int):
+            self.target_label = [target_label] * x.shape[0]
+        elif isinstance(target_label, np.ndarray):
+            if not (target_label.shape == (x.shape[0], 1) or target_label.shape == (x.shape[0],)):
+                raise ValueError("The target_label has to be a 1-dimensional array.")
+            self.target_label = target_label.tolist()
+        else:
+            if not len(target_label == x.shape[0]) or not isinstance(target_label, list):
+                raise ValueError("The target_label as list of integers needs to of length number of images in `x`.")
+            self.target_label = target_label
 
         for i_step in trange(self.max_iter, desc="DPatch iteration"):
             if i_step == 0 or (i_step + 1) % 100 == 0:
@@ -115,7 +134,7 @@ class DPatch(EvasionAttack):
 
                 target_dict = dict()
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                target_dict["labels"] = np.asarray([1,])
+                target_dict["labels"] = np.asarray([target_label[i_image],])
                 target_dict["scores"] = np.asarray([1.0,])
 
                 patch_target.append(target_dict)
