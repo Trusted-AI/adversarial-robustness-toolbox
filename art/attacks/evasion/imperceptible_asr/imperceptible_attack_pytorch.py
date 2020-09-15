@@ -560,8 +560,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :param x: Samples of shape (seq_length,).
         :return: A tuple of the masking threshold and the maximum psd.
         """
-        from scipy.fftpack import fft
-        from scipy.fftpack import ifft
         import scipy
 
         import librosa
@@ -654,20 +652,25 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                         break
 
             # Compute the global masking threshold
-            delta_TM = 1 * (-6.025 - 0.275 * bark_psd[:, 0])
-            Ts = two_slops(bark_psd, delta_TM, barks)
-            Ts = np.array(Ts)
+            delta = 1 * (-6.025 - 0.275 * barks_psd[:, 0])
 
+            t_s = []
 
-            theta_x = np.sum(pow(10, Ts / 10.), axis=0) + pow(10, ATH / 10.)
+            for m in range(barks_psd.shape[0]):
+                d_z = barks - barks_psd[m, 0]
+                zero_idx = np.argmax(d_z > 0)
+                s_f = np.zeros(len(d_z))
+                s_f[: zero_idx] = 27 * d_z[: zero_idx]
+                s_f[zero_idx:] = (-27 + 0.37 * max(barks_psd[m, 1] - 40, 0)) * d_z[zero_idx:]
+                t_s.append(barks_psd[m, 1] + delta[m] + s_f)
 
+            t_s = np.array(t_s)
 
-            theta_xs.append(compute_th(PSD[:,i], barks, ATH, freqs))
-        theta_xs = np.array(theta_xs)
+            theta.append(np.sum(pow(10, t_s / 10.), axis=0) + pow(10, ath / 10.))
+
+        theta = np.array(theta)
 
         return theta, original_max_psd
-
-
 
     def _psd_transform(
         self,
