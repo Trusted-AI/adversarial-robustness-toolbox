@@ -553,6 +553,57 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         return loss
 
+    def _psd_transform(
+        self,
+        delta: "torch.Tensor",
+        original_max_psd: "torch.Tensor"
+    ) -> "torch.Tensor":
+        """
+        Compute the psd matrix of the perturbation.
+
+        :param delta: The perturbation.
+        :param original_max_psd: The maximum psd of the original audio.
+        :return: The psd matrix.
+        """
+        import torchaudio
+
+        # These parameters are needed for the transformation
+        sample_rate = self.estimator.model.audio_conf.sample_rate
+        window_size = self.estimator.model.audio_conf.window_size
+        window_stride = self.estimator.model.audio_conf.window_stride
+
+        n_fft = int(sample_rate * window_size)
+        hop_length = int(sample_rate * window_stride)
+        win_length = n_fft
+
+        window = self.estimator.model.audio_conf.window.value
+        if window == "hamming":
+            window_fn = torch.hamming_window
+        elif window == "hann":
+            window_fn = torch.hann_window
+        elif window == "blackman":
+            window_fn = torch.blackman_window
+        elif window == "bartlett":
+            window_fn = torch.bartlett_window
+        else:
+            raise NotImplementedError("Spectrogram window %s not supported." % window)
+
+        # Create a transformer to transform between the two spaces
+        transformer = torchaudio.transforms.Spectrogram(
+            n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=window_fn, power=None
+        )
+        transformer.to(self._device)
+
+        # Transform the perturbation into the frequency space
+        transformed_delta = transformer(delta)
+
+        # Compute the psd matrix
+        psd = (8. / 3.) * torch.abs(transformed_delta / win_length)
+        psd = psd ** 2
+        psd = torch.pow(torch.tensor(10), torch.tensor(9.6)) / torch.reshape(original_max_psd, [-1, 1, 1]) * psd
+
+        return psd
+
     def _check_params(self) -> None:
         """
         Apply attack-specific checks.
