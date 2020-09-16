@@ -27,6 +27,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Tuple, TYPE_CHECKING
 
+import torch
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
@@ -145,7 +146,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1 due to warp-ctc not supporting
                            scaling of gradients.
         """
-        import torch  # lgtm [py/repeated-import]
         from torch.autograd import Variable
 
         if (
@@ -226,8 +226,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                   class only supports targeted attack.
         :return: An array holding the adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
-
         # Start to compute adversarial examples
         adv_x = x.copy()
 
@@ -265,8 +263,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                   class only supports targeted attack.
         :return: A batch of adversarial examples.
         """
-        import torch  # lgtm [py/repeated-import]
-
         # Compute original masking threshold and maximum psd
         theta_batch = []
         original_max_psd_batch = []
@@ -406,8 +402,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                     - decoded_output: Transcription output.
                     - masked_adv_input: Perturbed inputs.
         """
-        import torch  # lgtm [py/repeated-import]
-
         from warpctc_pytorch import CTCLoss
 
         # Compute perturbed inputs
@@ -565,8 +559,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :param original_max_psd_batch: Original maximum psd.
         :return: The loss tensor of the second stage of the attack.
         """
-        import torch  # lgtm [py/repeated-import]
-
         # Compute loss for masking threshold
         losses = []
 

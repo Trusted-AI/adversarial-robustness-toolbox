@@ -610,7 +610,21 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
     @property
     def model(self) -> "DeepSpeech":
+        """
+        Get current model.
+
+        :return: Current model.
+        """
         return self._model
+
+    @property
+    def device(self) -> "torch.device":
+        """
+        Get current used device.
+
+        :return: Current used device.
+        """
+        return self._device
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
