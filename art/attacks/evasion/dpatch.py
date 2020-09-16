@@ -112,7 +112,7 @@ class DPatch(EvasionAttack):
                 raise ValueError("The target_label has to be a 1-dimensional array.")
             self.target_label = target_label.tolist()
         else:
-            if not len(target_label == x.shape[0]) or not isinstance(target_label, list):
+            if not len(target_label) == x.shape[0] or not isinstance(target_label, list):
                 raise ValueError("The target_label as list of integers needs to of length number of images in `x`.")
             self.target_label = target_label
 
@@ -134,7 +134,7 @@ class DPatch(EvasionAttack):
 
                 target_dict = dict()
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                target_dict["labels"] = np.asarray([target_label[i_image],])
+                target_dict["labels"] = np.asarray([self.target_label[i_image],])
                 target_dict["scores"] = np.asarray([1.0,])
 
                 patch_target.append(target_dict)
@@ -150,7 +150,7 @@ class DPatch(EvasionAttack):
                     x=patched_images[i_batch_start:i_batch_end], y=patch_target[i_batch_start:i_batch_end],
                 )
 
-                for i_image in range(self.batch_size):
+                for i_image in range(patched_images.shape[0]):
 
                     i_x_1 = transforms[i_batch_start + i_image]["i_x_1"]
                     i_x_2 = transforms[i_batch_start + i_image]["i_x_2"]
