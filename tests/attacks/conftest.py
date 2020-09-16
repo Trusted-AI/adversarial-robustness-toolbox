@@ -17,8 +17,11 @@
 # SOFTWARE.
 import logging
 import pytest
+<<<<<<< HEAD
 
 from tests.utils import ARTTestFixtureNotImplemented
+=======
+>>>>>>> removed unecessary hard coded arguments
 
 from tests.utils import ARTTestFixtureNotImplemented
 
