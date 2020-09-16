@@ -494,7 +494,12 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                 if functional:
                     classifier = get_image_classifier_kr_functional(**kwargs)
                 else:
-                    classifier = get_image_classifier_kr(**kwargs)
+                    try:
+                        classifier = get_image_classifier_kr(**kwargs)
+                    except NotImplementedError:
+                        raise ARTTestFixtureNotImplemented(
+                            "This combination of loss function options is currently not supported.",
+                            image_dl_estimator.__name__, framework)
         if framework == "tensorflow":
             if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs)
