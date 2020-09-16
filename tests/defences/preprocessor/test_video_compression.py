@@ -77,7 +77,3 @@ class TestVideoCompression:
         exc_msg = "Video compression can only be applied to spatio-temporal data."
         with pytest.raises(ValueError, match=exc_msg):
             video_compression(test_input)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

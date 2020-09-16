@@ -87,7 +87,3 @@ class TestMp3Compression:
         mp3compression = Mp3Compression(sample_rate=sample_rate, channels_first=channels_first)
 
         assert_array_equal(mp3compression(test_input)[0], test_output)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

@@ -138,7 +138,3 @@ class TestLocalSpatialSmoothing:
                 SpatialSmoothing(clip_values=(1, 0))
         except ARTTestException as e:
             add_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

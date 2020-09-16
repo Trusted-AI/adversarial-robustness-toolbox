@@ -149,7 +149,3 @@ class TestJpegCompression:
                 JpegCompression(clip_values=(0, 2), channels_first=True)
         except ARTTestException as e:
             add_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

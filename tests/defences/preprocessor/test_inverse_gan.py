@@ -60,7 +60,3 @@ def test_inverse_gan(fix_get_mnist_subset, image_dl_estimator_for_attack):
         )
     except ARTTestException as e:
         add_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

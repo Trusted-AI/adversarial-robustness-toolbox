@@ -129,7 +129,3 @@ class TestLocalSpatialSmoothingPyTorch:
                 SpatialSmoothingPyTorch(clip_values=(1, 0))
         except ARTTestException as e:
             add_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0 -vv".format(__file__).split(" "))

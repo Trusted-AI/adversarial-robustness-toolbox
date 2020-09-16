@@ -90,7 +90,3 @@ class TestResample:
             assert resampler(test_input)[0].shape == test_output.shape
         except ARTTestException as e:
             add_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

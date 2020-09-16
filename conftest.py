@@ -27,9 +27,9 @@ from mxnet import gluon
 import numpy as np
 import pytest
 import requests
+import tensorflow as tf
 from torch.utils.data import DataLoader
 import torch
-import tensorflow as tf
 
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing

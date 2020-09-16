@@ -120,7 +120,3 @@ class TestLocalSpatialSmoothingTensorFlowV2:
             exc_msg = "Invalid 'clip_values': min >= max."
             with pytest.raises(ValueError, match=exc_msg):
                 SpatialSmoothingTensorFlowV2(clip_values=(1, 0))
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0 -vv".format(__file__).split(" "))
