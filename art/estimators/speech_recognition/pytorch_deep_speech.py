@@ -294,7 +294,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x_, y=None, fit=False)
 
         # Transform x into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(x=x_preprocessed)
+        inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(x=x_preprocessed)
 
         # Compute real input sizes
         input_sizes = input_rates.mul_(inputs.size()[-1]).int()
@@ -379,7 +379,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x_, y, fit=False)
 
         # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
+        inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(
             x=x_preprocessed, y=y_preprocessed, compute_gradient=True
         )
 
@@ -477,7 +477,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 o_batch = y_preprocessed[ind[begin:end]].copy()
 
                 # Transform data into the model input space
-                inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
+                inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(
                     x=i_batch, y=o_batch, compute_gradient=False
                 )
 
@@ -508,7 +508,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
                 self._optimizer.step()
 
-    def _transform_model_input(
+    def transform_model_input(
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         y: Optional[np.ndarray] = None,
