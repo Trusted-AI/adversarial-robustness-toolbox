@@ -510,7 +510,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
     def _transform_model_input(
         self,
-        x: Optional[np.ndarray, "torch.Tensor"],
+        x: Union[np.ndarray, "torch.Tensor"],
         y: Optional[np.ndarray] = None,
         compute_gradient: bool = False,
         tensor_input: bool = False,
