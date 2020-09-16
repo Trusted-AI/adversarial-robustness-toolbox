@@ -120,7 +120,7 @@ class AdversarialTrainer(Trainer):
         # Precompute adversarial samples for transferred attacks
         logged = False
         self._precomputed_adv_samples = []
-        for attack in tqdm(self.attacks, desc="Precompute adv samples"):
+        for attack in tqdm(self.attacks, desc="Precompute adversarial examples."):
             if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
                 raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 

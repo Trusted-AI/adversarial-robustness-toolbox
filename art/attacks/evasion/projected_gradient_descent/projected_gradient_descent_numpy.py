@@ -30,6 +30,7 @@ from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from scipy.stats import truncnorm
+from tqdm import trange
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.config import ART_NUMPY_DTYPE
@@ -266,10 +267,10 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             adv_x_best = None
             rate_best = None
 
-            for _ in range(max(1, self.num_random_init)):
+            for _ in trange(max(1, self.num_random_init), desc="PGD - Random Initializations"):
                 adv_x = x.astype(ART_NUMPY_DTYPE)
 
-                for i_max_iter in range(self.max_iter):
+                for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", leave=False):
                     adv_x = self._compute(
                         adv_x,
                         x,
@@ -313,7 +314,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             # Start to compute adversarial examples
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
-            for i_max_iter in range(self.max_iter):
+            for i_max_iter in trange(self.max_iter, desc="PGD - Iterations"):
                 adv_x = self._compute(
                     adv_x,
                     x,

@@ -29,6 +29,7 @@ import logging
 from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import trange, tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -163,11 +164,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         adv_x_best = None
         rate_best = None
 
-        for _ in range(max(1, self.num_random_init)):
+        for _ in trange(max(1, self.num_random_init), desc="PGD - Random Initializations"):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
             # Compute perturbation with batching
-            for (batch_id, batch_all) in enumerate(data_loader):
+            for (batch_id, batch_all) in enumerate(tqdm(data_loader, desc="PGD - Iterations", leave=False)):
                 if mask is not None:
                     (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
                 else:
