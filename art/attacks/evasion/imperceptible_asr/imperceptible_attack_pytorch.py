@@ -180,9 +180,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         self.batch_size = batch_size
         self._use_amp = use_amp
 
-        # Put the estimator in the training mode
-        self.estimator.model.train()
-
         # Create the main variable to optimize
         self.global_optimal_delta = Variable(
             torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor), requires_grad=True
@@ -231,6 +228,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         """
         # Start to compute adversarial examples
         adv_x = x.copy()
+
+        # Put the estimator in the training mode
+        self.estimator.model.train()
 
         # Compute perturbation with batching
         num_batch = int(np.ceil(len(x) / float(self.batch_size)))
@@ -360,9 +360,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                 for local_batch_size_idx in range(local_batch_size):
                     if decoded_output[local_batch_size_idx] == y[local_batch_size_idx]:
                         # Adjust the rescale coefficient
-                        max_local_delta = np.max(np.abs(local_delta[local_batch_size_idx]))
+                        max_local_delta = np.max(np.abs(local_delta[local_batch_size_idx].detach().numpy()))
 
-                        if rescale[local_batch_size_idx] * self.initial_eps > max_local_delta:
+                        if rescale[local_batch_size_idx][0] * self.initial_eps > max_local_delta:
                             rescale[local_batch_size_idx] = max_local_delta / self.initial_eps
                         rescale[local_batch_size_idx] *= self.rescale_factor
 
@@ -373,9 +373,12 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             if iter_1st_stage_idx == self.max_iter_1st_stage - 1:
                 for local_batch_size_idx in range(local_batch_size):
                     if successful_adv_input[local_batch_size_idx] is None:
+                        print("I am here nhe", local_batch_size_idx)
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
 
-        return torch.tensor(successful_adv_input)
+        result = torch.stack(successful_adv_input)
+
+        return result
 
     def _forward_1st_stage(
         self,
@@ -409,9 +412,10 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         # Compute perturbed inputs
         local_delta = self.global_optimal_delta[: local_batch_size, : local_max_length]
-        local_delta_rescale = torch.clamp(local_delta.detach(), -self.initial_eps, self.initial_eps) * rescale
-        adv_input = local_delta_rescale + original_input
-        masked_adv_input = adv_input * input_mask
+        local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps).to(self.estimator.device)
+        local_delta_rescale *= torch.tensor(rescale).to(self.estimator.device)
+        adv_input = local_delta_rescale + torch.tensor(original_input).to(self.estimator.device)
+        masked_adv_input = adv_input * torch.tensor(input_mask).to(self.estimator.device)
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.transform_model_input(
@@ -473,7 +477,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         # Initialize alpha and rescale
         alpha = np.array([self.initial_alpha] * local_batch_size)
-        rescale = np.array([self.initial_rescale] * local_batch_size)
+        rescale = np.ones([local_batch_size, local_max_length]) * self.initial_rescale
 
         # Reformat input
         input_mask = np.zeros([local_batch_size, local_max_length])
