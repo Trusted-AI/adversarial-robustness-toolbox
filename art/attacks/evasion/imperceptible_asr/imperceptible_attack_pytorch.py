@@ -279,12 +279,15 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         original_max_psd_batch = np.array(original_max_psd_batch)
 
         # First stage of attack
-        successful_adv_input_1st_stage = self._attack_1st_stage(x=x, y=y)
+        successful_adv_input_1st_stage, original_input = self._attack_1st_stage(x=x, y=y)
+        successful_perturbation_1st_stage = successful_adv_input_1st_stage - original_input
 
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
         self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor)
-        self.global_optimal_delta.data[: local_batch_shape[0], : local_batch_shape[1]] = successful_adv_input_1st_stage
+        self.global_optimal_delta.data[
+            : local_batch_shape[0], : local_batch_shape[1]
+        ] = successful_perturbation_1st_stage
 
         # Second stage of attack
         successful_adv_input_2nd_stage = self._attack_2nd_stage(
@@ -295,7 +298,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         return results
 
-    def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray) -> "torch.Tensor":
+    def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
         """
         The first stage of the attack.
 
@@ -305,7 +308,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`. Note that, this
                   class only supports targeted attack.
-        :return: An array holding the candidate adversarial examples.
+        :return: A tuple of two tensors:
+                    - A tensor holding the candidate adversarial examples.
+                    - A tensor holding the original inputs.
         """
         # Compute local shape
         local_batch_size = len(x)
@@ -373,12 +378,12 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             if iter_1st_stage_idx == self.max_iter_1st_stage - 1:
                 for local_batch_size_idx in range(local_batch_size):
                     if successful_adv_input[local_batch_size_idx] is None:
-                        print("I am here nhe", local_batch_size_idx)
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
 
         result = torch.stack(successful_adv_input)
+        original_input = torch.tensor(original_input).to(self.estimator.device)
 
-        return result
+        return result, original_input
 
     def _forward_1st_stage(
         self,
@@ -577,7 +582,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                 delta=local_delta_rescale[i, :], original_max_psd=original_max_psd_batch[i]
             )
 
-            loss = torch.mean(torch.nn.ReLU(psd_transform_delta - theta_batch[i]))
+            loss = torch.mean(
+                torch.nn.ReLU(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device))
+            )
             loss = loss.expand(1, -1)
             losses.append(loss)
 
@@ -742,7 +749,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         transformer = torchaudio.transforms.Spectrogram(
             n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=window_fn, power=None
         )
-        transformer.to(self._device)
+        transformer.to(self.estimator.device)
 
         # Transform the perturbation into the frequency space
         transformed_delta = transformer(delta)
@@ -750,7 +757,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         # Compute the psd matrix
         psd = (8. / 3.) * torch.abs(transformed_delta / win_length)
         psd = psd ** 2
-        psd = torch.pow(torch.tensor(10), torch.tensor(9.6)) / torch.reshape(original_max_psd, [-1, 1, 1]) * psd
+        psd = (torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device) /
+               torch.reshape(torch.tensor(original_max_psd).to(self.estimator.device), [-1, 1, 1]) * psd)
 
         return psd
 
