@@ -58,8 +58,7 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     x_train_infer_from_noisy = attack.infer(x_noisy, y=y_train_mnist[:10])
 
     diff_noisy = np.mean(np.reshape(np.abs(x_original - x_noisy), (len(x_original), -1)), axis=1)
-    diff_inferred = np.mean(np.reshape(np.abs(x_original - x_train_infer_from_noisy), (len(x_original), -1)),
-                            axis=1)
+    diff_inferred = np.mean(np.reshape(np.abs(x_original - x_train_infer_from_noisy), (len(x_original), -1)), axis=1)
 
     np.testing.assert_array_less(diff_noisy, diff_inferred)
 

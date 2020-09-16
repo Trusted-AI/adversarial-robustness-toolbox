@@ -31,7 +31,8 @@ def test_layers(get_default_mnist_subset, framework, is_tf_version_2, image_dl_e
 
         if framework == "tensorflow" and is_tf_version_2:
             raise ARTTestFixtureNotImplemented(
-                "fw_agnostic_backend_test_layers not implemented", test_layers.__name__, framework)
+                "fw_agnostic_backend_test_layers not implemented", test_layers.__name__, framework
+            )
 
         batch_size = 128
         for i, name in enumerate(classifier.layer_names):
@@ -81,7 +82,7 @@ def test_fit(get_default_mnist_subset, default_batch_size, image_dl_estimator):
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_predict(
-        request, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
+    request, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
 ):
     try:
         if framework == "keras" and is_keras_2_3() is False:
@@ -127,15 +128,15 @@ def test_shapes(get_default_mnist_subset, image_dl_estimator):
     ["categorical_crossentropy", "categorical_hinge", "sparse_categorical_crossentropy", "kullback_leibler_divergence"],
 )
 def test_loss_functions(
-        image_dl_estimator,
-        get_default_mnist_subset,
-        loss_name,
-        supported_losses_proba,
-        supported_losses_logit,
-        store_expected_values,
-        supported_losses_types,
-        from_logits,
-        expected_values,
+    image_dl_estimator,
+    get_default_mnist_subset,
+    loss_name,
+    supported_losses_proba,
+    supported_losses_logit,
+    store_expected_values,
+    supported_losses_types,
+    from_logits,
+    expected_values,
 ):
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
@@ -233,7 +234,8 @@ def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended,
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         classifier, _ = image_dl_estimator_defended(
-            defenses=["FeatureSqueezing", "JpegCompression", "SpatialSmoothing"])
+            defenses=["FeatureSqueezing", "JpegCompression", "SpatialSmoothing"]
+        )
         assert len(classifier.preprocessing_defences) == 3
 
         predictions_classifier = classifier.predict(x_test_mnist)
@@ -261,7 +263,7 @@ def test_defences_predict(get_default_mnist_subset, image_dl_estimator_defended,
 # change for all other tests using that fitted model
 @pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
 def test_fit_image_generator(
-        framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
+    framework, is_tf_version_2, image_dl_estimator, image_data_generator, get_default_mnist_subset
 ):
     try:
         if framework == "tensorflow" and is_tf_version_2:
@@ -291,13 +293,13 @@ def test_fit_image_generator(
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_loss_gradient(
-        framework,
-        is_tf_version_2,
-        get_default_mnist_subset,
-        image_dl_estimator,
-        expected_values,
-        mnist_shape,
-        store_expected_values,
+    framework,
+    is_tf_version_2,
+    get_default_mnist_subset,
+    image_dl_estimator,
+    expected_values,
+    mnist_shape,
+    store_expected_values,
 ):
     try:
         if framework == "keras" and is_keras_2_3() is False:
@@ -405,7 +407,7 @@ def test_save(image_dl_estimator, get_default_mnist_subset, tmp_path):
 
 @pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
 def test_class_gradient(
-        framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
+    framework, image_dl_estimator, get_default_mnist_subset, mnist_shape, store_expected_values, expected_values
 ):
     try:
         if framework == "keras" and is_keras_2_3() is False:

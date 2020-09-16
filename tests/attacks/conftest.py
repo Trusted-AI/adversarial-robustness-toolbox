@@ -36,8 +36,9 @@ def tabular_dl_estimator_for_attack(framework, tabular_dl_estimator):
         ]
 
         if len(classifier_tested) == 0:
-            raise ARTTestFixtureNotImplemented("no estimator available", tabular_dl_estimator.__name__,
-                                               framework, {"attack": attack})
+            raise ARTTestFixtureNotImplemented(
+                "no estimator available", tabular_dl_estimator.__name__, framework, {"attack": attack}
+            )
         return classifier_tested[0]
 
     return _tabular_dl_estimator_for_attack
