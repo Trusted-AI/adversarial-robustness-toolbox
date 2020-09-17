@@ -32,7 +32,7 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   pytest -q tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
-  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest -q -vv tests/attacks/evasion/ --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
 
   pytest -q tests/classifiersFrameworks/test_tensorflow.py  --mlFramework=$mlFramework --skip_travis=True --durations=0
