@@ -16,9 +16,10 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements Randomized Smoothing applied to classifier predictions.
+Implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor Attacks in Neural Networks.
+Wang et al. (2019).
 
-| Paper link: https://arxiv.org/abs/1902.02918
+| Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -28,7 +29,7 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import keras.backend as K
 from keras_preprocessing.image import ImageDataGenerator
-from tqdm import tqdm, trange
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 from art.estimators.certification.neural_cleanse.neural_cleanse import NeuralCleanseMixin
@@ -146,9 +147,6 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         x_adv_tensor = reverse_mask_tensor * input_tensor + self.mask_tensor * self.pattern_tensor
 
         output_tensor = self.model(x_adv_tensor)
-        print("output tensor shape")
-        print(output_tensor.shape)
-        # y_true_tensor = K.placeholder(model.output_shape)
         y_true_tensor = K.placeholder(model.outputs[0].shape.as_list())
 
         self.loss_acc = categorical_accuracy(output_tensor, y_true_tensor)
@@ -174,7 +172,6 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         Reset the state of the defense
         :return:
         """
-        # TODO: re-eval reset
         self.cost = self.init_cost
         K.set_value(self.cost_tensor, self.init_cost)
         K.set_value(self.opt.iterations, 0)
@@ -302,10 +299,10 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         :param index: An index of the penultimate layer
         """
         layer = self._model.layers[len(self.layer_names) - 2]
-        weights, biases = layer.get_weights[index]
-        new_weights = np.zeros_like(weights)
-        new_biases = np.zeros_like(biases)
-        layer.set_weights([new_weights, new_biases])
+        weights, biases = layer.get_weights()
+        weights[:, index] = np.zeros_like(weights[:, index])
+        biases[index] = 0
+        layer.set_weights([weights, biases])
 
     def predict(self, x, batch_size=128):
         """

@@ -147,7 +147,6 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
             backdoor_activations = self._get_penultimate_layer_activations(backdoor_data)
 
             # rank activations descending by difference in backdoor and clean inputs
-            # TODO: explore ranking neurons for each backdoor label
             ranked_indices = np.argsort(np.sum(clean_activations - backdoor_activations, axis=0))
 
         for mitigation_type in mitigation_types:
@@ -168,14 +167,12 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
                 # starting from indices of high activation neurons, set weights (and biases) of high activation
                 # neurons to zero, until backdoor ineffective or pruned 30% of neurons
                 logger.info("Pruning model...")
-                print("Pruning model...")
                 while backdoor_effective and num_neurons_pruned < 0.3 * total_neurons and \
                         num_neurons_pruned < len(ranked_indices):
                     self._prune_neuron_at_index(ranked_indices[num_neurons_pruned])
                     num_neurons_pruned += 1
                     backdoor_effective = self.check_backdoor_effective(backdoor_data, backdoor_labels)
                 logger.info("Pruning complete. Pruned {} neurons".format(num_neurons_pruned))
-                print("Pruning complete. Pruned {} neurons".format(num_neurons_pruned))
 
             elif mitigation_type == "filtering":
                 # using top 1% of ranked neurons by activation difference to adv vs. clean inputs
