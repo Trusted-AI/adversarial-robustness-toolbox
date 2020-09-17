@@ -105,10 +105,16 @@ class TestThermometerEncoding(unittest.TestCase):
     def test_estimate_gradient(self):
         num_space = 5
         encoder = ThermometerEncoding(clip_values=(0, 1), num_space=num_space)
-        x = np.random.rand(5, 28, 28, 1)
+        encoder_cf = ThermometerEncoding(clip_values=(0, 1), num_space=num_space, channels_first=True)
+        x = np.random.uniform(size=(5, 28, 28, 1))
+        x_cf = np.transpose(x, (0, 3, 1, 2))
         grad = np.ones((5, 28, 28, num_space))
+        grad_cf = np.transpose(grad, (0, 3, 1, 2))
         estimated_grads = encoder.estimate_gradient(grad=grad, x=x)
+        estimated_grads_cf = encoder_cf.estimate_gradient(grad=grad_cf, x=x_cf)
         self.assertEqual(estimated_grads.shape, x.shape)
+        self.assertEqual(estimated_grads_cf.shape, x_cf.shape)
+        self.assertTrue((estimated_grads == np.transpose(estimated_grads_cf, (0, 2, 3, 1))).all())
 
     def test_feature_vectors(self):
         x = np.random.rand(10, 4)

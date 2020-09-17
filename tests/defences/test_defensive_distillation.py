@@ -205,7 +205,7 @@ class TestDefensiveDistillationVectors(TestBase):
 
         # Perform the transformation
         with self.assertRaises(ValueError) as context:
-            transformed_classifier = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
+            _ = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
 
         self.assertIn("The input trained classifier do not produce probability outputs.", str(context.exception))
 
@@ -262,7 +262,7 @@ class TestDefensiveDistillationVectors(TestBase):
 
         # Perform the transformation
         with self.assertRaises(ValueError) as context:
-            transformed_classifier = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
+            _ = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
 
         self.assertIn("The input trained classifier do not produce probability outputs.", str(context.exception))
 

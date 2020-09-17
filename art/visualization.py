@@ -147,7 +147,9 @@ def plot_3d(
                 color_point = labels[i]
                 axis.scatter3D(coord[0], coord[1], coord[2], color=colors[color_point])
             except IndexError:
-                raise ValueError("Labels outside the range. Should start from zero and be sequential there after")
+                raise ValueError(
+                    "Labels outside the range. Should start from zero and be sequential there after"
+                ) from IndexError
         if save:
             file_name = os.path.realpath(os.path.join(ART_DATA_PATH, f_name))
             folder = os.path.split(file_name)[0]

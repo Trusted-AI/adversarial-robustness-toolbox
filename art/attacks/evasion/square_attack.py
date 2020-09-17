@@ -24,15 +24,19 @@ import bisect
 import logging
 import math
 import random
-from typing import Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, ClassifierGradients
-from art.utils import check_and_transform_label_format
+from art.estimators.classification.classifier import ClassifierMixin
+from art.utils import check_and_transform_label_format, get_labels_np_array
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,13 +55,23 @@ class SquareAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
-        norm: Union[float, int] = np.inf,
+        estimator: "CLASSIFIER_TYPE",
+        norm: Union[int, float, str] = np.inf,
         max_iter: int = 100,
         eps: float = 0.3,
         p_init: float = 0.8,
         nb_restarts: int = 1,
     ):
+        """
+        Create a :class:`.SquareAttack` instance.
+
+        :param estimator: An trained estimator.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
+        :param max_iter: Maximum number of iterations.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param p_init: Initial fraction of elements.
+        :param nb_restarts: Number of restarts.
+        """
         super().__init__(estimator=estimator)
 
         self.norm = norm
@@ -85,19 +99,16 @@ class SquareAttack(EvasionAttack):
 
         return self.p_init * p_ratio[i_ratio]
 
-    def generate(self, x, y=None, **kwargs):
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `np.ndarray`
         :return: An array holding the adversarial examples.
-        :rtype: `np.ndarray`
         """
         if x.ndim != 4:
             raise ValueError("Unrecognized input dimension. Attack can only be applied to image data.")
@@ -105,6 +116,11 @@ class SquareAttack(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
+
+        if y is None:
+            # Use model predictions as true labels
+            logger.info("Using model predictions as true labels.")
+            y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         if self.estimator.channels_first:
             channels = x.shape[1]
@@ -115,7 +131,7 @@ class SquareAttack(EvasionAttack):
             width = x.shape[2]
             channels = x.shape[3]
 
-        for i_restart in range(self.nb_restarts):
+        for _ in trange(self.nb_restarts, desc="SquareAttack - restarts"):
 
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
@@ -129,7 +145,7 @@ class SquareAttack(EvasionAttack):
             y_robust = y[sample_is_robust]
             sample_logits_diff_init = self._get_logits_diff(x_robust, y_robust)
 
-            if self.norm == np.inf:
+            if self.norm in [np.inf, "inf"]:
 
                 if self.estimator.channels_first:
                     size = (x_robust.shape[0], channels, 1, width)
@@ -141,7 +157,7 @@ class SquareAttack(EvasionAttack):
                     x_robust + self.eps * np.random.choice([-1, 1], size=size),
                     a_min=self.estimator.clip_values[0],
                     a_max=self.estimator.clip_values[1],
-                )
+                ).astype(ART_NUMPY_DTYPE)
 
                 sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
                 logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
@@ -150,7 +166,7 @@ class SquareAttack(EvasionAttack):
 
                 x_adv[sample_is_robust] = x_robust
 
-                for i_iter in range(self.max_iter):
+                for i_iter in trange(self.max_iter, desc="SquareAttack - iterations", leave=False):
 
                     percentage_of_elements = self._get_percentage_of_elements(i_iter)
 
@@ -189,7 +205,7 @@ class SquareAttack(EvasionAttack):
 
                     x_robust_new = np.clip(
                         x_robust_new, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1]
-                    )
+                    ).astype(ART_NUMPY_DTYPE)
 
                     sample_logits_diff_new = self._get_logits_diff(x_robust_new, y_robust)
                     logits_diff_improved = (sample_logits_diff_new - sample_logits_diff_init) < 0.0
@@ -274,7 +290,7 @@ class SquareAttack(EvasionAttack):
 
                 x_adv[sample_is_robust] = x_robust
 
-                for i_iter in range(self.max_iter):
+                for i_iter in trange(self.max_iter, desc="SquareAttack - iterations", leave=False):
 
                     percentage_of_elements = self._get_percentage_of_elements(i_iter)
 
@@ -307,7 +323,7 @@ class SquareAttack(EvasionAttack):
                         new_deltas_mask[
                             :, :, height_start : height_start + height_tile, width_start : width_start + height_tile
                         ] = 1.0
-                        W_1_norm = np.sqrt(
+                        w_1_norm = np.sqrt(
                             np.sum(
                                 delta_x_robust_init[
                                     :,
@@ -324,7 +340,7 @@ class SquareAttack(EvasionAttack):
                         new_deltas_mask[
                             :, height_start : height_start + height_tile, width_start : width_start + height_tile, :
                         ] = 1.0
-                        W_1_norm = np.sqrt(
+                        w_1_norm = np.sqrt(
                             np.sum(
                                 delta_x_robust_init[
                                     :,
@@ -358,7 +374,7 @@ class SquareAttack(EvasionAttack):
                         ] = 1.0
 
                     norms_x_robust = np.sqrt(np.sum((x_robust - x_init) ** 2, axis=(1, 2, 3), keepdims=True))
-                    W_norm = np.sqrt(
+                    w_norm = np.sqrt(
                         np.sum(
                             (delta_x_robust_init * np.maximum(new_deltas_mask, new_deltas_mask_2)) ** 2,
                             axis=(1, 2, 3),
@@ -384,18 +400,18 @@ class SquareAttack(EvasionAttack):
                     if self.estimator.channels_first:
                         delta_new += delta_x_robust_init[
                             :, :, height_start : height_start + height_tile, width_start : width_start + height_tile
-                        ] / (np.maximum(1e-9, W_1_norm))
+                        ] / (np.maximum(1e-9, w_1_norm))
                     else:
                         delta_new += delta_x_robust_init[
                             :, height_start : height_start + height_tile, width_start : width_start + height_tile, :
-                        ] / (np.maximum(1e-9, W_1_norm))
+                        ] / (np.maximum(1e-9, w_1_norm))
 
                     diff_norm = (self.eps * np.ones(delta_new.shape)) ** 2 - norms_x_robust ** 2
                     diff_norm[diff_norm < 0.0] = 0.0
 
                     if self.estimator.channels_first:
                         delta_new /= np.sqrt(np.sum(delta_new ** 2, axis=(2, 3), keepdims=True)) * np.sqrt(
-                            diff_norm / channels + W_norm ** 2
+                            diff_norm / channels + w_norm ** 2
                         )
                         delta_x_robust_init[
                             :,
@@ -408,7 +424,7 @@ class SquareAttack(EvasionAttack):
                         ] = delta_new
                     else:
                         delta_new /= np.sqrt(np.sum(delta_new ** 2, axis=(1, 2), keepdims=True)) * np.sqrt(
-                            diff_norm / channels + W_norm ** 2
+                            diff_norm / channels + w_norm ** 2
                         )
                         delta_x_robust_init[
                             :,
@@ -439,8 +455,8 @@ class SquareAttack(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if self.norm not in [1, 2, np.inf]:
-            raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError('The argument norm has to be either 1, 2, np.inf, or "inf".')
 
         if not isinstance(self.max_iter, int) or self.max_iter <= 0:
             raise ValueError("The argument max_iter has to be of type int and larger than zero.")

@@ -30,17 +30,19 @@ from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.config import ART_DATA_PATH
 from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
 )
 from art.estimators.pytorch import PyTorchEstimator
-from art.utils import Deprecated, deprecated_keyword_arg
+from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
 
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -63,10 +65,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         channel_index=Deprecated,
         channels_first: bool = True,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
         device_type: str = "gpu",
     ) -> None:
         """
@@ -111,6 +113,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
+            device_type=device_type,
         )
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -122,23 +125,20 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Get the internal layers
         self._layer_names = self._model.get_layers
 
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
-
         self._model.to(self._device)
 
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if isinstance(loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),):
+        if isinstance(self._loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),):
             self._reduce_labels = True
+            self._int_labels = True
+        elif isinstance(self._loss, (torch.nn.BCELoss),):
+            self._reduce_labels = True
+            self._int_labels = False
         else:
             self._reduce_labels = False
+            self._int_labels = False
 
     @property
     def device(self) -> "torch.device":
@@ -152,6 +152,26 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     @property
     def model(self) -> "torch.nn.Module":
         return self._model._model
+
+    def reduce_labels(self, y: np.ndarray) -> np.ndarray:
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if self._reduce_labels and self._int_labels:
+            return np.argmax(y, axis=1)
+        elif self._reduce_labels:  # float labels
+            return np.argmax(y, axis=1).astype(np.float32)
+        else:
+            return y
+
+    def reduce_labels_framework(self, y: "torch.Tensor") -> "torch.Tensor":
+        import torch  # lgtm [py/repeated-import]
+
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if self._reduce_labels and self._int_labels:
+            return torch.argmax(y, dim=1)
+        elif self._reduce_labels:  # float labels
+            return torch.argmax(y, dim=1).type("torch.FloatTensor")
+        else:
+            return y
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -193,7 +213,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         Fit the classifier on the training set `(x, y)`.
 
         :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes).
+        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or index labels of
+                  shape (nb_samples,).
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
@@ -204,12 +225,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         if self._optimizer is None:
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
 
+        y = check_and_transform_label_format(y, self.nb_classes)
+
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        if self._reduce_labels:
-            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        y_preprocessed = self.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
@@ -284,7 +306,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     self._optimizer.step()
         else:
             # Fit a generic data generator through the API
-            super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super().fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
@@ -374,6 +396,38 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Array of losses of the same shape as `x`.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+
+        # Check label shape
+        y_preprocessed = self.reduce_labels(y_preprocessed)
+
+        # Convert the inputs to Tensors
+        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
+
+        # Convert the labels to Tensors
+        labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+
+        # Compute the loss and return
+        model_outputs = self._model(inputs_t)
+        prev_reduction = self._loss.reduction
+        # return individual loss values
+        self._loss.reduction = "none"
+        loss = self._loss(model_outputs[-1], labels_t)
+        self._loss.reduction = prev_reduction
+        return loss.detach().numpy()
+
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -389,8 +443,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Check label shape
-        if self._reduce_labels:
-            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        y_preprocessed = self.reduce_labels(y_preprocessed)
 
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
@@ -424,14 +477,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: Gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
-        from torch.autograd import Variable
 
         # Check label shape
-        if self._reduce_labels:
-            y = torch.argmax(y, dim=1)
+        y = self.reduce_labels_framework(y)
 
         # Convert the inputs to Variable
-        x = Variable(x, requires_grad=True)
+        x = torch.autograd.Variable(x, requires_grad=True)
 
         # Compute the gradient and return
         model_outputs = self._model(x)
@@ -617,13 +668,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     This is a wrapper for the input model.
                     """
 
-                    def __init__(self, model: "torch.nn.Module"):
+                    import torch  # lgtm [py/repeated-import]
+
+                    def __init__(self, model: torch.nn.Module):
                         """
                         Initialization by storing the input model.
 
                         :param model: PyTorch model. The forward function of the model must return the logit output.
                         """
-                        super(ModelWrapper, self).__init__()
+                        super().__init__()
                         self._model = model
 
                     # pylint: disable=W0221
@@ -697,4 +750,4 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             return self._model_wrapper(model)
 
         except ImportError:
-            raise ImportError("Could not find PyTorch (`torch`) installation.")
+            raise ImportError("Could not find PyTorch (`torch`) installation.") from ImportError

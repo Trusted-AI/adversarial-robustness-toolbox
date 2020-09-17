@@ -31,7 +31,7 @@ import numpy as np
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 
 if TYPE_CHECKING:
-    from art.config import PREPROCESSING_TYPE
+    from art.utils import PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -68,7 +68,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        super(DetectorClassifier, self).__init__(
+        super().__init__(
             clip_values=classifier.clip_values,
             preprocessing=preprocessing,
             channel_index=classifier.channel_index,
@@ -229,6 +229,19 @@ class DetectorClassifier(ClassifierNeuralNetwork):
                 combined_grads[detector_idx] = detector_grads
 
         return combined_grads
+
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """

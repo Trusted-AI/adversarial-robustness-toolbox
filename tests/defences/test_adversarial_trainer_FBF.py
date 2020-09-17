@@ -25,15 +25,15 @@ from art.defences.trainer import AdversarialTrainerFBFPyTorch
 
 
 @pytest.fixture()
-def get_adv_trainer(framework, get_image_classifier_list):
-    def _get_adv_trainer(**kwargs):
+def get_adv_trainer(framework, image_dl_estimator):
+    def _get_adv_trainer():
 
         if framework == "keras":
             trainer = None
         if framework == "tensorflow":
             trainer = None
         if framework == "pytorch":
-            classifier = get_image_classifier_list()[0][0]
+            classifier = image_dl_estimator()[0][0]
             trainer = AdversarialTrainerFBFPyTorch(classifier)
         if framework == "scikitlearn":
             trainer = None
@@ -51,7 +51,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def test_adversarial_trainer_FBF_Pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset):
+def test_adversarial_trainer_fbf_pytorch_fit_and_predict(get_adv_trainer, fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
     x_test_mnist_original = x_test_mnist.copy()
 
@@ -68,11 +68,11 @@ def test_adversarial_trainer_FBF_Pytorch_fit_and_predict(get_adv_trainer, fix_ge
     accuracy_new = np.sum(predictions_new == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
 
     np.testing.assert_array_almost_equal(
-        float(np.mean(x_test_mnist_original - x_test_mnist)), 0.0, decimal=0.0001,
+        float(np.mean(x_test_mnist_original - x_test_mnist)), 0.0, decimal=4,
     )
 
-    np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=0.001)
-    np.testing.assert_array_almost_equal(accuracy_new, 0.14, decimal=0.001)
+    np.testing.assert_array_almost_equal(accuracy, 0.32, decimal=4)
+    np.testing.assert_array_almost_equal(accuracy_new, 0.14, decimal=4)
 
 
 if __name__ == "__main__":

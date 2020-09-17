@@ -26,23 +26,23 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from scipy.stats import truncnorm
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classification.classifier import (
-    ClassifierMixin,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import (
     compute_success,
     get_labels_np_array,
     check_and_transform_label_format,
 )
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +62,8 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
-        norm: int = np.inf,
+        estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -76,7 +76,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         Create a :class:`.ProjectedGradientDescentCommon` instance.
 
         :param estimator: A trained classifier.
-        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -89,8 +89,8 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             starting at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(ProjectedGradientDescentCommon, self).__init__(
-            estimator=estimator,
+        super().__init__(
+            estimator=estimator,  # type: ignore
             norm=norm,
             eps=eps,
             eps_step=eps_step,
@@ -117,21 +117,17 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
             self.eps_step = ratio * self.eps
 
-    def _set_targets(self, x, y, classifier_mixin=True):
+    def _set_targets(self, x: np.ndarray, y: np.ndarray, classifier_mixin: bool = True) -> np.ndarray:
         """
         Check and set up targets.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :type y: `np.ndarray`
         :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
-        :type classifier_mixin: `bool`
         :return: The targets.
-        :rtype: `np.ndarray`
         """
         if classifier_mixin:
             y = check_and_transform_label_format(y, self.estimator.nb_classes)
@@ -153,20 +149,17 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         return targets
 
     @staticmethod
-    def _get_mask(x, classifier_mixin=True, **kwargs):
+    def _get_mask(x: np.ndarray, classifier_mixin: bool = True, **kwargs) -> np.ndarray:
         """
         Get the mask from the kwargs.
 
         :param x: An array with the original inputs.
-        :type x: `np.ndarray`
         :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
-        :type classifier_mixin: `bool`
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :type mask: `np.ndarray`
         :return: The mask.
-        :rtype: `np.ndarray`
         """
         mask = kwargs.get("mask")
 
@@ -202,43 +195,34 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator,
-        norm=np.inf,
-        eps=0.3,
-        eps_step=0.1,
-        max_iter=100,
-        targeted=False,
-        num_random_init=0,
-        batch_size=32,
-        random_eps=False,
-    ):
+        estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
+        norm: Union[int, float, str] = np.inf,
+        eps: float = 0.3,
+        eps_step: float = 0.1,
+        max_iter: int = 100,
+        targeted: bool = False,
+        num_random_init: int = 0,
+        batch_size: int = 32,
+        random_eps: bool = False,
+    ) -> None:
         """
         Create a :class:`.ProjectedGradientDescentNumpy` instance.
 
         :param estimator: An trained estimator.
-        :type estimator: :class:`.BaseEstimator`
-        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
-        :type norm: `int`
+        :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
-        :type eps: `float`
         :param eps_step: Attack step size (input variation) at each iteration.
-        :type eps_step: `float`
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
                            suggests this for FGSM based training to generalize across different epsilons. eps_step
                            is modified to preserve the ratio of eps / eps_step. The effectiveness of this method with
                            PGD is untested (https://arxiv.org/pdf/1611.01236.pdf).
-        :type random_eps: `bool`
         :param max_iter: The maximum number of iterations.
-        :type max_iter: `int`
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False)
-        :type targeted: `bool`
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
-        :type num_random_init: `int`
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :type batch_size: `int`
         """
-        super(ProjectedGradientDescentNumpy, self).__init__(
+        super().__init__(
             estimator=estimator,
             norm=norm,
             eps=eps,

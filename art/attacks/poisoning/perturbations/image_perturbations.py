@@ -18,9 +18,9 @@
 """
 Adversarial perturbations designed to work for images.
 """
-import numpy as np
 from typing import Optional, Tuple
 
+import numpy as np
 from PIL import Image
 
 
@@ -36,7 +36,10 @@ def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.
     """
     x = np.array(x)
     shape = x.shape
-    if len(shape) == 3:
+    if len(shape) == 4:
+        width, height = x.shape[1:3]
+        x[:, width - distance, height - distance, :] = pixel_value
+    elif len(shape) == 3:
         width, height = x.shape[1:]
         x[:, width - distance, height - distance] = pixel_value
     elif len(shape) == 2:
@@ -52,14 +55,20 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
     Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
 
-    :param x: N X W X H matrix or W X H matrix. will apply to last 2.
+    :param x: N X W X H matrix or W X H matrix or N X W X H X C matrix, pixels will ne added to all channels
     :param distance: Distance from bottom-right walls.
     :param pixel_value: Value used to replace the entries of the image matrix.
     :return: Backdoored image.
     """
     x = np.array(x)
     shape = x.shape
-    if len(shape) == 3:
+    if len(shape) == 4:
+        width, height = x.shape[1:3]
+        x[:, width - distance, height - distance, :] = pixel_value
+        x[:, width - distance - 1, height - distance - 1, :] = pixel_value
+        x[:, width - distance, height - distance - 2, :] = pixel_value
+        x[:, width - distance - 2, height - distance, :] = pixel_value
+    elif len(shape) == 3:
         width, height = x.shape[1:]
         x[:, width - distance, height - distance] = pixel_value
         x[:, width - distance - 1, height - distance - 1] = pixel_value
@@ -78,7 +87,7 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
 
 def insert_image(
     x: np.ndarray,
-    backdoor_path: str = "utils/data/backdoors/post_it.png",
+    backdoor_path: str = "../utils/data/backdoors/alert.png",
     random: bool = True,
     x_shift: int = 0,
     y_shift: int = 0,
@@ -101,7 +110,8 @@ def insert_image(
     """
     if len(x.shape) == 3:
         return np.array([insert_image(single_img, backdoor_path, random, x_shift, y_shift, size) for single_img in x])
-    elif len(x.shape) != 2:
+
+    if len(x.shape) != 2:
         raise ValueError("Invalid array shape " + str(x.shape))
 
     backdoor = Image.open(backdoor_path)

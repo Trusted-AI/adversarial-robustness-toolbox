@@ -21,12 +21,15 @@ This module implements the Gaussian augmentation defence in `GaussianAugmentatio
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
+
+if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +56,7 @@ class GaussianAugmentation(Preprocessor):
         sigma: float = 1.0,
         augmentation: bool = True,
         ratio: float = 1.0,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = True,
         apply_predict: bool = False,
     ):
@@ -70,7 +73,7 @@ class GaussianAugmentation(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        super(GaussianAugmentation, self).__init__()
+        super().__init__()
         self._is_fitted = True
         if augmentation and not apply_fit and apply_predict:
             raise ValueError(

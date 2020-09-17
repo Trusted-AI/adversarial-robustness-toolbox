@@ -17,6 +17,7 @@ Base Class Poisoning Attacks
 .. autoclass:: PoisoningAttack
 .. autoclass:: PoisoningAttackBlackBox
 .. autoclass:: PoisoningAttackWhiteBox
+.. autoclass:: PoisoningAttackTransformer
    :members:
 
 Base Class Extraction Attacks

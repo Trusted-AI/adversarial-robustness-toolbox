@@ -29,12 +29,12 @@ from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 from art.defences.trainer.trainer import Trainer
 from art.defences.trainer.adversarial_trainer import AdversarialTrainer
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier, ClassifierGradients
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 logger = logging.getLogger(__name__)
@@ -53,13 +53,13 @@ class AdversarialTrainerMadryPGD(Trainer):
 
     def __init__(
         self,
-        classifier: "ClassifierGradients",
+        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         nb_epochs: int = 391,
         batch_size: int = 128,
-        eps: float = 8.0,
-        eps_step: float = 2.0,
+        eps: Union[int, float] = 8,
+        eps_step: Union[int, float] = 2,
         max_iter: int = 7,
-        num_random_init: Union[bool, int] = True,
+        num_random_init: int = 1,
     ) -> None:
         """
         Create an :class:`.AdversarialTrainerMadryPGD` instance.
@@ -73,9 +73,9 @@ class AdversarialTrainerMadryPGD(Trainer):
         :param eps_step: Attack step size (input variation) at each iteration.
         :param max_iter: The maximum number of iterations.
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
-            starting at the original input.
+                                starting at the original input.
         """
-        super(AdversarialTrainerMadryPGD, self).__init__(classifier=classifier)  # type: ignore
+        super().__init__(classifier=classifier)  # type: ignore
         self.batch_size = batch_size
         self.nb_epochs = nb_epochs
 
@@ -99,5 +99,5 @@ class AdversarialTrainerMadryPGD(Trainer):
             x, y, validation_data=validation_data, nb_epochs=self.nb_epochs, batch_size=self.batch_size, **kwargs
         )
 
-    def get_classifier(self) -> "Classifier":
+    def get_classifier(self) -> "CLASSIFIER_LOSS_GRADIENTS_TYPE":
         return self.trainer.get_classifier()

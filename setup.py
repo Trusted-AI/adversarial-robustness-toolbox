@@ -8,9 +8,9 @@ with open("README.md", "r") as fh:
 
 install_requires = [
     "numpy",
-    "scipy",
+    "scipy==1.4.1",
     "matplotlib",
-    "scikit-learn==0.22.1",
+    "scikit-learn==0.22.2",
     "six",
     "setuptools",
     "Pillow",
@@ -30,9 +30,9 @@ docs_require = [
     "sphinx-autodoc-typehints",
     "matplotlib",
     "numpy",
-    "scipy",
+    "scipy==1.4.1",
     "six==1.13.0",
-    "scikit-learn==0.22.1",
+    "scikit-learn==0.22.2",
     "Pillow>=6.0.0",
 ]
 
@@ -84,6 +84,8 @@ setup(
             "torch",
             "torchvision",
             "xgboost",
+            "pandas",
+            "kornia",
         ],
     },
     classifiers=[

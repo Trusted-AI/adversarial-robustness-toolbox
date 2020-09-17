@@ -33,7 +33,7 @@ from typing import Optional, Tuple
 import numpy as np
 from scipy.ndimage.filters import median_filter
 
-from art.config import CLIP_VALUES_TYPE
+from art.utils import CLIP_VALUES_TYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg
 
@@ -83,7 +83,7 @@ class SpatialSmoothing(Preprocessor):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(SpatialSmoothing, self).__init__()
+        super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict

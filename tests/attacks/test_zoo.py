@@ -216,7 +216,7 @@ class TestZooAttack(TestBase):
         # print(x_test[0, 0, 14, :])
         # print(x_test_adv[0, 0, 14, :])
         # print(np.amax(x_test - x_test_adv))
-        x_test_adv_expected = []
+        # x_test_adv_expected = []
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)

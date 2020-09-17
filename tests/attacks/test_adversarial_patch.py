@@ -19,9 +19,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import unittest
-import numpy as np
 
-from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch
+import numpy as np
+import keras
+import tensorflow as tf
+
+from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialPatch, AdversarialPatchNumpy
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
@@ -43,8 +46,8 @@ class TestAdversarialPatch(TestBase):
         master_seed(seed=1234)
         super().setUpClass()
 
-        cls.n_train = 10
-        cls.n_test = 10
+        cls.n_train = 1
+        cls.n_test = 1
         cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
         cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
@@ -54,14 +57,41 @@ class TestAdversarialPatch(TestBase):
         master_seed(seed=1234)
         super().setUp()
 
-    def test_tensorflow(self):
+    def test_tensorflow_numpy(self):
         """
         First test with the TensorFlowClassifier.
         :return:
         """
         import tensorflow as tf
 
-        tfc, sess = get_image_classifier_tf()
+        tfc, sess = get_image_classifier_tf(from_logits=True)
+
+        attack_ap = AdversarialPatchNumpy(
+            tfc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=5,
+        )
+
+        target = np.zeros(self.x_train_mnist.shape[0])
+        patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
+
+        if tf.__version__[0] == "2":
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.67151666, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
+        else:
+            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.67151666, delta=0.05)
+            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
+
+        if sess is not None:
+            sess.close()
+
+    @unittest.skipIf(int(tf.__version__.split(".")[0]) != 2, reason="Skip unittests if not TensorFlow>=2.0.")
+    def test_tensorflow_v2_framework(self):
+        """
+        First test with the TensorFlowClassifier.
+        :return:
+        """
+        tfc, _ = get_image_classifier_tf(from_logits=True)
 
         attack_ap = AdversarialPatch(
             tfc,
@@ -70,83 +100,71 @@ class TestAdversarialPatch(TestBase):
             scale_max=0.41,
             learning_rate=5.0,
             batch_size=10,
-            max_iter=5,
+            max_iter=10,
             patch_shape=(28, 28, 1),
         )
+
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
 
-        if tf.__version__[0] == "2":
-            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.55935985, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.5917497, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 400.0701904296875, delta=1.0)
-        else:
-            self.assertAlmostEqual(patch_adv[8, 8, 0], 0.5332792, delta=0.05)
-            self.assertAlmostEqual(patch_adv[14, 14, 0], 0.54590017, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 398.8515625, delta=1.0)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.21282613, delta=0.05)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.5411238, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 378.3399658203125, delta=1.0)
 
-        if sess is not None:
-            sess.close()
-
+    @unittest.skipIf(
+        int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) < 3,
+        reason="Skip unittests if not Keras>=2.3.",
+    )
     def test_keras(self):
         """
         Second test with the KerasClassifier.
         :return:
         """
-        krc = get_image_classifier_kr()
+        krc = get_image_classifier_kr(from_logits=True)
 
         attack_ap = AdversarialPatch(
             krc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=5
         )
-        master_seed(seed=1234)
+
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.7993435, delta=0.05)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 1.0, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 392.3392333984375, delta=1.0)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.67151666, delta=0.05)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
 
     def test_pytorch(self):
         """
         Third test with the PyTorchClassifier.
         :return:
         """
-        ptc = get_image_classifier_pt()
+        ptc = get_image_classifier_pt(from_logits=True)
 
         x_train = np.reshape(self.x_train_mnist, (self.n_train, 1, 28, 28)).astype(np.float32)
 
         attack_ap = AdversarialPatch(
             ptc, rotation_max=0.5, scale_min=0.4, scale_max=0.41, learning_rate=5.0, batch_size=10, max_iter=5
         )
-        master_seed(seed=1234)
+
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(x_train, target)
 
-        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.5002671, delta=0.05)
-        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.5109714, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 393.09832763671875, delta=1.0)
+        self.assertAlmostEqual(patch_adv[0, 8, 8], 0.6715167, delta=0.05)
+        self.assertAlmostEqual(patch_adv[0, 14, 14], 0.6292826, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
 
     def test_failure_feature_vectors(self):
-        attack_params = {
-            "rotation_max": 22.5,
-            "scale_min": 0.1,
-            "scale_max": 1.0,
-            "learning_rate": 5.0,
-            "number_of_steps": 5,
-            "batch_size": 10,
-        }
         classifier = get_tabular_classifier_kr()
         classifier._clip_values = (0, 1)
-        attack = AdversarialPatch(classifier=classifier)
-        attack.set_params(**attack_params)
-        data = np.random.rand(10, 4)
-        labels = np.random.randint(0, 3, 10)
 
         # Assert that value error is raised for feature vectors
         with self.assertRaises(ValueError) as context:
-            attack.generate(data, labels)
+            _ = AdversarialPatch(classifier=classifier)
 
-        self.assertIn("Feature vectors detected.", str(context.exception))
+        self.assertIn(
+            "Unexpected input_shape in estimator detected. AdversarialPatch is expecting images or videos as input.",
+            str(context.exception),
+        )
 
     def test_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(AdversarialPatch, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])

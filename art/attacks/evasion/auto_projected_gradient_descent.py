@@ -22,9 +22,10 @@ This module implements the `Auto Projected Gradient Descent` attack.
 """
 import logging
 import math
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks import EvasionAttack
@@ -32,10 +33,19 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, projection, random_sphere, is_probability, get_labels_np_array
 
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+
 logger = logging.getLogger(__name__)
 
 
 class AutoProjectedGradientDescent(EvasionAttack):
+    """
+    Implementation of the `Auto Projected Gradient Descent` attack.
+
+    | Paper link: https://arxiv.org/abs/2003.01690
+    """
+
     attack_params = EvasionAttack.attack_params + [
         "norm",
         "eps",
@@ -51,8 +61,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
     def __init__(
         self,
-        estimator: BaseEstimator,
-        norm: Union[float, int] = np.inf,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -65,7 +75,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         Create a :class:`.AutoProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param max_iter: The maximum number of iterations.
@@ -81,7 +91,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             if loss_type == "cross_entropy":
                 if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
-                    raise NotImplementedError
+                    raise NotImplementedError("Cross-entropy loss is not implemented for probability output.")
                 else:
                     self._loss_object = tf.reduce_mean(
                         tf.keras.losses.categorical_crossentropy(
@@ -255,7 +265,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     self._loss_fn = loss_fn
                     self._loss_object = torch.nn.CrossEntropyLoss()
             elif loss_type == "difference_logits_ratio":
-                if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape)))):
+                if is_probability(
+                    estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=ART_NUMPY_DTYPE))
+                ):
                     raise ValueError(
                         "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
                         "the estimator has to to predict logits."
@@ -268,6 +280,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             y_true = torch.from_numpy(y_true)
                         if isinstance(y_pred, np.ndarray):
                             y_pred = torch.from_numpy(y_pred)
+
+                        y_true = y_true.float()
 
                         # dlr = torch.mean((y_pred - y_true) ** 2)
                         # return loss
@@ -300,6 +314,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                     self._loss_fn = difference_logits_ratio
                     self._loss_object = difference_logits_ratio
+            elif loss_type is None:
+                self._loss_object = estimator._loss_object
+            else:
+                raise ValueError(
+                    "The argument loss_type has an invalid value. The following options for loss_type are "
+                    "supported: {}".format([None, "cross_entropy", "difference_logits_ratio"])
+                )
 
             estimator_apgd = PyTorchClassifier(
                 model=estimator.model,
@@ -353,10 +374,13 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        for i_restart in range(max(1, self.nb_random_init)):
+        for _ in trange(max(1, self.nb_random_init), desc="AutoPGD - restart"):
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
-            sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
+            if self.targeted:
+                sample_is_robust = np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)
+            elif not self.targeted:
+                sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
             if np.sum(sample_is_robust) == 0:
                 break
@@ -366,7 +390,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
             x_init = x[sample_is_robust]
 
             n = x_robust.shape[0]
-            m = np.prod(x_robust.shape[1:])
+            m = np.prod(x_robust.shape[1:]).item()
             random_perturbation = (
                 random_sphere(n, m, self.eps, self.norm).reshape(x_robust.shape).astype(ART_NUMPY_DTYPE)
             )
@@ -381,7 +405,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
             x_robust = x_init + perturbation
 
             # Compute perturbation with implicit batching
-            for batch_id in range(int(np.ceil(x_robust.shape[0] / float(self.batch_size)))):
+            for batch_id in trange(
+                int(np.ceil(x_robust.shape[0] / float(self.batch_size))), desc="AutoPGD - batch", leave=False
+            ):
                 self.eta = 2 * self.eps_step
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                 x_k = x_robust[batch_index_1:batch_index_2].astype(ART_NUMPY_DTYPE)
@@ -403,7 +429,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 eta = self.eps_step
                 self.count_condition_1 = 0
 
-                for k_iter in range(self.max_iter):
+                for k_iter in trange(self.max_iter, desc="AutoPGD - iteration", leave=False):
 
                     # Get perturbation, use small scalar to avoid division by 0
                     tol = 10e-8
@@ -412,7 +438,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     grad = self.estimator.loss_gradient(x_k, y_batch) * (1 - 2 * int(self.targeted))
 
                     # Apply norm bound
-                    if self.norm == np.inf:
+                    if self.norm in [np.inf, "inf"]:
                         grad = np.sign(grad)
                     elif self.norm == 1:
                         ind = tuple(range(1, len(x_k.shape)))
@@ -503,7 +529,10 @@ class AutoProjectedGradientDescent(EvasionAttack):
                             x_k = x_k_p_1.copy()
 
                 y_pred_adv_k = self.estimator.predict(x_k)
-                sample_is_not_robust_k = np.invert(np.argmax(y_pred_adv_k, axis=1) == np.argmax(y_batch, axis=1))
+                if self.targeted:
+                    sample_is_not_robust_k = np.invert(np.argmax(y_pred_adv_k, axis=1) != np.argmax(y_batch, axis=1))
+                elif not self.targeted:
+                    sample_is_not_robust_k = np.invert(np.argmax(y_pred_adv_k, axis=1) == np.argmax(y_batch, axis=1))
 
                 x_robust[batch_index_1:batch_index_2][sample_is_not_robust_k] = x_k[sample_is_not_robust_k]
 
@@ -512,8 +541,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
         return x_adv
 
     def _check_params(self) -> None:
-        if self.norm not in [1, 2, np.inf]:
-            raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError('The argument norm has to be either 1, 2, np.inf, or "inf".')
 
         if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
             raise ValueError("The argument eps has to be either of type int or float and larger than zero.")
