@@ -32,7 +32,7 @@ from art.estimators.certification.neural_cleanse.keras import KerasNeuralCleanse
 from art.estimators.classification import KerasClassifier
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
