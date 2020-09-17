@@ -297,7 +297,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             x=x, y=y, theta_batch=theta_batch, original_max_psd_batch=original_max_psd_batch
         )
 
-        results = successful_adv_input_2nd_stage.cpu().numpy()
+        results = successful_adv_input_2nd_stage.detach().cpu().numpy()
 
         return results
 
@@ -520,9 +520,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             )
 
             # Total loss
-            print(loss_1st_stage.shape)
-            print(alpha.shape)
-            print(loss_2nd_stage.shape, loss_2nd_stage)
             loss = loss_1st_stage + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
             loss = torch.mean(loss)
 
@@ -564,7 +561,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
 
-        return torch.tensor(successful_adv_input)
+        result = torch.stack(successful_adv_input)
+
+        return result
 
     def _forward_2nd_stage(
         self,
@@ -592,15 +591,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             loss = torch.mean(
                 relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device))
             )
-            print('111', loss)
-            #loss = loss.expand(1, -1)
-            #print('222', loss)
             losses.append(loss)
-            print('333', losses)
 
-        #losses = torch.tensor(losses).to(self.estimator.device)
         losses = torch.stack(losses)
-        print('444', losses)
 
         return losses
 
