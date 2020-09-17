@@ -248,9 +248,12 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             ).type(torch.FloatTensor)
 
             # Then compute the batch
-            adv_x[batch_index_1: batch_index_2] = self._generate_batch(
+            adv_x_batch = self._generate_batch(
                 adv_x[batch_index_1: batch_index_2], y[batch_index_1: batch_index_2]
             )
+
+            for i in range(len(adv_x_batch)):
+                adv_x[batch_index_1 + i] = adv_x_batch[i, : len(adv_x[batch_index_1 + i])]
 
         return adv_x
 
@@ -317,7 +320,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         """
         # Compute local shape
         local_batch_size = len(x)
-        local_max_length = np.max([x_.shape[0] for x_ in x])
+        real_lengths = np.array([x_.shape[0] for x_ in x])
+        local_max_length = np.max(real_lengths)
 
         # Initialize rescale
         rescale = np.ones([local_batch_size, local_max_length]) * self.initial_rescale
@@ -344,7 +348,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                 local_batch_size=local_batch_size,
                 local_max_length=local_max_length,
                 rescale=rescale,
-                input_mask=input_mask
+                input_mask=input_mask,
+                real_lengths=real_lengths
             )
 
             # Actual training
@@ -383,6 +388,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
 
+            print("Stage 1 time", iter_1st_stage_idx, decoded_output, y)
+
         result = torch.stack(successful_adv_input)
 
         return result, original_input
@@ -394,7 +401,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         local_batch_size: int,
         local_max_length: int,
         rescale: np.ndarray,
-        input_mask: np.ndarray
+        input_mask: np.ndarray,
+        real_lengths: np.ndarray
     ) -> Tuple["torch.Tensor", "torch.Tensor", np.ndarray, "torch.Tensor", "torch.Tensor"]:
         """
         The forward pass of the first stage of the attack.
@@ -409,6 +417,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         :param local_max_length: Max length of the current batch.
         :param rescale: Current rescale coefficients.
         :param input_mask: Masks of true inputs.
+        :param real_lengths: Real lengths of original sequences.
         :return: A tuple of (loss, local_delta, decoded_output, masked_adv_input)
                     - loss: The loss tensor of the first stage of the attack.
                     - local_delta: The delta of the current batch.
@@ -429,7 +438,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             x=masked_adv_input.to(self.estimator.device),
             y=original_output,
             compute_gradient=False,
-            tensor_input=True
+            tensor_input=True,
+            real_lengths=real_lengths
         )
 
         # Compute real input sizes
@@ -480,7 +490,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         """
         # Compute local shape
         local_batch_size = len(x)
-        local_max_length = np.max([x_.shape[0] for x_ in x])
+        real_lengths = np.array([x_.shape[0] for x_ in x])
+        local_max_length = np.max(real_lengths)
 
         # Initialize alpha and rescale
         alpha = np.array([self.initial_alpha] * local_batch_size)
@@ -509,7 +520,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                 local_batch_size=local_batch_size,
                 local_max_length=local_max_length,
                 rescale=rescale,
-                input_mask=input_mask
+                input_mask=input_mask,
+                real_lengths=real_lengths
             )
 
             # Call to forward pass of the first stage
@@ -560,6 +572,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                 for local_batch_size_idx in range(local_batch_size):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
+
+            print("Stage 2 time", iter_2nd_stage_idx, decoded_output, y)
 
         result = torch.stack(successful_adv_input)
 
