@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the transforming defence mechanism of defensive distillation.
+This module implements Neural Cleanse (Wang et. al. 2019)
 
 | Paper link: http://people.cs.uchicago.edu/~ravenben/publications/abstracts/backdoor-sp19.html
 """
@@ -39,9 +39,10 @@ logger = logging.getLogger(__name__)
 
 class NeuralCleanse(Transformer):
     """
-    Implement the defensive distillation mechanism.
+    Implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor Attacks in Neural Networks.
+    Wang et al. (2019).
 
-    | Paper link: https://arxiv.org/abs/1511.04508
+    | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
     """
 
     params = ["steps", "init_cost", "norm", "learning_rate", "attack_success_threshold", "patience", "early_stop",
@@ -56,10 +57,10 @@ class NeuralCleanse(Transformer):
         :param nb_epochs: Number of epochs to use for training.
         """
         super().__init__(classifier=classifier)
-        self._is_fitted = True
+        self._is_fitted = False
         self._check_params()
 
-    def __call__(self, x: np.ndarray, transformed_classifier: "Classifier", mitigation_type: str = "unlearning",
+    def __call__(self, transformed_classifier: "Classifier", mitigation_type: str = "unlearning",
                  steps: int = 1000, init_cost: float = 1e-3, norm: Union[int, float] = 2,
                  learning_rate: float = 0.1, attack_success_threshold: float = 0.99, patience: int = 5,
                  early_stop: bool = True, early_stop_threshold: float = 0.99, early_stop_patience: int = 10,
@@ -92,10 +93,5 @@ class NeuralCleanse(Transformer):
         pass
 
     def _check_params(self) -> None:
-        # TODO: finish this
-        pass
-        # if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
-        #     raise ValueError("The size of batches must be a positive integer.")
-        #
-        # if not isinstance(self.nb_epochs, (int, np.int)) or self.nb_epochs <= 0:
-        #     raise ValueError("The number of epochs must be a positive integer.")
+        if not isinstance(self.classifier, KerasClassifier):
+            raise NotImplementedError("Only Keras classifiers are supported for this defence.")
