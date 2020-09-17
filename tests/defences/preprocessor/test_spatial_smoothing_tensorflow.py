@@ -29,6 +29,39 @@ from tests.utils import add_warning, ARTTestException
 logger = logging.getLogger(__name__)
 
 
+# TODO these fixtures are duplicates from test_spatial_smoothing needs refactoring
+@pytest.fixture
+def image_batch(channels_first):
+    """
+    Image fixture of shape NHWC and NCHW.
+    """
+    test_input = np.repeat(np.array(range(6)).reshape(6, 1), 24, axis=1).reshape((2, 3, 4, 6))
+    if not channels_first:
+        test_input = np.transpose(test_input, (0, 2, 3, 1))
+    test_output = test_input.copy()
+    return test_input, test_output
+
+
+@pytest.fixture
+def video_batch(channels_first):
+    """
+    Video fixture of shape NFHWC and NCFHW.
+    """
+    test_input = np.repeat(np.array(range(6)).reshape(6, 1), 24, axis=1).reshape((1, 3, 2, 4, 6))
+    if not channels_first:
+        test_input = np.transpose(test_input, (0, 2, 3, 4, 1))
+    test_output = test_input.copy()
+    return test_input, test_output
+
+
+@pytest.fixture
+def tabular_batch():
+    """
+    Create tabular data fixture of shape (batch_size, features).
+    """
+    return np.zeros((2, 4))
+
+
 @pytest.mark.only_with_platform("tensorflow")
 class TestLocalSpatialSmoothingTensorFlowV2:
     """
@@ -69,25 +102,26 @@ class TestLocalSpatialSmoothingTensorFlowV2:
                 10,
                 marks=pytest.mark.xfail(
                     reason="Window size of 10 fails, because TensorFlow requires that Padding size should be less than "
-                    "the corresponding input dimension."
+                           "the corresponding input dimension."
                 ),
             ),
         ],
     )
     def test_spatial_smoothing_image_data(self, image_batch, channels_first, window_size, is_tf_version_2):
-        try:
-            if is_tf_version_2:
-                test_input, test_output = image_batch
+        # try:
+        if is_tf_version_2:
+            test_input, test_output = image_batch
 
-                if channels_first:
-                    exc_msg = "Only channels last input data is supported"
-                    with pytest.raises(ValueError, match=exc_msg):
-                        _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
-                else:
-                    spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
-                    assert_array_equal(spatial_smoothing(test_input)[0], test_output)
-        except ARTTestException as e:
-            add_warning(e)
+            if channels_first:
+                exc_msg = "Only channels last input data is supported"
+                with pytest.raises(ValueError, match=exc_msg):
+                    _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
+            else:
+                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first,
+                                                                 window_size=window_size)
+                assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+        # except ARTTestException as e:
+        #     add_warning(e)
 
     @pytest.mark.parametrize("channels_first", [True, False])
     def test_spatial_smoothing_video_data(self, video_batch, channels_first, is_tf_version_2):
