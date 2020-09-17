@@ -194,9 +194,6 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
             if not is_tf_version_2:
                 x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
                 y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
-                # tmp = x_train_mnist.shape[0] / default_batch_size
-                # x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(tmp, default_batch_size, 28, 28, 1))
-                # y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(tmp, default_batch_size, 10))
                 dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
                 return dataset.make_initializable_iterator()
 
