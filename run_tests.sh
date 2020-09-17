@@ -20,7 +20,7 @@ done
 
 mlFrameworkList=("tensorflow" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest -q -vv tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 done
 
