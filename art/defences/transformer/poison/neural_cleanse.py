@@ -48,7 +48,7 @@ class NeuralCleanse(Transformer):
     params = ["steps", "init_cost", "norm", "learning_rate", "attack_success_threshold", "patience", "early_stop",
               "early_stop_threshold", "early_stop_patience", "cost_multiplier", "batch_size"]
 
-    def __init__(self, classifier: "Classifier") -> None:
+    def __init__(self, classifier: "CLASSIFIER_TYPE") -> None:
         """
         Create an instance of the defensive distillation defence.
 
