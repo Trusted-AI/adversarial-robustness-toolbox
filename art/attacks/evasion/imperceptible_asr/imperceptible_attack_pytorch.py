@@ -298,7 +298,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         return results
 
-    def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray) -> Tuple["torch.Tensor", "torch.Tensor"]:
+    def _attack_1st_stage(self, x: np.ndarray, y: np.ndarray) -> Tuple["torch.Tensor", np.ndarray]:
         """
         The first stage of the attack.
 
@@ -310,7 +310,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                   class only supports targeted attack.
         :return: A tuple of two tensors:
                     - A tensor holding the candidate adversarial examples.
-                    - A tensor holding the original inputs.
+                    - An array holding the original inputs.
         """
         # Compute local shape
         local_batch_size = len(x)
@@ -579,9 +579,11 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         for i in range(len(theta_batch)):
             psd_transform_delta = self._psd_transform(
-                delta=local_delta_rescale[i, :], original_max_psd=original_max_psd_batch[i]
+                delta=local_delta_rescale[i+1, :], original_max_psd=original_max_psd_batch[i+1]
             )
-
+            print("aaaaaaaa", theta_batch.shape, original_max_psd_batch.shape, psd_transform_delta.shape)
+            print(theta_batch[0][0, :10])
+            print(original_max_psd_batch)
             loss = torch.mean(
                 torch.nn.ReLU(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device))
             )
@@ -613,6 +615,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         win_length = n_fft
 
         window = self.estimator.model.audio_conf.window.value
+
         if window == "hamming":
             window_fn = scipy.signal.windows.hamming
         elif window == "hann":
@@ -734,6 +737,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         win_length = n_fft
 
         window = self.estimator.model.audio_conf.window.value
+
         if window == "hamming":
             window_fn = torch.hamming_window
         elif window == "hann":
@@ -745,6 +749,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
 
+        print(sample_rate, '1111', window_size, win_length, n_fft, window, hop_length)
+
         # Create a transformer to transform between the two spaces
         transformer = torchaudio.transforms.Spectrogram(
             n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=window_fn, power=None
@@ -753,6 +759,15 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         # Transform the perturbation into the frequency space
         transformed_delta = transformer(delta)
+
+        # To get the center
+        transformed_delta = transformed_delta[:, 1:-1, 0]
+
+        print("transformed_delta", transformed_delta.shape, "delta", delta.shape )
+
+        print(transformed_delta[0:3, :, 0])
+        print(transformed_delta[0:3, :, 1])
+        print(original_max_psd)
 
         # Compute the psd matrix
         psd = (8. / 3.) * torch.abs(transformed_delta / win_length)
