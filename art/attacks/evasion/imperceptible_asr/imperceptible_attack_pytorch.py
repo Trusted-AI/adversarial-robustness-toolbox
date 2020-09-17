@@ -522,8 +522,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             # Total loss
             print(loss_1st_stage.shape)
             print(alpha.shape)
-            print(loss_2nd_stage.shape)
-            loss = loss_1st_stage + alpha * loss_2nd_stage
+            print(loss_2nd_stage.shape, loss_2nd_stage)
+            loss = loss_1st_stage + torch.tensor(alpha).to(self.estimator.device) * loss_2nd_stage
+            loss = torch.mean(loss)
 
             # Actual training
             if self._use_amp:
@@ -591,10 +592,15 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             loss = torch.mean(
                 relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device))
             )
-            loss = loss.expand(1, -1)
+            print('111', loss)
+            #loss = loss.expand(1, -1)
+            #print('222', loss)
             losses.append(loss)
+            print('333', losses)
 
-        losses = torch.cat(losses, dim=0)
+        #losses = torch.tensor(losses).to(self.estimator.device)
+        losses = torch.stack(losses)
+        print('444', losses)
 
         return losses
 
@@ -753,8 +759,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         else:
             raise NotImplementedError("Spectrogram window %s not supported." % window)
 
-        print(sample_rate, '1111', window_size, win_length, n_fft, window, hop_length)
-
         # Create a transformer to transform between the two spaces
         transformer = torchaudio.transforms.Spectrogram(
             n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=window_fn, power=None
@@ -766,12 +770,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         # To get the center
         transformed_delta = transformed_delta[:, 1:-1, 0]
-
-        print("transformed_delta", transformed_delta.shape, "delta", delta.shape )
-
-        #print(transformed_delta[0:3, :, 0])
-        #print(transformed_delta[0:3, :, 1])
-        print(original_max_psd)
 
         # Compute the psd matrix
         psd = (8. / 3.) * torch.abs(transformed_delta / win_length)
