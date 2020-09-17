@@ -21,12 +21,10 @@ import logging
 import os
 import unittest
 
-import numpy as np
-
 from art.defences.transformer.poison import NeuralCleanse
-from art.utils import load_dataset, random_targets, compute_accuracy
+from art.utils import load_dataset
 
-from tests.utils import master_seed, get_image_classifier_pt, get_tabular_classifier_pt, get_image_classifier_kr
+from tests.utils import master_seed, get_image_classifier_kr
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
