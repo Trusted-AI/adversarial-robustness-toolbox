@@ -26,8 +26,6 @@ import pytest
 from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
 from tests.utils import add_warning, ARTTestException
 
-from tests.defences.preprocessor.test_spatial_smoothing import image_batch, video_batch, tabular_batch
-
 logger = logging.getLogger(__name__)
 
 

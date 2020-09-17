@@ -24,8 +24,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2
-
-from tests.defences.preprocessor.test_spatial_smoothing import image_batch, video_batch, tabular_batch
+from tests.utils import add_warning, ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -38,21 +37,27 @@ class TestLocalSpatialSmoothingTensorFlowV2:
 
     @pytest.mark.xfail()
     def test_spatial_smoothing_median_filter_call(self, is_tf_version_2):
-        if is_tf_version_2:
-            test_input = np.array([[[[1], [2]], [[3], [4]]]])
-            test_output = np.array([[[[1], [2]], [[3], [3]]]])
-            spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=2)
+        try:
+            if is_tf_version_2:
+                test_input = np.array([[[[1], [2]], [[3], [4]]]])
+                test_output = np.array([[[[1], [2]], [[3], [3]]]])
+                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=2)
 
-            assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+                assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+        except ARTTestException as e:
+            add_warning(e)
 
     def test_spatial_smoothing_median_filter_call_expected_behavior(self, is_tf_version_2):
-        if is_tf_version_2:
-            test_input = np.array([[[[1], [2]], [[3], [4]]]])
-            test_output = np.array([[[[2], [2]], [[2], [2]]]])
-            print(test_input.shape)
-            spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=2)
+        try:
+            if is_tf_version_2:
+                test_input = np.array([[[[1], [2]], [[3], [4]]]])
+                test_output = np.array([[[[2], [2]], [[2], [2]]]])
+                print(test_input.shape)
+                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False, window_size=2)
 
-            assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+                assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+        except ARTTestException as e:
+            add_warning(e)
 
     @pytest.mark.parametrize("channels_first", [True, False])
     @pytest.mark.parametrize(
@@ -70,53 +75,71 @@ class TestLocalSpatialSmoothingTensorFlowV2:
         ],
     )
     def test_spatial_smoothing_image_data(self, image_batch, channels_first, window_size, is_tf_version_2):
-        if is_tf_version_2:
-            test_input, test_output = image_batch
+        try:
+            if is_tf_version_2:
+                test_input, test_output = image_batch
 
-            if channels_first:
-                exc_msg = "Only channels last input data is supported"
-                with pytest.raises(ValueError, match=exc_msg):
-                    _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
-            else:
-                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
-                assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+                if channels_first:
+                    exc_msg = "Only channels last input data is supported"
+                    with pytest.raises(ValueError, match=exc_msg):
+                        _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
+                else:
+                    spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
+                    assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+        except ARTTestException as e:
+            add_warning(e)
 
     @pytest.mark.parametrize("channels_first", [True, False])
     def test_spatial_smoothing_video_data(self, video_batch, channels_first, is_tf_version_2):
-        if is_tf_version_2:
-            test_input, test_output = video_batch
+        try:
+            if is_tf_version_2:
+                test_input, test_output = video_batch
 
-            if channels_first:
-                exc_msg = "Only channels last input data is supported"
-                with pytest.raises(ValueError, match=exc_msg):
-                    _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
-            else:
-                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
-                assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+                if channels_first:
+                    exc_msg = "Only channels last input data is supported"
+                    with pytest.raises(ValueError, match=exc_msg):
+                        _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
+                else:
+                    spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
+                    assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+        except ARTTestException as e:
+            add_warning(e)
 
     def test_non_spatial_data_error(self, tabular_batch, is_tf_version_2):
-        if is_tf_version_2:
-            test_input = tabular_batch
-            spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False)
+        try:
+            if is_tf_version_2:
+                test_input = tabular_batch
+                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=False)
 
-            exc_msg = "Unrecognized input dimension. Spatial smoothing can only be applied to image"
-            with pytest.raises(ValueError, match=exc_msg):
-                spatial_smoothing(test_input)
+                exc_msg = "Unrecognized input dimension. Spatial smoothing can only be applied to image"
+                with pytest.raises(ValueError, match=exc_msg):
+                    spatial_smoothing(test_input)
+        except ARTTestException as e:
+            add_warning(e)
 
     def test_window_size_error(self, is_tf_version_2):
-        if is_tf_version_2:
-            exc_msg = "Sliding window size must be a positive integer."
-            with pytest.raises(ValueError, match=exc_msg):
-                SpatialSmoothingTensorFlowV2(window_size=0)
+        try:
+            if is_tf_version_2:
+                exc_msg = "Sliding window size must be a positive integer."
+                with pytest.raises(ValueError, match=exc_msg):
+                    SpatialSmoothingTensorFlowV2(window_size=0)
+        except ARTTestException as e:
+            add_warning(e)
 
     def test_triple_clip_values_error(self, is_tf_version_2):
-        if is_tf_version_2:
-            exc_msg = "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
-            with pytest.raises(ValueError, match=exc_msg):
-                SpatialSmoothingTensorFlowV2(clip_values=(0, 1, 2))
+        try:
+            if is_tf_version_2:
+                exc_msg = "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
+                with pytest.raises(ValueError, match=exc_msg):
+                    SpatialSmoothingTensorFlowV2(clip_values=(0, 1, 2))
+        except ARTTestException as e:
+            add_warning(e)
 
     def test_relation_clip_values_error(self, is_tf_version_2):
-        if is_tf_version_2:
-            exc_msg = "Invalid 'clip_values': min >= max."
-            with pytest.raises(ValueError, match=exc_msg):
-                SpatialSmoothingTensorFlowV2(clip_values=(1, 0))
+        try:
+            if is_tf_version_2:
+                exc_msg = "Invalid 'clip_values': min >= max."
+                with pytest.raises(ValueError, match=exc_msg):
+                    SpatialSmoothingTensorFlowV2(clip_values=(1, 0))
+        except ARTTestException as e:
+            add_warning(e)
