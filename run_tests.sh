@@ -26,7 +26,7 @@ done
 
 mlFrameworkList=("tensorflow")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
   pytest -q tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
