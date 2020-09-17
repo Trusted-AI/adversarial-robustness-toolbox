@@ -31,7 +31,7 @@ import keras.backend as K
 from keras_preprocessing.image import ImageDataGenerator
 from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.estimators.certification.neural_cleanse.neural_cleanse import NeuralCleanseMixin
 from art.estimators.classification import KerasClassifier
 from art.estimators.classification.classifier import Classifier
@@ -47,6 +47,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
+PREPROCESSING_TYPE = Optional[Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]]
+
 
 class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
     """
@@ -61,10 +64,10 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
             model: KERAS_MODEL_TYPE,
             use_logits: bool = False,
             channels_first: bool = False,
-            clip_values: Optional[CLIP_VALUES_TYPE] = None,
+            clip_values: Optional["CLIP_VALUES_TYPE"] = None,
             preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
             postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-            preprocessing: PREPROCESSING_TYPE = (0, 1),
+            preprocessing: "PREPROCESSING_TYPE" = (0, 1),
             input_layer: int = 0,
             output_layer: int = 0,
             steps: int = 1000, init_cost: float = 1e-3, norm: Union[int, float] = 2,
