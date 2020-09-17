@@ -18,7 +18,7 @@
 """
 This module implements Neural Cleanse on a classifier.
 
-| Paper link: https://arxiv.org/abs/1902.02918
+| Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -35,10 +35,10 @@ logger = logging.getLogger(__name__)
 
 class NeuralCleanseMixin(AbstainPredictorMixin):
     """
-    Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
-    in Cohen et al. (2019).
+    Implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor Attacks in Neural Networks.
+    Wang et al. (2019).
 
-    | Paper link: https://arxiv.org/abs/1902.02918
+    | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
     """
 
     def __init__(self, steps: int = 1000, *args, init_cost: float = 1e-3, norm: Union[int, float] = 2,
@@ -107,7 +107,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
     def predict(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:
         """
-        Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
+        Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
         :param x: Test set.
         :param batch_size: Batch size.
@@ -115,14 +115,13 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         """
         predictions = self._predict_classifier(x)
 
-        if not self.top_indices:
+        if len(self.top_indices) == 0:
             logger.warning("Filtering mitigation not activated, suspected backdoors may be triggered")
             return predictions
 
         all_activations = self._get_penultimate_layer_activations(x)
         suspected_neuron_activations = all_activations[:, self.top_indices]
-        avg_neuron_activations = np.average(suspected_neuron_activations, axis=1)
-        predictions[avg_neuron_activations > self.activation_threshold] = self.abstain()
+        predictions[np.any(suspected_neuron_activations > self.activation_threshold, axis=1)] = self.abstain()
 
         return predictions
 
@@ -135,15 +134,21 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         :param mitigation_types: The types of mitigation method, can include 'unlearning', 'pruning', or 'filtering'
         :return: Tuple of length 2 of the selected class and certified radius.
         """
-        backdoor_data, backdoor_labels = self.backdoor_examples(x_val, y_val)
+        clean_data, backdoor_data, backdoor_labels = self.backdoor_examples(x_val, y_val)
+
+        # If no backdoors detected from outlier detection, do nothing
+        if len(backdoor_data) == 0:
+            logger.info("No backdoor labels were detected")
+            return
+
         if "pruning" in mitigation_types or "filtering" in mitigation_types:
             # get activations from penultimate layer from clean and backdoor images
-            clean_activations = self._get_penultimate_layer_activations(x_val)
+            clean_activations = self._get_penultimate_layer_activations(clean_data)
             backdoor_activations = self._get_penultimate_layer_activations(backdoor_data)
 
             # rank activations descending by difference in backdoor and clean inputs
             # TODO: explore ranking neurons for each backdoor label
-            ranked_indices = np.argsort(clean_activations - backdoor_activations)
+            ranked_indices = np.argsort(np.sum(clean_activations - backdoor_activations, axis=0))
 
         for mitigation_type in mitigation_types:
             if mitigation_type == "unlearning":
@@ -152,38 +157,42 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
                 self._fit_classifier(backdoor_data, backdoor_labels, batch_size=1, nb_epochs=1)
 
-            if mitigation_type == "pruning":
+            elif mitigation_type == "pruning":
                 # zero out activations from highly ranked neurons until backdoor is unresponsive
                 # This mitigation method works well for backdoors.
 
                 backdoor_effective = self.check_backdoor_effective(backdoor_data, backdoor_labels)
                 num_neurons_pruned = 0
-                total_neurons = len(clean_activations)
+                total_neurons = clean_activations.shape[1]
 
                 # starting from indices of high activation neurons, set weights (and biases) of high activation
                 # neurons to zero, until backdoor ineffective or pruned 30% of neurons
+                logger.info("Pruning model...")
+                print("Pruning model...")
                 while backdoor_effective and num_neurons_pruned < 0.3 * total_neurons and \
                         num_neurons_pruned < len(ranked_indices):
                     self._prune_neuron_at_index(ranked_indices[num_neurons_pruned])
                     num_neurons_pruned += 1
                     backdoor_effective = self.check_backdoor_effective(backdoor_data, backdoor_labels)
+                logger.info("Pruning complete. Pruned {} neurons".format(num_neurons_pruned))
+                print("Pruning complete. Pruned {} neurons".format(num_neurons_pruned))
 
-            if mitigation_type == "filtering":
+            elif mitigation_type == "filtering":
                 # using top 1% of ranked neurons by activation difference to adv vs. clean inputs
                 # generate a profile of average activation, when above threshold, abstain
 
                 # get indicies of top 1% of ranked neurons
-                num_top = np.ceil(len(ranked_indices) * 0.01)
+                num_top = int(np.ceil(len(ranked_indices) * 0.01))
                 self.top_indices = ranked_indices[:num_top]
 
                 # measure average activation for clean images and backdoor images
-                avg_clean_activation = np.average(clean_activations[self.top_indices])
-                std_clean_activation = np.std(clean_activations[self.top_indices])
+                avg_clean_activation = np.average(clean_activations[:, self.top_indices], axis=0)
+                std_clean_activation = np.std(clean_activations[:, self.top_indices], axis=0)
 
                 # if average activation for selected neurons is above a threshold, flag input and abstain
                 # activation over threshold function can be called at predict
                 # TODO: explore different values for threshold
-                self.activation_threshold = avg_clean_activation + 2 * std_clean_activation
+                self.activation_threshold = avg_clean_activation + 1 * std_clean_activation
 
             else:
                 raise TypeError("Mitigation type: `" + mitigation_type + "` not supported")
@@ -197,16 +206,17 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         :return: true if any of the backdoors are effective on the model
         """
         backdoor_predictions = self._predict_classifier(backdoor_data)
-        backdoor_effective = np.all(backdoor_predictions == backdoor_labels, axis=1)
+        backdoor_effective = np.logical_not(np.all(backdoor_predictions == backdoor_labels, axis=1))
         return np.any(backdoor_effective)
 
-    def backdoor_examples(self, x_val: np.ndarray, y_val: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def backdoor_examples(self, x_val: np.ndarray, y_val: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Generate reverse-engineered backdoored examples using validation data
         :param x_val: validation data
         :param y_val: validation labels
-        :return: example backdoored data and labels
+        :return: a tuple containing (clean data, backdoored data, labels)
         """
+        clean_data = []
         example_data = []
         example_labels = []
         for backdoored_label, mask, pattern in self.outlier_detection(x_val, y_val):
@@ -216,14 +226,18 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
             if len(data_for_class) == 0:
                 logger.warning("No validation data exists for infected class: " + str(backdoored_label))
 
+            clean_data.append(np.copy(data_for_class))
             data_for_class = (1 - mask) * data_for_class + mask * pattern
             example_data.append(data_for_class)
             example_labels.append(labels_for_class)
 
-        example_data = np.vstack(example_data)
-        example_labels = np.vstack(example_labels)
+        # If any backdoor examples were found, stack data into one array
+        if example_data:
+            clean_data = np.vstack(clean_data)
+            example_data = np.vstack(example_data)
+            example_labels = np.vstack(example_labels)
 
-        return example_data, example_labels
+        return clean_data, example_data, example_labels
 
     def generate_backdoor(self, x_val: np.ndarray, y_val: np.ndarray, y_target: np.ndarray) -> \
             Tuple[np.ndarray, np.ndarray]:
@@ -238,12 +252,14 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
         Returns a tuple of suspected of suspected poison labels and their mask and pattern
         :return: A list of tuples containing the the class index, mask, and pattern for suspected labels
         """
-        num_classes = self.nb_classes
         l1_norms = []
         masks = []
         patterns = []
+        num_classes = self.nb_classes
         for class_idx in range(num_classes):
-            mask, pattern = self.generate_backdoor(x_val, y_val, to_categorical(np.ndarray([class_idx]), num_classes))
+            # Assuming classes are indexed
+            target_label = to_categorical([class_idx], num_classes).flatten()
+            mask, pattern = self.generate_backdoor(x_val, y_val, target_label)
             norm = np.sum(np.abs(mask))
             l1_norms.append(norm)
             masks.append(mask)

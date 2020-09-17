@@ -28,15 +28,13 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import keras.backend as K
 from keras_preprocessing.image import ImageDataGenerator
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 from art.estimators.certification.neural_cleanse.neural_cleanse import NeuralCleanseMixin
 from art.estimators.classification import KerasClassifier
 from art.estimators.classification.classifier import Classifier
 from art.estimators.classification.keras import KERAS_MODEL_TYPE
-
-from art.utils import Deprecated, deprecated_keyword_arg
 
 from keras.losses import categorical_crossentropy
 from keras.metrics import categorical_accuracy
@@ -49,20 +47,18 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-@deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
 class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
     """
-    Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
-    in Cohen et al. (2019).
+    Implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor Attacks in Neural Networks.
+    Wang et al. (2019).
 
-    | Paper link: https://arxiv.org/abs/1902.02918
+    | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
     """
 
     def __init__(
             self,
             model: KERAS_MODEL_TYPE,
             use_logits: bool = False,
-            channel_index=Deprecated,
             channels_first: bool = False,
             clip_values: Optional[CLIP_VALUES_TYPE] = None,
             preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
@@ -81,8 +77,6 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         :param model: Keras model, neural network or other.
         :param use_logits: True if the output of the model are logits; false for probabilities or any other type of
                outputs. Logits output should be favored when possible to ensure attack efficiency.
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
                maximum values allowed for features. If floats are provided, these will be used as the range of all
@@ -114,7 +108,6 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         super().__init__(
             model=model,
             use_logits=use_logits,
-            channel_index=channel_index,
             channels_first=channels_first,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -208,8 +201,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         early_stop_counter = 0
         early_stop_reg_best = reg_best
         mini_batch_size = len(x_val) // self.batch_size
-
-        for _ in tqdm(range(self.steps), desc="generating backdoor"):
+        for _ in tqdm(range(self.steps), desc="Generating backdoor for class {}".format(np.argmax(y_target))):
             loss_ce_list = []
             loss_reg_list = []
             loss_list = []
@@ -287,12 +279,11 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
 
     def _predict_classifier(self, x: np.ndarray) -> np.ndarray:
         x = x.astype(ART_NUMPY_DTYPE)
-        self._model.get_layer(len(self.layer_names) - 2).get_weights()
         return KerasClassifier.predict(self, x=x, batch_size=self.batch_size)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
         x = x.astype(ART_NUMPY_DTYPE)
-        return KerasClassifier.fit(self, x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
+        return self.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def _get_penultimate_layer_activations(self, x: np.ndarray) -> np.ndarray:
         """
@@ -302,7 +293,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
         penultimate_layer = len(self.layer_names) - 2
-        return KerasClassifier.get_activations(self, x, penultimate_layer, batch_size=self.batch_size, framework=False)
+        return self.get_activations(x, penultimate_layer, batch_size=self.batch_size, framework=False)
 
     def _prune_neuron_at_index(self, index: int) -> None:
         """
@@ -310,14 +301,15 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
 
         :param index: An index of the penultimate layer
         """
-        layer = self._model.get_layer(len(self.layer_names) - 2)
-        # TODO: ensure this works
-        new_weights = np.zeros_like(layer.get_weights[index])
-        layer.set_weights(new_weights)
+        layer = self._model.layers[len(self.layer_names) - 2]
+        weights, biases = layer.get_weights[index]
+        new_weights = np.zeros_like(weights)
+        new_biases = np.zeros_like(biases)
+        layer.set_weights([new_weights, new_biases])
 
     def predict(self, x, batch_size=128):
         """
-        Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
+        Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
         :param x: Test set.
         :type x: `np.ndarray`
