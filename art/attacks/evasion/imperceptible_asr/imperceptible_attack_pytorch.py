@@ -266,21 +266,24 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                   class only supports targeted attack.
         :return: A batch of adversarial examples.
         """
+        # First stage of attack
+        successful_adv_input_1st_stage, original_input = self._attack_1st_stage(x=x, y=y)
+        successful_perturbation_1st_stage = successful_adv_input_1st_stage - torch.tensor(original_input).to(
+            self.estimator.device
+        )
+
         # Compute original masking threshold and maximum psd
         theta_batch = []
         original_max_psd_batch = []
 
         for i in range(len(x)):
-            theta, original_max_psd = self._compute_masking_threshold(x[i])
+            theta, original_max_psd = self._compute_masking_threshold(original_input[i])
+            theta = theta.transpose(1, 0)
             theta_batch.append(theta)
             original_max_psd_batch.append(original_max_psd)
 
         theta_batch = np.array(theta_batch)
         original_max_psd_batch = np.array(original_max_psd_batch)
-
-        # First stage of attack
-        successful_adv_input_1st_stage, original_input = self._attack_1st_stage(x=x, y=y)
-        successful_perturbation_1st_stage = successful_adv_input_1st_stage - original_input
 
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
@@ -381,7 +384,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
 
         result = torch.stack(successful_adv_input)
-        original_input = torch.tensor(original_input).to(self.estimator.device)
 
         return result, original_input
 
@@ -576,16 +578,18 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         """
         # Compute loss for masking threshold
         losses = []
+        relu = torch.nn.ReLU()
 
         for i in range(len(theta_batch)):
             psd_transform_delta = self._psd_transform(
-                delta=local_delta_rescale[i+1, :], original_max_psd=original_max_psd_batch[i+1]
+                delta=local_delta_rescale[i, :], original_max_psd=original_max_psd_batch[i]
             )
             print("aaaaaaaa", theta_batch.shape, original_max_psd_batch.shape, psd_transform_delta.shape)
-            print(theta_batch[0][0, :10])
-            print(original_max_psd_batch)
+            #print(torch.nn.ReLU(psd_transform_delta - torch.tensor(theta_batch[i])))
+            print((psd_transform_delta - torch.tensor(theta_batch[i])).shape)
+
             loss = torch.mean(
-                torch.nn.ReLU(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device))
+                relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device))
             )
             loss = loss.expand(1, -1)
             losses.append(loss)
@@ -765,8 +769,8 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         print("transformed_delta", transformed_delta.shape, "delta", delta.shape )
 
-        print(transformed_delta[0:3, :, 0])
-        print(transformed_delta[0:3, :, 1])
+        #print(transformed_delta[0:3, :, 0])
+        #print(transformed_delta[0:3, :, 1])
         print(original_max_psd)
 
         # Compute the psd matrix
