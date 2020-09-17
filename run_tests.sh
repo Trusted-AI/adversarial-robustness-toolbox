@@ -55,7 +55,7 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
   pytest -q -vv tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_common.py $mlFramework"; fi
-  pytest -q tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest -q -vv tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
 done
 
