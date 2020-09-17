@@ -1344,7 +1344,6 @@ def get_tabular_classifier_kr(load_init=True):
 class ARTTestException(Exception):
     def __init__(self, message):
         super().__init__(message)
-        # self.errors = errors
 
 
 class ARTTestFixtureNotImplemented(ARTTestException):
