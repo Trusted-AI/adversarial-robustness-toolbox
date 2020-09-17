@@ -548,6 +548,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         win_length = n_fft
 
         window = self._model.audio_conf.window.value
+
         if window == "hamming":
             window_fn = torch.hamming_window
         elif window == "hann":

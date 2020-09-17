@@ -520,6 +520,9 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             )
 
             # Total loss
+            print(loss_1st_stage.shape)
+            print(alpha.shape)
+            print(loss_2nd_stage.shape)
             loss = loss_1st_stage + alpha * loss_2nd_stage
 
             # Actual training
@@ -584,9 +587,6 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             psd_transform_delta = self._psd_transform(
                 delta=local_delta_rescale[i, :], original_max_psd=original_max_psd_batch[i]
             )
-            print("aaaaaaaa", theta_batch.shape, original_max_psd_batch.shape, psd_transform_delta.shape)
-            #print(torch.nn.ReLU(psd_transform_delta - torch.tensor(theta_batch[i])))
-            print((psd_transform_delta - torch.tensor(theta_batch[i])).shape)
 
             loss = torch.mean(
                 relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device))
