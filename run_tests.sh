@@ -8,7 +8,7 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 mlFrameworkList=("pytorch")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q -s tests/attacks/evasion/test_shadow_attack.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest -q -vv -s tests/attacks/evasion/test_shadow_attack.py --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
   pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework=$mlFramework --skip_travis=True --durations=0
