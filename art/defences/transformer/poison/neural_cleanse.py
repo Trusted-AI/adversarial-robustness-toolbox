@@ -53,8 +53,6 @@ class NeuralCleanse(Transformer):
         Create an instance of the neural cleanse defence.
 
         :param classifier: A trained classifier.
-        :param batch_size: Size of batches.
-        :param nb_epochs: Number of epochs to use for training.
         """
         super().__init__(classifier=classifier)
         self._is_fitted = False
