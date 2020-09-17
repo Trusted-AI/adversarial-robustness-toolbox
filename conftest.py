@@ -21,14 +21,9 @@ import os
 import shutil
 import tempfile
 
-from keras.preprocessing.image import ImageDataGenerator
-from mxnet import gluon
 import numpy as np
 import pytest
 import requests
-import tensorflow as tf
-from torch.utils.data import DataLoader
-import torch
 
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
@@ -179,6 +174,7 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
 
     def _get_image_iterator():
         if framework == "keras" or framework == "kerastf":
+            from keras.preprocessing.image import ImageDataGenerator
             keras_gen = ImageDataGenerator(
                 width_shift_range=0.075,
                 height_shift_range=0.075,
@@ -191,6 +187,7 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
             return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
 
         if framework == "tensorflow":
+            import tensorflow as tf
             if not is_tf_version_2:
                 x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
                 y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
@@ -198,14 +195,16 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
                 return dataset.make_initializable_iterator()
 
         if framework == "pytorch":
+            import torch
             # Create tensors from data
             x_train_tens = torch.from_numpy(x_train_mnist)
             x_train_tens = x_train_tens.float()
             y_train_tens = torch.from_numpy(y_train_mnist)
             dataset = torch.utils.data.TensorDataset(x_train_tens, y_train_tens)
-            return DataLoader(dataset=dataset, batch_size=default_batch_size, shuffle=True)
+            return torch.utils.data.DataLoader(dataset=dataset, batch_size=default_batch_size, shuffle=True)
 
         if framework == "mxnet":
+            from mxnet import gluon
             dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
             return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
 
