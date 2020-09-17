@@ -20,7 +20,6 @@ import logging
 import os
 import shutil
 import tempfile
-import warnings
 
 from keras.preprocessing.image import ImageDataGenerator
 from mxnet import gluon
