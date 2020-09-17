@@ -143,7 +143,6 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         # Normalize pattern between [0, 1]
         self.pattern_tensor_raw = K.variable(pattern)
         self.pattern_tensor = K.expand_dims(K.tanh(self.pattern_tensor_raw) / (2 - self.epsilon) + 0.5, axis=0)
-        # self.pattern_tensor = K.tanh(self.pattern_tensor_raw) / (2 - self.epsilon) + 0.5
 
         reverse_mask_tensor = K.ones_like(self.mask_tensor) - self.mask_tensor
         input_tensor = K.placeholder(model.input_shape)
@@ -166,7 +165,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         self.loss = self.loss_ce + self.loss_reg * self.cost_tensor
         self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
 
-        self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw,  self.mask_tensor_raw], loss=self.loss)
+        self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss)
         self.train = K.function([input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss, self.loss_acc],
                                 updates=self.updates)
 
