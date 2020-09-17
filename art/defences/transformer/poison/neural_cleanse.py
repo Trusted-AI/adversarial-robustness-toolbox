@@ -64,7 +64,7 @@ class NeuralCleanse(Transformer):
                  early_stop: bool = True, early_stop_threshold: float = 0.99, early_stop_patience: int = 10,
                  cost_multiplier: float = 1.5, batch_size: int = 32) -> "Classifier":
         """
-        Perform the defensive distillation defence mechanism and return a robuster classifier.
+        Perform the Neural Cleanse defence mechanism and return a robuster classifier.
 
         :param x: Dataset for training the transformed classifier.
         :param transformed_classifier: A classifier to be transformed for increased robustness. Note that, the
