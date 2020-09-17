@@ -58,7 +58,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
-    attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps"]
+    attack_params = FastGradientMethod.attack_params + ["max_iter", "random_eps", "verbose"]
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
@@ -72,6 +72,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        verbose: bool = True,
     ) -> None:
         """
         Create a :class:`.ProjectedGradientDescentCommon` instance.
@@ -89,6 +90,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         super().__init__(
             estimator=estimator,  # type: ignore
@@ -102,6 +104,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         )
         self.max_iter = max_iter
         self.random_eps = random_eps
+        self.verbose = verbose
         ProjectedGradientDescentCommon._check_params(self)
 
         if self.random_eps:
@@ -205,6 +208,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        verbose: bool = True,
     ) -> None:
         """
         Create a :class:`.ProjectedGradientDescentNumpy` instance.
@@ -222,6 +226,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         super().__init__(
             estimator=estimator,
@@ -233,6 +238,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             num_random_init=num_random_init,
             batch_size=batch_size,
             random_eps=random_eps,
+            verbose=verbose,
         )
 
         self._project = True
@@ -267,10 +273,12 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             adv_x_best = None
             rate_best = None
 
-            for _ in trange(max(1, self.num_random_init), desc="PGD - Random Initializations"):
+            for _ in trange(
+                max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose
+            ):
                 adv_x = x.astype(ART_NUMPY_DTYPE)
 
-                for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", leave=False):
+                for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", leave=False, disable=not self.verbose):
                     adv_x = self._compute(
                         adv_x,
                         x,
@@ -314,7 +322,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             # Start to compute adversarial examples
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
-            for i_max_iter in trange(self.max_iter, desc="PGD - Iterations"):
+            for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", disable=not self.verbose):
                 adv_x = self._compute(
                     adv_x,
                     x,
