@@ -50,7 +50,7 @@ class NeuralCleanse(Transformer):
 
     def __init__(self, classifier: "CLASSIFIER_TYPE") -> None:
         """
-        Create an instance of the defensive distillation defence.
+        Create an instance of the neural cleanse defence.
 
         :param classifier: A trained classifier.
         :param batch_size: Size of batches.
