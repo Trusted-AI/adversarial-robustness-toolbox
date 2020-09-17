@@ -514,6 +514,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         y: Optional[np.ndarray] = None,
         compute_gradient: bool = False,
         tensor_input: bool = False,
+        real_lengths: Optional[np.ndarray] = None
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
         """
         Transform the user input space into the model input space.
@@ -525,6 +526,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                   lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :param compute_gradient: Indicate whether to compute gradients for the input `x`.
         :param tensor_input: Indicate whether input is tensor.
+        :param real_lengths: Real lengths of original sequences.
         :return: A tuple of inputs and targets in the model space with the original index
                  `(inputs, targets, input_percentages, target_sizes, batch_idx)`, where:
                     - inputs: model inputs of shape (nb_samples, nb_frequencies, seq_length).
@@ -588,7 +590,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 x[i].requires_grad = True
 
             # Transform the sequence into the frequency space
-            transformed_input = transformer(x[i])
+            if tensor_input and real_lengths is not None:
+                transformed_input = transformer(x[i][: real_lengths[i]])
+            else:
+                transformed_input = transformer(x[i])
+
             spectrogram, _ = torchaudio.functional.magphase(transformed_input)
             spectrogram = torch.log1p(spectrogram)
 
