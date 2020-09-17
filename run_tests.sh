@@ -14,7 +14,7 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   pytest -q -vv tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
 
-  pytest -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest -q -vv tests/classifiersFrameworks/test_pytorch.py  --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_pytorch.py tests"; fi
 done
 
