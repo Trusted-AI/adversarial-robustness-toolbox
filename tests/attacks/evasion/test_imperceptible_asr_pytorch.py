@@ -127,7 +127,7 @@ class TestImperceptibleASRPytorch:
     def _test_all(self, request, setup_class):
         # Only import if deep speech module is available
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-        from art.attacks.evasion.imperceptible_asr.imperceptible_attack_pytorch import ImperceptibleASRPytorch
+        from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPytorch
 
         # Without amp
         if request.param is False:
