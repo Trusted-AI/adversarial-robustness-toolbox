@@ -87,7 +87,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
     def __init__(
         self,
         estimator: PyTorchDeepSpeech,
-        initial_eps: float = 2000,
+        initial_eps: float = 0.001,
         max_iter_1st_stage: int = 1000,
         max_iter_2nd_stage: int = 4000,
         learning_rate_1st_stage: float = 0.1,
@@ -245,7 +245,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             # First reset delta
             self.global_optimal_delta.data = torch.zeros(
                 self.batch_size, self.global_max_length
-            ).type(torch.FloatTensor)
+            ).type(torch.float32)
 
             # Then compute the batch
             adv_x_batch = self._generate_batch(
@@ -290,7 +290,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         # Reset delta with new result
         local_batch_shape = successful_adv_input_1st_stage.shape
-        self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.FloatTensor)
+        self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
         self.global_optimal_delta.data[
             : local_batch_shape[0], : local_batch_shape[1]
         ] = successful_perturbation_1st_stage
@@ -324,11 +324,11 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize rescale
-        rescale = np.ones([local_batch_size, local_max_length]) * self.initial_rescale
+        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float32) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length])
-        original_input = np.zeros([local_batch_size, local_max_length])
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
@@ -336,6 +336,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
         # Optimization loop
         successful_adv_input = [None] * local_batch_size
+        trans = [None] * local_batch_size
 
         for iter_1st_stage_idx in range(self.max_iter_1st_stage):
             # Zero the parameter gradients
@@ -381,14 +382,14 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
                         # Save the best adversarial example
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
+                        trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
             # If attack is unsuccessful
             if iter_1st_stage_idx == self.max_iter_1st_stage - 1:
                 for local_batch_size_idx in range(local_batch_size):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
-
-            print("Stage 1 time", iter_1st_stage_idx, decoded_output, y)
+                        trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
         result = torch.stack(successful_adv_input)
 
@@ -494,12 +495,12 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize alpha and rescale
-        alpha = np.array([self.initial_alpha] * local_batch_size)
-        rescale = np.ones([local_batch_size, local_max_length]) * self.initial_rescale
+        alpha = np.array([self.initial_alpha] * local_batch_size, dtype=np.float32)
+        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float32) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length])
-        original_input = np.zeros([local_batch_size, local_max_length])
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
@@ -508,6 +509,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         # Optimization loop
         successful_adv_input = [None] * local_batch_size
         best_loss_2nd_stage = [np.inf] * local_batch_size
+        trans = [None] * local_batch_size
 
         for iter_2nd_stage_idx in range(self.max_iter_2nd_stage):
             # Zero the parameter gradients
@@ -557,6 +559,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
 
                         # Save the best adversarial example
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
+                        trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
                     # Adjust to increase the alpha coefficient
                     if iter_2nd_stage_idx % self.num_iter_increase_alpha == 0:
@@ -572,8 +575,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                 for local_batch_size_idx in range(local_batch_size):
                     if successful_adv_input[local_batch_size_idx] is None:
                         successful_adv_input[local_batch_size_idx] = masked_adv_input[local_batch_size_idx]
-
-            print("Stage 2 time", iter_2nd_stage_idx, decoded_output, y)
+                        trans[local_batch_size_idx] = decoded_output[local_batch_size_idx]
 
         result = torch.stack(successful_adv_input)
 
@@ -659,7 +661,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         barks = 13 * np.arctan(0.00076 * freqs) + 3.5 * np.arctan(pow(freqs / 7500.0, 2))
 
         # Compute quiet threshold
-        ath = np.zeros(len(barks)) - np.inf
+        ath = np.zeros(len(barks), dtype=np.float32) - np.inf
         bark_idx = np.argmax(barks > 1)
         ath[bark_idx:] = (3.64 * pow(freqs[bark_idx:] * 0.001, -0.8) -
                           6.5 * np.exp(-0.6 * pow(0.001 * freqs[bark_idx:] - 3.3, 2)) +
@@ -678,7 +680,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             if len(psd[:, i]) - 1 in masker_idx:
                 masker_idx = np.delete(masker_idx, len(psd[:, i]) - 1)
 
-            barks_psd = np.zeros([len(masker_idx), 3])
+            barks_psd = np.zeros([len(masker_idx), 3], dtype=np.float32)
             barks_psd[:, 0] = barks[masker_idx]
             barks_psd[:, 1] = 10 * np.log10(
                 pow(10, psd[:, i][masker_idx - 1] / 10.) +
@@ -717,7 +719,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
             for m in range(barks_psd.shape[0]):
                 d_z = barks - barks_psd[m, 0]
                 zero_idx = np.argmax(d_z > 0)
-                s_f = np.zeros(len(d_z))
+                s_f = np.zeros(len(d_z), dtype=np.float32)
                 s_f[: zero_idx] = 27 * d_z[: zero_idx]
                 s_f[zero_idx:] = (-27 + 0.37 * max(barks_psd[m, 1] - 40, 0)) * d_z[zero_idx:]
                 t_s.append(barks_psd[m, 1] + delta[m] + s_f)
