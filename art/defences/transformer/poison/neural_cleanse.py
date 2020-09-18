@@ -23,6 +23,7 @@ This module implements Neural Cleanse (Wang et. al. 2019)
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+import keras
 from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
@@ -84,7 +85,7 @@ class NeuralCleanse(Transformer):
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimiation
         :param batch_size: The batch size for optimizations in the Neural Cleanse optimiation
         """
-        if isinstance(transformed_classifier, KerasClassifier):
+        if isinstance(transformed_classifier, KerasClassifier) and keras.__version__ == '2.2.4':
             transformed_classifier = KerasNeuralCleanse(model=transformed_classifier.model, steps=steps,
                                                         init_cost=init_cost, norm=norm, learning_rate=learning_rate,
                                                         attack_success_threshold=attack_success_threshold,
@@ -94,7 +95,7 @@ class NeuralCleanse(Transformer):
                                                         cost_multiplier=cost_multiplier, batch_size=batch_size)
             return transformed_classifier
         else:
-            raise NotImplementedError("Only Keras classifier are supported for this defence.")
+            raise NotImplementedError("Only Keras classifiers (v2.2.4) are supported for this defence.")
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
