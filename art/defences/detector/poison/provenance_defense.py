@@ -34,7 +34,7 @@ from art.defences.detector.poison.poison_filtering_defence import PoisonFilterin
 from art.utils import segment_by_class, performance_diff
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +60,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_TYPE",
         x_train: np.ndarray,
         y_train: np.ndarray,
         p_train: np.ndarray,
@@ -69,7 +69,6 @@ class ProvenanceDefense(PoisonFilteringDefence):
         eps: float = 0.2,
         perf_func: str = "accuracy",
         pp_valid: float = 0.2,
-        **kwargs
     ) -> None:
         """
         Create an :class:`.ProvenanceDefense` object with the provided classifier.
@@ -84,7 +83,7 @@ class ProvenanceDefense(PoisonFilteringDefence):
         :param perf_func: performance function used to evaluate effectiveness of defense.
         :param pp_valid: The percent of training data to use as validation data (for defense without validation data).
         """
-        super(ProvenanceDefense, self).__init__(classifier, x_train, y_train)
+        super().__init__(classifier, x_train, y_train)
         self.p_train = p_train
         self.num_devices = self.p_train.shape[1]
         self.x_val = x_val

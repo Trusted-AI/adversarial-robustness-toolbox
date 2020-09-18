@@ -26,7 +26,7 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Union
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
@@ -43,6 +43,9 @@ from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_p
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_tensorflow_v2 import (
     ProjectedGradientDescentTensorFlowV2,
 )
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -66,14 +69,15 @@ class ProjectedGradientDescent(EvasionAttack):
         "minimal",
         "max_iter",
         "random_eps",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
 
     def __init__(
         self,
-        estimator,
-        norm: int = np.inf,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -81,12 +85,13 @@ class ProjectedGradientDescent(EvasionAttack):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        verbose: bool = True,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation supporting np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -98,8 +103,9 @@ class ProjectedGradientDescent(EvasionAttack):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
-        super(ProjectedGradientDescent, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         self.norm = norm
         self.eps = eps
@@ -109,6 +115,7 @@ class ProjectedGradientDescent(EvasionAttack):
         self.num_random_init = num_random_init
         self.batch_size = batch_size
         self.random_eps = random_eps
+        self.verbose = verbose
         ProjectedGradientDescent._check_params(self)
 
         no_preprocessing = self.estimator.preprocessing is None or (
@@ -121,7 +128,7 @@ class ProjectedGradientDescent(EvasionAttack):
         ]
         if isinstance(self.estimator, PyTorchClassifier) and no_preprocessing and no_defences:
             self._attack = ProjectedGradientDescentPyTorch(
-                estimator=estimator,
+                estimator=estimator,  # type: ignore
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
@@ -130,11 +137,12 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                verbose=verbose,
             )
 
         elif isinstance(self.estimator, TensorFlowV2Classifier) and no_preprocessing and no_defences:
             self._attack = ProjectedGradientDescentTensorFlowV2(
-                estimator=estimator,
+                estimator=estimator,  # type: ignore
                 norm=norm,
                 eps=eps,
                 eps_step=eps_step,
@@ -143,6 +151,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                verbose=verbose,
             )
 
         else:
@@ -156,6 +165,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                verbose=verbose,
             )
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -178,8 +188,8 @@ class ProjectedGradientDescent(EvasionAttack):
 
     def _check_params(self) -> None:
         # Check if order of the norm is acceptable given current implementation
-        if self.norm not in [np.inf, int(1), int(2)]:
-            raise ValueError("Norm order must be either `np.inf`, 1, or 2.")
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
         if self.eps <= 0:
             raise ValueError("The perturbation size `eps` has to be positive.")
@@ -199,8 +209,11 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-        if self.norm == np.inf and self.eps_step > self.eps:
+        if self.norm in ["inf", np.inf] and self.eps_step > self.eps:
             raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         if self.max_iter <= 0:
             raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The verbose has to be a Boolean.")

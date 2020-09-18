@@ -26,19 +26,18 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import random
 import types
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-    ClassifierNeuralNetwork,
-)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import projection, get_labels_np_array, check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -73,17 +72,17 @@ class UniversalPerturbation(EvasionAttack):
         "norm",
         "batch_size",
     ]
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: Union[ClassifierGradients, ClassifierNeuralNetwork],
+        classifier: "CLASSIFIER_TYPE",
         attacker: str = "deepfool",
         attacker_params: Optional[Dict[str, Any]] = None,
         delta: float = 0.2,
         max_iter: int = 20,
         eps: float = 10.0,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
         batch_size: int = 32,
     ) -> None:
         """
@@ -95,10 +94,10 @@ class UniversalPerturbation(EvasionAttack):
         :param delta: desired accuracy
         :param max_iter: The maximum number of iterations for computing universal perturbation.
         :param eps: Attack step size (input variation).
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 2.
         :param batch_size: Batch size for model evaluations in UniversalPerturbation.
         """
-        super(UniversalPerturbation, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.attacker = attacker
         self.attacker_params = attacker_params
         self.delta = delta
@@ -213,7 +212,7 @@ class UniversalPerturbation(EvasionAttack):
 
             return a_instance
         except KeyError:
-            raise NotImplementedError("{} attack not supported".format(a_name))
+            raise NotImplementedError("{} attack not supported".format(a_name)) from KeyError
 
     @staticmethod
     def _get_class(class_name: str) -> types.ModuleType:

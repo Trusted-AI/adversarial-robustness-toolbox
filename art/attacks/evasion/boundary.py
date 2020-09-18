@@ -24,7 +24,7 @@ predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
@@ -32,8 +32,11 @@ from tqdm import tqdm
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import Classifier, ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +65,7 @@ class BoundaryAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: Classifier,
+        estimator: "CLASSIFIER_TYPE",
         targeted: bool = True,
         delta: float = 0.01,
         epsilon: float = 0.01,
@@ -85,7 +88,7 @@ class BoundaryAttack(EvasionAttack):
         :param sample_size: Number of samples per trial.
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
         """
-        super(BoundaryAttack, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         self._targeted = targeted
         self.delta = delta
@@ -312,7 +315,7 @@ class BoundaryAttack(EvasionAttack):
 
     def _init_sample(
         self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
-    ) -> Optional[np.ndarray]:
+    ) -> Optional[Tuple[np.ndarray, int]]:
         """
         Find initial adversarial example for the attack.
 

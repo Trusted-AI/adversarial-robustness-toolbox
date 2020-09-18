@@ -963,14 +963,6 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
         model=model, loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10, clip_values=(0, 1)
     )
 
-    model = Model()
-
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    myclassifier_2 = PyTorchClassifier(
-        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
-    )
-
     return ptc
 
 
@@ -1441,6 +1433,41 @@ def get_tabular_classifier_pt(load_init=True):
     )
 
     return ptc
+
+
+def get_attack_classifier_pt(num_features):
+    """
+    PyTorch classifier for testing membership inference attacks.
+
+    :param num_features: The number of features in the attack model.
+    :type num_features: `int`
+    :return: Model for attack.
+    :rtype: :class:`.PyTorchClassifier`
+    """
+    import torch.nn as nn
+    import torch.optim as optim
+    from art.estimators.classification.pytorch import PyTorchClassifier
+
+    class AttackModel(nn.Module):
+        def __init__(self, num_features):
+            super(AttackModel, self).__init__()
+            self.layer = nn.Linear(num_features, 1)
+            self.output = nn.Sigmoid()
+
+        def forward(self, x):
+            return self.output(self.layer(x))
+
+    # Create model
+    model = AttackModel(num_features)
+
+    # Define a loss function and optimizer
+    loss_fn = nn.BCELoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    attack_model = PyTorchClassifier(
+        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(num_features,), nb_classes=1
+    )
+
+    return attack_model
 
 
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS

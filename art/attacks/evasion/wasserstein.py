@@ -23,17 +23,20 @@ This module implements ``Wasserstein Adversarial Examples via Projected Sinkhorn
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from scipy.special import lambertw
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,11 +65,11 @@ class Wasserstein(EvasionAttack):
         "batch_size",
     ]
 
-    _estimator_requirements = (BaseEstimator, LossGradientsMixin, NeuralNetworkMixin, ClassifierMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
 
     def __init__(
         self,
-        estimator: BaseEstimator,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         targeted: bool = False,
         regularization: float = 3000.0,
         p: int = 2,
@@ -632,7 +635,7 @@ class Wasserstein(EvasionAttack):
         exp_beta: np.ndarray,
         psi: np.ndarray,
         K: np.ndarray,
-        eps: float,
+        eps: np.ndarray,
     ) -> np.ndarray:
         """
         Function to evaluate the objective of the projected sinkhorn optimizer.

@@ -42,8 +42,8 @@ from tqdm import trange, tqdm
 from art.defences.trainer.trainer import Trainer
 
 if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
     from art.attacks.attack import EvasionAttack
-    from art.estimators.classification.classifier import Classifier
     from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
@@ -69,7 +69,10 @@ class AdversarialTrainer(Trainer):
     """
 
     def __init__(
-        self, classifier: "Classifier", attacks: Union["EvasionAttack", List["EvasionAttack"]], ratio: float = 0.5,
+        self,
+        classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        attacks: Union["EvasionAttack", List["EvasionAttack"]],
+        ratio: float = 0.5,
     ) -> None:
         """
         Create an :class:`.AdversarialTrainer` instance.
@@ -81,7 +84,7 @@ class AdversarialTrainer(Trainer):
         """
         from art.attacks.attack import EvasionAttack
 
-        super(AdversarialTrainer, self).__init__(classifier=classifier)
+        super().__init__(classifier=classifier)
         if isinstance(attacks, EvasionAttack):
             self.attacks = [attacks]
         elif isinstance(attacks, list):
@@ -117,7 +120,8 @@ class AdversarialTrainer(Trainer):
         # Precompute adversarial samples for transferred attacks
         logged = False
         self._precomputed_adv_samples = []
-        for attack in tqdm(self.attacks, desc="Precompute adv samples"):
+        for attack in tqdm(self.attacks, desc="Precompute adversarial examples."):
+            attack.set_params(verbose=False)
             if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
                 raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
@@ -151,6 +155,7 @@ class AdversarialTrainer(Trainer):
                 # Choose indices to replace with adversarial samples
                 nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
                 attack = self.attacks[attack_id]
+                attack.set_params(verbose=False)
                 if self.ratio < 1:
                     adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
                 else:
@@ -171,21 +176,12 @@ class AdversarialTrainer(Trainer):
                 self._classifier.fit(x_batch, y_batch, nb_epochs=1, batch_size=x_batch.shape[0], verbose=0, **kwargs)
                 attack_id = (attack_id + 1) % len(self.attacks)
 
-    def fit(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        validation_data: Optional[np.ndarray] = None,
-        batch_size: int = 128,
-        nb_epochs: int = 20,
-        **kwargs
-    ) -> None:
+    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
         Train a model adversarially. See class documentation for more information on the exact procedure.
 
         :param x: Training set.
         :param y: Labels for the training set.
-        :param validation_data: Validation data, not used.
         :param batch_size: Size of batches.
         :param nb_epochs: Number of epochs to use for trainings.
         :param kwargs: Dictionary of framework-specific arguments. These will be passed as such to the `fit` function of
@@ -200,6 +196,7 @@ class AdversarialTrainer(Trainer):
         logged = False
         self._precomputed_adv_samples = []
         for attack in tqdm(self.attacks, desc="Precompute adv samples"):
+            attack.set_params(verbose=False)
             if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
                 raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
@@ -223,6 +220,7 @@ class AdversarialTrainer(Trainer):
                 # Choose indices to replace with adversarial samples
                 nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
                 attack = self.attacks[attack_id]
+                attack.set_params(verbose=False)
                 if self.ratio < 1:
                     adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
                 else:

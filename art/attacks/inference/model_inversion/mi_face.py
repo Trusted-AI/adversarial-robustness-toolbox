@@ -23,17 +23,19 @@ This module implements model inversion attacks.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classification.classifier import ClassGradientsMixin, Classifier
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 from art.estimators.estimator import BaseEstimator
 from art.attacks import InferenceAttack
 from art.utils import get_labels_np_array, check_and_transform_label_format
 
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -55,11 +57,11 @@ class MIFace(InferenceAttack):
         "batch_size",
     ]
 
-    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin, ClassGradientsMixin)
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
         max_iter: int = 10000,
         window_length: int = 100,
         threshold: float = 0.99,

@@ -73,10 +73,11 @@ class TestShapeShifter(TestBase):
         groundtruth_classes_list = [result["detection_classes"][i] for i in range(1)]
         groundtruth_weights_list = [np.ones_like(r) for r in groundtruth_classes_list]
 
-        y = {}
-        y["groundtruth_boxes_list"] = groundtruth_boxes_list
-        y["groundtruth_classes_list"] = groundtruth_classes_list
-        y["groundtruth_weights_list"] = groundtruth_weights_list
+        y = {
+            "groundtruth_boxes_list": groundtruth_boxes_list,
+            "groundtruth_classes_list": groundtruth_classes_list,
+            "groundtruth_weights_list": groundtruth_weights_list,
+        }
 
         # Define attack
         attack = ShapeShifter(
@@ -154,10 +155,11 @@ class TestShapeShifter(TestBase):
         groundtruth_classes_list = [result["detection_classes"][i] for i in range(1)]
         groundtruth_weights_list = [np.ones_like(r) for r in groundtruth_classes_list]
 
-        y = {}
-        y["groundtruth_boxes_list"] = groundtruth_boxes_list
-        y["groundtruth_classes_list"] = groundtruth_classes_list
-        y["groundtruth_weights_list"] = groundtruth_weights_list
+        y = {
+            "groundtruth_boxes_list": groundtruth_boxes_list,
+            "groundtruth_classes_list": groundtruth_classes_list,
+            "groundtruth_weights_list": groundtruth_weights_list,
+        }
 
         # Define random transform
         def random_transform(x):

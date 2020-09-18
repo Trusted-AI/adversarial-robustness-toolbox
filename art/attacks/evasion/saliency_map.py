@@ -23,7 +23,7 @@ This module implements the Jacobian-based Saliency Map attack `SaliencyMapMethod
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -31,11 +31,11 @@ from tqdm import trange
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import check_and_transform_label_format, compute_success
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,11 @@ class SaliencyMapMethod(EvasionAttack):
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-        self, classifier: ClassifierGradients, theta: float = 0.1, gamma: float = 1.0, batch_size: int = 1,
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        theta: float = 0.1,
+        gamma: float = 1.0,
+        batch_size: int = 1,
     ) -> None:
         """
         Create a SaliencyMapMethod instance.
@@ -61,7 +65,7 @@ class SaliencyMapMethod(EvasionAttack):
         :param gamma: Maximum fraction of features being perturbed (between 0 and 1).
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(SaliencyMapMethod, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.theta = theta
         self.gamma = gamma
         self.batch_size = batch_size
@@ -182,7 +186,7 @@ class SaliencyMapMethod(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-    def _saliency_map(self, x: np.ndarray, target: np.ndarray, search_space: np.ndarray) -> np.ndarray:
+    def _saliency_map(self, x: np.ndarray, target: Union[np.ndarray, int], search_space: np.ndarray) -> np.ndarray:
         """
         Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize
         the saliency map.

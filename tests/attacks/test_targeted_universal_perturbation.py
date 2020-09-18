@@ -23,9 +23,8 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversalPerturbation
-from art.estimators.classification.classifier import ClassGradientsMixin
-from art.estimators.classification.keras import KerasClassifier
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import (
     TestBase,
@@ -162,9 +161,7 @@ class TestTargetedUniversalPerturbation(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            TargetedUniversalPerturbation, [BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin, LossGradientsMixin]
-        )
+        backend_test_classifier_type_check_fail(TargetedUniversalPerturbation, (BaseEstimator, ClassifierMixin))
 
 
 if __name__ == "__main__":

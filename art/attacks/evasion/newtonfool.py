@@ -23,7 +23,7 @@ This module implements the white-box attack `NewtonFool`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -31,11 +31,11 @@ from tqdm import trange
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import to_categorical, compute_success
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,11 @@ class NewtonFool(EvasionAttack):
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-        self, classifier: ClassifierGradients, max_iter: int = 100, eta: float = 0.01, batch_size: int = 1,
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        max_iter: int = 100,
+        eta: float = 0.01,
+        batch_size: int = 1,
     ) -> None:
         """
         Create a NewtonFool attack instance.
@@ -61,7 +65,7 @@ class NewtonFool(EvasionAttack):
         :param eta: The eta coefficient.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(NewtonFool, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.max_iter = max_iter
         self.eta = eta
         self.batch_size = batch_size

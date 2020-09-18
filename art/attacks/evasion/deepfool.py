@@ -23,18 +23,19 @@ This module implements the white-box attack `DeepFool`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
 from art.utils import compute_success, is_probability
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +54,11 @@ class DeepFool(EvasionAttack):
         "batch_size",
         "verbose",
     ]
-    _estimator_requirements = (ClassGradientsMixin,)
+    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
         max_iter: int = 100,
         epsilon: float = 1e-6,
         nb_grads: int = 10,
@@ -73,8 +74,9 @@ class DeepFool(EvasionAttack):
         :param nb_grads: The number of class gradients (top nb_grads w.r.t. prediction) to compute. This way only the
                          most likely classes are considered, speeding up the computation.
         :param batch_size: Batch size
+        :param verbose: Show progress bars.
         """
-        super(DeepFool, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.max_iter = max_iter
         self.epsilon = epsilon
         self.nb_grads = nb_grads

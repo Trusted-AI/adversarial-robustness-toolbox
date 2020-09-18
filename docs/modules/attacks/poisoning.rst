@@ -2,6 +2,12 @@
 ============================
 .. automodule:: art.attacks.poisoning
 
+Adversarial Embedding Attack
+----------------------------
+.. autoclass:: PoisoningAttackAdversarialEmbedding
+   :members:
+   :special-members:
+
 Backdoor Poisoning Attack
 -------------------------
 .. autoclass:: PoisoningAttackBackdoor

@@ -25,17 +25,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import random
 import types
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
-from art.estimators.classification.classifier import (
-    ClassifierGradients,
-    ClassGradientsMixin,
-)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import projection
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -54,17 +54,17 @@ class TargetedUniversalPerturbation(EvasionAttack):
     }
     attack_params = EvasionAttack.attack_params + ["attacker", "attacker_params", "delta", "max_iter", "eps", "norm"]
 
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin, LossGradientsMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: "CLASSIFIER_TYPE",
         attacker: str = "fgsm",
         attacker_params: Optional[Dict[str, Any]] = None,
         delta: float = 0.2,
         max_iter: int = 20,
         eps: float = 10.0,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
     ):
         """
         :param classifier: A trained classifier.
@@ -74,9 +74,9 @@ class TargetedUniversalPerturbation(EvasionAttack):
         :param delta: desired accuracy
         :param max_iter: The maximum number of iterations for computing universal perturbation.
         :param eps: Attack step size (input variation)
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 2
         """
-        super(TargetedUniversalPerturbation, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.attacker = attacker
         self.attacker_params = attacker_params
@@ -87,7 +87,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
         self._targeted = True
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -95,6 +95,9 @@ class TargetedUniversalPerturbation(EvasionAttack):
         :param y: An array with the targeted labels.
         :return: An array holding the adversarial examples.
         """
+        if y is None:
+            raise ValueError("Labels `y` cannot be None.")
+
         logger.info("Computing targeted universal perturbation based on %s attack.", self.attacker)
 
         # Init universal perturbation
@@ -115,9 +118,9 @@ class TargetedUniversalPerturbation(EvasionAttack):
             rnd_idx = random.sample(range(nb_instances), nb_instances)
 
             # Go through the data set and compute the perturbation increments sequentially
-            for j, (ex, ey) in enumerate(zip(x[rnd_idx], y[rnd_idx])):
-                x_i = ex[None, ...]
-                y_i = ey[None, ...]
+            for _, (e_x, e_y) in enumerate(zip(x[rnd_idx], y[rnd_idx])):
+                x_i = e_x[None, ...]
+                y_i = e_y[None, ...]
 
                 current_label = np.argmax(self.estimator.predict(x_i + noise)[0])
                 target_label = np.argmax(y_i)
@@ -185,7 +188,7 @@ class TargetedUniversalPerturbation(EvasionAttack):
             return a_instance
 
         except KeyError:
-            raise NotImplementedError("{} attack not supported".format(a_name))
+            raise NotImplementedError("{} attack not supported".format(a_name)) from KeyError
 
     @staticmethod
     def _get_class(class_name: str) -> types.ModuleType:

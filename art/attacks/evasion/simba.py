@@ -23,18 +23,18 @@ This module implements the black-box attack `SimBA`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from scipy.fftpack import idct
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.config import ART_NUMPY_DTYPE
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,11 +51,11 @@ class SimBA(EvasionAttack):
         "batch_size",
     ]
 
-    _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: ClassifierGradients,
+        classifier: "CLASSIFIER_TYPE",
         attack: str = "dct",
         max_iter: int = 3000,
         order: str = "random",
@@ -78,7 +78,7 @@ class SimBA(EvasionAttack):
         :param targeted: perform targeted attack
         :param batch_size: Batch size (but, batch process unavailable in this implementation)
         """
-        super(SimBA, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.attack = attack
         self.max_iter = max_iter
@@ -275,7 +275,7 @@ class SimBA(EvasionAttack):
         if self.attack != "px" and self.attack != "dct":
             raise ValueError("The attack type has to be `px` or `dct`.")
 
-        if not isinstance(self.targeted, (int)) or (self.targeted != 0 and self.targeted != 1):
+        if not isinstance(self.targeted, int) or (self.targeted != 0 and self.targeted != 1):
             raise ValueError("`targeted` has to be a logical value.")
 
     def _block_order(self, img_size, channels, initial_size=2, stride=1):
@@ -309,7 +309,7 @@ class SimBA(EvasionAttack):
         if self.estimator.channels_first:
             return order.reshape(1, -1).squeeze().argsort()
         else:
-            return order.transpose(1, 2, 0).reshape(1, -1).squeeze().argsort()
+            return order.transpose((1, 2, 0)).reshape(1, -1).squeeze().argsort()
 
     def _block_idct(self, x, block_size=8, masked=False, ratio=0.5):
         """
@@ -345,7 +345,7 @@ class SimBA(EvasionAttack):
         if self.estimator.channels_first:
             return z
         else:
-            return z.transpose(0, 2, 3, 1)
+            return z.transpose((0, 2, 3, 1))
 
     def diagonal_order(self, image_size, channels):
         """
@@ -377,4 +377,4 @@ class SimBA(EvasionAttack):
         if self.estimator.channels_first:
             return order.reshape(1, -1).squeeze().argsort()
         else:
-            return order.transpose(1, 2, 0).reshape(1, -1).squeeze().argsort()
+            return order.transpose((1, 2, 0)).reshape(1, -1).squeeze().argsort()

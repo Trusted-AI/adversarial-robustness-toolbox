@@ -38,7 +38,7 @@ from art.utils import random_sphere
 
 if TYPE_CHECKING:
     from art.attacks import EvasionAttack
-    from art.estimators.classification.classifier import Classifier, ClassifierGradients
+    from art.utils import CLASSIFIER_TYPE, CLASSIFIER_LOSS_GRADIENTS_TYPE, CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ SUPPORTED_METHODS: Dict[str, Dict[str, Any]] = {
 }
 
 
-def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
+def get_crafter(classifier: "CLASSIFIER_TYPE", attack: str, params: Optional[Dict[str, Any]] = None) -> "EvasionAttack":
     """
     Create an attack instance to craft adversarial samples.
 
@@ -63,7 +63,7 @@ def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str
     try:
         crafter = SUPPORTED_METHODS[attack]["class"](classifier)
     except Exception:
-        raise NotImplementedError("{} crafting method not supported.".format(attack))
+        raise NotImplementedError("{} crafting method not supported.".format(attack)) from Exception
 
     if params:
         crafter.set_params(**params)
@@ -72,7 +72,7 @@ def get_crafter(classifier: "Classifier", attack: str, params: Optional[Dict[str
 
 
 def empirical_robustness(
-    classifier: "Classifier", x: np.ndarray, attack_name: str, attack_params: Optional[Dict[str, Any]] = None,
+    classifier: "CLASSIFIER_TYPE", x: np.ndarray, attack_name: str, attack_params: Optional[Dict[str, Any]] = None,
 ) -> Union[float, np.ndarray]:
     """
     Compute the Empirical Robustness of a classifier object over the sample `x` for a given adversarial crafting
@@ -149,7 +149,7 @@ def empirical_robustness(
 #     return avg_nn_dist
 
 
-def loss_sensitivity(classifier: "ClassifierGradients", x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def loss_sensitivity(classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", x: np.ndarray, y: np.ndarray) -> np.ndarray:
     """
     Local loss sensitivity estimated through the gradients of the prediction at points in `x`.
 
@@ -167,7 +167,7 @@ def loss_sensitivity(classifier: "ClassifierGradients", x: np.ndarray, y: np.nda
 
 
 def clever(
-    classifier: "ClassifierGradients",
+    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -221,7 +221,7 @@ def clever(
 
 
 def clever_u(
-    classifier: "ClassifierGradients",
+    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
     x: np.ndarray,
     nb_batches: int,
     batch_size: int,
@@ -260,7 +260,7 @@ def clever_u(
 
 
 def clever_t(
-    classifier: "ClassifierGradients",
+    classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
     x: np.ndarray,
     target_class: int,
     nb_batches: int,
@@ -325,11 +325,13 @@ def clever_t(
         sample_xs = rand_pool[np.random.choice(pool_factor * batch_size, batch_size)]
 
         # Compute gradients
-        grads = classifier.class_gradient(sample_xs)
-        if np.isnan(grads).any():
+        grad_pred_class = classifier.class_gradient(sample_xs, label=pred_class)
+        grad_target_class = classifier.class_gradient(sample_xs, label=target_class)
+
+        if np.isnan(grad_pred_class).any() or np.isnan(grad_target_class).any():
             raise Exception("The classifier results NaN gradients.")
 
-        grad = grads[:, pred_class] - grads[:, target_class]
+        grad = grad_pred_class - grad_target_class
         grad = np.reshape(grad, (batch_size, -1))
         grad_norm = np.max(np.linalg.norm(grad, ord=norm, axis=1))
         grad_norm_set.append(grad_norm)
@@ -362,7 +364,7 @@ def wasserstein_distance(
     :param v_weights: Weight for each value. If None, equal weights will be used.
     :return: The Wasserstein distance between the two distributions.
     """
-    from scipy.stats import wasserstein_distance
+    import scipy
 
     assert u_values.shape == v_values.shape
     if u_weights is not None:
@@ -377,12 +379,16 @@ def wasserstein_distance(
     u_values = u_values.flatten().reshape(u_values.shape[0], -1)
     v_values = v_values.flatten().reshape(v_values.shape[0], -1)
 
-    wd = np.zeros(u_values.shape[0])
+    if u_weights is not None and v_weights is not None:
+        u_weights = u_weights.flatten().reshape(u_weights.shape[0], -1)
+        v_weights = v_weights.flatten().reshape(v_weights.shape[0], -1)
+
+    w_d = np.zeros(u_values.shape[0])
 
     for i in range(u_values.shape[0]):
         if u_weights is None and v_weights is None:
-            wd[i] = wasserstein_distance(u_values[i], v_values[i])
+            w_d[i] = scipy.stats.wasserstein_distance(u_values[i], v_values[i])
         elif u_weights is not None and v_weights is not None:
-            wd[i] = wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
+            w_d[i] = scipy.stats.wasserstein_distance(u_values[i], v_values[i], u_weights[i], v_weights[i])
 
-    return wd
+    return w_d

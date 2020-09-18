@@ -28,21 +28,21 @@ import time
 from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-import torch
 import six
 
-from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.config import ART_DATA_PATH
 from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
 )
 from art.estimators.pytorch import PyTorchEstimator
-from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torch
 
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -65,10 +65,10 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         channel_index=Deprecated,
         channels_first: bool = True,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
         device_type: str = "gpu",
     ) -> None:
         """
@@ -113,6 +113,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
+            device_type=device_type,
         )
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -124,23 +125,20 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Get the internal layers
         self._layer_names = self._model.get_layers
 
-        # Set device
-        if device_type == "cpu" or not torch.cuda.is_available():
-            self._device = torch.device("cpu")
-        else:
-            cuda_idx = torch.cuda.current_device()
-            self._device = torch.device("cuda:{}".format(cuda_idx))
-
         self._model.to(self._device)
 
         # Index of layer at which the class gradients should be calculated
         self._layer_idx_gradients = -1
 
-        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if isinstance(loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),):
+        if isinstance(self._loss, (torch.nn.CrossEntropyLoss, torch.nn.NLLLoss, torch.nn.MultiMarginLoss),):
             self._reduce_labels = True
+            self._int_labels = True
+        elif isinstance(self._loss, (torch.nn.BCELoss),):
+            self._reduce_labels = True
+            self._int_labels = False
         else:
             self._reduce_labels = False
+            self._int_labels = False
 
     @property
     def device(self) -> "torch.device":
@@ -154,6 +152,26 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     @property
     def model(self) -> "torch.nn.Module":
         return self._model._model
+
+    def reduce_labels(self, y: np.ndarray) -> np.ndarray:
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if self._reduce_labels and self._int_labels:
+            return np.argmax(y, axis=1)
+        elif self._reduce_labels:  # float labels
+            return np.argmax(y, axis=1).astype(np.float32)
+        else:
+            return y
+
+    def reduce_labels_framework(self, y: "torch.Tensor") -> "torch.Tensor":
+        import torch  # lgtm [py/repeated-import]
+
+        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
+        if self._reduce_labels and self._int_labels:
+            return torch.argmax(y, dim=1)
+        elif self._reduce_labels:  # float labels
+            return torch.argmax(y, dim=1).type("torch.FloatTensor")
+        else:
+            return y
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -213,8 +231,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Check label shape
-        if self._reduce_labels:
-            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        y_preprocessed = self.reduce_labels(y_preprocessed)
 
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
         ind = np.arange(len(x_preprocessed))
@@ -289,7 +306,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     self._optimizer.step()
         else:
             # Fit a generic data generator through the API
-            super(PyTorchClassifier, self).fit_generator(generator, nb_epochs=nb_epochs)
+            super().fit_generator(generator, nb_epochs=nb_epochs)
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
@@ -379,6 +396,38 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss function w.r.t. `x`.
+
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Array of losses of the same shape as `x`.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+
+        # Check label shape
+        y_preprocessed = self.reduce_labels(y_preprocessed)
+
+        # Convert the inputs to Tensors
+        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
+
+        # Convert the labels to Tensors
+        labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+
+        # Compute the loss and return
+        model_outputs = self._model(inputs_t)
+        prev_reduction = self._loss.reduction
+        # return individual loss values
+        self._loss.reduction = "none"
+        loss = self._loss(model_outputs[-1], labels_t)
+        self._loss.reduction = prev_reduction
+        return loss.detach().numpy()
+
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -394,8 +443,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
 
         # Check label shape
-        if self._reduce_labels:
-            y_preprocessed = np.argmax(y_preprocessed, axis=1)
+        y_preprocessed = self.reduce_labels(y_preprocessed)
 
         # Convert the inputs to Tensors
         inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
@@ -429,14 +477,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: Gradients of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
-        from torch.autograd import Variable
 
         # Check label shape
-        if self._reduce_labels:
-            y = torch.argmax(y, dim=1)
+        y = self.reduce_labels_framework(y)
 
         # Convert the inputs to Variable
-        x = Variable(x, requires_grad=True)
+        x = torch.autograd.Variable(x, requires_grad=True)
 
         # Compute the gradient and return
         model_outputs = self._model(x)
@@ -622,13 +668,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     This is a wrapper for the input model.
                     """
 
-                    def __init__(self, model: "torch.nn.Module"):
+                    import torch  # lgtm [py/repeated-import]
+
+                    def __init__(self, model: torch.nn.Module):
                         """
                         Initialization by storing the input model.
 
                         :param model: PyTorch model. The forward function of the model must return the logit output.
                         """
-                        super(ModelWrapper, self).__init__()
+                        super().__init__()
                         self._model = model
 
                     # pylint: disable=W0221
@@ -702,118 +750,4 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             return self._model_wrapper(model)
 
         except ImportError:
-            raise ImportError("Could not find PyTorch (`torch`) installation.")
-
-    def _apply_preprocessing_defences(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
-        """
-        Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
-        only be called from function `_apply_preprocessing`.
-
-        The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing_defences().
-        It requires all defenses to have a method `forward()`.
-        It converts numpy arrays to PyTorch tensors first, then chains a series of defenses by calling
-        defence.forward() which contains PyTorch operations. At the end, it converts PyTorch tensors
-        back to numpy arrays.
-
-        :param x: Samples.
-        :type x: Format as expected by the `model`
-        :param y: Target values.
-        :type y: Format as expected by the `model`
-        :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
-                    predict operation.
-        :return: Tuple of `x` and `y` after applying the defences and standardisation.
-        :rtype: Format as expected by the `model`
-        """
-
-        if not hasattr(self, "preprocessing_defences") or \
-           self.preprocessing_defences is None or \
-           len(self.preprocessing_defences) == 0:
-            return x, y
-
-        if len(self.preprocessing_defences) == 1:
-            # Compatible with non-PyTorch defences if no chaining.
-            defence = self.preprocessing_defences[0]
-            x, y = defence(x, y)
-        else:
-            # Check if all defences are implemented in PyTorch.
-            for defence in self.preprocessing_defences:
-                if not isinstance(defence, PreprocessorPyTorch):
-                    raise NotImplementedError(f"{defence.__class__} is not PyTorch-specific.")
-
-            # Convert np arrays to torch tensors.
-            x = torch.tensor(x, device=self._device)
-            if y is not None:
-                y = torch.tensor(y, device=self._device)
-
-            with torch.no_grad():
-                for defence in self.preprocessing_defences:
-                    if fit:
-                        if defence.apply_fit:
-                            x, y = defence.forward(x, y)
-                    else:
-                        if defence.apply_predict:
-                            x, y = defence.forward(x, y)
-
-            # Convert torch tensors back to np arrays.
-            x = x.cpu().numpy()
-            if y is not None:
-                y = y.cpu().numpy()
-
-        return x, y
-
-    def _apply_preprocessing_defences_gradient(self, x, gradients, fit=False):
-        """
-        Apply the backward pass to the gradients through all preprocessing defences that have been applied to `x`
-        and `y` in the forward pass. This function is should only be called from function
-        `_apply_preprocessing_gradient`.
-
-        The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_defences_gradient().
-        It requires all defenses to have a method estimate_forward().
-        It converts numpy arrays to PyTorch tensors first, then chains a series of defenses by calling
-        defence.estimate_forward() which contains differentiable estimate of the operations. At the end,
-        it converts PyTorch tensors back to numpy arrays.
-
-        :param x: Samples.
-        :type x: Format as expected by the `model`
-        :param gradients: Gradients before backward pass through preprocessing defences.
-        :type gradients: Format as expected by the `model`
-        :param fit: `True` if the gradients are computed during training.
-        :return: Gradients after backward pass through preprocessing defences.
-        :rtype: Format as expected by the `model`
-        """
-        if not hasattr(self, "preprocessing_defences") or \
-           self.preprocessing_defences is None or \
-           len(self.preprocessing_defences) == 0:
-            return gradients
-
-        if len(self.preprocessing_defences) == 1:
-            # Compatible with non-PyTorch defences if no chaining.
-            defence = self.preprocessing_defences[0]
-            gradients = defence.estimate_gradient(x, gradients)
-        else:
-            # Check if all defences are implemented in PyTorch.
-            for defence in self.preprocessing_defences:
-                if not isinstance(defence, PreprocessorPyTorch):
-                    raise NotImplementedError(f"{defence.__class__} is not PyTorch-specific.")
-
-            # Convert np arrays to torch tensors.
-            x = torch.tensor(x, device=self._device, requires_grad=True)
-            gradients = torch.tensor(gradients, device=self._device)
-            x_orig = x
-
-            for defence in self.preprocessing_defences:
-                if fit:
-                    if defence.apply_fit:
-                        x = defence.estimate_forward(x)
-                else:
-                    if defence.apply_predict:
-                        x = defence.estimate_forward(x)
-
-            x.backward(gradients)
-
-            # Convert torch tensors back to np arrays.
-            gradients = x_orig.grad.detach().cpu().numpy()
-            if gradients.shape != x_orig.shape:
-                raise ValueError("The input shape is {} while the gradient shape is {}".format(
-                    x.shape, gradients.shape))
-        return gradients
+            raise ImportError("Could not find PyTorch (`torch`) installation.") from ImportError

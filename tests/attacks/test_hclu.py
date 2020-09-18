@@ -38,10 +38,10 @@ class TestHCLU(TestBase):
         super().setUpClass()
 
         # change iris to a binary problem
-        cls.x_train = cls.x_train_iris
-        cls.y_train = cls.y_train_iris[:, 1]
-        cls.x_test = cls.x_test_iris
-        cls.y_test = cls.y_test_iris[:, 1]
+        cls.x_train = cls.x_train_iris[0:35]
+        cls.y_train = cls.y_train_iris[0:35, 1]
+        cls.x_test = cls.x_train
+        cls.y_test = cls.y_train
 
     def test_GPy(self):
         x_test_original = self.x_test.copy()

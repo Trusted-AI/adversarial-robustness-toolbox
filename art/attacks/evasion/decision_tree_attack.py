@@ -49,7 +49,7 @@ class DecisionTreeAttack(EvasionAttack):
         :param classifier: A trained scikit-learn decision tree model.
         :param offset: How much the value is pushed away from tree's threshold.
         """
-        super(DecisionTreeAttack, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.offset = offset
         self._check_params()
 

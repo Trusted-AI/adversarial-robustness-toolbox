@@ -1,6 +1,6 @@
-:mod:`art.attacks.inference`
-============================
-.. automodule:: art.attacks.inference
+:mod:`art.attacks.inference.attribute_inference`
+================================================
+.. automodule:: art.attacks.inference.attribute_inference
 
 Attribute Inference Black-Box
 -----------------------------
@@ -17,11 +17,5 @@ Attribute Inference White-Box Lifestyle Decision-Tree
 Attribute Inference White-Box Decision-Tree
 -------------------------------------------
 .. autoclass:: AttributeInferenceWhiteBoxDecisionTree
-   :members:
-   :special-members:
-
-MIFace
-------
-.. autoclass:: MIFace
    :members:
    :special-members:

@@ -30,7 +30,7 @@ from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.utils import deprecated
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE
+    from art.utils import CLIP_VALUES_TYPE
     from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
@@ -48,7 +48,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
 
         :param detector: The detector architecture to be trained and applied for the binary classification.
         """
-        super(BinaryInputDetector, self).__init__(
+        super().__init__(
             clip_values=detector.clip_values,
             channel_index=detector.channel_index,
             channels_first=detector.channels_first,
@@ -89,6 +89,20 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
+
+    @property
     def nb_classes(self) -> int:
         return self.detector.nb_classes
 
@@ -158,7 +172,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         :param detector: The detector architecture to be trained and applied for the binary classification.
         :param layer: Layer for computing the activations to use for training the detector.
         """
-        super(BinaryActivationDetector, self).__init__(
+        super().__init__(
             clip_values=detector.clip_values,
             channel_index=detector.channel_index,
             preprocessing_defences=detector.preprocessing_defences,
@@ -168,6 +182,9 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         self.detector = detector
 
         # Ensure that layer is well-defined:
+        if classifier.layer_names is None:
+            raise ValueError("No layer names identified.")
+
         if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(
@@ -212,6 +229,20 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
+
+    @property
     def nb_classes(self) -> int:
         return self.detector.nb_classes
 

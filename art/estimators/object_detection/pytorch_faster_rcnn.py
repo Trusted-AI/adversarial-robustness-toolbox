@@ -28,9 +28,10 @@ from art.estimators.pytorch import PyTorchEstimator
 from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import torchvision
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
 
@@ -122,7 +123,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             self._model = model
 
         # Set device
-        self._device: str
+        self._device: torch.device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
         else:
@@ -248,4 +249,17 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         raise NotImplementedError
 
     def set_learning_phase(self, train: bool) -> None:
+        raise NotImplementedError
+
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
         raise NotImplementedError

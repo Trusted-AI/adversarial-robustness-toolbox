@@ -23,7 +23,7 @@ This module implements the adversarial patch attack `DPatch` for object detector
 import logging
 import math
 import random
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -32,6 +32,9 @@ from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.utils import Deprecated, deprecated_keyword_arg
+
+if TYPE_CHECKING:
+    from art.utils import OBJECT_DETECTOR_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +57,7 @@ class DPatch(EvasionAttack):
 
     def __init__(
         self,
-        estimator: ObjectDetectorMixin,
+        estimator: "OBJECT_DETECTOR_TYPE",
         patch_shape: Tuple[int, int, int] = (40, 40, 3),
         learning_rate: float = 5.0,
         max_iter: int = 500,
@@ -69,7 +72,7 @@ class DPatch(EvasionAttack):
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         """
-        super(DPatch, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         self.patch_shape = patch_shape
         self.learning_rate = learning_rate
@@ -232,15 +235,15 @@ class DPatch(EvasionAttack):
 
         if not isinstance(self.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate > 0.0:
+        if self.learning_rate <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.max_iter, int):
             raise ValueError("The number of optimization steps must be of type int.")
-        if not self.max_iter > 0:
+        if self.max_iter <= 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
         if not isinstance(self.batch_size, int):
             raise ValueError("The batch size must be of type int.")
-        if not self.batch_size > 0:
+        if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
