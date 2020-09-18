@@ -23,14 +23,13 @@ This module implements Neural Cleanse (Wang et. al. 2019)
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import keras
 from typing import Optional, TYPE_CHECKING, Union
 
 import numpy as np
 
 from art.defences.transformer.transformer import Transformer
 from art.estimators.certification.neural_cleanse.keras import KerasNeuralCleanse
-from art.estimators.classification import KerasClassifier
+from art.estimators.classification.keras import KerasClassifier
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -106,6 +105,7 @@ class NeuralCleanse(Transformer):
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization
         :param batch_size: The batch size for optimizations in the Neural Cleanse optimization
         """
+        import keras
         if isinstance(transformed_classifier, KerasClassifier) and keras.__version__ == "2.2.4":
             transformed_classifier = KerasNeuralCleanse(
                 model=transformed_classifier.model,

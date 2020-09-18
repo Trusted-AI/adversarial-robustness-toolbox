@@ -27,31 +27,21 @@ import logging
 from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-import keras.backend as K
-from keras_preprocessing.image import ImageDataGenerator
 from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.certification.neural_cleanse.neural_cleanse import NeuralCleanseMixin
-from art.estimators.classification import KerasClassifier
-from art.estimators.classification.classifier import Classifier
-from art.estimators.classification.keras import KERAS_MODEL_TYPE
-
-from keras.losses import categorical_crossentropy
-from keras.metrics import categorical_accuracy
-from keras.optimizers import Adam
+from art.estimators.classification.keras import KerasClassifier, KERAS_MODEL_TYPE
 
 if TYPE_CHECKING:
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
 
 logger = logging.getLogger(__name__)
 
-CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
-PREPROCESSING_TYPE = Optional[Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]]
 
-
-class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
+class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
     """
     Implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor Attacks in Neural Networks.
     Wang et al. (2019).
@@ -117,6 +107,11 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization
         :param batch_size: The batch size for optimizations in the Neural Cleanse optimization
         """
+        import keras.backend as K
+        from keras.losses import categorical_crossentropy
+        from keras.metrics import categorical_accuracy
+        from keras.optimizers import Adam
+
         super().__init__(
             model=model,
             use_logits=use_logits,
@@ -183,6 +178,8 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         Reset the state of the defense
         :return:
         """
+        import keras.backend as K
+
         self.cost = self.init_cost
         K.set_value(self.cost_tensor, self.init_cost)
         K.set_value(self.opt.iterations, 0)
@@ -196,6 +193,9 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
         Generates a possible backdoor for the model. Returns the pattern and the mask
         :return: A tuple of the pattern and mask for the model.
         """
+        import keras.backend as K
+        from keras_preprocessing.image import ImageDataGenerator
+
         self.reset()
         datagen = ImageDataGenerator()
         gen = datagen.flow(x_val, y_val, batch_size=self.batch_size)
