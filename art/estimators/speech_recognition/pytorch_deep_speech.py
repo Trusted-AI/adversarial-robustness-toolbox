@@ -277,11 +277,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :type transcription_output: `bool`
         :return: Probability (if transcription_output is None or False) or transcription (if transcription_output is
                  True) predictions:
-                    - Probability return is a tuple of (probs, sizes), where:
-                        - probs is the probability of characters of shape (nb_samples, seq_length, nb_classes).
-                        - sizes is the real sequence length of shape (nb_samples,).
-                    - Transcription return is a numpy array of characters. A possible example of a transcription return
-                      is `np.array(['SIXTY ONE', 'HELLO'])`.
+                 - Probability return is a tuple of (probs, sizes), where `probs` is the probability of characters of
+                 shape (nb_samples, seq_length, nb_classes) and `sizes` is the real sequence length of shape
+                 (nb_samples,).
+                 - Transcription return is a numpy array of characters. A possible example of a transcription return
+                 is `np.array(['SIXTY ONE', 'HELLO'])`.
         """
         import torch  # lgtm [py/repeated-import]
 
@@ -529,11 +529,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :param real_lengths: Real lengths of original sequences.
         :return: A tuple of inputs and targets in the model space with the original index
                  `(inputs, targets, input_percentages, target_sizes, batch_idx)`, where:
-                    - inputs: model inputs of shape (nb_samples, nb_frequencies, seq_length).
-                    - targets: ground truth targets of shape (sum over nb_samples of real seq_lengths).
-                    - input_percentages: percentages of real inputs in inputs.
-                    - target_sizes: list of real seq_lengths.
-                    - batch_idx: original index of inputs.
+                 - inputs: model inputs of shape (nb_samples, nb_frequencies, seq_length).
+                 - targets: ground truth targets of shape (sum over nb_samples of real seq_lengths).
+                 - input_percentages: percentages of real inputs in inputs.
+                 - target_sizes: list of real seq_lengths.
+                 - batch_idx: original index of inputs.
         """
         import torch  # lgtm [py/repeated-import]
         import torchaudio
