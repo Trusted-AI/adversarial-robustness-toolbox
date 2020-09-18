@@ -32,7 +32,7 @@ from art.estimators.certification.neural_cleanse.keras import KerasNeuralCleanse
 from art.estimators.classification import KerasClassifier
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -48,22 +48,20 @@ class NeuralCleanse(Transformer):
     params = ["steps", "init_cost", "norm", "learning_rate", "attack_success_threshold", "patience", "early_stop",
               "early_stop_threshold", "early_stop_patience", "cost_multiplier", "batch_size"]
 
-    def __init__(self, classifier: "Classifier") -> None:
+    def __init__(self, classifier: "CLASSIFIER_TYPE") -> None:
         """
-        Create an instance of the defensive distillation defence.
+        Create an instance of the neural cleanse defence.
 
         :param classifier: A trained classifier.
-        :param batch_size: Size of batches.
-        :param nb_epochs: Number of epochs to use for training.
         """
         super().__init__(classifier=classifier)
         self._check_params()
 
-    def __call__(self, transformed_classifier: "Classifier",
+    def __call__(self, transformed_classifier: "CLASSIFIER_TYPE",
                  steps: int = 1000, init_cost: float = 1e-3, norm: Union[int, float] = 2,
                  learning_rate: float = 0.1, attack_success_threshold: float = 0.99, patience: int = 5,
                  early_stop: bool = True, early_stop_threshold: float = 0.99, early_stop_patience: int = 10,
-                 cost_multiplier: float = 1.5, batch_size: int = 32) -> "Classifier":
+                 cost_multiplier: float = 1.5, batch_size: int = 32) -> KerasNeuralCleanse:
         """
         Returns an new classifier with implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor
         Attacks in Neural Networks. Wang et al. (2019).
@@ -102,7 +100,7 @@ class NeuralCleanse(Transformer):
         """
         No parameters to learn for this method; do nothing.
         """
-        pass
+        raise NotImplementedError
 
     def _check_params(self) -> None:
         if not isinstance(self.classifier, KerasClassifier):
