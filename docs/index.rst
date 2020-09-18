@@ -73,6 +73,7 @@ Supported Machine Learning Libraries
    modules/defences/transformer
    modules/estimators
    modules/estimators/certification
+   modules/estimators/certification_neural_cleanse
    modules/estimators/certification_randomized_smoothing
    modules/estimators/classification
    modules/estimators/classification_scikitlearn
