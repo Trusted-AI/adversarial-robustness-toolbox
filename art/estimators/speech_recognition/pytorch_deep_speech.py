@@ -583,17 +583,19 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             # Push the sequence to device
             if not tensor_input:
                 x[i] = x[i].astype(ART_NUMPY_DTYPE)
-                x[i] = torch.tensor(x[i]).to(self._device)
+                x_i_tensor = torch.tensor(x[i]).to(self._device)
+            else:
+                x_i_tensor = x[i]
 
             # Set gradient computation permission
             if compute_gradient:
-                x[i].requires_grad = True
+                x_i_tensor.requires_grad = True
 
             # Transform the sequence into the frequency space
             if tensor_input and real_lengths is not None:
-                transformed_input = transformer(x[i][: real_lengths[i]])
+                transformed_input = transformer(x_i_tensor[: real_lengths[i]])
             else:
-                transformed_input = transformer(x[i])
+                transformed_input = transformer(x_i_tensor)
 
             spectrogram, _ = torchaudio.functional.magphase(transformed_input)
             spectrogram = torch.log1p(spectrogram)
