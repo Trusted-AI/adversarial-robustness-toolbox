@@ -27,6 +27,7 @@ import time
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.trainer.adversarial_trainer_fbf import AdversarialTrainerFBF
@@ -92,9 +93,9 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         def lr_schedule(t):
             return np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
 
-        logger.info("Adversarial training FBF")
+        logger.info("Adversarial Training FBF")
 
-        for i_epoch in range(nb_epochs):
+        for i_epoch in trange(nb_epochs, desc="Adversarial Training FBF - Epochs"):
             # Shuffle the examples
             np.random.shuffle(ind)
             start_time = time.time()
@@ -160,9 +161,9 @@ class AdversarialTrainerFBFPyTorch(AdversarialTrainerFBF):
         def lr_schedule(t):
             return np.interp([t], [0, nb_epochs * 2 // 5, nb_epochs], [0, 0.21, 0])[0]
 
-        logger.info("Adversarial training FBF")
+        logger.info("Adversarial Training FBF")
 
-        for i_epoch in range(nb_epochs):
+        for i_epoch in trange(nb_epochs, desc="Adversarial Training FBF - Epochs"):
             start_time = time.time()
             train_loss = 0.0
             train_acc = 0.0

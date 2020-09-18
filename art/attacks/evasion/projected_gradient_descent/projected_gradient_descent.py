@@ -69,6 +69,7 @@ class ProjectedGradientDescent(EvasionAttack):
         "minimal",
         "max_iter",
         "random_eps",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin)
@@ -84,6 +85,7 @@ class ProjectedGradientDescent(EvasionAttack):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        verbose: bool = True,
     ):
         """
         Create a :class:`.ProjectedGradientDescent` instance.
@@ -101,6 +103,7 @@ class ProjectedGradientDescent(EvasionAttack):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=estimator)
 
@@ -112,6 +115,7 @@ class ProjectedGradientDescent(EvasionAttack):
         self.num_random_init = num_random_init
         self.batch_size = batch_size
         self.random_eps = random_eps
+        self.verbose = verbose
         ProjectedGradientDescent._check_params(self)
 
         no_preprocessing = self.estimator.preprocessing is None or (
@@ -133,6 +137,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                verbose=verbose,
             )
 
         elif isinstance(self.estimator, TensorFlowV2Classifier) and no_preprocessing and no_defences:
@@ -146,6 +151,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                verbose=verbose,
             )
 
         else:
@@ -159,6 +165,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 num_random_init=num_random_init,
                 batch_size=batch_size,
                 random_eps=random_eps,
+                verbose=verbose,
             )
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -207,3 +214,6 @@ class ProjectedGradientDescent(EvasionAttack):
 
         if self.max_iter <= 0:
             raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The verbose has to be a Boolean.")

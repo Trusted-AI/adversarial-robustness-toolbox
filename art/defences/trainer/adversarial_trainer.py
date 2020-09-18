@@ -120,7 +120,8 @@ class AdversarialTrainer(Trainer):
         # Precompute adversarial samples for transferred attacks
         logged = False
         self._precomputed_adv_samples = []
-        for attack in tqdm(self.attacks, desc="Precompute adv samples"):
+        for attack in tqdm(self.attacks, desc="Precompute adversarial examples."):
+            attack.set_params(verbose=False)
             if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
                 raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
@@ -154,6 +155,7 @@ class AdversarialTrainer(Trainer):
                 # Choose indices to replace with adversarial samples
                 nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
                 attack = self.attacks[attack_id]
+                attack.set_params(verbose=False)
                 if self.ratio < 1:
                     adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
                 else:
@@ -194,6 +196,7 @@ class AdversarialTrainer(Trainer):
         logged = False
         self._precomputed_adv_samples = []
         for attack in tqdm(self.attacks, desc="Precompute adv samples"):
+            attack.set_params(verbose=False)
             if "targeted" in attack.attack_params and attack.targeted:  # type: ignore
                 raise NotImplementedError("Adversarial training with targeted attacks is currently not implemented")
 
@@ -217,6 +220,7 @@ class AdversarialTrainer(Trainer):
                 # Choose indices to replace with adversarial samples
                 nb_adv = int(np.ceil(self.ratio * x_batch.shape[0]))
                 attack = self.attacks[attack_id]
+                attack.set_params(verbose=False)
                 if self.ratio < 1:
                     adv_ids = np.random.choice(x_batch.shape[0], size=nb_adv, replace=False)
                 else:
