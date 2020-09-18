@@ -74,6 +74,7 @@ class DeepFool(EvasionAttack):
         :param nb_grads: The number of class gradients (top nb_grads w.r.t. prediction) to compute. This way only the
                          most likely classes are considered, speeding up the computation.
         :param batch_size: Batch size
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         self.max_iter = max_iter

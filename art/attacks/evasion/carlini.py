@@ -108,7 +108,7 @@ class CarliniL2Method(EvasionAttack):
         :param max_halving: Maximum number of halving steps in the line search optimization.
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :param verbose: Indicates whether to print verbose messages.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
 
@@ -523,7 +523,7 @@ class CarliniLInfMethod(EvasionAttack):
         :param max_doubling: Maximum number of doubling steps in the line search optimization.
         :param eps: An upper bound for the L_0 norm of the adversarial perturbation.
         :param batch_size: Size of the batch on which adversarial samples are generated.
-        :param verbose: Indicates whether to print verbose messages.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
 

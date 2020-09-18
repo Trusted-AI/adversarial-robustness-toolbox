@@ -29,6 +29,7 @@ import logging
 from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import trange, tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -64,6 +65,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        verbose: bool = True,
     ):
         """
         Create a :class:`.ProjectedGradientDescentPytorch` instance.
@@ -81,6 +83,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         if (
             hasattr(estimator, "preprocessing")
@@ -104,6 +107,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             num_random_init=num_random_init,
             batch_size=batch_size,
             random_eps=random_eps,
+            verbose=verbose,
         )
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -163,11 +167,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         adv_x_best = None
         rate_best = None
 
-        for _ in range(max(1, self.num_random_init)):
+        for _ in trange(max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
             # Compute perturbation with batching
-            for (batch_id, batch_all) in enumerate(data_loader):
+            for (batch_id, batch_all) in enumerate(
+                tqdm(data_loader, desc="PGD - Iterations", leave=False, disable=not self.verbose)
+            ):
                 if mask is not None:
                     (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
                 else:
