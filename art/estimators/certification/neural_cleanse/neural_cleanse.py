@@ -56,6 +56,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
                                          Neural Cleanse optimization
         :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimiation
         :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimiation
+        :param early_stop_threshold: How close values need to come to max value to start counting early stop
         :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimiation
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimiation
         :param batch_size: The batch size for optimizations in the Neural Cleanse optimiation

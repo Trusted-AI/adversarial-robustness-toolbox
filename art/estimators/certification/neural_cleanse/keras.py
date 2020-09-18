@@ -105,6 +105,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
                                          Neural Cleanse optimization
         :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimiation
         :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimiation
+        :param early_stop_threshold: How close values need to come to max value to start counting early stop
         :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimiation
         :param cost_multiplier: How much to change the cost in the Neural Cleanse optimiation
         :param batch_size: The batch size for optimizations in the Neural Cleanse optimiation
@@ -339,7 +340,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
                   (nb_samples,).
         :return: Array of gradients of the same shape as `x`.
         """
-        return KerasClassifier.loss_gradient(self, x, y, **kwargs)
+        return self.loss_gradient(x, y, **kwargs)
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
@@ -354,4 +355,4 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier, Classifier):
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        return KerasClassifier.class_gradient(self, x, label, **kwargs)
+        return self.class_gradient(x, label, **kwargs)

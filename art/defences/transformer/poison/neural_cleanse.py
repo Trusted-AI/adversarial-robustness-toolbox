@@ -59,19 +59,32 @@ class NeuralCleanse(Transformer):
         super().__init__(classifier=classifier)
         self._check_params()
 
-    def __call__(self, transformed_classifier: "Classifier", mitigation_type: str = "unlearning",
+    def __call__(self, transformed_classifier: "Classifier",
                  steps: int = 1000, init_cost: float = 1e-3, norm: Union[int, float] = 2,
                  learning_rate: float = 0.1, attack_success_threshold: float = 0.99, patience: int = 5,
                  early_stop: bool = True, early_stop_threshold: float = 0.99, early_stop_patience: int = 10,
                  cost_multiplier: float = 1.5, batch_size: int = 32) -> "Classifier":
         """
-        Perform the defensive distillation defence mechanism and return a robuster classifier.
+        Returns an new classifier with implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor
+        Attacks in Neural Networks. Wang et al. (2019).
 
-        :param x: Dataset for training the transformed classifier.
-        :param transformed_classifier: A classifier to be transformed for increased robustness. Note that, the
-            objective loss function used for fitting inside the input transformed_classifier must support soft labels,
-            i.e. probability labels.
-        :return: The transformed classifier.
+        Namely, the new classifier has a new method mitigate(). This can also affect the predict() function.
+
+        | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
+
+        :param transformed_classifier: An ART classifier
+        :param steps: The maximum number of steps to run the Neural Cleanse optimization
+        :param init_cost: The initial value for the cost tensor in the Neural Cleanse optimization
+        :param norm: The norm to use for the Neural Cleanse optimization, can be 1, 2, or np.inf
+        :param learning_rate: Tjhe learning rate for the Neural Cleanse optmization
+        :param attack_success_threshold: The threshold at which the generated backdoor is successful enough to stop the
+                                         Neural Cleanse optimization
+        :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimiation
+        :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimiation
+        :param early_stop_threshold: How close values need to come to max value to start counting early stop
+        :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimiation
+        :param cost_multiplier: How much to change the cost in the Neural Cleanse optimiation
+        :param batch_size: The batch size for optimizations in the Neural Cleanse optimiation
         """
         if isinstance(transformed_classifier, KerasClassifier):
             transformed_classifier = KerasNeuralCleanse(model=transformed_classifier.model, steps=steps,
