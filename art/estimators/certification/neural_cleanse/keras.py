@@ -311,16 +311,13 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         biases[index] = 0
         layer.set_weights([weights, biases])
 
-    def predict(self, x, batch_size=128):
+    def predict(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, potentially filtering suspicious input
 
-        :param x: Test set.
-        :type x: `np.ndarray`
+        :param x: Input data to predict.
         :param batch_size: Batch size.
-        :type batch_size: `int`
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        :rtype: `np.ndarray`
         """
         return NeuralCleanseMixin.predict(self, x, batch_size=batch_size)
 
