@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import unittest
+import keras
 
 from art.defences.transformer.poison import NeuralCleanse
 from art.utils import load_dataset
@@ -55,17 +56,20 @@ class TestNeuralCleanse(unittest.TestCase):
         Test with a KerasClassifier.
         :return:
         """
-        # Build KerasClassifier
-        krc = get_image_classifier_kr()
+        if keras.__version__ != '2.2.4':
+            self.assertRaises(NotImplementedError)
+        else:
+            # Build KerasClassifier
+            krc = get_image_classifier_kr()
 
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test) = self.mnist
+            # Get MNIST
+            (x_train, y_train), (x_test, y_test) = self.mnist
 
-        krc.fit(x_train, y_train, nb_epochs=1)
+            krc.fit(x_train, y_train, nb_epochs=1)
 
-        cleanse = NeuralCleanse(krc)
-        defense_cleanse = cleanse(krc, steps=2)
-        defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
+            cleanse = NeuralCleanse(krc)
+            defense_cleanse = cleanse(krc, steps=2)
+            defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
 
 
 if __name__ == "__main__":
