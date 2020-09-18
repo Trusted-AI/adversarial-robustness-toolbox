@@ -119,6 +119,7 @@ class TestImperceptibleAttackPytorch:
         # Create labels
         self.y = np.array(["S", "I", "GD"])
 
+    @pytest.mark.only_with_platform("pytorch")
     def test_all(self, _test_all):
         pass
 
