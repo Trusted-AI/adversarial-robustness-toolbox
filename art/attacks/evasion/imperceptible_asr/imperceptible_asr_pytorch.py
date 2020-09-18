@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ImperceptibleAttackPytorch(EvasionAttack):
+class ImperceptibleASRPytorch(EvasionAttack):
     """
     This class implements the imperceptible, robust, and targeted attack to generate adversarial examples for automatic
     speech recognition models. This attack will be implemented specifically for DeepSpeech model and is framework
@@ -109,7 +109,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
         loss_scale: int = 1,
     ):
         """
-        Create a :class:`.ImperceptibleAttackPytorch` instance.
+        Create a :class:`.ImperceptibleASRPytorch` instance.
 
         :param estimator: A trained estimator.
         :param initial_eps: Initial maximum perturbation that the attacker can introduce.
@@ -160,7 +160,7 @@ class ImperceptibleAttackPytorch(EvasionAttack):
                 "preprocessing defences."
             )
 
-        super(ImperceptibleAttackPytorch, self).__init__(estimator=estimator)
+        super().__init__(estimator=estimator)
 
         # Set attack attributes
         self.initial_eps = initial_eps

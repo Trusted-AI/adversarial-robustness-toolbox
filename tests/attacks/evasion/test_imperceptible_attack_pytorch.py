@@ -44,9 +44,9 @@ logger = logging.getLogger(__name__)
     reason="Skip unittests if deep speech module is not found because of pre-trained model.",
 )
 @pytest.mark.skipif(not amp_found, reason="Skip unittests if apex module is not found.")
-class TestImperceptibleAttackPytorch:
+class TestImperceptibleASRPytorch:
     """
-    This class tests the ImperceptibleAttackPytorch attack.
+    This class tests the ImperceptibleASRPytorch attack.
     """
 
     @pytest.fixture
@@ -127,7 +127,7 @@ class TestImperceptibleAttackPytorch:
     def _test_all(self, request, setup_class):
         # Only import if deep speech module is available
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-        from art.attacks.evasion.imperceptible_asr.imperceptible_attack_pytorch import ImperceptibleAttackPytorch
+        from art.attacks.evasion.imperceptible_asr.imperceptible_attack_pytorch import ImperceptibleASRPytorch
 
         # Without amp
         if request.param is False:
@@ -135,7 +135,7 @@ class TestImperceptibleAttackPytorch:
             speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech")
 
             # Create attack
-            asr_attack = ImperceptibleAttackPytorch(
+            asr_attack = ImperceptibleASRPytorch(
                 estimator=speech_recognizer,
                 initial_eps=0.001,
                 max_iter_1st_stage=50,
@@ -165,7 +165,7 @@ class TestImperceptibleAttackPytorch:
             speech_recognizer = PyTorchDeepSpeech(pretrained_model="librispeech", device_type="gpu", use_amp=True)
 
             # Create attack
-            asr_attack = ImperceptibleAttackPytorch(
+            asr_attack = ImperceptibleASRPytorch(
                 estimator=speech_recognizer,
                 initial_eps=0.001,
                 max_iter_1st_stage=50,
