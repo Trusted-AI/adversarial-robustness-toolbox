@@ -16,9 +16,8 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements Randomized Smoothing applied to classifier predictions.
+This module implements a mixin to be added to classifier so that they may abstain from classification.
 
-| Paper link: https://arxiv.org/abs/1902.02918
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -33,10 +32,7 @@ logger = logging.getLogger(__name__)
 
 class AbstainPredictorMixin(ClassifierMixin):
     """
-    Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
-    in Cohen et al. (2019).
-
-    | Paper link: https://arxiv.org/abs/1902.02918
+    A mixin class that gives classifiers the ability to abstain
     """
 
     def __init__(self, **kwargs):
