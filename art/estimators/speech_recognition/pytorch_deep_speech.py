@@ -287,9 +287,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         x_ = x.copy()
 
-        # Put the model in the evaluation status
-        self._model.eval()
-
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x_, y=None, fit=False)
 
@@ -333,7 +330,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             )
 
             # Overwrite results
-            result_outputs[begin:end, : results[m].shape[1], : results[m].shape[-1]] = results[m].cpu().numpy()
+            result_outputs[begin : end, : results[m].shape[1], : results[m].shape[-1]] = results[m].cpu().numpy()
 
         # Rearrange to the original order
         result_output_sizes_ = result_output_sizes.copy()
