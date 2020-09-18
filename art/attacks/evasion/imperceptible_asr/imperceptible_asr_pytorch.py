@@ -243,14 +243,10 @@ class ImperceptibleASRPytorch(EvasionAttack):
             )
 
             # First reset delta
-            self.global_optimal_delta.data = torch.zeros(
-                self.batch_size, self.global_max_length
-            ).type(torch.float32)
+            self.global_optimal_delta.data = torch.zeros(self.batch_size, self.global_max_length).type(torch.float32)
 
             # Then compute the batch
-            adv_x_batch = self._generate_batch(
-                adv_x[batch_index_1: batch_index_2], y[batch_index_1: batch_index_2]
-            )
+            adv_x_batch = self._generate_batch(adv_x[batch_index_1:batch_index_2], y[batch_index_1:batch_index_2])
 
             for i in range(len(adv_x_batch)):
                 adv_x[batch_index_1 + i] = adv_x_batch[i, : len(adv_x[batch_index_1 + i])]
@@ -350,7 +346,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
                 local_max_length=local_max_length,
                 rescale=rescale,
                 input_mask=input_mask,
-                real_lengths=real_lengths
+                real_lengths=real_lengths,
             )
 
             # Actual training
@@ -403,7 +399,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         local_max_length: int,
         rescale: np.ndarray,
         input_mask: np.ndarray,
-        real_lengths: np.ndarray
+        real_lengths: np.ndarray,
     ) -> Tuple["torch.Tensor", "torch.Tensor", np.ndarray, "torch.Tensor", "torch.Tensor"]:
         """
         The forward pass of the first stage of the attack.
@@ -428,7 +424,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         from warpctc_pytorch import CTCLoss
 
         # Compute perturbed inputs
-        local_delta = self.global_optimal_delta[: local_batch_size, : local_max_length]
+        local_delta = self.global_optimal_delta[:local_batch_size, :local_max_length]
         local_delta_rescale = torch.clamp(local_delta, -self.initial_eps, self.initial_eps).to(self.estimator.device)
         local_delta_rescale *= torch.tensor(rescale).to(self.estimator.device)
         adv_input = local_delta_rescale + torch.tensor(original_input).to(self.estimator.device)
@@ -440,7 +436,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
             y=original_output,
             compute_gradient=False,
             tensor_input=True,
-            real_lengths=real_lengths
+            real_lengths=real_lengths,
         )
 
         # Compute real input sizes
@@ -470,11 +466,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         return loss, local_delta, decoded_output, masked_adv_input, local_delta_rescale
 
     def _attack_2nd_stage(
-        self,
-        x: np.ndarray,
-        y: np.ndarray,
-        theta_batch: np.ndarray,
-        original_max_psd_batch: np.ndarray
+        self, x: np.ndarray, y: np.ndarray, theta_batch: np.ndarray, original_max_psd_batch: np.ndarray
     ) -> "torch.Tensor":
         """
         The second stage of the attack.
@@ -523,14 +515,14 @@ class ImperceptibleASRPytorch(EvasionAttack):
                 local_max_length=local_max_length,
                 rescale=rescale,
                 input_mask=input_mask,
-                real_lengths=real_lengths
+                real_lengths=real_lengths,
             )
 
             # Call to forward pass of the first stage
             loss_2nd_stage = self._forward_2nd_stage(
                 local_delta_rescale=local_delta_rescale,
                 theta_batch=theta_batch,
-                original_max_psd_batch=original_max_psd_batch
+                original_max_psd_batch=original_max_psd_batch,
             )
 
             # Total loss
@@ -582,10 +574,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         return result
 
     def _forward_2nd_stage(
-        self,
-        local_delta_rescale: "torch.Tensor",
-        theta_batch: np.ndarray,
-        original_max_psd_batch: np.ndarray,
+        self, local_delta_rescale: "torch.Tensor", theta_batch: np.ndarray, original_max_psd_batch: np.ndarray,
     ) -> "torch.Tensor":
         """
         The forward pass of the second stage of the attack.
@@ -604,9 +593,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
                 delta=local_delta_rescale[i, :], original_max_psd=original_max_psd_batch[i]
             )
 
-            loss = torch.mean(
-                relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device))
-            )
+            loss = torch.mean(relu(psd_transform_delta - torch.tensor(theta_batch[i]).to(self.estimator.device)))
             losses.append(loss)
 
         losses = torch.stack(losses)
@@ -649,7 +636,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         transformed_x = librosa.core.stft(
             y=x, n_fft=n_fft, hop_length=hop_length, win_length=win_length, window=window_fn, center=False
         )
-        transformed_x *= np.sqrt(8.0 / 3.)
+        transformed_x *= np.sqrt(8.0 / 3.0)
 
         psd = abs(transformed_x / win_length)
         original_max_psd = np.max(psd * psd)
@@ -663,9 +650,12 @@ class ImperceptibleASRPytorch(EvasionAttack):
         # Compute quiet threshold
         ath = np.zeros(len(barks), dtype=np.float32) - np.inf
         bark_idx = np.argmax(barks > 1)
-        ath[bark_idx:] = (3.64 * pow(freqs[bark_idx:] * 0.001, -0.8) -
-                          6.5 * np.exp(-0.6 * pow(0.001 * freqs[bark_idx:] - 3.3, 2)) +
-                          0.001 * pow(0.001 * freqs[bark_idx:], 4) - 12)
+        ath[bark_idx:] = (
+            3.64 * pow(freqs[bark_idx:] * 0.001, -0.8)
+            - 6.5 * np.exp(-0.6 * pow(0.001 * freqs[bark_idx:] - 3.3, 2))
+            + 0.001 * pow(0.001 * freqs[bark_idx:], 4)
+            - 12
+        )
 
         # Compute the global masking threshold theta
         theta = []
@@ -683,9 +673,9 @@ class ImperceptibleASRPytorch(EvasionAttack):
             barks_psd = np.zeros([len(masker_idx), 3], dtype=np.float32)
             barks_psd[:, 0] = barks[masker_idx]
             barks_psd[:, 1] = 10 * np.log10(
-                pow(10, psd[:, i][masker_idx - 1] / 10.) +
-                pow(10, psd[:, i][masker_idx] / 10.) +
-                pow(10, psd[:, i][masker_idx + 1] / 10.)
+                pow(10, psd[:, i][masker_idx - 1] / 10.0)
+                + pow(10, psd[:, i][masker_idx] / 10.0)
+                + pow(10, psd[:, i][masker_idx + 1] / 10.0)
             )
             barks_psd[:, 2] = masker_idx
 
@@ -694,9 +684,12 @@ class ImperceptibleASRPytorch(EvasionAttack):
                     break
 
                 while barks_psd[j + 1, 0] - barks_psd[j, 0] < 0.5:
-                    quiet_threshold = (3.64 * pow(freqs[int(barks_psd[j, 2])] * 0.001, -0.8) -
-                                       6.5 * np.exp(-0.6 * pow(0.001 * freqs[int(barks_psd[j, 2])] - 3.3, 2)) +
-                                       0.001 * pow(0.001 * freqs[int(barks_psd[j, 2])], 4) - 12)
+                    quiet_threshold = (
+                        3.64 * pow(freqs[int(barks_psd[j, 2])] * 0.001, -0.8)
+                        - 6.5 * np.exp(-0.6 * pow(0.001 * freqs[int(barks_psd[j, 2])] - 3.3, 2))
+                        + 0.001 * pow(0.001 * freqs[int(barks_psd[j, 2])], 4)
+                        - 12
+                    )
                     if barks_psd[j, 1] < quiet_threshold:
                         barks_psd = np.delete(barks_psd, j, axis=0)
 
@@ -720,23 +713,19 @@ class ImperceptibleASRPytorch(EvasionAttack):
                 d_z = barks - barks_psd[m, 0]
                 zero_idx = np.argmax(d_z > 0)
                 s_f = np.zeros(len(d_z), dtype=np.float32)
-                s_f[: zero_idx] = 27 * d_z[: zero_idx]
+                s_f[:zero_idx] = 27 * d_z[:zero_idx]
                 s_f[zero_idx:] = (-27 + 0.37 * max(barks_psd[m, 1] - 40, 0)) * d_z[zero_idx:]
                 t_s.append(barks_psd[m, 1] + delta[m] + s_f)
 
             t_s = np.array(t_s)
 
-            theta.append(np.sum(pow(10, t_s / 10.), axis=0) + pow(10, ath / 10.))
+            theta.append(np.sum(pow(10, t_s / 10.0), axis=0) + pow(10, ath / 10.0))
 
         theta = np.array(theta)
 
         return theta, original_max_psd
 
-    def _psd_transform(
-        self,
-        delta: "torch.Tensor",
-        original_max_psd: "torch.Tensor"
-    ) -> "torch.Tensor":
+    def _psd_transform(self, delta: "torch.Tensor", original_max_psd: "torch.Tensor") -> "torch.Tensor":
         """
         Compute the psd matrix of the perturbation.
 
@@ -781,10 +770,13 @@ class ImperceptibleASRPytorch(EvasionAttack):
         transformed_delta = transformed_delta[:, 1:-1, 0]
 
         # Compute the psd matrix
-        psd = (8. / 3.) * torch.abs(transformed_delta / win_length)
+        psd = (8.0 / 3.0) * torch.abs(transformed_delta / win_length)
         psd = psd ** 2
-        psd = (torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device) /
-               torch.reshape(torch.tensor(original_max_psd).to(self.estimator.device), [-1, 1, 1]) * psd)
+        psd = (
+            torch.pow(torch.tensor(10.0), torch.tensor(9.6)).to(self.estimator.device)
+            / torch.reshape(torch.tensor(original_max_psd).to(self.estimator.device), [-1, 1, 1])
+            * psd
+        )
 
         return psd
 
