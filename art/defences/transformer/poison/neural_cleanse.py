@@ -57,7 +57,6 @@ class NeuralCleanse(Transformer):
         :param nb_epochs: Number of epochs to use for training.
         """
         super().__init__(classifier=classifier)
-        self._is_fitted = False
         self._check_params()
 
     def __call__(self, transformed_classifier: "Classifier", mitigation_type: str = "unlearning",
