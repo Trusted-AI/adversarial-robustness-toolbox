@@ -80,6 +80,7 @@ Supported Machine Learning Libraries
    modules/estimators/generation
    modules/estimators/object_detection
    modules/estimators/regression
+   modules/estimators/speech_recognition
    modules/metrics
    modules/wrappers
    modules/data_generators
