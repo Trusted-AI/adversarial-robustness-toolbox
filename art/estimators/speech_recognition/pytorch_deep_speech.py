@@ -287,6 +287,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         x_ = x.copy()
 
+        # Put the model in the eval mode
+        self._model.eval()
+
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x_, y=None, fit=False)
 
