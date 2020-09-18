@@ -46,8 +46,19 @@ class NeuralCleanse(Transformer):
     | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
     """
 
-    params = ["steps", "init_cost", "norm", "learning_rate", "attack_success_threshold", "patience", "early_stop",
-              "early_stop_threshold", "early_stop_patience", "cost_multiplier", "batch_size"]
+    params = [
+        "steps",
+        "init_cost",
+        "norm",
+        "learning_rate",
+        "attack_success_threshold",
+        "patience",
+        "early_stop",
+        "early_stop_threshold",
+        "early_stop_patience",
+        "cost_multiplier",
+        "batch_size",
+    ]
 
     def __init__(self, classifier: "CLASSIFIER_TYPE") -> None:
         """
@@ -58,11 +69,21 @@ class NeuralCleanse(Transformer):
         super().__init__(classifier=classifier)
         self._check_params()
 
-    def __call__(self, transformed_classifier: "CLASSIFIER_TYPE",
-                 steps: int = 1000, init_cost: float = 1e-3, norm: Union[int, float] = 2,
-                 learning_rate: float = 0.1, attack_success_threshold: float = 0.99, patience: int = 5,
-                 early_stop: bool = True, early_stop_threshold: float = 0.99, early_stop_patience: int = 10,
-                 cost_multiplier: float = 1.5, batch_size: int = 32) -> KerasNeuralCleanse:
+    def __call__(
+        self,
+        transformed_classifier: "CLASSIFIER_TYPE",
+        steps: int = 1000,
+        init_cost: float = 1e-3,
+        norm: Union[int, float] = 2,
+        learning_rate: float = 0.1,
+        attack_success_threshold: float = 0.99,
+        patience: int = 5,
+        early_stop: bool = True,
+        early_stop_threshold: float = 0.99,
+        early_stop_patience: int = 10,
+        cost_multiplier: float = 1.5,
+        batch_size: int = 32,
+    ) -> KerasNeuralCleanse:
         """
         Returns an new classifier with implementation of methods in Neural Cleanse: Identifying and Mitigating Backdoor
         Attacks in Neural Networks. Wang et al. (2019).
@@ -75,24 +96,31 @@ class NeuralCleanse(Transformer):
         :param steps: The maximum number of steps to run the Neural Cleanse optimization
         :param init_cost: The initial value for the cost tensor in the Neural Cleanse optimization
         :param norm: The norm to use for the Neural Cleanse optimization, can be 1, 2, or np.inf
-        :param learning_rate: Tjhe learning rate for the Neural Cleanse optmization
+        :param learning_rate: The learning rate for the Neural Cleanse optimization
         :param attack_success_threshold: The threshold at which the generated backdoor is successful enough to stop the
                                          Neural Cleanse optimization
-        :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimiation
-        :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimiation
+        :param patience: How long to wait for changing the cost multiplier in the Neural Cleanse optimization
+        :param early_stop: Whether or not to allow early stopping in the Neural Cleanse optimization
         :param early_stop_threshold: How close values need to come to max value to start counting early stop
-        :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimiation
-        :param cost_multiplier: How much to change the cost in the Neural Cleanse optimiation
-        :param batch_size: The batch size for optimizations in the Neural Cleanse optimiation
+        :param early_stop_patience: How long to wait to determine early stopping in the Neural Cleanse optimization
+        :param cost_multiplier: How much to change the cost in the Neural Cleanse optimization
+        :param batch_size: The batch size for optimizations in the Neural Cleanse optimization
         """
-        if isinstance(transformed_classifier, KerasClassifier) and keras.__version__ == '2.2.4':
-            transformed_classifier = KerasNeuralCleanse(model=transformed_classifier.model, steps=steps,
-                                                        init_cost=init_cost, norm=norm, learning_rate=learning_rate,
-                                                        attack_success_threshold=attack_success_threshold,
-                                                        patience=patience, early_stop=early_stop,
-                                                        early_stop_threshold=early_stop_threshold,
-                                                        early_stop_patience=early_stop_patience,
-                                                        cost_multiplier=cost_multiplier, batch_size=batch_size)
+        if isinstance(transformed_classifier, KerasClassifier) and keras.__version__ == "2.2.4":
+            transformed_classifier = KerasNeuralCleanse(
+                model=transformed_classifier.model,
+                steps=steps,
+                init_cost=init_cost,
+                norm=norm,
+                learning_rate=learning_rate,
+                attack_success_threshold=attack_success_threshold,
+                patience=patience,
+                early_stop=early_stop,
+                early_stop_threshold=early_stop_threshold,
+                early_stop_patience=early_stop_patience,
+                cost_multiplier=cost_multiplier,
+                batch_size=batch_size,
+            )
             return transformed_classifier
         else:
             raise NotImplementedError("Only Keras classifiers (v2.2.4) are supported for this defence.")

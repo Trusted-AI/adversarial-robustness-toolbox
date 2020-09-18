@@ -41,10 +41,22 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
     | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
     """
 
-    def __init__(self, steps: int = 1000, *args, init_cost: float = 1e-3, norm: Union[int, float] = 2,
-                 learning_rate: float = 0.1, attack_success_threshold: float = 0.99, patience: int = 5,
-                 early_stop: bool = True, early_stop_threshold: float = 0.99, early_stop_patience: int = 10,
-                 cost_multiplier: float = 1.5, batch_size: int = 32, **kwargs) -> None:
+    def __init__(
+        self,
+        steps: int = 1000,
+        *args,
+        init_cost: float = 1e-3,
+        norm: Union[int, float] = 2,
+        learning_rate: float = 0.1,
+        attack_success_threshold: float = 0.99,
+        patience: int = 5,
+        early_stop: bool = True,
+        early_stop_threshold: float = 0.99,
+        early_stop_patience: int = 10,
+        cost_multiplier: float = 1.5,
+        batch_size: int = 32,
+        **kwargs
+    ) -> None:
         """
         Create a neural cleanse wrapper.
 
@@ -168,8 +180,11 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
                 # starting from indices of high activation neurons, set weights (and biases) of high activation
                 # neurons to zero, until backdoor ineffective or pruned 30% of neurons
                 logger.info("Pruning model...")
-                while backdoor_effective and num_neurons_pruned < 0.3 * total_neurons and \
-                        num_neurons_pruned < len(ranked_indices):
+                while (
+                    backdoor_effective
+                    and num_neurons_pruned < 0.3 * total_neurons
+                    and num_neurons_pruned < len(ranked_indices)
+                ):
                     self._prune_neuron_at_index(ranked_indices[num_neurons_pruned])
                     num_neurons_pruned += 1
                     backdoor_effective = self.check_backdoor_effective(backdoor_data, backdoor_labels)
@@ -237,8 +252,9 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
         return clean_data, example_data, example_labels
 
-    def generate_backdoor(self, x_val: np.ndarray, y_val: np.ndarray, y_target: np.ndarray) -> \
-            Tuple[np.ndarray, np.ndarray]:
+    def generate_backdoor(
+        self, x_val: np.ndarray, y_val: np.ndarray, y_target: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Generates a possible backdoor for the model. Returns the pattern and the mask
         :return: A tuple of the pattern and mask for the model.
