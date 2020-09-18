@@ -58,11 +58,11 @@ class NeuralCleanse(Transformer):
         self._is_fitted = False
         self._check_params()
 
-    def __call__(self, transformed_classifier: "Classifier", mitigation_type: str = "unlearning",
+    def __call__(self, transformed_classifier: "CLASSIFIER_TYPE", mitigation_type: str = "unlearning",
                  steps: int = 1000, init_cost: float = 1e-3, norm: Union[int, float] = 2,
                  learning_rate: float = 0.1, attack_success_threshold: float = 0.99, patience: int = 5,
                  early_stop: bool = True, early_stop_threshold: float = 0.99, early_stop_patience: int = 10,
-                 cost_multiplier: float = 1.5, batch_size: int = 32) -> "Classifier":
+                 cost_multiplier: float = 1.5, batch_size: int = 32) -> KerasNeuralCleanse:
         """
         Perform the Neural Cleanse defence mechanism and return a robuster classifier.
 
@@ -88,7 +88,7 @@ class NeuralCleanse(Transformer):
         """
         No parameters to learn for this method; do nothing.
         """
-        pass
+        raise NotImplementedError
 
     def _check_params(self) -> None:
         if not isinstance(self.classifier, KerasClassifier):
