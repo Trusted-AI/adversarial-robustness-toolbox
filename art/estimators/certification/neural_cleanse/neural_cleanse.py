@@ -195,7 +195,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
             else:
                 raise TypeError("Mitigation type: `" + mitigation_type + "` not supported")
 
-    def check_backdoor_effective(self, backdoor_data, backdoor_labels) -> bool:
+    def check_backdoor_effective(self, backdoor_data: np.ndarray, backdoor_labels: np.ndarray) -> bool:
         """
         Check if supposed backdoors are effective against the classifier
 
