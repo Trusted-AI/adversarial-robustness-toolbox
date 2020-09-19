@@ -130,6 +130,39 @@ def test_augment_images_with_patch(random_location, image_format, fix_get_mnist_
     np.testing.assert_array_equal(patched_images[1, 2, :, 0], patched_images_column)
 
 
+def test_exceptions(get_default_mnist_subset, image_dl_estimator):
+    class ObjectDetector(BaseEstimator, LossGradientsMixin, ObjectDetectorMixin):
+
+        clip_values = (0, 1)
+        channels_first = False
+
+        def fit(self):
+            pass
+
+        def loss_gradient(self, x, y, **kwargs):
+            pass
+
+        def predict(self, x, **kwargs):
+            pass
+
+    estimator = ObjectDetector()
+
+    (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
+
+    attack = DPatch(estimator=estimator, patch_shape=(4, 4, 1), learning_rate=5.0, max_iter=5, batch_size=16,)
+
+    with pytest.raises(ValueError, match="The DPatch attack does not use target labels."):
+        attack.generate(x=x_train_mnist, y=y_train_mnist)
+
+    with pytest.raises(
+        ValueError, match="The target_label as list of integers needs to of length number of images in" " `x`."
+    ):
+        attack.generate(x=x_train_mnist, y=None, target_label=[1, 2, 3])
+
+    with pytest.raises(ValueError, match="The target_label has to be a 1-dimensional array."):
+        attack.generate(x=x_train_mnist, y=None, target_label=np.asarray([[1, 2, 3], [4, 5, 6]]))
+
+
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(DPatch, [BaseEstimator, LossGradientsMixin, ObjectDetectorMixin])
 

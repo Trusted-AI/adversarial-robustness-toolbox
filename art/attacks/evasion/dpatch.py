@@ -23,7 +23,7 @@ This module implements the adversarial patch attack `DPatch` for object detector
 import logging
 import math
 import random
-from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -78,15 +78,26 @@ class DPatch(EvasionAttack):
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
-        self._patch = np.ones(shape=patch_shape) * (self.estimator.clip_values[1] + self.estimator.clip_values[0]) / 2.0
+        self._patch = np.random.randint(
+            self.estimator.clip_values[0], self.estimator.clip_values[1], size=patch_shape
+        ).astype(np.float32)
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+        self.target_label = []
+
+    def generate(
+        self,
+        x: np.ndarray,
+        y: Optional[np.ndarray] = None,
+        target_label: Optional[Union[int, List[int], np.ndarray]] = None,
+        **kwargs
+    ) -> np.ndarray:
         """
         Generate DPatch.
 
         :param x: Sample images.
         :param y: Target labels for object detector.
+        :param target_label: The target label of the DPatch attack.
         :return: Adversarial patch.
         """
         channel_index = 1 if self.estimator.channels_first else x.ndim - 1
@@ -96,6 +107,17 @@ class DPatch(EvasionAttack):
             raise ValueError("The DPatch attack does not use target labels.")
         if x.ndim != 4:
             raise ValueError("The adversarial patch can only be applied to images.")
+        if target_label is not None:
+            if isinstance(target_label, int):
+                self.target_label = [target_label] * x.shape[0]
+            elif isinstance(target_label, np.ndarray):
+                if not (target_label.shape == (x.shape[0], 1) or target_label.shape == (x.shape[0],)):
+                    raise ValueError("The target_label has to be a 1-dimensional array.")
+                self.target_label = target_label.tolist()
+            else:
+                if not len(target_label) == x.shape[0] or not isinstance(target_label, list):
+                    raise ValueError("The target_label as list of integers needs to of length number of images in `x`.")
+                self.target_label = target_label
 
         for i_step in trange(self.max_iter, desc="DPatch iteration"):
             if i_step == 0 or (i_step + 1) % 100 == 0:
@@ -106,19 +128,32 @@ class DPatch(EvasionAttack):
             )
             patch_target: List[Dict[str, np.ndarray]] = list()
 
-            for i_image in range(patched_images.shape[0]):
+            if self.target_label:
 
-                i_x_1 = transforms[i_image]["i_x_1"]
-                i_x_2 = transforms[i_image]["i_x_2"]
-                i_y_1 = transforms[i_image]["i_y_1"]
-                i_y_2 = transforms[i_image]["i_y_2"]
+                for i_image in range(patched_images.shape[0]):
+                    i_x_1 = transforms[i_image]["i_x_1"]
+                    i_x_2 = transforms[i_image]["i_x_2"]
+                    i_y_1 = transforms[i_image]["i_y_1"]
+                    i_y_2 = transforms[i_image]["i_y_2"]
 
-                target_dict = dict()
-                target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                target_dict["labels"] = np.asarray([1,])
-                target_dict["scores"] = np.asarray([1.0,])
+                    target_dict = dict()
+                    target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
+                    target_dict["labels"] = np.asarray([self.target_label[i_image],])
+                    target_dict["scores"] = np.asarray([1.0,])
 
-                patch_target.append(target_dict)
+                    patch_target.append(target_dict)
+
+            else:
+
+                predictions = self.estimator.predict(x=patched_images)
+
+                for i_image in range(patched_images.shape[0]):
+                    target_dict = dict()
+                    target_dict["boxes"] = predictions[i_image]["boxes"].detach().cpu().numpy()
+                    target_dict["labels"] = predictions[i_image]["labels"].detach().cpu().numpy()
+                    target_dict["scores"] = predictions[i_image]["scores"].detach().cpu().numpy()
+
+                    patch_target.append(target_dict)
 
             num_batches = math.ceil(x.shape[0] / self.batch_size)
             patch_gradients = np.zeros_like(self._patch)
@@ -131,7 +166,7 @@ class DPatch(EvasionAttack):
                     x=patched_images[i_batch_start:i_batch_end], y=patch_target[i_batch_start:i_batch_end],
                 )
 
-                for i_image in range(self.batch_size):
+                for i_image in range(patched_images.shape[0]):
 
                     i_x_1 = transforms[i_batch_start + i_image]["i_x_1"]
                     i_x_2 = transforms[i_batch_start + i_image]["i_x_2"]
@@ -143,9 +178,13 @@ class DPatch(EvasionAttack):
                     else:
                         patch_gradients_i = gradients[i_image, i_x_1:i_x_2, i_y_1:i_y_2, :]
 
-                    patch_gradients += patch_gradients_i
+                    patch_gradients = patch_gradients + patch_gradients_i
 
-            self._patch -= patch_gradients * self.learning_rate
+            if self.target_label:
+                self._patch = self._patch - np.sign(patch_gradients) * self.learning_rate
+            else:
+                self._patch = self._patch + np.sign(patch_gradients) * self.learning_rate
+
             self._patch = np.clip(
                 self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
             )
