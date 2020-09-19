@@ -78,7 +78,9 @@ class DPatch(EvasionAttack):
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
-        self._patch = np.random.randint(self.estimator.clip_values[0], self.estimator.clip_values[1], size=patch_shape).astype(np.float32)
+        self._patch = np.random.randint(
+            self.estimator.clip_values[0], self.estimator.clip_values[1], size=patch_shape
+        ).astype(np.float32)
         self._check_params()
 
         self.target_label = []
@@ -136,8 +138,8 @@ class DPatch(EvasionAttack):
 
                     target_dict = dict()
                     target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                    target_dict["labels"] = np.asarray([self.target_label[i_image], ])
-                    target_dict["scores"] = np.asarray([1.0, ])
+                    target_dict["labels"] = np.asarray([self.target_label[i_image],])
+                    target_dict["scores"] = np.asarray([1.0,])
 
                     patch_target.append(target_dict)
 
