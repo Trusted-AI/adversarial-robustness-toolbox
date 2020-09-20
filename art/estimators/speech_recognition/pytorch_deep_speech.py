@@ -333,7 +333,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             )
 
             # Overwrite results
-            result_outputs[begin : end, : results[m].shape[1], : results[m].shape[-1]] = results[m].cpu().numpy()
+            result_outputs[begin:end, : results[m].shape[1], : results[m].shape[-1]] = results[m].cpu().numpy()
 
         # Rearrange to the original order
         result_output_sizes_ = result_output_sizes.copy()
@@ -514,7 +514,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         y: Optional[np.ndarray] = None,
         compute_gradient: bool = False,
         tensor_input: bool = False,
-        real_lengths: Optional[np.ndarray] = None
+        real_lengths: Optional[np.ndarray] = None,
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
         """
         Transform the user input space into the model input space.

@@ -106,6 +106,7 @@ class NeuralCleanse(Transformer):
         :param batch_size: The batch size for optimizations in the Neural Cleanse optimization
         """
         import keras
+
         if isinstance(transformed_classifier, KerasClassifier) and keras.__version__ == "2.2.4":
             transformed_classifier = KerasNeuralCleanse(
                 model=transformed_classifier.model,

@@ -159,6 +159,7 @@ class PixelDefend(Preprocessor):
 
         from art.estimators.classification.classifier import ClassifierMixin
         from art.estimators.estimator import NeuralNetworkMixin
+
         if hasattr(self, "pixel_cnn") and not (
             isinstance(self.pixel_cnn, ClassifierMixin) and isinstance(self.pixel_cnn, NeuralNetworkMixin)
         ):

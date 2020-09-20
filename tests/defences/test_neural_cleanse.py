@@ -56,7 +56,7 @@ class TestNeuralCleanse(unittest.TestCase):
         Test with a KerasClassifier.
         :return:
         """
-        if keras.__version__ != '2.2.4':
+        if keras.__version__ != "2.2.4":
             self.assertRaises(NotImplementedError)
         else:
             # Build KerasClassifier
