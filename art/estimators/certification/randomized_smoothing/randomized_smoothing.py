@@ -23,7 +23,6 @@ This module implements Randomized Smoothing applied to classifier predictions.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from abc import ABC
-
 import logging
 from typing import Optional, Tuple
 
@@ -106,7 +105,7 @@ class RandomizedSmoothingMixin(ABC):
 
             prediction.append(smooth_prediction)
         if n_abstained > 0:
-            logger.info("%s prediction(s) abstained." % n_abstained)
+            logger.info("%s prediction(s) abstained.", n_abstained)
         return np.array(prediction)
 
     def _fit_classifier(self, x: np.ndarray, y: np.ndarray, batch_size: int, nb_epochs: int, **kwargs) -> None:
@@ -116,7 +115,7 @@ class RandomizedSmoothingMixin(ABC):
         :param x: Training data.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
-        :param batch_size: Batche size.
+        :param batch_size: Batch size.
         :param nb_epochs: Number of epochs to use for training.
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
@@ -135,8 +134,8 @@ class RandomizedSmoothingMixin(ABC):
         :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
                and providing it takes no effect.
         """
-        ga = GaussianAugmentation(sigma=self.scale, augmentation=False)
-        x_rs, _ = ga(x)
+        g_a = GaussianAugmentation(sigma=self.scale, augmentation=False)
+        x_rs, _ = g_a(x)
         self._fit_classifier(x_rs, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
     def certify(self, x: np.ndarray, n: int, batch_size: int = 32) -> Tuple[np.ndarray, np.ndarray]:

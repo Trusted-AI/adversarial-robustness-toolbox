@@ -60,7 +60,7 @@ def create_generator_layers(x):
 
         # denormalizing images
         output_resized = tf.image.resize_images(output, [28, 28])
-        return tf.multiply(tf.add(output_resized, 0.5), 0.5, name="output")
+        return tf.add(tf.multiply(output_resized, 0.5), 0.5, name="output")
 
 
 def create_discriminator_layers(x):

@@ -26,9 +26,10 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import trange, tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -38,6 +39,7 @@ from art.utils import compute_success, random_sphere
 
 if TYPE_CHECKING:
     import tensorflow as tf
+    from art.estimators.classification.tensorflow import TensorFlowV2Classifier
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +55,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator,
-        norm: int = np.inf,
+        estimator: "TensorFlowV2Classifier",
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -62,6 +64,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        verbose: bool = True,
     ):
         """
         Create a :class:`.ProjectedGradientDescentTensorFlowV2` instance.
@@ -79,6 +82,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         if (
             hasattr(estimator, "preprocessing")
@@ -92,7 +96,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                 "preprocessing defences."
             )
 
-        super(ProjectedGradientDescentTensorFlowV2, self).__init__(
+        super().__init__(
             estimator=estimator,
             norm=norm,
             eps=eps,
@@ -102,6 +106,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             num_random_init=num_random_init,
             batch_size=batch_size,
             random_eps=random_eps,
+            verbose=verbose,
         )
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -157,12 +162,14 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         adv_x_best = None
         rate_best = None
 
-        for _ in range(max(1, self.num_random_init)):
+        for _ in trange(max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose):
             adv_x = x.astype(ART_NUMPY_DTYPE)
             data_loader = iter(dataset)
 
             # Compute perturbation with batching
-            for (batch_id, batch_all) in enumerate(data_loader):
+            for (batch_id, batch_all) in enumerate(
+                tqdm(data_loader, desc="PGD - Iterations", leave=False, disable=not self.verbose)
+            ):
                 if mask is not None:
                     (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
                 else:
@@ -209,7 +216,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return adv_x
 
-    def _compute_perturbation(self, x: "tf.Tensor", y: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
+    def _compute_perturbation(self, x: "tf.Tensor", y: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         """
         Compute perturbations.
 
@@ -229,7 +236,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient_framework(x, y) * (1 - 2 * int(self.targeted))
+        grad: tf.Tensor = self.estimator.loss_gradient_framework(x, y) * tf.constant(
+            1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
+        )
 
         # Apply norm bound
         if self.norm == np.inf:
@@ -237,11 +246,13 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         elif self.norm == 1:
             ind = tuple(range(1, len(x.shape)))
-            grad = grad / (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol)
+            grad = tf.divide(grad, (tf.math.reduce_sum(tf.abs(grad), axis=ind, keepdims=True) + tol))
 
         elif self.norm == 2:
             ind = tuple(range(1, len(x.shape)))
-            grad = grad / (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
+            grad = tf.divide(
+                grad, (tf.math.sqrt(tf.math.reduce_sum(tf.math.square(grad), axis=ind, keepdims=True)) + tol)
+            )
 
         assert x.shape == grad.shape
 
@@ -261,7 +272,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        x = x + eps_step * perturbation
+        x = x + tf.constant(eps_step, dtype=ART_NUMPY_DTYPE) * perturbation
 
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
@@ -301,7 +312,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         if random_init:
             n = x.shape[0]
-            m = np.prod(x.shape[1:])
+            m = np.prod(x.shape[1:]).item()
 
             random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             random_perturbation = tf.convert_to_tensor(random_perturbation)
@@ -332,7 +343,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         return x_adv
 
     @staticmethod
-    def _projection(values: "tf.Tensor", eps: float, norm_p: int) -> "tf.Tensor":
+    def _projection(values: "tf.Tensor", eps: float, norm_p: Union[int, float, str]) -> "tf.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
@@ -357,12 +368,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                 tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=1, axis=1) + tol)), axis=1
             )
 
-        elif norm_p == np.inf:
+        elif norm_p in ["inf", np.inf]:
             values_tmp = tf.sign(values_tmp) * tf.minimum(tf.math.abs(values_tmp), eps)
 
         else:
             raise NotImplementedError(
-                "Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported."
+                'Values of `norm_p` different from 1, 2 "inf" and `np.inf` are currently not supported.'
             )
 
         values = tf.reshape(values_tmp, values.shape)

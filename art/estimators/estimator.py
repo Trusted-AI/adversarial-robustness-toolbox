@@ -24,12 +24,14 @@ from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 from tqdm import trange
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.postprocessor.postprocessor import Postprocessor
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
+    # pylint: disable=R0401
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.metrics.verification_decisions_trees import Tree
 
@@ -51,10 +53,10 @@ class BaseEstimator(ABC):
     def __init__(
         self,
         model=None,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union[Preprocessor, List[Preprocessor], None] = None,
+        postprocessing_defences: Union[Postprocessor, List[Postprocessor], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ):
         """
         Initialize a `BaseEstimator` object.
@@ -66,7 +68,7 @@ class BaseEstimator(ABC):
                the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the estimator.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the estimator.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input and the results will be
                divided by the second value.
         """
@@ -164,13 +166,13 @@ class BaseEstimator(ABC):
             )
 
     @abstractmethod
-    def predict(self, x, *args, **kwargs):  # lgtm [py/inheritance/incorrect-overridden-signature]
+    def predict(self, x, **kwargs) -> Any:  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
         Perform prediction of the estimator for input `x`.
 
         :param x: Samples.
         :type x: Format as expected by the `model`
-        :return: Array of predictions by the model.
+        :return: Predictions by the model.
         :rtype: Format as produced by the `model`
         """
         raise NotImplementedError
@@ -206,7 +208,7 @@ class BaseEstimator(ABC):
         return self._input_shape  # type: ignore
 
     @property
-    def clip_values(self) -> Optional[CLIP_VALUES_TYPE]:
+    def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
         """
         Return the clip values of the input samples.
 
@@ -512,6 +514,20 @@ class NeuralNetworkMixin(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
+
     @property  # type: ignore
     @deprecated(end_version="1.5.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
@@ -540,7 +556,7 @@ class NeuralNetworkMixin(ABC):
         return self._learning_phase  # type: ignore
 
     @property
-    def layer_names(self) -> List[str]:
+    def layer_names(self) -> Optional[List[str]]:
         """
         Return the names of the hidden layers in the model, if applicable.
 

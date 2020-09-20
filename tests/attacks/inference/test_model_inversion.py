@@ -22,9 +22,9 @@ import pytest
 
 import numpy as np
 
-from art.attacks.inference import MIFace
+from art.attacks.inference.model_inversion import MIFace
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
@@ -36,7 +36,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train = 100
     n_test = 11
-    yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
 def backend_check_inferred_values(attack, mnist_dataset, classifier):
@@ -62,8 +62,9 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     np.testing.assert_array_less(diff_noisy, diff_inferred)
 
 
-def test_miface(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-    classifier_list = get_image_classifier_list_for_attack(MIFace)
+@pytest.mark.skipMlFramework("pytorch")
+def test_miface(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(MIFace)
     # TODO this if statement must be removed once we have a classifier for both image and tabular data
     if classifier_list is None:
         logging.warning("Couldn't perform  this test because no classifier is defined")
@@ -83,7 +84,7 @@ def test_miface(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassGradientsMixin])
+    backend_test_classifier_type_check_fail(MIFace, (BaseEstimator, ClassifierMixin, ClassGradientsMixin))
 
 
 if __name__ == "__main__":

@@ -22,15 +22,18 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from functools import reduce
 import logging
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierNeuralNetwork, ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +66,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: ClassifierNeuralNetwork,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: np.ndarray,
         feature_layer: Union[str, int],
         learning_rate: float = 500 * 255.0,
@@ -90,7 +93,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param similarity_coeff: The maximum number of iterations for the attack.
         :param watermark: Whether The opacity of the watermarked target image.
         """
-        super().__init__(classifier)
+        super().__init__(classifier=classifier)  # type: ignore
         self.target = target
         self.feature_layer = feature_layer
         self.learning_rate = learning_rate
@@ -140,7 +143,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
                 rel_change_val = np.linalg.norm(new_attack - old_attack) / np.linalg.norm(new_attack)
                 if rel_change_val < self.stopping_tol or self.obj_threshold and old_objective <= self.obj_threshold:
-                    logger.info("stopped after " + str(i) + " iterations due to small changes")
+                    logger.info("stopped after %d iterations due to small changes", i)
                     break
 
                 np.expand_dims(new_attack, axis=0)
@@ -175,7 +178,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             raise ValueError("Learning rate must be strictly positive")
         if self.max_iter < 1:
             raise ValueError("Value of max_iter at least 1")
-        if not (isinstance(self.feature_layer, str) or isinstance(self.feature_layer, int)):
+        if not isinstance(self.feature_layer, (str, int)):
             raise TypeError("Feature layer should be a string or int")
         if self.decay_coeff <= 0:
             raise ValueError("Decay coefficient must be positive")
@@ -249,10 +252,11 @@ def get_class_name(obj: object) -> str:
     :return: A qualified class name.
     """
     module = obj.__class__.__module__
+
     if module is None or module == str.__class__.__module__:
         return obj.__class__.__name__
-    else:
-        return module + "." + obj.__class__.__name__
+
+    return module + "." + obj.__class__.__name__
 
 
 def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):

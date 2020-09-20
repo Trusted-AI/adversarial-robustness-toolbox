@@ -24,13 +24,14 @@ import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 
-from art.attacks.inference import (
-    AttributeInferenceWhiteBoxDecisionTree,
-    AttributeInferenceBlackBox,
+from art.attacks.inference.attribute_inference.black_box import AttributeInferenceBlackBox
+from art.attacks.inference.attribute_inference.white_box_decision_tree import AttributeInferenceWhiteBoxDecisionTree
+from art.attacks.inference.attribute_inference.white_box_lifestyle_decision_tree import (
     AttributeInferenceWhiteBoxLifestyleDecisionTree,
 )
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.estimator import BaseEstimator
+from art.estimators.classification import ClassifierMixin
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
@@ -209,12 +210,12 @@ def test_white_box_lifestyle(get_tabular_classifier_list, get_iris_dataset):
 
 
 def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(AttributeInferenceBlackBox, [BaseEstimator])
+    backend_test_classifier_type_check_fail(AttributeInferenceBlackBox, (BaseEstimator, ClassifierMixin))
     backend_test_classifier_type_check_fail(
-        AttributeInferenceWhiteBoxLifestyleDecisionTree, [BaseEstimator, ScikitlearnDecisionTreeClassifier]
+        AttributeInferenceWhiteBoxLifestyleDecisionTree, (ScikitlearnDecisionTreeClassifier,)
     )
     backend_test_classifier_type_check_fail(
-        AttributeInferenceWhiteBoxDecisionTree, [BaseEstimator, ScikitlearnDecisionTreeClassifier]
+        AttributeInferenceWhiteBoxDecisionTree, (ScikitlearnDecisionTreeClassifier,)
     )
 
 

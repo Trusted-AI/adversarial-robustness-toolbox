@@ -21,14 +21,14 @@ This module implements the evasion attack `ShadowAttack`.
 | Paper link: https://arxiv.org/abs/2003.08937
 """
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.classification.classifier import ClassifierMixin, Classifier
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 from art.estimators.certification.randomized_smoothing import (
     TensorFlowV2RandomizedSmoothing,
@@ -62,7 +62,9 @@ class ShadowAttack(EvasionAttack):
 
     def __init__(
         self,
-        estimator: Classifier,
+        estimator: Union[
+            TensorFlowV2Classifier, TensorFlowV2RandomizedSmoothing, PyTorchClassifier, PyTorchRandomizedSmoothing
+        ],
         sigma: float = 0.5,
         nb_steps: int = 300,
         learning_rate: float = 0.1,
@@ -94,15 +96,13 @@ class ShadowAttack(EvasionAttack):
         self.lambda_tv = lambda_tv
         self.lambda_c = lambda_c
         self.lambda_s = lambda_s
-        self.targeted = targeted
+        self._targeted = targeted
         self._check_params()
 
         self.framework: Optional[str]
-        if isinstance(self.estimator, TensorFlowV2Classifier) or isinstance(
-            self.estimator, TensorFlowV2RandomizedSmoothing
-        ):
+        if isinstance(self.estimator, (TensorFlowV2Classifier, TensorFlowV2RandomizedSmoothing)):
             self.framework = "tensorflow"
-        elif isinstance(self.estimator, PyTorchClassifier) or isinstance(self.estimator, PyTorchRandomizedSmoothing):
+        elif isinstance(self.estimator, (PyTorchClassifier, PyTorchRandomizedSmoothing)):
             self.framework = "pytorch"
         else:
             self.framework = None
@@ -116,9 +116,6 @@ class ShadowAttack(EvasionAttack):
         :param y: An array of a single target label.
         :return: An array with the adversarial examples.
         """
-        if x.shape[0] > 1 or y.shape[0] > 1:
-            raise ValueError("This attack only accepts a single sample as input.")
-
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
@@ -130,6 +127,9 @@ class ShadowAttack(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
         else:
             self.targeted = True
+
+        if x.shape[0] > 1 or y.shape[0] > 1:
+            raise ValueError("This attack only accepts a single sample as input.")
 
         if x.ndim != 4:
             raise ValueError("Unrecognized input dimension. Shadow Attack can only be applied to image data.")
@@ -182,9 +182,9 @@ class ShadowAttack(EvasionAttack):
                     perturbation_t = tf.convert_to_tensor(perturbation)
                     tape.watch(perturbation_t)
 
-                    x_ = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
-                    y_ = perturbation_t[:, :, 1:, :] - perturbation_t[:, :, :-1, :]
-                    loss_tv = tf.reduce_sum(x_ * x_, axis=(1, 2, 3)) + tf.reduce_sum(y_ * y_, axis=(1, 2, 3))
+                    x_t = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
+                    y_t = perturbation_t[:, :, 1:, :] - perturbation_t[:, :, :-1, :]
+                    loss_tv = tf.reduce_sum(x_t * x_t, axis=(1, 2, 3)) + tf.reduce_sum(y_t * y_t, axis=(1, 2, 3))
 
                     if perturbation_t.shape[1] == 1:
                         loss_s = 0.0
@@ -213,10 +213,10 @@ class ShadowAttack(EvasionAttack):
             perturbation_t = torch.from_numpy(perturbation).to("cpu")
             perturbation_t.requires_grad = True
 
-            x_ = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
-            y_ = perturbation_t[:, :, 1:, :] - perturbation_t[:, :, :-1, :]
+            x_t = perturbation_t[:, :, :, 1:] - perturbation_t[:, :, :, :-1]
+            y_t = perturbation_t[:, :, 1:, :] - perturbation_t[:, :, :-1, :]
 
-            loss_tv = (x_ * x_).sum(dim=(1, 2, 3)) + (y_ * y_).sum(dim=(1, 2, 3))
+            loss_tv = (x_t * x_t).sum(dim=(1, 2, 3)) + (y_t * y_t).sum(dim=(1, 2, 3))
 
             if perturbation_t.shape[1] == 1:
                 loss_s = 0.0

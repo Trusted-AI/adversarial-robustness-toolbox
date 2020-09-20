@@ -223,7 +223,6 @@ class TestInputFilter(unittest.TestCase):
         }
 
         (_, _), (x_test, y_test) = self.iris
-        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()

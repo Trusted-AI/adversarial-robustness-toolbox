@@ -19,7 +19,6 @@ import logging
 import pytest
 
 import numpy as np
-import tensorflow as tf
 
 from art.attacks.evasion import ShadowAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -38,11 +37,9 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skipif(tf.__version__[0] == "1", reason="Skip for TensorFlow 1.x")
-@pytest.mark.skipMlFramework("keras", "scikitlearn")
-def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-
-    classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
+@pytest.mark.only_with_platform("pytorch")
+def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(ShadowAttack)
 
     for classifier in classifier_list:
         attack = ShadowAttack(
@@ -64,11 +61,9 @@ def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, abs=0.06)
 
 
-@pytest.mark.skipif(tf.__version__[0] == "1", reason="Skip for TensorFlow 1.x")
-@pytest.mark.skipMlFramework("keras", "scikitlearn")
-def test_get_regularisation_loss_gradients(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-
-    classifier_list = get_image_classifier_list_for_attack(ShadowAttack)
+@pytest.mark.only_with_platform("pytorch")
+def test_get_regularisation_loss_gradients(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(ShadowAttack)
 
     for classifier in classifier_list:
 

@@ -40,7 +40,7 @@ class ScanningOps:
         subset of nodes.
 
         :param pvalues: pvalue ranges.
-        :param a_max: Ddetermines the significance level threshold.
+        :param a_max: Determines the significance level threshold.
         :param image_to_node: Informs the direction for optimization.
         :param score_function: Scoring function.
         :return: (best_score_so_far, subset, best_alpha).
@@ -142,7 +142,7 @@ class ScanningOps:
         default.
 
         :param pvalues: pvalue ranges.
-        :param a_max: Ddetermines the significance level threshold.
+        :param a_max: Determines the significance level threshold.
         :param indices_of_seeds: Indices of initial sets of images or nodes to perform optimization.
         :param image_to_node: Informs the direction for optimization.
         :param score_function: Scoring function.

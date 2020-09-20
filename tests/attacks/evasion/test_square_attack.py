@@ -34,12 +34,12 @@ def fix_get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train = 100
     n_test = 10
-    yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-    classifier_list = get_image_classifier_list_for_attack(SquareAttack)
+def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
+    classifier_list = image_dl_estimator_for_attack(SquareAttack)
 
     if classifier_list is None:
         logging.warning("Couldn't perform this test because no classifier is defined")
@@ -52,7 +52,7 @@ def test_generate(fix_get_mnist_subset, get_image_classifier_list_for_attack):
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.03636, abs=0.015)
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.053533513, abs=0.015)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
 
 

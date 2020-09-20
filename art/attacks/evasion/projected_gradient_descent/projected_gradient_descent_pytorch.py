@@ -26,9 +26,10 @@ al. for adversarial training.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
+from tqdm import trange, tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
@@ -38,6 +39,8 @@ from art.utils import compute_success, random_sphere
 
 if TYPE_CHECKING:
     import torch
+    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +56,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
     def __init__(
         self,
-        estimator,
-        norm: int = np.inf,
+        estimator: Union["PyTorchClassifier", "PyTorchFasterRCNN"],
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         max_iter: int = 100,
@@ -62,13 +65,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         num_random_init: int = 0,
         batch_size: int = 32,
         random_eps: bool = False,
+        verbose: bool = True,
     ):
         """
         Create a :class:`.ProjectedGradientDescentPytorch` instance.
 
         :param estimator: An trained estimator.
-        :type estimator: :class:`.BaseEstimator`
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_eps: When True, epsilon is drawn randomly from truncated normal distribution. The literature
@@ -80,6 +83,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param num_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0 starting
                                 at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         if (
             hasattr(estimator, "preprocessing")
@@ -103,6 +107,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             num_random_init=num_random_init,
             batch_size=batch_size,
             random_eps=random_eps,
+            verbose=verbose,
         )
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -162,11 +167,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         adv_x_best = None
         rate_best = None
 
-        for _ in range(max(1, self.num_random_init)):
+        for _ in trange(max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
             # Compute perturbation with batching
-            for (batch_id, batch_all) in enumerate(data_loader):
+            for (batch_id, batch_all) in enumerate(
+                tqdm(data_loader, desc="PGD - Iterations", leave=False, disable=not self.verbose)
+            ):
                 if mask is not None:
                     (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
                 else:
@@ -242,7 +249,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         grad = self.estimator.loss_gradient_framework(x, y) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
-        if self.norm == np.inf:
+        if self.norm in ["inf", np.inf]:
             grad = grad.sign()
 
         elif self.norm == 1:
@@ -314,7 +321,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         if random_init:
             n = x.shape[0]
-            m = np.prod(x.shape[1:])
+            m = np.prod(x.shape[1:]).item()
 
             random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             random_perturbation = torch.from_numpy(random_perturbation).to(self.estimator.device)
@@ -348,13 +355,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x_adv
 
-    def _projection(self, values: "torch.Tensor", eps: float, norm_p: int) -> "torch.Tensor":
+    def _projection(self, values: "torch.Tensor", eps: float, norm_p: Union[int, float, str]) -> "torch.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
         :param values: Values to clip.
         :param eps: Maximum norm allowed.
-        :param norm_p: L_p norm to use for clipping supporting 1, 2 and `np.Inf`.
+        :param norm_p: L_p norm to use for clipping supporting 1, 2, `np.Inf` and "inf".
         :return: Values of `values` after projection.
         """
         import torch  # lgtm [py/repeated-import]
@@ -375,7 +382,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                 eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
             ).unsqueeze_(-1)
 
-        elif norm_p == np.inf:
+        elif norm_p in [np.inf, "inf"]:
             values_tmp = values_tmp.sign() * torch.min(
                 values_tmp.abs(), torch.tensor([eps], dtype=torch.float32).to(self.estimator.device)
             )

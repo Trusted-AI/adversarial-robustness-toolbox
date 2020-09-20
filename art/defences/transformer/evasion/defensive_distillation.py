@@ -31,7 +31,7 @@ from art.defences.transformer.transformer import Transformer
 from art.utils import is_probability
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +45,7 @@ class DefensiveDistillation(Transformer):
 
     params = ["batch_size", "nb_epochs"]
 
-    def __init__(self, classifier: "Classifier", batch_size: int = 128, nb_epochs: int = 10) -> None:
+    def __init__(self, classifier: "CLASSIFIER_TYPE", batch_size: int = 128, nb_epochs: int = 10) -> None:
         """
         Create an instance of the defensive distillation defence.
 
@@ -59,7 +59,7 @@ class DefensiveDistillation(Transformer):
         self.nb_epochs = nb_epochs
         self._check_params()
 
-    def __call__(self, x: np.ndarray, transformed_classifier: "Classifier") -> "Classifier":
+    def __call__(self, x: np.ndarray, transformed_classifier: "CLASSIFIER_TYPE") -> "CLASSIFIER_TYPE":
         """
         Perform the defensive distillation defence mechanism and return a robuster classifier.
 

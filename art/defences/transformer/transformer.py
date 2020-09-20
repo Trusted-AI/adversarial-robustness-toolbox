@@ -26,7 +26,7 @@ from typing import List, Optional, TYPE_CHECKING
 import numpy as np
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 
 class Transformer(abc.ABC):
@@ -36,7 +36,7 @@ class Transformer(abc.ABC):
 
     params: List[str] = list()
 
-    def __init__(self, classifier: "Classifier") -> None:
+    def __init__(self, classifier: "CLASSIFIER_TYPE") -> None:
         """
         Create a transformation object.
 
@@ -54,7 +54,7 @@ class Transformer(abc.ABC):
         """
         return self._is_fitted
 
-    def get_classifier(self) -> "Classifier":
+    def get_classifier(self) -> "CLASSIFIER_TYPE":
         """
         Get the internal classifier.
 
@@ -63,7 +63,7 @@ class Transformer(abc.ABC):
         return self.classifier
 
     @abc.abstractmethod
-    def __call__(self, x: np.ndarray, transformed_classifier: "Classifier") -> "Classifier":
+    def __call__(self, x: np.ndarray, transformed_classifier: "CLASSIFIER_TYPE") -> "CLASSIFIER_TYPE":
         """
         Perform the transformation defence and return a robuster classifier.
 

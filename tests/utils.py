@@ -275,7 +275,9 @@ def get_image_classifier_tf_v1(from_logits=False, load_init=True, sess=None):
     probabilities = tf.keras.activations.softmax(x=logits)
 
     # Train operator
-    loss = tf.reduce_mean(tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph))
+    loss = tf.reduce_mean(
+        tf.losses.softmax_cross_entropy(logits=logits, onehot_labels=output_ph, reduction=tf.losses.Reduction.SUM)
+    )
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
     train = optimizer.minimize(loss)
 
@@ -377,7 +379,9 @@ def get_image_classifier_tf_v2(from_logits=False):
             )
         )
 
-    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=from_logits)
+    loss_object = tf.keras.losses.SparseCategoricalCrossentropy(
+        from_logits=from_logits, reduction=tf.keras.losses.Reduction.SUM
+    )
 
     model.compile(optimizer=optimizer, loss=loss_object)
 
@@ -485,7 +489,7 @@ def get_image_classifier_kr(
 
                     loss = categorical_crossentropy
                 else:
-                    raise AttributeError("This combination of loss function options is not supported.")
+                    raise NotImplementedError("This combination of loss function options is not supported.")
             else:
                 loss = keras.losses.categorical_crossentropy
         elif loss_type == "function_backend":
@@ -548,6 +552,98 @@ def get_image_classifier_kr(
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=from_logits)
 
     return krc
+
+
+def get_image_classifier_kr_functional(input_layer=1, output_layer=1):
+    from art.estimators.classification.keras import KerasClassifier
+    import keras
+    from keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+    from keras.models import Model
+
+    def _functional_model():
+        in_layer = Input(shape=(28, 28, 1), name="input0")
+        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
+        layer = Conv2D(64, (3, 3), activation="relu")(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation="relu")(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer = Dense(10, activation="softmax", name="output0")(layer)
+
+        in_layer_2 = Input(shape=(28, 28, 1), name="input1")
+        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer_2)
+        layer = Conv2D(64, (3, 3), activation="relu")(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation="relu")(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer_2 = Dense(10, activation="softmax", name="output1")(layer)
+
+        model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
+
+        model.compile(
+            loss=keras.losses.categorical_crossentropy,
+            optimizer=keras.optimizers.Adadelta(),
+            metrics=["accuracy"],
+            loss_weights=[1.0, 1.0],
+        )
+
+        return model
+
+    functional_model = _functional_model()
+
+    return KerasClassifier(functional_model, clip_values=(0, 1), input_layer=input_layer, output_layer=output_layer)
+
+
+def get_image_classifier_kr_tf_functional(input_layer=1, output_layer=1):
+    """
+       Standard Keras_tf classifier for unit testing built with a functional model
+
+       :return: KerasClassifier
+       """
+    import tensorflow as tf
+
+    if tf.__version__[0] == "2":
+        tf.compat.v1.disable_eager_execution()
+    from tensorflow.keras.layers import Conv2D, Dense, Dropout, Flatten, Input, MaxPooling2D
+    from tensorflow.keras.models import Model
+    from art.estimators.classification.keras import KerasClassifier
+
+    def functional_model():
+        in_layer = Input(shape=(28, 28, 1), name="input0")
+        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer)
+        layer = Conv2D(64, (3, 3), activation="relu")(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation="relu")(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer = Dense(10, activation="softmax", name="output0")(layer)
+
+        in_layer_2 = Input(shape=(28, 28, 1), name="input1")
+        layer = Conv2D(32, kernel_size=(3, 3), activation="relu")(in_layer_2)
+        layer = Conv2D(64, (3, 3), activation="relu")(layer)
+        layer = MaxPooling2D(pool_size=(2, 2))(layer)
+        layer = Dropout(0.25)(layer)
+        layer = Flatten()(layer)
+        layer = Dense(128, activation="relu")(layer)
+        layer = Dropout(0.5)(layer)
+        out_layer_2 = Dense(10, activation="softmax", name="output1")(layer)
+
+        model = Model(inputs=[in_layer, in_layer_2], outputs=[out_layer, out_layer_2])
+
+        model.compile(
+            loss=tf.keras.losses.categorical_crossentropy,
+            optimizer=tf.keras.optimizers.Adadelta(),
+            metrics=["accuracy"],
+            loss_weights=[1.0, 1.0],
+        )
+
+        return model
+
+    return KerasClassifier(functional_model(), clip_values=(0, 1), input_layer=input_layer, output_layer=output_layer)
 
 
 def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="function", from_logits=False):
@@ -790,7 +886,8 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     :return: PyTorchClassifier
     """
     import torch
-
+    import torch.nn as nn
+    import torch.optim as optim
     from art.estimators.classification.pytorch import PyTorchClassifier
 
     class Model(torch.nn.Module):
@@ -804,6 +901,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
             super(Model, self).__init__()
 
             self.conv = torch.nn.Conv2d(in_channels=1, out_channels=1, kernel_size=7)
+            self.relu = torch.nn.ReLU()
             self.pool = torch.nn.MaxPool2d(4, 4)
             self.fullyconnected = torch.nn.Linear(25, 10)
 
@@ -845,7 +943,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
             :return: Prediction of the model
             """
             x = self.conv(x)
-            x = torch.nn.functional.relu(x)
+            x = self.relu(x)
             x = self.pool(x)
             x = x.reshape(-1, 25)
             x = self.fullyconnected(x)
@@ -857,7 +955,7 @@ def get_image_classifier_pt(from_logits=False, load_init=True):
     model = Model()
 
     # Define a loss function and optimizer
-    loss_fn = torch.nn.CrossEntropyLoss()
+    loss_fn = torch.nn.CrossEntropyLoss(reduction="sum")
     optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
 
     # Get classifier
@@ -877,7 +975,7 @@ def get_classifier_bb(defences=None):
     from art.estimators.classification.blackbox import BlackBoxClassifier
     from art.utils import to_categorical
 
-    # define blackbox classifier
+    # define black-box classifier
     def predict(x):
         with open(
             os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
@@ -889,51 +987,44 @@ def get_classifier_bb(defences=None):
     return bbc
 
 
-def get_classifier_mx():
-    """
-    Standard MXNet classifier for unit testing
-
-    :return: MXNetClassifier
-    """
+def get_image_classifier_mxnet_custom_ini():
     import mxnet
-    from mxnet.gluon.nn import Conv2D, MaxPool2D, Flatten, Dense
-    from art.estimators.classification import MXClassifier
 
-    model = mxnet.gluon.nn.Sequential()
-    with model.name_scope():
-        model.add(
-            Conv2D(channels=1, kernel_size=7, activation="relu"),
-            MaxPool2D(pool_size=4, strides=4),
-            Flatten(),
-            Dense(10),
-        )
-    model.initialize(init=mxnet.init.Xavier())
-
-    # Create optimizer
-    loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss()
-    trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
-
-    # # Fit classifier
-    # classifier = MXClassifier(model=net, loss=loss, clip_values=(0, 1), input_shape=(1, 28, 28), nb_classes=10,
-    #                           optimizer=trainer)
-    # classifier.fit(x_train, y_train, batch_size=128, nb_epochs=2)
-    # cls.classifier = classifier
-
-    # Get classifier
-    mxc = MXClassifier(
-        model=model,
-        loss=loss,
-        input_shape=(28, 28, 1),
-        nb_classes=10,
-        optimizer=trainer,
-        ctx=None,
-        channels_first=True,
-        clip_values=(0, 1),
-        defences=None,
-        preprocessing=(0, 1),
+    w_conv2d = np.load(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_CONV2D_MNIST.npy")
+    )
+    b_conv2d = np.load(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_CONV2D_MNIST.npy")
+    )
+    w_dense = np.load(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "W_DENSE_MNIST.npy")
+    )
+    b_dense = np.load(
+        os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/resources/models", "B_DENSE_MNIST.npy")
     )
 
-    return mxc
+    w_conv2d_mx = w_conv2d.reshape((1, 1, 7, 7))
+
+    alias = mxnet.registry.get_alias_func(mxnet.initializer.Initializer, "initializer")
+
+    @mxnet.init.register
+    @alias("mm_init")
+    class CustomInit(mxnet.init.Initializer):
+        def __init__(self):
+            super(CustomInit, self).__init__()
+            self.params = dict()
+            self.params["conv0_weight"] = w_conv2d_mx
+            self.params["conv0_bias"] = b_conv2d
+            self.params["dense0_weight"] = np.transpose(w_dense)
+            self.params["dense0_bias"] = b_dense
+
+        def _init_weight(self, name, arr):
+            arr[:] = self.params[name]
+
+        def _init_bias(self, name, arr):
+            arr[:] = self.params[name]
+
+    return CustomInit()
 
 
 def get_gan_inverse_gan_ft():
@@ -1342,6 +1433,41 @@ def get_tabular_classifier_pt(load_init=True):
     )
 
     return ptc
+
+
+def get_attack_classifier_pt(num_features):
+    """
+    PyTorch classifier for testing membership inference attacks.
+
+    :param num_features: The number of features in the attack model.
+    :type num_features: `int`
+    :return: Model for attack.
+    :rtype: :class:`.PyTorchClassifier`
+    """
+    import torch.nn as nn
+    import torch.optim as optim
+    from art.estimators.classification.pytorch import PyTorchClassifier
+
+    class AttackModel(nn.Module):
+        def __init__(self, num_features):
+            super(AttackModel, self).__init__()
+            self.layer = nn.Linear(num_features, 1)
+            self.output = nn.Sigmoid()
+
+        def forward(self, x):
+            return self.output(self.layer(x))
+
+    # Create model
+    model = AttackModel(num_features)
+
+    # Define a loss function and optimizer
+    loss_fn = nn.BCELoss()
+    optimizer = optim.Adam(model.parameters(), lr=0.0001)
+    attack_model = PyTorchClassifier(
+        model=model, loss=loss_fn, optimizer=optimizer, input_shape=(num_features,), nb_classes=1
+    )
+
+    return attack_model
 
 
 # -------------------------------------------------------------------------------------------- RANDOM NUMBER GENERATORS

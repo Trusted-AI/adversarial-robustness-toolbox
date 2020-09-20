@@ -59,7 +59,7 @@ class LabelSmoothing(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        super(LabelSmoothing, self).__init__()
+        super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict

@@ -20,3 +20,7 @@ CLEVER
 ------
 .. autofunction:: clever_u
 .. autofunction:: clever_t
+
+Wasserstein Distance
+--------------------
+.. autofunction:: wasserstein_distance

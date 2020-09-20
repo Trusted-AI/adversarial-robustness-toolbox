@@ -23,6 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from copy import deepcopy
 import importlib
 import logging
+import os
 import pickle
 from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
 
@@ -35,11 +36,13 @@ from art.estimators.classification.classifier import (
 )
 from art.estimators.scikitlearn import ScikitlearnEstimator
 from art.utils import to_categorical
+from art.config import ART_DATA_PATH
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import sklearn
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
     from art.metrics.verification_decisions_trees import LeafNode, Tree
@@ -64,7 +67,7 @@ def SklearnClassifier(
             for features.
     :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
     :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-    :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+    :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
             used for data preprocessing. The first value will be subtracted from the input. The input will then
             be divided by the second one.
     """
@@ -86,7 +89,7 @@ def SklearnClassifier(
     return ScikitlearnClassifier(model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing,)
 
 
-class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
+class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/missing-call-to-init]
     """
     Wrapper class for scikit-learn classifier models.
     """
@@ -107,11 +110,11 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        super(ScikitlearnClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -162,7 +165,22 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):
         return predictions
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
-        with open(filename + ".pickle", "wb") as file_pickle:
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `ART_DATA_PATH`.
+        """
+        if path is None:
+            full_path = os.path.join(ART_DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
     def _get_input_shape(self, model) -> Optional[Tuple[int, ...]]:
@@ -203,7 +221,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
 
     def __init__(
         self,
-        model: Optional["sklearn.tree.DecisionTreeClassifier"],
+        model: "sklearn.tree.DecisionTreeClassifier",
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
@@ -217,7 +235,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -226,7 +244,7 @@ class ScikitlearnDecisionTreeClassifier(ScikitlearnClassifier):
         if not isinstance(model, sklearn.tree.DecisionTreeClassifier) and model is not None:
             raise TypeError("Model must be of type sklearn.tree.DecisionTreeClassifier.")
 
-        super(ScikitlearnDecisionTreeClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -364,7 +382,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -454,7 +472,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -463,7 +481,7 @@ class ScikitlearnExtraTreeClassifier(ScikitlearnDecisionTreeClassifier):
         if not isinstance(model, sklearn.tree.ExtraTreeClassifier):
             raise TypeError("Model must be of type sklearn.tree.ExtraTreeClassifier.")
 
-        super(ScikitlearnExtraTreeClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -494,7 +512,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -503,7 +521,7 @@ class ScikitlearnAdaBoostClassifier(ScikitlearnClassifier):
         if not isinstance(model, sklearn.ensemble.AdaBoostClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.AdaBoostClassifier.")
 
-        super(ScikitlearnAdaBoostClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -534,7 +552,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -544,7 +562,7 @@ class ScikitlearnBaggingClassifier(ScikitlearnClassifier):
         if not isinstance(model, sklearn.ensemble.BaggingClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.BaggingClassifier.")
 
-        super(ScikitlearnBaggingClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -575,7 +593,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -585,7 +603,7 @@ class ScikitlearnExtraTreesClassifier(ScikitlearnClassifier, DecisionTreeMixin):
         if not isinstance(model, sklearn.ensemble.ExtraTreesClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.ExtraTreesClassifier.")
 
-        super(ScikitlearnExtraTreesClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -649,7 +667,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -659,7 +677,7 @@ class ScikitlearnGradientBoostingClassifier(ScikitlearnClassifier, DecisionTreeM
         if not isinstance(model, sklearn.ensemble.GradientBoostingClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.GradientBoostingClassifier.")
 
-        super(ScikitlearnGradientBoostingClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -724,7 +742,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -734,7 +752,7 @@ class ScikitlearnRandomForestClassifier(ScikitlearnClassifier):
         if not isinstance(model, sklearn.ensemble.RandomForestClassifier):
             raise TypeError("Model must be of type sklearn.ensemble.RandomForestClassifier.")
 
-        super(ScikitlearnRandomForestClassifier, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -798,11 +816,11 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        super(ScikitlearnLogisticRegression, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
@@ -985,7 +1003,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -997,7 +1015,7 @@ class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassif
                 "Model must be of type sklearn.svm.SVC or sklearn.svm.LinearSVC. Found type {}".format(type(model))
             )
 
-        super(ScikitlearnSVC, self).__init__(
+        super().__init__(
             model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,

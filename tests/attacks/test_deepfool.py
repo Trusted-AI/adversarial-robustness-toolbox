@@ -24,6 +24,7 @@ import keras
 import numpy as np
 
 from art.attacks.evasion.deepfool import DeepFool
+from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin
 from art.estimators.classification.keras import KerasClassifier
 from art.utils import get_labels_np_array
@@ -81,13 +82,13 @@ class TestDeepFool(TestBase):
         self.assertFalse((self.y_train_mnist == train_y_pred).all())
         self.assertFalse((self.y_test_mnist == test_y_pred).all())
 
-        sum = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1))
-        accuracy = sum / self.y_train_mnist.shape[0]
-        logger.info("Accuracy on adversarial train examples: %.2f%%", (accuracy * 100))
+        sum_0 = np.sum(np.argmax(train_y_pred, axis=1) == np.argmax(self.y_train_mnist, axis=1))
+        accuracy_0 = sum_0 / self.y_train_mnist.shape[0]
+        logger.info("Accuracy on adversarial train examples: %.2f%%", (accuracy_0 * 100))
 
-        sum1 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1))
-        accuracy = sum1 / self.y_test_mnist.shape[0]
-        logger.info("Accuracy on adversarial test examples: %.2f%%", (accuracy * 100))
+        sum_1 = np.sum(np.argmax(test_y_pred, axis=1) == np.argmax(self.y_test_mnist, axis=1))
+        accuracy_1 = sum_1 / self.y_test_mnist.shape[0]
+        logger.info("Accuracy on adversarial test examples: %.2f%%", (accuracy_1 * 100))
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
@@ -178,7 +179,7 @@ class TestDeepFool(TestBase):
         not (int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3),
         reason="Minimal version of Keras or TensorFlow required.",
     )
-    def test_kera_mnist_partial_grads(self):
+    def test_keras_mnist_partial_grads(self):
         classifier = get_image_classifier_kr(from_logits=True)
         attack = DeepFool(classifier, max_iter=2, nb_grads=3)
         x_test_adv = attack.generate(self.x_test_mnist)
@@ -191,7 +192,7 @@ class TestDeepFool(TestBase):
         logger.info("Accuracy on adversarial test examples: %.2f%%", (accuracy * 100))
 
     def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(DeepFool, [ClassGradientsMixin])
+        backend_test_classifier_type_check_fail(DeepFool, [BaseEstimator, ClassGradientsMixin])
 
     def test_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()

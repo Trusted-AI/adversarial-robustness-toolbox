@@ -25,7 +25,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 import math
-from typing import Optional, Union, Tuple
+from typing import Optional, Union, Tuple, TYPE_CHECKING
 
 import random
 import numpy as np
@@ -34,12 +34,11 @@ from tqdm import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import (
-    ClassifierMixin,
-    ClassifierNeuralNetwork,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +63,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def __init__(
         self,
-        classifier: Union[ClassifierNeuralNetwork, ClassifierGradients],
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: int = 0,
         rotation_max: float = 22.5,
         scale_min: float = 0.1,
@@ -91,7 +90,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                [(float, float), (float, float), (float, float)].
         :param batch_size: The size of the training batch.
         """
-        super(AdversarialPatchNumpy, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.target = target
         self.rotation_max = rotation_max
@@ -222,17 +221,17 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         if not isinstance(self.learning_rate, float):
             raise ValueError("The learning rate must be of type float.")
-        if not self.learning_rate > 0.0:
+        if self.learning_rate <= 0.0:
             raise ValueError("The learning rate must be greater than 0.0.")
 
         if not isinstance(self.max_iter, int):
             raise ValueError("The number of optimization steps must be of type int.")
-        if not self.max_iter > 0:
+        if self.max_iter <= 0:
             raise ValueError("The number of optimization steps must be greater than 0.")
 
         if not isinstance(self.batch_size, int):
             raise ValueError("The batch size must be of type int.")
-        if not self.batch_size > 0:
+        if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
 
     def _get_circular_patch_mask(self, sharpness: int = 40) -> np.ndarray:
@@ -261,14 +260,14 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         if self.estimator.channels_first:
             if self.nb_dims == 3:
-                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))
+                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))  # type: ignore
             elif self.nb_dims == 4:
-                pad_width = ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))
+                pad_width = ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))  # type: ignore
         else:
             if self.nb_dims == 3:
-                pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))
+                pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
             elif self.nb_dims == 4:
-                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))
+                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
 
         mask = np.pad(mask, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
 

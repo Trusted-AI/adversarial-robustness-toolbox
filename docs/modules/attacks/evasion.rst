@@ -164,6 +164,18 @@ Shadow Attack
    :members:
    :special-members:
 
+ShapeShifter Attack
+-------------------
+.. autoclass:: ShapeShifter
+   :members:
+   :special-members:
+
+SimBA Attack
+------------
+.. autoclass:: SimBA
+   :members:
+   :special-members:
+
 Spatial Transformations Attack
 ------------------------------
 .. autoclass:: SpatialTransformation
@@ -173,6 +185,12 @@ Spatial Transformations Attack
 Square Attack
 -------------
 .. autoclass:: SquareAttack
+   :members:
+   :special-members:
+
+Targeted Universal Perturbation Attack
+--------------------------------------
+.. autoclass:: TargetedUniversalPerturbation
    :members:
    :special-members:
 

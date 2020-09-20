@@ -30,7 +30,7 @@ from art.estimators.estimator import NeuralNetworkMixin
 from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -73,7 +73,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier. Not applicable
                in this classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one. Not applicable in this classifier.
         """
@@ -88,7 +88,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(EnsembleClassifier, self).__init__(
+        super().__init__(
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -307,5 +307,18 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
         :raises `NotImplementedException`: This method is not supported for ensembles.
+        """
+        raise NotImplementedError
+
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
