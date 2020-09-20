@@ -193,7 +193,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             else:
                 #   NHWC <-- NCHW
                 x = x_nchw.permute(0, 2, 3, 1)
-        elif x_ndim == 5:
+        elif x_ndim == 5:  # lgtm [py/redundant-comparison]
             if self.channels_first:
                 # NCFHW <-- NFCHW <-- NCHW
                 x_nfchw = x_nchw.reshape(nb_clips, clip_size, channels, height, width)

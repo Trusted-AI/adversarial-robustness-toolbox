@@ -284,7 +284,7 @@ class NeuralCleanseMixin(AbstainPredictorMixin):
 
         median = np.median(l1_norms)
         mad = consistency_constant * np.median(np.abs(l1_norms - median))
-        min_mad = np.abs(np.min(l1_norms) - median) / mad
+        # min_mad = np.abs(np.min(l1_norms) - median) / mad
         flagged_labels = []
 
         for class_idx in range(num_classes):

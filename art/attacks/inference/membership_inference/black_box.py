@@ -223,7 +223,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
 
                     optimizer.zero_grad()
                     outputs = self.attack_model(input1, input2)
-                    loss = loss_fn(outputs, targets.unsqueeze(1))
+                    loss = loss_fn(outputs, targets.unsqueeze(1))  # lgtm [py/call-to-non-callable]
 
                     loss.backward()
                     optimizer.step()

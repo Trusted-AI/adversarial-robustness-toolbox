@@ -27,8 +27,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Tuple, TYPE_CHECKING
 
-import torch
 import numpy as np
+import scipy
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
@@ -421,6 +421,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
                     - decoded_output: Transcription output.
                     - masked_adv_input: Perturbed inputs.
         """
+        import torch  # lgtm [py/repeated-import]
         from warpctc_pytorch import CTCLoss
 
         # Compute perturbed inputs
@@ -607,7 +608,6 @@ class ImperceptibleASRPytorch(EvasionAttack):
         :param x: Samples of shape (seq_length,).
         :return: A tuple of the masking threshold and the maximum psd.
         """
-        import scipy
         import librosa
 
         # First compute the psd matrix

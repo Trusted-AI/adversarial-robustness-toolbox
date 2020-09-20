@@ -197,10 +197,10 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
         return torch.utils.data.DataLoader(dataset=dataset, batch_size=default_batch_size, shuffle=True)
 
     if framework == "mxnet":
-        from mxnet import gluon
+        import mxnet
 
-        dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
-        return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
+        dataset = mxnet.gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
+        return mxnet.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
 
     return None
 
@@ -323,20 +323,20 @@ def expected_values(framework, request, is_tf_version_2):
 
 @pytest.fixture(scope="session")
 def get_image_classifier_mx_model():
-    from mxnet.gluon import nn
+    import mxnet
 
     # TODO needs to be made parameterizable once Mxnet allows multiple identical models to be created in one session
     from_logits = True
 
-    class Model(nn.Block):
+    class Model(mxnet.gluon.nn.Block):
         def __init__(self, **kwargs):
             super(Model, self).__init__(**kwargs)
-            self.model = nn.Sequential()
+            self.model = mxnet.gluon.nn.Sequential()
             self.model.add(
-                nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
-                nn.MaxPool2D(pool_size=4, strides=4),
-                nn.Flatten(),
-                nn.Dense(10, activation=None,),
+                mxnet.gluon.nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
+                mxnet.gluon.nn.MaxPool2D(pool_size=4, strides=4),
+                mxnet.gluon.nn.Flatten(),
+                mxnet.gluon.nn.Dense(10, activation=None,),
             )
 
         def forward(self, x):

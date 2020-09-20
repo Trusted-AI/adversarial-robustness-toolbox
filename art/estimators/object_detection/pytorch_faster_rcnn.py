@@ -84,7 +84,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
                             if available otherwise run on CPU.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         # Remove in 1.5.0
         if channel_index == 3:
@@ -149,7 +149,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                   - scores (Tensor[N]): the scores or each prediction.
         :return: Loss gradients of the same shape as `x`.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
         import torchvision  # lgtm [py/repeated-import]
 
         self._model.train()
