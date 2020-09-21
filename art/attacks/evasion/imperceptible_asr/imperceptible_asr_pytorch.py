@@ -25,7 +25,7 @@ specifically for Pytorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Tuple, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import scipy
@@ -51,8 +51,6 @@ class ImperceptibleASRPytorch(EvasionAttack):
 
     | Paper link: https://arxiv.org/abs/1903.10346
     """
-
-    import torch  # lgtm [py/repeated-import]
 
     attack_params = EvasionAttack.attack_params + [
         "initial_eps",
@@ -94,8 +92,8 @@ class ImperceptibleASRPytorch(EvasionAttack):
         max_iter_2nd_stage: int = 4000,
         learning_rate_1st_stage: float = 0.1,
         learning_rate_2nd_stage: float = 0.001,
-        optimizer_1st_stage: "Optimizer" = torch.optim.SGD,
-        optimizer_2nd_stage: "Optimizer" = torch.optim.SGD,
+        optimizer_1st_stage: Optional["torch.optim.Optimizer"] = None,
+        optimizer_2nd_stage: Optional["torch.optim.Optimizer"] = None,
         global_max_length: int = 10000,
         initial_rescale: float = 1.0,
         rescale_factor: float = 0.8,
@@ -123,8 +121,10 @@ class ImperceptibleASRPytorch(EvasionAttack):
                                         the attack.
         :param learning_rate_2nd_stage: The initial learning rate applied for the second stage of the optimization of
                                         the attack.
-        :param optimizer_1st_stage: The optimizer applied for the first stage of the optimization of the attack.
-        :param optimizer_2nd_stage: The optimizer applied for the second stage of the optimization of the attack.
+        :param optimizer_1st_stage: The optimizer applied for the first stage of the optimization of the attack. If
+                                    `None` attack will use `torch.optim.SGD`.
+        :param optimizer_2nd_stage: The optimizer applied for the second stage of the optimization of the attack. If
+                                    `None` attack will use `torch.optim.SGD`.
         :param global_max_length: The length of the longest audio signal allowed by this attack.
         :param initial_rescale: Initial rescale coefficient to speedup the decrease of the perturbation size during
                                 the first stage of the optimization of the attack.
@@ -189,12 +189,22 @@ class ImperceptibleASRPytorch(EvasionAttack):
         self.global_optimal_delta.to(self.estimator.device)
 
         # Create the optimizers
-        self.optimizer_1st_stage = optimizer_1st_stage(
-            params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
-        )
-        self.optimizer_2nd_stage = optimizer_2nd_stage(
-            params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
-        )
+        if optimizer_1st_stage is None:
+            self.optimizer_1st_stage = torch.optim.SGD(
+                params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
+            )
+        else:
+            self.optimizer_1st_stage = optimizer_1st_stage(
+                params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
+            )
+        if optimizer_2nd_stage is None:
+            self.optimizer_2nd_stage = torch.optim.SGD(
+                params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
+            )
+        else:
+            self.optimizer_2nd_stage = optimizer_2nd_stage(
+                params=[self.global_optimal_delta], lr=self.learning_rate_1st_stage
+            )
 
         # Setup for AMP use
         if self._use_amp:
