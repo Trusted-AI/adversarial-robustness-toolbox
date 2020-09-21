@@ -145,7 +145,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
                 median: torch.Tensor = torch.median(features, dim=2)[0]
                 return median
 
-        self.median_blur = self.MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
+        self.median_blur = MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
 
     @property
     def apply_fit(self) -> bool:
