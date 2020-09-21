@@ -1,5 +1,5 @@
 """
-Module providing methods for detecting adversarial samples under a common interface.
+Module implementing detector-based defences against evasion attacks.
 """
 from art.defences.detector.evasion.detector import (
     BinaryInputDetector,
