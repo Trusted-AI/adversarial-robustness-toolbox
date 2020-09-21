@@ -52,7 +52,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1903.10346
     """
 
-    import torch
+    import torch  # lgtm [py/repeated-import]
 
     attack_params = EvasionAttack.attack_params + [
         "initial_eps",
