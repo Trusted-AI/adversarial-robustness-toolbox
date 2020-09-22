@@ -129,6 +129,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model = self._make_model_wrapper(model)
         self._loss = loss
         self._optimizer = optimizer
+        self._use_amp = use_amp
         self._learning_phase: Optional[bool] = None
 
         # Get the internal layers
@@ -148,6 +149,28 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             self._reduce_labels = False
             self._int_labels = False
+
+        # Setup for AMP use
+        if self._use_amp:
+            from apex import amp
+
+            if self._optimizer is None:
+                raise ValueError(
+                    "An optimizer is needed to use the automatic mixed precision tool, but none for provided. "
+                )
+
+            if self.device.type == "cpu":
+                enabled = False
+            else:
+                enabled = True
+
+            self._model, self._optimizer = amp.initialize(
+                models=self._model,
+                optimizers=self._optimizer,
+                enabled=enabled,
+                opt_level=opt_level,
+                loss_scale=loss_scale,
+            )
 
     @property
     def device(self) -> "torch.device":
@@ -192,6 +215,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
+        # Put the model in the eval mode
         self._model.eval()
 
         # Apply preprocessing
@@ -231,6 +255,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
+        # Put the model in the training mode
+        self._model.train()
+
         if self._optimizer is None:
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
 
@@ -264,8 +291,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 # Form the loss function
                 loss = self._loss(model_outputs[-1], o_batch)
 
-                # Actual training
-                loss.backward()
+                # Do training
+                if self._use_amp:
+                    from apex import amp
+
+                    with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                        scaled_loss.backward()
+
+                else:
+                    loss.backward()
+
                 self._optimizer.step()
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
@@ -279,6 +314,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
         from art.data_generators import PyTorchDataGenerator
+
+        # Put the model in the training mode
+        self._model.train()
 
         if self._optimizer is None:
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -664,7 +702,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return repr_
 
-    def _make_model_wrapper(self, model: "torch.nn.Module"):
+    def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
             import torch.nn as nn
