@@ -94,7 +94,7 @@ def test_jpeg_compression_image_data(image_batch, channels_first, framework):
 
 @pytest.mark.parametrize("channels_first", [True, False])
 @pytest.mark.framework_agnostic
-def test_jpeg_compression_video_data(video_batch, channels_first, framework):
+def test_jpeg_compression_video_data(video_batch, channels_first):
     try:
         test_input, test_output = video_batch
         jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=channels_first)
@@ -102,6 +102,11 @@ def test_jpeg_compression_video_data(video_batch, channels_first, framework):
         assert_array_equal(jpeg_compression(test_input)[0], test_output)
     except ARTTestException as e:
         add_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_jpeg_compress_dummy():
+    tmp = ""
 
 
 @pytest.mark.parametrize("channels_first", [False])
