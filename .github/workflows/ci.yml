@@ -43,6 +43,7 @@ jobs:
           pip install -q -r requirements.txt
           pip list
       - name: Run Tests
+        timeout-minutes: 120
         run: ./run_tests.sh
   style:
     name: Style Check
