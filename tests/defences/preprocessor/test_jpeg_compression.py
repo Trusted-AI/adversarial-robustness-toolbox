@@ -104,6 +104,11 @@ def test_jpeg_compression_video_data(art_warning, video_batch, channels_first):
         art_warning(e)
 
 
+@pytest.mark.framework_agnostic
+def test_jpeg_compress_dummy():
+    tmp = ""
+
+
 @pytest.mark.parametrize("channels_first", [False])
 @pytest.mark.framework_agnostic
 def test_jpeg_compress(art_warning, image_batch, channels_first):
