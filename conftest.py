@@ -737,5 +737,5 @@ def make_customer_record():
 @pytest.fixture(autouse=True)
 def framework_agnostic(request, framework):
     if request.node.get_closest_marker("framework_agnostic"):
-        if framework is not default_framework:
+        if framework != default_framework:
             pytest.skip("framework agnostic test skipped for framework : {}".format(framework))
