@@ -38,7 +38,6 @@ from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpe
 
 if TYPE_CHECKING:
     import torch
-    from torch.optim import Optimizer
 
 logger = logging.getLogger(__name__)
 

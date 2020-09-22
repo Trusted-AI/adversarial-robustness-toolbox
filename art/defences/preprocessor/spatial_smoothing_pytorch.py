@@ -97,8 +97,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             An ongoing effort to reproduce the median blur function in SciPy.
             """
 
-            import torch  # lgtm [py/repeated-import]
-
             def __init__(self, kernel_size: Tuple[int, int]) -> None:
                 super().__init__(kernel_size)
 
