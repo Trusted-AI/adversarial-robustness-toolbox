@@ -22,7 +22,7 @@ import os
 import unittest
 import keras
 
-from art.defences.transformer.poison import NeuralCleanse
+from art.defences.transformer.poisoning import NeuralCleanse
 from art.utils import load_dataset
 
 from tests.utils import master_seed, get_image_classifier_kr

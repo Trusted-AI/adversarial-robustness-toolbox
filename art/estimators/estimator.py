@@ -25,8 +25,6 @@ import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.postprocessor.postprocessor import Postprocessor
-from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
@@ -34,6 +32,8 @@ if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.metrics.verification_decisions_trees import Tree
+    from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
 
 
 class BaseEstimator(ABC):
@@ -54,8 +54,8 @@ class BaseEstimator(ABC):
         self,
         model=None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union[Preprocessor, List[Preprocessor], None] = None,
-        postprocessing_defences: Union[Postprocessor, List[Postprocessor], None] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ):
         """
@@ -72,16 +72,19 @@ class BaseEstimator(ABC):
                used for data preprocessing. The first value will be subtracted from the input and the results will be
                divided by the second value.
         """
+        from art.defences.postprocessor.postprocessor import Postprocessor
+        from art.defences.preprocessor.preprocessor import Preprocessor
+
         self._model = model
         self._clip_values = clip_values
 
-        self.preprocessing_defences: Optional[List[Preprocessor]]
+        self.preprocessing_defences: Optional[List["Preprocessor"]]
         if isinstance(preprocessing_defences, Preprocessor):
             self.preprocessing_defences = [preprocessing_defences]
         else:
             self.preprocessing_defences = preprocessing_defences
 
-        self.postprocessing_defences: Optional[List[Postprocessor]]
+        self.postprocessing_defences: Optional[List["Postprocessor"]]
         if isinstance(postprocessing_defences, Postprocessor):
             self.postprocessing_defences = [postprocessing_defences]
         else:
@@ -118,6 +121,9 @@ class BaseEstimator(ABC):
         return params
 
     def _check_params(self) -> None:
+        from art.defences.postprocessor.postprocessor import Postprocessor
+        from art.defences.preprocessor.preprocessor import Preprocessor
+
         if self._clip_values is not None:
             if len(self._clip_values) != 2:
                 raise ValueError(
