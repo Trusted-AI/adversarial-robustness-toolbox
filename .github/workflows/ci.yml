@@ -1,0 +1,75 @@
+name: Continuous Integration
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run CI flow daily
+  schedule:
+    - cron: '0 8 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python: 3.6
+            tensorflow: 1.15.3
+            keras: 2.2.5
+          - python: 3.7
+            tensorflow: 2.2.0
+            keras: 2.3.1
+    name: Run Tests (Python ${{ matrix.python }})
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Pre-install
+        run: |
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          sed -i "s/^tensorflow$/tensorflow==${{ matrix.tensorflow }}/" requirements.txt
+          sed -i "s/^keras$/keras==${{ matrix.keras }}/" requirements.txt
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -q -r requirements.txt
+          pip list
+      - name: Run Tests
+        run: ./run_tests.sh
+  style:
+    name: Style Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Pre-install
+          run: |
+            sudo apt-get -y -q install ffmpeg libavcodec-extra
+            sed -i "s/^tensorflow$/tensorflow==2.2.0/" requirements.txt
+            sed -i "s/^keras$/keras==2.3.1" requirements.txt
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -q pylint pycodestyle
+          pip install -q -r requirements.txt
+          pip list
+      - name: pycodestyle
+        run: (pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art || exit 0)
+      - name: pylint
+        run: (pylint --disable=C0330,C0415,E203,E1136 -rn art || exit 0)
+      - name: Check Types (mypy)
+        run: (mypy art || exit 0)
+      - name: pytest
+        run: py.test --pep8 -m pep8
