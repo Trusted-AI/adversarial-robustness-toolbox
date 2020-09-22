@@ -27,7 +27,7 @@ catboost==0.24.1
 GPy==1.9.9
 lightgbm==3.0.0
 xgboost==1.2.0
-kornia==0.3.1
+kornia==0.4.0
 
 # other
 pytest==5.4.1
