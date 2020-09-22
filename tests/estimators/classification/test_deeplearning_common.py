@@ -495,3 +495,70 @@ def test_learning_phase(image_dl_estimator):
             assert hasattr(classifier, "_learning_phase")
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
+
+
+# Note, the following part is for testing the amp tool on pytorch platform only.
+import importlib
+
+import torch.nn as nn
+
+from art.estimators.classification.pytorch import PyTorchClassifier
+
+apex_spec = importlib.util.find_spec("apex")
+if apex_spec is not None:
+    amp_spec = importlib.util.find_spec("apex.amp")
+else:
+    amp_spec = None
+amp_found = amp_spec is not None
+
+
+@pytest.mark.skipif(not amp_found, reason="Skip unittests if apex module is not found.")
+@pytest.mark.only_with_platform("pytorch")
+def test_loss_gradient_amp(
+    get_default_mnist_subset,
+    image_dl_estimator,
+    expected_values_amp,
+    mnist_shape,
+    device_type,
+    preprocessing_defences
+):
+
+    (expected_gradients_1, expected_gradients_2) = expected_values_amp()
+
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
+
+    # Redefine the classifier with amp
+    clip_values = (0, 1)
+    criterion = nn.CrossEntropyLoss()
+    classifier = PyTorchClassifier(
+        clip_values=clip_values,
+        model=classifier_.model,
+        preprocessing_defences=preprocessing_defences,
+        loss=criterion,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+        device_type=device_type,
+        use_amp=True,
+    )
+
+    # Compute loss gradients
+    gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
+
+    # Test shape
+    assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
+
+    # First test of gradients
+    sub_gradients = gradients[0, 0, :, 14]
+
+    np.testing.assert_array_almost_equal(
+        sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
+    )
+
+    # Second test of gradients
+    sub_gradients = gradients[0, 0, 14, :]
+
+    np.testing.assert_array_almost_equal(
+        sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
+    )
