@@ -6,6 +6,7 @@ RUN pip3 install keras==2.3.1
 
 RUN pip3 install numpy==1.19.1 scipy==1.4.1 matplotlib==3.3.1 scikit-learn==0.22.2 six==1.15.0 Pillow==7.2.0
 RUN pip3 install tqdm==4.48.2 statsmodels==0.11.1 pydub==0.24.1 resampy==0.2.2 ffmpeg-python==0.2.0 cma==3.0.3 mypy==0.770
+RUN pip3 install ffmpeg-python==0.2.0
 RUN pip3 install pandas==1.1.1
 
 #TODO check if jupyter notebook works
@@ -31,6 +32,9 @@ WORKDIR /project
 # IMPORTANT: please double check that the dependencies above are up to date with the following requirements file. We currently still run pip install on dependencies within requirements.txt in order to keep dependencies in agreement (in the rare cases were someone updated the requirements.txt file and forgot to update the dockefile)
 ADD . /project/
 RUN pip3 install --upgrade -r /project/requirements.txt
+
+RUN apt-get update
+RUN apt-get -y -q install ffmpeg libavcodec-extra
 
 RUN echo "You should think about possibly upgrading these outdated packages"
 RUN pip3 list --outdated

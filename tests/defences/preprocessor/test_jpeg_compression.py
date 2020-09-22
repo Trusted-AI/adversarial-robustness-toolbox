@@ -80,72 +80,74 @@ def tabular_batch():
     return np.zeros((2, 4))
 
 
-class TestJpegCompression:
-    """Test JpegCompression."""
+@pytest.mark.framework_agnostic
+@pytest.mark.parametrize("channels_first", [True, False])
+def test_jpeg_compression_image_data(image_batch, channels_first, framework):
+    try:
+        test_input, test_output = image_batch
+        jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=channels_first)
 
-    @pytest.mark.parametrize("channels_first", [True, False])
-    @pytest.mark.framework_agnostic
-    def test_jpeg_compression_image_data(self, image_batch, channels_first):
-        try:
-            test_input, test_output = image_batch
-            jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=channels_first)
+        assert_array_equal(jpeg_compression(test_input)[0], test_output)
+    except ARTTestException as e:
+        add_warning(e)
 
-            assert_array_equal(jpeg_compression(test_input)[0], test_output)
-        except ARTTestException as e:
-            add_warning(e)
 
-    @pytest.mark.parametrize("channels_first", [True, False])
-    @pytest.mark.framework_agnostic
-    def test_jpeg_compression_video_data(self, video_batch, channels_first):
-        try:
-            test_input, test_output = video_batch
-            jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=channels_first)
+@pytest.mark.parametrize("channels_first", [True, False])
+@pytest.mark.framework_agnostic
+def test_jpeg_compression_video_data(video_batch, channels_first, framework):
+    try:
+        test_input, test_output = video_batch
+        jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=channels_first)
 
-            assert_array_equal(jpeg_compression(test_input)[0], test_output)
-        except ARTTestException as e:
-            add_warning(e)
+        assert_array_equal(jpeg_compression(test_input)[0], test_output)
+    except ARTTestException as e:
+        add_warning(e)
 
-    @pytest.mark.parametrize("channels_first", [False])
-    @pytest.mark.framework_agnostic
-    def test_jpeg_compress(self, image_batch, channels_first):
-        try:
-            test_input, test_output = image_batch
-            jpeg_compression = JpegCompression(clip_values=(0, 255))
 
-            image_mode = "RGB" if test_input.shape[-1] == 3 else "L"
-            test_single_input = np.squeeze(test_input[0]).astype(np.uint8)
-            test_single_output = np.squeeze(test_output[0]).astype(np.uint8)
+@pytest.mark.parametrize("channels_first", [False])
+@pytest.mark.framework_agnostic
+def test_jpeg_compress(image_batch, channels_first):
+    try:
+        test_input, test_output = image_batch
+        jpeg_compression = JpegCompression(clip_values=(0, 255))
 
-            assert_array_equal(jpeg_compression._compress(test_single_input, image_mode), test_single_output)
-        except ARTTestException as e:
-            add_warning(e)
+        image_mode = "RGB" if test_input.shape[-1] == 3 else "L"
+        test_single_input = np.squeeze(test_input[0]).astype(np.uint8)
+        test_single_output = np.squeeze(test_output[0]).astype(np.uint8)
 
-    @pytest.mark.framework_agnostic
-    def test_non_spatial_data_error(self, tabular_batch):
-        try:
-            test_input = tabular_batch
-            jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=True)
+        assert_array_equal(jpeg_compression._compress(test_single_input, image_mode), test_single_output)
+    except ARTTestException as e:
+        add_warning(e)
 
-            exc_msg = "Unrecognized input dimension. JPEG compression can only be applied to image and video data."
-            with pytest.raises(ValueError, match=exc_msg):
-                jpeg_compression(test_input)
-        except ARTTestException as e:
-            add_warning(e)
 
-    @pytest.mark.framework_agnostic
-    def test_negative_clip_values_error(self):
-        try:
-            exc_msg = "'clip_values' min value must be 0."
-            with pytest.raises(ValueError, match=exc_msg):
-                JpegCompression(clip_values=(-1, 255), channels_first=True)
-        except ARTTestException as e:
-            add_warning(e)
+@pytest.mark.framework_agnostic
+def test_non_spatial_data_error(tabular_batch):
+    try:
+        test_input = tabular_batch
+        jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=True)
 
-    @pytest.mark.framework_agnostic
-    def test_maximum_clip_values_error(self):
-        try:
-            exc_msg = "'clip_values' max value must be either 1 or 255."
-            with pytest.raises(ValueError, match=exc_msg):
-                JpegCompression(clip_values=(0, 2), channels_first=True)
-        except ARTTestException as e:
-            add_warning(e)
+        exc_msg = "Unrecognized input dimension. JPEG compression can only be applied to image and video data."
+        with pytest.raises(ValueError, match=exc_msg):
+            jpeg_compression(test_input)
+    except ARTTestException as e:
+        add_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_negative_clip_values_error():
+    try:
+        exc_msg = "'clip_values' min value must be 0."
+        with pytest.raises(ValueError, match=exc_msg):
+            JpegCompression(clip_values=(-1, 255), channels_first=True)
+    except ARTTestException as e:
+        add_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_maximum_clip_values_error():
+    try:
+        exc_msg = "'clip_values' max value must be either 1 or 255."
+        with pytest.raises(ValueError, match=exc_msg):
+            JpegCompression(clip_values=(0, 2), channels_first=True)
+    except ARTTestException as e:
+        add_warning(e)
