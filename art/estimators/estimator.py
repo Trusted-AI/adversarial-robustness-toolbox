@@ -25,8 +25,6 @@ import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.postprocessor.postprocessor import Postprocessor
-from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
@@ -34,6 +32,8 @@ if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.metrics.verification_decisions_trees import Tree
+    from art.defences.postprocessor.postprocessor import Postprocessor
+    from art.defences.preprocessor.preprocessor import Preprocessor
 
 
 class BaseEstimator(ABC):
@@ -54,8 +54,8 @@ class BaseEstimator(ABC):
         self,
         model=None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union[Preprocessor, List[Preprocessor], None] = None,
-        postprocessing_defences: Union[Postprocessor, List[Postprocessor], None] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ):
         """
@@ -75,14 +75,14 @@ class BaseEstimator(ABC):
         self._model = model
         self._clip_values = clip_values
 
-        self.preprocessing_defences: Optional[List[Preprocessor]]
-        if isinstance(preprocessing_defences, Preprocessor):
+        self.preprocessing_defences: Optional[List["Preprocessor"]]
+        if isinstance(preprocessing_defences, "Preprocessor"):
             self.preprocessing_defences = [preprocessing_defences]
         else:
             self.preprocessing_defences = preprocessing_defences
 
-        self.postprocessing_defences: Optional[List[Postprocessor]]
-        if isinstance(postprocessing_defences, Postprocessor):
+        self.postprocessing_defences: Optional[List["Postprocessor"]]
+        if isinstance(postprocessing_defences, "Postprocessor"):
             self.postprocessing_defences = [postprocessing_defences]
         else:
             self.postprocessing_defences = postprocessing_defences
@@ -133,7 +133,7 @@ class BaseEstimator(ABC):
 
         if isinstance(self.preprocessing_defences, list):
             for preproc_defence in self.preprocessing_defences:
-                if not isinstance(preproc_defence, Preprocessor):
+                if not isinstance(preproc_defence, "Preprocessor"):
                     raise ValueError(
                         "All preprocessing defences have to be instance of "
                         "art.defences.preprocessor.preprocessor.Preprocessor."
@@ -147,7 +147,7 @@ class BaseEstimator(ABC):
             )
         if isinstance(self.postprocessing_defences, list):
             for postproc_defence in self.postprocessing_defences:
-                if not isinstance(postproc_defence, Postprocessor):
+                if not isinstance(postproc_defence, "Postprocessor"):
                     raise ValueError(
                         "All postprocessing defences have to be instance of "
                         "art.defences.postprocessor.postprocessor.Postprocessor."
