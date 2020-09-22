@@ -74,6 +74,7 @@ class BaseEstimator(ABC):
         """
         from art.defences.postprocessor.postprocessor import Postprocessor
         from art.defences.preprocessor.preprocessor import Preprocessor
+
         self._model = model
         self._clip_values = clip_values
 
@@ -120,6 +121,9 @@ class BaseEstimator(ABC):
         return params
 
     def _check_params(self) -> None:
+        from art.defences.postprocessor.postprocessor import Postprocessor
+        from art.defences.preprocessor.preprocessor import Preprocessor
+
         if self._clip_values is not None:
             if len(self._clip_values) != 2:
                 raise ValueError(
@@ -135,7 +139,7 @@ class BaseEstimator(ABC):
 
         if isinstance(self.preprocessing_defences, list):
             for preproc_defence in self.preprocessing_defences:
-                if not isinstance(preproc_defence, "Preprocessor"):
+                if not isinstance(preproc_defence, Preprocessor):
                     raise ValueError(
                         "All preprocessing defences have to be instance of "
                         "art.defences.preprocessor.preprocessor.Preprocessor."
@@ -149,7 +153,7 @@ class BaseEstimator(ABC):
             )
         if isinstance(self.postprocessing_defences, list):
             for postproc_defence in self.postprocessing_defences:
-                if not isinstance(postproc_defence, "Postprocessor"):
+                if not isinstance(postproc_defence, Postprocessor):
                     raise ValueError(
                         "All postprocessing defences have to be instance of "
                         "art.defences.postprocessor.postprocessor.Postprocessor."
