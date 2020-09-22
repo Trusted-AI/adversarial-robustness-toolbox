@@ -168,7 +168,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
             # Compute perturbation with batching
             for (batch_id, batch_all) in enumerate(
-                tqdm(data_loader, desc="PGD - Iterations", leave=False, disable=not self.verbose)
+                tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
             ):
                 if mask is not None:
                     (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
