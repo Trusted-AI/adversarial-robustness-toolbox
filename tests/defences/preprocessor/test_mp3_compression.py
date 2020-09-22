@@ -64,26 +64,25 @@ def image_batch():
     return np.zeros((2, 1, 4, 4))
 
 
-class TestMp3Compression:
-    """Test Mp3Compression."""
+def test_sample_rate_error():
+    exc_msg = "Sample rate be must a positive integer."
+    with pytest.raises(ValueError, match=exc_msg):
+        Mp3Compression(sample_rate=0)
 
-    def test_sample_rate_error(self):
-        exc_msg = "Sample rate be must a positive integer."
-        with pytest.raises(ValueError, match=exc_msg):
-            Mp3Compression(sample_rate=0)
 
-    def test_non_temporal_data_error(self, image_batch):
-        test_input = image_batch
-        mp3compression = Mp3Compression(sample_rate=16000)
+def test_non_temporal_data_error(image_batch):
+    test_input = image_batch
+    mp3compression = Mp3Compression(sample_rate=16000)
 
-        exc_msg = "Mp3 compression can only be applied to temporal data across at least one channel."
-        with pytest.raises(ValueError, match=exc_msg):
-            mp3compression(test_input)
+    exc_msg = "Mp3 compression can only be applied to temporal data across at least one channel."
+    with pytest.raises(ValueError, match=exc_msg):
+        mp3compression(test_input)
 
-    @pytest.mark.parametrize("channels_first", [True, False])
-    @pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn")
-    def test_mp3_compresssion(self, audio_batch, channels_first):
-        test_input, test_output, sample_rate = audio_batch
-        mp3compression = Mp3Compression(sample_rate=sample_rate, channels_first=channels_first)
 
-        assert_array_equal(mp3compression(test_input)[0], test_output)
+@pytest.mark.parametrize("channels_first", [True, False])
+@pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn")
+def test_mp3_compresssion(audio_batch, channels_first):
+    test_input, test_output, sample_rate = audio_batch
+    mp3compression = Mp3Compression(sample_rate=sample_rate, channels_first=channels_first)
+
+    assert_array_equal(mp3compression(test_input)[0], test_output)
