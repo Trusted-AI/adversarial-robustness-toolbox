@@ -63,6 +63,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         input_shape: Tuple[int, ...],
         nb_classes: int,
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        use_amp: bool = False,
+        opt_level: str = "O1",
+        loss_scale: int = 1,
         channel_index=Deprecated,
         channels_first: bool = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -80,6 +83,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                categorical, i.e. not converted to one-hot encoding.
         :param input_shape: The shape of one input instance.
         :param optimizer: The optimizer used to train the classifier.
+        :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
+                        gradient computation, e.g. with loss gradient computation. When set to True, this option is
+                        only triggered if there are GPUs available.
+        :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
+                          values are `O0`, `O1`, `O2`, and `O3`.
+        :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1.
         :param nb_classes: The number of classes of the model.
         :param optimizer: The optimizer used to train the classifier.
         :param channel_index: Index of the axis in data containing the color channels or features.
