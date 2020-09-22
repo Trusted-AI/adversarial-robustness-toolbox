@@ -348,9 +348,18 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     # Form the loss function
                     loss = self._loss(model_outputs[-1], o_batch)
 
-                    # Actual training
-                    loss.backward()
+                    # Do training
+                    if self._use_amp:
+                        from apex import amp
+
+                        with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                            scaled_loss.backward()
+
+                    else:
+                        loss.backward()
+
                     self._optimizer.step()
+
         else:
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
@@ -469,10 +478,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Compute the loss and return
         model_outputs = self._model(inputs_t)
         prev_reduction = self._loss.reduction
-        # return individual loss values
+
+        # Return individual loss values
         self._loss.reduction = "none"
         loss = self._loss(model_outputs[-1], labels_t)
         self._loss.reduction = prev_reduction
+
         return loss.detach().numpy()
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -507,7 +518,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model.zero_grad()
 
         # Compute gradients
-        loss.backward()
+        if self._use_amp:
+            from apex import amp
+
+            with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                scaled_loss.backward()
+
+        else:
+            loss.backward()
+
+        # Get results
         grads = inputs_t.grad.cpu().numpy().copy()  # type: ignore
         grads = self._apply_preprocessing_gradient(x, grads)
         assert grads.shape == x.shape
@@ -539,7 +559,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model.zero_grad()
 
         # Compute gradients
-        loss.backward()
+        if self._use_amp:
+            from apex import amp
+
+            with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                scaled_loss.backward()
+
+        else:
+            loss.backward()
+
+        # Get results
         grads = x.grad
         assert grads.shape == x.shape  # type: ignore
 
@@ -595,6 +624,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
+
         return results
 
     def set_learning_phase(self, train: bool) -> None:
