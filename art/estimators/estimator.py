@@ -72,17 +72,19 @@ class BaseEstimator(ABC):
                used for data preprocessing. The first value will be subtracted from the input and the results will be
                divided by the second value.
         """
+        from art.defences.postprocessor.postprocessor import Postprocessor
+        from art.defences.preprocessor.preprocessor import Preprocessor
         self._model = model
         self._clip_values = clip_values
 
         self.preprocessing_defences: Optional[List["Preprocessor"]]
-        if isinstance(preprocessing_defences, "Preprocessor"):
+        if isinstance(preprocessing_defences, Preprocessor):
             self.preprocessing_defences = [preprocessing_defences]
         else:
             self.preprocessing_defences = preprocessing_defences
 
         self.postprocessing_defences: Optional[List["Postprocessor"]]
-        if isinstance(postprocessing_defences, "Postprocessor"):
+        if isinstance(postprocessing_defences, Postprocessor):
             self.postprocessing_defences = [postprocessing_defences]
         else:
             self.postprocessing_defences = postprocessing_defences
