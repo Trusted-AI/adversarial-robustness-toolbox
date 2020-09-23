@@ -714,7 +714,12 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
 @pytest.fixture(autouse=True)
 def only_with_platform(request, framework):
     if request.node.get_closest_marker("only_with_platform"):
-        if framework not in request.node.get_closest_marker("only_with_platform").args:
+        framework_to_skip_list = list(request.node.get_closest_marker("only_with_platform").args)
+        if "tensorflow" in framework_to_skip_list:
+            framework_to_skip_list.append("tensorflow1")
+            framework_to_skip_list.append("tensorflow2")
+
+        if framework not in framework_to_skip_list:
             pytest.skip("skipped on this platform: {}".format(framework))
 
 
@@ -724,6 +729,10 @@ def only_with_platform(request, framework):
 def skip_by_platform(request, framework):
     if request.node.get_closest_marker("skipMlFramework"):
         framework_to_skip_list = list(request.node.get_closest_marker("skipMlFramework").args)
+        if "tensorflow" in framework_to_skip_list:
+            framework_to_skip_list.append("tensorflow1")
+            framework_to_skip_list.append("tensorflow2")
+
         if "dl_frameworks" in framework_to_skip_list:
             framework_to_skip_list.extend(deep_learning_frameworks)
 
