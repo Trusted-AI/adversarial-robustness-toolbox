@@ -41,27 +41,26 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.framework_agnostic
 def test_generate(art_warning, is_tf_version_2, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        if is_tf_version_2:
-            classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent)
+        classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent)
 
-            attack = AutoProjectedGradientDescent(
-                estimator=classifier,
-                norm=np.inf,
-                eps=0.3,
-                eps_step=0.1,
-                max_iter=5,
-                targeted=False,
-                nb_random_init=1,
-                batch_size=32,
-                loss_type="cross_entropy",
-            )
+        attack = AutoProjectedGradientDescent(
+            estimator=classifier,
+            norm=np.inf,
+            eps=0.3,
+            eps_step=0.1,
+            max_iter=5,
+            targeted=False,
+            nb_random_init=1,
+            batch_size=32,
+            loss_type="cross_entropy",
+        )
 
-            (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-            x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-            assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0329, abs=0.005)
-            assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.01)
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0329, abs=0.005)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.01)
     except ARTTestException as e:
         art_warning(e)
 
