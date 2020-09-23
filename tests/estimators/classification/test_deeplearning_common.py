@@ -29,11 +29,6 @@ def test_layers(art_warning, get_default_mnist_subset, framework, is_tf_version_
 
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-        if framework == "tensorflow" and is_tf_version_2:
-            raise ARTTestFixtureNotImplemented(
-                "fw_agnostic_backend_test_layers not implemented", test_layers.__name__, framework
-            )
-
         batch_size = 128
         for i, name in enumerate(classifier.layer_names):
             activation_i = classifier.get_activations(x_test_mnist, i, batch_size=batch_size)
@@ -261,12 +256,11 @@ def test_defences_predict(art_warning, get_default_mnist_subset, image_dl_estima
 
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
+
 @pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
 def test_fit_image_generator(art_warning, framework, is_tf_version_2, image_dl_estimator,
                              image_data_generator, get_default_mnist_subset):
     try:
-        if framework == "tensorflow" and is_tf_version_2:
-            return
 
         classifier, sess = image_dl_estimator(from_logits=True)
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
