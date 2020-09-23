@@ -38,7 +38,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.only_with_platform("pytorch")
 def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(ShadowAttack)
@@ -63,7 +63,7 @@ def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
         add_warning(e)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.only_with_platform("pytorch")
 def test_get_regularisation_loss_gradients(fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(ShadowAttack)
@@ -125,7 +125,7 @@ def test_get_regularisation_loss_gradients(fix_get_mnist_subset, image_dl_estima
         add_warning(e)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.only_with_platform("pytorch")
 def test_classifier_type_check_fail():
     try:
         backend_test_classifier_type_check_fail(ShadowAttack, [BaseEstimator, LossGradientsMixin, ClassifierMixin])
