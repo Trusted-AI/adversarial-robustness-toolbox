@@ -6,40 +6,40 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
-pytest -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
+pytest -n auto -q tests/attacks/evasion/ --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
 
-pytest -q -s tests/attacks/evasion/test_shadow_attack.py --mlFramework="pytorch" --durations=0
+pytest -n auto -q -s tests/attacks/evasion/test_shadow_attack.py --mlFramework="pytorch" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
 mlFrameworkList=("tensorflow" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
+  pytest -n auto -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 done
 
 mlFrameworkList=("tensorflow")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  pytest -q tests/defences/preprocessor --mlFramework=$mlFramework --durations=0
+  pytest -n auto -q tests/defences/preprocessor --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
-  pytest -q tests/utils --mlFramework=$mlFramework --durations=0
+  pytest -n auto -q tests/utils --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
-  pytest -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
+  pytest -n auto -q tests/attacks/evasion/ --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
 done
 
-pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --durations=0
+pytest -n auto -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="pytorch" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
 
-pytest -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="tensorflow" --durations=0
+pytest -n auto -q tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_tensorflow.py tests"; fi
 
-pytest -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework="pytorch" --durations=0
+pytest -n auto -q tests/classifiersFrameworks/test_pytorch.py  --mlFramework="pytorch" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_pytorch.py tests"; fi
 
-pytest -q tests/classifiersFrameworks/test_tensorflow.py  --mlFramework="tensorflow" --durations=0
+pytest -n auto -q tests/classifiersFrameworks/test_tensorflow.py  --mlFramework="tensorflow" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_tensorflow.py tests"; fi
 
 
@@ -48,9 +48,9 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks/test_ten
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
-  pytest -q tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --durations=0
+  pytest -n auto -q tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_common.py $mlFramework"; fi
-  pytest -q tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --durations=0
+  pytest -n auto -q tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_specific.py $mlFramework"; fi
 done
 
