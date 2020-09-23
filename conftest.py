@@ -48,7 +48,12 @@ art_supported_frameworks.extend(non_deep_learning_frameworks)
 
 master_seed(1234)
 
-default_framework = "tensorflow"
+import tensorflow as tf
+
+if tf.__version__[0] == "2":
+    default_framework = "tensorflow2"
+else:
+    default_framework = "tensorflow1"
 
 
 def pytest_addoption(parser):
@@ -146,11 +151,9 @@ def setup_tear_down_framework(framework):
     # Ran before each test
     if framework == "keras":
         pass
-    if framework == "tensorflow":
+    if framework == "tensorflow1":
         import tensorflow as tf
-
-        if tf.__version__[0] != "2":
-            tf.reset_default_graph()
+        tf.reset_default_graph()
     if framework == "pytorch":
         pass
     if framework == "scikitlearn":
@@ -484,7 +487,7 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                         raise ARTTestFixtureNotImplemented(
                             "This combination of loss function options is currently not supported.",
                             image_dl_estimator.__name__, framework)
-        if framework == "tensorflow":
+        if framework == "tensorflow1" or framework == "tensorflow2":
             if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs)
                 return classifier, sess
@@ -560,7 +563,7 @@ def tabular_dl_estimator(framework):
                 kr_classifier = get_tabular_classifier_kr()
                 classifier = KerasClassifier(model=kr_classifier.model, use_logits=False, channels_first=True)
 
-        if framework == "tensorflow":
+        if framework == "tensorflow1" or framework=="tensorflow2":
             if clipped:
                 classifier, _ = get_tabular_classifier_tf()
 
@@ -594,18 +597,19 @@ def create_test_image(create_test_dir):
 @pytest.fixture(scope="session")
 def framework(request):
     mlFramework = request.config.getoption("--mlFramework")
-    if mlFramework not in art_supported_frameworks:
-        raise Exception(
-            "mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
-                mlFramework, " ".join(art_supported_frameworks)
-            )
-        )
     if mlFramework == "tensorflow":
         import tensorflow as tf
         if tf.__version__[0] == "2":
             mlFramework = "tensorflow2"
         else:
             mlFramework = "tensorflow1"
+    if mlFramework not in art_supported_frameworks:
+        raise Exception(
+            "mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+                mlFramework, " ".join(art_supported_frameworks)
+            )
+        )
+
     return mlFramework
 
 
