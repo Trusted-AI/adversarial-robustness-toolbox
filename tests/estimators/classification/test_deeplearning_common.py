@@ -1,5 +1,7 @@
 import logging
 import os
+
+import importlib
 from os import listdir, path
 import pickle
 import tempfile
@@ -498,12 +500,6 @@ logger = logging.getLogger(__name__)
 
 
 # Note, the following part is for testing the amp tool on pytorch platform only.
-import importlib
-
-import torch.nn as nn
-
-from art.estimators.classification.pytorch import PyTorchClassifier
-
 apex_spec = importlib.util.find_spec("apex")
 if apex_spec is not None:
     amp_spec = importlib.util.find_spec("apex.amp")
@@ -522,12 +518,17 @@ def test_loss_gradient_amp(
     mnist_shape,
     device_type,
 ):
+    import torch
+    import torch.nn as nn
+
+    from art.estimators.classification.pytorch import PyTorchClassifier
 
     (expected_gradients_1, expected_gradients_2) = expected_values_amp()
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
     classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
+    optimizer = torch.optim.Adam(classifier.model.parameters(), lr=0.01)
 
     # Redefine the classifier with amp
     clip_values = (0, 1)
@@ -540,6 +541,7 @@ def test_loss_gradient_amp(
         input_shape=(1, 28, 28),
         nb_classes=10,
         device_type=device_type,
+        optimizer=optimizer,
         use_amp=True,
     )
 
@@ -551,14 +553,15 @@ def test_loss_gradient_amp(
 
     # First test of gradients
     sub_gradients = gradients[0, 0, :, 14]
-
+    print('sub_gradients1', sub_gradients)
     np.testing.assert_array_almost_equal(
         sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
     )
 
     # Second test of gradients
     sub_gradients = gradients[0, 0, 14, :]
-
+    print('sub_gradients2', sub_gradients)
     np.testing.assert_array_almost_equal(
         sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
     )
+
