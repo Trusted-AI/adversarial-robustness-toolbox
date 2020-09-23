@@ -106,16 +106,15 @@ def test_spatial_smoothing_median_filter_call_expected_behavior(art_warning, is_
 @pytest.mark.only_with_platform("tensorflow")
 def test_spatial_smoothing_image_data(art_warning, image_batch, channels_first, window_size, is_tf_version_2):
     try:
-        if is_tf_version_2:
-            test_input, test_output = video_batch
+        test_input, test_output = video_batch
 
-            if channels_first:
-                exc_msg = "Only channels last input data is supported"
-                with pytest.raises(ValueError, match=exc_msg):
-                    _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
-            else:
-                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
-                assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+        if channels_first:
+            exc_msg = "Only channels last input data is supported"
+            with pytest.raises(ValueError, match=exc_msg):
+                _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
+        else:
+            spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
+            assert_array_equal(spatial_smoothing(test_input)[0], test_output)
     except ARTTestException as e:
         art_warning(e)
 
