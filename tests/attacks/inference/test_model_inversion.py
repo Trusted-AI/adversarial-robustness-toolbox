@@ -85,7 +85,7 @@ def test_miface(fix_get_mnist_subset, image_dl_estimator_for_attack):
 @pytest.mark.framework_agnostic
 def test_classifier_type_check_fail():
     try:
-        backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassGradientsMixin])
+        backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassifierMixin, ClassGradientsMixin])
     except ARTTestException as e:
         add_warning(e)
 
