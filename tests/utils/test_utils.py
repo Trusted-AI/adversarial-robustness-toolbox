@@ -143,4 +143,4 @@ class TestDeprecatedKeyword:
 
 
 if __name__ == "__main__":
-    pytest.cmdline.main("-n auto -q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
+    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
