@@ -52,61 +52,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         https://arxiv.org/abs/1902.06705
     """
 
-    from kornia.filters import MedianBlur
-
-    class MedianBlurCustom(MedianBlur):
-        """
-        An ongoing effort to reproduce the median blur function in SciPy.
-        """
-
-        import torch  # lgtm [py/repeated-import]
-
-        def __init__(self, kernel_size: Tuple[int, int]) -> None:
-            super().__init__(kernel_size)
-
-            # Half-pad the input so that the output keeps the same shape.
-            # * center pixel located lower right
-            half_pad = [int(k % 2 == 0) for k in kernel_size]
-            self.p2d = [
-                int(self.padding[-1]) + half_pad[-1],
-                int(self.padding[-1]),
-                int(self.padding[-2]) + half_pad[-2],
-                int(self.padding[-2]),
-            ]
-            # PyTorch requires Padding size should be less than the corresponding input dimension,
-
-        def forward(self, input: "torch.Tensor"):  # type: ignore
-            import torch  # lgtm [py/repeated-import]
-            import torch.nn.functional as F
-
-            if not torch.is_tensor(input):
-                raise TypeError("Input type is not a torch.Tensor. Got {}".format(type(input)))
-            if not len(input.shape) == 4:
-                raise ValueError("Invalid input shape, we expect BxCxHxW. Got: {}".format(input.shape))
-            # prepare kernel
-            batch_size, channels, height, width = input.shape
-            kernel: torch.Tensor = self.kernel.to(input.device).to(input.dtype)
-            # map the local window to single vector
-
-            _input = input.reshape(batch_size * channels, 1, height, width)
-            if input.dtype == torch.int64:
-                # "reflection_pad2d" not implemented for 'Long'
-                # "reflect" in scipy.ndimage.median_filter has no equivalence in F.pad.
-                # "reflect" in PyTorch maps to "mirror" in scipy.ndimage.median_filter.
-                _input = _input.to(torch.float32)
-                _input = F.pad(_input, self.p2d, "reflect")
-                _input = _input.to(torch.int64)
-            else:
-                _input = F.pad(_input, self.p2d, "reflect")
-
-            features: torch.Tensor = F.conv2d(_input, kernel, stride=1)
-            features = features.view(batch_size, channels, -1, height, width)  # BxCx(K_h * K_w)xHxW
-
-            # compute the median along the feature axis
-            # * torch.median(), if window size even, use smaller value (e.g. median(4,5)=4)
-            median: torch.Tensor = torch.median(features, dim=2)[0]
-            return median
-
     def __init__(
         self,
         window_size: int = 3,
@@ -138,14 +83,67 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         self.clip_values = clip_values
         self._check_params()
 
-        self.median_blur = self.MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
-
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
         else:
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
+
+        from kornia.filters import MedianBlur
+
+        class MedianBlurCustom(MedianBlur):
+            """
+            An ongoing effort to reproduce the median blur function in SciPy.
+            """
+
+            def __init__(self, kernel_size: Tuple[int, int]) -> None:
+                super().__init__(kernel_size)
+
+                # Half-pad the input so that the output keeps the same shape.
+                # * center pixel located lower right
+                half_pad = [int(k % 2 == 0) for k in kernel_size]
+                self.p2d = [
+                    int(self.padding[-1]) + half_pad[-1],
+                    int(self.padding[-1]),
+                    int(self.padding[-2]) + half_pad[-2],
+                    int(self.padding[-2]),
+                ]
+                # PyTorch requires Padding size should be less than the corresponding input dimension,
+
+            def forward(self, input: "torch.Tensor"):  # type: ignore
+                import torch  # lgtm [py/repeated-import]
+                import torch.nn.functional as F
+
+                if not torch.is_tensor(input):
+                    raise TypeError("Input type is not a torch.Tensor. Got {}".format(type(input)))
+                if not len(input.shape) == 4:
+                    raise ValueError("Invalid input shape, we expect BxCxHxW. Got: {}".format(input.shape))
+                # prepare kernel
+                batch_size, channels, height, width = input.shape
+                kernel: torch.Tensor = self.kernel.to(input.device).to(input.dtype)
+                # map the local window to single vector
+
+                _input = input.reshape(batch_size * channels, 1, height, width)
+                if input.dtype == torch.int64:
+                    # "reflection_pad2d" not implemented for 'Long'
+                    # "reflect" in scipy.ndimage.median_filter has no equivalence in F.pad.
+                    # "reflect" in PyTorch maps to "mirror" in scipy.ndimage.median_filter.
+                    _input = _input.to(torch.float32)
+                    _input = F.pad(_input, self.p2d, "reflect")
+                    _input = _input.to(torch.int64)
+                else:
+                    _input = F.pad(_input, self.p2d, "reflect")
+
+                features: torch.Tensor = F.conv2d(_input, kernel, stride=1)
+                features = features.view(batch_size, channels, -1, height, width)  # BxCx(K_h * K_w)xHxW
+
+                # compute the median along the feature axis
+                # * torch.median(), if window size even, use smaller value (e.g. median(4,5)=4)
+                median: torch.Tensor = torch.median(features, dim=2)[0]
+                return median
+
+        self.median_blur = MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
 
     @property
     def apply_fit(self) -> bool:

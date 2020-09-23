@@ -26,23 +26,25 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierNeuralNetwork
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 from art.utils import deprecated
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE
     from art.data_generators import DataGenerator
+    from art.estimators.classification.classifier import ClassifierNeuralNetwork
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryInputDetector(ClassifierNeuralNetwork):
+class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
 
-    def __init__(self, detector: ClassifierNeuralNetwork) -> None:
+    def __init__(self, detector: "ClassifierNeuralNetwork") -> None:
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
 
@@ -155,14 +157,16 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(ClassifierNeuralNetwork):
+class BinaryActivationDetector(
+    ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
+):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
 
     def __init__(
-        self, classifier: ClassifierNeuralNetwork, detector: ClassifierNeuralNetwork, layer: Union[int, str],
+        self, classifier: "ClassifierNeuralNetwork", detector: "ClassifierNeuralNetwork", layer: Union[int, str],
     ) -> None:  # lgtm [py/similar-function]
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
