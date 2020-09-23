@@ -100,7 +100,11 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               `first_stage_localization_loss`, `first_stage_objectness_loss`,
                               `second_stage_localization_loss`, `second_stage_classification_loss`.
         """
+<<<<<<< HEAD
         import tensorflow as tf  # lgtm [py/repeated-import]
+=======
+        import tensorflow as tf
+>>>>>>> Fix docs build
 
         # Super initialization
         super().__init__(
