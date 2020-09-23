@@ -29,7 +29,6 @@ from art.estimators.estimator import (
     LossGradientsMixin,
     NeuralNetworkMixin,
 )
-from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -170,6 +169,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
+        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
         if (
             not hasattr(self, "preprocessing_defences")
@@ -229,6 +229,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
+        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
         if (
             not hasattr(self, "preprocessing_defences")

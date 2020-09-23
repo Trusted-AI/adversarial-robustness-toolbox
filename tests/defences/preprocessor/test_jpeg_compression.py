@@ -23,7 +23,6 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
-# import art
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor import JpegCompression
 

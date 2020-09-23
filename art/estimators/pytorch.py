@@ -28,7 +28,6 @@ from art.estimators.estimator import (
     LossGradientsMixin,
     NeuralNetworkMixin,
 )
-from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 logger = logging.getLogger(__name__)
 
@@ -124,6 +123,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         import torch
+        from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
         if (
             not hasattr(self, "preprocessing_defences")
@@ -184,6 +184,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         import torch
+        from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
         if (
             not hasattr(self, "preprocessing_defences")
