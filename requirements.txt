@@ -30,6 +30,7 @@ xgboost==1.2.0
 kornia==0.3.1
 
 # other
+pytest-xdist
 pytest==5.4.1
 pytest-pep8==1.0.6
 pytest-mock==3.3.1
