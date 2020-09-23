@@ -66,11 +66,13 @@ Supported Machine Learning Libraries
    modules/attacks/poisoning
    modules/defences
    modules/defences/detector_evasion
-   modules/defences/detector_poison
+   modules/defences/detector_evasion_subsetscanning
+   modules/defences/detector_poisoning
    modules/defences/postprocessor
    modules/defences/preprocessor
    modules/defences/trainer
-   modules/defences/transformer
+   modules/defences/transformer_evasion
+   modules/defences/transformer_poisoning
    modules/estimators
    modules/estimators/certification
    modules/estimators/certification_neural_cleanse
