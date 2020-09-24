@@ -530,11 +530,11 @@ def art_warning(request):
         if type(exception) is ARTTestFixtureNotImplemented:
             if request.node.get_closest_marker("framework_agnostic"):
                 if not request.node.get_closest_marker("parametrize"):
-                    raise exception("This test has marker framework_agnostic decorator which means it will only be ran "
+                    raise Exception("This test has marker framework_agnostic decorator which means it will only be ran "
                                     "once. However the ART test exception was thrown, hence it is never run fully. ")
             elif request.node.get_closest_marker("only_with_platform") and len(
                     request.node.get_closest_marker("only_with_platform").args) == 1:
-                raise exception("This test has marker only_with_platform decorator which means it will only be ran "
+                raise Exception("This test has marker only_with_platform decorator which means it will only be ran "
                                 "once. However the ARTTestFixtureNotImplemented exception was thrown, hence it is "
                                 "never run fully. ")
 
