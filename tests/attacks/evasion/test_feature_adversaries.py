@@ -23,7 +23,7 @@ from art.attacks.evasion import FeatureAdversaries
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 @pytest.mark.skipMlFramework("pytorch")
 @pytest.mark.framework_agnostic
-def test_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -49,12 +49,12 @@ def test_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
         assert np.mean(x_train_mnist[0:3]) == pytest.approx(0.13015706282513004, 0.01)
         assert np.mean(x_train_mnist_adv) == pytest.approx(0.1592448561261751, 0.01)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_classifier_type_check_fail():
+def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(FeatureAdversaries, [BaseEstimator, NeuralNetworkMixin])
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)

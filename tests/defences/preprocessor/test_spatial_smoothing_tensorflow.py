@@ -24,7 +24,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ def tabular_batch():
 
 @pytest.mark.xfail()
 @pytest.mark.only_with_platform("tensorflow")
-def test_spatial_smoothing_median_filter_call(is_tf_version_2):
+def test_spatial_smoothing_median_filter_call(art_warning, is_tf_version_2):
     try:
         if is_tf_version_2:
             test_input = np.array([[[[1], [2]], [[3], [4]]]])
@@ -73,11 +73,11 @@ def test_spatial_smoothing_median_filter_call(is_tf_version_2):
 
             assert_array_equal(spatial_smoothing(test_input)[0], test_output)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_spatial_smoothing_median_filter_call_expected_behavior(is_tf_version_2):
+def test_spatial_smoothing_median_filter_call_expected_behavior(art_warning, is_tf_version_2):
     try:
         if is_tf_version_2:
             test_input = np.array([[[[1], [2]], [[3], [4]]]])
@@ -87,7 +87,7 @@ def test_spatial_smoothing_median_filter_call_expected_behavior(is_tf_version_2)
 
             assert_array_equal(spatial_smoothing(test_input)[0], test_output)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.parametrize("channels_first", [True, False])
@@ -106,26 +106,26 @@ def test_spatial_smoothing_median_filter_call_expected_behavior(is_tf_version_2)
     ],
 )
 @pytest.mark.only_with_platform("tensorflow")
-def test_spatial_smoothing_image_data(image_batch, channels_first, window_size, is_tf_version_2):
-    # try:
-    if is_tf_version_2:
-        test_input, test_output = image_batch
+def test_spatial_smoothing_image_data(art_warning, image_batch, channels_first, window_size, is_tf_version_2):
+    try:
+        if is_tf_version_2:
+            test_input, test_output = image_batch
 
-        if channels_first:
-            exc_msg = "Only channels last input data is supported"
-            with pytest.raises(ValueError, match=exc_msg):
-                _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
-        else:
-            spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first,
-                                                             window_size=window_size)
-            assert_array_equal(spatial_smoothing(test_input)[0], test_output)
-    # except ARTTestException as e:
-    #     add_warning(e)
+            if channels_first:
+                exc_msg = "Only channels last input data is supported"
+                with pytest.raises(ValueError, match=exc_msg):
+                    _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
+            else:
+                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first,
+                                                                 window_size=window_size)
+                assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("tensorflow")
 @pytest.mark.parametrize("channels_first", [True, False])
-def test_spatial_smoothing_video_data(video_batch, channels_first, is_tf_version_2):
+def test_spatial_smoothing_video_data(art_warning, video_batch, channels_first, is_tf_version_2):
     try:
         if is_tf_version_2:
             test_input, test_output = video_batch
@@ -138,11 +138,11 @@ def test_spatial_smoothing_video_data(video_batch, channels_first, is_tf_version
                 spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=2)
                 assert_array_equal(spatial_smoothing(test_input)[0], test_output)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_non_spatial_data_error(tabular_batch, is_tf_version_2):
+def test_non_spatial_data_error(art_warning, tabular_batch, is_tf_version_2):
     try:
         if is_tf_version_2:
             test_input = tabular_batch
@@ -152,37 +152,37 @@ def test_non_spatial_data_error(tabular_batch, is_tf_version_2):
             with pytest.raises(ValueError, match=exc_msg):
                 spatial_smoothing(test_input)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_window_size_error(is_tf_version_2):
+def test_window_size_error(art_warning, is_tf_version_2):
     try:
         if is_tf_version_2:
             exc_msg = "Sliding window size must be a positive integer."
             with pytest.raises(ValueError, match=exc_msg):
                 SpatialSmoothingTensorFlowV2(window_size=0)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_triple_clip_values_error(is_tf_version_2):
+def test_triple_clip_values_error(art_warning, is_tf_version_2):
     try:
         if is_tf_version_2:
             exc_msg = "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
             with pytest.raises(ValueError, match=exc_msg):
                 SpatialSmoothingTensorFlowV2(clip_values=(0, 1, 2))
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_relation_clip_values_error(is_tf_version_2):
+def test_relation_clip_values_error(art_warning, is_tf_version_2):
     try:
         if is_tf_version_2:
             exc_msg = "Invalid 'clip_values': min >= max."
             with pytest.raises(ValueError, match=exc_msg):
                 SpatialSmoothingTensorFlowV2(clip_values=(1, 0))
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)

@@ -25,6 +25,8 @@ from numpy.testing import assert_array_equal
 
 from art.defences.preprocessor import Mp3Compression
 
+from tests.utils import ARTTestException
+
 logger = logging.getLogger(__name__)
 
 
@@ -64,25 +66,34 @@ def image_batch():
     return np.zeros((2, 1, 4, 4))
 
 
-def test_sample_rate_error():
-    exc_msg = "Sample rate be must a positive integer."
-    with pytest.raises(ValueError, match=exc_msg):
-        Mp3Compression(sample_rate=0)
+def test_sample_rate_error(art_warning):
+    try:
+        exc_msg = "Sample rate be must a positive integer."
+        with pytest.raises(ValueError, match=exc_msg):
+            Mp3Compression(sample_rate=0)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-def test_non_temporal_data_error(image_batch):
-    test_input = image_batch
-    mp3compression = Mp3Compression(sample_rate=16000)
+def test_non_temporal_data_error(art_warning, image_batch):
+    try:
+        test_input = image_batch
+        mp3compression = Mp3Compression(sample_rate=16000)
 
-    exc_msg = "Mp3 compression can only be applied to temporal data across at least one channel."
-    with pytest.raises(ValueError, match=exc_msg):
-        mp3compression(test_input)
+        exc_msg = "Mp3 compression can only be applied to temporal data across at least one channel."
+        with pytest.raises(ValueError, match=exc_msg):
+            mp3compression(test_input)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.parametrize("channels_first", [True, False])
 @pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn")
-def test_mp3_compresssion(audio_batch, channels_first):
-    test_input, test_output, sample_rate = audio_batch
-    mp3compression = Mp3Compression(sample_rate=sample_rate, channels_first=channels_first)
+def test_mp3_compresssion(art_warning, audio_batch, channels_first):
+    try:
+        test_input, test_output, sample_rate = audio_batch
+        mp3compression = Mp3Compression(sample_rate=sample_rate, channels_first=channels_first)
 
-    assert_array_equal(mp3compression(test_input)[0], test_output)
+        assert_array_equal(mp3compression(test_input)[0], test_output)
+    except ARTTestException as e:
+        art_warning(e)

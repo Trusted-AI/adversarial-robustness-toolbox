@@ -27,7 +27,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
 
 
 @pytest.mark.framework_agnostic
-def test_miface(fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_miface(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(MIFace)
 
@@ -79,15 +79,15 @@ def test_miface(fix_get_mnist_subset, image_dl_estimator_for_attack):
         attack = MIFace(classifier, max_iter=150, batch_size=3)
         backend_check_inferred_values(attack, fix_get_mnist_subset, classifier)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_classifier_type_check_fail():
+def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassifierMixin, ClassGradientsMixin])
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 if __name__ == "__main__":

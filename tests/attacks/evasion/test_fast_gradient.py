@@ -28,7 +28,7 @@ from tests.attacks.utils import backend_check_adverse_values, backend_test_defen
 from tests.attacks.utils import backend_test_random_initialisation_images, backend_targeted_images
 from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_masked_images
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import ExpectedValue, add_warning, ARTTestException
+from tests.utils import ExpectedValue, ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -42,27 +42,27 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.framework_agnostic
-def test_classifier_defended_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_classifier_defended_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod, defended=True)
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         backend_test_defended_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_random_initialisation_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_random_initialisation_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
         attack = FastGradientMethod(classifier, num_random_init=3)
         backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_targeted_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_targeted_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
@@ -71,21 +71,21 @@ def test_targeted_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
 
         backend_targeted_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_masked_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_masked_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
         attack = FastGradientMethod(classifier, eps=1.0, num_random_init=1)
         backend_masked_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_minimal_perturbations_images(fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
@@ -100,13 +100,13 @@ def test_minimal_perturbations_images(fix_get_mnist_subset, image_dl_estimator_f
         }
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.parametrize("norm", [np.inf, 1, 2])
 @pytest.mark.skipMlFramework("pytorch")  # temporarily skipping for pytorch until find bug fix in bounded test
 @pytest.mark.framework_agnostic
-def test_norm_images(norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
 
@@ -137,13 +137,13 @@ def test_norm_images(norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
 
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
 @pytest.mark.framework_agnostic
-def test_tabular(tabular_dl_estimator, framework, get_iris_dataset, targeted, clipped):
+def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset, targeted, clipped):
     try:
         classifier = tabular_dl_estimator(clipped=clipped)
 
@@ -154,12 +154,12 @@ def test_tabular(tabular_dl_estimator, framework, get_iris_dataset, targeted, cl
             attack = FastGradientMethod(classifier, eps=0.1)
             backend_untargeted_tabular(attack, get_iris_dataset, clipped=clipped)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_classifier_type_check_fail():
+def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(FastGradientMethod, [BaseEstimator, LossGradientsMixin])
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)

@@ -25,7 +25,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.framework_agnostic
-def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(SquareAttack)
 
@@ -52,12 +52,12 @@ def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.053533513, abs=0.015)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_classifier_type_check_fail():
+def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(SquareAttack, [BaseEstimator, ClassifierMixin])
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)

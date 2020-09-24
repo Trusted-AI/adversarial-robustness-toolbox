@@ -25,7 +25,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import master_seed
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.parametrize("random_location", [True, False])
 @pytest.mark.parametrize("image_format", ["NHWC", "NCHW"])
 @pytest.mark.framework_agnostic
-def test_augment_images_with_patch(random_location, image_format, fix_get_mnist_subset):
+def test_augment_images_with_patch(art_warning, random_location, image_format, fix_get_mnist_subset):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -134,12 +134,12 @@ def test_augment_images_with_patch(random_location, image_format, fix_get_mnist_
 
         np.testing.assert_array_equal(patched_images[1, 2, :, 0], patched_images_column)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_classifier_type_check_fail():
+def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(DPatch, [BaseEstimator, LossGradientsMixin, ObjectDetectorMixin])
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)

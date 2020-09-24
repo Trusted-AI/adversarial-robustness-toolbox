@@ -24,6 +24,7 @@ import tempfile
 import numpy as np
 import pytest
 import requests
+import warnings
 
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
 from art.defences.preprocessor import FeatureSqueezing, JpegCompression, SpatialSmoothing
@@ -521,6 +522,30 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
         return classifier, sess
 
     return _image_dl_estimator
+
+
+@pytest.fixture
+def art_warning(request):
+    def _art_warning(exception):
+        if type(exception) is ARTTestFixtureNotImplemented:
+            if request.node.get_closest_marker("framework_agnostic"):
+                raise exception("This test has marker framework_agnostic decorator which means it will only be ran "
+                                "once. However the ART test exception was thrown, hence it is never run fully. "
+                                "Exception was: {0}".format(exception.args[0]))
+            elif request.node.get_closest_marker("only_with_platform") and len(
+                    request.node.get_closest_marker("only_with_platform").args) == 1:
+                raise exception("This test has marker only_with_platform decorator which means it will only be ran "
+                                "once. However the ART test exception was thrown, hence it is never run fully. "
+                                "Exception was: {0}".format(exception.args[0]))
+            else:
+                # NotImplementedErrors are raised in ART whenever a test model does not exist for a specific
+                # model/framework combination. By catching there here, we can provide a report at the end of each
+                # pytest run list all models requiring to be implemented.
+                warnings.warn(UserWarning(exception))
+        else:
+            raise exception
+
+    return _art_warning
 
 
 @pytest.fixture

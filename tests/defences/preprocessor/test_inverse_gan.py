@@ -25,7 +25,7 @@ from art.defences.preprocessor.inverse_gan import InverseGAN
 from art.attacks.evasion import FastGradientMethod
 
 from tests.utils import get_gan_inverse_gan_ft
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 
 @pytest.fixture()
@@ -37,7 +37,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn", "mxnet", "kerastf")
-def test_inverse_gan(fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_inverse_gan(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -59,4 +59,4 @@ def test_inverse_gan(fix_get_mnist_subset, image_dl_estimator_for_attack):
             float(np.mean(x_test_defended - x_test_adv)), 0.08818667382001877, decimal=0.01,
         )
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)

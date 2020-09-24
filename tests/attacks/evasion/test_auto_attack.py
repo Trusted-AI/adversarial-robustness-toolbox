@@ -28,7 +28,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +42,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.framework_agnostic
-def test_generate_default(fix_get_mnist_subset, image_dl_estimator):
+def test_generate_default(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
 
@@ -57,11 +57,11 @@ def test_generate_default(fix_get_mnist_subset, image_dl_estimator):
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0292, abs=0.105)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_generate_attacks_and_targeted(fix_get_mnist_subset, image_dl_estimator):
+def test_generate_attacks_and_targeted(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
 
@@ -136,12 +136,12 @@ def test_generate_attacks_and_targeted(fix_get_mnist_subset, image_dl_estimator)
         assert np.mean(x_train_mnist_adv - x_train_mnist) == pytest.approx(0.0179, abs=0.0075)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(eps, abs=0.005)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_classifier_type_check_fail():
+def test_classifier_type_check_fail(art_warning):
     try:
         backend_test_classifier_type_check_fail(AutoAttack, [BaseEstimator, ClassifierMixin])
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)

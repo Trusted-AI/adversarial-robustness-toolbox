@@ -25,7 +25,7 @@ from numpy.testing import assert_array_equal
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor import JpegCompression
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -82,31 +82,31 @@ def tabular_batch():
 
 @pytest.mark.framework_agnostic
 @pytest.mark.parametrize("channels_first", [True, False])
-def test_jpeg_compression_image_data(image_batch, channels_first, framework):
+def test_jpeg_compression_image_data(art_warning, image_batch, channels_first, framework):
     try:
         test_input, test_output = image_batch
         jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=channels_first)
 
         assert_array_equal(jpeg_compression(test_input)[0], test_output)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.parametrize("channels_first", [True, False])
 @pytest.mark.framework_agnostic
-def test_jpeg_compression_video_data(video_batch, channels_first):
+def test_jpeg_compression_video_data(art_warning, video_batch, channels_first):
     try:
         test_input, test_output = video_batch
         jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=channels_first)
 
         assert_array_equal(jpeg_compression(test_input)[0], test_output)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.parametrize("channels_first", [False])
 @pytest.mark.framework_agnostic
-def test_jpeg_compress(image_batch, channels_first):
+def test_jpeg_compress(art_warning, image_batch, channels_first):
     try:
         test_input, test_output = image_batch
         jpeg_compression = JpegCompression(clip_values=(0, 255))
@@ -117,11 +117,11 @@ def test_jpeg_compress(image_batch, channels_first):
 
         assert_array_equal(jpeg_compression._compress(test_single_input, image_mode), test_single_output)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_non_spatial_data_error(tabular_batch):
+def test_non_spatial_data_error(art_warning, tabular_batch):
     try:
         test_input = tabular_batch
         jpeg_compression = JpegCompression(clip_values=(0, 255), channels_first=True)
@@ -130,24 +130,24 @@ def test_non_spatial_data_error(tabular_batch):
         with pytest.raises(ValueError, match=exc_msg):
             jpeg_compression(test_input)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_negative_clip_values_error():
+def test_negative_clip_values_error(art_warning):
     try:
         exc_msg = "'clip_values' min value must be 0."
         with pytest.raises(ValueError, match=exc_msg):
             JpegCompression(clip_values=(-1, 255), channels_first=True)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_maximum_clip_values_error():
+def test_maximum_clip_values_error(art_warning):
     try:
         exc_msg = "'clip_values' max value must be either 1 or 255."
         with pytest.raises(ValueError, match=exc_msg):
             JpegCompression(clip_values=(0, 2), channels_first=True)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)

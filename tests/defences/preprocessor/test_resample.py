@@ -22,7 +22,7 @@ import pytest
 import resampy
 
 from art.defences.preprocessor import Resample
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -46,27 +46,27 @@ def image_batch():
 
 
 @pytest.mark.framework_agnostic
-def test_sample_rate_original_error():
+def test_sample_rate_original_error(art_warning):
     try:
         exc_msg = "Original sampling rate be must a positive integer."
         with pytest.raises(ValueError, match=exc_msg):
             Resample(sr_original=0, sr_new=16000)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_sample_rate_new_error():
+def test_sample_rate_new_error(art_warning):
     try:
         exc_msg = "New sampling rate be must a positive integer."
         with pytest.raises(ValueError, match=exc_msg):
             Resample(sr_original=16000, sr_new=0)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_non_temporal_data_error(image_batch):
+def test_non_temporal_data_error(art_warning, image_batch):
     try:
         test_input = image_batch
         resample = Resample(16000, 16000)
@@ -75,11 +75,11 @@ def test_non_temporal_data_error(image_batch):
         with pytest.raises(ValueError, match=exc_msg):
             resample(test_input)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
-def test_resample(audio_batch, mocker):
+def test_resample(art_warning, audio_batch, mocker):
     try:
         test_input, test_output, sr_orig, sr_new = audio_batch
 
@@ -89,4 +89,4 @@ def test_resample(audio_batch, mocker):
         resampler = Resample(sr_original=sr_orig, sr_new=sr_new, channels_first=True)
         assert resampler(test_input)[0].shape == test_output.shape
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)

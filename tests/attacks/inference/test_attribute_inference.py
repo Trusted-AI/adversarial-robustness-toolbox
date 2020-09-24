@@ -35,13 +35,13 @@ from art.estimators.classification import ClassifierMixin
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import add_warning, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.mark.skipMlFramework("dl_frameworks")
-def test_black_box(decision_tree_estimator, get_iris_dataset):
+def test_black_box(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
 
@@ -87,11 +87,11 @@ def test_black_box(decision_tree_estimator, get_iris_dataset):
         assert test_acc == pytest.approx(0.8888, abs=0.03)
 
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.skipMlFramework("dl_frameworks")
-def test_black_box_with_model(decision_tree_estimator, get_iris_dataset):
+def test_black_box_with_model(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
 
@@ -145,11 +145,11 @@ def test_black_box_with_model(decision_tree_estimator, get_iris_dataset):
         # assert train_acc == pytest.approx(0.5523, abs=0.03)
         # assert test_acc == pytest.approx(0.5777, abs=0.03)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.skipMlFramework("dl_frameworks")
-def test_white_box(decision_tree_estimator, get_iris_dataset):
+def test_white_box(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
         values = [0.14, 0.42, 0.71]  # rounded down
@@ -173,11 +173,11 @@ def test_white_box(decision_tree_estimator, get_iris_dataset):
         assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.2108, abs=0.03)
         assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.1988, abs=0.03)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 @pytest.mark.skipMlFramework("dl_frameworks")
-def test_white_box_lifestyle(decision_tree_estimator, get_iris_dataset):
+def test_white_box_lifestyle(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         attack_feature = 2  # petal length
         values = [0.14, 0.42, 0.71]  # rounded down
@@ -201,7 +201,7 @@ def test_white_box_lifestyle(decision_tree_estimator, get_iris_dataset):
         assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.3149, abs=0.03)
         # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
     except ARTTestException as e:
-        add_warning(e)
+        art_warning(e)
 
 
 def test_classifier_type_check_fail():
