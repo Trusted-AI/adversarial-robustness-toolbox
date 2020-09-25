@@ -78,30 +78,6 @@ class TestLingvoAsr:
         tf1.reset_default_graph()
         LingvoAsr()
 
-    def test_check_and_download_params(self):
-        import tensorflow.compat.v1 as tf1
-
-        tf1.reset_default_graph()
-
-        lingvo = LingvoAsr()
-        assert lingvo._check_and_download_params()
-
-    def test_check_and_download_model(self):
-        import tensorflow.compat.v1 as tf1
-
-        tf1.reset_default_graph()
-
-        lingvo = LingvoAsr()
-        assert lingvo._check_and_download_model()
-
-    def test_check_and_download_vocab(self):
-        import tensorflow.compat.v1 as tf1
-
-        tf1.reset_default_graph()
-
-        lingvo = LingvoAsr()
-        assert lingvo._check_and_download_vocab()
-
     def test_load_model(self):
         import tensorflow.compat.v1 as tf1
 
@@ -205,7 +181,6 @@ class TestLingvoAsr:
         assert predictions.shape[0] == test_input.shape[0]
         assert isinstance(predictions[0], np.str_)
 
-    @pytest.mark.skip(reason="requires patched Lingvo install")
     def test_loss_gradient_tensor(self, audio_batch_padded):
         import tensorflow.compat.v1 as tf1
 
@@ -224,7 +199,6 @@ class TestLingvoAsr:
         assert test_input.shape == loss_gradient.shape
         assert loss_gradient.sum() == 0.0
 
-    @pytest.mark.skip(reason="requires patched Lingvo install")
     def test_loss_gradient_per_batch(self, audio_data):
         import tensorflow.compat.v1 as tf1
 
@@ -243,7 +217,6 @@ class TestLingvoAsr:
         assert_allclose(np.abs(gradients[2]).sum(), np.abs(gradients[3]).sum(), rtol=1e-01)
         assert_array_equal(gradients_abs_sum > 0, [False, True, True, True])
 
-    @pytest.mark.skip(reason="requires patched Lingvo install")
     def test_loss_gradient_per_sequence(self, audio_data):
         import tensorflow.compat.v1 as tf1
 

@@ -23,7 +23,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import os
 import sys
-from typing import TYPE_CHECKING, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
@@ -33,7 +33,7 @@ from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import get_file, make_directory
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
 
@@ -51,33 +51,54 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
     .. warning::
 
-    In order to calculate loss gradients, this estimator requires a user-patched Lingvo module. Please
-    apply the following additions to the file `<PYTHON_SITE_PACKAGES>/lingvo/tasks/asr/decoder.py` as
-    outlined in the following commit diff:
+    In order to calculate loss gradients, this estimator requires a user-patched Lingvo module. A patched source file
+    for the `lingvo.tasks.asr.decoder` module will be automatically applied. The original source file can be found in
+    `<PYTHON_SITE_PACKAGES>/lingvo/tasks/asr/decoder.py` and will be patched as outlined in the following commit diff:
 
     * https://github.com/yaq007/lingvo/commit/414e035b2c60372de732c9d67db14d1003be6dd6
 
-    Run `python -m site` to obtain a list of possible candidates where to find the `site-packages` folder.
+    The patched `decoder_patched.py` can be found in `ART_DATA_PATH/lingvo/asr`.
+
+    Note: Run `python -m site` to obtain a list of possible candidates where to find the `<PYTHON_SITE_PACKAGES`
+    folder.
     """
 
     # Note: Support for the estimator is pinned to Lingvo version 0.6.4. Some additional source files that are not
     # provided by pip package need to be downloaded. Those downloads are pinned to the following commit:
     # https://github.com/tensorflow/lingvo/commit/9961306adf66f7340e27f109f096c9322d4f9636
-    _LINGVO_CFG = {
+    _LINGVO_CFG: Dict[str, Any] = {
         "path": os.path.join(ART_DATA_PATH, "lingvo"),
-        "model_ckpt_data_uri": "http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001",
-        "model_ckpt_index_uri": (
-            "https://github.com/tensorflow/cleverhans/blob/"
-            "6ef939059172901db582c7702eb803b7171e3db5/examples/adversarial_asr/model/ckpt-00908156.index?raw=true"
-        ),
-        "params_uri": (
-            "https://raw.githubusercontent.com/tensorflow/lingvo/"
-            "9961306adf66f7340e27f109f096c9322d4f9636/lingvo/tasks/asr/params/librispeech.py"
-        ),
-        "vocab_uri": (
-            "https://raw.githubusercontent.com/tensorflow/lingvo/"
-            "9961306adf66f7340e27f109f096c9322d4f9636/lingvo/tasks/asr/wpm_16k_librispeech.vocab"
-        ),
+        "model_data": {
+            "uri": "http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001",
+            "basename": "ckpt-00908156.data-00000-of-00001",
+        },
+        "model_index": {
+            "uri": (
+                "https://github.com/tensorflow/cleverhans/blob/"
+                "6ef939059172901db582c7702eb803b7171e3db5/examples/adversarial_asr/model/ckpt-00908156.index?raw=true"
+            ),
+            "basename": "ckpt-00908156.index",
+        },
+        "params": {
+            "uri": (
+                "https://raw.githubusercontent.com/tensorflow/lingvo/"
+                "9961306adf66f7340e27f109f096c9322d4f9636/lingvo/tasks/asr/params/librispeech.py"
+            ),
+            "basename": "librispeech.py",
+        },
+        "vocab": {
+            "uri": (
+                "https://raw.githubusercontent.com/tensorflow/lingvo/"
+                "9961306adf66f7340e27f109f096c9322d4f9636/lingvo/tasks/asr/wpm_16k_librispeech.vocab"
+            ),
+            "basename": "wpm_16k_librispeech.vocab",
+        },
+        "decoder": {
+            "uri": (
+                "https://raw.githubusercontent.com/hesseltuinhof/lingvo/qin_patched_decoder/lingvo/tasks/asr/decoder.py"
+            ),
+            "basename": "decoder_patched.py",
+        },
     }
 
     def __init__(
@@ -143,7 +164,9 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         tf1.flags.FLAGS(tuple(sys.argv[0]))
 
         # check and download additional Lingvo ASR params file
-        _ = self._check_and_download_params()
+        _ = self._check_and_download_file(
+            self._LINGVO_CFG["params"]["uri"], self._LINGVO_CFG["params"]["basename"], self._LINGVO_CFG["path"], "asr"
+        )
 
         # placeholders
         self._x_padded = tf1.placeholder(tf1.float32, shape=[None, None], name="art_x_padded")
@@ -161,42 +184,17 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         self._predict_batch_op = self._predict_batch(self._x_padded, self._y_target, self._mask_frequency)
         self._loss_gradient_op = self._loss_gradient(self._x_padded, self._y_target, self._mask_frequency)
 
-    def _check_and_download_params(self) -> str:
-        """Check and download the `params/librispeech.py` file from the official Lingvo repository."""
-        params_dir = os.path.join(self._LINGVO_CFG["path"], "asr")
-        params_base = "librispeech.py"
-        if not os.path.isdir(params_dir):
-            make_directory(params_dir)
-        if not os.path.isfile(os.path.join(params_dir, params_base)):
-            logger.info("Could not find %s. Downloading it now...", params_base)
-            get_file(params_base, self._LINGVO_CFG["params_uri"], path=params_dir)
-        return os.path.join(params_dir, params_base)
-
-    def _check_and_download_model(self) -> Tuple[str, str]:
-        """Check and download the pretrained model of Qin et al. (2019). file from the official Lingvo repository."""
-        model_ckpt_dir = os.path.join(self._LINGVO_CFG["path"], "asr", "model")
-        model_ckpt_data_base = "ckpt-00908156.data-00000-of-00001"
-        model_ckpt_index_base = "ckpt-00908156.index"
-        if not os.path.isdir(model_ckpt_dir):
-            make_directory(model_ckpt_dir)
-        if not os.path.isfile(os.path.join(model_ckpt_dir, model_ckpt_data_base)):
-            logger.info("Could not find %s. Downloading it now...", model_ckpt_data_base)
-            get_file(model_ckpt_data_base, self._LINGVO_CFG["model_ckpt_data_uri"], path=model_ckpt_dir)
-        if not os.path.isfile(os.path.join(model_ckpt_dir, model_ckpt_index_base)):
-            logger.info("Could not find %s. Downloading it now...", model_ckpt_index_base)
-            get_file(model_ckpt_index_base, self._LINGVO_CFG["model_ckpt_index_uri"], path=model_ckpt_dir)
-        return os.path.join(model_ckpt_dir, model_ckpt_data_base), os.path.join(model_ckpt_dir, model_ckpt_index_base)
-
-    def _check_and_download_vocab(self) -> str:
-        """Check and download the `wpm_16k_librispeech.vocab` file from the official Lingvo repository."""
-        vocab_dir = os.path.join(self._LINGVO_CFG["path"], "asr")
-        vocab_base = "wpm_16k_librispeech.vocab"
-        if not os.path.isdir(vocab_dir):
-            make_directory(vocab_dir)
-        if not os.path.isfile(os.path.join(vocab_dir, vocab_base)):
-            logger.info("Could not find %x. Downloading it now...", vocab_base)
-            get_file(vocab_base, self._LINGVO_CFG["vocab_uri"], path=vocab_dir)
-        return os.path.join(vocab_dir, vocab_base)
+    @staticmethod
+    def _check_and_download_file(uri: str, basename: str, *paths: str) -> str:
+        """Check and download the file from given URI."""
+        dir_path = os.path.join(*paths)
+        file_path = os.path.join(dir_path, basename)
+        if not os.path.isdir(dir_path):
+            make_directory(dir_path)
+        if not os.path.isfile(file_path):
+            logger.info("Could not find %s. Downloading it now...", basename)
+            get_file(basename, uri, path=dir_path)
+        return file_path
 
     def _load_model(self):
         """
@@ -208,8 +206,23 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         from asr.librispeech import Librispeech960Wpm
 
+        # check and download patched Lingvo ASR decoder
+        _ = self._check_and_download_file(
+            self._LINGVO_CFG["decoder"]["uri"], self._LINGVO_CFG["decoder"]["basename"], self._LINGVO_CFG["path"], "asr"
+        )
+
+        # monkey-patch the lingvo.asr.decoder.AsrDecoderBase._ComputeMetrics method with patched method according
+        # to Qin et al
+        import lingvo.tasks.asr.decoder as decoder
+        import asr.decoder_patched as decoder_patched
+
+        decoder.AsrDecoderBase._ComputeMetrics = decoder_patched.AsrDecoderBase._ComputeMetrics
+
         # check and download Lingvo ASR vocab
-        vocab_path = self._check_and_download_vocab()
+        # vocab_path = self._check_and_download_vocab()
+        vocab_path = self._check_and_download_file(
+            self._LINGVO_CFG["vocab"]["uri"], self._LINGVO_CFG["vocab"]["basename"], self._LINGVO_CFG["path"], "asr"
+        )
 
         # monkey-patch tasks.asr.librispeechLibriSpeech960Wpm class attribute WPM_SYMBOL_TABLE_FILEPATH
         Librispeech960Wpm.WPM_SYMBOL_TABLE_FILEPATH = vocab_path
@@ -230,7 +243,20 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
             task = model.GetTask()
 
         # load Qin et al. pretrained model
-        _, model_index_path = self._check_and_download_model()
+        _ = self._check_and_download_file(
+            self._LINGVO_CFG["model_data"]["uri"],
+            self._LINGVO_CFG["model_data"]["basename"],
+            self._LINGVO_CFG["path"],
+            "asr",
+            "model",
+        )
+        model_index_path = self._check_and_download_file(
+            self._LINGVO_CFG["model_index"]["uri"],
+            self._LINGVO_CFG["model_index"]["basename"],
+            self._LINGVO_CFG["path"],
+            "asr",
+            "model",
+        )
         self._sess.run(tf1.global_variables_initializer())
         saver = tf1.train.Saver([var for var in tf1.global_variables() if var.name.startswith("librispeech")])
         saver.restore(self._sess, os.path.splitext(model_index_path)[0])
