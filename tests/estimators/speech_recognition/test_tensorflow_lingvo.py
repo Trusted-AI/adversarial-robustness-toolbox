@@ -21,8 +21,7 @@ import logging
 
 import numpy as np
 import pytest
-import tensorflow.compat.v1 as tf1
-from lingvo.core.hyperparams import Params
+import tensorflow as tf
 from numpy.testing import assert_allclose, assert_array_equal
 
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
@@ -61,7 +60,7 @@ def audio_batch_padded():
     return test_input, test_mask_frequency
 
 
-@pytest.mark.skipif(tf1.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+@pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
 @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
 class TestLingvoAsr:
     """
@@ -72,28 +71,38 @@ class TestLingvoAsr:
         assert issubclass(LingvoAsr, (SpeechRecognizerMixin, TensorFlowV2Estimator))
 
     def test_implements_abstract_methods(self):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
         LingvoAsr()
 
     def test_check_and_download_params(self):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         lingvo = LingvoAsr()
         assert lingvo._check_and_download_params()
 
     def test_check_and_download_model(self):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         lingvo = LingvoAsr()
         assert lingvo._check_and_download_model()
 
     def test_check_and_download_vocab(self):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         lingvo = LingvoAsr()
         assert lingvo._check_and_download_vocab()
 
     def test_load_model(self):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         LingvoAsr()
@@ -101,6 +110,8 @@ class TestLingvoAsr:
         assert graph.get_operations()
 
     def test_create_decoder_input(self, audio_batch_padded):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         test_input, test_mask_frequency = audio_batch_padded
@@ -122,6 +133,8 @@ class TestLingvoAsr:
         assert set(decoder_input.tgt.keys()).issuperset({"ids", "labels", "paddings", "weights"})
 
     def test_create_log_mel_features(self, audio_batch_padded):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         test_input, _ = audio_batch_padded
@@ -133,6 +146,8 @@ class TestLingvoAsr:
         assert len(features.shape) == 4
 
     def test_pad_audio_input(self):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         test_input = np.array([np.array([1]), np.array([2] * 480)])
@@ -145,6 +160,8 @@ class TestLingvoAsr:
         assert_array_equal(test_mask, mask)
 
     def test_predict_batch(self, audio_batch_padded):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         test_input, test_mask_frequency = audio_batch_padded
@@ -175,6 +192,8 @@ class TestLingvoAsr:
         )
 
     def test_predict(self, audio_data):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         test_input = audio_data
@@ -186,6 +205,8 @@ class TestLingvoAsr:
 
     @pytest.mark.skip(reason="requires patched Lingvo install")
     def test_loss_gradient_tensor(self, audio_batch_padded):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         test_input, test_mask_frequency = audio_batch_padded
@@ -203,6 +224,8 @@ class TestLingvoAsr:
 
     @pytest.mark.skip(reason="requires patched Lingvo install")
     def test_loss_gradient_per_batch(self, audio_data):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         test_input = audio_data
@@ -214,12 +237,14 @@ class TestLingvoAsr:
         gradients_abs_sum = np.array([np.abs(g).sum() for g in gradients])
 
         # test shape, equal inputs have equal gradients, non-zero inputs have non-zero gradient sums
-        assert test_input.shape == gradients.shape
+        assert [x.shape for x in test_input] == [g.shape for g in gradients]
         assert_allclose(np.abs(gradients[2]).sum(), np.abs(gradients[3]).sum(), rtol=1e-01)
         assert_array_equal(gradients_abs_sum > 0, [False, True, True, True])
 
     @pytest.mark.skip(reason="requires patched Lingvo install")
     def test_loss_gradient_per_sequence(self, audio_data):
+        import tensorflow.compat.v1 as tf1
+
         tf1.reset_default_graph()
 
         test_input = audio_data
@@ -231,7 +256,7 @@ class TestLingvoAsr:
         gradients_abs_sum = np.array([np.abs(g).sum() for g in gradients])
 
         # test shape, equal inputs have equal gradients, non-zero inputs have non-zero gradient sums
-        assert test_input.shape == gradients.shape
+        assert [x.shape for x in test_input] == [g.shape for g in gradients]
         assert_allclose(np.abs(gradients[2]).sum(), np.abs(gradients[3]).sum(), rtol=1e-01)
         assert_array_equal(gradients_abs_sum > 0, [False, True, True, True])
 

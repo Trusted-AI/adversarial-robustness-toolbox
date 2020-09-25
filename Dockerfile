@@ -13,7 +13,13 @@ RUN pip3 install pandas==1.1.1
 RUN pip3 install jupyter==1.0.0 && pip3 install jupyterlab==2.1.0
 # https://stackoverflow.com/questions/49024624/how-to-dockerize-jupyter-lab
 
-RUN pip3 install lingvo==0.7.2
+# Lingvo ASR dependencies
+# supported versions: (lingvo==0.6.4 with tensorflow==2.1.0)
+# note: due to conflicts with other TF1/2 version supported by ART, the dependencies are not installed by default:
+# Replace line 1 with: FROM tensorflow/tensorflow:2.1.0
+# Comment other TF related lines and uncomment:
+# RUN pip3 install lingvo==0.6.4
+
 RUN pip3 install h5py==2.10.0
 RUN pip3 install tensorflow-addons==0.11.1
 RUN pip3 install mxnet==1.6.0

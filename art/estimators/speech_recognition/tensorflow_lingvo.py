@@ -60,8 +60,11 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
     Run `python -m site` to obtain a list of possible candidates where to find the `site-packages` folder.
     """
 
+    # Note: Support for the estimator is pinned to Lingvo version 0.6.4. Some additional source files that are not
+    # provided by pip package need to be downloaded. Those downloads are pinned to the following commit:
+    # https://github.com/tensorflow/lingvo/commit/9961306adf66f7340e27f109f096c9322d4f9636
     _LINGVO_CFG = {
-        "path": os.path.join(ART_DATA_PATH, "lingvo/"),
+        "path": os.path.join(ART_DATA_PATH, "lingvo"),
         "model_ckpt_data_uri": "http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001",
         "model_ckpt_index_uri": (
             "https://github.com/tensorflow/cleverhans/blob/"
@@ -69,11 +72,11 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         ),
         "params_uri": (
             "https://raw.githubusercontent.com/tensorflow/lingvo/"
-            "3c5ef88b8a9407124afe045a8e5048a9c5013acd/lingvo/tasks/asr/params/librispeech.py"
+            "9961306adf66f7340e27f109f096c9322d4f9636/lingvo/tasks/asr/params/librispeech.py"
         ),
         "vocab_uri": (
             "https://raw.githubusercontent.com/tensorflow/lingvo/"
-            "3c5ef88b8a9407124afe045a8e5048a9c5013acd/lingvo/tasks/asr/wpm_16k_librispeech.vocab"
+            "9961306adf66f7340e27f109f096c9322d4f9636/lingvo/tasks/asr/wpm_16k_librispeech.vocab"
         ),
     }
 
@@ -84,7 +87,7 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
-        device_type: str = "cpu",
+        random_seed: Optional[int] = None,
     ):
         """
         Initialization.
@@ -97,11 +100,12 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be subtracted from the input. The input will then
+            used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
-        :param device_type: Type of device to be used for model and tensors, if `cpu` run on CPU, if `gpu` run on GPU
-                            if available otherwise run on CPU.
+        :param random_seed: Specify a random seed.
         """
+        import pkg_resources
+
         import tensorflow.compat.v1 as tf1
 
         # Super initialization
@@ -112,15 +116,24 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
-        self.device_type = device_type
+        self.random_seed = random_seed
         if self.preprocessing is not None:
             raise ValueError("This estimator does not support `preprocessing`.")
         if self.preprocessing_defences is not None:
             raise ValueError("This estimator does not support `preprocessing_defences`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
-        if self.device_type != "cpu":
-            raise ValueError("This estimator does not yet support running on a GPU.")
+
+        # check required TensorFlow version
+        assert tf1.__version__ == "2.1.0", "The Lingvo estimator only supports TensorFlow 2.1.0."
+
+        # check required Python version
+        assert sys.version_info[:2] == (3, 6), "The Lingvo estimator only supports Python 3.6."
+
+        # check required Lingvo version
+        assert (
+            pkg_resources.get_distribution("lingvo").version == "0.6.4"
+        ), "The Lingvo estimator only supports Lingvo 0.6.4"
 
         # disable eager execution as Lingvo uses tensorflow.compat.v1 API
         tf1.disable_eager_execution()
@@ -206,6 +219,10 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         model_imports.ImportParams(model_name)
         params = model_registry._ModelRegistryHelper.GetParams(model_name, "Test")
 
+        # set random seed parameter
+        if self.random_seed is not None:
+            params.random_seed = self.random_seed
+
         # instantiate Lingvo ASR model
         cluster = cluster_factory.Cluster(params.cluster)
         with cluster, tf1.device(cluster.GetPlacer()):
@@ -217,6 +234,9 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         self._sess.run(tf1.global_variables_initializer())
         saver = tf1.train.Saver([var for var in tf1.global_variables() if var.name.startswith("librispeech")])
         saver.restore(self._sess, os.path.splitext(model_index_path)[0])
+
+        # set 'enable_asserts'-flag to False (Note: this flag ensures correct GPU support)
+        tf1.flags.FLAGS.enable_asserts = False
 
         return model, task
 
@@ -424,13 +444,19 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         """
         assert x.shape[0] == y.shape[0], "Number of samples in x and y differ."
 
+        # get frequency masks
+        _, _, mask_frequency = self._pad_audio_input(x)
+
+        # iterate over sequences
         gradients = list()
-        for x_i, y_i in zip(x, y):
-            _, _, mask_frequency = self._pad_audio_input(np.array([x_i]))
+        for x_i, y_i, mask_frequency_i in zip(x, y, mask_frequency):
+            # calculate frequency length for x_i
+            frequency_length = (len(x_i) // 2 + 1) // 240 * 3
+
             feed_dict = {
                 self._x_padded: np.expand_dims(x_i, 0),
                 self._y_target: np.array([y_i]),
-                self._mask_frequency: mask_frequency,
+                self._mask_frequency: np.expand_dims(mask_frequency_i[:frequency_length], 0),
             }
             # get loss gradient
             gradient = self._sess.run(self._loss_gradient_op, feed_dict)
