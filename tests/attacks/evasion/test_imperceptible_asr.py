@@ -19,14 +19,26 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import logging
 
+import numpy as np
 import pytest
+from numpy.testing import assert_array_equal
 
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleAsr
+from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleAsr, PsychoacousticMasker
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture
+def audio_sample():
+    """
+    Create audio sample.
+    """
+    sample_rate = 16000
+    test_input = np.ones((sample_rate)) * 10e3
+    return test_input
 
 
 @pytest.fixture
@@ -89,3 +101,73 @@ class TestImperceptibleAsr:
     # # TODO does only work with TF2 >= 2.2....
     # def test_classifier_type_check_fail(self):
     #    backend_test_classifier_type_check_fail(ImperceptibleAsr, [TensorFlowV2Estimator, SpeechRecognizerMixin])
+
+
+class TestPsychoacousticMasker:
+    """
+    Test the PsychoacousticMasker.
+    """
+
+    def test_power_spectral_density(self, audio_sample):
+        test_input = audio_sample
+
+        masker = PsychoacousticMasker()
+        psd_matrix, psd_max = masker.power_spectral_density(test_input)
+
+        assert psd_matrix.shape[0] == masker.window_size // 2 + 1
+        assert psd_matrix.shape[1] == psd_max.shape[0]
+
+    def test_find_maskers(self):
+        test_psd_vector = np.array([2, 10, 96, 90, 35, 40, 36, 60, 55, 91, 40])
+
+        masker = PsychoacousticMasker()
+        maskers, masker_idx = masker.find_maskers(test_psd_vector)
+
+        # test masker_idx shape and first, last maskers
+        assert masker_idx.tolist() == [2, 5, 7, 9]
+        assert_array_equal(
+            maskers[[0, -1]], 10 * np.log10(np.sum(10 ** np.array([[1.0, 9.6, 9.0], [5.5, 9.1, 4.0]]), axis=1))
+        )
+
+    def test_filter_maskers(self):
+        test_psd_vector = np.array([2, 10, 96, 90, 35, 40, 36, 60, 55, 91, 40])
+        test_masker_idx = np.array([2, 5, 7, 9])
+        test_maskers = test_psd_vector[test_masker_idx]
+
+        masker = PsychoacousticMasker()
+        maskers, masker_idx = masker.filter_maskers(test_maskers, test_masker_idx)
+
+        assert masker_idx.tolist() == [9]
+        assert maskers.tolist() == [91]
+
+    def test_calculate_individual_threshold(self, mocker):
+        test_masker_idx = np.array([2, 5, 7, 9])
+        test_maskers = np.array([96, 40, 60, 9])
+
+        masker = PsychoacousticMasker()
+        threshold = masker.calculate_individual_threshold(test_maskers, test_masker_idx)
+
+        assert threshold.shape == test_masker_idx.shape + (masker.window_size // 2 + 1,)
+
+    def test_calculate_global_threshold(self, mocker):
+        test_threshold = np.array([[0, 10, 20], [10, 0, 20]])
+
+        mocker.patch(
+            "art.attacks.evasion.imperceptible_asr.imperceptible_asr.PsychoacousticMasker.absolute_threshold_hearing",
+            new_callable=mocker.PropertyMock,
+            return_value=np.zeros(test_threshold.shape[1]),
+        )
+
+        masker = PsychoacousticMasker()
+        threshold = masker.calculate_global_threshold(test_threshold)
+
+        assert threshold.tolist() == (10 * np.log10([12, 12, 201])).tolist()
+
+    def test_calculate_threshold_and_psd_maximum(self, audio_sample):
+        test_input = audio_sample
+
+        masker = PsychoacousticMasker()
+        threshold, psd_max = masker.calculate_threshold_and_psd_maximum(test_input)
+
+        assert threshold.shape[1] == psd_max.shape[0]
+        assert threshold.shape[0] == masker.window_size // 2 + 1
