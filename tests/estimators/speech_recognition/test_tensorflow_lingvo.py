@@ -23,10 +23,12 @@ import numpy as np
 import pytest
 import tensorflow as tf
 from numpy.testing import assert_allclose, assert_array_equal
+from scipy.io.wavfile import read
 
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.speech_recognition.tensorflow_lingvo import LingvoAsr
 from art.estimators.tensorflow import TensorFlowV2Estimator
+from art.utils import get_file
 
 logger = logging.getLogger(__name__)
 
@@ -259,6 +261,94 @@ class TestLingvoAsr:
         assert [x.shape for x in test_input] == [g.shape for g in gradients]
         assert_allclose(np.abs(gradients[2]).sum(), np.abs(gradients[3]).sum(), rtol=1e-01)
         assert_array_equal(gradients_abs_sum > 0, [False, True, True, True])
+
+
+@pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+@pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+class TestLingvoAsrLibriSpeechSamples:
+    # specify LibriSpeech samples for download and with transcriptions
+    samples = {
+        "3575-170457-0013.wav": {
+            "uri": (
+                "https://github.com/tensorflow/cleverhans/blob/6ef939059172901db582c7702eb803b7171e3db5/"
+                "examples/adversarial_asr/LibriSpeech/test-clean/3575/170457/3575-170457-0013.wav?raw=true"
+            ),
+            "transcript": (
+                "the more she is engaged in her proper duties the last leisure will she have for it even as"
+                " an accomplishment and a recreation"
+            ),
+        },
+        "5105-28241-0006.wav": {
+            "uri": (
+                "https://github.com/tensorflow/cleverhans/blob/6ef939059172901db582c7702eb803b7171e3db5/"
+                "examples/adversarial_asr/LibriSpeech/test-clean/5105/28241/5105-28241-0006.wav?raw=true"
+            ),
+            "transcript": (
+                "the log and the compass therefore were able to be called upon to do the work of the sextant which"
+                " had become utterly useless"
+            ),
+        },
+        "2300-131720-0015.wav": {
+            "uri": (
+                "https://github.com/tensorflow/cleverhans/blob/6ef939059172901db582c7702eb803b7171e3db5/"
+                "examples/adversarial_asr/LibriSpeech/test-clean/2300/131720/2300-131720-0015.wav?raw=true"
+            ),
+            "transcript": (
+                "he obtained the desired speed and load with a friction brake also regulator of speed but waited for an"
+                " indicator to verify it"
+            ),
+        },
+    }
+
+    def test_predict(self):
+        import tensorflow.compat.v1 as tf1
+
+        tf1.reset_default_graph()
+
+        transcripts = list()
+        audios = list()
+        for filename, sample in self.samples.items():
+            file_path = get_file(filename, sample["uri"])
+            _, audio = read(file_path)
+            audios.append(audio)
+            transcripts.append(sample["transcript"])
+
+        audio_batch = np.array(audios)
+
+        lingvo = LingvoAsr(random_seed=314159)
+        prediction = lingvo.predict(audio_batch, batch_size=1)
+        assert prediction[0] == transcripts[0]
+
+    @pytest.mark.xfail(reason="Known issue that needs further investigation")
+    def test_loss_gradient(self):
+        import tensorflow.compat.v1 as tf1
+
+        tf1.reset_default_graph()
+
+        transcripts = list()
+        audios = list()
+        for filename, sample in self.samples.items():
+            file_path = get_file(filename, sample["uri"])
+            _, audio = read(file_path)
+            audios.append(audio)
+            transcripts.append(sample["transcript"])
+
+        audio_batch = np.array(audios)
+        target_batch = np.array(transcripts)
+
+        lingvo = LingvoAsr(random_seed=314159)
+        gradient_batch = lingvo._loss_gradient_per_batch(audio_batch, target_batch)
+        gradient_sequence = lingvo._loss_gradient_per_sequence(audio_batch, target_batch)
+
+        gradient_batch_sum = np.array([np.abs(gb).sum() for gb in gradient_batch])
+        gradient_sequence_sum = np.array([np.abs(gs).sum() for gs in gradient_sequence])
+
+        # test loss gradients per batch and per sequence are the same
+        assert_allclose(gradient_sequence_sum, gradient_batch_sum, rtol=1e-05)
+        # test gradient_batch, gradient_sequence and audios items have same shapes
+        assert (
+            [gb.shape for gb in gradient_batch] == [gs.shape for gs in gradient_sequence] == [a.shape for a in audios]
+        )
 
 
 if __name__ == "__main__":
