@@ -440,7 +440,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         self._model.train()
 
         if self._optimizer is None:
-            raise ValueError("An optimizer is needed to train the model, but none for provided.")
+            raise ValueError("An optimizer is required to train the model, but none was provided.")
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
