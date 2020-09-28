@@ -155,9 +155,14 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             from apex import amp
 
             if self._optimizer is None:
-                raise ValueError(
+                logger.warning(
                     "An optimizer is needed to use the automatic mixed precision tool, but none for provided. "
+                    "A default optimizer is used."
                 )
+
+                # Create the optimizers
+                parameters = self._model.parameters()
+                self._optimizer = torch.optim.SGD(parameters, lr=0.01)
 
             if self.device.type == "cpu":
                 enabled = False
