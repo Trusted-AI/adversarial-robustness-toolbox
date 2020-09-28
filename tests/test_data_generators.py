@@ -178,7 +178,7 @@ class TestPyTorchGenerator(unittest.TestCase):
         import torch
         from torch.utils.data import DataLoader
 
-        master_seed(seed=56561434)
+        master_seed(seed=42)
 
         class DummyDataset(torch.utils.data.Dataset):
             def __init__(self):
