@@ -600,7 +600,7 @@ class BFGSB(object):
         return xmin
 
 
-class Optimizer(object):  # pragma: no cover
+class Optimizer(object):
     """
     Base class for the trust-region optimization. If feasible, this optimizer solves the problem
 
@@ -1972,20 +1972,15 @@ class BrendelBethgeAttack(EvasionAttack):
 
                     i_z_i = tf.stack(i_z_i_list)
 
-                    # z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
-                    # z_3 = tf.gather(y_pred, i_y_pred_arg[:, -3], axis=1, batch_dims=0)
                     z_i = tf.gather(y_pred, i_z_i, axis=1, batch_dims=0)
                     z_y = tf.gather(y_pred, i_y_true, axis=1, batch_dims=0)
 
-                    # z_1 = tf.linalg.diag_part(z_1)
-                    # z_3 = tf.linalg.diag_part(z_3)
                     z_i = tf.linalg.diag_part(z_i)
                     z_y = tf.linalg.diag_part(z_y)
 
-                    # dlr = -(z_y - z_i) / (z_1 - z_3)
-                    dlr = z_y - z_i
+                    logits_diff = z_y - z_i
 
-                    return tf.reduce_mean(dlr)
+                    return tf.reduce_mean(logits_diff)
 
                 self._loss_fn = logits_difference
                 self._loss_object = logits_difference
@@ -2022,9 +2017,6 @@ class BrendelBethgeAttack(EvasionAttack):
 
                     y_true = y_true.float()
 
-                    # dlr = torch.mean((y_pred - y_true) ** 2)
-                    # return loss
-
                     i_y_true = torch.argmax(y_true, axis=1)
                     i_y_pred_arg = torch.argsort(y_pred, axis=1)
                     i_z_i_list = list()
@@ -2037,20 +2029,15 @@ class BrendelBethgeAttack(EvasionAttack):
 
                     i_z_i = torch.stack(i_z_i_list)
 
-                    # z_1 = y_pred[:, i_y_pred_arg[:, -1]]
-                    # z_3 = y_pred[:, i_y_pred_arg[:, -3]]
                     z_i = y_pred[:, i_z_i]
                     z_y = y_pred[:, i_y_true]
 
-                    # z_1 = torch.diagonal(z_1)
-                    # z_3 = torch.diagonal(z_3)
                     z_i = torch.diagonal(z_i)
                     z_y = torch.diagonal(z_y)
 
-                    # dlr = -(z_y - z_i) / (z_1 - z_3)
-                    dlr = z_y - z_i
+                    logits_diff = z_y - z_i
 
-                    return torch.mean(dlr.float())
+                    return torch.mean(logits_diff.float())
 
                 self._loss_fn = logits_difference
                 self._loss_object = logits_difference
@@ -2119,22 +2106,8 @@ class BrendelBethgeAttack(EvasionAttack):
             Adversarial inputs to use as a starting points, in particular
             for targeted attacks.
         """
-        # BB originals, restore_type = ep.astensor_(inputs)
         originals = x.copy()
-        # BB del inputs
 
-        # criterion_ = get_criterion(criterion)
-        # BB del criterion
-        # BB is_adversarial = get_is_adversarial(criterion_, model)
-
-        # BB if isinstance(criterion_, Misclassification):
-        #     targeted = False
-        #     classes = criterion_.labels
-        # elif isinstance(criterion_, TargetedMisclassification):
-        #     targeted = True
-        #     classes = criterion_.target_classes
-        # else:
-        # BB     raise ValueError("unsupported criterion")
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
@@ -2158,10 +2131,6 @@ class BrendelBethgeAttack(EvasionAttack):
             x_adv_init = [None] * len(x)
 
         classes = y
-        # if self.targeted:
-        #     is_adversarial = np.argmax(self.estimator.predict(x=x), axis=1) == np.argmax(y, axis=1)
-        # else:
-        #     is_adversarial = np.argmax(self.estimator.predict(x=x), axis=1) != np.argmax(y, axis=1)
 
         if starting_points is None:
 
@@ -2171,8 +2140,6 @@ class BrendelBethgeAttack(EvasionAttack):
             # Prediction from the original images
             preds = np.argmax(self.estimator.predict(x, batch_size=self.batch_size), axis=1)
             y_index = np.argmax(y, axis=1)
-
-            # BB starting_points = init_attack.run(model, originals, criterion_)
 
             for i_x in range(x.shape[0]):
                 initial_sample = self._init_sample(
@@ -2190,7 +2157,6 @@ class BrendelBethgeAttack(EvasionAttack):
                 else:
                     starting_points[i_x] = initial_sample[0]
 
-        # BB best_advs = ep.astensor(starting_points)
         best_advs = starting_points
         # assert is_adversarial(best_advs).all()
         if self.targeted:
@@ -2208,53 +2174,23 @@ class BrendelBethgeAttack(EvasionAttack):
         min_, max_ = bounds
 
         x0 = originals
-        # BB x0_np_flatten = x0.numpy().reshape((N, -1))
         x0_np_flatten = x0.reshape((N, -1))
         x1 = best_advs
 
-        # BB lower_bound = ep.zeros(x0, shape=(N,))
         lower_bound = np.zeros(shape=(N,))
-        # BB upper_bound = ep.ones(x0, shape=(N,))
         upper_bound = np.ones(shape=(N,))
 
         for _ in range(self.binary_search_steps):
             epsilons = (lower_bound + upper_bound) / 2
             mid_points = self.mid_points(x0, x1, epsilons, bounds)
-            # is_advs = is_adversarial(mid_points)
             if self.targeted:
-                is_advs = (np.argmax(self.estimator.predict(x=x), axis=1) == np.argmax(y, axis=1)).all()
+                is_advs = (np.argmax(self.estimator.predict(x=mid_points), axis=1) == np.argmax(y, axis=1)).all()
             else:
-                is_advs = (np.argmax(self.estimator.predict(x=x), axis=1) != np.argmax(y, axis=1)).all()
+                is_advs = (np.argmax(self.estimator.predict(x=mid_points), axis=1) != np.argmax(y, axis=1)).all()
             lower_bound = np.where(is_advs, lower_bound, epsilons)
             upper_bound = np.where(is_advs, epsilons, upper_bound)
 
         starting_points = self.mid_points(x0, x1, upper_bound, bounds)
-
-        # function to compute logits_diff and gradient
-        # def loss_fun(x):
-        #     # BB logits = model(x)
-        #     logits = self.estimator.predict(x=x)
-        #
-        #     exclude = classes
-        #     best_other_classes = logits - ep.onehot_like(logits, exclude, value=np.inf).argmax(axis=-1)
-        #
-        #     if self.targeted:
-        #         c_minimize = best_other_classes
-        #         c_maximize = classes
-        #     else:
-        #         c_minimize = classes
-        #         c_maximize = best_other_classes
-        #
-        #     logits_diffs = logits[rows, c_minimize] - logits[rows, c_maximize]
-        #     assert logits_diffs.shape == (N,)
-        #
-        #     return logits_diffs.sum(), logits_diffs
-        #
-        # value_and_grad = ep.value_and_grad_fn(x0, loss_fun, has_aux=True)
-        #
-        # def logits_diff_and_grads(x) -> Tuple[Any, Any]:
-        #     _, logits_diffs, boundary = value_and_grad(x)
-        #     return logits_diffs.numpy(), boundary.numpy().copy()
 
         x = starting_points.astype(ART_NUMPY_DTYPE)
         lrs = self.lr * np.ones(N)
@@ -2262,7 +2198,6 @@ class BrendelBethgeAttack(EvasionAttack):
         converged = np.zeros(N, dtype=np.bool)
         rate_normalization = np.prod(x.shape) * (max_ - min_)
         original_shape = x.shape
-        # _best_advs = best_advs.numpy()
         _best_advs = best_advs.copy()
 
         from tqdm.auto import trange
@@ -2273,7 +2208,6 @@ class BrendelBethgeAttack(EvasionAttack):
 
             # get logits and local boundary geometry
             # TODO: only perform forward pass on non-converged samples
-            # BB logits_diffs, _boundary = logits_diff_and_grads(x)
 
             logits = self.estimator.predict(x=x)
 
@@ -2282,7 +2216,6 @@ class BrendelBethgeAttack(EvasionAttack):
 
             logits_exclude[:, np.argmax(exclude, axis=1)] = -np.inf
 
-            # best_other_classes = logits - ep.onehot_like(logits, exclude, value=np.inf).argmax(axis=-1)
             best_other_classes = np.argmax(logits_exclude, axis=1)
 
             if self.targeted:
@@ -2306,21 +2239,16 @@ class BrendelBethgeAttack(EvasionAttack):
             closer = distances < source_norms
             closer = np.squeeze(closer)
             is_advs = logits_diffs < 0
-            # BB            closer = closer.logical_and(ep.from_numpy(x, is_advs))
             closer = np.logical_and(closer, is_advs)
 
-            # x_np_flatten = x.numpy().reshape((N, -1))
             x_np_flatten = x.reshape((N, -1))
 
             if closer.any():
-                # BB _best_advs = best_advs.numpy().copy()
                 _best_advs = best_advs.copy()
-                # BB _closer = closer.numpy().flatten()
                 _closer = closer.flatten()
                 for idx in np.arange(N)[_closer]:
                     _best_advs[idx] = x_np_flatten[idx].reshape(original_shape[1:])
 
-            # BB            best_advs = ep.from_numpy(x, _best_advs)
             best_advs = _best_advs.copy()
 
             # denoise estimate of boundary using a short history of the boundary
@@ -2342,8 +2270,7 @@ class BrendelBethgeAttack(EvasionAttack):
                 -logits_diffs < 0, -self.overshoot * logits_diffs, -(2 - self.overshoot) * logits_diffs,
             )
 
-            # employ solver to find optimal step within trust region
-            # for each sample
+            # employ solver to find optimal step within trust region for each sample
             deltas, k = [], 0
 
             for sample in range(N):
@@ -2365,25 +2292,14 @@ class BrendelBethgeAttack(EvasionAttack):
                     k += 1  # idx of masked sample
 
             deltas = np.stack(deltas)
-            # BB            deltas = ep.from_numpy(x, deltas.astype(np.float32))  # type: ignore
             deltas = deltas.astype(np.float32)
 
             # add step to current perturbation
-            # BB x = (x + ep.astensor(deltas)).reshape(original_shape)
             x = (x + deltas).reshape(original_shape)
 
-        # BB return restore_type(best_advs)
         return best_advs.astype(ART_NUMPY_DTYPE)
 
     def norms(self, x: np.ndarray) -> np.ndarray:
-        # BB if self.norm == 0:
-        #     norm = (flatten(x).abs() > 1e-4).sum(axis=-1)
-        # if self.norm == 1:
-        #     norm = flatten(x).norms.l1(axis=-1)
-        # if self.norm == 2:
-        #     norm = flatten(x).norms.l2(axis=-1)
-        # if self.norm in ["inf", np.inf]:
-        # BB     norm = flatten(x).norms.linf(axis=-1)
         order = self.norm if self.norm != "inf" else np.inf
         norm = np.linalg.norm(x=x.reshape(x.shape[0], -1), ord=order, axis=1)
         return norm
