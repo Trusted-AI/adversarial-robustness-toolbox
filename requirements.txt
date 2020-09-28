@@ -1,7 +1,7 @@
 # base
 numpy==1.19.2
 scipy==1.4.1
-matplotlib==3.3.1
+matplotlib==3.3.2
 scikit-learn==0.22.2
 six==1.15.0
 Pillow==7.2.0
@@ -11,7 +11,7 @@ pydub==0.24.1
 resampy==0.2.2
 ffmpeg-python==0.2.0
 cma==3.0.3
-pandas==1.1.1
+pandas==1.1.2
 
 # frameworks
 h5py==2.10.0
@@ -27,7 +27,7 @@ catboost==0.24.1
 GPy==1.9.9
 lightgbm==3.0.0
 xgboost==1.2.0
-kornia==0.3.1
+kornia==0.4.0
 
 # other
 pytest==5.4.1
