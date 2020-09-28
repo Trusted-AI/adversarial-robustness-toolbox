@@ -222,43 +222,43 @@ class TestPyTorchGenerator(unittest.TestCase):
         self.assertEqual(y.shape, (5,))
 
 
-# class TestMXGenerator(unittest.TestCase):
-#     def setUp(self):
-#         import mxnet as mx
-#
-#         master_seed(seed=42, set_mxnet=True)
-#
-#         x = mx.random.uniform(shape=(10, 1, 5, 5))
-#         y = mx.random.uniform(shape=10)
-#         dataset = mx.gluon.data.dataset.ArrayDataset(x, y)
-#
-#         data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
-#         self.data_gen = MXDataGenerator(data_loader, size=10, batch_size=5)
-#
-#     def test_gen_interface(self):
-#         x, y = self.data_gen.get_batch()
-#
-#         # Check return types
-#         self.assertTrue(isinstance(x, np.ndarray))
-#         self.assertTrue(isinstance(y, np.ndarray))
-#
-#         # Check shapes
-#         self.assertEqual(x.shape, (5, 1, 5, 5))
-#         self.assertEqual(y.shape, (5,))
-#
-#     def test_mxnet_specific(self):
-#         import mxnet as mx
-#
-#         iter_ = iter(self.data_gen.iterator)
-#         x, y = next(iter_)
-#
-#         # Check return types
-#         self.assertTrue(isinstance(x, mx.ndarray.NDArray))
-#         self.assertTrue(isinstance(y, mx.ndarray.NDArray))
-#
-#         # Check shapes
-#         self.assertEqual(x.shape, (5, 1, 5, 5))
-#         self.assertEqual(y.shape, (5,))
+class TestMXGenerator(unittest.TestCase):
+    def setUp(self):
+        import mxnet as mx
+
+        master_seed(seed=42, set_mxnet=True)
+
+        x = mx.random.uniform(shape=(10, 1, 5, 5))
+        y = mx.random.uniform(shape=10)
+        dataset = mx.gluon.data.dataset.ArrayDataset(x, y)
+
+        data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
+        self.data_gen = MXDataGenerator(data_loader, size=10, batch_size=5)
+
+    def test_gen_interface(self):
+        x, y = self.data_gen.get_batch()
+
+        # Check return types
+        self.assertTrue(isinstance(x, np.ndarray))
+        self.assertTrue(isinstance(y, np.ndarray))
+
+        # Check shapes
+        self.assertEqual(x.shape, (5, 1, 5, 5))
+        self.assertEqual(y.shape, (5,))
+
+    def test_mxnet_specific(self):
+        import mxnet as mx
+
+        iter_ = iter(self.data_gen.iterator)
+        x, y = next(iter_)
+
+        # Check return types
+        self.assertTrue(isinstance(x, mx.ndarray.NDArray))
+        self.assertTrue(isinstance(y, mx.ndarray.NDArray))
+
+        # Check shapes
+        self.assertEqual(x.shape, (5, 1, 5, 5))
+        self.assertEqual(y.shape, (5,))
 
 
 @unittest.skipIf(tf.__version__[0] == "2", reason="Skip unittests for TensorFlow v2.")
