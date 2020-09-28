@@ -2265,7 +2265,7 @@ class BrendelBethgeAttack(EvasionAttack):
         #     _, logits_diffs, boundary = value_and_grad(x)
         #     return logits_diffs.numpy(), boundary.numpy().copy()
 
-        x = starting_points
+        x = starting_points.astype(ART_NUMPY_DTYPE)
         lrs = self.lr * np.ones(N)
         lr_reduction_interval = max(1, int(self.steps / self.lr_num_decay))
         converged = np.zeros(N, dtype=np.bool)
