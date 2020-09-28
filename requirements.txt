@@ -14,12 +14,12 @@ cma==3.0.3
 pandas==1.1.2
 
 # frameworks
+mxnet==1.6.0
 h5py==2.10.0
 # supported versions: (tensorflow==2.2.0 with keras==2.3.1) or (tensorflow==1.15.3 with keras==2.2.5)
 tensorflow
 keras
 tensorflow-addons==0.11.2
-mxnet==1.6.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==1.5.0+cpu
 torchvision==0.7.0
