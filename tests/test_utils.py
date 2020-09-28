@@ -43,7 +43,6 @@ class TestUtils(unittest.TestCase):
     def setUp(self):
         master_seed(seed=1234)
 
-    @with_seed()
     def test_master_seed_mx(self):
         import mxnet as mx
 
