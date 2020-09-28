@@ -428,7 +428,7 @@ class BFGSB(object):
                 fval_star = val_star
                 fprime_star = valprime_star
                 fnev = k
-                ## INLINE END
+                # INLINE END
 
                 _ls_fc += fnev
                 break
@@ -533,7 +533,7 @@ class BFGSB(object):
                 fval_star = val_star
                 fprime_star = valprime_star
                 fnev = k
-                ## INLINE END
+                # INLINE END
 
                 _ls_fc += fnev
                 break
@@ -2274,7 +2274,9 @@ class BrendelBethgeAttack(EvasionAttack):
         # _best_advs = best_advs.numpy()
         _best_advs = best_advs.copy()
 
-        for step in range(1, self.steps + 1):
+        from tqdm.auto import trange
+
+        for step in trange(1, self.steps + 1):
             if converged.all():
                 break  # pragma: no cover
 
@@ -2311,6 +2313,7 @@ class BrendelBethgeAttack(EvasionAttack):
             source_norms = self.norms(originals - best_advs)
 
             closer = distances < source_norms
+            closer = np.squeeze(closer)
             is_advs = logits_diffs < 0
             # BB            closer = closer.logical_and(ep.from_numpy(x, is_advs))
             closer = np.logical_and(closer, is_advs)
