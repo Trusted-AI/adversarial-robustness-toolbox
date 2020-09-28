@@ -2175,15 +2175,6 @@ class BrendelBethgeAttack(EvasionAttack):
             # BB starting_points = init_attack.run(model, originals, criterion_)
 
             for i_x in range(x.shape[0]):
-                c = self._init_sample(
-                    x=x[i_x],
-                    y=y_index[i_x],
-                    y_p=preds[i_x],
-                    init_pred=init_preds[i_x],
-                    adv_init=x_adv_init[i_x],
-                    clip_min=clip_min,
-                    clip_max=clip_max,
-                )
                 initial_sample = self._init_sample(
                     x=x[i_x],
                     y=y_index[i_x],
@@ -2394,7 +2385,7 @@ class BrendelBethgeAttack(EvasionAttack):
         # if self.norm in ["inf", np.inf]:
         # BB     norm = flatten(x).norms.linf(axis=-1)
         order = self.norm if self.norm != "inf" else np.inf
-        norm = np.linalg.norm(x=x, ord=order, axis=(1, 2))
+        norm = np.linalg.norm(x=x.reshape(x.shape[0], -1), ord=order, axis=1)
         return norm
 
     def mid_points(
