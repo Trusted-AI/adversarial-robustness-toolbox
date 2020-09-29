@@ -19,7 +19,7 @@ h5py==2.10.0
 tensorflow
 keras
 tensorflow-addons==0.11.2
-git+https://github.com/apache/incubator-mxnet.git
+mxnet
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==1.5.0+cpu
 torchvision==0.7.0
