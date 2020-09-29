@@ -46,16 +46,14 @@ class TestUtils(unittest.TestCase):
     def test_master_seed_mx(self):
         import mxnet as mx
 
-        with mx.Context(mx.cpu(0)):
-            master_seed(seed=1234, set_mxnet=True)
+        master_seed(seed=1234, set_mxnet=True)
+        x = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
+        y = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
 
-            x = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
-            y = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
-
-            master_seed(seed=1234, set_mxnet=True)
-            z = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
-            self.assertFalse((x == y).any())
-            self.assertTrue((x == z).all())
+        master_seed(seed=1234, set_mxnet=True)
+        z = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
+        self.assertFalse((x == y).any())
+        self.assertTrue((x == z).all())
 
     def test_master_seed_pytorch(self):
         import torch
