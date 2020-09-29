@@ -43,7 +43,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -q -r requirements.txt
           pip list
-      - name: [debug] Run failing MXNet tests
+      - name: (debug) Run failing MXNet tests
         run: |
           python -m unittest tests/test_data_generators.py
           python -m unittest tests/test_utils.py
