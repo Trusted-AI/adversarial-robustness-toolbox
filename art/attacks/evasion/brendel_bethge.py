@@ -47,6 +47,7 @@ import logging
 from art.utils import get_labels_np_array, check_and_transform_label_format, ART_NUMPY_DTYPE, is_probability
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -1890,7 +1891,7 @@ class BrendelBethgeAttack(EvasionAttack):
         "binary_search_steps",
         "init_size",
     ]
-    _estimator_requirements = (BaseEstimator, LossGradientsMixin)
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
 
     """
     Base class for the Brendel & Bethge adversarial attack [#Bren19]_, a powerful gradient-based adversarial attack that
@@ -2164,18 +2165,17 @@ class BrendelBethgeAttack(EvasionAttack):
                     starting_points[i_x] = initial_sample[0]
 
         best_advs = starting_points
-        # assert is_adversarial(best_advs).all()
+
         if self.targeted:
-            assert (np.argmax(self.estimator.predict(x=x), axis=1) == np.argmax(y, axis=1)).all()
+            assert (np.argmax(self.estimator.predict(x=best_advs), axis=1) == np.argmax(y, axis=1)).all()
         else:
-            print("no assert")
-            # assert (np.argmax(self.estimator.predict(x=x), axis=1) != np.argmax(y, axis=1)).all()
+            assert (np.argmax(self.estimator.predict(x=best_advs), axis=1) != np.argmax(y, axis=1)).all()
 
         # perform binary search to find adversarial boundary
         # TODO: Implement more efficient search with breaking condition
         N = len(originals)
         rows = range(N)
-        # bounds = model.bounds
+
         bounds = self.estimator.clip_values
         min_, max_ = bounds
 
@@ -2328,8 +2328,8 @@ class BrendelBethgeAttack(EvasionAttack):
             epsilons = epsilons.reshape(epsilons.shape + (1,) * (x0.ndim - 1))
 
             threshold = (bounds[1] - bounds[0]) * (1 - epsilons)
-            mask = (x1 - x0).abs() > threshold
-            new_x = np.where(mask, x0 + (x1 - x0).sign() * ((x1 - x0).abs() - threshold), x0)
+            mask = np.abs(x1 - x0) > threshold
+            new_x = np.where(mask, x0 + np.sign(x1 - x0) * (np.abs(x1 - x0) - threshold), x0)
         if self.norm == 2:
             # get epsilons in right shape for broadcasting
             epsilons = epsilons.reshape(epsilons.shape + (1,) * (x0.ndim - 1))
@@ -2345,7 +2345,7 @@ class BrendelBethgeAttack(EvasionAttack):
             clipped_delta = np.where(clipped_delta > epsilons * s, epsilons * s, clipped_delta)
             new_x = x0 + clipped_delta
 
-        return new_x
+        return new_x.astype(ART_NUMPY_DTYPE)
 
     def _init_sample(
         self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
