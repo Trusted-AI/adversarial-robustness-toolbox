@@ -40,8 +40,6 @@ jobs:
           sed -i "s/^keras$/keras==${{ matrix.keras }}/" requirements.txt
       - name: MXNet install
         run: |
-          apt-get update
-          apt-get install -y git build-essential libopenblas-dev libopencv-dev python3-pip
           pip3 install -U pip
           wget https://mxnet-public.s3.us-east-2.amazonaws.com/install/jetson/1.6.0/mxnet_cu102-1.6.0-py2.py3-none-linux_aarch64.whl
           pip3 install mxnet_cu102-1.6.0-py2.py3-none-linux_aarch64.whl
