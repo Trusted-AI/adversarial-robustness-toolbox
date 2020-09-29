@@ -1897,7 +1897,7 @@ class BrendelBethgeAttack(EvasionAttack):
     follows the adversarial boundary (the boundary between the space of adversarial and non-adversarial images as
     defined by the adversarial criterion) to find the minimum distance to the clean image.
 
-    This is implementation of the Brendel & Bethge attack follows the reference implementation at 
+    This is implementation of the Brendel & Bethge attack follows the reference implementation at
     https://github.com/bethgelab/foolbox/blob/master/foolbox/attacks/brendel_bethge.py.
 
     Implementation differs from the attack used in the paper in two ways:
