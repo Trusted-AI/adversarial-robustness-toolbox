@@ -226,14 +226,15 @@ class TestMXGenerator(unittest.TestCase):
     def setUp(self):
         import mxnet as mx
 
-        master_seed(seed=42, set_mxnet=True)
+        with mx.Context(mx.cpu(0)):
+            master_seed(seed=42, set_mxnet=True)
 
-        x = mx.random.uniform(shape=(10, 1, 5, 5))
-        y = mx.random.uniform(shape=10)
-        dataset = mx.gluon.data.dataset.ArrayDataset(x, y)
+            x = mx.random.uniform(shape=(10, 1, 5, 5))
+            y = mx.random.uniform(shape=10)
+            dataset = mx.gluon.data.dataset.ArrayDataset(x, y)
 
-        data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
-        self.data_gen = MXDataGenerator(data_loader, size=10, batch_size=5)
+            data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
+            self.data_gen = MXDataGenerator(data_loader, size=10, batch_size=5)
 
     def test_gen_interface(self):
         x, y = self.data_gen.get_batch()
