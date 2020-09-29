@@ -1525,7 +1525,7 @@ def master_seed(seed=1234, set_random=True, set_numpy=True, set_tensorflow=False
             import mxnet as mx
 
             logger.info("Setting random seed for MXNet.")
-            mx.random.seed(seed, ctx=mx.cpu(0))
+            mx.random.seed(seed)
         except ImportError:
             logger.info("Could not set random seed for MXNet.")
 

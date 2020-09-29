@@ -22,7 +22,6 @@ import unittest
 
 import numpy as np
 import tensorflow as tf
-from mxnet import nd, cpu
 
 from art.utils import projection, random_sphere, to_categorical, least_likely_class, check_and_transform_label_format
 from art.utils import load_iris, load_mnist
@@ -45,12 +44,14 @@ class TestUtils(unittest.TestCase):
         master_seed(seed=1234)
 
     def test_master_seed_mx(self):
-        master_seed(seed=1234, set_mxnet=True)
-        x = nd.random.uniform(0, 1, shape=(10,), ctx=cpu(0)).asnumpy()
-        y = nd.random.uniform(0, 1, shape=(10,), ctx=cpu(0)).asnumpy()
+        import mxnet as mx
 
         master_seed(seed=1234, set_mxnet=True)
-        z = nd.random.uniform(0, 1, shape=(10,), ctx=cpu(0)).asnumpy()
+        x = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
+        y = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
+
+        master_seed(seed=1234, set_mxnet=True)
+        z = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
         self.assertFalse((x == y).any())
         self.assertTrue((x == z).all())
 
