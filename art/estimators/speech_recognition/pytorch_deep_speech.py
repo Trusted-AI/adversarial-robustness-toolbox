@@ -440,14 +440,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         self._model.train()
 
         if self._optimizer is None:
-            logger.warning(
-                "An optimizer is needed to use the automatic mixed precision tool, but none for provided. "
-                "A default optimizer is used."
-            )
-
-            # Create the optimizers
-            parameters = self._model.parameters()
-            self._optimizer = torch.optim.SGD(parameters, lr=0.01)
+            raise ValueError("An optimizer is required to train the model, but none was provided.")
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)

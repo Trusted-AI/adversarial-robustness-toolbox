@@ -1,6 +1,6 @@
-:mod:`art.defences.detector.poison`
-===================================
-.. automodule:: art.defences.detector.poison
+:mod:`art.defences.detector.poisoning`
+======================================
+.. automodule:: art.defences.detector.poisoning
 
 Base Class
 ----------

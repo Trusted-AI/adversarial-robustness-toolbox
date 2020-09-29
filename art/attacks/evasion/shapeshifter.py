@@ -25,7 +25,6 @@ from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
 from collections import Callable
 
 import numpy as np
-import tensorflow as tf
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
@@ -344,6 +343,8 @@ class ShapeShifter(EvasionAttack):
 
         :return: Adversarial image/texture.
         """
+        import tensorflow as tf
+
         # Initialize session
         self.estimator.sess.run(tf.global_variables_initializer())
         self.estimator.sess.run(tf.local_variables_initializer())
@@ -442,6 +443,8 @@ class ShapeShifter(EvasionAttack):
         :param rendering_function: A rendering function to use textures as input.
         :return: A tuple of tensors.
         """
+        import tensorflow as tf
+
         # Create a placeholder to pass input image/texture
         initial_input = tf.placeholder(dtype=tf.float32, shape=initial_shape, name="initial_input")
 
@@ -628,6 +631,8 @@ class ShapeShifter(EvasionAttack):
 
         :return: Attack optimizer.
         """
+        import tensorflow as tf
+
         # Create placeholder for learning rate
         learning_rate = tf.placeholder(dtype=tf.float32, shape=[], name="learning_rate")
 
@@ -664,6 +669,8 @@ class ShapeShifter(EvasionAttack):
         :param custom_loss: Custom loss function from users.
         :return: Attack loss tensor.
         """
+        import tensorflow as tf
+
         # Compute faster rcnn loss
         partial_faster_rcnn_loss = self._create_faster_rcnn_loss()
 
@@ -697,6 +704,8 @@ class ShapeShifter(EvasionAttack):
 
         :return: Attack partial loss tensor.
         """
+        import tensorflow as tf
+
         # Compute RPN classifier loss
         rpn_classifier_weight = tf.placeholder(dtype=tf.float32, shape=[], name="rpn_classifier_weight")
 
@@ -748,6 +757,8 @@ class ShapeShifter(EvasionAttack):
 
         :return: Attack partial loss tensor.
         """
+        import tensorflow as tf
+
         # Get default graph
         default_graph = tf.get_default_graph()
 
@@ -826,6 +837,8 @@ class ShapeShifter(EvasionAttack):
 
         :return: Attack partial loss tensor.
         """
+        import tensorflow as tf
+
         # Get default graph
         default_graph = tf.get_default_graph()
 
@@ -888,6 +901,8 @@ class ShapeShifter(EvasionAttack):
         :param current_value: Current image/texture.
         :return: Attack partial loss tensor.
         """
+        import tensorflow as tf
+
         # Create a placeholder for the similarity weight
         similarity_weight = tf.placeholder(dtype=tf.float32, shape=[], name="similarity_weight")
 
