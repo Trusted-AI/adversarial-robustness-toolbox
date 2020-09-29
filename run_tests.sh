@@ -12,6 +12,9 @@ if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
 pytest -q -s tests/attacks/evasion/test_shadow_attack.py --mlFramework="pytorch" --durations=0
 if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
+pytest -q -s tests/attacks/evasion/test_brendel_and_bethge.py --mlFramework="pytorch" --durations=0
+if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_brendel_and_bethge.py"; fi
+
 mlFrameworkList=("tensorflow" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   pytest -q tests/attacks/inference/ --mlFramework=$mlFramework --durations=0
