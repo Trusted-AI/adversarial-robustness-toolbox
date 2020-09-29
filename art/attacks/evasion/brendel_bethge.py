@@ -39,7 +39,7 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import Union, Optional, Tuple, Any, TYPE_CHECKING
+from typing import Union, Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 import logging
@@ -1906,6 +1906,9 @@ class BrendelBethgeAttack(EvasionAttack):
       greedy but is more robust, reliable and simpler (decay every K steps)
 
     Args:
+        estimator : A trained ART classifier providing loss gradients.
+        norm : The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
+        targeted : Flag determining if attack is targeted.
         overshoot : If 1 the attack tries to return exactly to the adversarial boundary
             in each iteration. For higher values the attack tries to overshoot
             over the boundary to ensure that the perturbed sample in each iteration
@@ -1924,6 +1927,8 @@ class BrendelBethgeAttack(EvasionAttack):
             average over a larger number of iterations.
         binary_search_steps : Number of binary search steps used to find the adversarial boundary
             between the starting point and the clean image.
+        batch_size : Batch size for evaluating the model for predictions and gradients.
+        init_size : Maximum number of random search steps to find initial adversarial example.
 
     References:
         .. [#Bren19] Wieland Brendel, Jonas Rauber, Matthias Kümmerer,
@@ -1946,6 +1951,7 @@ class BrendelBethgeAttack(EvasionAttack):
         momentum: float = 0.8,
         binary_search_steps: int = 10,
         init_size: int = 100,
+        batch_size: int = 32,
     ):
         from art.estimators.classification import TensorFlowV2Classifier, PyTorchClassifier
 
@@ -2070,7 +2076,7 @@ class BrendelBethgeAttack(EvasionAttack):
         self.momentum = momentum
         self.binary_search_steps = binary_search_steps
         self.init_size = init_size
-        self.batch_size = 2
+        self.batch_size = batch_size
         self._check_params()
 
         self._optimizer: Optimizer
@@ -2525,3 +2531,35 @@ class BrendelBethgeAttack(EvasionAttack):
             result = preds != target
 
         return result
+
+    def _check_params(self) -> None:
+
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError('The argument norm has to be either 1, 2, np.inf, or "inf".')
+
+        if not isinstance(self.targeted, bool):
+            raise ValueError("The argument `targeted` has to be of type `bool`.")
+
+        if not isinstance(self.overshoot, float) or self.overshoot < 1.0:
+            raise ValueError("The argument `overshoot` has to be of `float` and larger than 1.")
+
+        if not isinstance(self.steps, int) or self.steps < 1:
+            raise ValueError("The argument `steps` has to be of `int` and larger than 0.")
+
+        if not isinstance(self.lr, float) or self.lr <= 0.0:
+            raise ValueError("The argument `lr` has to be of `float` and larger than 0.0.")
+
+        if not isinstance(self.lr_decay, float) or self.lr_decay <= 0.0:
+            raise ValueError("The argument `lr_decay` has to be of `float` and larger than 0.0.")
+
+        if not isinstance(self.lr_num_decay, int) or self.lr_num_decay < 1:
+            raise ValueError("The argument `lr_num_decay` has to be of `int` and larger than 0.")
+
+        if not isinstance(self.momentum, float) or self.momentum <= 0.0:
+            raise ValueError("The argument `momentum` has to be of `float` and larger than 0.0.")
+
+        if not isinstance(self.binary_search_steps, int) or self.binary_search_steps < 1:
+            raise ValueError("The argument `binary_search_steps` has to be of `int` and larger than 0.")
+
+        if not isinstance(self.init_size, int) or self.init_size < 1:
+            raise ValueError("The argument `init_size` has to be of `int` and larger than 0.")
