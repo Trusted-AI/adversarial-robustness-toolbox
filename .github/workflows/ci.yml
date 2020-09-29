@@ -43,6 +43,9 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -q -r requirements.txt
           pip list
+      - name: (debug) Which cores are available?
+          run: |
+            lscpu | egrep 'Model name|Socket|Thread|NUMA|CPU\(s\)'
       - name: (debug) Run failing MXNet tests
         run: |
           echo master seed test
