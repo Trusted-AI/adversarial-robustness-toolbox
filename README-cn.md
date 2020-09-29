@@ -20,8 +20,8 @@
 开发人员和研究人员针对以下方面捍卫和评估机器学习模型和应用程序：
 逃避，中毒，提取和推断的对抗性威胁。 ART支持所有流行的机器学习框架
 （TensorFlow，Keras，PyTorch，MXNet，scikit-learn，XGBoost，LightGBM，CatBoost，GPy等），所有数据类型
-（图像，表格，音频，视频等）和机器学习任务（分类，对象检测，生成，
-认证等）。
+（图像，表格，音频，视频等）和机器学习任务（分类，物体检测，语音识别，
+生成，认证等）。
 
 <p align="center">
   <img src="docs/images/adversarial_threats_attacker.png?raw=true" width="400" title="ART logo">
