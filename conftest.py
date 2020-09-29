@@ -112,9 +112,9 @@ def image_dl_estimator_defended(framework):
 def image_dl_estimator_for_attack(image_dl_estimator, image_dl_estimator_defended):
     def _image_dl_estimator_for_attack(attack, defended=False, **kwargs):
         if defended:
-            classifier_list, _ = image_dl_estimator_defended(kwargs)
+            classifier_list, _ = image_dl_estimator_defended(**kwargs)
         else:
-            classifier_list, _ = image_dl_estimator()
+            classifier_list, _ = image_dl_estimator(**kwargs)
         if classifier_list is None:
             return None
 
@@ -521,14 +521,14 @@ def get_tabular_classifier_list(framework):
                 classifier, _ = get_tabular_classifier_tf()
                 classifier_list = [classifier]
             else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
+                logging.warning("{0} doesn't have an unclipped classifier defined yet".format(framework))
                 classifier_list = None
 
         if framework == "pytorch":
             if clipped:
                 classifier_list = [get_tabular_classifier_pt()]
             else:
-                logging.warning("{0} doesn't have an uncliped classifier defined yet".format(framework))
+                logging.warning("{0} doesn't have an unclipped classifier defined yet".format(framework))
                 classifier_list = None
 
         if framework == "scikitlearn":
