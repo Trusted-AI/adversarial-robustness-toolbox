@@ -49,9 +49,9 @@ jobs:
       - name: (debug) Run failing MXNet tests
         run: |
           echo master seed test
-          python -m unittest tests.test_utils.TestUtils.test_master_seed_mx
+          python -X faulthandler -m unittest tests.test_utils.TestUtils.test_master_seed_mx
           echo datagenerators test
-          python -m unittest tests.test_data_generators.TestMXGenerator
+          python -X faulthandler -m unittest tests.test_data_generators.TestMXGenerator
       - name: Run Tests
         run: ./run_tests.sh
   style:
