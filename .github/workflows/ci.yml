@@ -45,8 +45,10 @@ jobs:
           pip list
       - name: (debug) Run failing MXNet tests
         run: |
-          python -m unittest tests/test_data_generators.py
+          echo master seed test
           python -m unittest tests/test_utils.py
+          echo datagenerators test
+          python -m unittest tests/test_data_generators.py
       - name: Run Tests
         run: ./run_tests.sh
   style:
