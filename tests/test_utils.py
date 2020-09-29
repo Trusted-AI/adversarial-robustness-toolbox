@@ -47,11 +47,11 @@ class TestUtils(unittest.TestCase):
         import mxnet as mx
 
         master_seed(seed=1234, set_mxnet=True)
-        x = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
-        y = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
+        x = mx.nd.random.uniform(0, 1, shape=(10,), ctx=mx.cpu(0)).asnumpy()
+        y = mx.nd.random.uniform(0, 1, shape=(10,), ctx=mx.cpu(0)).asnumpy()
 
         master_seed(seed=1234, set_mxnet=True)
-        z = mx.nd.random.uniform(0, 1, shape=(10,)).asnumpy()
+        z = mx.nd.random.uniform(0, 1, shape=(10,), ctx=mx.cpu(0)).asnumpy()
         self.assertFalse((x == y).any())
         self.assertTrue((x == z).all())
 
