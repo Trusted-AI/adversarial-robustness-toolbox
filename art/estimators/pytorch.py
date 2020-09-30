@@ -125,11 +125,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         import torch
         from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
-        if (
-            not hasattr(self, "preprocessing_defences")
-            or self.preprocessing_defences is None
-            or len(self.preprocessing_defences) == 0
-        ):
+        if not self.preprocessing:
             return x, y
 
         if len(self.preprocessing_defences) == 1:

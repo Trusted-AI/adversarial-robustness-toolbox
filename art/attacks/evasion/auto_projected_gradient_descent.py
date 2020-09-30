@@ -173,7 +173,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 sess=estimator._sess,
                 channels_first=estimator.channels_first,
                 clip_values=estimator.clip_values,
-                preprocessing_defences=estimator.preprocessing_defences,
                 postprocessing_defences=estimator.postprocessing_defences,
                 preprocessing=estimator.preprocessing,
                 feed_dict=estimator._feed_dict,
@@ -242,7 +241,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 train_step=estimator._train_step,
                 channels_first=estimator.channels_first,
                 clip_values=estimator.clip_values,
-                preprocessing_defences=estimator.preprocessing_defences,
                 postprocessing_defences=estimator.postprocessing_defences,
                 preprocessing=estimator.preprocessing,
             )
@@ -330,7 +328,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 optimizer=None,
                 channels_first=estimator.channels_first,
                 clip_values=estimator.clip_values,
-                preprocessing_defences=estimator.preprocessing_defences,
                 postprocessing_defences=estimator.postprocessing_defences,
                 preprocessing=estimator.preprocessing,
                 device_type=estimator._device,
