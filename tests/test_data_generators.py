@@ -228,8 +228,8 @@ class TestMXGenerator(unittest.TestCase):
 
         master_seed(seed=42, set_mxnet=True)
 
-        x = mx.random.uniform(shape=(10, 1, 5, 5), ctx=mx.cpu(0))
-        y = mx.random.uniform(shape=10, ctx=mx.cpu(0))
+        x = mx.random.uniform(shape=(10, 1, 5, 5))
+        y = mx.random.uniform(shape=10)
         dataset = mx.gluon.data.dataset.ArrayDataset(x, y)
 
         data_loader = mx.gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
