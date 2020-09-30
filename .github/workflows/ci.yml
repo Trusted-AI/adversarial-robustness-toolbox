@@ -21,6 +21,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-16.04
+    fail-fast: false
     strategy:
       matrix:
         include:
