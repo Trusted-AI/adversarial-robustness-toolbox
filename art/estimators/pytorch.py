@@ -128,15 +128,15 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         if not self.preprocessing:
             return x, y
 
-        if len(self.preprocessing_defences) == 1:
+        if len(self.preprocessing) == 1:
             # Compatible with non-PyTorch defences if no chaining.
-            defence = self.preprocessing_defences[0]
+            defence = self.preprocessing[0]
             x, y = defence(x, y)
         else:
             # Check if all defences are implemented in PyTorch.
-            for defence in self.preprocessing_defences:
-                if not isinstance(defence, PreprocessorPyTorch):
-                    raise NotImplementedError(f"{defence.__class__} is not PyTorch-specific.")
+            for preprocess in self.preprocessing:
+                if not isinstance(preprocess, PreprocessorPyTorch):
+                    raise NotImplementedError(f"{preprocess.__class__} is not PyTorch-specific.")
 
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device)
@@ -144,13 +144,13 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                 y = torch.tensor(y, device=self._device)
 
             with torch.no_grad():
-                for defence in self.preprocessing_defences:
+                for preprocess in self.preprocessing:
                     if fit:
-                        if defence.apply_fit:
-                            x, y = defence.forward(x, y)
+                        if preprocess.apply_fit:
+                            x, y = preprocess.forward(x, y)
                     else:
-                        if defence.apply_predict:
-                            x, y = defence.forward(x, y)
+                        if preprocess.apply_predict:
+                            x, y = preprocess.forward(x, y)
 
             # Convert torch tensors back to np arrays.
             x = x.cpu().numpy()
@@ -159,13 +159,13 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         return x, y
 
-    def _apply_preprocessing_defences_gradient(self, x, gradients, fit=False):
+    def _apply_preprocessing_gradient(self, x, gradients, fit=False):
         """
         Apply the backward pass to the gradients through all preprocessing defences that have been applied to `x`
         and `y` in the forward pass. This function is should only be called from function
         `_apply_preprocessing_gradient`.
 
-        The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_defences_gradient().
+        The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_gradient().
         It requires all defenses to have a method estimate_forward().
         It converts numpy arrays to PyTorch tensors first, then chains a series of defenses by calling
         defence.estimate_forward() which contains differentiable estimate of the operations. At the end,
@@ -182,35 +182,31 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         import torch
         from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
-        if (
-            not hasattr(self, "preprocessing_defences")
-            or self.preprocessing_defences is None
-            or len(self.preprocessing_defences) == 0
-        ):
+        if not self.preprocessing:
             return gradients
 
-        if len(self.preprocessing_defences) == 1:
+        if len(self.preprocessing) == 1:
             # Compatible with non-PyTorch defences if no chaining.
-            defence = self.preprocessing_defences[0]
+            defence = self.preprocessing[0]
             gradients = defence.estimate_gradient(x, gradients)
         else:
             # Check if all defences are implemented in PyTorch.
-            for defence in self.preprocessing_defences:
-                if not isinstance(defence, PreprocessorPyTorch):
-                    raise NotImplementedError(f"{defence.__class__} is not PyTorch-specific.")
+            for preprocess in self.preprocessing:
+                if not isinstance(preprocess, PreprocessorPyTorch):
+                    raise NotImplementedError(f"{preprocess.__class__} is not PyTorch-specific.")
 
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device, requires_grad=True)
             gradients = torch.tensor(gradients, device=self._device)
             x_orig = x
 
-            for defence in self.preprocessing_defences:
+            for preprocess in self.preprocessing:
                 if fit:
-                    if defence.apply_fit:
-                        x = defence.estimate_forward(x)
+                    if preprocess.apply_fit:
+                        x = preprocess.estimate_forward(x)
                 else:
-                    if defence.apply_predict:
-                        x = defence.estimate_forward(x)
+                    if preprocess.apply_predict:
+                        x = preprocess.estimate_forward(x)
 
             x.backward(gradients)
 

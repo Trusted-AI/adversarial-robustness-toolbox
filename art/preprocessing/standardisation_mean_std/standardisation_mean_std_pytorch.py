@@ -40,7 +40,7 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
     params = ["mean", "std", "apply_fit", "apply_predict"]
 
     def __init__(
-        self, mean: float = 0.0, std: float = 1.0, apply_fit: bool = True, apply_predict: bool = True,
+        self, mean: float = 0.0, std: float = 1.0, apply_fit: bool = True, apply_predict: bool = True, device_type: str = "gpu",
     ):
         """
         Create an instance of StandardisationMeanStdPyTorch.
@@ -48,6 +48,8 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         :param mean: Mean.
         :param std: Standard Deviation.
         """
+        import torch  # lgtm [py/repeated-import]
+
         super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
@@ -55,6 +57,13 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         self.mean = mean
         self.std = std
         self._check_params()
+
+        # Set device
+        if device_type == "cpu" or not torch.cuda.is_available():
+            self._device = torch.device("cpu")
+        else:
+            cuda_idx = torch.cuda.current_device()
+            self._device = torch.device("cuda:{}".format(cuda_idx))
 
     @property
     def apply_fit(self) -> bool:
@@ -70,19 +79,20 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         """
         Apply local spatial smoothing to sample `x`.
         """
-        if x.dtype in [torch.uint8, torch.uint16, torch.uint32, torch.uint64]:
+        import torch  # lgtm [py/repeated-import]
+
+        if x.dtype in [torch.uint8]:
             raise TypeError(
                 "The data type of input data `x` is {} and cannot represent negative values. Consider "
                 "changing the data type of the input data `x` to a type that supports negative values e.g. "
                 "np.float32.".format(x.dtype)
             )
 
-        mean = np.asarray(self.mean, dtype=ART_NUMPY_DTYPE)
-        std = np.asarray(self.std, dtype=ART_NUMPY_DTYPE)
+        mean = torch.from_numpy(np.asarray(self.mean, dtype=ART_NUMPY_DTYPE))
+        std = torch.from_numpy(np.asarray(self.std, dtype=ART_NUMPY_DTYPE))
 
         x_norm = x - mean
         x_norm = x_norm / std
-        x_norm = x_norm.astype(ART_NUMPY_DTYPE)
 
         return x_norm, y
 

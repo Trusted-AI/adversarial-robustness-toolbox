@@ -204,13 +204,13 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         return x, y
 
-    def _apply_preprocessing_defences_gradient(self, x, gradients, fit=False):
+    def _apply_preprocessing_gradient(self, x, gradients, fit=False):
         """
         Apply the backward pass to the gradients through all preprocessing defences that have been applied to `x`
         and `y` in the forward pass. This function is should only be called from function
         `_apply_preprocessing_gradient`.
 
-        The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_defences_gradient().
+        The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_gradient().
         It requires all defenses to have a method estimate_forward().
         It converts numpy arrays to TensorFlow tensors first, then chains a series of defenses by calling
         defence.estimate_forward() which contains differentiable estimate of the operations. At the end,
