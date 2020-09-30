@@ -34,10 +34,6 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
-      - name: Sleep for 20 minutes
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '1200s'
       - name: Setup Python
         uses: actions/setup-python@v2
         with:

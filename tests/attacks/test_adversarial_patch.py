@@ -76,11 +76,11 @@ class TestAdversarialPatch(TestBase):
         if tf.__version__[0] == "2":
             self.assertAlmostEqual(patch_adv[8, 8, 0], 0.67151666, delta=0.05)
             self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), -424.31439208984375, delta=1.0)
         else:
             self.assertAlmostEqual(patch_adv[8, 8, 0], 0.67151666, delta=0.05)
             self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
-            self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
+            self.assertAlmostEqual(float(np.sum(patch_adv)), -424.31439208984375, delta=1.0)
 
         if sess is not None:
             sess.close()
