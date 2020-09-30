@@ -11,7 +11,8 @@ on:
   # Run when pushing to master
   push:
     branches:
-      - master
+      - main
+      - dev_1.5.0
 
   # Run scheduled CI flow daily
   schedule:
