@@ -21,7 +21,6 @@ on:
 jobs:
   test:
     runs-on: ubuntu-16.04
-    timeout-minutes: 120
     strategy:
       matrix:
         include:
