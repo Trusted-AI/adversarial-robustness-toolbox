@@ -8,7 +8,7 @@ on:
     paths-ignore:
       - '*.md'
 
-  # Run when pushing to master
+  # Run when pushing to main or dev branches
   push:
     branches:
       - main
