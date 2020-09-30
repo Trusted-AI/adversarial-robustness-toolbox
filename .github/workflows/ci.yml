@@ -21,8 +21,8 @@ on:
 jobs:
   test:
     runs-on: ubuntu-16.04
-    fail-fast: false
     strategy:
+      fail-fast: false
       matrix:
         include:
           - python: 3.6
