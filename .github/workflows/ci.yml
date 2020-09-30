@@ -8,7 +8,12 @@ on:
     paths-ignore:
       - '*.md'
 
-  # Run CI flow daily
+  # Run when pushing to master
+  push:
+    branches:
+      - master
+
+  # Run scheduled CI flow daily
   schedule:
     - cron: '0 8 * * *'
 
@@ -43,15 +48,6 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -q -r requirements.txt
           pip list
-      - name: (debug) Which cores are available?
-        run: |
-          lscpu | egrep 'Model name|Socket|Thread|NUMA|CPU\(s\)'
-      - name: (debug) Run failing MXNet tests
-        run: |
-          echo master seed test
-          python -X faulthandler -m unittest tests.test_utils.TestUtils.test_master_seed_mx
-          echo datagenerators test
-          python -X faulthandler -m unittest tests.test_data_generators.TestMXGenerator
       - name: Run Tests
         run: ./run_tests.sh
   style:
