@@ -148,12 +148,12 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         raise NotImplementedError
 
-    def _apply_preprocessing_defences(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
+    def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
         only be called from function `_apply_preprocessing`.
 
-        The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing_defences().
+        The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing().
         It requires all defenses to have a method `forward()`.
         It converts numpy arrays to TensorFlow tensors first, then chains a series of defenses by calling
         defence.forward() which contains TensorFlow operations. At the end, it converts TensorFlow tensors
@@ -171,35 +171,31 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
-        if (
-            not hasattr(self, "preprocessing_defences")
-            or self.preprocessing_defences is None
-            or len(self.preprocessing_defences) == 0
-        ):
+        if not self.preprocessing:
             return x, y
 
-        if len(self.preprocessing_defences) == 1:
+        if len(self.preprocessing) == 1:
             # Compatible with non-TensorFlow defences if no chaining.
-            defence = self.preprocessing_defences[0]
-            x, y = defence(x, y)
+            preprocess = self.preprocessing[0]
+            x, y = preprocess(x, y)
         else:
             # Check if all defences are implemented in TensorFlow.
-            for defence in self.preprocessing_defences:
-                if not isinstance(defence, PreprocessorTensorFlowV2):
-                    raise NotImplementedError(f"{defence.__class__} is not TensorFlow-specific.")
+            for preprocess in self.preprocessing:
+                if not isinstance(preprocess, PreprocessorTensorFlowV2):
+                    raise NotImplementedError(f"{preprocess.__class__} is not TensorFlow-specific.")
 
             # Convert np arrays to torch tensors.
             x = tf.convert_to_tensor(x)
             if y is not None:
                 y = tf.convert_to_tensor(y)
 
-            for defence in self.preprocessing_defences:
+            for preprocess in self.preprocessing:
                 if fit:
-                    if defence.apply_fit:
-                        x, y = defence.forward(x, y)
+                    if preprocess.apply_fit:
+                        x, y = preprocess.forward(x, y)
                 else:
-                    if defence.apply_predict:
-                        x, y = defence.forward(x, y)
+                    if preprocess.apply_predict:
+                        x, y = preprocess.forward(x, y)
 
             # Convert torch tensors back to np arrays.
             x = x.numpy()

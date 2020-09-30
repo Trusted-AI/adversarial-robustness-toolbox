@@ -102,12 +102,12 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         raise NotImplementedError
 
-    def _apply_preprocessing_defences(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
+    def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
         only be called from function `_apply_preprocessing`.
 
-        The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing_defences().
+        The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing().
         It requires all defenses to have a method `forward()`.
         It converts numpy arrays to PyTorch tensors first, then chains a series of defenses by calling
         defence.forward() which contains PyTorch operations. At the end, it converts PyTorch tensors

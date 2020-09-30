@@ -25,6 +25,8 @@ from typing import List, Optional, Tuple, Any, TYPE_CHECKING
 
 import numpy as np
 
+from art.utils import ART_NUMPY_DTYPE
+
 if TYPE_CHECKING:
     import torch
     import tensorflow as tf
@@ -162,6 +164,42 @@ class PreprocessorPyTorch(Preprocessor):
         """
         raise NotImplementedError
 
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+        """
+        Apply local spatial smoothing to sample `x`.
+
+        :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
+        :return: Smoothed sample.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        x = torch.tensor(x, device=self._device)
+        if y is not None:
+            y = torch.tensor(y, device=self._device)
+
+        with torch.no_grad():
+            x, y = self.forward(x, y)
+
+        result = x.cpu().numpy()
+        if y is not None:
+            y = y.cpu().numpy()
+        return result, y
+
+    # Backward compatibility.
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        import torch  # lgtm [py/repeated-import]
+
+        x = torch.tensor(x, device=self._device, requires_grad=True)
+        grad = torch.tensor(grad, device=self._device)
+
+        x_prime = self.estimate_forward(x)
+        x_prime.backward(grad)
+        x_grad = x.grad.detach().cpu().numpy()
+        if x_grad.shape != x.shape:
+            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+        return x_grad
+
 
 class PreprocessorTensorFlowV2(Preprocessor):
     """
@@ -193,3 +231,42 @@ class PreprocessorTensorFlowV2(Preprocessor):
         :return: Preprocessed data.
         """
         raise NotImplementedError
+
+    def __call__(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
+        """
+        Apply local spatial smoothing to sample `x`.
+
+        :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
+        :return: Smoothed sample.
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        x = tf.convert_to_tensor(x)
+        if y is not None:
+            y = tf.convert_to_tensor(y)
+
+        x, y = self.forward(x, y)
+
+        result = x.numpy()
+        if y is not None:
+            y = y.numpy()
+        return result, y
+
+    # Backward compatibility.
+    def estimate_gradient(self, x: "tf.Tensor", grad: "tf.Tensor") -> "tf.Tensor":
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        with tf.GradientTape() as tape:
+            x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
+            tape.watch(x)
+            grad = tf.convert_to_tensor(grad, dtype=ART_NUMPY_DTYPE)
+
+            x_prime = self.estimate_forward(x)
+
+        x_grad = tape.gradient(target=x_prime, sources=x, output_gradients=grad)
+
+        x_grad = x_grad.numpy()
+        if x_grad.shape != x.shape:
+            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+        return x_grad

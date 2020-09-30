@@ -307,13 +307,12 @@ class DetectorClassifier(ClassifierNeuralNetwork):
 
     def __repr__(self):
         repr_ = (
-            "%s(classifier=%r, detector=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
+            "%s(classifier=%r, detector=%r, postprocessing_defences=%r, "
             "preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self.classifier,
                 self.detector,
-                self.preprocessing_defences,
                 self.postprocessing_defences,
                 self.preprocessing,
             )
