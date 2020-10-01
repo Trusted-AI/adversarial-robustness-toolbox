@@ -183,6 +183,19 @@ class TestPyTorchDeepSpeech:
         expected_transcriptions = np.array(["", "", ""])
         assert (expected_transcriptions == transcriptions).all()
 
+        # Test transcription outputs, corner case
+        if request.param is True:
+            transcriptions = self.speech_recognizer_amp.predict(
+                np.array([self.x[0]]), batch_size=2, transcription_output=True
+            )
+        else:
+            transcriptions = self.speech_recognizer.predict(
+                np.array([self.x[0]]), batch_size=2, transcription_output=True
+            )
+
+        expected_transcriptions = np.array([""])
+        assert (expected_transcriptions == transcriptions).all()
+
         # Now test loss gradients
         # Create labels
         y = np.array(["SIX", "HI", "GOOD"])
