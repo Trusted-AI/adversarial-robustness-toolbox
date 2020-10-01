@@ -38,9 +38,9 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 
 from art.config import ART_DATA_PATH
 from art.data_generators import DataGenerator
-from art.defences.detector.poisoning.clustering_analyzer import ClusteringAnalyzer
-from art.defences.detector.poisoning.ground_truth_evaluator import GroundTruthEvaluator
-from art.defences.detector.poisoning.poison_filtering_defence import PoisonFilteringDefence
+from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
+from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 

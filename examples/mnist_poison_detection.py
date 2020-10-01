@@ -13,7 +13,7 @@ import numpy as np
 from art.attacks.poisoning.perturbations.image_perturbations import add_pattern_bd, add_single_bd
 from art.estimators.classification import KerasClassifier
 from art.utils import load_mnist, preprocess
-from art.defences.detector.poisoning import ActivationDefence
+from art.defences.detector.poison import ActivationDefence
 
 
 def main():
