@@ -40,7 +40,12 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
     params = ["mean", "std", "apply_fit", "apply_predict"]
 
     def __init__(
-        self, mean: float = 0.0, std: float = 1.0, apply_fit: bool = True, apply_predict: bool = True, device_type: str = "gpu",
+        self,
+        mean: float = 0.0,
+        std: float = 1.0,
+        apply_fit: bool = True,
+        apply_predict: bool = True,
+        device_type: str = "gpu",
     ):
         """
         Create an instance of StandardisationMeanStdPyTorch.
