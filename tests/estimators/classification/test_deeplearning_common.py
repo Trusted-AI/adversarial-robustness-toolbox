@@ -381,7 +381,11 @@ def test_repr(art_warning, image_dl_estimator, framework, expected_values, store
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
         repr_ = repr(classifier)
+        print(repr_)
+        print("expected_values()")
+        print(expected_values())
         for message in expected_values():
+            print("message", message)
             assert message in repr_, "{0}: was not contained within repr".format(message)
 
     except ARTTestException as e:

@@ -392,7 +392,7 @@
         "train_step=<function get_image_classifier_tf_v2.<locals>.train_step",
         "channels_first=False, ",
         "clip_values=array([0., 1.], dtype=float32), ",
-        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))"
+        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=[<art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow.StandardisationMeanStdTensorFlowV2"
     ],
     "test_repr_tensorflow1": [
         "TensorFlowClassifier",
@@ -406,7 +406,7 @@
         "channels_first=False",
         "clip_values=array([0., 1.], dtype=float32)",
         "preprocessing_defences=None, postprocessing_defences=None",
-        "preprocessing=(0, 1))"
+        "preprocessing=[<art.preprocessing.standardisation_mean_std.standardisation_mean_std.StandardisationMeanStd"
     ],
     "test_repr_pytorch": [
         "art.estimators.classification.pytorch.PyTorchClassifier",
@@ -416,7 +416,7 @@
         "loss=CrossEntropyLoss(), optimizer=Adam",
         "input_shape=(1, 28, 28), nb_classes=10, channel_index",
         "clip_values=array([0., 1.], dtype=float32",
-        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1)"
+        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=[<art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch.StandardisationMeanStdPyTorch"
     ],
     "test_repr_keras": [
         "art.estimators.classification.keras.KerasClassifier",
@@ -424,7 +424,7 @@
         "channels_first=False",
         "clip_values=array([0., 1.], dtype=float32)",
         "preprocessing_defences=None",
-        "preprocessing=(0, 1)",
+        "preprocessing=[<art.preprocessing.standardisation_mean_std.standardisation_mean_std.StandardisationMeanStd",
         "input_layer=0, output_layer=0"
     ],
     "test_repr_kerastf": [
@@ -433,14 +433,14 @@
         "channels_first=False",
         "clip_values=array([0., 1.], dtype=float32)",
         "preprocessing_defences=None",
-        "preprocessing=(0, 1)",
+        "preprocessing=[<art.preprocessing.standardisation_mean_std.standardisation_mean_std.StandardisationMeanStd",
         "input_layer=0, output_layer=0"
     ],
     "test_repr_mxnet": [
         "art.estimators.classification.mxnet.MXClassifier",
         "input_shape=(1, 28, 28), nb_classes=10",
         "channels_first=True, clip_values=array([0., 1.], dtype=float32)",
-        "defences=None, preprocessing=(0, 1)"
+        "defences=None, preprocessing=[<art.preprocessing.standardisation_mean_std.standardisation_mean_std.StandardisationMeanStd"
     ],
     "test_predict_mxnet": [
         [

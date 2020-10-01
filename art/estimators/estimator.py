@@ -81,13 +81,13 @@ class BaseEstimator(ABC):
         self.preprocessing: List["Preprocessor"] = []
 
         if preprocessing_defences is None:
-            self.preprocessing_defences = False
+            pass
         elif isinstance(preprocessing_defences, Preprocessor):
             self.preprocessing.append(preprocessing_defences)
-            self.preprocessing_defences = True
         else:
             self.preprocessing += preprocessing_defences
-            self.preprocessing_defences = True
+
+        self.preprocessing_defences = preprocessing_defences
 
         if preprocessing is None:
             pass

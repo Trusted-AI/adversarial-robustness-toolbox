@@ -227,22 +227,18 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
-        if (
-            not hasattr(self, "preprocessing_defences")
-            or self.preprocessing_defences is None
-            or len(self.preprocessing_defences) == 0
-        ):
+        if not self.preprocessing:
             return gradients
 
-        if len(self.preprocessing_defences) == 1:
+        if len(self.preprocessing) == 1:
             # Compatible with non-TensorFlow defences if no chaining.
-            defence = self.preprocessing_defences[0]
+            defence = self.preprocessing[0]
             gradients = defence.estimate_gradient(x, gradients)
         else:
             # Check if all defences are implemented in TensorFlow.
-            for defence in self.preprocessing_defences:
-                if not isinstance(defence, PreprocessorTensorFlowV2):
-                    raise NotImplementedError(f"{defence.__class__} is not TensorFlowV2-specific.")
+            for preprocess in self.preprocessing:
+                if not isinstance(preprocess, PreprocessorTensorFlowV2):
+                    raise NotImplementedError(f"{preprocess.__class__} is not TensorFlowV2-specific.")
 
             with tf.GradientTape() as tape:
                 # Convert np arrays to TensorFlow tensors.
@@ -251,13 +247,13 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 gradients = tf.convert_to_tensor(gradients, dtype=ART_NUMPY_DTYPE)
                 x_orig = x
 
-                for defence in self.preprocessing_defences:
+                for preprocess in self.preprocessing:
                     if fit:
-                        if defence.apply_fit:
-                            x = defence.estimate_forward(x)
+                        if preprocess.apply_fit:
+                            x = preprocess.estimate_forward(x)
                     else:
-                        if defence.apply_predict:
-                            x = defence.estimate_forward(x)
+                        if preprocess.apply_predict:
+                            x = preprocess.estimate_forward(x)
 
             x_grad = tape.gradient(target=x, sources=x_orig, output_gradients=gradients)
 

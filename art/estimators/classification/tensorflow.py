@@ -832,11 +832,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             )
 
         # Train directly in TensorFlow
-        if (
-            isinstance(generator, TensorFlowV2DataGenerator)
-            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
-            and self.preprocessing == (0, 1)
-        ):
+        if isinstance(generator, TensorFlowV2DataGenerator) and not self.preprocessing:
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
                     if self._reduce_labels:
