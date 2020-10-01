@@ -94,7 +94,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
                           values are `O0`, `O1`, `O2`, and `O3`.
         :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1.0 due to warp-ctc not supporting
-                           scaling of gradients.
+                           scaling of gradients. If passed as a string, must be a string representing a number,
+                           e.g., “1.0”, or the string “dynamic”.
         :param decoder_type: Decoder type. Either `greedy` or `beam`. This parameter is only used when users want
                              transcription outputs.
         :param lm_path: Path to an (optional) kenlm language model for use with beam search. This parameter is only
