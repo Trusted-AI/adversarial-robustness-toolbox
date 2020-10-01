@@ -4,6 +4,7 @@ from os import listdir, path
 import pickle
 import tempfile
 import warnings
+import importlib
 
 import keras
 import numpy as np
@@ -495,3 +496,94 @@ def test_learning_phase(image_dl_estimator):
             assert hasattr(classifier, "_learning_phase")
     except NotImplementedError as e:
         warnings.warn(UserWarning(e))
+
+
+# Note, the following part is for testing the amp tool on pytorch platform only.
+apex_spec = importlib.util.find_spec("apex")
+if apex_spec is not None:
+    amp_spec = importlib.util.find_spec("apex.amp")
+else:
+    amp_spec = None
+amp_found = amp_spec is not None
+
+
+@pytest.mark.skipif(not amp_found, reason="Skip unittests if apex module is not found.")
+@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.parametrize("device_type", ["cpu", "gpu"])
+def test_loss_gradient_amp(
+    get_default_mnist_subset,
+    image_dl_estimator,
+    expected_values_amp,
+    mnist_shape,
+    device_type,
+):
+    import torch
+    import torch.nn as nn
+
+    from art.estimators.classification.pytorch import PyTorchClassifier
+
+    (expected_gradients_1, expected_gradients_2) = expected_values_amp()
+
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
+    optimizer = torch.optim.Adam(classifier.model.parameters(), lr=0.01)
+
+    # Redefine the classifier with amp
+    clip_values = (0, 1)
+    criterion = nn.CrossEntropyLoss()
+    classifier = PyTorchClassifier(
+        clip_values=clip_values,
+        model=classifier.model,
+        preprocessing_defences=[],
+        loss=criterion,
+        input_shape=(1, 28, 28),
+        nb_classes=10,
+        device_type=device_type,
+        optimizer=optimizer,
+        use_amp=True,
+        loss_scale=1.0,
+    )
+
+    # Compute loss gradients
+    gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
+
+    # Test shape
+    assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
+
+    # First test of gradients
+    sub_gradients = gradients[0, 0, :, 14]
+
+    np.testing.assert_array_almost_equal(
+        sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
+    )
+
+    # Second test of gradients
+    sub_gradients = gradients[0, 0, 14, :]
+
+    np.testing.assert_array_almost_equal(
+        sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
+    )
+
+    # Compute loss gradients with framework
+    gradients = classifier.loss_gradient_framework(
+        torch.tensor(x_test_mnist).to(classifier.device), torch.tensor(y_test_mnist).to(classifier.device)
+    )
+    gradients = gradients.cpu().numpy()
+
+    # Test shape
+    assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
+
+    # First test of gradients
+    sub_gradients = gradients[0, 0, :, 14]
+
+    np.testing.assert_array_almost_equal(
+        sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
+    )
+
+    # Second test of gradients
+    sub_gradients = gradients[0, 0, 14, :]
+
+    np.testing.assert_array_almost_equal(
+        sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
+    )
