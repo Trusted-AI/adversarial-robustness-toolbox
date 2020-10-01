@@ -88,7 +88,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                         only triggered if there are GPUs available.
         :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
                           values are `O0`, `O1`, `O2`, and `O3`.
-        :param loss_scale: Loss scaling. Used when use_amp is True.
+        :param loss_scale: Loss scaling. Used when use_amp is True. If passed as a string, must be a string
+                           representing a number, e.g., “1.0”, or the string “dynamic”.
         :param nb_classes: The number of classes of the model.
         :param optimizer: The optimizer used to train the classifier.
         :param channel_index: Index of the axis in data containing the color channels or features.
