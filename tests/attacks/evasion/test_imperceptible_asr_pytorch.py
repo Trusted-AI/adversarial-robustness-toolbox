@@ -210,7 +210,3 @@ class TestImperceptibleASRPytorch:
 
         # adv_transcriptions = speech_recognizer.predict(x_adv, batch_size=2, transcription_output=True)
         # assert (adv_transcriptions == self.y).all()
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
