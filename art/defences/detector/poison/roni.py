@@ -30,8 +30,8 @@ from typing import Callable, List, Tuple, Union, TYPE_CHECKING
 import numpy as np
 from sklearn.model_selection import train_test_split
 
-from art.defences.detector.poisoning.ground_truth_evaluator import GroundTruthEvaluator
-from art.defences.detector.poisoning.poison_filtering_defence import PoisonFilteringDefence
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
+from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.utils import performance_diff
 
 if TYPE_CHECKING:

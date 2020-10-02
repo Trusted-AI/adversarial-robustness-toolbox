@@ -25,7 +25,7 @@ specifically for Pytorch.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Tuple, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 import scipy
@@ -105,7 +105,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         batch_size: int = 32,
         use_amp: bool = False,
         opt_level: str = "O1",
-        loss_scale: int = 1,
+        loss_scale: Optional[Union[float, str]] = 1.0,
     ):
         """
         Create a :class:`.ImperceptibleASRPytorch` instance.
@@ -144,9 +144,11 @@ class ImperceptibleASRPytorch(EvasionAttack):
                         only triggered if there are GPUs available.
         :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
                           values are `O0`, `O1`, `O2`, and `O3`.
-        :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1 due to warp-ctc not supporting
-                           scaling of gradients.
+        :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1.0 due to warp-ctc not supporting
+                           scaling of gradients. If passed as a string, must be a string representing a number,
+                           e.g., “1.0”, or the string “dynamic”.
         """
+        import torch  # lgtm [py/repeated-import]
         from torch.autograd import Variable
 
         if (
@@ -237,6 +239,8 @@ class ImperceptibleASRPytorch(EvasionAttack):
                   class only supports targeted attack.
         :return: An array holding the adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # Start to compute adversarial examples
         adv_x = x.copy()
 
@@ -276,6 +280,8 @@ class ImperceptibleASRPytorch(EvasionAttack):
                   class only supports targeted attack.
         :return: A batch of adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # First stage of attack
         successful_adv_input_1st_stage, original_input = self._attack_1st_stage(x=x, y=y)
         successful_perturbation_1st_stage = successful_adv_input_1st_stage - torch.tensor(original_input).to(
@@ -325,6 +331,8 @@ class ImperceptibleASRPytorch(EvasionAttack):
                     - A tensor holding the candidate adversarial examples.
                     - An array holding the original inputs.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # Compute local shape
         local_batch_size = len(x)
         real_lengths = np.array([x_.shape[0] for x_ in x])
@@ -493,6 +501,8 @@ class ImperceptibleASRPytorch(EvasionAttack):
         :param original_max_psd_batch: Original maximum psd.
         :return: An array holding the candidate adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # Compute local shape
         local_batch_size = len(x)
         real_lengths = np.array([x_.shape[0] for x_ in x])
@@ -596,6 +606,8 @@ class ImperceptibleASRPytorch(EvasionAttack):
         :param original_max_psd_batch: Original maximum psd.
         :return: The loss tensor of the second stage of the attack.
         """
+        import torch  # lgtm [py/repeated-import]
+
         # Compute loss for masking threshold
         losses = []
         relu = torch.nn.ReLU()
@@ -744,6 +756,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         :param original_max_psd: The maximum psd of the original audio.
         :return: The psd matrix.
         """
+        import torch  # lgtm [py/repeated-import]
         import torchaudio
 
         # These parameters are needed for the transformation

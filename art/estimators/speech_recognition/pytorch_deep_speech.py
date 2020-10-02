@@ -61,7 +61,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         use_amp: bool = False,
         opt_level: str = "O1",
-        loss_scale: int = 1,
+        loss_scale: Optional[Union[float, str]] = 1.0,
         decoder_type: str = "greedy",
         lm_path: str = "",
         top_paths: int = 1,
@@ -93,8 +93,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                         only triggered if there are GPUs available.
         :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
                           values are `O0`, `O1`, `O2`, and `O3`.
-        :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1 due to warp-ctc not supporting
-                           scaling of gradients.
+        :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1.0 due to warp-ctc not supporting
+                           scaling of gradients. If passed as a string, must be a string representing a number,
+                           e.g., “1.0”, or the string “dynamic”.
         :param decoder_type: Decoder type. Either `greedy` or `beam`. This parameter is only used when users want
                              transcription outputs.
         :param lm_path: Path to an (optional) kenlm language model for use with beam search. This parameter is only
@@ -285,7 +286,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x_ = x.copy()
+        x_ = np.array([x_i for x_i in x] + [np.array([0.1]), np.array([0.1, 0.2])])[:-2]
 
         # Put the model in the eval mode
         self._model.eval()
@@ -370,7 +371,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         from warpctc_pytorch import CTCLoss
 
-        x_ = x.copy()
+        x_ = np.array([x_i for x_i in x] + [np.array([0.1]), np.array([0.1, 0.2])])[:-2]
 
         # Put the model in the training mode
         self._model.train()
@@ -432,22 +433,13 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         import random
 
-        import torch  # lgtm [py/repeated-import]
-
         from warpctc_pytorch import CTCLoss
 
         # Put the model in the training mode
         self._model.train()
 
         if self._optimizer is None:
-            logger.warning(
-                "An optimizer is needed to use the automatic mixed precision tool, but none for provided. "
-                "A default optimizer is used."
-            )
-
-            # Create the optimizers
-            parameters = self._model.parameters()
-            self._optimizer = torch.optim.SGD(parameters, lr=0.01)
+            raise ValueError("An optimizer is required to train the model, but none was provided.")
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
@@ -473,8 +465,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 )
 
                 # Extract random batch
-                i_batch = x_preprocessed[ind[begin:end]].copy()
-                o_batch = y_preprocessed[ind[begin:end]].copy()
+                i_batch = np.array(
+                    [x_i for x_i in x_preprocessed[ind[begin : end]]] + [np.array([0.1]), np.array([0.1, 0.2])]
+                )[:-2]
+                o_batch = y_preprocessed[ind[begin : end]]
 
                 # Transform data into the model input space
                 inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(
@@ -583,19 +577,17 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             # Push the sequence to device
             if not tensor_input:
                 x[i] = x[i].astype(ART_NUMPY_DTYPE)
-                x_i_tensor = torch.tensor(x[i]).to(self._device)
-            else:
-                x_i_tensor = x[i]
+                x[i] = torch.tensor(x[i]).to(self._device)
 
             # Set gradient computation permission
             if compute_gradient:
-                x_i_tensor.requires_grad = True
+                x[i].requires_grad = True
 
             # Transform the sequence into the frequency space
             if tensor_input and real_lengths is not None:
-                transformed_input = transformer(x_i_tensor[: real_lengths[i]])
+                transformed_input = transformer(x[i][: real_lengths[i]])
             else:
-                transformed_input = transformer(x_i_tensor)
+                transformed_input = transformer(x[i])
 
             spectrogram, _ = torchaudio.functional.magphase(transformed_input)
             spectrogram = torch.log1p(spectrogram)
