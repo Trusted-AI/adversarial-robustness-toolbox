@@ -96,13 +96,13 @@ class TestBase(unittest.TestCase):
 
         # Check that the test data has not been modified, only catches changes in attack.generate if self has been used
         np.testing.assert_array_almost_equal(
-            self._x_train_mnist_original[0: self.n_train], self.x_train_mnist, decimal=3
+            self._x_train_mnist_original[0 : self.n_train], self.x_train_mnist, decimal=3
         )
         np.testing.assert_array_almost_equal(
-            self._y_train_mnist_original[0: self.n_train], self.y_train_mnist, decimal=3
+            self._y_train_mnist_original[0 : self.n_train], self.y_train_mnist, decimal=3
         )
-        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0: self.n_test], self.x_test_mnist, decimal=3)
-        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0: self.n_test], self.y_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._x_test_mnist_original[0 : self.n_test], self.x_test_mnist, decimal=3)
+        np.testing.assert_array_almost_equal(self._y_test_mnist_original[0 : self.n_test], self.y_test_mnist, decimal=3)
 
         np.testing.assert_array_almost_equal(self._x_train_iris_original, self.x_train_iris, decimal=3)
         np.testing.assert_array_almost_equal(self._y_train_iris_original, self.y_train_iris, decimal=3)
@@ -400,7 +400,7 @@ def get_image_classifier_tf_v2(from_logits=False):
 
 
 def get_image_classifier_kr(
-        loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
+    loss_name="categorical_crossentropy", loss_type="function_losses", from_logits=False, load_init=True
 ):
     """
     Standard Keras classifier for unit testing
@@ -979,7 +979,7 @@ def get_classifier_bb(defences=None):
     # define black-box classifier
     def predict(x):
         with open(
-                os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
+            os.path.join(os.path.dirname(os.path.dirname(__file__)), "utils/data/mnist", "api_output.txt")
         ) as json_file:
             predictions = json.load(json_file)
         return to_categorical(predictions["values"][: len(x)], nb_classes=10)
@@ -1046,9 +1046,9 @@ def get_gan_inverse_gan_ft():
         sess = tf.Session()
         sess.run(tf.global_variables_initializer())
 
-        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess, )
+        gan = TensorFlowGenerator(input_ph=z_ph, model=gen_tf, sess=sess,)
 
-        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess, )
+        inverse_gan = TensorFlowEncoder(input_ph=image_to_enc_ph, model=enc_tf, sess=sess,)
         return gan, inverse_gan, sess
 
 
@@ -1249,16 +1249,18 @@ def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
         ScikitlearnSVC,
     )
 
-    available_models = {"decisionTreeClassifier": ScikitlearnDecisionTreeClassifier,
-            # "extraTreeClassifier": ScikitlearnExtraTreeClassifier,
-            "adaBoostClassifier": ScikitlearnAdaBoostClassifier,
-            "baggingClassifier": ScikitlearnBaggingClassifier,
-            "extraTreesClassifier": ScikitlearnExtraTreesClassifier,
-            "gradientBoostingClassifier": ScikitlearnGradientBoostingClassifier,
-            "randomForestClassifier": ScikitlearnRandomForestClassifier,
-            "logisticRegression": ScikitlearnLogisticRegression,
-            "svc": ScikitlearnSVC,
-            "linearSVC": ScikitlearnSVC,}
+    available_models = {
+        "decisionTreeClassifier": ScikitlearnDecisionTreeClassifier,
+        # "extraTreeClassifier": ScikitlearnExtraTreeClassifier,
+        "adaBoostClassifier": ScikitlearnAdaBoostClassifier,
+        "baggingClassifier": ScikitlearnBaggingClassifier,
+        "extraTreesClassifier": ScikitlearnExtraTreesClassifier,
+        "gradientBoostingClassifier": ScikitlearnGradientBoostingClassifier,
+        "randomForestClassifier": ScikitlearnRandomForestClassifier,
+        "logisticRegression": ScikitlearnLogisticRegression,
+        "svc": ScikitlearnSVC,
+        "linearSVC": ScikitlearnSVC,
+    }
 
     if model_list_names is None:
         model_dict_names = available_models
