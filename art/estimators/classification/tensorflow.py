@@ -241,10 +241,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         from art.data_generators import TensorFlowDataGenerator
 
         # Train directly in TensorFlow
-        if (
-            isinstance(generator, TensorFlowDataGenerator)
-            and not self.preprocessing and self.preprocessing == (0, 1)
-        ):
+        if isinstance(generator, TensorFlowDataGenerator) and not self.preprocessing and self.preprocessing == (0, 1):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
                     i_batch, o_batch = generator.get_batch()

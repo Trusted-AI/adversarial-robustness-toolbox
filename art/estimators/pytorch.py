@@ -125,14 +125,16 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         import torch
         from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import \
-            StandardisationMeanStdPyTorch
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
+            StandardisationMeanStdPyTorch,
+        )
 
         if not self.preprocessing:
             return x, y
 
-        if len(self.preprocessing) == 2 and isinstance(self.preprocessing[-1],
-                                                       (StandardisationMeanStd, StandardisationMeanStdPyTorch)):
+        if len(self.preprocessing) in [1, 2] and isinstance(
+            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch)
+        ):
             # Compatible with non-PyTorch defences if no chaining.
             defence = self.preprocessing[0]
             x, y = defence(x, y)
@@ -186,12 +188,16 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         import torch
         from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import StandardisationMeanStdPyTorch
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
+            StandardisationMeanStdPyTorch,
+        )
 
         if not self.preprocessing:
             return gradients
 
-        if len(self.preprocessing) == 2 and isinstance(self.preprocessing[-1],  (StandardisationMeanStd, StandardisationMeanStdPyTorch)):
+        if len(self.preprocessing) in [1, 2] and isinstance(
+            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch)
+        ):
             # Compatible with non-PyTorch defences if no chaining.
             defence = self.preprocessing[0]
             gradients = defence.estimate_gradient(x, gradients)

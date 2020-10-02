@@ -306,16 +306,12 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self.detector.save(filename=filename + "_detector", path=path)
 
     def __repr__(self):
-        repr_ = (
-            "%s(classifier=%r, detector=%r, postprocessing_defences=%r, "
-            "preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self.classifier,
-                self.detector,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+        repr_ = "%s(classifier=%r, detector=%r, postprocessing_defences=%r, " "preprocessing=%r)" % (
+            self.__module__ + "." + self.__class__.__name__,
+            self.classifier,
+            self.detector,
+            self.postprocessing_defences,
+            self.preprocessing,
         )
 
         return repr_

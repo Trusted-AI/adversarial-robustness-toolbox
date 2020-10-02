@@ -190,14 +190,34 @@ class PreprocessorPyTorch(Preprocessor):
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         import torch  # lgtm [py/repeated-import]
 
-        x = torch.tensor(x, device=self._device, requires_grad=True)
-        grad = torch.tensor(grad, device=self._device)
+        def get_gradient(x, grad):
+            x = torch.tensor(x, device=self._device, requires_grad=True)
+            grad = torch.tensor(grad, device=self._device)
 
-        x_prime = self.estimate_forward(x)
-        x_prime.backward(grad)
-        x_grad = x.grad.detach().cpu().numpy()
-        if x_grad.shape != x.shape:
-            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+            x_prime = self.estimate_forward(x)
+            x_prime.backward(grad)
+            x_grad = x.grad.detach().cpu().numpy()
+
+            if x_grad.shape != x.shape:
+                raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+
+            return x_grad
+
+        if x.shape == grad.shape:
+            x_grad = get_gradient(x=x, grad=grad)
+        else:
+            # Special case for lass gradients
+            x_grad = np.zeros_like(grad)
+            print("grad.shape", grad.shape)
+            for i in range(grad.shape[1]):
+                print("i:", i)
+                if x.ndim == 4:
+                    x_grad[:, i, :, :, :] = get_gradient(x=x, grad=grad[:, i, :, :, :])
+                elif x.ndim == 5:
+                    x_grad[:, i, :, :, :, :] = get_gradient(x=x, grad=grad[:, i, :, :, :, :])
+                else:
+                    raise NotImplementedError("Shape of x not supported.")
+
         return x_grad
 
 
@@ -257,16 +277,33 @@ class PreprocessorTensorFlowV2(Preprocessor):
     def estimate_gradient(self, x: "tf.Tensor", grad: "tf.Tensor") -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        with tf.GradientTape() as tape:
-            x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
-            tape.watch(x)
-            grad = tf.convert_to_tensor(grad, dtype=ART_NUMPY_DTYPE)
+        def get_gradient(x, grad):
+            with tf.GradientTape() as tape:
+                x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
+                tape.watch(x)
+                grad = tf.convert_to_tensor(grad, dtype=ART_NUMPY_DTYPE)
 
-            x_prime = self.estimate_forward(x)
+                x_prime = self.estimate_forward(x)
 
-        x_grad = tape.gradient(target=x_prime, sources=x, output_gradients=grad)
+            x_grad = tape.gradient(target=x_prime, sources=x, output_gradients=grad)
 
-        x_grad = x_grad.numpy()
-        if x_grad.shape != x.shape:
-            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+            x_grad = x_grad.numpy()
+            if x_grad.shape != x.shape:
+                raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+
+            return x_grad
+
+        if x.shape == grad.shape:
+            x_grad = get_gradient(x=x, grad=grad)
+        else:
+            # Special case for lass gradients
+            x_grad = np.zeros_like(grad)
+            for i in range(grad.shape[1]):
+                if x.ndim == 4:
+                    x_grad[:, i, :, :, :] = get_gradient(x=x, grad=grad[:, i, :, :, :])
+                elif x.ndim == 5:
+                    x_grad[:, i, :, :, :, :] = get_gradient(x=x, grad=grad[:, i, :, :, :, :])
+                else:
+                    raise NotImplementedError("Shape of x not supported.")
+
         return x_grad
