@@ -115,3 +115,8 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
 
     def _check_params(self) -> None:
         pass
+
+    def __repr__(self):
+        return "StandardisationMeanStdPyTorch(mean={}, std={}, apply_fit={}, apply_predict={}, device={})".format(
+            self.mean, self.std, self.apply_fit, self.apply_predict, self._device
+        )

@@ -101,3 +101,8 @@ class StandardisationMeanStd(Preprocessor):
 
     def _check_params(self) -> None:
         pass
+
+    def __repr__(self):
+        return "StandardisationMeanStd(mean={}, std={}, apply_fit={}, apply_predict={})".format(
+            self.mean, self.std, self.apply_fit, self.apply_predict
+        )

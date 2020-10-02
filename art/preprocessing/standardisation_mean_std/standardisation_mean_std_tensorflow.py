@@ -100,3 +100,8 @@ class StandardisationMeanStdTensorFlowV2(PreprocessorTensorFlowV2):
 
     def _check_params(self) -> None:
         pass
+
+    def __repr__(self):
+        return "StandardisationMeanStdTensorFlowV2(mean={}, std={}, apply_fit={}, apply_predict={})".format(
+            self.mean, self.std, self.apply_fit, self.apply_predict
+        )
