@@ -170,11 +170,15 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import \
+            StandardisationMeanStdTensorFlowV2
 
         if not self.preprocessing:
             return x, y
 
-        if len(self.preprocessing) == 1:
+        if len(self.preprocessing) == 2 and isinstance(self.preprocessing[-1],
+                                                       (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)):
             # Compatible with non-TensorFlow defences if no chaining.
             preprocess = self.preprocessing[0]
             x, y = preprocess(x, y)
@@ -226,11 +230,15 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
         from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import \
+            StandardisationMeanStdTensorFlowV2
 
         if not self.preprocessing:
             return gradients
 
-        if len(self.preprocessing) == 1:
+        if len(self.preprocessing) == 2 and isinstance(self.preprocessing[-1],
+                                                       (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)):
             # Compatible with non-TensorFlow defences if no chaining.
             defence = self.preprocessing[0]
             gradients = defence.estimate_gradient(x, gradients)

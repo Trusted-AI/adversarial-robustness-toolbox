@@ -635,7 +635,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def __repr__(self):
         repr_ = (
             "%s(model=%r, loss=%r, optimizer=%r, input_shape=%r, nb_classes=%r, channel_index=%r, channels_first=%r, "
-            "clip_values=%r, postprocessing_defences=%r, preprocessing=%r)"
+            "clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r, preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
                 self._model,
@@ -646,6 +646,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 self.channel_index,
                 self.channels_first,
                 self.clip_values,
+                self.preprocessing_defences,
                 self.postprocessing_defences,
                 self.preprocessing,
             )
