@@ -208,15 +208,8 @@ class PreprocessorPyTorch(Preprocessor):
         else:
             # Special case for lass gradients
             x_grad = np.zeros_like(grad)
-            print("grad.shape", grad.shape)
             for i in range(grad.shape[1]):
-                print("i:", i)
-                if x.ndim == 4:
-                    x_grad[:, i, :, :, :] = get_gradient(x=x, grad=grad[:, i, :, :, :])
-                elif x.ndim == 5:
-                    x_grad[:, i, :, :, :, :] = get_gradient(x=x, grad=grad[:, i, :, :, :, :])
-                else:
-                    raise NotImplementedError("Shape of x not supported.")
+                x_grad[:, i, ...] = get_gradient(x=x, grad=grad[:, i, ...])
 
         return x_grad
 
@@ -299,11 +292,6 @@ class PreprocessorTensorFlowV2(Preprocessor):
             # Special case for lass gradients
             x_grad = np.zeros_like(grad)
             for i in range(grad.shape[1]):
-                if x.ndim == 4:
-                    x_grad[:, i, :, :, :] = get_gradient(x=x, grad=grad[:, i, :, :, :])
-                elif x.ndim == 5:
-                    x_grad[:, i, :, :, :, :] = get_gradient(x=x, grad=grad[:, i, :, :, :, :])
-                else:
-                    raise NotImplementedError("Shape of x not supported.")
+                x_grad[:, i, ...] = get_gradient(x=x, grad=grad[:, i, ...])
 
         return x_grad
