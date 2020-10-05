@@ -101,7 +101,7 @@ def test_spatial_smoothing_median_filter_call_expected_behavior(art_warning):
             10,
             marks=pytest.mark.xfail(
                 reason="Window size of 10 fails, because PyTorch requires that Padding size should be less than "
-                       "the corresponding input dimension."
+                "the corresponding input dimension."
             ),
         ),
     ],

@@ -100,7 +100,7 @@ def test_spatial_smoothing_median_filter_call_expected_behavior(art_warning, is_
             10,
             marks=pytest.mark.xfail(
                 reason="Window size of 10 fails, because TensorFlow requires that Padding size should be less than "
-                       "the corresponding input dimension."
+                "the corresponding input dimension."
             ),
         ),
     ],
@@ -116,8 +116,7 @@ def test_spatial_smoothing_image_data(art_warning, image_batch, channels_first, 
                 with pytest.raises(ValueError, match=exc_msg):
                     _ = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
             else:
-                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first,
-                                                                 window_size=window_size)
+                spatial_smoothing = SpatialSmoothingTensorFlowV2(channels_first=channels_first, window_size=window_size)
                 assert_array_equal(spatial_smoothing(test_input)[0], test_output)
     except ARTTestException as e:
         art_warning(e)
