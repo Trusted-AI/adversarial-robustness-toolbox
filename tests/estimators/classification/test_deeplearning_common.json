@@ -416,7 +416,7 @@
         "loss=CrossEntropyLoss(), optimizer=Adam",
         "input_shape=(1, 28, 28), nb_classes=10, channel_index",
         "clip_values=array([0., 1.], dtype=float32",
-        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=[StandardisationMeanStdPyTorch(mean=0, std=1, apply_fit=True, apply_predict=True)]"
+        "preprocessing_defences=None, postprocessing_defences=None, preprocessing=[StandardisationMeanStdPyTorch(mean=0, std=1, apply_fit=True, apply_predict=True, device=cpu)]"
     ],
     "test_repr_keras": [
         "art.estimators.classification.keras.KerasClassifier",
