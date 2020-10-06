@@ -855,70 +855,69 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        # Apply preprocessing
-        if self.all_framework_preprocessing:
-            x_tf = tf.convert_to_tensor(x)
-            x_preprocessed, _ = self._apply_preprocessing(x_tf, y=None, fit=False)
-        else:
-            x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-            x_tf = tf.convert_to_tensor(x_preprocessed)
+        x = tf.convert_to_tensor(x)
 
-        # Compute the gradients
-        if tf.executing_eagerly():
-            if label is None:
-                # Compute the gradients w.r.t. all classes
-                class_gradients = list()
+        with tf.GradientTape(persistent=True) as tape:
+            # Apply preprocessing
+            if self.all_framework_preprocessing:
+                x_grad = tf.convert_to_tensor(x)
+                tape.watch(x_grad)
+                x_input, _ = self._apply_preprocessing(x_grad, y=None, fit=False)
+            else:
+                x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+                x_grad = tf.convert_to_tensor(x_preprocessed)
+                tape.watch(x_grad)
+                x_input = x_grad
 
-                for i in range(self.nb_classes):
-                    with tf.GradientTape() as tape:
-                        # x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
-                        tape.watch(x_tf)
-                        predictions = self._model(x_tf)
+            tape.watch(x_input)
+
+            # Compute the gradients
+            if tf.executing_eagerly():
+                if label is None:
+                    # Compute the gradients w.r.t. all classes
+                    class_gradients = list()
+
+                    for i in range(self.nb_classes):
+                        predictions = self._model(x_input)
                         prediction = predictions[:, i]
                         tape.watch(prediction)
 
-                    class_gradient = tape.gradient(prediction, x_tf).numpy()
-                    class_gradients.append(class_gradient)
+                        class_gradient = tape.gradient(prediction, x_input).numpy()
+                        class_gradients.append(class_gradient)
 
-                gradients = np.swapaxes(np.array(class_gradients), 0, 1)
+                    gradients = np.swapaxes(np.array(class_gradients), 0, 1)
 
-            elif isinstance(label, (int, np.integer)):
-                # Compute the gradients only w.r.t. the provided label
-                with tf.GradientTape() as tape:
-                    # x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
-                    tape.watch(x_tf)
-                    predictions = self._model(x_tf)
+                elif isinstance(label, (int, np.integer)):
+                    # Compute the gradients only w.r.t. the provided label
+                    predictions = self._model(x_input)
                     prediction = predictions[:, label]
                     tape.watch(prediction)
 
-                class_gradient = tape.gradient(prediction, x_tf).numpy()
-                gradients = np.expand_dims(class_gradient, axis=1)
+                    class_gradient = tape.gradient(prediction, x_grad).numpy()
+                    gradients = np.expand_dims(class_gradient, axis=1)
 
-            else:
-                # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
-                class_gradients = list()
-                unique_labels = list(np.unique(label))
+                else:
+                    # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
+                    class_gradients = list()
+                    unique_labels = list(np.unique(label))
 
-                for unique_label in unique_labels:
-                    with tf.GradientTape() as tape:
-                        # x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
-                        tape.watch(x_tf)
-                        predictions = self._model(x_tf)
+                    for unique_label in unique_labels:
+                        predictions = self._model(x_input)
                         prediction = predictions[:, unique_label]
                         tape.watch(prediction)
 
-                    class_gradient = tape.gradient(prediction, x_tf).numpy()
-                    class_gradients.append(class_gradient)
+                        class_gradient = tape.gradient(prediction, x_grad).numpy()
+                        class_gradients.append(class_gradient)
 
-                gradients = np.swapaxes(np.array(class_gradients), 0, 1)
-                lst = [unique_labels.index(i) for i in label]
-                gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
+                    gradients = np.swapaxes(np.array(class_gradients), 0, 1)
+                    lst = [unique_labels.index(i) for i in label]
+                    gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
-            if not self.all_framework_preprocessing:
-                gradients = self._apply_preprocessing_gradient(x, gradients)
+                if not self.all_framework_preprocessing:
+                    gradients = self._apply_preprocessing_gradient(x, gradients)
 
-        else:
-            raise NotImplementedError("Expecting eager execution.")
+            else:
+                raise NotImplementedError("Expecting eager execution.")
 
         return gradients
 

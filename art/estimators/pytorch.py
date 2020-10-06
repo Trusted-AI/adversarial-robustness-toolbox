@@ -113,7 +113,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         raise NotImplementedError
 
-    def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
+    def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
         only be called from function `_apply_preprocessing`.
@@ -130,6 +130,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :type y: Format as expected by the `model`
         :param fit: `True` if the function is call before fit/training and `False` if the function is called before a
                     predict operation.
+        :param no_grad: `True` if no gradients required.
+        :type no_grad: bool
         :return: Tuple of `x` and `y` after applying the defences and standardisation.
         :rtype: Format as expected by the `model`
         """
@@ -148,12 +150,13 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             input_is_tensor = False
 
         if self.all_framework_preprocessing:
-            # Convert np arrays to torch tensors.
-            x = torch.tensor(x, device=self._device)
-            if y is not None:
-                y = torch.tensor(y, device=self._device)
+            if not input_is_tensor:
+                # Convert np arrays to torch tensors.
+                x = torch.tensor(x, device=self._device)
+                if y is not None:
+                    y = torch.tensor(y, device=self._device)
 
-            with torch.no_grad():
+            def chain_processes(x, y):
                 for preprocess in self.preprocessing:
                     if fit:
                         if preprocess.apply_fit:
@@ -161,6 +164,13 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                     else:
                         if preprocess.apply_predict:
                             x, y = preprocess.forward(x, y)
+                return x, y
+
+            if no_grad:
+                with torch.no_grad():
+                    x, y = chain_processes(x, y)
+            else:
+                x, y = chain_processes(x, y)
 
             # Convert torch tensors back to np arrays.
             if not input_is_tensor:

@@ -86,15 +86,8 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        if x.dtype in [torch.uint8]:
-            raise TypeError(
-                "The data type of input data `x` is {} and cannot represent negative values. Consider "
-                "changing the data type of the input data `x` to a type that supports negative values e.g. "
-                "np.float32.".format(x.dtype)
-            )
-
-        mean = torch.from_numpy(np.asarray(self.mean, dtype=ART_NUMPY_DTYPE))
-        std = torch.from_numpy(np.asarray(self.std, dtype=ART_NUMPY_DTYPE))
+        mean = torch.tensor(self.mean, device=self._device)
+        std = torch.tensor(self.std, device=self._device)
 
         x_norm = x - mean
         x_norm = x_norm / std

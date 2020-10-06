@@ -333,24 +333,25 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
-            x_pt = torch.from_numpy(x).to(self._device)
-            x_preprocessed, _ = self._apply_preprocessing(x_pt, y=None, fit=False)
+            x_grad = torch.from_numpy(x).to(self._device)
+            if self._layer_idx_gradients < 0:
+                x_grad.requires_grad = True
+            x_input, _ = self._apply_preprocessing(x_grad, y=None, fit=False, no_grad=False)
         else:
-            x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-            x_pt = torch.from_numpy(x_preprocessed).to(self._device)
-
-        # Compute gradients
-        if self._layer_idx_gradients < 0:
-            x_pt.requires_grad = True
+            x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False, no_grad=True)
+            x_grad = torch.from_numpy(x_preprocessed).to(self._device)
+            if self._layer_idx_gradients < 0:
+                x_grad.requires_grad = True
+            x_input = x_grad
 
         # Run prediction
-        model_outputs = self._model(x_pt)
+        model_outputs = self._model(x_input)
 
         # Set where to get gradient
         if self._layer_idx_gradients >= 0:
             input_grad = model_outputs[self._layer_idx_gradients]
         else:
-            input_grad = x_pt
+            input_grad = x_grad
 
         # Set where to get gradient from
         preds = model_outputs[-1]
