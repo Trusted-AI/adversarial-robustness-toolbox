@@ -23,7 +23,9 @@ import pytest
 from art.attacks.evasion import BrendelBethgeAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
+
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -31,15 +33,12 @@ logger = logging.getLogger(__name__)
 @pytest.mark.skipMlFramework("keras", "scikitlearn", "mxnet")
 @pytest.mark.parametrize("targeted", [True, False])
 @pytest.mark.parametrize("norm", [1, 2, np.inf, "inf"])
-def test_generate(get_default_mnist_subset, image_dl_estimator_for_attack, is_tf_version_2, targeted, norm):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-    classifier_list = image_dl_estimator_for_attack(BrendelBethgeAttack, defended=False, from_logits=True)
+def test_generate(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack, is_tf_version_2, targeted, norm):
+    try:
 
-    if classifier_list is None or not is_tf_version_2:
-        logging.warning("Couldn't perform this test because no classifier is defined")
-        return
+        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        classifier = image_dl_estimator_for_attack(BrendelBethgeAttack, defended=False, from_logits=True)
 
-    for classifier in classifier_list:
         attack = BrendelBethgeAttack(estimator=classifier,
                                      norm=norm,
                                      targeted=targeted,
@@ -54,6 +53,9 @@ def test_generate(get_default_mnist_subset, image_dl_estimator_for_attack, is_tf
                                      batch_size=32, )
 
         attack.generate(x=x_test_mnist[0:1].astype(np.float32), y=y_test_mnist[0:1].astype(np.int32))
+
+    except ARTTestException as e:
+        art_warning(e)
 
 
 def test_classifier_type_check_fail():
