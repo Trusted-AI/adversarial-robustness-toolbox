@@ -126,7 +126,7 @@ class ProjectedGradientDescent(EvasionAttack):
         self._attack: Union[
             ProjectedGradientDescentPyTorch, ProjectedGradientDescentTensorFlowV2, ProjectedGradientDescentNumpy
         ]
-        if isinstance(self.estimator, PyTorchClassifier) and no_preprocessing and no_defences:
+        if isinstance(self.estimator, PyTorchClassifier) and self.estimator.all_framework_preprocessing:
             self._attack = ProjectedGradientDescentPyTorch(
                 estimator=estimator,  # type: ignore
                 norm=norm,
@@ -140,7 +140,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 verbose=verbose,
             )
 
-        elif isinstance(self.estimator, TensorFlowV2Classifier) and no_preprocessing and no_defences:
+        elif isinstance(self.estimator, TensorFlowV2Classifier) and self.estimator.all_framework_preprocessing:
             self._attack = ProjectedGradientDescentTensorFlowV2(
                 estimator=estimator,  # type: ignore
                 norm=norm,

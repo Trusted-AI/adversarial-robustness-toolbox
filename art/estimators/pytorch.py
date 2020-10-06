@@ -66,6 +66,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         super().__init__(**kwargs)
 
         from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
+
         self.all_framework_preprocessing = all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing])
 
         # Set device

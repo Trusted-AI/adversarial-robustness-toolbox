@@ -153,23 +153,20 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def model(self) -> "torch.nn.Module":
         return self._model._model
 
-    def reduce_labels(self, y: np.ndarray) -> np.ndarray:
-        # Check if the loss function requires as input index labels instead of one-hot-encoded labels
-        if self._reduce_labels and self._int_labels:
-            return np.argmax(y, axis=1)
-        elif self._reduce_labels:  # float labels
-            return np.argmax(y, axis=1).astype(np.float32)
-        else:
-            return y
-
-    def reduce_labels_framework(self, y: "torch.Tensor") -> "torch.Tensor":
+    def reduce_labels(self, y: Union[np.ndarray, "torch.Tensor"]) -> Union[np.ndarray, "torch.Tensor"]:
         import torch  # lgtm [py/repeated-import]
 
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if self._reduce_labels and self._int_labels:
-            return torch.argmax(y, dim=1)
+            if isinstance(y, torch.Tensor):
+                return torch.argmax(y, dim=1)
+            else:
+                return np.argmax(y, axis=1)
         elif self._reduce_labels:  # float labels
-            return torch.argmax(y, dim=1).type("torch.FloatTensor")
+            if isinstance(y, torch.Tensor):
+                return torch.argmax(y, dim=1).type("torch.FloatTensor")
+            else:
+                return np.argmax(y, axis=1).astype(np.float32)
         else:
             return y
 
@@ -430,7 +427,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._loss.reduction = prev_reduction
         return loss.detach().numpy()
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss_gradient(
+        self, x: Union[np.ndarray, "torch.Tensor"], y: Union[np.ndarray, "torch.Tensor"], **kwargs
+    ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -442,17 +441,30 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch  # lgtm [py/repeated-import]
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+        if self.all_framework_preprocessing:
+            if isinstance(x, torch.Tensor):
+                x_grad = torch.tensor(x).to(self._device)
+                y_grad = torch.tensor(y).to(self._device)
+            else:
+                x_grad = torch.from_numpy(x).to(self._device)
+                y_grad = torch.from_numpy(y.astype(np.uint8)).to(self._device)
+            x_grad.requires_grad = True
+            inputs_t, y_preprocessed = self._apply_preprocessing(x_grad, y=y_grad, fit=False, no_grad=False)
+        elif isinstance(x, np.ndarray):
+            x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y=y, fit=False, no_grad=True)
+            x_grad = torch.from_numpy(x_preprocessed).to(self._device)
+            x_grad.requires_grad = True
+            inputs_t = x_grad
+        else:
+            raise NotImplementedError("Combination of inputs and preprocessing not supported.")
 
         # Check label shape
         y_preprocessed = self.reduce_labels(y_preprocessed)
 
-        # Convert the inputs to Tensors
-        inputs_t = torch.from_numpy(x_preprocessed).to(self._device)
-        inputs_t.requires_grad = True
-
-        # Convert the labels to Tensors
-        labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+        if isinstance(y_preprocessed, np.ndarray):
+            labels_t = torch.from_numpy(y_preprocessed).to(self._device)
+        else:
+            labels_t = y_preprocessed
 
         # Compute the gradient and return
         model_outputs = self._model(inputs_t)
@@ -463,42 +475,17 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Compute gradients
         loss.backward()
-        grads = inputs_t.grad.cpu().numpy().copy()  # type: ignore
-        grads = self._apply_preprocessing_gradient(x, grads)
+        if isinstance(x, torch.Tensor):
+            grads = x_grad.grad
+        else:
+            grads = x_grad.grad.cpu().numpy().copy()  # type: ignore
+
+        if not self.all_framework_preprocessing:
+            grads = self._apply_preprocessing_gradient(x, grads)
+
         assert grads.shape == x.shape
 
         return grads
-
-    def loss_gradient_framework(self, x: "torch.Tensor", y: "torch.Tensor", **kwargs) -> "torch.Tensor":
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Input with shape as expected by the model.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :return: Gradients of the same shape as `x`.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        # Check label shape
-        y = self.reduce_labels_framework(y)
-
-        # Convert the inputs to Variable
-        x = torch.autograd.Variable(x, requires_grad=True)
-
-        # Compute the gradient and return
-        model_outputs = self._model(x)
-        loss = self._loss(model_outputs[-1], y)
-
-        # Clean gradients
-        self._model.zero_grad()
-
-        # Compute gradients
-        loss.backward()
-        grads = x.grad
-        assert grads.shape == x.shape  # type: ignore
-
-        return grads  # type: ignore
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False

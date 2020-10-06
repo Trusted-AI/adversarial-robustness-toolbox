@@ -119,6 +119,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         super().__init__(**kwargs)
 
         from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+
         self.all_framework_preprocessing = all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing])
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):

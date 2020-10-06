@@ -84,13 +84,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Show progress bars.
         """
-        if (
-            hasattr(estimator, "preprocessing")
-            and (estimator.preprocessing is not None and estimator.preprocessing != (0, 1))
-        ) or (
-            hasattr(estimator, "preprocessing_defences")
-            and (estimator.preprocessing_defences is not None and estimator.preprocessing_defences != [])
-        ):
+        if not estimator.all_framework_preprocessing:
             raise NotImplementedError(
                 "The framework-specific implementation currently does not apply preprocessing and "
                 "preprocessing defences."
@@ -236,7 +230,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad: tf.Tensor = self.estimator.loss_gradient_framework(x, y) * tf.constant(
+        grad: tf.Tensor = self.estimator.loss_gradient(x, y) * tf.constant(
             1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
         )
 

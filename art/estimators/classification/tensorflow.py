@@ -955,38 +955,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         self._loss_object.reduction = prev_reduction
         return loss.numpy()
 
-    def loss_gradient_framework(self, x: "tf.Tensor", y: "tf.Tensor", **kwargs) -> "tf.Tensor":
-        """
-        Compute the gradient of the loss function w.r.t. `x`.
-
-        :param x: Input with shape as expected by the model.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :return: Gradients of the same shape as `x`.
-        """
-        import tensorflow as tf  # lgtm [py/repeated-import]
-
-        if self._loss_object is None:
-            raise ValueError("Loss object is necessary for computing the loss gradient.")
-
-        if tf.executing_eagerly():
-            with tf.GradientTape() as tape:
-                tape.watch(x)
-                predictions = self._model(x)
-
-                if self._reduce_labels:
-                    loss = self._loss_object(tf.argmax(y, axis=1), predictions)
-                else:
-                    loss = self._loss_object(y, predictions)
-
-                loss_grads = tape.gradient(loss, x)
-
-        else:
-            raise NotImplementedError("Expecting eager execution.")
-
-        return loss_grads
-
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss_gradient(
+        self, x: Union[np.ndarray, "tf.Tensor"], y: Union[np.ndarray, "tf.Tensor"], **kwargs
+    ) -> Union[np.ndarray, "tf.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -1002,26 +973,38 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 "defined."
             )
 
-        # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
-
         if tf.executing_eagerly():
             with tf.GradientTape() as tape:
-                x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
-                tape.watch(x_preprocessed_tf)
-                predictions = self._model(x_preprocessed_tf)
+                # Apply preprocessing
+                if self.all_framework_preprocessing:
+                    x_grad = tf.convert_to_tensor(x)
+                    tape.watch(x_grad)
+                    x_input, _ = self._apply_preprocessing(x_grad, y=None, fit=False)
+                else:
+                    x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+                    x_grad = tf.convert_to_tensor(x_preprocessed)
+                    tape.watch(x_grad)
+                    x_input = x_grad
+
+                predictions = self._model(x_input)
+
                 if self._reduce_labels:
                     loss = self._loss_object(np.argmax(y, axis=1), predictions)
                 else:
                     loss = self._loss_object(y, predictions)
 
-            gradients = tape.gradient(loss, x_preprocessed_tf).numpy()
+            gradients = tape.gradient(loss, x_grad)
+
+            if isinstance(x, np.ndarray):
+                gradients = gradients.numpy()
 
         else:
             raise NotImplementedError("Expecting eager execution.")
 
         # Apply preprocessing gradients
-        gradients = self._apply_preprocessing_gradient(x, gradients)
+        if not self.all_framework_preprocessing:
+            gradients = self._apply_preprocessing_gradient(x, gradients)
+
         return gradients
 
     def _get_layers(self) -> list:
