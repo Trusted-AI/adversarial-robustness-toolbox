@@ -332,21 +332,25 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             raise ValueError("Label %s is out of range." % label)
 
         # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-        x_preprocessed = torch.from_numpy(x_preprocessed).to(self._device)
+        if self.all_framework_preprocessing:
+            x_pt = torch.from_numpy(x).to(self._device)
+            x_preprocessed, _ = self._apply_preprocessing(x_pt, y=None, fit=False)
+        else:
+            x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+            x_pt = torch.from_numpy(x_preprocessed).to(self._device)
 
         # Compute gradients
         if self._layer_idx_gradients < 0:
-            x_preprocessed.requires_grad = True
+            x_pt.requires_grad = True
 
         # Run prediction
-        model_outputs = self._model(x_preprocessed)
+        model_outputs = self._model(x_pt)
 
         # Set where to get gradient
         if self._layer_idx_gradients >= 0:
             input_grad = model_outputs[self._layer_idx_gradients]
         else:
-            input_grad = x_preprocessed
+            input_grad = x_pt
 
         # Set where to get gradient from
         preds = model_outputs[-1]
@@ -388,7 +392,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             grads = grads[None, ...]
 
         grads = np.swapaxes(np.array(grads), 0, 1)
-        grads = self._apply_preprocessing_gradient(x, grads)
+        if not self.all_framework_preprocessing:
+            grads = self._apply_preprocessing_gradient(x, grads)
 
         return grads
 

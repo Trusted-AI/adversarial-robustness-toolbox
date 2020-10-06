@@ -65,6 +65,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         super().__init__(**kwargs)
 
+        from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
+        self.all_framework_preprocessing = all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing])
+
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
@@ -131,7 +134,6 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         import torch
-        from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
             StandardisationMeanStdPyTorch,
@@ -145,7 +147,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         else:
             input_is_tensor = False
 
-        if all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing]):
+        if self.all_framework_preprocessing:
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device)
             if y is not None:
@@ -199,7 +201,6 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         import torch
-        from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
             StandardisationMeanStdPyTorch,
@@ -208,7 +209,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         if not self.preprocessing:
             return gradients
 
-        if all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing]):
+        if self.all_framework_preprocessing:
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device, requires_grad=True)
             gradients = torch.tensor(gradients, device=self._device)

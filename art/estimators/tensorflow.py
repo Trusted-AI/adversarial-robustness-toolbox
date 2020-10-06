@@ -118,6 +118,9 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         super().__init__(**kwargs)
 
+        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+        self.all_framework_preprocessing = all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing])
+
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
         Perform prediction of the neural network for samples `x`.
@@ -177,7 +180,6 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
-        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
             StandardisationMeanStdTensorFlowV2,
@@ -191,7 +193,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         else:
             input_is_tensor = False
 
-        if all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing]):
+        if self.all_framework_preprocessing:
             # Convert np arrays to torch tensors.
             x = tf.convert_to_tensor(x)
             if y is not None:
@@ -244,7 +246,6 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
-        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
             StandardisationMeanStdTensorFlowV2,
@@ -253,7 +254,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         if not self.preprocessing:
             return gradients
 
-        if all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing]):
+        if self.all_framework_preprocessing:
             with tf.GradientTape() as tape:
                 # Convert np arrays to TensorFlow tensors.
                 x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
