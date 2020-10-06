@@ -27,6 +27,8 @@ import torch.optim as optim
 
 from art.estimators.classification.pytorch import PyTorchClassifier
 
+from tests.utils import ARTTestException
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,93 +47,99 @@ class Model(nn.Module):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_device():
-    class Flatten(nn.Module):
-        def forward(self, x):
-            n, _, _, _ = x.size()
-            result = x.view(n, -1)
+def test_device(art_warning):
+    try:
+        class Flatten(nn.Module):
+            def forward(self, x):
+                n, _, _, _ = x.size()
+                result = x.view(n, -1)
 
-            return result
+                return result
 
-    # Define the network
-    model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
+        # Define the network
+        model = nn.Sequential(nn.Conv2d(1, 2, 5), nn.ReLU(), nn.MaxPool2d(2, 2), Flatten(), nn.Linear(288, 10))
 
-    # Define a loss function and optimizer
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
+        # Define a loss function and optimizer
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
 
-    # First test cpu
-    classifier_cpu = PyTorchClassifier(
-        model=model,
-        clip_values=(0, 1),
-        loss=loss_fn,
-        optimizer=optimizer,
-        input_shape=(1, 28, 28),
-        nb_classes=10,
-        device_type="cpu",
-    )
+        # First test cpu
+        classifier_cpu = PyTorchClassifier(
+            model=model,
+            clip_values=(0, 1),
+            loss=loss_fn,
+            optimizer=optimizer,
+            input_shape=(1, 28, 28),
+            nb_classes=10,
+            device_type="cpu",
+        )
 
-    assert classifier_cpu._device == torch.device("cpu")
-    assert classifier_cpu._device != torch.device("cuda")
+        assert classifier_cpu._device == torch.device("cpu")
+        assert classifier_cpu._device != torch.device("cuda")
 
-    # Then test gpu
-    if torch.cuda.device_count() >= 2:
-        with torch.cuda.device(0):
-            classifier_gpu0 = PyTorchClassifier(
-                model=model,
-                clip_values=(0, 1),
-                loss=loss_fn,
-                optimizer=optimizer,
-                input_shape=(1, 28, 28),
-                nb_classes=10,
-            )
-            assert classifier_gpu0._device == torch.device("cuda:0")
-            assert classifier_gpu0._device != torch.device("cuda:1")
+        # Then test gpu
+        if torch.cuda.device_count() >= 2:
+            with torch.cuda.device(0):
+                classifier_gpu0 = PyTorchClassifier(
+                    model=model,
+                    clip_values=(0, 1),
+                    loss=loss_fn,
+                    optimizer=optimizer,
+                    input_shape=(1, 28, 28),
+                    nb_classes=10,
+                )
+                assert classifier_gpu0._device == torch.device("cuda:0")
+                assert classifier_gpu0._device != torch.device("cuda:1")
 
-        with torch.cuda.device(1):
-            classifier_gpu1 = PyTorchClassifier(
-                model=model,
-                clip_values=(0, 1),
-                loss=loss_fn,
-                optimizer=optimizer,
-                input_shape=(1, 28, 28),
-                nb_classes=10,
-            )
-            assert classifier_gpu1._device == torch.device("cuda:1")
-            assert classifier_gpu1._device != torch.device("cuda:0")
+            with torch.cuda.device(1):
+                classifier_gpu1 = PyTorchClassifier(
+                    model=model,
+                    clip_values=(0, 1),
+                    loss=loss_fn,
+                    optimizer=optimizer,
+                    input_shape=(1, 28, 28),
+                    nb_classes=10,
+                )
+                assert classifier_gpu1._device == torch.device("cuda:1")
+                assert classifier_gpu1._device != torch.device("cuda:0")
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_pickle(get_default_mnist_subset, image_dl_estimator):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    from art.config import ART_DATA_PATH
+        from art.config import ART_DATA_PATH
 
-    full_path = os.path.join(ART_DATA_PATH, "my_classifier")
-    folder = os.path.split(full_path)[0]
-    if not os.path.exists(folder):
-        os.makedirs(folder)
+        full_path = os.path.join(ART_DATA_PATH, "my_classifier")
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
 
-    # The model used within the common ART pytorch get_image_classifier_list does not support pickling
-    model = Model()
-    loss_fn = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=0.01)
-    myclassifier_2 = PyTorchClassifier(
-        model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
-    )
-    myclassifier_2.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
+        # The model used within the common ART pytorch get_image_classifier_list does not support pickling
+        model = Model()
+        loss_fn = nn.CrossEntropyLoss()
+        optimizer = optim.Adam(model.parameters(), lr=0.01)
+        myclassifier_2 = PyTorchClassifier(
+            model=model, clip_values=(0, 1), loss=loss_fn, optimizer=optimizer, input_shape=(1, 28, 28), nb_classes=10
+        )
+        myclassifier_2.fit(x_train_mnist, y_train_mnist, batch_size=100, nb_epochs=1)
 
-    pickle.dump(myclassifier_2, open(full_path, "wb"))
+        pickle.dump(myclassifier_2, open(full_path, "wb"))
 
-    with open(full_path, "rb") as f:
-        loaded_model = pickle.load(f)
-        np.testing.assert_equal(myclassifier_2._clip_values, loaded_model._clip_values)
-        assert myclassifier_2._channel_index == loaded_model._channel_index
-        assert set(myclassifier_2.__dict__.keys()) == set(loaded_model.__dict__.keys())
+        with open(full_path, "rb") as f:
+            loaded_model = pickle.load(f)
+            np.testing.assert_equal(myclassifier_2._clip_values, loaded_model._clip_values)
+            assert myclassifier_2._channel_index == loaded_model._channel_index
+            assert set(myclassifier_2.__dict__.keys()) == set(loaded_model.__dict__.keys())
 
-    # Test predict
-    predictions_1 = myclassifier_2.predict(x_test_mnist)
-    accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
-    predictions_2 = loaded_model.predict(x_test_mnist)
-    accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
-    assert accuracy_1 == accuracy_2
+        # Test predict
+        predictions_1 = myclassifier_2.predict(x_test_mnist)
+        accuracy_1 = np.sum(np.argmax(predictions_1, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+        predictions_2 = loaded_model.predict(x_test_mnist)
+        accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+        assert accuracy_1 == accuracy_2
+    except ARTTestException as e:
+        art_warning(e)

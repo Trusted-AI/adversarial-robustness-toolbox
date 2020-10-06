@@ -27,6 +27,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from tests.utils import ExpectedValue
 from tests.attacks.utils import backend_check_adverse_values, backend_check_adverse_frames
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -40,42 +41,40 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skipMlFramework("pytorch")
-def test_one_shot(fix_get_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
-    # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+@pytest.mark.framework_agnostic
+def test_one_shot(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
 
-    # for the one-shot method, frame saliency attack should resort to plain FastGradientMethod
-    expected_values = {
-        "x_test_mean": ExpectedValue(0.2346725, 0.002),
-        "x_test_min": ExpectedValue(-1.0, 0.00001),
-        "x_test_max": ExpectedValue(1.0, 0.00001),
-        "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 4, 4, 7, 7, 4, 7, 2, 2, 3, 0]), 2),
-    }
+        # for the one-shot method, frame saliency attack should resort to plain FastGradientMethod
+        expected_values = {
+            "x_test_mean": ExpectedValue(0.2346725, 0.002),
+            "x_test_min": ExpectedValue(-1.0, 0.00001),
+            "x_test_max": ExpectedValue(1.0, 0.00001),
+            "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 4, 4, 7, 7, 4, 7, 2, 2, 3, 0]), 2),
+        }
 
-    for classifier in classifier_list:
         attacker = FastGradientMethod(classifier, eps=1, batch_size=128)
         attack = FrameSaliencyAttack(classifier, attacker, "one_shot")
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.skipMlFramework("pytorch")
-def test_iterative_saliency(fix_get_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
-    # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+@pytest.mark.framework_agnostic
+def test_iterative_saliency(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
 
-    expected_values_axis_1 = {
-        "nb_perturbed_frames": ExpectedValue(np.asarray([10, 1, 2, 12, 16, 1, 2, 7, 4, 11, 5]), 2)
-    }
+        expected_values_axis_1 = {
+            "nb_perturbed_frames": ExpectedValue(np.asarray([10, 1, 2, 12, 16, 1, 2, 7, 4, 11, 5]), 2)
+        }
 
-    expected_values_axis_2 = {"nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)}
+        expected_values_axis_2 = {
+            "nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)
+        }
 
-    for classifier in classifier_list:
         attacker = FastGradientMethod(classifier, eps=0.3, batch_size=128)
         attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency")
         backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values_axis_1)
@@ -83,21 +82,24 @@ def test_iterative_saliency(fix_get_mnist_subset, image_dl_estimator_for_attack)
         # test with non-default frame index:
         attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency", frame_index=2)
         backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values_axis_2)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.skipMlFramework("pytorch")
-def test_iterative_saliency_refresh(fix_get_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(FastGradientMethod)
-    # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+@pytest.mark.framework_agnostic
+def test_iterative_saliency_refresh(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
 
-    expected_values_axis_1 = {"nb_perturbed_frames": ExpectedValue(np.asarray([5, 1, 3, 10, 8, 1, 3, 8, 4, 7, 7]), 2)}
+        expected_values_axis_1 = {
+            "nb_perturbed_frames": ExpectedValue(np.asarray([5, 1, 3, 10, 8, 1, 3, 8, 4, 7, 7]), 2)
+        }
 
-    expected_values_axis_2 = {"nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)}
+        expected_values_axis_2 = {
+            "nb_perturbed_frames": ExpectedValue(np.asarray([11, 1, 2, 6, 14, 2, 2, 13, 4, 8, 4]), 2)
+        }
 
-    for classifier in classifier_list:
         attacker = FastGradientMethod(classifier, eps=0.3, batch_size=128)
         attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency_refresh")
         backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values_axis_1)
@@ -105,11 +107,13 @@ def test_iterative_saliency_refresh(fix_get_mnist_subset, image_dl_estimator_for
         # test with non-default frame index:
         attack = FrameSaliencyAttack(classifier, attacker, "iterative_saliency", frame_index=2)
         backend_check_adverse_frames(attack, fix_get_mnist_subset, expected_values_axis_2)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(FastGradientMethod, [LossGradientsMixin, BaseEstimator])
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
+@pytest.mark.framework_agnostic
+def test_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(FastGradientMethod, [LossGradientsMixin, BaseEstimator])
+    except ARTTestException as e:
+        art_warning(e)
