@@ -245,7 +245,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
         """
         raise NotImplementedError
 
-    def __call__(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply local spatial smoothing to sample `x`.
 

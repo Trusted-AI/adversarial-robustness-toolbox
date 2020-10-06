@@ -93,23 +93,8 @@ class BaseEstimator(ABC):
             pass
         elif isinstance(preprocessing, tuple):
             from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
-                StandardisationMeanStdTensorFlowV2,
-            )
-            from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
-                StandardisationMeanStdPyTorch,
-            )
-            from art.estimators.tensorflow import TensorFlowV2Estimator
-            from art.estimators.pytorch import PyTorchEstimator
 
-            if TensorFlowV2Estimator in type(self).__mro__:
-                self.preprocessing.append(
-                    StandardisationMeanStdTensorFlowV2(mean=preprocessing[0], std=preprocessing[1])
-                )
-            elif PyTorchEstimator in type(self).__mro__:
-                self.preprocessing.append(StandardisationMeanStdPyTorch(mean=preprocessing[0], std=preprocessing[1]))
-            else:
-                self.preprocessing.append(StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1]))
+            self.preprocessing.append(StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1]))
         elif isinstance(preprocessing, Preprocessor):
             self.preprocessing.append(preprocessing)
         else:

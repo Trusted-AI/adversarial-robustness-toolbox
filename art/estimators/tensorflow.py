@@ -108,6 +108,14 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         Estimator class for TensorFlow v2 models.
         """
+        preprocessing = kwargs.get("preprocessing")
+        if isinstance(preprocessing, tuple):
+            from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
+                StandardisationMeanStdTensorFlowV2,
+            )
+
+            kwargs["preprocessing"] = StandardisationMeanStdTensorFlowV2(mean=preprocessing[0], std=preprocessing[1])
+
         super().__init__(**kwargs)
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
@@ -178,18 +186,12 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         if not self.preprocessing:
             return x, y
 
-        if len(self.preprocessing) in [1, 2] and isinstance(
-            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
-        ):
-            # Compatible with non-TensorFlow defences if no chaining.
-            preprocess = self.preprocessing[0]
-            x, y = preprocess(x, y)
+        if isinstance(x, tf.Tensor):
+            input_is_tensor = True
         else:
-            # Check if all defences are implemented in TensorFlow.
-            for preprocess in self.preprocessing:
-                if not isinstance(preprocess, PreprocessorTensorFlowV2):
-                    raise NotImplementedError(f"{preprocess.__class__} is not TensorFlow-specific.")
+            input_is_tensor = False
 
+        if all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing]):
             # Convert np arrays to torch tensors.
             x = tf.convert_to_tensor(x)
             if y is not None:
@@ -204,9 +206,20 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                         x, y = preprocess.forward(x, y)
 
             # Convert torch tensors back to np arrays.
-            x = x.numpy()
-            if y is not None:
-                y = y.numpy()
+            if not input_is_tensor:
+                x = x.numpy()
+                if y is not None:
+                    y = y.numpy()
+
+        elif len(self.preprocessing) in [1, 2] and isinstance(
+            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
+        ):
+            # Compatible with non-TensorFlow defences if no chaining.
+            for preprocess in self.preprocessing:
+                x, y = preprocess(x, y)
+
+        else:
+            raise NotImplementedError("The current combination of preprocessing types is not supported.")
 
         return x, y
 
@@ -240,18 +253,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         if not self.preprocessing:
             return gradients
 
-        if len(self.preprocessing) in [1, 2] and isinstance(
-            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
-        ):
-            # Compatible with non-TensorFlow defences if no chaining.
-            defence = self.preprocessing[0]
-            gradients = defence.estimate_gradient(x, gradients)
-        else:
-            # Check if all defences are implemented in TensorFlow.
-            for preprocess in self.preprocessing:
-                if not isinstance(preprocess, PreprocessorTensorFlowV2):
-                    raise NotImplementedError(f"{preprocess.__class__} is not TensorFlowV2-specific.")
-
+        if all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing]):
             with tf.GradientTape() as tape:
                 # Convert np arrays to TensorFlow tensors.
                 x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
@@ -275,4 +277,15 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 raise ValueError(
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
+
+        elif len(self.preprocessing) in [1, 2] and isinstance(
+            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
+        ):
+            # Compatible with non-TensorFlow defences if no chaining.
+            defence = self.preprocessing[0]
+            gradients = defence.estimate_gradient(x, gradients)
+
+        else:
+            raise NotImplementedError("The current combination of preprocessing types is not supported.")
+
         return gradients

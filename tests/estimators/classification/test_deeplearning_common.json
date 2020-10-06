@@ -406,7 +406,7 @@
         "channels_first=False",
         "clip_values=array([0., 1.], dtype=float32)",
         "preprocessing_defences=None, postprocessing_defences=None",
-        "preprocessing=[<art.preprocessing.standardisation_mean_std.standardisation_mean_std.StandardisationMeanStd"
+        "preprocessing=[StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)]"
     ],
     "test_repr_pytorch": [
         "art.estimators.classification.pytorch.PyTorchClassifier",

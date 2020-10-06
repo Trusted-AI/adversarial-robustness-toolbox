@@ -70,13 +70,6 @@ class StandardisationMeanStdTensorFlowV2(PreprocessorTensorFlowV2):
         """
         import tensorflow as tf
 
-        if x.dtype in [tf.uint8, tf.uint16, tf.uint32, tf.uint64]:
-            raise TypeError(
-                "The data type of input data `x` is {} and cannot represent negative values. Consider "
-                "changing the data type of the input data `x` to a type that supports negative values e.g. "
-                "np.float32.".format(x.dtype)
-            )
-
         mean = np.asarray(self.mean, dtype=ART_NUMPY_DTYPE)
         std = np.asarray(self.std, dtype=ART_NUMPY_DTYPE)
 

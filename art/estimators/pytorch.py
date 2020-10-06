@@ -55,6 +55,14 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         import torch
 
+        preprocessing = kwargs.get("preprocessing")
+        if isinstance(preprocessing, tuple):
+            from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
+                StandardisationMeanStdPyTorch,
+            )
+
+            kwargs["preprocessing"] = StandardisationMeanStdPyTorch(mean=preprocessing[0], std=preprocessing[1])
+
         super().__init__(**kwargs)
 
         # Set device
@@ -132,18 +140,12 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         if not self.preprocessing:
             return x, y
 
-        if len(self.preprocessing) in [1, 2] and isinstance(
-            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch)
-        ):
-            # Compatible with non-PyTorch defences if no chaining.
-            defence = self.preprocessing[0]
-            x, y = defence(x, y)
+        if isinstance(x, torch.Tensor):
+            input_is_tensor = True
         else:
-            # Check if all defences are implemented in PyTorch.
-            for preprocess in self.preprocessing:
-                if not isinstance(preprocess, PreprocessorPyTorch):
-                    raise NotImplementedError(f"{preprocess.__class__} is not PyTorch-specific.")
+            input_is_tensor = False
 
+        if all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing]):
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device)
             if y is not None:
@@ -159,9 +161,20 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                             x, y = preprocess.forward(x, y)
 
             # Convert torch tensors back to np arrays.
-            x = x.cpu().numpy()
-            if y is not None:
-                y = y.cpu().numpy()
+            if not input_is_tensor:
+                x = x.cpu().numpy()
+                if y is not None:
+                    y = y.cpu().numpy()
+
+        elif len(self.preprocessing) in [1, 2] and isinstance(
+            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch)
+        ):
+            # Compatible with non-PyTorch defences if no chaining.
+            for preprocess in self.preprocessing:
+                x, y = preprocess(x, y)
+
+        else:
+            raise NotImplementedError("The current combination of preprocessing types is not supported.")
 
         return x, y
 
@@ -195,18 +208,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         if not self.preprocessing:
             return gradients
 
-        if len(self.preprocessing) in [1, 2] and isinstance(
-            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch)
-        ):
-            # Compatible with non-PyTorch defences if no chaining.
-            defence = self.preprocessing[0]
-            gradients = defence.estimate_gradient(x, gradients)
-        else:
-            # Check if all defences are implemented in PyTorch.
-            for preprocess in self.preprocessing:
-                if not isinstance(preprocess, PreprocessorPyTorch):
-                    raise NotImplementedError(f"{preprocess.__class__} is not PyTorch-specific.")
-
+        if all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing]):
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device, requires_grad=True)
             gradients = torch.tensor(gradients, device=self._device)
@@ -228,4 +230,15 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                 raise ValueError(
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
+
+        elif len(self.preprocessing) in [1, 2] and isinstance(
+            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch)
+        ):
+            # Compatible with non-PyTorch defences if no chaining.
+            defence = self.preprocessing[0]
+            gradients = defence.estimate_gradient(x, gradients)
+
+        else:
+            raise NotImplementedError("The current combination of preprocessing types is not supported.")
+
         return gradients
