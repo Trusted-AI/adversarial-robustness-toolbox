@@ -539,7 +539,7 @@ def test_loss_gradient_amp(
 
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = image_dl_estimator(one_classifier=True, from_logits=True)
+    classifier, _ = image_dl_estimator(from_logits=True)
     optimizer = torch.optim.Adam(classifier.model.parameters(), lr=0.01)
 
     # Redefine the classifier with amp
