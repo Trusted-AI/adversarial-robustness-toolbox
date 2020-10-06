@@ -61,7 +61,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
         use_amp: bool = False,
         opt_level: str = "O1",
-        loss_scale: Optional[Union[float, str]] = 1.0,
         decoder_type: str = "greedy",
         lm_path: str = "",
         top_paths: int = 1,
@@ -93,9 +92,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                         only triggered if there are GPUs available.
         :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
                           values are `O0`, `O1`, `O2`, and `O3`.
-        :param loss_scale: Loss scaling. Used when use_amp is True. Default is 1.0 due to warp-ctc not supporting
-                           scaling of gradients. If passed as a string, must be a string representing a number,
-                           e.g., “1.0”, or the string “dynamic”.
         :param decoder_type: Decoder type. Either `greedy` or `beam`. This parameter is only used when users want
                              transcription outputs.
         :param lm_path: Path to an (optional) kenlm language model for use with beam search. This parameter is only
@@ -259,7 +255,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 optimizers=self._optimizer,
                 enabled=enabled,
                 opt_level=opt_level,
-                loss_scale=loss_scale,
+                loss_scale=1.0,
             )
 
     def predict(
