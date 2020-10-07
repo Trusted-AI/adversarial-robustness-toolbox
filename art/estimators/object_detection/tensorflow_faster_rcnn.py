@@ -237,6 +237,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               corresponding loss values.
                     - detections: a dictionary containing final detection results.
         """
+        import tensorflow as tf
         from object_detection.utils import variables_helper
 
         if obj_detection_model is None:
@@ -323,6 +324,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                                                   [num_boxes] containing weights for groundtruth boxes.
         :return: Loss gradients of the same shape as `x`.
         """
+        import tensorflow as tf
         # Only do loss_gradient if is_training is False
         if self.is_training:
             raise NotImplementedError(
