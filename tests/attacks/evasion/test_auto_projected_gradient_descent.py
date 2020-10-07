@@ -39,6 +39,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.framework_agnostic
+@pytest.mark.skipMlFramework("tensorflow1", "keras", "pytorch", "non_dl_frameworks", "mxnet", "kerastf")
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(AutoProjectedGradientDescent)
