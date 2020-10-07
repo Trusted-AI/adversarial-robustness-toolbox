@@ -9,14 +9,18 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 mlFrameworkList=("tensorflow" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  echo "Running tests with framework $mlFramework"
+  echo "#######################################################################"
+  echo "############## Running tests with framework $mlFramework ##############"
+  echo "#######################################################################"
   pytest -q -vv tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 done
 
 mlFrameworkList=("tensorflow")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  echo "Running tests with framework $mlFramework"
+  echo "#######################################################################"
+  echo "############## Running tests with framework $mlFramework ##############"
+  echo "#######################################################################"
   pytest -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
@@ -32,7 +36,9 @@ done
 # made framework independent to be incorporated within this loop
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  echo "Running tests with framework $mlFramework"
+  echo "#######################################################################"
+  echo "############## Running tests with framework $mlFramework ##############"
+  echo "#######################################################################"
 
   pytest -q -vv tests/classifiersFrameworks/  --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests"; fi

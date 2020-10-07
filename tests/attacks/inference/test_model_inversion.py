@@ -63,7 +63,6 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     np.testing.assert_array_less(diff_noisy, diff_inferred)
 
 
-@pytest.mark.framework_agnostic
 def test_miface(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(MIFace)
