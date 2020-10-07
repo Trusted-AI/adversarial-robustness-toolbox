@@ -7,24 +7,33 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 
-#mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
-mlFrameworkList=("keras")
+mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "#######################################################################"
   echo "############## Running tests with framework $mlFramework ##############"
   echo "#######################################################################"
-  pytest -q -vv tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
+  pytest -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
+
+  pytest -q -vv tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
+
+  pytest -q -vv tests/attacks/evasion/ --mlFramework=$mlFramework  --skip_travis=True --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
+
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed all framework tests"; fi
 done
 
-#mlFrameworkList=("tensorflow" "scikitlearn")
-#for mlFramework in "${mlFrameworkList[@]}"; do
-#  echo "#######################################################################"
-#  echo "############## Running tests with framework $mlFramework ##############"
-#  echo "#######################################################################"
-#  pytest -q -vv tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
-#  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
-#done
+mlFrameworkList=("tensorflow" "scikitlearn")
+for mlFramework in "${mlFrameworkList[@]}"; do
+  echo "#######################################################################"
+  echo "############## Running tests with framework $mlFramework ##############"
+  echo "#######################################################################"
+
+  #FIX Failing with Keras at test_membership_inference.test_black_box_keras_loss
+  pytest -q -vv tests/attacks/inference/test_membership_inference.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
+done
 #
 #mlFrameworkList=("tensorflow")
 #for mlFramework in "${mlFrameworkList[@]}"; do
@@ -50,6 +59,10 @@ done
 #  echo "############## Running tests with framework $mlFramework ##############"
 #  echo "#######################################################################"
 #
+#  pytest -q -vv tests/attacks/inference/test_model_inversion.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+#  pytest -q -vv tests/attacks/inference/test_attribute_inference.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+#  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
+
 #  pytest -q -vv tests/classifiersFrameworks/  --mlFramework=$mlFramework --skip_travis=True --durations=0
 #  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests"; fi
 #
