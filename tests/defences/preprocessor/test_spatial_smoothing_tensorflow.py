@@ -150,13 +150,12 @@ def test_non_spatial_data_error(art_warning, tabular_batch):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_window_size_error(art_warning, is_tf_version_2):
+@pytest.mark.only_with_platform("tensorflow2")
+def test_window_size_error(art_warning):
     try:
-        if is_tf_version_2:
-            exc_msg = "Sliding window size must be a positive integer."
-            with pytest.raises(ValueError, match=exc_msg):
-                SpatialSmoothingTensorFlowV2(window_size=0)
+        exc_msg = "Sliding window size must be a positive integer."
+        with pytest.raises(ValueError, match=exc_msg):
+            SpatialSmoothingTensorFlowV2(window_size=0)
     except ARTTestException as e:
         art_warning(e)
 
