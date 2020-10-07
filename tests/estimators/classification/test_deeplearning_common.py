@@ -16,12 +16,6 @@ from tests.utils import ARTTestException, ARTTestFixtureNotImplemented
 logger = logging.getLogger(__name__)
 
 
-def is_keras_2_3():
-    if int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) >= 3:
-        return True
-    return False
-
-
 @pytest.mark.skipMlFramework("non_dl_frameworks", "tensorflow2")
 def test_layers(art_warning, get_default_mnist_subset, framework, image_dl_estimator):
     try:
@@ -76,13 +70,10 @@ def test_fit(art_warning, get_default_mnist_subset, default_batch_size, image_dl
 
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
 def test_predict(art_warning, framework, get_default_mnist_subset, image_dl_estimator,
                  expected_values, store_expected_values):
     try:
-        if framework == "keras" and is_keras_2_3() is False:
-            # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
-            return
-
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
@@ -283,6 +274,7 @@ def test_fit_image_generator(art_warning, framework, image_dl_estimator,
 
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
 def test_loss_gradient(art_warning,
                        framework,
                        get_default_mnist_subset,
@@ -292,10 +284,6 @@ def test_loss_gradient(art_warning,
                        store_expected_values,
                        ):
     try:
-        if framework == "keras" and is_keras_2_3() is False:
-            # Keras 2.2 does not support creating classifiers with logits=True so skipping this test d
-            return
-
         (expected_gradients_1, expected_gradients_2) = expected_values()
 
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -396,13 +384,10 @@ def test_save(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_pat
 
 
 @pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
+@pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
 def test_class_gradient(art_warning, framework, image_dl_estimator, get_default_mnist_subset, mnist_shape,
                         store_expected_values, expected_values):
     try:
-        if framework == "keras" and is_keras_2_3() is False:
-            # Keras 2.2 does not support creating classifiers with logits=True so skipping this test
-            return
-
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
         classifier, _ = image_dl_estimator(from_logits=True)
