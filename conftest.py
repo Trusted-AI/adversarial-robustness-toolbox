@@ -176,7 +176,7 @@ def setup_tear_down_framework(framework):
 
 
 @pytest.fixture
-def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default_batch_size):
+def image_iterator(framework, get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
     def _get_image_iterator():
@@ -219,7 +219,7 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
 
 
 @pytest.fixture
-def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, image_iterator, default_batch_size):
+def image_data_generator(framework, get_default_mnist_subset, image_iterator, default_batch_size):
     def _image_data_generator(**kwargs):
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
@@ -233,13 +233,12 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
                 batch_size=default_batch_size,
             )
 
-        if framework == "tensorflow":
-            if not is_tf_version_2:
-                data_generator = TensorFlowDataGenerator(
-                    sess=kwargs["sess"], iterator=image_it, iterator_type="initializable", iterator_arg={},
-                    size=x_train_mnist.shape[0],
-                    batch_size=default_batch_size,
-                )
+        if framework == "tensorflow1":
+            data_generator = TensorFlowDataGenerator(
+                sess=kwargs["sess"], iterator=image_it, iterator_type="initializable", iterator_arg={},
+                size=x_train_mnist.shape[0],
+                batch_size=default_batch_size,
+            )
 
         if framework == "pytorch":
             data_generator = PyTorchDataGenerator(iterator=image_it, size=x_train_mnist.shape[0],
