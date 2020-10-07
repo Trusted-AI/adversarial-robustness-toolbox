@@ -7,7 +7,8 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 
-mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
+#mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
+mlFrameworkList=("keras")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "#######################################################################"
   echo "############## Running tests with framework $mlFramework ##############"
