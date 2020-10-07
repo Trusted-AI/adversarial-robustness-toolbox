@@ -285,7 +285,6 @@ def test_fit_image_generator(art_warning, framework, image_dl_estimator,
 @pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_loss_gradient(art_warning,
                        framework,
-                       is_tf_version_2,
                        get_default_mnist_subset,
                        image_dl_estimator,
                        expected_values,
