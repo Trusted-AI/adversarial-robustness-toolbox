@@ -49,6 +49,7 @@ class SquareAttack(EvasionAttack):
         "eps",
         "p_init",
         "nb_restarts",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -61,6 +62,7 @@ class SquareAttack(EvasionAttack):
         eps: float = 0.3,
         p_init: float = 0.8,
         nb_restarts: int = 1,
+        verbose: bool = True,
     ):
         """
         Create a :class:`.SquareAttack` instance.
@@ -71,6 +73,7 @@ class SquareAttack(EvasionAttack):
         :param eps: Maximum perturbation that the attacker can introduce.
         :param p_init: Initial fraction of elements.
         :param nb_restarts: Number of restarts.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=estimator)
 
@@ -79,6 +82,7 @@ class SquareAttack(EvasionAttack):
         self.eps = eps
         self.p_init = p_init
         self.nb_restarts = nb_restarts
+        self.verbose = verbose
         self._check_params()
 
     def _get_logits_diff(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
@@ -131,7 +135,7 @@ class SquareAttack(EvasionAttack):
             width = x.shape[2]
             channels = x.shape[3]
 
-        for _ in trange(self.nb_restarts, desc="SquareAttack - restarts"):
+        for _ in trange(self.nb_restarts, desc="SquareAttack - restarts", disable=not self.verbose):
 
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
@@ -166,7 +170,9 @@ class SquareAttack(EvasionAttack):
 
                 x_adv[sample_is_robust] = x_robust
 
-                for i_iter in trange(self.max_iter, desc="SquareAttack - iterations", leave=False):
+                for i_iter in trange(
+                    self.max_iter, desc="SquareAttack - iterations", leave=False, disable=not self.verbose
+                ):
 
                     percentage_of_elements = self._get_percentage_of_elements(i_iter)
 
@@ -290,7 +296,9 @@ class SquareAttack(EvasionAttack):
 
                 x_adv[sample_is_robust] = x_robust
 
-                for i_iter in trange(self.max_iter, desc="SquareAttack - iterations", leave=False):
+                for i_iter in trange(
+                    self.max_iter, desc="SquareAttack - iterations", leave=False, disable=not self.verbose
+                ):
 
                     percentage_of_elements = self._get_percentage_of_elements(i_iter)
 
@@ -469,3 +477,6 @@ class SquareAttack(EvasionAttack):
 
         if not isinstance(self.nb_restarts, int) or self.nb_restarts <= 0:
             raise ValueError("The argument nb_restarts has to be of type int and larger than zero.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

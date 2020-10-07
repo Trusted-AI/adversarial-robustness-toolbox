@@ -56,6 +56,7 @@ class AdversarialPatch(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
@@ -70,6 +71,7 @@ class AdversarialPatch(EvasionAttack):
         max_iter: int = 500,
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
+        verbose: bool = True,
     ):
         """
         Create an instance of the :class:`.AdversarialPatch`.
@@ -87,6 +89,7 @@ class AdversarialPatch(EvasionAttack):
         :param patch_shape: The shape of the adversarial patch as a tuple of shape (width, height, nb_channels).
                             Currently only supported for `TensorFlowV2Classifier`. For classifiers of other frameworks
                             the `patch_shape` is set to the shape of the input samples.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         if self.estimator.clip_values is None:
@@ -103,6 +106,7 @@ class AdversarialPatch(EvasionAttack):
                 max_iter=max_iter,
                 batch_size=batch_size,
                 patch_shape=patch_shape,
+                verbose=verbose,
             )
         else:
             self._attack = AdversarialPatchNumpy(
@@ -113,6 +117,7 @@ class AdversarialPatch(EvasionAttack):
                 learning_rate=learning_rate,
                 max_iter=max_iter,
                 batch_size=batch_size,
+                verbose=verbose,
             )
         self._check_params()
 
@@ -184,3 +189,6 @@ class AdversarialPatch(EvasionAttack):
             raise ValueError("The batch size must be of type int.")
         if not self._attack.batch_size > 0:
             raise ValueError("The batch size must be greater than 0.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

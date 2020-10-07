@@ -49,6 +49,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         "y_train",
         "x_val",
         "y_val",
+        "verbose",
     ]
     _estimator_requirements = (ScikitlearnSVC,)
 
@@ -62,6 +63,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         x_val: Optional[np.ndarray] = None,
         y_val: Optional[np.ndarray] = None,
         max_iter: int = 100,
+        verbose: bool = True,
     ) -> None:
         """
         Initialize an SVM poisoning attack.
@@ -75,6 +77,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         :param y_val: The validation labels used to test the attack.
         :param max_iter: The maximum number of iterations for the attack.
         :raises `NotImplementedError`, `TypeError`: If the argument classifier has the wrong type.
+        :param verbose: Show progress bars.
         """
         # pylint: disable=W0212
         from sklearn.svm import LinearSVC, SVC
@@ -96,6 +99,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         self.x_val = x_val
         self.y_val = y_val
         self.max_iter = max_iter
+        self.verbose = verbose
         self._check_params()
 
     def poison(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
@@ -120,7 +124,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         train_labels = np.copy(self.y_train)
         all_poison = []
 
-        for attack_point, attack_label in tqdm(zip(x, y_attack), desc="SVM poisoning"):
+        for attack_point, attack_label in tqdm(zip(x, y_attack), desc="SVM poisoning", disable=not self.verbose):
             poison = self.generate_attack_point(attack_point, attack_label)
             all_poison.append(poison)
             train_data = np.vstack([train_data, poison])
@@ -135,14 +139,6 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
         )
 
         return x_adv, y_attack
-
-    def _check_params(self) -> None:
-        if self.step is not None and self.step <= 0:
-            raise ValueError("Step size must be strictly positive.")
-        if self.eps is not None and self.eps <= 0:
-            raise ValueError("Value of eps must be strictly positive.")
-        if self.max_iter <= 1:
-            raise ValueError("Value of max_iter must be strictly positive.")
 
     def generate_attack_point(self, x_attack: np.ndarray, y_attack: np.ndarray) -> np.ndarray:
         """
@@ -245,3 +241,16 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
             grad += (np.matmul(m_k, d_q_sc) + d_q_kc) * alpha_c
 
         return grad
+
+    def _check_params(self) -> None:
+        if self.step is not None and self.step <= 0:
+            raise ValueError("Step size must be strictly positive.")
+
+        if self.eps is not None and self.eps <= 0:
+            raise ValueError("Value of eps must be strictly positive.")
+
+        if self.max_iter <= 1:
+            raise ValueError("Value of max_iter must be strictly positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

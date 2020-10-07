@@ -55,6 +55,7 @@ class MIFace(InferenceAttack):
         "threshold",
         "learning_rate",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin, ClassGradientsMixin)

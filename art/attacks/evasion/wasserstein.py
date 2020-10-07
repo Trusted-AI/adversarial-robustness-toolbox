@@ -63,6 +63,7 @@ class Wasserstein(EvasionAttack):
         "conjugate_sinkhorn_max_iter",
         "projected_sinkhorn_max_iter",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
@@ -84,6 +85,7 @@ class Wasserstein(EvasionAttack):
         conjugate_sinkhorn_max_iter: int = 400,
         projected_sinkhorn_max_iter: int = 400,
         batch_size: int = 1,
+        verbose: bool = True,
     ):
         """
         Create a Wasserstein attack instance.
@@ -103,6 +105,7 @@ class Wasserstein(EvasionAttack):
         :param conjugate_sinkhorn_max_iter: The maximum number of iterations for the conjugate sinkhorn optimizer.
         :param projected_sinkhorn_max_iter: The maximum number of iterations for the projected sinkhorn optimizer.
         :param batch_size: Size of batches.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=estimator)
 
@@ -120,6 +123,7 @@ class Wasserstein(EvasionAttack):
         self.conjugate_sinkhorn_max_iter = conjugate_sinkhorn_max_iter
         self.projected_sinkhorn_max_iter = projected_sinkhorn_max_iter
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -155,7 +159,7 @@ class Wasserstein(EvasionAttack):
 
         # Compute perturbation with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
-        for batch_id in trange(nb_batches, desc="Wasserstein"):
+        for batch_id in trange(nb_batches, desc="Wasserstein", disable=not self.verbose):
             logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
@@ -746,3 +750,6 @@ class Wasserstein(EvasionAttack):
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
