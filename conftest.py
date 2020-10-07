@@ -611,6 +611,7 @@ def framework(request):
 def default_batch_size():
     yield 16
 
+
 @pytest.fixture(scope="session")
 def load_iris_dataset():
     logging.info("Loading Iris dataset")
