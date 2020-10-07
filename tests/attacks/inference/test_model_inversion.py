@@ -88,4 +88,3 @@ def test_classifier_type_check_fail(art_warning):
         backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassifierMixin, ClassGradientsMixin])
     except ARTTestException as e:
         art_warning(e)
-
