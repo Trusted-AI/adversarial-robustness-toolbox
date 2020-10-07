@@ -259,7 +259,7 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
 
 
 @pytest.fixture
-def store_expected_values(request, is_tf_version_2):
+def store_expected_values(request):
     """
     Stores expected values to be retrieved by the expected_values fixture
     Note1: Numpy arrays MUST be converted to list before being stored as json
@@ -272,11 +272,6 @@ def store_expected_values(request, is_tf_version_2):
     def _store_expected_values(values_to_store, framework=""):
 
         framework_name = framework
-        if framework == "tensorflow":
-            if is_tf_version_2:
-                framework_name = "tensorflow2"
-            else:
-                framework_name = "tensorflow1"
         if framework_name is not "":
             framework_name = "_" + framework_name
 
