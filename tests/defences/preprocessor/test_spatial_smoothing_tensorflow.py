@@ -170,12 +170,11 @@ def test_triple_clip_values_error(art_warning):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_relation_clip_values_error(art_warning, is_tf_version_2):
+@pytest.mark.only_with_platform("tensorflow2")
+def test_relation_clip_values_error(art_warning):
     try:
-        if is_tf_version_2:
-            exc_msg = "Invalid 'clip_values': min >= max."
-            with pytest.raises(ValueError, match=exc_msg):
-                SpatialSmoothingTensorFlowV2(clip_values=(1, 0))
+        exc_msg = "Invalid 'clip_values': min >= max."
+        with pytest.raises(ValueError, match=exc_msg):
+            SpatialSmoothingTensorFlowV2(clip_values=(1, 0))
     except ARTTestException as e:
         art_warning(e)
