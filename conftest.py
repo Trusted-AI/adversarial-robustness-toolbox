@@ -717,7 +717,7 @@ def only_with_platform(request, framework):
 # ART test fixture to skip test for specific mlFramework values
 # eg: @pytest.mark.skipMlFramework("tensorflow","scikitlearn")
 @pytest.fixture(autouse=True)
-def skip_by_platform(request, framework):
+def skip_by_framework(request, framework):
     if request.node.get_closest_marker("skipMlFramework"):
         framework_to_skip_list = list(request.node.get_closest_marker("skipMlFramework").args)
         if "dl_frameworks" in framework_to_skip_list:
@@ -725,6 +725,10 @@ def skip_by_platform(request, framework):
 
         if "non_dl_frameworks" in framework_to_skip_list:
             framework_to_skip_list.extend(non_deep_learning_frameworks)
+
+        if "tensorflow" in framework_to_skip_list:
+            framework_to_skip_list.append("tensorflow1")
+            framework_to_skip_list.append("tensorflow2")
 
         if framework in framework_to_skip_list:
             pytest.skip("skipped on this platform: {}".format(framework))
