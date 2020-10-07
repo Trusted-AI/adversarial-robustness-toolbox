@@ -192,28 +192,27 @@ def test_defences_chaining(art_warning, get_default_mnist_subset, image_dl_estim
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator, is_tf_version_2):
+@pytest.mark.only_with_platform("tensorflow2")
+def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator):
     try:
-        if is_tf_version_2:
-            clip_values = (0, 1)
-            smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
-            smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
-            smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
-            classifier_, _ = image_dl_estimator()
+        clip_values = (0, 1)
+        smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
+        smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
+        classifier_, _ = image_dl_estimator()
 
-            loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
-            classifier = TensorFlowV2Classifier(
-                clip_values=clip_values,
-                model=classifier_.model,
-                preprocessing_defences=[smooth_3x3, smooth_5x5, smooth_7x7],
-                loss_object=loss_object,
-                input_shape=(28, 28, 1),
-                nb_classes=10,
-            )
-            assert len(classifier.preprocessing_defences) == 3
+        loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+        classifier = TensorFlowV2Classifier(
+            clip_values=clip_values,
+            model=classifier_.model,
+            preprocessing_defences=[smooth_3x3, smooth_5x5, smooth_7x7],
+            loss_object=loss_object,
+            input_shape=(28, 28, 1),
+            nb_classes=10,
+        )
+        assert len(classifier.preprocessing_defences) == 3
 
-            attack = FastGradientMethod(classifier, eps=1, batch_size=128)
-            backend_test_defended_images(attack, fix_get_mnist_subset)
+        attack = FastGradientMethod(classifier, eps=1, batch_size=128)
+        backend_test_defended_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
         art_warning(e)
