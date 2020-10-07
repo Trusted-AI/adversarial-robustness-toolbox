@@ -597,14 +597,21 @@ def create_test_image(create_test_dir):
 
 @pytest.fixture(scope="session")
 def framework(request):
-    mlFramework = request.config.getoption("--mlFramework")
-    if mlFramework not in art_supported_frameworks:
+    ml_framework = request.config.getoption("--mlFramework")
+    if ml_framework == "tensorflow":
+        import tensorflow as tf
+        if tf.__version__[0] == "2":
+            ml_framework = "tensorflow2"
+        else:
+            ml_framework = "tensorflow1"
+
+    if ml_framework not in art_supported_frameworks:
         raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
-            mlFramework, " ".join(art_supported_frameworks)))
+            ml_framework, " ".join(art_supported_frameworks)))
     # if utils_test.is_valid_framework(mlFramework):
     #     raise Exception("The mlFramework specified was incorrect. Valid options available
     #     are {0}".format(art_supported_frameworks))
-    return mlFramework
+    return ml_framework
 
 
 @pytest.fixture(scope="session")
