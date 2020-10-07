@@ -160,13 +160,12 @@ def test_window_size_error(art_warning):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_triple_clip_values_error(art_warning, is_tf_version_2):
+@pytest.mark.only_with_platform("tensorflow2")
+def test_triple_clip_values_error(art_warning):
     try:
-        if is_tf_version_2:
-            exc_msg = "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
-            with pytest.raises(ValueError, match=exc_msg):
-                SpatialSmoothingTensorFlowV2(clip_values=(0, 1, 2))
+        exc_msg = "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
+        with pytest.raises(ValueError, match=exc_msg):
+            SpatialSmoothingTensorFlowV2(clip_values=(0, 1, 2))
     except ARTTestException as e:
         art_warning(e)
 
