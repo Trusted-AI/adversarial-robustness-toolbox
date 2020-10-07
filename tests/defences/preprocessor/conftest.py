@@ -15,6 +15,11 @@ def image_batch(channels_first):
 
 
 @pytest.fixture
+def image_batch_small():
+    """Create image fixture of shape (batch_size, channels, width, height)."""
+    return np.zeros((2, 1, 4, 4))
+
+@pytest.fixture
 def video_batch(channels_first):
     """
     Video fixture of shape NFHWC and NCFHW.
