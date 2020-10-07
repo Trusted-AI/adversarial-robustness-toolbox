@@ -22,17 +22,12 @@ def is_keras_2_3():
     return False
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
-def test_layers(art_warning, get_default_mnist_subset, framework, is_tf_version_2, image_dl_estimator):
+@pytest.mark.skipMlFramework("non_dl_frameworks", "tensorflow2")
+def test_layers(art_warning, get_default_mnist_subset, framework, image_dl_estimator):
     try:
         classifier, _ = image_dl_estimator(from_logits=True)
 
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-        if framework == "tensorflow" and is_tf_version_2:
-            raise ARTTestFixtureNotImplemented(
-                "fw_agnostic_backend_test_layers not implemented", test_layers.__name__, framework
-            )
 
         batch_size = 128
         for i, name in enumerate(classifier.layer_names):
