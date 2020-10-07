@@ -24,19 +24,24 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   #TODO FIX Failing with Keras at test_membership_inference.test_black_box_keras_loss
   pytest -q -vv tests/attacks/inference/test_membership_inference.py --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
-done
-#
-mlFrameworkList=("tensorflow")
-for mlFramework in "${mlFrameworkList[@]}"; do
-  echo "#######################################################################"
-  echo "############## Running tests with framework $mlFramework ##############"
-  echo "#######################################################################"
 
   #TODO FIX Failing with Pytorch at test_shadow_attack.test_generate
   pytest -q -vv tests/attacks/evasion/test_shadow_attack.py --mlFramework=$mlFramework  --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
-
 done
+
+#
+#mlFrameworkList=("tensorflow")
+#for mlFramework in "${mlFrameworkList[@]}"; do
+#  echo "#######################################################################"
+#  echo "############## Running tests with framework $mlFramework ##############"
+#  echo "#######################################################################"
+#
+##  #TODO FIX Failing with Pytorch at test_shadow_attack.test_generate
+##  pytest -q -vv tests/attacks/evasion/test_shadow_attack.py --mlFramework=$mlFramework  --skip_travis=True --durations=0
+##  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion tests"; fi
+#
+#done
 
 #NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
 # made framework independent to be incorporated within this loop
