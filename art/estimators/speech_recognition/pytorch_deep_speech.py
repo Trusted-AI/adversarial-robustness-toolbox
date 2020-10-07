@@ -251,11 +251,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 enabled = True
 
             self._model, self._optimizer = amp.initialize(
-                models=self._model,
-                optimizers=self._optimizer,
-                enabled=enabled,
-                opt_level=opt_level,
-                loss_scale=1.0,
+                models=self._model, optimizers=self._optimizer, enabled=enabled, opt_level=opt_level, loss_scale=1.0,
             )
 
     def predict(
@@ -462,9 +458,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
                 # Extract random batch
                 i_batch = np.array(
-                    [x_i for x_i in x_preprocessed[ind[begin : end]]] + [np.array([0.1]), np.array([0.1, 0.2])]
+                    [x_i for x_i in x_preprocessed[ind[begin:end]]] + [np.array([0.1]), np.array([0.1, 0.2])]
                 )[:-2]
-                o_batch = y_preprocessed[ind[begin : end]]
+                o_batch = y_preprocessed[ind[begin:end]]
 
                 # Transform data into the model input space
                 inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(
