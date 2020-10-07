@@ -108,35 +108,33 @@ def _test_preprocessing_defences_backward(
     np.testing.assert_array_almost_equal(gradients_in_chain, gradients, decimal=4)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_nodefence(art_warning, get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
+@pytest.mark.only_with_platform("tensorflow2")
+def test_nodefence(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
-        if is_tf_version_2:
-            preprocessing_defences = []
-            device_type = None
-            _test_preprocessing_defences_forward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
-            _test_preprocessing_defences_backward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
+        preprocessing_defences = []
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_defence_tensorflow(art_warning, get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defence_tensorflow(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
-        if is_tf_version_2:
-            smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
-            preprocessing_defences = [smooth_3x3]
-            device_type = None
-            _test_preprocessing_defences_forward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
-            _test_preprocessing_defences_backward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
+        smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        preprocessing_defences = [smooth_3x3]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
     except ARTTestException as e:
         art_warning(e)
 
