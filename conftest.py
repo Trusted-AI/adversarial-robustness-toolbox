@@ -297,7 +297,7 @@ def store_expected_values(request):
 
 
 @pytest.fixture
-def expected_values(framework, request, is_tf_version_2):
+def expected_values(framework, request):
     """
     Retrieves the expected values that were stored using the store_expected_values fixture
     :param request:
@@ -307,11 +307,6 @@ def expected_values(framework, request, is_tf_version_2):
     file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
 
     framework_name = framework
-    if framework == "tensorflow":
-        if is_tf_version_2:
-            framework_name = "tensorflow2"
-        else:
-            framework_name = "tensorflow1"
     if framework_name is not "":
         framework_name = "_" + framework_name
 
