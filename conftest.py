@@ -149,17 +149,11 @@ def estimator_for_attack(framework):
 @pytest.fixture(autouse=True)
 def setup_tear_down_framework(framework):
     # Ran before each test
-    if framework == "keras":
-        pass
-    if framework == "tensorflow":
+    if framework == "tensorflow1" or framework == "tensorflow2":
         import tensorflow as tf
 
         if tf.__version__[0] != "2":
             tf.reset_default_graph()
-    if framework == "pytorch":
-        pass
-    if framework == "scikitlearn":
-        pass
     yield True
 
     # Ran after each test
@@ -167,12 +161,6 @@ def setup_tear_down_framework(framework):
         import keras
 
         keras.backend.clear_session()
-    if framework == "tensorflow":
-        pass
-    if framework == "pytorch":
-        pass
-    if framework == "scikitlearn":
-        pass
 
 
 @pytest.fixture
@@ -564,7 +552,7 @@ def tabular_dl_estimator(framework):
                 kr_classifier = get_tabular_classifier_kr()
                 classifier = KerasClassifier(model=kr_classifier.model, use_logits=False, channels_first=True)
 
-        if framework == "tensorflow":
+        if framework == "tensorflow1" or framework == "tensorflow2":
             if clipped:
                 classifier, _ = get_tabular_classifier_tf()
 
