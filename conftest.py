@@ -24,6 +24,7 @@ import tempfile
 import numpy as np
 import pytest
 import requests
+import tensorflow as tf
 import warnings
 
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
@@ -38,7 +39,7 @@ from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt
 
 logger = logging.getLogger(__name__)
 
-deep_learning_frameworks = ["keras", "tensorflow", "pytorch", "kerastf", "mxnet"]
+deep_learning_frameworks = ["keras", "tensorflow1", "tensorflow2", "pytorch", "kerastf", "mxnet"]
 non_deep_learning_frameworks = ["scikitlearn"]
 
 art_supported_frameworks = []
@@ -48,6 +49,11 @@ art_supported_frameworks.extend(non_deep_learning_frameworks)
 master_seed(1234)
 
 default_framework = "tensorflow"
+
+if tf.__version__[0] == "2":
+    default_framework = "tensorflow2"
+else:
+    default_framework = "tensorflow1"
 
 
 def pytest_addoption(parser):
