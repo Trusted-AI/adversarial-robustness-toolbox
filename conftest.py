@@ -193,13 +193,11 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
             )
             return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
 
-        if framework == "tensorflow":
-            import tensorflow as tf
-            if not is_tf_version_2:
-                x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
-                y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
-                dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
-                return dataset.make_initializable_iterator()
+        if framework == "tensorflow1":
+            x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
+            y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
+            dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+            return dataset.make_initializable_iterator()
 
         if framework == "pytorch":
             import torch
