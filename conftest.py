@@ -611,17 +611,6 @@ def framework(request):
 def default_batch_size():
     yield 16
 
-
-# @pytest.fixture(scope="session")
-# def is_tf_version_2():
-#     import tensorflow as tf
-#
-#     if tf.__version__[0] == "2":
-#         yield True
-#     else:
-#         yield False
-
-
 @pytest.fixture(scope="session")
 def load_iris_dataset():
     logging.info("Loading Iris dataset")
