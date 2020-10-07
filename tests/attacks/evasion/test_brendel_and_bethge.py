@@ -38,6 +38,10 @@ def test_generate(
 ):
     try:
 
+        if not is_tf_version_2:
+            logging.warning("Couldn't perform this test because it only supports TensorFlow v2.")
+            return
+
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
         classifier = image_dl_estimator_for_attack(BrendelBethgeAttack, defended=False, from_logits=True)
 
