@@ -139,58 +139,55 @@ def test_defence_tensorflow(art_warning, get_default_mnist_subset, image_dl_esti
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_defence_non_tensorflow(art_warning, get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defence_non_tensorflow(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
-        if is_tf_version_2:
-            smooth_3x3 = SpatialSmoothing(window_size=3, channels_first=False)
-            preprocessing_defences = [smooth_3x3]
-            device_type = None
-            _test_preprocessing_defences_forward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
-            _test_preprocessing_defences_backward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
+        smooth_3x3 = SpatialSmoothing(window_size=3, channels_first=False)
+        preprocessing_defences = [smooth_3x3]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.xfail(reason="Preprocessing-defence chaining only supports defences implemented in TensorFlow v2.")
-@pytest.mark.only_with_platform("tensorflow")
+@pytest.mark.only_with_platform("tensorflow2")
 def test_defences_tensorflow_and_nontensorflow(art_warning, get_default_mnist_subset, image_dl_estimator,
-                                               device_type, is_tf_version_2):
+                                               device_type):
     try:
-        if is_tf_version_2:
-            smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=False)
-            smooth_3x3_pth = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
-            preprocessing_defences = [smooth_3x3_nonpth, smooth_3x3_pth]
-            device_type = None
-            _test_preprocessing_defences_forward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
-            _test_preprocessing_defences_backward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
+        smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=False)
+        smooth_3x3_pth = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        preprocessing_defences = [smooth_3x3_nonpth, smooth_3x3_pth]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_defences_chaining(art_warning, get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defences_chaining(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
-        if is_tf_version_2:
-            smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
-            smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
-            smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
-            preprocessing_defences = [smooth_3x3, smooth_5x5, smooth_7x7]
-            device_type = None
-            _test_preprocessing_defences_forward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
-            _test_preprocessing_defences_backward(
-                get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
-            )
+        smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
+        smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
+        preprocessing_defences = [smooth_3x3, smooth_5x5, smooth_7x7]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
     except ARTTestException as e:
         art_warning(e)
 
