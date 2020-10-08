@@ -39,7 +39,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 # A generic test for various preprocessing_defences, forward pass.
 def _test_preprocessing_defences_forward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
 ):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -73,7 +73,7 @@ def _test_preprocessing_defences_forward(
 
 # A generic test for various preprocessing_defences, backward pass.
 def _test_preprocessing_defences_backward(
-        get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+    get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
 ):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -157,8 +157,7 @@ def test_defence_non_tensorflow(art_warning, get_default_mnist_subset, image_dl_
 
 @pytest.mark.xfail(reason="Preprocessing-defence chaining only supports defences implemented in TensorFlow v2.")
 @pytest.mark.only_with_platform("tensorflow2")
-def test_defences_tensorflow_and_nontensorflow(art_warning, get_default_mnist_subset, image_dl_estimator,
-                                               device_type):
+def test_defences_tensorflow_and_nontensorflow(art_warning, get_default_mnist_subset, image_dl_estimator, device_type):
     try:
         smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=False)
         smooth_3x3_pth = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)

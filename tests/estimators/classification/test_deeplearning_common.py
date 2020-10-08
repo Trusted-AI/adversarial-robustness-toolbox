@@ -71,8 +71,9 @@ def test_fit(art_warning, get_default_mnist_subset, default_batch_size, image_dl
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
 @pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
-def test_predict(art_warning, framework, get_default_mnist_subset, image_dl_estimator,
-                 expected_values, store_expected_values):
+def test_predict(
+    art_warning, framework, get_default_mnist_subset, image_dl_estimator, expected_values, store_expected_values
+):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
@@ -113,16 +114,16 @@ def test_shapes(art_warning, get_default_mnist_subset, image_dl_estimator):
     ["categorical_crossentropy", "categorical_hinge", "sparse_categorical_crossentropy", "kullback_leibler_divergence"],
 )
 def test_loss_functions(
-        art_warning,
-        image_dl_estimator,
-        get_default_mnist_subset,
-        loss_name,
-        supported_losses_proba,
-        supported_losses_logit,
-        store_expected_values,
-        supported_losses_types,
-        from_logits,
-        expected_values,
+    art_warning,
+    image_dl_estimator,
+    get_default_mnist_subset,
+    loss_name,
+    supported_losses_proba,
+    supported_losses_logit,
+    store_expected_values,
+    supported_losses_types,
+    from_logits,
+    expected_values,
 ):
     # prediction and class_gradient should be independent of logits/probabilities and of loss function
 
@@ -248,8 +249,9 @@ def test_defences_predict(art_warning, get_default_mnist_subset, image_dl_estima
 # Note: because mxnet only supports 1 concurrent version of a model if we fit that model, all expected values will
 # change for all other tests using that fitted model
 @pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks", "tensorflow2")
-def test_fit_image_generator(art_warning, framework, image_dl_estimator,
-                             image_data_generator, get_default_mnist_subset):
+def test_fit_image_generator(
+    art_warning, framework, image_dl_estimator, image_data_generator, get_default_mnist_subset
+):
     try:
         classifier, sess = image_dl_estimator(from_logits=True)
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
@@ -275,14 +277,15 @@ def test_fit_image_generator(art_warning, framework, image_dl_estimator,
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
 @pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
-def test_loss_gradient(art_warning,
-                       framework,
-                       get_default_mnist_subset,
-                       image_dl_estimator,
-                       expected_values,
-                       mnist_shape,
-                       store_expected_values,
-                       ):
+def test_loss_gradient(
+    art_warning,
+    framework,
+    get_default_mnist_subset,
+    image_dl_estimator,
+    expected_values,
+    mnist_shape,
+    store_expected_values,
+):
     try:
         (expected_gradients_1, expected_gradients_2) = expected_values()
 
@@ -385,8 +388,15 @@ def test_save(art_warning, image_dl_estimator, get_default_mnist_subset, tmp_pat
 
 @pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
 @pytest.mark.skipif(keras.__version__.startswith("2.2"), reason="requires Keras 2.3.0 or higher")
-def test_class_gradient(art_warning, framework, image_dl_estimator, get_default_mnist_subset, mnist_shape,
-                        store_expected_values, expected_values):
+def test_class_gradient(
+    art_warning,
+    framework,
+    image_dl_estimator,
+    get_default_mnist_subset,
+    mnist_shape,
+    store_expected_values,
+    expected_values,
+):
     try:
         (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
