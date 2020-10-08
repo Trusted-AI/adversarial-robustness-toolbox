@@ -588,11 +588,13 @@ class HopSkipJump(EvasionAttack):
         # Generate random noise
         rnd_noise_shape = [num_eval] + list(self.estimator.input_shape)
         if self.norm == 2:
-            ### TODO: ADD MASK PARAM
             rnd_noise = np.random.randn(*rnd_noise_shape).astype(ART_NUMPY_DTYPE)
         else:
-            ### TODO: ADD MASK PARAM
             rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(ART_NUMPY_DTYPE)
+
+        # With mask
+        if mask is not None:
+            rnd_noise = rnd_noise * mask
 
         # Normalize random noise to fit into the range of input data
         rnd_noise = rnd_noise / np.sqrt(
