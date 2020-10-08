@@ -146,8 +146,14 @@ class HopSkipJump(EvasionAttack):
         x_adv_init = kwargs.get("x_adv_init")
 
         if x_adv_init is not None:
-            ### TODO: ADD MASK PARAM TO THE INIT
+            # Add mask param to the x_adv_init
+            if mask is not None:
+                for i in range(x.shape[0]):
+                    x_adv_init[i] = x_adv_init[i] * mask[i] + x[i] * (1 - mask[i])
+
+            # Do prediction on the init
             init_preds = np.argmax(self.estimator.predict(x_adv_init, batch_size=self.batch_size), axis=1)
+
         else:
             init_preds = [None] * len(x)
             x_adv_init = [None] * len(x)
@@ -165,27 +171,54 @@ class HopSkipJump(EvasionAttack):
         for ind, val in enumerate(tqdm(x_adv, desc="HopSkipJump")):
             self.curr_iter = start
             if self.targeted:
-                ### TODO: ADD MASK PARAM PER EXAMPLE
-                x_adv[ind] = self._perturb(
-                    x=val,
-                    y=y[ind],
-                    y_p=preds[ind],
-                    init_pred=init_preds[ind],
-                    adv_init=x_adv_init[ind],
-                    clip_min=clip_min,
-                    clip_max=clip_max,
-                )
+                if mask is not None:
+                    x_adv[ind] = self._perturb(
+                        x=val,
+                        y=y[ind],
+                        y_p=preds[ind],
+                        init_pred=init_preds[ind],
+                        adv_init=x_adv_init[ind],
+                        mask=mask[ind],
+                        clip_min=clip_min,
+                        clip_max=clip_max,
+                    )
+
+                else:
+                    x_adv[ind] = self._perturb(
+                        x=val,
+                        y=y[ind],
+                        y_p=preds[ind],
+                        init_pred=init_preds[ind],
+                        adv_init=x_adv_init[ind],
+                        mask=None,
+                        clip_min=clip_min,
+                        clip_max=clip_max,
+                    )
+
             else:
-                ### TODO: ADD MASK PARAM PER EXAMPLE
-                x_adv[ind] = self._perturb(
-                    x=val,
-                    y=-1,
-                    y_p=preds[ind],
-                    init_pred=init_preds[ind],
-                    adv_init=x_adv_init[ind],
-                    clip_min=clip_min,
-                    clip_max=clip_max,
-                )
+                if mask is not None:
+                    x_adv[ind] = self._perturb(
+                        x=val,
+                        y=-1,
+                        y_p=preds[ind],
+                        init_pred=init_preds[ind],
+                        adv_init=x_adv_init[ind],
+                        mask=mask[ind],
+                        clip_min=clip_min,
+                        clip_max=clip_max,
+                    )
+
+                else:
+                    x_adv[ind] = self._perturb(
+                        x=val,
+                        y=-1,
+                        y_p=preds[ind],
+                        init_pred=init_preds[ind],
+                        adv_init=x_adv_init[ind],
+                        mask=None,
+                        clip_min=clip_min,
+                        clip_max=clip_max,
+                    )
 
         if y is not None:
             y = to_categorical(y, self.estimator.nb_classes)
@@ -223,9 +256,16 @@ class HopSkipJump(EvasionAttack):
 
         return mask
 
-    ### TODO: ADD MASK PARAM
     def _perturb(
-        self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
+        self,
+        x: np.ndarray,
+        y: int,
+        y_p: int,
+        init_pred: int,
+        adv_init: np.ndarray,
+        mask: Optional[np.ndarray],
+        clip_min: float,
+        clip_max: float,
     ) -> np.ndarray:
         """
         Internal attack function for one example.
@@ -235,6 +275,9 @@ class HopSkipJump(EvasionAttack):
         :param y_p: The predicted label of x.
         :param init_pred: The predicted label of the initial image.
         :param adv_init: Initial array to act as an initial adversarial example.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :return: An adversarial example.
