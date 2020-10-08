@@ -41,21 +41,35 @@ class ImperceptibleAsr(EvasionAttack):
     | Paper link: http://proceedings.mlr.press/v97/qin19a.html
     """
 
-    attack_params = EvasionAttack.attack_params + []
+    attack_params = EvasionAttack.attack_params + [
+        "eps",
+        "learning_rate_1",
+        "max_iter_1",
+    ]
 
     _estimator_requirements = (TensorFlowV2Estimator, SpeechRecognizerMixin)
 
     def __init__(
         self,
         estimator: "TensorFlowV2Estimator",
+        eps: float = 2000,
+        learning_rate_1: float = 100,
+        max_iter_1: int = 1000,
     ) -> None:
         """
         Create an instance of the :class:`.ImperceptibleAsr`.
 
         :param estimator: A trained classifier.
+        :param eps: Initial max norm bound for adversarial perturbation.
+        :param learning_rate_1: Learning rate for stage 1 of attack.
+        :param max_iter_1: Number of iterations for stage 1 of attack.
         """
         # Super initialization
         super().__init__(estimator=estimator)
+        self.eps = eps
+        self.learning_rate_1 = learning_rate_1
+        self.max_iter_1 = max_iter_1
+        self._targeted = True
         self._check_params()
 
     def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -69,6 +83,62 @@ class ImperceptibleAsr(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         pass
+
+    def _create_adversarial(self, x, y) -> np.ndarray:
+        """
+        Create adversarial example with small perturbation that successfully deceives the estimator.
+
+        The method implements the part of the paper by Qin et al. (2019) that is referred to as the first stage of the
+        attack. The authors basically follow Carlini and Wagner (2018).
+
+        | Paper link: https://arxiv.org/abs/1801.01944.
+
+        :param x: An array with the original inputs to be attacked.
+        :param y: Target values of shape (batch_size,). Each sample in `y` is a string and it may possess different
+            lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
+        :return: An array with the adversarial outputs.
+        """
+        batch_size = x.shape[0]
+
+        epsilon = [self.eps] * batch_size
+        x_adversarial = [None] * batch_size
+
+        x_perturbed = x.copy()
+        perturbation = np.zeros_like(x_perturbed)
+
+        for i in range(self.max_iter_1):
+            # perform FGSM step for x
+            gradients = self.estimator.loss_gradient(x_perturbed, y, batch_mode=True)
+            x_perturbed = x_perturbed - self.learning_rate_1 * np.array([np.sign(g) for g in gradients], dtype=object)
+
+            # clip perturbation
+            perturbation = x_perturbed - x
+            perturbation = np.array([np.clip(p, -e, e) for p, e in zip(perturbation, epsilon)], dtype=object)
+
+            # re-apply clipped perturbation to x
+            x_perturbed = x + perturbation
+
+            if i % 10 == 0:
+                prediction = self.estimator.predict(x_perturbed, batch_size=batch_size)
+                for j in range(batch_size):
+                    # validate adversarial target, i.e. f(x_perturbed)=y
+                    if prediction[j] == y[j].upper():
+                        # decrease max norm bound epsilon
+                        perturbation_norm = np.max(np.abs(perturbation[j]))
+                        if epsilon[j] > perturbation_norm:
+                            epsilon[j] = perturbation_norm
+                        epsilon[j] *= 0.8
+                        # save current best adversarial example
+                        x_adversarial[j] = x_perturbed[j]
+                logger.info("Current iteration %s, epsilon %s", i, epsilon)
+
+        # return perturbed x if no adversarial example found
+        for j in range(batch_size):
+            if x_adversarial[j] is None:
+                logger.critical("Adversarial attack stage 1 for x_%s was not successful", j)
+                x_adversarial[j] = x_perturbed[j]
+
+        return np.array(x_adversarial, dtype=object)
 
     def _check_params(self) -> None:
         """

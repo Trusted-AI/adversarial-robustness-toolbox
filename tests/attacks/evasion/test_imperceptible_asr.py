@@ -29,6 +29,24 @@ from art.estimators.tensorflow import TensorFlowV2Estimator
 logger = logging.getLogger(__name__)
 
 
+@pytest.fixture
+def audio_data():
+    """
+    Create audio fixtures of shape (nb_samples=3,) with elements of variable length.
+    """
+    sample_rate = 16000
+    test_input = np.array(
+        [
+            np.zeros(sample_rate),
+            np.ones(sample_rate * 2) * 2e3,
+            np.ones(sample_rate * 3) * 3e3,
+            np.ones(sample_rate * 3) * 3e3,
+        ],
+        dtype=object,
+    )
+    return test_input
+
+
 class TensorFlowV2AsrDummy(TensorFlowV2Estimator, SpeechRecognizerMixin):
     def get_activations():
         pass
@@ -53,6 +71,20 @@ class TestImperceptibleAsr:
 
     def test_implements_abstract_methods(self):
         ImperceptibleAsr(estimator=TensorFlowV2AsrDummy())
+
+    def test_create_adversarial_numpy(self, mocker, audio_data):
+        test_input = audio_data
+        test_target = ["dummy"] * test_input.shape[0]
+
+        mocker.patch.object(TensorFlowV2AsrDummy, "predict", return_value=test_target)
+
+        # learning rate of zero ensures that adversarial example equals test input
+        imperceptible_asr = ImperceptibleAsr(estimator=TensorFlowV2AsrDummy(), max_iter_1=10, learning_rate_1=0)
+        adversarial = imperceptible_asr._create_adversarial(test_input, test_target)
+
+        # test shape and adversarial example result
+        assert [x.shape for x in test_input] == [a.shape for a in adversarial]
+        assert [(a - x).sum() for a, x in zip(adversarial, test_input)] == [0.0] * 4
 
     # # TODO does only work with TF2 >= 2.2....
     # def test_classifier_type_check_fail(self):
