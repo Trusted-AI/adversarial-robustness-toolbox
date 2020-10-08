@@ -113,7 +113,9 @@ class MIFace(InferenceAttack):
         x_infer = x.astype(ART_NUMPY_DTYPE)
 
         # Compute inversions with implicit batching
-        for batch_id in trange(int(np.ceil(x.shape[0] / float(self.batch_size))), desc="Model inversion", disable=not self.verbose):
+        for batch_id in trange(
+            int(np.ceil(x.shape[0] / float(self.batch_size))), desc="Model inversion", disable=not self.verbose
+        ):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_infer[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
@@ -151,7 +153,7 @@ class MIFace(InferenceAttack):
         if not isinstance(self.window_length, (int, np.int)) or self.window_length < 0:
             raise ValueError("The window length must be a non-negative integer.")
 
-        if not isinstance(self.max_iter, float) or self.max_iter < 0.0:
+        if not isinstance(self.threshold, float) or self.threshold < 0.0:
             raise ValueError("The threshold must be a non-negative float.")
 
         if not isinstance(self.learning_rate, float) or self.learning_rate < 0.0:
