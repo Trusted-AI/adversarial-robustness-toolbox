@@ -71,7 +71,12 @@ class PixelThreshold(EvasionAttack):
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
     def __init__(
-        self, classifier: "CLASSIFIER_NEURALNETWORK_TYPE", th: Optional[int], es: int, targeted: bool, verbose: bool,
+        self,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        th: Optional[int],
+        es: int,
+        targeted: bool,
+        verbose: bool = True,
     ) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
@@ -80,7 +85,7 @@ class PixelThreshold(EvasionAttack):
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
-        :param verbose: Indicates whether to print verbose messages of ES used.
+        :param verbose: Print verbose messages of ES and show progress bars.
         """
         super().__init__(estimator=classifier)
 
@@ -105,12 +110,18 @@ class PixelThreshold(EvasionAttack):
         if self.th is not None:
             if self.th <= 0:
                 raise ValueError("The perturbation size `eps` has to be positive.")
+
         if not isinstance(self.es, int):
             raise ValueError("The flag `es` has to be of type int.")
+
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
+
         if not isinstance(self.verbose, bool):
             raise ValueError("The flag `verbose` has to be of type bool.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs) -> np.ndarray:
         """
@@ -141,7 +152,7 @@ class PixelThreshold(EvasionAttack):
             x = x * 255.0
 
         adv_x_best = []
-        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold"):
+        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold", disable=not self.verbose):
             if self.th is None:
                 self.min_th = 127
                 start, end = 1, 127
