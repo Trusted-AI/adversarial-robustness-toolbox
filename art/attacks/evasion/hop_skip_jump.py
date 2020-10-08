@@ -283,22 +283,27 @@ class HopSkipJump(EvasionAttack):
         :return: An adversarial example.
         """
         # First, create an initial adversarial sample
-        ### TODO: ADD MASK PARAM
-        initial_sample = self._init_sample(x, y, y_p, init_pred, adv_init, clip_min, clip_max)
+        initial_sample = self._init_sample(x, y, y_p, init_pred, adv_init, mask, clip_min, clip_max)
 
         # If an initial adversarial example is not found, then return the original image
         if initial_sample is None:
             return x
 
         # If an initial adversarial example found, then go with HopSkipJump attack
-        ### TODO: ADD MASK PARAM
-        x_adv = self._attack(initial_sample[0], x, initial_sample[1], clip_min, clip_max)
+        x_adv = self._attack(initial_sample[0], x, initial_sample[1], mask, clip_min, clip_max)
 
         return x_adv
 
-    ### TODO: ADD MASK PARAM
     def _init_sample(
-        self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
+        self,
+        x: np.ndarray,
+        y: int,
+        y_p: int,
+        init_pred: int,
+        adv_init: np.ndarray,
+        mask: Optional[np.ndarray],
+        clip_min: float,
+        clip_max: float,
     ) -> Optional[Union[np.ndarray, Tuple[np.ndarray, int]]]:
         """
         Find initial adversarial example for the attack.
@@ -308,6 +313,9 @@ class HopSkipJump(EvasionAttack):
         :param y_p: The predicted label of x.
         :param init_pred: The predicted label of the initial image.
         :param adv_init: Initial array to act as an initial adversarial example.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :return: An adversarial example.
@@ -322,20 +330,21 @@ class HopSkipJump(EvasionAttack):
 
             # Attack unsatisfied yet and the initial image satisfied
             if adv_init is not None and init_pred == y:
-                ### TODO: ADD MASK PARAM TO INIT BEFORE RETURN
                 return adv_init.astype(ART_NUMPY_DTYPE), init_pred
 
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
-                ### TODO: ADD MASK PARAM TO THE RANDOM IMAGE
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
+
+                if mask is not None:
+                    random_img = random_img * mask + x * (1 - mask)
+
                 random_class = np.argmax(
                     self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
                 )[0]
 
                 if random_class == y:
                     # Binary search to reduce the l2 distance to the original image
-                    ### TODO: ADD MASK PARAM
                     random_img = self._binary_search(
                         current_sample=random_img,
                         original_sample=x,
