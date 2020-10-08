@@ -123,6 +123,13 @@ class HopSkipJump(EvasionAttack):
         else:
             start = 0
 
+
+        ### TODO: GET MASK
+
+
+        ### TODO: PROCESS MASK AS BROADCASTED
+
+
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
@@ -136,6 +143,7 @@ class HopSkipJump(EvasionAttack):
         x_adv_init = kwargs.get("x_adv_init")
 
         if x_adv_init is not None:
+            ### TODO: ADD MASK PARAM TO THE INIT
             init_preds = np.argmax(self.estimator.predict(x_adv_init, batch_size=self.batch_size), axis=1)
         else:
             init_preds = [None] * len(x)
@@ -154,6 +162,7 @@ class HopSkipJump(EvasionAttack):
         for ind, val in enumerate(tqdm(x_adv, desc="HopSkipJump")):
             self.curr_iter = start
             if self.targeted:
+                ### TODO: ADD MASK PARAM PER EXAMPLE
                 x_adv[ind] = self._perturb(
                     x=val,
                     y=y[ind],
@@ -164,6 +173,7 @@ class HopSkipJump(EvasionAttack):
                     clip_max=clip_max,
                 )
             else:
+                ### TODO: ADD MASK PARAM PER EXAMPLE
                 x_adv[ind] = self._perturb(
                     x=val,
                     y=-1,
@@ -184,6 +194,33 @@ class HopSkipJump(EvasionAttack):
 
         return x_adv
 
+    @staticmethod
+    def _get_mask(x: np.ndarray, classifier_mixin: bool = True, **kwargs) -> np.ndarray:
+        """
+        Get the mask from the kwargs.
+
+        :param x: An array with the original inputs.
+        :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: The mask.
+        """
+        mask = kwargs.get("mask")
+
+        if mask is not None:
+            if classifier_mixin:
+                # Ensure the mask is broadcastable
+                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
+                    raise ValueError("Mask shape must be broadcastable to input shape.")
+
+            else:
+                raise ValueError("Mask is only supported for classification.")
+
+        return mask
+
+    ### TODO: ADD MASK PARAM
     def _perturb(
         self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
     ) -> np.ndarray:
@@ -200,6 +237,7 @@ class HopSkipJump(EvasionAttack):
         :return: An adversarial example.
         """
         # First, create an initial adversarial sample
+        ### TODO: ADD MASK PARAM
         initial_sample = self._init_sample(x, y, y_p, init_pred, adv_init, clip_min, clip_max)
 
         # If an initial adversarial example is not found, then return the original image
@@ -207,10 +245,12 @@ class HopSkipJump(EvasionAttack):
             return x
 
         # If an initial adversarial example found, then go with HopSkipJump attack
+        ### TODO: ADD MASK PARAM
         x_adv = self._attack(initial_sample[0], x, initial_sample[1], clip_min, clip_max)
 
         return x_adv
 
+    ### TODO: ADD MASK PARAM
     def _init_sample(
         self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
     ) -> Optional[Union[np.ndarray, Tuple[np.ndarray, int]]]:
@@ -236,10 +276,12 @@ class HopSkipJump(EvasionAttack):
 
             # Attack unsatisfied yet and the initial image satisfied
             if adv_init is not None and init_pred == y:
+                ### TODO: ADD MASK PARAM TO INIT BEFORE RETURN
                 return adv_init.astype(ART_NUMPY_DTYPE), init_pred
 
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
+                ### TODO: ADD MASK PARAM TO THE RANDOM IMAGE
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
                     self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
@@ -247,6 +289,7 @@ class HopSkipJump(EvasionAttack):
 
                 if random_class == y:
                     # Binary search to reduce the l2 distance to the original image
+                    ### TODO: ADD MASK PARAM
                     random_img = self._binary_search(
                         current_sample=random_img,
                         original_sample=x,
@@ -266,10 +309,12 @@ class HopSkipJump(EvasionAttack):
         else:
             # The initial image satisfied
             if adv_init is not None and init_pred != y_p:
+                ### TODO: ADD MASK PARAM
                 return adv_init.astype(ART_NUMPY_DTYPE), y_p
 
             # The initial image unsatisfied
             for _ in range(self.init_size):
+                ### TODO: ADD MASK PARAM
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
                 random_class = np.argmax(
                     self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
@@ -295,6 +340,7 @@ class HopSkipJump(EvasionAttack):
 
         return initial_sample
 
+    ### TODO: ADD MASK PARAM
     def _attack(
         self, initial_sample: np.ndarray, original_sample: np.ndarray, target: int, clip_min: float, clip_max: float,
     ) -> np.ndarray:
@@ -330,6 +376,8 @@ class HopSkipJump(EvasionAttack):
 
             # Next compute the number of evaluations and compute the update
             num_eval = min(int(self.init_eval * np.sqrt(self.curr_iter + 1)), self.max_eval)
+
+            ### TODO: ADD MASK PARAM
             update = self._compute_update(
                 current_sample=current_sample,
                 num_eval=num_eval,
@@ -448,6 +496,7 @@ class HopSkipJump(EvasionAttack):
 
         return delta
 
+    ### TODO: ADD MASK PARAM
     def _compute_update(
         self, current_sample: np.ndarray, num_eval: int, delta: float, target: int, clip_min: float, clip_max: float,
     ) -> np.ndarray:
@@ -465,8 +514,10 @@ class HopSkipJump(EvasionAttack):
         # Generate random noise
         rnd_noise_shape = [num_eval] + list(self.estimator.input_shape)
         if self.norm == 2:
+            ### TODO: ADD MASK PARAM
             rnd_noise = np.random.randn(*rnd_noise_shape).astype(ART_NUMPY_DTYPE)
         else:
+            ### TODO: ADD MASK PARAM
             rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(ART_NUMPY_DTYPE)
 
         # Normalize random noise to fit into the range of input data
