@@ -216,6 +216,24 @@ class TestHopSkipJump(TestBase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
+        # Test the masking 1
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+
+        params.update(mask=mask)
+        x_test_adv = hsj.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        # Test the masking 2
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
+        mask = mask.reshape(self.x_test_mnist.shape[1:])
+
+        params.update(mask=mask)
+        x_test_adv = hsj.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
         params = {"y": random_targets(self.y_test_mnist, krc.nb_classes)}
@@ -229,6 +247,24 @@ class TestHopSkipJump(TestBase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
+        # Test the masking 1
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+
+        params.update(mask=mask)
+        x_test_adv = hsj.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        # Test the masking 2
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
+        mask = mask.reshape(self.x_test_mnist.shape[1:])
+
+        params.update(mask=mask)
+        x_test_adv = hsj.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
         # Second untargeted attack and norm=2
         hsj = HopSkipJump(classifier=krc, targeted=False, max_iter=2, max_eval=100, init_eval=10)
         x_test_adv = hsj.generate(self.x_test_mnist)
@@ -241,6 +277,22 @@ class TestHopSkipJump(TestBase):
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
 
+        # Test the masking 1
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+
+        x_test_adv = hsj.generate(self.x_test_mnist, mask=mask)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        # Test the masking 2
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
+        mask = mask.reshape(self.x_test_mnist.shape[1:])
+
+        x_test_adv = hsj.generate(self.x_test_mnist, mask=mask)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
         # Second untargeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=krc, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
         x_test_adv = hsj.generate(self.x_test_mnist)
@@ -252,6 +304,22 @@ class TestHopSkipJump(TestBase):
         y_pred = np.argmax(krc.predict(self.x_test_mnist), axis=1)
         y_pred_adv = np.argmax(krc.predict(x_test_adv), axis=1)
         self.assertTrue((y_pred != y_pred_adv).any())
+
+        # Test the masking 1
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+
+        x_test_adv = hsj.generate(self.x_test_mnist, mask=mask)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
+        # Test the masking 2
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
+        mask = mask.reshape(self.x_test_mnist.shape[1:])
+
+        x_test_adv = hsj.generate(self.x_test_mnist, mask=mask)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
