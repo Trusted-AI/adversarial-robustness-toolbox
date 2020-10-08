@@ -7,9 +7,6 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
 
-pytest -q -s tests/attacks/evasion/test_brendel_and_bethge.py --mlFramework="pytorch" --durations=0
-if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_brendel_and_bethge.py"; fi
-
 mlFrameworkList=("tensorflow" "scikitlearn")
 for mlFramework in "${mlFrameworkList[@]}"; do
   echo "Running tests with framework $mlFramework"
