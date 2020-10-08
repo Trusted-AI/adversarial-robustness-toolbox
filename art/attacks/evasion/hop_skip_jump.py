@@ -364,13 +364,15 @@ class HopSkipJump(EvasionAttack):
         else:
             # The initial image satisfied
             if adv_init is not None and init_pred != y_p:
-                ### TODO: ADD MASK PARAM
                 return adv_init.astype(ART_NUMPY_DTYPE), y_p
 
             # The initial image unsatisfied
             for _ in range(self.init_size):
-                ### TODO: ADD MASK PARAM
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
+
+                if mask is not None:
+                    random_img = random_img * mask + x * (1 - mask)
+
                 random_class = np.argmax(
                     self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
                 )[0]
@@ -395,9 +397,14 @@ class HopSkipJump(EvasionAttack):
 
         return initial_sample
 
-    ### TODO: ADD MASK PARAM
     def _attack(
-        self, initial_sample: np.ndarray, original_sample: np.ndarray, target: int, clip_min: float, clip_max: float,
+        self,
+        initial_sample: np.ndarray,
+        original_sample: np.ndarray,
+        target: int,
+        mask: Optional[np.ndarray],
+        clip_min: float,
+        clip_max: float,
     ) -> np.ndarray:
         """
         Main function for the boundary attack.
@@ -405,6 +412,9 @@ class HopSkipJump(EvasionAttack):
         :param initial_sample: An initial adversarial example.
         :param original_sample: The original input.
         :param target: The target label.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :return: an adversarial example.
@@ -432,12 +442,12 @@ class HopSkipJump(EvasionAttack):
             # Next compute the number of evaluations and compute the update
             num_eval = min(int(self.init_eval * np.sqrt(self.curr_iter + 1)), self.max_eval)
 
-            ### TODO: ADD MASK PARAM
             update = self._compute_update(
                 current_sample=current_sample,
                 num_eval=num_eval,
                 delta=delta,
                 target=target,
+                mask=mask,
                 clip_min=clip_min,
                 clip_max=clip_max,
             )
@@ -551,9 +561,15 @@ class HopSkipJump(EvasionAttack):
 
         return delta
 
-    ### TODO: ADD MASK PARAM
     def _compute_update(
-        self, current_sample: np.ndarray, num_eval: int, delta: float, target: int, clip_min: float, clip_max: float,
+        self,
+        current_sample: np.ndarray,
+        num_eval: int,
+        delta: float,
+        target: int,
+        mask: Optional[np.ndarray],
+        clip_min: float,
+        clip_max: float,
     ) -> np.ndarray:
         """
         Compute the update in Eq.(14).
@@ -562,6 +578,9 @@ class HopSkipJump(EvasionAttack):
         :param num_eval: The number of evaluations for estimating gradient.
         :param delta: The size of random perturbation.
         :param target: The target label.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :return: an updated perturbation.
