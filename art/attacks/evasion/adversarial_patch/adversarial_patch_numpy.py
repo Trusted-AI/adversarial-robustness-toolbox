@@ -57,6 +57,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
@@ -72,6 +73,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         max_iter: int = 500,
         clip_patch: Union[list, tuple, None] = None,
         batch_size: int = 16,
+        verbose: bool = True,
     ) -> None:
         """
         Create an instance of the :class:`.AdversarialPatchNumpy`.
@@ -89,6 +91,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         :param clip_patch: The minimum and maximum values for each channel in the form
                [(float, float), (float, float), (float, float)].
         :param batch_size: The size of the training batch.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
 
@@ -100,6 +103,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.max_iter = max_iter
         self.batch_size = batch_size
         self.clip_patch = clip_patch
+        self.verbose = verbose
         self._check_params()
 
         if len(self.estimator.input_shape) not in [3, 4]:
@@ -162,7 +166,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
-        for _ in trange(self.max_iter, desc="Adversarial Patch Numpy"):
+        for _ in trange(self.max_iter, desc="Adversarial Patch Numpy", disable=not self.verbose):
             patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
 
             num_batches = int(math.ceil(x.shape[0] / self.batch_size))
@@ -233,6 +237,9 @@ class AdversarialPatchNumpy(EvasionAttack):
             raise ValueError("The batch size must be of type int.")
         if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
 
     def _get_circular_patch_mask(self, sharpness: int = 40) -> np.ndarray:
         """

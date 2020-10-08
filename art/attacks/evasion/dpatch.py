@@ -51,6 +51,7 @@ class DPatch(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
@@ -62,6 +63,7 @@ class DPatch(EvasionAttack):
         learning_rate: float = 5.0,
         max_iter: int = 500,
         batch_size: int = 16,
+        verbose: bool = True,
     ):
         """
         Create an instance of the :class:`.DPatch`.
@@ -71,6 +73,7 @@ class DPatch(EvasionAttack):
         :param learning_rate: The learning rate of the optimization.
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=estimator)
 
@@ -81,6 +84,7 @@ class DPatch(EvasionAttack):
         self._patch = np.random.randint(
             self.estimator.clip_values[0], self.estimator.clip_values[1], size=patch_shape
         ).astype(np.float32)
+        self.verbose = verbose
         self._check_params()
 
         self.target_label = []
@@ -119,7 +123,7 @@ class DPatch(EvasionAttack):
                     raise ValueError("The target_label as list of integers needs to of length number of images in `x`.")
                 self.target_label = target_label
 
-        for i_step in trange(self.max_iter, desc="DPatch iteration"):
+        for i_step in trange(self.max_iter, desc="DPatch iteration", disable=not self.verbose):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
 
@@ -286,3 +290,6 @@ class DPatch(EvasionAttack):
             raise ValueError("The batch size must be of type int.")
         if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
