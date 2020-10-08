@@ -81,6 +81,15 @@ class TestHopSkipJump(TestBase):
         y_pred_adv = np.argmax(tfc.predict(x_test_adv), axis=1)
         self.assertTrue((target == y_pred_adv).any())
 
+        # Test the masking 1
+        mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
+        mask = mask.reshape(self.x_test_mnist.shape)
+
+        params.update(mask=mask)
+        x_test_adv = hsj.generate(self.x_test_mnist, **params)
+        mask_diff = (1 - mask) * (x_test_adv - self.x_test_mnist)
+        self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
+
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
