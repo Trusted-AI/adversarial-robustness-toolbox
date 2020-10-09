@@ -44,7 +44,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1812.02606
     """
 
-    attack_params = ["conf", "unc_increase", "min_val", "max_val"]
+    attack_params = ["conf", "unc_increase", "min_val", "max_val", "verbose"]
     _estimator_requirements = (GPyGaussianProcessClassifier,)
 
     def __init__(
@@ -54,6 +54,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         unc_increase: float = 100.0,
         min_val: float = 0.0,
         max_val: float = 1.0,
+        verbose: bool = True,
     ) -> None:
         """
         :param classifier: A trained model of type GPYGaussianProcessClassifier.
@@ -61,12 +62,14 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         :param unc_increase: Value uncertainty is allowed to deviate, where 1.0 is original value.
         :param min_val: minimal value any feature can take.
         :param max_val: maximal value any feature can take.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         self.conf = conf
         self.unc_increase = unc_increase
         self.min_val = min_val
         self.max_val = max_val
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -97,7 +100,7 @@ class HighConfidenceLowUncertainty(EvasionAttack):
         # adding bounds, to not go away from original data
         for i in range(np.shape(x)[1]):
             bounds.append((self.min_val, self.max_val))
-        for i in trange(x.shape[0], desc="HCLU"):  # go through data amd craft
+        for i in trange(x.shape[0], desc="HCLU", disable=not self.verbose):  # go through data and craft
             # get properties for attack
             max_uncertainty = self.unc_increase * self.estimator.predict_uncertainty(x_adv[i].reshape(1, -1))
             class_zero = not self.estimator.predict(x_adv[i].reshape(1, -1))[0, 0] < 0.5
@@ -120,9 +123,15 @@ class HighConfidenceLowUncertainty(EvasionAttack):
     def _check_params(self) -> None:
         if not isinstance(self.estimator, GPyGaussianProcessClassifier):
             raise TypeError("Model must be a GPy Gaussian Process classifier.")
+
         if self.conf <= 0.5 or self.conf > 1.0:
             raise ValueError("Confidence value has to be a value between 0.5 and 1.0.")
+
         if self.unc_increase <= 0.0:
             raise ValueError("Value to increase uncertainty must be positive.")
+
         if self.min_val > self.max_val:
             raise ValueError("Maximum has to be larger than minimum.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

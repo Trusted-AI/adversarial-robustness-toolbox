@@ -58,6 +58,7 @@ class HopSkipJump(EvasionAttack):
         "init_size",
         "curr_iter",
         "batch_size",
+        "verbose",
     ]
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
@@ -70,6 +71,7 @@ class HopSkipJump(EvasionAttack):
         max_eval: int = 10000,
         init_eval: int = 100,
         init_size: int = 100,
+        verbose: bool = True,
     ) -> None:
         """
         Create a HopSkipJump attack instance.
@@ -81,6 +83,7 @@ class HopSkipJump(EvasionAttack):
         :param max_eval: Maximum number of evaluations for estimating gradient.
         :param init_eval: Initial number of evaluations for estimating gradient.
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         self._targeted = targeted
@@ -91,6 +94,7 @@ class HopSkipJump(EvasionAttack):
         self.init_size = init_size
         self.curr_iter = 0
         self.batch_size = 1
+        self.verbose = verbose
         self._check_params()
         self.curr_iter = 0
 
@@ -151,7 +155,7 @@ class HopSkipJump(EvasionAttack):
             y = np.argmax(y, axis=1)
 
         # Generate the adversarial samples
-        for ind, val in enumerate(tqdm(x_adv, desc="HopSkipJump")):
+        for ind, val in enumerate(tqdm(x_adv, desc="HopSkipJump", disable=not self.verbose)):
             self.curr_iter = start
             if self.targeted:
                 x_adv[ind] = self._perturb(
@@ -561,3 +565,6 @@ class HopSkipJump(EvasionAttack):
 
         if not isinstance(self.init_size, (int, np.int)) or self.init_size <= 0:
             raise ValueError("The number of initial trials must be a positive integer.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

@@ -126,9 +126,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         self._input_layer = input_layer
         self._output_layer = output_layer
 
-        if "<class 'tensorflow" in str(type(model)):
+        if "<class 'tensorflow" in str(type(model).__mro__):
             self.is_tensorflow = True
-        elif "<class 'keras" in str(type(model)):
+        elif "<class 'keras" in str(type(model).__mro__):
             self.is_tensorflow = False
         else:
             raise TypeError("Type of model not recognized:" + str(type(model)))

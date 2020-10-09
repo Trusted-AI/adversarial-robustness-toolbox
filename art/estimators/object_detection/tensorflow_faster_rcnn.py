@@ -80,8 +80,8 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                                   `Loss/BoxClassifierLoss/classification_loss`) to scalar tensors representing
                                   corresponding loss values.
                         - detections: a dictionary containing final detection results.
-        :param filename: Name of the file.
-        :param url: Download URL.
+        :param filename: Filename of the detection model without filename extension.
+        :param url: URL to download archive of detection model including filename extension.
         :param sess: Computation session.
         :param is_training: A boolean indicating whether the training version of the computation graph should be
                             constructed.
@@ -237,6 +237,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               corresponding loss values.
                     - detections: a dictionary containing final detection results.
         """
+        import tensorflow as tf
         from object_detection.utils import variables_helper
 
         if obj_detection_model is None:
@@ -323,6 +324,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                                                   [num_boxes] containing weights for groundtruth boxes.
         :return: Loss gradients of the same shape as `x`.
         """
+        import tensorflow as tf
         # Only do loss_gradient if is_training is False
         if self.is_training:
             raise NotImplementedError(

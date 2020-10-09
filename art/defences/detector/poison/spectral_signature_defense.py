@@ -29,8 +29,8 @@ from typing import List, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.defences.detector.poisoning.ground_truth_evaluator import GroundTruthEvaluator
-from art.defences.detector.poisoning.poison_filtering_defence import PoisonFilteringDefence
+from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
+from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_NEURALNETWORK_TYPE

@@ -55,6 +55,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         "nb_random_init",
         "batch_size",
         "loss_type",
+        "verbose",
     ]
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
     _predefined_losses = [None, "cross_entropy", "difference_logits_ratio"]
@@ -70,6 +71,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         nb_random_init: int = 5,
         batch_size: int = 32,
         loss_type: Optional[str] = None,
+        verbose: bool = True,
     ):
         """
         Create a :class:`.AutoProjectedGradientDescent` instance.
@@ -83,6 +85,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         :param nb_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         from art.estimators.classification import TensorFlowClassifier, TensorFlowV2Classifier, PyTorchClassifier
 
@@ -348,6 +351,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
         self.nb_random_init = nb_random_init
         self.batch_size = batch_size
         self.loss_type = loss_type
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -374,7 +378,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
-        for _ in trange(max(1, self.nb_random_init), desc="AutoPGD - restart"):
+        for _ in trange(max(1, self.nb_random_init), desc="AutoPGD - restart", disable=not self.verbose):
             # Determine correctly predicted samples
             y_pred = self.estimator.predict(x_adv)
             if self.targeted:
@@ -406,7 +410,10 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
             # Compute perturbation with implicit batching
             for batch_id in trange(
-                int(np.ceil(x_robust.shape[0] / float(self.batch_size))), desc="AutoPGD - batch", leave=False
+                int(np.ceil(x_robust.shape[0] / float(self.batch_size))),
+                desc="AutoPGD - batch",
+                leave=False,
+                disable=not self.verbose,
             ):
                 self.eta = 2 * self.eps_step
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
@@ -429,7 +436,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                 eta = self.eps_step
                 self.count_condition_1 = 0
 
-                for k_iter in trange(self.max_iter, desc="AutoPGD - iteration", leave=False):
+                for k_iter in trange(self.max_iter, desc="AutoPGD - iteration", leave=False, disable=not self.verbose):
 
                     # Get perturbation, use small scalar to avoid division by 0
                     tol = 10e-8
@@ -564,3 +571,6 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
         if self.loss_type not in self._predefined_losses:
             raise ValueError("The argument loss_type has to be either {}.".format(self._predefined_losses))
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
