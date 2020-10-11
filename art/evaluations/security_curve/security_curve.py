@@ -48,7 +48,7 @@ class SecurityCurve(Evaluation):
                 self.eps_list.append(i * eps_incr)
 
         else:
-            self.eps_list = self.eps
+            self.eps_list = self.eps.copy()
 
         y_pred = classifier.predict(x=x, y=y)
         self.accuracy = self._get_accuracy(y=y, y_pred=y_pred)
@@ -65,8 +65,12 @@ class SecurityCurve(Evaluation):
         return self.eps_list, self.accuracy_adv_list, self.accuracy
 
     def plot(self):
-        plt.plot(self.eps_list, self.accuracy_adv_list)
-        plt.plot([self.eps_list[0], self.eps_list[-1]], [self.accuracy, self.accuracy], linestyle="--")
+        plt.plot(self.eps_list, self.accuracy_adv_list, label='adversarial', marker='o')
+        plt.plot([self.eps_list[0], self.eps_list[-1]], [self.accuracy, self.accuracy], linestyle="--", label='benign')
+        plt.legend()
+        plt.xlabel('Attack budget eps')
+        plt.ylabel('Accuracy')
+        plt.ylim([0, 1])
         plt.show()
 
     @staticmethod
