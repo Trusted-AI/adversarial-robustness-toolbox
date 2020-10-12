@@ -13,7 +13,7 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   echo "#######################################################################"
 
   #TODO FIX Failing with Keras at test_membership_inference.test_black_box_keras_loss
-  pytest -q -vv tests/attacks/inference/test_membership_inference.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append -q -vv tests/attacks/inference/test_membership_inference.py --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 done
 
@@ -25,29 +25,29 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   echo "############## Running tests with framework $mlFramework ##############"
   echo "#######################################################################"
 
-  pytest -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
-  pytest -q -vv tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
-  pytest -q -vv -s tests/attacks/evasion/ --mlFramework=$mlFramework  --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/evasion/ --mlFramework=$mlFramework  --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
-  pytest -q -vv tests/attacks/inference/test_model_inversion.py --mlFramework=$mlFramework --skip_travis=True --durations=0
-  pytest -q -vv tests/attacks/inference/test_attribute_inference.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/test_model_inversion.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/test_attribute_inference.py --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
 
-  pytest -q -vv tests/classifiersFrameworks/  --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/classifiersFrameworks/  --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests"; fi
 
-  pytest -q -vv tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor/test_spatial_smoothing_pytorch.py tests"; fi
 
-  pytest -q -vv tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_common.py --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification/test_deeplearning_common.py $mlFramework"; fi
 
-  pytest -q -vv tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/estimators/classification/test_deeplearning_specific.py --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed estimators/classification tests for framework $mlFramework"; fi
 done
 
