@@ -341,6 +341,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             prev_reduction = []
             predictions = k.constant(predictions)
+            y_preprocessed = k.constant(y_preprocessed)
             for loss_function in self._model.loss_functions:
                 prev_reduction.append(loss_function.reduction)
                 loss_function.reduction = self._losses.Reduction.NONE
