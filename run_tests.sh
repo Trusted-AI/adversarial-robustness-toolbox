@@ -154,7 +154,7 @@ run_test () {
   echo "######################################################################"
   echo ${test}
   echo "######################################################################"
-  coverage run --append -m unittest -v ${test}
+#  coverage run --append -m unittest -v ${test}
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed $test"; fi
 }
 
@@ -165,7 +165,7 @@ for tests_module in "${tests_modules[@]}"; do
   done
 done
 
-bash <(curl -s https://codecov.io/bash)
+#bash <(curl -s https://codecov.io/bash)
 
 
 exit ${exit_code}
