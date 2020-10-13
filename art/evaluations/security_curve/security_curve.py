@@ -62,11 +62,11 @@ class SecurityCurve(Evaluation):
             accuracy_adv = self._get_accuracy(y=y, y_pred=y_pred_adv)
             self.accuracy_adv_list.append(accuracy_adv)
 
-        self._check_gradient_masking(classifier=classifier, x=x, y=y)
+        self._check_gradient(classifier=classifier, x=x, y=y)
 
         return self.eps_list, self.accuracy_adv_list, self.accuracy
 
-    def _check_gradient_masking(self, classifier, x, y):
+    def _check_gradient(self, classifier, x, y):
 
         max_iter = 100
 
@@ -91,9 +91,9 @@ class SecurityCurve(Evaluation):
         accuracy_adv = self._get_accuracy(y=y, y_pred=y_pred_adv)
 
         if accuracy_adv > 0.05:
-            self.is_gradient_masking = True
+            self.is_obfuscating_gradients = True
         else:
-            self.is_gradient_masking = False
+            self.is_obfuscating_gradients = False
 
     def plot(self):
         plt.plot(self.eps_list, self.accuracy_adv_list, label='adversarial', marker='o')
@@ -101,6 +101,10 @@ class SecurityCurve(Evaluation):
         plt.legend()
         plt.xlabel('Attack budget eps')
         plt.ylabel('Accuracy')
+        if self.is_obfuscating_gradients:
+            plt.title("Potential gradient obfuscation detected.")
+        else:
+            plt.title("No gradient obfuscation detected")
         plt.ylim([0, 1.05])
         plt.show()
 
