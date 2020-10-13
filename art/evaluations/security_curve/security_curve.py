@@ -20,14 +20,16 @@ This module implements the evaluation of Security Curves.
 
 Examples of Security Curves can be found in Figure 6 of Madry et al., 2019 (https://arxiv.org/abs/1706.06083).
 """
-from typing import List, NoReturn, Tuple, Union
+from typing import List, NoReturn, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from matplotlib import pyplot as plt
 
 from art.evaluations.evaluation import Evaluation
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
-from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 class SecurityCurve(Evaluation):
