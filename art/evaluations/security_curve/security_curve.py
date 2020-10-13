@@ -62,7 +62,38 @@ class SecurityCurve(Evaluation):
             accuracy_adv = self._get_accuracy(y=y, y_pred=y_pred_adv)
             self.accuracy_adv_list.append(accuracy_adv)
 
+        self._check_gradient_masking(classifier=classifier, x=x, y=y)
+
         return self.eps_list, self.accuracy_adv_list, self.accuracy
+
+    def _check_gradient_masking(self, classifier, x, y):
+
+        max_iter = 100
+
+        kwargs = {
+            "norm": "inf",
+            "eps": classifier.clip_values[1],
+            "eps_step": classifier.clip_values[1] / (max_iter * 2),
+            "max_iter": max_iter,
+            "targeted": False,
+            "num_random_init": 0,
+            "batch_size": 128,
+            "random_eps": False,
+            "verbose": False,
+        }
+
+        attack_pgd = ProjectedGradientDescent(estimator=classifier, **kwargs)
+
+        x_adv = attack_pgd.generate(x=x, y=y)
+
+        y_pred_adv = classifier.predict(x=x_adv, y=y)
+
+        accuracy_adv = self._get_accuracy(y=y, y_pred=y_pred_adv)
+
+        if accuracy_adv > 0.05:
+            self.is_gradient_masking = True
+        else:
+            self.is_gradient_masking = False
 
     def plot(self):
         plt.plot(self.eps_list, self.accuracy_adv_list, label='adversarial', marker='o')
@@ -70,7 +101,7 @@ class SecurityCurve(Evaluation):
         plt.legend()
         plt.xlabel('Attack budget eps')
         plt.ylabel('Accuracy')
-        plt.ylim([0, 1])
+        plt.ylim([0, 1.05])
         plt.show()
 
     @staticmethod
