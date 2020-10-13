@@ -24,7 +24,7 @@ from keras_preprocessing.image import ImageDataGenerator
 import numpy as np
 
 from art.data_generators import KerasDataGenerator
-from art.defences.detector.poisoning import ActivationDefence
+from art.defences.detector.poison import ActivationDefence
 from art.utils import load_mnist
 from art.visualization import convert_to_rgb
 
