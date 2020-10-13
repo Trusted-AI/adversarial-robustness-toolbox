@@ -27,7 +27,7 @@ from matplotlib import pyplot as plt
 
 from art.evaluations.evaluation import Evaluation
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
-from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
+from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 
 class SecurityCurve(Evaluation):
@@ -51,7 +51,7 @@ class SecurityCurve(Evaluation):
 
     def evaluate(
         self,
-        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         x: np.ndarray,
         y: np.ndarray,
         **kwargs: Union[str, bool, int, float]
@@ -111,7 +111,7 @@ class SecurityCurve(Evaluation):
 
     def _check_gradient(
         self,
-        classifier: CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE,
+        classifier: CLASSIFIER_LOSS_GRADIENTS_TYPE,
         x: np.ndarray,
         y: np.ndarray,
         **kwargs: Union[str, bool, int, float]
