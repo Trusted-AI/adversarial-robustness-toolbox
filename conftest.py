@@ -764,33 +764,3 @@ def framework_agnostic(request, framework):
     if request.node.get_closest_marker("framework_agnostic"):
         if framework != default_framework:
             pytest.skip("framework agnostic test skipped for framework : {}".format(framework))
-
-
-@pytest.fixture
-def expected_values_amp(request):
-    """
-    Retrieves the expected values for amp testing.
-
-    :param request:
-    :return:
-    """
-    file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
-
-    def _expected_values_amp():
-        with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
-        ) as f:
-            expected_values = json.load(f)
-
-            # Searching first for any framework specific expected value
-            expected_keys_amp = "test_loss_gradient_amp"
-            if expected_keys_amp in expected_values.keys():
-                return expected_values[expected_keys_amp]
-            else:
-                raise NotImplementedError(
-                    "Couldn't find any expected values for test {0} and framework {1}".format(
-                        request.node.name, 'pytorch'
-                    )
-                )
-
-    return _expected_values_amp
