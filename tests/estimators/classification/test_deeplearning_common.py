@@ -511,17 +511,8 @@ def test_learning_phase(art_warning, image_dl_estimator):
         art_warning(e)
 
 
-# Note, the following part is for testing the amp tool on pytorch platform only.
-apex_spec = importlib.util.find_spec("apex")
-if apex_spec is not None:
-    amp_spec = importlib.util.find_spec("apex.amp")
-else:
-    amp_spec = None
-amp_found = amp_spec is not None
-
-
-@pytest.mark.skipif(not amp_found, reason="Skip unittests if apex module is not found.")
-@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.skipModule("apex.amp")
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_loss_gradient_amp(
     art_warning,
