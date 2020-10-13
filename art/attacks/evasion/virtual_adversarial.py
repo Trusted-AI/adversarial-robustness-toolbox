@@ -52,6 +52,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         "finite_diff",
         "max_iter",
         "batch_size",
+        "verbose",
     ]
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
@@ -62,6 +63,7 @@ class VirtualAdversarialMethod(EvasionAttack):
         finite_diff: float = 1e-6,
         eps: float = 0.1,
         batch_size: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         Create a :class:`.VirtualAdversarialMethod` instance.
@@ -71,12 +73,14 @@ class VirtualAdversarialMethod(EvasionAttack):
         :param finite_diff: The finite difference parameter.
         :param max_iter: The maximum number of iterations.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         self.finite_diff = finite_diff
         self.eps = eps
         self.max_iter = max_iter
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -98,7 +102,9 @@ class VirtualAdversarialMethod(EvasionAttack):
         preds_rescaled = preds
 
         # Compute perturbation with implicit batching
-        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="VAT"):
+        for batch_id in trange(
+            int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="VAT", disable=not self.verbose
+        ):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
             batch = batch.reshape((batch.shape[0], -1))
@@ -204,3 +210,6 @@ class VirtualAdversarialMethod(EvasionAttack):
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

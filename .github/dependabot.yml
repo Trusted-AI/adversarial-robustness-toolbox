@@ -11,3 +11,9 @@ updates:
       interval: "daily"
     assignees:
       - "beat-buesser"
+  - package-ecosystem: "github-actions"
+      directory: "/"
+      schedule:
+        interval: "daily"
+      assignees:
+        - "ebubae"

@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.detector.poisoning import SpectralSignatureDefense
+from art.defences.detector.poison import SpectralSignatureDefense
 from art.utils import load_mnist
 
 from tests.utils import master_seed

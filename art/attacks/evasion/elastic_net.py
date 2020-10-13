@@ -62,6 +62,7 @@ class ElasticNet(EvasionAttack):
         "initial_const",
         "batch_size",
         "decision_rule",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
@@ -78,6 +79,7 @@ class ElasticNet(EvasionAttack):
         initial_const: float = 1e-3,
         batch_size: int = 1,
         decision_rule: str = "EN",
+        verbose: bool = True,
     ) -> None:
         """
         Create an ElasticNet attack instance.
@@ -96,6 +98,7 @@ class ElasticNet(EvasionAttack):
                Carlini and Wagner (2016).
         :param batch_size: Internal size of batches on which adversarial samples are generated.
         :param decision_rule: Decision rule. 'EN' means Elastic Net rule, 'L1' means L1 rule, 'L2' means L2 rule.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         self.confidence = confidence
@@ -107,6 +110,7 @@ class ElasticNet(EvasionAttack):
         self.initial_const = initial_const
         self.batch_size = batch_size
         self.decision_rule = decision_rule
+        self.verbose = verbose
         self._check_params()
 
     def _loss(self, x: np.ndarray, x_adv: np.ndarray) -> tuple:
@@ -201,7 +205,7 @@ class ElasticNet(EvasionAttack):
 
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x_adv.shape[0] / float(self.batch_size)))
-        for batch_id in trange(nb_batches, desc="EAD"):
+        for batch_id in trange(nb_batches, desc="EAD", disable=not self.verbose):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_batch = x_adv[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]
@@ -386,3 +390,6 @@ class ElasticNet(EvasionAttack):
 
         if not isinstance(self.decision_rule, six.string_types) or self.decision_rule not in ["EN", "L1", "L2"]:
             raise ValueError("The decision rule only supports `EN`, `L1`, `L2`.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

@@ -43,7 +43,7 @@ class Mp3Compression(Preprocessor):
     Implement the MP3 compression defense approach.
     """
 
-    params = ["channel_index", "channels_first", "sample_rate"]
+    params = ["channel_index", "channels_first", "sample_rate", "verbose"]
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
@@ -53,6 +53,7 @@ class Mp3Compression(Preprocessor):
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        verbose: bool = False,
     ) -> None:
         """
         Create an instance of MP3 compression.
@@ -63,6 +64,7 @@ class Mp3Compression(Preprocessor):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -79,6 +81,7 @@ class Mp3Compression(Preprocessor):
         self.channel_index = channel_index
         self.channels_first = channels_first
         self.sample_rate = sample_rate
+        self.verbose = verbose
         self._check_params()
 
     @property
@@ -145,7 +148,7 @@ class Mp3Compression(Preprocessor):
 
         # apply mp3 compression per audio item
         x_mp3 = x.copy()
-        for i, x_i in enumerate(tqdm(x, desc="MP3 compression")):
+        for i, x_i in enumerate(tqdm(x, desc="MP3 compression", disable=not self.verbose)):
             x_mp3[i] = wav_to_mp3(x_i, self.sample_rate)
 
         if self.channels_first:
@@ -165,3 +168,6 @@ class Mp3Compression(Preprocessor):
     def _check_params(self) -> None:
         if not (isinstance(self.sample_rate, (int, np.int)) and self.sample_rate > 0):
             raise ValueError("Sample rate be must a positive integer.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
