@@ -524,9 +524,10 @@ amp_found = amp_spec is not None
 @pytest.mark.only_with_platform("pytorch")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_loss_gradient_amp(
+    art_warning,
     get_default_mnist_subset,
     image_dl_estimator,
-    expected_values_amp,
+    expected_values,
     mnist_shape,
     device_type,
 ):
@@ -535,68 +536,72 @@ def test_loss_gradient_amp(
 
     from art.estimators.classification.pytorch import PyTorchClassifier
 
-    (expected_gradients_1, expected_gradients_2) = expected_values_amp()
+    try:
+        (expected_gradients_1, expected_gradients_2) = expected_values()
 
-    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier, _ = image_dl_estimator(from_logits=True)
-    optimizer = torch.optim.Adam(classifier.model.parameters(), lr=0.01)
+        classifier, _ = image_dl_estimator(from_logits=True)
+        optimizer = torch.optim.Adam(classifier.model.parameters(), lr=0.01)
 
-    # Redefine the classifier with amp
-    clip_values = (0, 1)
-    criterion = nn.CrossEntropyLoss()
-    classifier = PyTorchClassifier(
-        clip_values=clip_values,
-        model=classifier.model,
-        preprocessing_defences=[],
-        loss=criterion,
-        input_shape=(1, 28, 28),
-        nb_classes=10,
-        device_type=device_type,
-        optimizer=optimizer,
-        use_amp=True,
-        loss_scale=1.0,
-    )
+        # Redefine the classifier with amp
+        clip_values = (0, 1)
+        criterion = nn.CrossEntropyLoss()
+        classifier = PyTorchClassifier(
+            clip_values=clip_values,
+            model=classifier.model,
+            preprocessing_defences=[],
+            loss=criterion,
+            input_shape=(1, 28, 28),
+            nb_classes=10,
+            device_type=device_type,
+            optimizer=optimizer,
+            use_amp=True,
+            loss_scale=1.0,
+        )
 
-    # Compute loss gradients
-    gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
+        # Compute loss gradients
+        gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
 
-    # Test shape
-    assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
+        # Test shape
+        assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
 
-    # First test of gradients
-    sub_gradients = gradients[0, 0, :, 14]
+        # First test of gradients
+        sub_gradients = gradients[0, 0, :, 14]
 
-    np.testing.assert_array_almost_equal(
-        sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
-    )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_1, decimal=4,
+        )
 
-    # Second test of gradients
-    sub_gradients = gradients[0, 0, 14, :]
+        # Second test of gradients
+        sub_gradients = gradients[0, 0, 14, :]
 
-    np.testing.assert_array_almost_equal(
-        sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
-    )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_2, decimal=4,
+        )
 
-    # Compute loss gradients with framework
-    gradients = classifier.loss_gradient_framework(
-        torch.tensor(x_test_mnist).to(classifier.device), torch.tensor(y_test_mnist).to(classifier.device)
-    )
-    gradients = gradients.cpu().numpy()
+        # Compute loss gradients with framework
+        gradients = classifier.loss_gradient_framework(
+            torch.tensor(x_test_mnist).to(classifier.device), torch.tensor(y_test_mnist).to(classifier.device)
+        )
+        gradients = gradients.cpu().numpy()
 
-    # Test shape
-    assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
+        # Test shape
+        assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
 
-    # First test of gradients
-    sub_gradients = gradients[0, 0, :, 14]
+        # First test of gradients
+        sub_gradients = gradients[0, 0, :, 14]
 
-    np.testing.assert_array_almost_equal(
-        sub_gradients, expected_gradients_1[0], decimal=expected_gradients_1[1],
-    )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_1, decimal=4,
+        )
 
-    # Second test of gradients
-    sub_gradients = gradients[0, 0, 14, :]
+        # Second test of gradients
+        sub_gradients = gradients[0, 0, 14, :]
 
-    np.testing.assert_array_almost_equal(
-        sub_gradients, expected_gradients_2[0], decimal=expected_gradients_2[1],
-    )
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_2, decimal=4,
+        )
+
+    except ARTTestException as e:
+        art_warning(e)
