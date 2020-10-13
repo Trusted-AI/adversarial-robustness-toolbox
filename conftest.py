@@ -764,3 +764,42 @@ def framework_agnostic(request, framework):
     if request.node.get_closest_marker("framework_agnostic"):
         if framework != default_framework:
             pytest.skip("framework agnostic test skipped for framework : {}".format(framework))
+
+
+# ART test fixture to skip test for specific required modules
+# eg: @pytest.mark.skipModule("deepspeech_pytorch", "apex.amp", "object_detection")
+@pytest.fixture(autouse=True)
+def skip_by_module(request):
+    import importlib
+
+    if request.node.get_closest_marker("skipModule"):
+        module_to_skip_list = list(request.node.get_closest_marker("skipModule").args)
+
+        if "deepspeech_pytorch" in module_to_skip_list:
+            deepspeech_pytorch_spec = importlib.util.find_spec("deepspeech_pytorch")
+            deepspeech_pytorch_found = deepspeech_pytorch_spec is not None
+
+            if not deepspeech_pytorch_found:
+                pytest.skip(
+                    "Skip unittests if the `deepspeech_pytorch` module is not found because of pre-trained model."
+                )
+
+        if "object_detection" in module_to_skip_list:
+            object_detection_spec = importlib.util.find_spec("object_detection")
+            object_detection_found = object_detection_spec is not None
+
+            if not object_detection_found:
+                pytest.skip(
+                    "Skip unittests if the `object_detection` module is not found because of pre-trained model."
+                )
+
+        if "apex.amp" in module_to_skip_list:
+            apex_spec = importlib.util.find_spec("apex")
+            if apex_spec is not None:
+                amp_spec = importlib.util.find_spec("apex.amp")
+            else:
+                amp_spec = None
+            amp_found = amp_spec is not None
+
+            if not amp_found:
+                pytest.skip("Skip unittests if the `apex.amp` module is not found.")
