@@ -169,5 +169,4 @@ tests_modules=("attacks" \
 #
 #bash <(curl -s https://codecov.io/bash)
 
-
 exit ${exit_code}
