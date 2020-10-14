@@ -271,8 +271,8 @@ class DPatch(EvasionAttack):
         return patched_images
 
     def _check_params(self) -> None:
-        if not isinstance(self.patch_shape, tuple):
-            raise ValueError("The patch shape must be a tuple of integers.")
+        if not isinstance(self.patch_shape, (tuple, list)) or not all(isinstance(s, int) for s in self.patch_shape):
+            raise ValueError("The patch shape must be either a tuple or list of integers.")
         if len(self.patch_shape) != 3:
             raise ValueError("The length of patch shape must be 3.")
 
