@@ -555,6 +555,14 @@ def get_image_classifier_kr(
     return krc
 
 
+def filter_out_non_supported_kwargs(kwargs, supported_keywords):
+    new_kwargs = {}
+    for key, value in kwargs.items():
+        if key in supported_keywords:
+            new_kwargs[key] = value
+    return new_kwargs
+
+
 def get_image_classifier_kr_functional(input_layer=1, output_layer=1):
     from art.estimators.classification.keras import KerasClassifier
     import keras

@@ -34,7 +34,7 @@ from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, ge
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
-from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt
+from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt, filter_out_non_supported_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -487,33 +487,42 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
         if framework == "keras":
             if wildcard is False and functional is False:
                 if functional:
-                    classifier = get_image_classifier_kr_functional(**kwargs)
+                    new_kwargs = filter_out_non_supported_kwargs(kwargs, ["input_layer", "output_layer"])
+                    classifier = get_image_classifier_kr_functional(**new_kwargs)
                 else:
                     try:
-                        classifier = get_image_classifier_kr(**kwargs)
+                        new_kwargs = filter_out_non_supported_kwargs(kwargs, ["loss_name", "loss_type", "from_logits",
+                                                                              "load_init"])
+                        classifier = get_image_classifier_kr(**new_kwargs)
                     except NotImplementedError:
                         raise ARTTestFixtureNotImplemented(
                             "This combination of loss function options is currently not supported.",
                             image_dl_estimator.__name__, framework)
         if framework == "tensorflow":
             if wildcard is False and functional is False:
-                classifier, sess = get_image_classifier_tf(**kwargs)
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["from_logits", "load_init", "sess"])
+                classifier, sess = get_image_classifier_tf(**new_kwargs)
                 return classifier, sess
         if framework == "pytorch":
             if wildcard is False and functional is False:
-                classifier = get_image_classifier_pt(**kwargs)
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["from_logits", "load_init"])
+                classifier = get_image_classifier_pt(**new_kwargs)
         if framework == "kerastf":
             if wildcard:
-                classifier = get_image_classifier_kr_tf_with_wildcard(**kwargs)
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, [])
+                classifier = get_image_classifier_kr_tf_with_wildcard(**new_kwargs)
             else:
                 if functional:
-                    classifier = get_image_classifier_kr_tf_functional(**kwargs)
+                    new_kwargs = filter_out_non_supported_kwargs(kwargs, ["input_layer", "output_layer"])
+                    classifier = get_image_classifier_kr_tf_functional(**new_kwargs)
                 else:
-                    classifier = get_image_classifier_kr_tf(**kwargs)
+                    new_kwargs = filter_out_non_supported_kwargs(kwargs, ["loss_name", "loss_type", "from_logits"])
+                    classifier = get_image_classifier_kr_tf(**new_kwargs)
 
         if framework == "mxnet":
             if wildcard is False and functional is False:
-                classifier = get_image_classifier_mx_instance(**kwargs)
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["from_logits"])
+                classifier = get_image_classifier_mx_instance(**new_kwargs)
 
         if classifier is None:
             raise ARTTestFixtureNotImplemented(
@@ -764,6 +773,3 @@ def framework_agnostic(request, framework):
     if request.node.get_closest_marker("framework_agnostic"):
         if framework != default_framework:
             pytest.skip("framework agnostic test skipped for framework : {}".format(framework))
-
-
-
