@@ -51,17 +51,30 @@ def mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def back_end_verification(min_accuracy, victim_tfc, thieved_tfc, x_train):
+def back_end_knockoff_nets(min_accuracy, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train=None):
+    # Create random attack
+    attack = KnockoffNets(
+        classifier=victim_tfc,
+        batch_size_fit=BATCH_SIZE,
+        batch_size_query=BATCH_SIZE,
+        nb_epochs=NB_EPOCHS,
+        nb_stolen=NB_STOLEN,
+        sampling_strategy=sampling_strategy,
+    )
+
+    thieved_tfc = attack.extract(x=x_train, y=y_train, thieved_classifier=thieved_tfc)
+
     victim_preds = np.argmax(victim_tfc.predict(x=x_train), axis=1)
     thieved_preds = np.argmax(thieved_tfc.predict(x=x_train), axis=1)
     assert np.sum(victim_preds == thieved_preds) / len(victim_preds) > min_accuracy
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
-@pytest.mark.framework_agnostic
-def test_with_images(art_warning, mnist_subset, image_dl_estimator):
+@pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
+@pytest.mark.parametrize("sampling_strategy", ["random", "adaptive"])
+# @pytest.mark.framework_agnostic
+def test_with_images(art_warning, mnist_subset, image_dl_estimator, sampling_strategy):
     try:
-        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_subset
+        (x_train, y_train, x_test, y_test) = mnist_subset
 
         # Build TensorFlowClassifier
         victim_tfc, sess = image_dl_estimator()
@@ -69,40 +82,14 @@ def test_with_images(art_warning, mnist_subset, image_dl_estimator):
         # Create the thieved classifier
         thieved_tfc, _ = image_dl_estimator(load_init=False, sess=sess)
 
-        # Create random attack
-        attack = KnockoffNets(
-            classifier=victim_tfc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="random",
-        )
-
-        thieved_tfc = attack.extract(x=x_train_mnist, thieved_classifier=thieved_tfc)
-
-        back_end_verification(0.3, victim_tfc, thieved_tfc, x_train_mnist)
-
-        # Create adaptive attack
-        attack = KnockoffNets(
-            classifier=victim_tfc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="adaptive",
-            reward="all",
-        )
-        thieved_tfc = attack.extract(x=x_train_mnist, y=y_train_mnist, thieved_classifier=thieved_tfc)
-
-        back_end_verification(0.4, victim_tfc, thieved_tfc, x_train_mnist)
+        back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
-@pytest.mark.framework_agnostic
+# @pytest.mark.framework_agnostic
 def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator):
     try:
         (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
@@ -123,13 +110,7 @@ def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator):
         )
         thieved_tfc = attack.extract(x=x_train_iris, thieved_classifier=thieved_tfc)
 
-        back_end_verification(0.3, victim_tfc, thieved_tfc, x_train_iris)
-
-        # victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
-        # thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
-        # acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        # assert acc > 0.3
+        back_end_knockoff_nets(0.3, victim_tfc, thieved_tfc, x_train_iris)
 
         # Create adaptive attack
         attack = KnockoffNets(
@@ -143,16 +124,7 @@ def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator):
         )
         thieved_tfc = attack.extract(x=x_train_iris, y=y_train_iris, thieved_classifier=thieved_tfc)
 
-        # victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
-        # thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
-        # acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-        #
-        # assert acc > 0.4
+        back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, x_train_iris)
 
-        back_end_verification(0.4, victim_tfc, thieved_tfc, x_train_iris)
-
-        # Clean-up session
-        # if sess is not None:
-        #     sess.close()
     except ARTTestException as e:
         art_warning(e)
