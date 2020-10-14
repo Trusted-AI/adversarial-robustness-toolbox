@@ -571,23 +571,27 @@ def decision_tree_estimator(framework):
 
 @pytest.fixture
 def tabular_dl_estimator(framework):
-    def _tabular_dl_estimator(clipped=True):
+    def _tabular_dl_estimator(clipped=True, **kwargs):
         classifier = None
         sess = None
         if framework == "keras":
             if clipped:
-                classifier = get_tabular_classifier_kr()
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init"])
+                classifier = get_tabular_classifier_kr(new_kwargs)
             else:
-                kr_classifier = get_tabular_classifier_kr()
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init"])
+                kr_classifier = get_tabular_classifier_kr(new_kwargs)
                 classifier = KerasClassifier(model=kr_classifier.model, use_logits=False, channels_first=True)
 
         if framework == "tensorflow":
             if clipped:
-                classifier, sess = get_tabular_classifier_tf()
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init", "sess"])
+                classifier, sess = get_tabular_classifier_tf(new_kwargs)
 
         if framework == "pytorch":
             if clipped:
-                classifier = get_tabular_classifier_pt()
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init"])
+                classifier = get_tabular_classifier_pt(new_kwargs)
 
         if classifier is None:
             raise ARTTestFixtureNotImplemented("no deep learning tabular estimator available",
