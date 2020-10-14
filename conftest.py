@@ -577,21 +577,21 @@ def tabular_dl_estimator(framework):
         if framework == "keras":
             if clipped:
                 new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init"])
-                classifier = get_tabular_classifier_kr(new_kwargs)
+                classifier = get_tabular_classifier_kr(**new_kwargs)
             else:
                 new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init"])
-                kr_classifier = get_tabular_classifier_kr(new_kwargs)
+                kr_classifier = get_tabular_classifier_kr(**new_kwargs)
                 classifier = KerasClassifier(model=kr_classifier.model, use_logits=False, channels_first=True)
 
         if framework == "tensorflow":
             if clipped:
                 new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init", "sess"])
-                classifier, sess = get_tabular_classifier_tf(new_kwargs)
+                classifier, sess = get_tabular_classifier_tf(**new_kwargs)
 
         if framework == "pytorch":
             if clipped:
                 new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init"])
-                classifier = get_tabular_classifier_pt(new_kwargs)
+                classifier = get_tabular_classifier_pt(**new_kwargs)
 
         if classifier is None:
             raise ARTTestFixtureNotImplemented("no deep learning tabular estimator available",
