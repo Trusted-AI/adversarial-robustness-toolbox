@@ -24,7 +24,6 @@ import keras.backend as k
 import pytest
 import numpy as np
 
-
 from art.attacks.extraction.knockoff_nets import KnockoffNets
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
@@ -36,7 +35,6 @@ from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, ge
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
-
 
 BATCH_SIZE = 10
 NB_TRAIN = 100
@@ -53,9 +51,15 @@ def mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks")
-def test_with_images(art_warning, mnist_subset, image_dl_estimator):
+def back_end_verification(min_accuracy, victim_tfc, thieved_tfc, x_train):
+    victim_preds = np.argmax(victim_tfc.predict(x=x_train), axis=1)
+    thieved_preds = np.argmax(thieved_tfc.predict(x=x_train), axis=1)
+    assert np.sum(victim_preds == thieved_preds) / len(victim_preds) > min_accuracy
 
+
+@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.framework_agnostic
+def test_with_images(art_warning, mnist_subset, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_subset
 
@@ -77,12 +81,7 @@ def test_with_images(art_warning, mnist_subset, image_dl_estimator):
 
         thieved_tfc = attack.extract(x=x_train_mnist, thieved_classifier=thieved_tfc)
 
-        def back_end_verification(min_accuracy):
-            victim_preds = np.argmax(victim_tfc.predict(x=x_train_mnist), axis=1)
-            thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_mnist), axis=1)
-            assert np.sum(victim_preds == thieved_preds) / len(victim_preds) > min_accuracy
-
-        back_end_verification(0.3)
+        back_end_verification(0.3, victim_tfc, thieved_tfc, x_train_mnist)
 
         # Create adaptive attack
         attack = KnockoffNets(
@@ -96,28 +95,21 @@ def test_with_images(art_warning, mnist_subset, image_dl_estimator):
         )
         thieved_tfc = attack.extract(x=x_train_mnist, y=y_train_mnist, thieved_classifier=thieved_tfc)
 
-        # victim_preds = np.argmax(victim_tfc.predict(x=x_train_mnist), axis=1)
-        # thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_mnist), axis=1)
-        # acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-        #
-        # assert acc > 0.4
-        back_end_verification(0.4)
+        back_end_verification(0.4, victim_tfc, thieved_tfc, x_train_mnist)
 
     except ARTTestException as e:
         art_warning(e)
 
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.framework_agnostic
 def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator):
     try:
         (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
 
-        # Get the TensorFlow classifier
-        # victim_tfc, sess = get_tabular_classifier_tf()
         victim_tfc, sess = tabular_dl_estimator()
 
         # Create the thieved classifier
-        # thieved_tfc, _ = get_tabular_classifier_tf(load_init=False, sess=sess)
         thieved_tfc, _ = tabular_dl_estimator(load_init=False, sess=sess)
 
         # Create random attack
@@ -131,11 +123,13 @@ def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator):
         )
         thieved_tfc = attack.extract(x=x_train_iris, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+        back_end_verification(0.3, victim_tfc, thieved_tfc, x_train_iris)
 
-        assert acc > 0.3
+        # victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
+        # thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
+        # acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+        # assert acc > 0.3
 
         # Create adaptive attack
         attack = KnockoffNets(
@@ -149,11 +143,13 @@ def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator):
         )
         thieved_tfc = attack.extract(x=x_train_iris, y=y_train_iris, thieved_classifier=thieved_tfc)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+        # victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
+        # thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
+        # acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+        #
+        # assert acc > 0.4
 
-        assert acc > 0.4
+        back_end_verification(0.4, victim_tfc, thieved_tfc, x_train_iris)
 
         # Clean-up session
         # if sess is not None:
