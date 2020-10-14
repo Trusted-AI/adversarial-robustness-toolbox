@@ -55,6 +55,7 @@ def mnist_subset(get_mnist_dataset):
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
 def test_knockoff_nets(art_warning, mnist_subset, image_dl_estimator):
+
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_subset
 
@@ -79,8 +80,7 @@ def test_knockoff_nets(art_warning, mnist_subset, image_dl_estimator):
         def back_end_verification(min_accuracy):
             victim_preds = np.argmax(victim_tfc.predict(x=x_train_mnist), axis=1)
             thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_mnist), axis=1)
-            acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-            assert acc > min_accuracy
+            assert np.sum(victim_preds == thieved_preds) / len(victim_preds) > min_accuracy
 
         back_end_verification(0.3)
 
