@@ -49,7 +49,6 @@ class TestSpectralSignatureDefense(unittest.TestCase):
             batch_size=BATCH_SIZE,
             eps_multiplier=EPS_MULTIPLIER,
             ub_pct_poison=UB_PCT_POISON,
-            nb_classes=10,
         )
 
     def setUp(self):
