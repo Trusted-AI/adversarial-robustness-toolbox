@@ -38,6 +38,8 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 #  pytest -q -vv -s tests/attacks/evasion/test_decision_tree_attack.py --mlFramework=$mlFramework  --skip_travis=True --durations=0
 #  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
+#  pytest -q -vv -s tests/attacks/evasion/test_hop_skip_jump.py --mlFramework=$mlFramework  --skip_travis=True --durations=0
+#  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
 
 
@@ -71,7 +73,7 @@ declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                     "tests/attacks/test_functionally_equivalent_extraction.py" \
                     "tests/attacks/test_hclu.py" \
                     "tests/attacks/test_input_filter.py" \
-                    "tests/attacks/test_hop_skip_jump.py" \
+#                    "tests/attacks/test_hop_skip_jump.py" \
                     "tests/attacks/test_iterative_method.py" \
                     "tests/attacks/test_knockoff_nets.py" \
                     "tests/attacks/test_newtonfool.py" \
