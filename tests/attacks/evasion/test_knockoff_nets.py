@@ -89,10 +89,11 @@ def test_with_images(art_warning, mnist_subset, image_dl_estimator, sampling_str
 
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.parametrize("sampling_strategy", ["random", "adaptive"])
 # @pytest.mark.framework_agnostic
-def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator):
+def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator, sampling_strategy):
     try:
-        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+        (x_train, y_train), (_, _) = get_iris_dataset
 
         victim_tfc, sess = tabular_dl_estimator()
 
@@ -100,31 +101,33 @@ def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator):
         thieved_tfc, _ = tabular_dl_estimator(load_init=False, sess=sess)
 
         # Create random attack
-        attack = KnockoffNets(
-            classifier=victim_tfc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="random",
-        )
-        thieved_tfc = attack.extract(x=x_train_iris, thieved_classifier=thieved_tfc)
-
-        back_end_knockoff_nets(0.3, victim_tfc, thieved_tfc, x_train_iris)
+        # attack = KnockoffNets(
+        #     classifier=victim_tfc,
+        #     batch_size_fit=BATCH_SIZE,
+        #     batch_size_query=BATCH_SIZE,
+        #     nb_epochs=NB_EPOCHS,
+        #     nb_stolen=NB_STOLEN,
+        #     sampling_strategy="random",
+        # )
+        # thieved_tfc = attack.extract(x=x_train_iris, thieved_classifier=thieved_tfc)
+        #
+        # back_end_knockoff_nets(0.3, victim_tfc, thieved_tfc, x_train_iris)
+        back_end_knockoff_nets(0.3, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
 
         # Create adaptive attack
-        attack = KnockoffNets(
-            classifier=victim_tfc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="adaptive",
-            reward="all",
-        )
-        thieved_tfc = attack.extract(x=x_train_iris, y=y_train_iris, thieved_classifier=thieved_tfc)
-
-        back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, x_train_iris)
+        # attack = KnockoffNets(
+        #     classifier=victim_tfc,
+        #     batch_size_fit=BATCH_SIZE,
+        #     batch_size_query=BATCH_SIZE,
+        #     nb_epochs=NB_EPOCHS,
+        #     nb_stolen=NB_STOLEN,
+        #     sampling_strategy="adaptive",
+        #     reward="all",
+        # )
+        # thieved_tfc = attack.extract(x=x_train_iris, y=y_train_iris, thieved_classifier=thieved_tfc)
+        #
+        # back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, x_train_iris)
+        back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
 
     except ARTTestException as e:
         art_warning(e)
