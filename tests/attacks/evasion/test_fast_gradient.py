@@ -146,7 +146,7 @@ def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator
 @pytest.mark.framework_agnostic
 def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset, targeted, clipped):
     try:
-        classifier = tabular_dl_estimator(clipped=clipped)
+        classifier, _ = tabular_dl_estimator(clipped=clipped)
 
         if targeted:
             attack = FastGradientMethod(classifier, targeted=True, eps=0.1, batch_size=128)

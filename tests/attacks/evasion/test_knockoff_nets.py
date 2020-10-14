@@ -54,7 +54,7 @@ def mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.skipMlFramework("non_dl_frameworks")
-def test_knockoff_nets(art_warning, mnist_subset, image_dl_estimator):
+def test_with_images(art_warning, mnist_subset, image_dl_estimator):
 
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_subset
@@ -107,53 +107,59 @@ def test_knockoff_nets(art_warning, mnist_subset, image_dl_estimator):
         art_warning(e)
 
 
-def test_tensorflow_iris(get_iris_dataset):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
+@pytest.mark.skipMlFramework("non_dl_frameworks")
+def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator):
+    try:
+        (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
 
-    # Get the TensorFlow classifier
-    victim_tfc, sess = get_tabular_classifier_tf()
+        # Get the TensorFlow classifier
+        # victim_tfc, sess = get_tabular_classifier_tf()
+        victim_tfc, sess = tabular_dl_estimator()
 
-    # Create the thieved classifier
-    thieved_tfc, _ = get_tabular_classifier_tf(load_init=False, sess=sess)
+        # Create the thieved classifier
+        # thieved_tfc, _ = get_tabular_classifier_tf(load_init=False, sess=sess)
+        thieved_tfc, _ = tabular_dl_estimator(load_init=False, sess=sess)
 
-    # Create random attack
-    attack = KnockoffNets(
-        classifier=victim_tfc,
-        batch_size_fit=BATCH_SIZE,
-        batch_size_query=BATCH_SIZE,
-        nb_epochs=NB_EPOCHS,
-        nb_stolen=NB_STOLEN,
-        sampling_strategy="random",
-    )
-    thieved_tfc = attack.extract(x=x_train_iris, thieved_classifier=thieved_tfc)
+        # Create random attack
+        attack = KnockoffNets(
+            classifier=victim_tfc,
+            batch_size_fit=BATCH_SIZE,
+            batch_size_query=BATCH_SIZE,
+            nb_epochs=NB_EPOCHS,
+            nb_stolen=NB_STOLEN,
+            sampling_strategy="random",
+        )
+        thieved_tfc = attack.extract(x=x_train_iris, thieved_classifier=thieved_tfc)
 
-    victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
-    thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
-    acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+        victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
-    assert acc > 0.3
+        assert acc > 0.3
 
-    # Create adaptive attack
-    attack = KnockoffNets(
-        classifier=victim_tfc,
-        batch_size_fit=BATCH_SIZE,
-        batch_size_query=BATCH_SIZE,
-        nb_epochs=NB_EPOCHS,
-        nb_stolen=NB_STOLEN,
-        sampling_strategy="adaptive",
-        reward="all",
-    )
-    thieved_tfc = attack.extract(x=x_train_iris, y=y_train_iris, thieved_classifier=thieved_tfc)
+        # Create adaptive attack
+        attack = KnockoffNets(
+            classifier=victim_tfc,
+            batch_size_fit=BATCH_SIZE,
+            batch_size_query=BATCH_SIZE,
+            nb_epochs=NB_EPOCHS,
+            nb_stolen=NB_STOLEN,
+            sampling_strategy="adaptive",
+            reward="all",
+        )
+        thieved_tfc = attack.extract(x=x_train_iris, y=y_train_iris, thieved_classifier=thieved_tfc)
 
-    victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
-    thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
-    acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+        victim_preds = np.argmax(victim_tfc.predict(x=x_train_iris), axis=1)
+        thieved_preds = np.argmax(thieved_tfc.predict(x=x_train_iris), axis=1)
+        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
 
-    assert acc > 0.4
+        assert acc > 0.4
 
-    # Clean-up session
-    # if sess is not None:
-    #     sess.close()
+        # Clean-up session
+        # if sess is not None:
+        #     sess.close()
+    except ARTTestException as e:
+        art_warning(e)
 
 # class TestKnockoffNetsVectors(TestBase):
 #     @classmethod
