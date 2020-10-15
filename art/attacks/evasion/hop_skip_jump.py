@@ -137,6 +137,9 @@ class HopSkipJump(EvasionAttack):
             else:
                 mask = np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])
 
+        else:
+            mask = [None] * x.shape[0]
+
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
@@ -151,8 +154,8 @@ class HopSkipJump(EvasionAttack):
 
         if x_adv_init is not None:
             # Add mask param to the x_adv_init
-            if mask is not None:
-                for i in range(x.shape[0]):
+            for i in range(x.shape[0]):
+                if mask[i] is not None:
                     x_adv_init[i] = x_adv_init[i] * mask[i] + x[i] * (1 - mask[i])
 
             # Do prediction on the init
@@ -168,61 +171,37 @@ class HopSkipJump(EvasionAttack):
 
         # Some initial setups
         x_adv = x.astype(ART_NUMPY_DTYPE)
+
         if y is not None:
             y = np.argmax(y, axis=1)
 
         # Generate the adversarial samples
         for ind, val in enumerate(tqdm(x_adv, desc="HopSkipJump", disable=not self.verbose)):
             self.curr_iter = start
-            if self.targeted:
-                if mask is not None:
-                    x_adv[ind] = self._perturb(
-                        x=val,
-                        y=y[ind],
-                        y_p=preds[ind],
-                        init_pred=init_preds[ind],
-                        adv_init=x_adv_init[ind],
-                        mask=mask[ind],
-                        clip_min=clip_min,
-                        clip_max=clip_max,
-                    )
 
-                else:
-                    x_adv[ind] = self._perturb(
-                        x=val,
-                        y=y[ind],
-                        y_p=preds[ind],
-                        init_pred=init_preds[ind],
-                        adv_init=x_adv_init[ind],
-                        mask=None,
-                        clip_min=clip_min,
-                        clip_max=clip_max,
-                    )
+            if self.targeted:
+                x_adv[ind] = self._perturb(
+                    x=val,
+                    y=y[ind],
+                    y_p=preds[ind],
+                    init_pred=init_preds[ind],
+                    adv_init=x_adv_init[ind],
+                    mask=mask[ind],
+                    clip_min=clip_min,
+                    clip_max=clip_max,
+                )
 
             else:
-                if mask is not None:
-                    x_adv[ind] = self._perturb(
-                        x=val,
-                        y=-1,
-                        y_p=preds[ind],
-                        init_pred=init_preds[ind],
-                        adv_init=x_adv_init[ind],
-                        mask=mask[ind],
-                        clip_min=clip_min,
-                        clip_max=clip_max,
-                    )
-
-                else:
-                    x_adv[ind] = self._perturb(
-                        x=val,
-                        y=-1,
-                        y_p=preds[ind],
-                        init_pred=init_preds[ind],
-                        adv_init=x_adv_init[ind],
-                        mask=None,
-                        clip_min=clip_min,
-                        clip_max=clip_max,
-                    )
+                x_adv[ind] = self._perturb(
+                    x=val,
+                    y=-1,
+                    y_p=preds[ind],
+                    init_pred=init_preds[ind],
+                    adv_init=x_adv_init[ind],
+                    mask=mask[ind],
+                    clip_min=clip_min,
+                    clip_max=clip_max,
+                )
 
         if y is not None:
             y = to_categorical(y, self.estimator.nb_classes)
@@ -235,12 +214,11 @@ class HopSkipJump(EvasionAttack):
         return x_adv
 
     @staticmethod
-    def _get_mask(x: np.ndarray, classifier_mixin: bool = True, **kwargs) -> np.ndarray:
+    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
         """
         Get the mask from the kwargs.
 
         :param x: An array with the original inputs.
-        :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
@@ -250,13 +228,9 @@ class HopSkipJump(EvasionAttack):
         mask = kwargs.get("mask")
 
         if mask is not None:
-            if classifier_mixin:
-                # Ensure the mask is broadcastable
-                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                    raise ValueError("Mask shape must be broadcastable to input shape.")
-
-            else:
-                raise ValueError("Mask is only supported for classification.")
+            # Ensure the mask is broadcastable
+            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
+                raise ValueError("Mask shape must be broadcastable to input shape.")
 
         return mask
 
