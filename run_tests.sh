@@ -32,7 +32,7 @@ done
 # made framework independent to be incorporated within this loop
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 for mlFramework in "${mlFrameworkList[@]}"; do
-  echo "Running tests with framework $mlFramework
+  echo "Running tests with framework $mlFramework"
 
   pytest -q -s tests/attacks/evasion/test_brendel_and_bethge.py --mlFramework=$mlFramework --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_brendel_and_bethge.py"; fi
