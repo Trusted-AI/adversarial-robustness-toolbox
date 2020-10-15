@@ -56,7 +56,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         sess: Optional["Session"] = None,
         is_training: bool = False,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        channels_first: Optional[bool] = None,
+        channels_first: bool = False,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
@@ -304,27 +304,25 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return predictions, losses, detections
 
-    def loss_gradient(self, x: np.ndarray, y: Dict[str, List["tf.Tensor"]], **kwargs) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :param y: A dictionary of target values. The fields of the dictionary are as follows:
 
-                    - `groundtruth_boxes_list`: A list of `nb_samples` size of 2-D tf.float32 tensors of shape
-                                                [num_boxes, 4] containing coordinates of the groundtruth boxes.
-                                                Groundtruth boxes are provided in [y_min, x_min, y_max, x_max]
-                                                format and also assumed to be normalized as well as clipped
-                                                relative to the image window with conditions y_min <= y_max and
-                                                x_min <= x_max.
-                    - `groundtruth_classes_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
-                                                  [num_boxes] containing the class targets with the zero index
-                                                  assumed to map to the first non-background class.
-                    - `groundtruth_weights_list`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape
-                                                  [num_boxes] containing weights for groundtruth boxes.
+                  - `boxes`: A list of `nb_samples` size of 2-D tf.float32 tensors of shape [num_boxes, 4] containing
+                    coordinates of the groundtruth boxes. Groundtruth boxes are provided in [y_min, x_min, y_max, x_max]
+                    format and also assumed to be normalized as well as clipped relative to the image window with
+                    conditions y_min <= y_max and x_min <= x_max.
+                  - `labels`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape [num_boxes] containing
+                    the class targets with the zero index assumed to map to the first non-background class.
+                  - `scores`: A list of `nb_samples` size of 1-D tf.float32 tensors of shape [num_boxes] containing
+                    weights for groundtruth boxes.
         :return: Loss gradients of the same shape as `x`.
         """
         import tensorflow as tf
+
         # Only do loss_gradient if is_training is False
         if self.is_training:
             raise NotImplementedError(
@@ -348,14 +346,14 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Create feed_dict
         feed_dict = {self.images: x_preprocessed}
 
-        for (placeholder, value) in zip(self._groundtruth_boxes_list, y["groundtruth_boxes_list"]):
-            feed_dict[placeholder] = value
+        for (placeholder, value) in zip(self._groundtruth_boxes_list, y):
+            feed_dict[placeholder] = value["boxes"]
 
-        for (placeholder, value) in zip(self._groundtruth_classes_list, y["groundtruth_classes_list"]):
-            feed_dict[placeholder] = value
+        for (placeholder, value) in zip(self._groundtruth_classes_list, y):
+            feed_dict[placeholder] = value["labels"]
 
-        for (placeholder, value) in zip(self._groundtruth_weights_list, y["groundtruth_weights_list"]):
-            feed_dict[placeholder] = value
+        for (placeholder, value) in zip(self._groundtruth_weights_list, y):
+            feed_dict[placeholder] = value["scores"]
 
         # Compute gradients
         grads = self._sess.run(self._loss_grads, feed_dict=feed_dict)
@@ -364,22 +362,25 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         return grads
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> Dict[str, np.ndarray]:
+    def predict(
+        self, x: np.ndarray, batch_size: int = 128, standardise_output: bool = False, **kwargs
+    ) -> List[Dict[str, np.ndarray]]:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :param batch_size: Batch size.
+        :param standardise_output: True if output should be standardised. Box coordinates will be normalised to [0, 1]
+                                   and label index will be decreased by 1 to adhere to COCO categories.
         :return: A dictionary containing the following fields:
 
-                    - detection_boxes: `[batch, max_detection, 4]`
-                    - detection_scores: `[batch, max_detections]`
-                    - detection_classes: `[batch, max_detections]`
-                    - detection_multiclass_scores: `[batch, max_detections, 2]`
-                    - detection_anchor_indices: `[batch, max_detections]`
-                    - num_detections: `[batch]`
-                    - raw_detection_boxes: `[batch, total_detections, 4]`
-                    - raw_detection_scores: `[batch, total_detections, num_classes + 1]`
+        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The
+                 fields of the Dict are as follows:
+
+                 - boxes [N, 4]: the predicted boxes in [x1, y1, x2, y2] format, with values \
+                   between 0 and H and 0 and W
+                 - labels [N]: the predicted labels for each image
+                 - scores [N]: the scores or each prediction.
         """
         # Only do prediction if is_training is False
         if self.is_training:
@@ -400,52 +401,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
         # Run prediction with batch processing
         num_samples = x.shape[0]
-        results = {
-            "detection_boxes": np.zeros(
-                (
-                    num_samples,
-                    self._detections["detection_boxes"].shape[1].value,
-                    self._detections["detection_boxes"].shape[2].value,
-                ),
-                dtype=np.float32,
-            ),
-            "detection_scores": np.zeros(
-                (num_samples, self._detections["detection_scores"].shape[1].value), dtype=np.float32
-            ),
-            "detection_classes": np.zeros(
-                (num_samples, self._detections["detection_classes"].shape[1].value), dtype=np.float32
-            ),
-            "detection_multiclass_scores": np.zeros(
-                (
-                    num_samples,
-                    self._detections["detection_multiclass_scores"].shape[1].value,
-                    self._detections["detection_multiclass_scores"].shape[2].value,
-                ),
-                dtype=np.float32,
-            ),
-            "detection_anchor_indices": np.zeros(
-                (num_samples, self._detections["detection_anchor_indices"].shape[1].value), dtype=np.float32
-            ),
-            "num_detections": np.zeros((num_samples,), dtype=np.float32),
-            "raw_detection_boxes": np.zeros(
-                (
-                    num_samples,
-                    self._detections["raw_detection_boxes"].shape[1].value,
-                    self._detections["raw_detection_boxes"].shape[2].value,
-                ),
-                dtype=np.float32,
-            ),
-            "raw_detection_scores": np.zeros(
-                (
-                    num_samples,
-                    self._detections["raw_detection_scores"].shape[1].value,
-                    self._detections["raw_detection_scores"].shape[2].value,
-                ),
-                dtype=np.float32,
-            ),
-        }
-
         num_batch = int(np.ceil(num_samples / float(batch_size)))
+        results = list()
+
         for m in range(num_batch):
             # Batch indexes
             begin, end = m * batch_size, min((m + 1) * batch_size, num_samples)
@@ -456,15 +414,28 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             # Run prediction
             batch_results = self._sess.run(self._detections, feed_dict=feed_dict)
 
-            # Update final results
-            results["detection_boxes"][begin:end] = batch_results["detection_boxes"]
-            results["detection_scores"][begin:end] = batch_results["detection_scores"]
-            results["detection_classes"][begin:end] = batch_results["detection_classes"]
-            results["detection_multiclass_scores"][begin:end] = batch_results["detection_multiclass_scores"]
-            results["detection_anchor_indices"][begin:end] = batch_results["detection_anchor_indices"]
-            results["num_detections"][begin:end] = batch_results["num_detections"]
-            results["raw_detection_boxes"][begin:end] = batch_results["raw_detection_boxes"]
-            results["raw_detection_scores"][begin:end] = batch_results["raw_detection_scores"]
+            for i in range(end - begin):
+                d_sample = dict()
+
+                d_sample["boxes"] = batch_results["detection_boxes"][i]
+                d_sample["labels"] = batch_results["detection_classes"][i].astype(np.int32)
+
+                if standardise_output:
+                    height = x.shape[1]
+                    width = x.shape[2]
+
+                    d_sample["boxes"][:, 0] *= height
+                    d_sample["boxes"][:, 1] *= width
+                    d_sample["boxes"][:, 2] *= height
+                    d_sample["boxes"][:, 3] *= width
+
+                    d_sample["boxes"] = d_sample["boxes"][:, [1, 0, 3, 2]]
+
+                    d_sample["labels"] = d_sample["labels"] + 1
+
+                d_sample["scores"] = batch_results["detection_scores"][i]
+
+                results.append(d_sample)
 
         return results
 

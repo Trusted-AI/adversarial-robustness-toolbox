@@ -208,19 +208,19 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
 
         return grads
 
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, "torch.Tensor"]]:
+    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> List[Dict[str, np.ndarray]]:
         """
         Perform prediction for a batch of inputs.
 
         :param x: Samples of shape (nb_samples, height, width, nb_channels).
         :param batch_size: Batch size.
-        :return: Predictions of format `List[Dict[str, Tensor]]`, one for each input image. The
+        :return: Predictions of format `List[Dict[str, np.ndarray]]`, one for each input image. The
                  fields of the Dict are as follows:
 
-                 - boxes (FloatTensor[N, 4]): the predicted boxes in [x1, y1, x2, y2] format, with values \
+                 - boxes [N, 4]: the predicted boxes in [x1, y1, x2, y2] format, with values \
                    between 0 and H and 0 and W
-                 - labels (Int64Tensor[N]): the predicted labels for each image
-                 - scores (Tensor[N]): the scores or each prediction.
+                 - labels [N]: the predicted labels for each image
+                 - scores [N]: the scores or each prediction.
         """
         import torchvision  # lgtm [py/repeated-import]
 
@@ -239,6 +239,12 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         for i in range(x.shape[0]):
             image_tensor_list.append(transform(x[i] / norm_factor).to(self._device))
         predictions = self._model(image_tensor_list)
+
+        for i_prediction in range(len(predictions)):
+            predictions[i_prediction]["boxes"] = predictions[i_prediction]["boxes"].detach().cpu().numpy()
+            predictions[i_prediction]["labels"] = predictions[i_prediction]["labels"].detach().cpu().numpy()
+            predictions[i_prediction]["scores"] = predictions[i_prediction]["scores"].detach().cpu().numpy()
+
         return predictions
 
     def fit(self, x: np.ndarray, y, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
