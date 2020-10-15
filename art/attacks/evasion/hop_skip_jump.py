@@ -235,7 +235,7 @@ class HopSkipJump(EvasionAttack):
         return x_adv
 
     @staticmethod
-    def _get_mask(x: np.ndarray, classifier_mixin: bool = True, **kwargs) -> np.ndarray:
+    def _get_mask(x: np.ndarray, classifier_mixin: bool = True, **kwargs) -> List[Optional[np.ndarray]]:
         """
         Get the mask from the kwargs.
 
