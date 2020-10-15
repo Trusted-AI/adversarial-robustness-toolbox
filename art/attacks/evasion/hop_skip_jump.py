@@ -24,7 +24,7 @@ predictions. It is an advanced version of the Boundary attack.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import Optional, Tuple, Union, List, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
@@ -130,16 +130,6 @@ class HopSkipJump(EvasionAttack):
         # Get the mask
         mask = self._get_mask(x, **kwargs)
 
-        # Process mask as for each example
-        if mask is not None:
-            if len(mask.shape) == len(x.shape):
-                mask = mask.astype(ART_NUMPY_DTYPE)
-            else:
-                mask = np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])
-
-        else:
-            mask = [None] * x.shape[0]
-
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
@@ -231,6 +221,15 @@ class HopSkipJump(EvasionAttack):
             # Ensure the mask is broadcastable
             if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
                 raise ValueError("Mask shape must be broadcastable to input shape.")
+
+            # Process mask as for each example
+            if len(mask.shape) == len(x.shape):
+                mask = mask.astype(ART_NUMPY_DTYPE)
+            else:
+                mask = np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])
+
+        else:
+            mask = np.array([None] * x.shape[0])
 
         return mask
 
