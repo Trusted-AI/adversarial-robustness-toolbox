@@ -30,7 +30,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipMlFramework("keras", "scikitlearn", "mxnet", "non_dl_frameworks")
+@pytest.mark.skipMlFramework("keras", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("targeted", [True, False])
 @pytest.mark.parametrize("norm", [1, 2, np.inf, "inf"])
 def test_generate(
