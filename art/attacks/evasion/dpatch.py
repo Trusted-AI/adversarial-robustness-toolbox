@@ -153,9 +153,9 @@ class DPatch(EvasionAttack):
 
                 for i_image in range(patched_images.shape[0]):
                     target_dict = dict()
-                    target_dict["boxes"] = predictions[i_image]["boxes"].detach().cpu().numpy()
-                    target_dict["labels"] = predictions[i_image]["labels"].detach().cpu().numpy()
-                    target_dict["scores"] = predictions[i_image]["scores"].detach().cpu().numpy()
+                    target_dict["boxes"] = predictions[i_image]["boxes"]
+                    target_dict["labels"] = predictions[i_image]["labels"]
+                    target_dict["scores"] = predictions[i_image]["scores"]
 
                     patch_target.append(target_dict)
 
