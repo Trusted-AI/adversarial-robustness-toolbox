@@ -293,7 +293,7 @@ class FastGradientMethod(EvasionAttack):
                 grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
             return grad
 
-        if isinstance(batch[0], np.ndarray):
+        if batch.dtype == np.object:
             for i_sample in range(batch.shape[0]):
                 grad[i_sample] = _apply_norm(grad[i_sample])
                 assert batch[i_sample].shape == grad[i_sample].shape
@@ -339,7 +339,7 @@ class FastGradientMethod(EvasionAttack):
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
-            if isinstance(x[0], np.ndarray):
+            if x.dtype == np.object:
                 x_adv = x.copy()
             else:
                 x_adv = x.astype(ART_NUMPY_DTYPE)
@@ -365,7 +365,7 @@ class FastGradientMethod(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
 
             if project:
-                if isinstance(x_adv[0], np.ndarray):
+                if x_adv.dtype == np.object:
                     for i_sample in range(batch_index_1, batch_index_2):
                         perturbation = projection(x_adv[i_sample] - x_init[i_sample], eps, self.norm)
                     x_adv[i_sample] = x_init[i_sample] + perturbation

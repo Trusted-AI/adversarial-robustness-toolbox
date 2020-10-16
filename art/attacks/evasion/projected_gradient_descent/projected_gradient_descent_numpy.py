@@ -320,7 +320,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             mask = self._get_mask(x, classifier_mixin=False, **kwargs)
 
             # Start to compute adversarial examples
-            if isinstance(x[0], np.ndarray):
+            if x.dtype == np.object:
                 adv_x = x.copy()
             else:
                 adv_x = x.astype(ART_NUMPY_DTYPE)
