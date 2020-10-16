@@ -329,7 +329,10 @@ class FastGradientMethod(EvasionAttack):
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
-            x_adv = x.astype(ART_NUMPY_DTYPE)
+            if isinstance(x[0], np.ndarray):
+                x_adv = x.copy()
+            else:
+                x_adv = x.astype(ART_NUMPY_DTYPE)
 
             # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
