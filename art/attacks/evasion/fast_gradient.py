@@ -281,28 +281,15 @@ class FastGradientMethod(EvasionAttack):
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
-        def _apply_norm(grad_i):
-
-            if self.norm in [np.inf, "inf"]:
-                grad_i = np.sign(grad_i)
-            elif self.norm == 1:
-                ind = tuple(range(1, len(batch.shape)))
-                grad_i = grad_i / (np.sum(np.abs(grad_i), axis=ind, keepdims=True) + tol)
-            elif self.norm == 2:
-                ind = tuple(range(1, len(batch.shape)))
-                grad_i = grad_i / (np.sqrt(np.sum(np.square(grad_i), axis=ind, keepdims=True)) + tol)
-            else:
-                raise NotImplementedError
-
-            return grad_i
-
         # Apply norm bound
-        if isinstance(grad[0], np.ndarray):
-            for i_gradient in grad.shape[0]:
-                grad[i_gradient] = _apply_norm(grad[i_gradient])
-        else:
-            grad = _apply_norm(grad)
-
+        if self.norm in [np.inf, "inf"]:
+            grad = np.sign(grad)
+        elif self.norm == 1:
+            ind = tuple(range(1, len(batch.shape)))
+            grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
+        elif self.norm == 2:
+            ind = tuple(range(1, len(batch.shape)))
+            grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
         assert batch.shape == grad.shape
 
         if mask is None:

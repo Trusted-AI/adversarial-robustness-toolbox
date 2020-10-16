@@ -326,16 +326,29 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                 adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", disable=not self.verbose):
-                adv_x = self._compute(
-                    adv_x,
-                    x,
-                    targets,
-                    mask,
-                    self.eps,
-                    self.eps_step,
-                    self._project,
-                    self.num_random_init > 0 and i_max_iter == 0,
-                )
+                if isinstance(x[0], np.ndarray):
+                    for i_sample in x.shape[0]:
+                        adv_x[i_sample] = self._compute(
+                            adv_x[i_sample],
+                            x,
+                            targets,
+                            mask,
+                            self.eps,
+                            self.eps_step,
+                            self._project,
+                            self.num_random_init > 0 and i_max_iter == 0,
+                        )
+                else:
+                    adv_x = self._compute(
+                        adv_x,
+                        x,
+                        targets,
+                        mask,
+                        self.eps,
+                        self.eps_step,
+                        self._project,
+                        self.num_random_init > 0 and i_max_iter == 0,
+                    )
 
             adv_x_best = adv_x
 
