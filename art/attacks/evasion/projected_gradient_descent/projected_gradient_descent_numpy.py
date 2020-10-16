@@ -327,7 +327,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
             for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", disable=not self.verbose):
                 if isinstance(x[0], np.ndarray):
-                    for i_sample in x.shape[0]:
+                    for i_sample in range(x.shape[0]):
                         adv_x[i_sample] = self._compute(
                             adv_x[i_sample],
                             x,
