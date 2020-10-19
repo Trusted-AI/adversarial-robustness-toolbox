@@ -181,8 +181,12 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
     def _check_params(self) -> None:
         super(ProjectedGradientDescentCommon, self)._check_params()
 
-        if self.eps_step > self.eps:
-            raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
+        if isinstance(self.eps, float):
+            if self.eps_step > self.eps:
+                raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
+        else:
+            if (self.eps_step > self.eps).any():
+                raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         if self.max_iter <= 0:
             raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
