@@ -94,94 +94,66 @@ def test_with_images(art_warning, mnist_subset, image_dl_estimator, sampling_str
 # @pytest.mark.framework_agnostic
 def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator, sampling_strategy):
     try:
-        It looks like different models are used when using the agnostic estimators than the direct keras models
-
         (x_train, y_train), (_, _) = get_iris_dataset
-
-        victim_krc = get_tabular_classifier_kr()
-
-        # Create the thieved classifier
-        thieved_krc = get_tabular_classifier_kr(load_init=False)
-
-        # Create random attack
-        attack = KnockoffNets(
-            classifier=victim_krc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="random",
-        )
-        thieved_krc = attack.extract(x=x_train, thieved_classifier=thieved_krc)
-
-        victim_preds = np.argmax(victim_krc.predict(x=x_train), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=x_train), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        assert acc > 0.3
-
-        # Create adaptive attack
-        attack = KnockoffNets(
-            classifier=victim_krc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="adaptive",
-            reward="all",
-        )
-        thieved_krc = attack.extract(x=x_train, y=y_train, thieved_classifier=thieved_krc)
-
-        victim_preds = np.argmax(victim_krc.predict(x=x_train), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=x_train), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        assert acc > 0.4
 
         victim_tfc, sess = tabular_dl_estimator()
 
         # Create the thieved classifier
         thieved_tfc, _ = tabular_dl_estimator(load_init=False, sess=sess)
 
-        # Create random attack
-        # attack = KnockoffNets(
-        #     classifier=victim_tfc,
-        #     batch_size_fit=BATCH_SIZE,
-        #     batch_size_query=BATCH_SIZE,
-        #     nb_epochs=NB_EPOCHS,
-        #     nb_stolen=NB_STOLEN,
-        #     sampling_strategy="random",
-        # )
-        # thieved_tfc = attack.extract(x=x_train_iris, thieved_classifier=thieved_tfc)
-        #
-        # back_end_knockoff_nets(0.3, victim_tfc, thieved_tfc, x_train_iris)
-
-        if sampling_strategy == "random":
-            acc = 0.3
-        else:
-            acc = 0.4
-        back_end_knockoff_nets(acc, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
-
-
-
-        # Create adaptive attack
-        # attack = KnockoffNets(
-        #     classifier=victim_tfc,
-        #     batch_size_fit=BATCH_SIZE,
-        #     batch_size_query=BATCH_SIZE,
-        #     nb_epochs=NB_EPOCHS,
-        #     nb_stolen=NB_STOLEN,
-        #     sampling_strategy="adaptive",
-        #     reward="all",
-        # )
-        # thieved_tfc = attack.extract(x=x_train_iris, y=y_train_iris, thieved_classifier=thieved_tfc)
-        #
-        # back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, x_train_iris)
-        # y_train = None
-        # back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
+        back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
 
     except ARTTestException as e:
         art_warning(e)
+
+
+def test_keras_iris_OLD(get_iris_dataset, tabular_dl_estimator):
+    (x_train, y_train), (_, _) = get_iris_dataset
+    # Build KerasClassifier
+    # victim_krc = get_tabular_classifier_kr()
+    victim_krc, _ = tabular_dl_estimator()
+
+    # Create the thieved classifier
+    # thieved_krc = get_tabular_classifier_kr(load_init=False)
+    thieved_krc, _ = tabular_dl_estimator(load_init=False)
+
+    # Create random attack
+    attack = KnockoffNets(
+        classifier=victim_krc,
+        batch_size_fit=BATCH_SIZE,
+        batch_size_query=BATCH_SIZE,
+        nb_epochs=NB_EPOCHS,
+        nb_stolen=NB_STOLEN,
+        sampling_strategy="random",
+    )
+    thieved_krc = attack.extract(x=x_train, thieved_classifier=thieved_krc)
+
+    victim_preds = np.argmax(victim_krc.predict(x=x_train), axis=1)
+    thieved_preds = np.argmax(thieved_krc.predict(x=x_train), axis=1)
+    acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+    assert acc > 0.3
+
+    # Create adaptive attack
+    attack = KnockoffNets(
+        classifier=victim_krc,
+        batch_size_fit=BATCH_SIZE,
+        batch_size_query=BATCH_SIZE,
+        nb_epochs=NB_EPOCHS,
+        nb_stolen=NB_STOLEN,
+        sampling_strategy="adaptive",
+        reward="all",
+    )
+    thieved_krc = attack.extract(x=x_train, y=y_train, thieved_classifier=thieved_krc)
+
+    victim_preds = np.argmax(victim_krc.predict(x=x_train), axis=1)
+    thieved_preds = np.argmax(thieved_krc.predict(x=x_train), axis=1)
+    acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+
+    assert acc > 0.4
+
+    # Clean-up
+    k.clear_session()
 
 
 def test_keras_iris(get_iris_dataset):
