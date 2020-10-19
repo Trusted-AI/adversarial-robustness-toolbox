@@ -24,7 +24,6 @@ import tempfile
 import numpy as np
 import pytest
 import requests
-import tensorflow as tf
 import warnings
 
 from art.data_generators import PyTorchDataGenerator, TensorFlowDataGenerator, KerasDataGenerator, MXDataGenerator
@@ -48,19 +47,24 @@ art_supported_frameworks.extend(non_deep_learning_frameworks)
 
 master_seed(1234)
 
-default_framework = "tensorflow"
 
-if tf.__version__[0] == "2":
-    default_framework = "tensorflow2"
-else:
-    default_framework = "tensorflow1"
+def get_default_framework():
+    import tensorflow as tf
+    default_framework = "tensorflow"
+
+    if tf.__version__[0] == "2":
+        default_framework = "tensorflow2"
+    else:
+        default_framework = "tensorflow1"
+
+    return default_framework
 
 
 def pytest_addoption(parser):
     parser.addoption(
         "--mlFramework",
         action="store",
-        default=default_framework,
+        default=get_default_framework(),
         help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is `tensorflow`. "
              "Other options available are {0}".format(art_supported_frameworks),
     )
@@ -182,6 +186,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
             return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
 
         if framework == "tensorflow1":
+            import tensorflow as tf
             x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
             y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
             dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
@@ -745,5 +750,5 @@ def make_customer_record():
 @pytest.fixture(autouse=True)
 def framework_agnostic(request, framework):
     if request.node.get_closest_marker("framework_agnostic"):
-        if framework != default_framework:
+        if framework != get_default_framework():
             pytest.skip("framework agnostic test skipped for framework : {}".format(framework))
