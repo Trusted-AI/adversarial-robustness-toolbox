@@ -35,8 +35,9 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
   pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/test_model_inversion.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference/model_inversion tests"; fi
   pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/test_attribute_inference.py --mlFramework=$mlFramework --skip_travis=True --durations=0
-  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference tests"; fi
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference/attribute_inference tests"; fi
 
   pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/classifiersFrameworks/  --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests"; fi
