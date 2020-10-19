@@ -95,7 +95,7 @@ def test_with_images(art_warning, mnist_subset, image_dl_estimator, sampling_str
 def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator, sampling_strategy):
     try:
         It looks like different models are used when using the agnostic estimators than the direct keras models
-        
+
         (x_train, y_train), (_, _) = get_iris_dataset
 
         victim_krc = get_tabular_classifier_kr()
