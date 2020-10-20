@@ -1069,7 +1069,7 @@ def preprocess(
     return normalized_x, categorical_y
 
 
-def segment_by_class(data: np.ndarray, classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
+def segment_by_class(data: Union[np.ndarray, List[int]], classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
     """
     Returns segmented data according to specified features.
 
