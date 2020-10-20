@@ -161,6 +161,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         super().__init__(estimator=estimator)
 
         # Set attack attributes
+        self._targeted = True
         self.initial_eps = initial_eps
         self.max_iter_1st_stage = max_iter_1st_stage
         self.max_iter_2nd_stage = max_iter_2nd_stage
