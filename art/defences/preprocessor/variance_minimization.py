@@ -53,7 +53,7 @@ class TotalVarMin(Preprocessor):
         see https://arxiv.org/abs/1902.06705
     """
 
-    params = ["prob", "norm", "lamb", "solver", "max_iter", "clip_values"]
+    params = ["prob", "norm", "lamb", "solver", "max_iter", "clip_values", "verbose"]
 
     def __init__(
         self,
@@ -65,6 +65,7 @@ class TotalVarMin(Preprocessor):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        verbose: bool = False,
     ):
         """
         Create an instance of total variance minimization.
@@ -78,6 +79,7 @@ class TotalVarMin(Preprocessor):
                for features.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         """
         super().__init__()
         self._is_fitted = True
@@ -89,6 +91,7 @@ class TotalVarMin(Preprocessor):
         self.solver = solver
         self.max_iter = max_iter
         self.clip_values = clip_values
+        self.verbose = verbose
         self._check_params()
 
     @property
@@ -114,7 +117,7 @@ class TotalVarMin(Preprocessor):
         x_preproc = x.copy()
 
         # Minimize one input at a time
-        for i, x_i in enumerate(tqdm(x_preproc, desc="Variance minimization")):
+        for i, x_i in enumerate(tqdm(x_preproc, desc="Variance minimization", disable=not self.verbose)):
             mask = (np.random.rand(*x_i.shape) < self.prob).astype("int")
             x_preproc[i] = self._minimize(x_i, mask)
 
@@ -242,3 +245,6 @@ class TotalVarMin(Preprocessor):
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

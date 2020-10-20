@@ -22,7 +22,7 @@ import logging
 import pprint
 import unittest
 
-from art.defences.detector.poisoning import GroundTruthEvaluator
+from art.defences.detector.poison import GroundTruthEvaluator
 
 from tests.utils import master_seed
 

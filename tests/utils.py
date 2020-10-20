@@ -26,12 +26,13 @@ import os
 import pickle
 import time
 import unittest
+import warnings
 
 import numpy as np
 
-from art.utils import load_dataset
 from art.estimators.encoding.tensorflow import TensorFlowEncoder
 from art.estimators.generation.tensorflow import TensorFlowGenerator
+from art.utils import load_dataset
 
 logger = logging.getLogger(__name__)
 
@@ -1235,19 +1236,20 @@ def get_tabular_classifier_tf_v2():
     return tfc
 
 
-def get_tabular_classifier_scikit_list(clipped=False):
-    model_list_names = [
-        "decisionTreeClassifier",
-        "extraTreeClassifier",
-        "adaBoostClassifier",
-        "baggingClassifier",
-        "extraTreesClassifier",
-        "gradientBoostingClassifier",
-        "randomForestClassifier",
-        "logisticRegression",
-        "svc",
-        "linearSVC",
-    ]
+def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
+    if model_list_names is None:
+        model_list_names = [
+            "decisionTreeClassifier",
+            "extraTreeClassifier",
+            "adaBoostClassifier",
+            "baggingClassifier",
+            "extraTreesClassifier",
+            "gradientBoostingClassifier",
+            "randomForestClassifier",
+            "logisticRegression",
+            "svc",
+            "linearSVC",
+        ]
     if clipped:
         classifier_list = [
             # os.path.join(os.path.dirname(os.path.dirname(__file__)),'utils/resources/models', 'W_DENSE3_IRIS.npy')
@@ -1337,6 +1339,19 @@ def get_tabular_classifier_kr(load_init=True):
     krc = KerasClassifier(model, clip_values=(0, 1), use_logits=False, channels_first=True)
 
     return krc
+
+
+class ARTTestException(Exception):
+    def __init__(self, message):
+        super().__init__(message)
+
+
+class ARTTestFixtureNotImplemented(ARTTestException):
+    def __init__(self, message, fixture_name, framework, parameters_dict=""):
+        super().__init__(
+            "Could NOT run test for framework: {0} due to fixture: {1}. Message was: '"
+            "{2}' for the following parameters: {3}".format(framework, fixture_name, message, parameters_dict)
+        )
 
 
 def get_tabular_classifier_pt(load_init=True):

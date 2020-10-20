@@ -47,7 +47,7 @@ class SaliencyMapMethod(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1511.07528
     """
 
-    attack_params = EvasionAttack.attack_params + ["theta", "gamma", "batch_size"]
+    attack_params = EvasionAttack.attack_params + ["theta", "gamma", "batch_size", "verbose"]
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
@@ -56,6 +56,7 @@ class SaliencyMapMethod(EvasionAttack):
         theta: float = 0.1,
         gamma: float = 1.0,
         batch_size: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         Create a SaliencyMapMethod instance.
@@ -64,11 +65,13 @@ class SaliencyMapMethod(EvasionAttack):
         :param theta: Amount of Perturbation introduced to each modified feature per step (can be positive or negative).
         :param gamma: Maximum fraction of features being perturbed (between 0 and 1).
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         self.theta = theta
         self.gamma = gamma
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -98,7 +101,9 @@ class SaliencyMapMethod(EvasionAttack):
             targets = np.argmax(y, axis=1)
 
         # Compute perturbation with implicit batching
-        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="JSMA"):
+        for batch_id in trange(
+            int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="JSMA", disable=not self.verbose
+        ):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
 
@@ -179,13 +184,6 @@ class SaliencyMapMethod(EvasionAttack):
 
         return x_adv
 
-    def _check_params(self) -> None:
-        if self.gamma <= 0 or self.gamma > 1:
-            raise ValueError("The total perturbation percentage `gamma` must be between 0 and 1.")
-
-        if self.batch_size <= 0:
-            raise ValueError("The batch size `batch_size` has to be positive.")
-
     def _saliency_map(self, x: np.ndarray, target: Union[np.ndarray, int], search_space: np.ndarray) -> np.ndarray:
         """
         Compute the saliency map of `x`. Return the top 2 coefficients in `search_space` that maximize / minimize
@@ -210,3 +208,13 @@ class SaliencyMapMethod(EvasionAttack):
             ind = np.argpartition(-grads, -2, axis=1)[:, -2:]
 
         return ind
+
+    def _check_params(self) -> None:
+        if self.gamma <= 0 or self.gamma > 1:
+            raise ValueError("The total perturbation percentage `gamma` must be between 0 and 1.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

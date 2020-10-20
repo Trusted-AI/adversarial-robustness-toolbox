@@ -121,6 +121,8 @@ class TestPyTorchDeepSpeech:
     @pytest.fixture(params=[False, True])
     def _test_all(self, request, setup_class):
         # Only import if deep speech module is available
+        import torch
+
         from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
 
         # Test probability outputs
@@ -179,6 +181,19 @@ class TestPyTorchDeepSpeech:
             transcriptions = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 
         expected_transcriptions = np.array(["", "", ""])
+        assert (expected_transcriptions == transcriptions).all()
+
+        # Test transcription outputs, corner case
+        if request.param is True:
+            transcriptions = self.speech_recognizer_amp.predict(
+                np.array([self.x[0]]), batch_size=2, transcription_output=True
+            )
+        else:
+            transcriptions = self.speech_recognizer.predict(
+                np.array([self.x[0]]), batch_size=2, transcription_output=True
+            )
+
+        expected_transcriptions = np.array([""])
         assert (expected_transcriptions == transcriptions).all()
 
         # Now test loss gradients
@@ -356,6 +371,10 @@ class TestPyTorchDeepSpeech:
 
         # Now test fit function
         if request.param is True:
+            # Create the optimizer
+            parameters = self.speech_recognizer_amp.model.parameters()
+            self.speech_recognizer_amp._optimizer = torch.optim.SGD(parameters, lr=0.01)
+
             # Before train
             transcriptions1 = self.speech_recognizer_amp.predict(self.x, batch_size=2, transcription_output=True)
 
@@ -368,6 +387,10 @@ class TestPyTorchDeepSpeech:
             assert not ((transcriptions1 == transcriptions2).all())
 
         else:
+            # Create the optimizer
+            parameters = self.speech_recognizer.model.parameters()
+            self.speech_recognizer._optimizer = torch.optim.SGD(parameters, lr=0.01)
+
             # Before train
             transcriptions1 = self.speech_recognizer.predict(self.x, batch_size=2, transcription_output=True)
 

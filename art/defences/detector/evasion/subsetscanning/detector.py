@@ -48,13 +48,16 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
-    def __init__(self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str],) -> None:
+    def __init__(
+        self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str], verbose: bool = True
+    ) -> None:
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
         :param classifier: The model being evaluated for its robustness to anomalies (e.g. adversarial samples).
         :param bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
         :param layer: The layer from which to extract activations to perform scan.
+        :param verbose: Show progress bars.
         """
         super().__init__(
             clip_values=classifier.clip_values,
@@ -65,6 +68,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         )
         self.detector = classifier
         self.bgd_data = bgd_data
+        self.verbose = verbose
 
         # Ensure that layer is well-defined
         if classifier.layer_names is None:
@@ -145,7 +149,9 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
 
         if clean_size is None and advs_size is None:
             # Individual scan
-            with tqdm(len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning") as pbar:
+            with tqdm(
+                len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning", disable=not self.verbose
+            ) as pbar:
                 for j, c_p in enumerate(clean_pvalranges):
                     best_score, _, _, _ = Scanner.fgss_individ_for_nets(c_p)
                     clean_scores.append(best_score)
@@ -159,7 +165,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
             len_adv_x = len(adv_x)
             len_clean_x = len(clean_x)
 
-            for _ in trange(run, desc="Subset scanning"):
+            for _ in trange(run, desc="Subset scanning", disable=not self.verbose):
                 np.random.seed()
 
                 advchoice = np.random.choice(range(len_adv_x), advs_size, replace=False)

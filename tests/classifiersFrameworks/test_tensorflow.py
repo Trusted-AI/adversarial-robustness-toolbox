@@ -26,6 +26,7 @@ from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmooth
 from art.attacks.evasion import FastGradientMethod
 
 from tests.attacks.utils import backend_test_defended_images
+from tests.utils import ARTTestException
 
 
 @pytest.fixture()
@@ -42,7 +43,7 @@ def _test_preprocessing_defences_forward(
 ):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_, _ = image_dl_estimator(one_classifier=True)
+    classifier_, _ = image_dl_estimator()
 
     clip_values = (0, 1)
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
@@ -76,7 +77,7 @@ def _test_preprocessing_defences_backward(
 ):
     (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    classifier_, _ = image_dl_estimator(one_classifier=True)
+    classifier_, _ = image_dl_estimator()
 
     clip_values = (0, 1)
     loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
@@ -107,9 +108,9 @@ def _test_preprocessing_defences_backward(
     np.testing.assert_array_almost_equal(gradients_in_chain, gradients, decimal=4)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_nodefence(get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
-    if is_tf_version_2:
+@pytest.mark.only_with_platform("tensorflow2")
+def test_nodefence(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
         preprocessing_defences = []
         device_type = None
         _test_preprocessing_defences_forward(
@@ -118,11 +119,13 @@ def test_nodefence(get_default_mnist_subset, image_dl_estimator, is_tf_version_2
         _test_preprocessing_defences_backward(
             get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
         )
+    except ARTTestException as e:
+        art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_defence_tensorflow(get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
-    if is_tf_version_2:
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defence_tensorflow(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
         smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
         preprocessing_defences = [smooth_3x3]
         device_type = None
@@ -132,11 +135,13 @@ def test_defence_tensorflow(get_default_mnist_subset, image_dl_estimator, is_tf_
         _test_preprocessing_defences_backward(
             get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
         )
+    except ARTTestException as e:
+        art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_defence_non_tensorflow(get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
-    if is_tf_version_2:
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defence_non_tensorflow(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
         smooth_3x3 = SpatialSmoothing(window_size=3, channels_first=False)
         preprocessing_defences = [smooth_3x3]
         device_type = None
@@ -146,14 +151,14 @@ def test_defence_non_tensorflow(get_default_mnist_subset, image_dl_estimator, is
         _test_preprocessing_defences_backward(
             get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
         )
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.xfail(reason="Preprocessing-defence chaining only supports defences implemented in TensorFlow v2.")
-@pytest.mark.only_with_platform("tensorflow")
-def test_defences_tensorflow_and_nontensorflow(
-    get_default_mnist_subset, image_dl_estimator, device_type, is_tf_version_2
-):
-    if is_tf_version_2:
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defences_tensorflow_and_nontensorflow(art_warning, get_default_mnist_subset, image_dl_estimator, device_type):
+    try:
         smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=False)
         smooth_3x3_pth = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
         preprocessing_defences = [smooth_3x3_nonpth, smooth_3x3_pth]
@@ -164,11 +169,13 @@ def test_defences_tensorflow_and_nontensorflow(
         _test_preprocessing_defences_backward(
             get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
         )
+    except ARTTestException as e:
+        art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_defences_chaining(get_default_mnist_subset, image_dl_estimator, is_tf_version_2):
-    if is_tf_version_2:
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defences_chaining(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
         smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
         smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
         smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
@@ -180,17 +187,18 @@ def test_defences_chaining(get_default_mnist_subset, image_dl_estimator, is_tf_v
         _test_preprocessing_defences_backward(
             get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
         )
+    except ARTTestException as e:
+        art_warning(e)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_fgsm_defences(fix_get_mnist_subset, image_dl_estimator, is_tf_version_2):
-    if is_tf_version_2:
-
+@pytest.mark.only_with_platform("tensorflow2")
+def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator):
+    try:
         clip_values = (0, 1)
         smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
         smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
         smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
-        classifier_, _ = image_dl_estimator(one_classifier=True)
+        classifier_, _ = image_dl_estimator()
 
         loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
         classifier = TensorFlowV2Classifier(
@@ -205,3 +213,5 @@ def test_fgsm_defences(fix_get_mnist_subset, image_dl_estimator, is_tf_version_2
 
         attack = FastGradientMethod(classifier, eps=1, batch_size=128)
         backend_test_defended_images(attack, fix_get_mnist_subset)
+    except ARTTestException as e:
+        art_warning(e)

@@ -156,7 +156,6 @@ class TestImperceptibleASRPytorch:
                 batch_size=2,
                 use_amp=False,
                 opt_level="O1",
-                loss_scale=1,
             )
 
         # With amp
@@ -186,7 +185,6 @@ class TestImperceptibleASRPytorch:
                 batch_size=2,
                 use_amp=True,
                 opt_level="O1",
-                loss_scale=1,
             )
 
         # Test transcription output
@@ -210,7 +208,3 @@ class TestImperceptibleASRPytorch:
 
         # adv_transcriptions = speech_recognizer.predict(x_adv, batch_size=2, transcription_output=True)
         # assert (adv_transcriptions == self.y).all()
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
