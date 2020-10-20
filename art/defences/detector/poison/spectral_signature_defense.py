@@ -70,6 +70,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         :param eps_multiplier:
         :param ub_pct_poison:
         """
+        # TODO: fill in comments
         super().__init__(classifier, x_train, y_train)
         self.batch_size = batch_size
         self.eps_multiplier = eps_multiplier
@@ -114,16 +115,23 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         )
 
         features_split = segment_by_class(features_x_poisoned, self.y_train_sparse, self.classifier.nb_classes)
-        score_by_class, keep_by_class = [], []
+        score_by_class = []
+        keep_by_class = []
 
         for idx, feature in enumerate(features_split):
-            score = spectral_signature_scores(feature)
-            score_cutoff = np.quantile(score, max(1 - self.eps_multiplier * self.ub_pct_poison, 0.0))
-            score_by_class.append(score)
-            keep_by_class.append(score < score_cutoff)
+            # Check for empty list
+            if len(feature):
+                score = spectral_signature_scores(np.vstack(feature))
+                score_cutoff = np.quantile(score, max(1 - self.eps_multiplier * self.ub_pct_poison, 0.0))
+                score_by_class.append(score)
+                keep_by_class.append(score < score_cutoff)
+            else:
+                # TODO: what score/keep to use when features is empty list? Currently using zero/True
+                score_by_class.append([0])
+                keep_by_class.append([True])
 
         base_indices_by_class = segment_by_class(
-            np.arange(self.y_train_sparse.shape[0]), self.y_train_sparse, self.classifier.nb_classes,
+            np.arange(len(self.y_train_sparse)), self.y_train_sparse, self.classifier.nb_classes,
         )
         is_clean_lst = [0] * len(self.y_train_sparse)
         report = {}
