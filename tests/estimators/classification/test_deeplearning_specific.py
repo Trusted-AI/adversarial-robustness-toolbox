@@ -49,6 +49,7 @@ class Model(nn.Module):
 @pytest.mark.only_with_platform("pytorch")
 def test_device(art_warning):
     try:
+
         class Flatten(nn.Module):
             def forward(self, x):
                 n, _, _, _ = x.size()

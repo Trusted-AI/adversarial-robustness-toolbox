@@ -143,9 +143,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             if not np.all(self.clip_values[1] == 1):
                 raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
 
-        # Check preprocessing and postprocessing defences
-        if self.preprocessing_defences is not None:
-            raise ValueError("This estimator does not support `preprocessing_defences`.")
+        # Check postprocessing defences
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
