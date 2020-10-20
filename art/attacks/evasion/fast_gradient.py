@@ -282,20 +282,26 @@ class FastGradientMethod(EvasionAttack):
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
-        def _apply_norm(grad):
+        def _apply_norm(grad, object_type=False):
             if self.norm in [np.inf, "inf"]:
                 grad = np.sign(grad)
             elif self.norm == 1:
-                ind = tuple(range(1, len(batch.shape)))
+                if not object_type:
+                    ind = tuple(range(1, len(batch.shape)))
+                else:
+                    ind = None
                 grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
             elif self.norm == 2:
-                ind = tuple(range(1, len(batch.shape)))
+                if not object_type:
+                    ind = tuple(range(1, len(batch.shape)))
+                else:
+                    ind = None
                 grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
             return grad
 
         if batch.dtype == np.object:
             for i_sample in range(batch.shape[0]):
-                grad[i_sample] = _apply_norm(grad[i_sample])
+                grad[i_sample] = _apply_norm(grad[i_sample], object_type=True)
                 assert batch[i_sample].shape == grad[i_sample].shape
         else:
             grad = _apply_norm(grad)
