@@ -23,9 +23,9 @@ This module implements STRIP: A Defence Against Trojan Attacks on Deep Neural Ne
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import numpy as np
 from typing import Callable, Optional
 
+import numpy as np
 from scipy.stats import entropy, norm
 from tqdm import tqdm
 
@@ -50,9 +50,9 @@ class STRIPMixin(AbstainPredictorMixin):
         """
         Create a STRIP defense
 
+        :param predict_fn: The predict function of the original classifier
         :param num_samples: The number of samples to use to test entropy at inference time
         :param false_acceptance_rate: The percentage of acceptable false acceptance
-        :param predict function
         """
         super().__init__(**kwargs)
         self.predict_fn = predict_fn
@@ -81,7 +81,7 @@ class STRIPMixin(AbstainPredictorMixin):
             # Randomly select samples from test set
             selected_indices = np.random.choice(np.arange(len(x_val)), self.num_samples)
 
-            # Perturn the images by combining them
+            # Perturb the images by combining them
             perturbed_images = np.array([combine_images(img, x_val[idx]) for idx in selected_indices])
 
             # Predict on the perturbed images
