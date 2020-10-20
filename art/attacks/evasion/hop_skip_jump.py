@@ -24,7 +24,7 @@ predictions. It is an advanced version of the Boundary attack.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import Optional, Tuple, Union, List, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
@@ -127,6 +127,9 @@ class HopSkipJump(EvasionAttack):
         else:
             start = 0
 
+        # Get the mask
+        mask = self._get_mask(x, **kwargs)
+
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
@@ -140,7 +143,14 @@ class HopSkipJump(EvasionAttack):
         x_adv_init = kwargs.get("x_adv_init")
 
         if x_adv_init is not None:
+            # Add mask param to the x_adv_init
+            for i in range(x.shape[0]):
+                if mask[i] is not None:
+                    x_adv_init[i] = x_adv_init[i] * mask[i] + x[i] * (1 - mask[i])
+
+            # Do prediction on the init
             init_preds = np.argmax(self.estimator.predict(x_adv_init, batch_size=self.batch_size), axis=1)
+
         else:
             init_preds = [None] * len(x)
             x_adv_init = [None] * len(x)
@@ -151,12 +161,14 @@ class HopSkipJump(EvasionAttack):
 
         # Some initial setups
         x_adv = x.astype(ART_NUMPY_DTYPE)
+
         if y is not None:
             y = np.argmax(y, axis=1)
 
         # Generate the adversarial samples
         for ind, val in enumerate(tqdm(x_adv, desc="HopSkipJump", disable=not self.verbose)):
             self.curr_iter = start
+
             if self.targeted:
                 x_adv[ind] = self._perturb(
                     x=val,
@@ -164,9 +176,11 @@ class HopSkipJump(EvasionAttack):
                     y_p=preds[ind],
                     init_pred=init_preds[ind],
                     adv_init=x_adv_init[ind],
+                    mask=mask[ind],
                     clip_min=clip_min,
                     clip_max=clip_max,
                 )
+
             else:
                 x_adv[ind] = self._perturb(
                     x=val,
@@ -174,6 +188,7 @@ class HopSkipJump(EvasionAttack):
                     y_p=preds[ind],
                     init_pred=init_preds[ind],
                     adv_init=x_adv_init[ind],
+                    mask=mask[ind],
                     clip_min=clip_min,
                     clip_max=clip_max,
                 )
@@ -188,8 +203,46 @@ class HopSkipJump(EvasionAttack):
 
         return x_adv
 
+    @staticmethod
+    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Get the mask from the kwargs.
+
+        :param x: An array with the original inputs.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: The mask.
+        """
+        mask = kwargs.get("mask")
+
+        if mask is not None:
+            # Ensure the mask is broadcastable
+            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
+                raise ValueError("Mask shape must be broadcastable to input shape.")
+
+            # Process mask as for each example
+            if len(mask.shape) == len(x.shape):
+                mask = mask.astype(ART_NUMPY_DTYPE)
+            else:
+                mask = np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])
+
+        else:
+            mask = np.array([None] * x.shape[0])
+
+        return mask
+
     def _perturb(
-        self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
+        self,
+        x: np.ndarray,
+        y: int,
+        y_p: int,
+        init_pred: int,
+        adv_init: np.ndarray,
+        mask: Optional[np.ndarray],
+        clip_min: float,
+        clip_max: float,
     ) -> np.ndarray:
         """
         Internal attack function for one example.
@@ -199,24 +252,35 @@ class HopSkipJump(EvasionAttack):
         :param y_p: The predicted label of x.
         :param init_pred: The predicted label of the initial image.
         :param adv_init: Initial array to act as an initial adversarial example.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :return: An adversarial example.
         """
         # First, create an initial adversarial sample
-        initial_sample = self._init_sample(x, y, y_p, init_pred, adv_init, clip_min, clip_max)
+        initial_sample = self._init_sample(x, y, y_p, init_pred, adv_init, mask, clip_min, clip_max)
 
         # If an initial adversarial example is not found, then return the original image
         if initial_sample is None:
             return x
 
         # If an initial adversarial example found, then go with HopSkipJump attack
-        x_adv = self._attack(initial_sample[0], x, initial_sample[1], clip_min, clip_max)
+        x_adv = self._attack(initial_sample[0], x, initial_sample[1], mask, clip_min, clip_max)
 
         return x_adv
 
     def _init_sample(
-        self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
+        self,
+        x: np.ndarray,
+        y: int,
+        y_p: int,
+        init_pred: int,
+        adv_init: np.ndarray,
+        mask: Optional[np.ndarray],
+        clip_min: float,
+        clip_max: float,
     ) -> Optional[Union[np.ndarray, Tuple[np.ndarray, int]]]:
         """
         Find initial adversarial example for the attack.
@@ -226,6 +290,9 @@ class HopSkipJump(EvasionAttack):
         :param y_p: The predicted label of x.
         :param init_pred: The predicted label of the initial image.
         :param adv_init: Initial array to act as an initial adversarial example.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :return: An adversarial example.
@@ -245,6 +312,10 @@ class HopSkipJump(EvasionAttack):
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
+
+                if mask is not None:
+                    random_img = random_img * mask + x * (1 - mask)
+
                 random_class = np.argmax(
                     self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
                 )[0]
@@ -275,6 +346,10 @@ class HopSkipJump(EvasionAttack):
             # The initial image unsatisfied
             for _ in range(self.init_size):
                 random_img = nprd.uniform(clip_min, clip_max, size=x.shape).astype(x.dtype)
+
+                if mask is not None:
+                    random_img = random_img * mask + x * (1 - mask)
+
                 random_class = np.argmax(
                     self.estimator.predict(np.array([random_img]), batch_size=self.batch_size), axis=1,
                 )[0]
@@ -300,7 +375,13 @@ class HopSkipJump(EvasionAttack):
         return initial_sample
 
     def _attack(
-        self, initial_sample: np.ndarray, original_sample: np.ndarray, target: int, clip_min: float, clip_max: float,
+        self,
+        initial_sample: np.ndarray,
+        original_sample: np.ndarray,
+        target: int,
+        mask: Optional[np.ndarray],
+        clip_min: float,
+        clip_max: float,
     ) -> np.ndarray:
         """
         Main function for the boundary attack.
@@ -308,6 +389,9 @@ class HopSkipJump(EvasionAttack):
         :param initial_sample: An initial adversarial example.
         :param original_sample: The original input.
         :param target: The target label.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :return: an adversarial example.
@@ -334,11 +418,13 @@ class HopSkipJump(EvasionAttack):
 
             # Next compute the number of evaluations and compute the update
             num_eval = min(int(self.init_eval * np.sqrt(self.curr_iter + 1)), self.max_eval)
+
             update = self._compute_update(
                 current_sample=current_sample,
                 num_eval=num_eval,
                 delta=delta,
                 target=target,
+                mask=mask,
                 clip_min=clip_min,
                 clip_max=clip_max,
             )
@@ -453,7 +539,14 @@ class HopSkipJump(EvasionAttack):
         return delta
 
     def _compute_update(
-        self, current_sample: np.ndarray, num_eval: int, delta: float, target: int, clip_min: float, clip_max: float,
+        self,
+        current_sample: np.ndarray,
+        num_eval: int,
+        delta: float,
+        target: int,
+        mask: Optional[np.ndarray],
+        clip_min: float,
+        clip_max: float,
     ) -> np.ndarray:
         """
         Compute the update in Eq.(14).
@@ -462,6 +555,9 @@ class HopSkipJump(EvasionAttack):
         :param num_eval: The number of evaluations for estimating gradient.
         :param delta: The size of random perturbation.
         :param target: The target label.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
         :param clip_min: Minimum value of an example.
         :param clip_max: Maximum value of an example.
         :return: an updated perturbation.
@@ -472,6 +568,10 @@ class HopSkipJump(EvasionAttack):
             rnd_noise = np.random.randn(*rnd_noise_shape).astype(ART_NUMPY_DTYPE)
         else:
             rnd_noise = np.random.uniform(low=-1, high=1, size=rnd_noise_shape).astype(ART_NUMPY_DTYPE)
+
+        # With mask
+        if mask is not None:
+            rnd_noise = rnd_noise * mask
 
         # Normalize random noise to fit into the range of input data
         rnd_noise = rnd_noise / np.sqrt(
