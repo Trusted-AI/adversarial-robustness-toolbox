@@ -108,9 +108,15 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         ProjectedGradientDescentCommon._check_params(self)
 
         if self.random_eps:
-            lower, upper = 0, eps
-            mu, sigma = 0, (eps / 2)
-            self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+            if isinstance(eps, float):
+                lower, upper = 0, eps
+                mu, sigma = 0, (eps / 2)
+                self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+
+            else:
+                lower, upper = np.zeros_like(eps), eps
+                mu, sigma = np.zeros_like(eps), (eps / 2)
+                self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
     def _random_eps(self):
         """
@@ -263,6 +269,9 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        # Ensure eps is broadcastable
+        self._check_eps(x=x)
+
         # Check whether random eps is enabled
         self._random_eps()
 
