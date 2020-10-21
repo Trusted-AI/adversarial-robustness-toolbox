@@ -111,12 +111,11 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
             if isinstance(eps, float):
                 lower, upper = 0, eps
                 mu, sigma = 0, (eps / 2)
-                self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
-
             else:
                 lower, upper = np.zeros_like(eps), eps
                 mu, sigma = np.zeros_like(eps), (eps / 2)
-                self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
+
+            self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
     def _random_eps(self):
         """
@@ -124,7 +123,12 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         """
         if self.random_eps:
             ratio = self.eps_step / self.eps
-            self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
+
+            if isinstance(self.eps, float):
+                self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
+            else:
+                self.eps = np.round(self.norm_dist.rvs(size=self.eps.shape), 10)
+
             self.eps_step = ratio * self.eps
 
     def _set_targets(self, x: np.ndarray, y: np.ndarray, classifier_mixin: bool = True) -> np.ndarray:
