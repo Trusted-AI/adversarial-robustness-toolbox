@@ -135,7 +135,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         self._model.eval()
         self.attack_losses: Tuple[str, ...] = attack_losses
 
-    def loss_gradient(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
+    def loss_gradient(
+        self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -157,7 +159,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         # Apply preprocessing
         x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        if y is not None:
+        if y is not None and isinstance(y[0]["boxes"], np.ndarray):
             for i, y_i in enumerate(y):
                 y[i]["boxes"] = torch.from_numpy(y_i["boxes"]).type(torch.float).to(self._device)
                 y[i]["labels"] = torch.from_numpy(y_i["labels"]).type(torch.int64).to(self._device)
