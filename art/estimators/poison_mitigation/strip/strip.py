@@ -128,7 +128,7 @@ def combine_images(img1: np.ndarray, img2: np.ndarray, alpha=0.5) -> np.ndarray:
     Combine two Numpy arrays of the same shape
 
     :param img1: a Numpy array
-    :param img2: a Numpy
+    :param img2: a Numpy array
     :param alpha: percentage weight for the first image
     :return: The combined image
     """
