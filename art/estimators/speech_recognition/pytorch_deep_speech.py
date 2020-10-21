@@ -403,6 +403,12 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             results.append(x_preprocessed[i].grad.cpu().numpy().copy())
 
         results = np.array(results)
+
+        if results.shape[0] == 1:
+            results = np.array(
+                [results_i for results_i in results] + [np.array([0.1]), np.array([0.1, 0.2])], dtype="object"
+            )[:-2]
+
         results = self._apply_preprocessing_gradient(x_, results)
 
         return results
