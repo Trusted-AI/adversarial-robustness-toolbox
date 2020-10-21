@@ -31,7 +31,7 @@ from tqdm import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.utils import Deprecated, deprecated_keyword_arg
+from art.utils import Deprecated, deprecated_keyword_arg, ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     from art.utils import OBJECT_DETECTOR_TYPE
@@ -81,9 +81,15 @@ class DPatch(EvasionAttack):
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
-        self._patch = np.random.randint(
-            self.estimator.clip_values[0], self.estimator.clip_values[1], size=patch_shape
-        ).astype(np.float32)
+        if self.estimator.clip_values is None:
+            self._patch = np.zeros(shape=patch_shape, dtype=ART_NUMPY_DTYPE)
+        else:
+            self._patch = (
+                np.random.randint(0, 255, size=patch_shape)
+                / 255
+                * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
+                + self.estimator.clip_values[0]
+            ).astype(ART_NUMPY_DTYPE)
         self.verbose = verbose
         self._check_params()
 
@@ -170,7 +176,7 @@ class DPatch(EvasionAttack):
                     x=patched_images[i_batch_start:i_batch_end], y=patch_target[i_batch_start:i_batch_end],
                 )
 
-                for i_image in range(patched_images.shape[0]):
+                for i_image in range(gradients.shape[0]):
 
                     i_x_1 = transforms[i_batch_start + i_image]["i_x_1"]
                     i_x_2 = transforms[i_batch_start + i_image]["i_x_2"]
@@ -189,9 +195,10 @@ class DPatch(EvasionAttack):
             else:
                 self._patch = self._patch + np.sign(patch_gradients) * self.learning_rate
 
-            self._patch = np.clip(
-                self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
-            )
+            if self.estimator.clip_values is not None:
+                self._patch = np.clip(
+                    self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
+                )
 
         return self._patch
 
