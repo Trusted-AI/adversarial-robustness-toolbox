@@ -127,6 +127,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         import torch  # lgtm [py/repeated-import]
 
+        # Ensure eps is broadcastable
+        self._check_eps(x=x)
+
         # Check whether random eps is enabled
         self._random_eps()
 

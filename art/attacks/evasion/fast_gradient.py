@@ -102,6 +102,22 @@ class FastGradientMethod(EvasionAttack):
         self._project = True
         FastGradientMethod._check_params(self)
 
+    def _check_eps(self, x: np.ndarray):
+        """
+        Check the correctness of the `eps` attribute, and implicitly check the correctness of the `eps_step`
+        attribute because `eps` and `eps_step` have same shape.
+
+        :param x: An array with the original inputs.
+        """
+        if isinstance(self.eps, np.ndarray):
+            if isinstance(self.estimator, ClassifierMixin):
+                # Ensure the eps array is broadcastable
+                if len(self.eps.shape) > len(x.shape) or self.eps.shape != x.shape[-len(self.eps.shape) :]:
+                    raise ValueError("The `eps` shape must be broadcastable to input shape.")
+
+            else:
+                raise ValueError("The `eps` array is only supported for classification.")
+
     def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray, mask: np.ndarray) -> np.ndarray:
         """
         Iteratively compute the minimal perturbation necessary to make the class prediction change. Stop when the
@@ -167,6 +183,9 @@ class FastGradientMethod(EvasionAttack):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        # Ensure eps is broadcastable
+        self._check_eps(x=x)
+
         if isinstance(self.estimator, ClassifierMixin):
             y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
