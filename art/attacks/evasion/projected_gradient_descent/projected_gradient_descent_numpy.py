@@ -153,12 +153,11 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         return targets
 
     @staticmethod
-    def _get_mask(x: np.ndarray, classifier_mixin: bool = True, **kwargs) -> np.ndarray:
+    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
         """
         Get the mask from the kwargs.
 
         :param x: An array with the original inputs.
-        :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
@@ -313,7 +312,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             targets = self._set_targets(x, y, classifier_mixin=False)
 
             # Get the mask
-            mask = self._get_mask(x, classifier_mixin=False, **kwargs)
+            mask = self._get_mask(x, **kwargs)
 
             # Start to compute adversarial examples
             if x.dtype == np.object:
