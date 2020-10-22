@@ -129,41 +129,41 @@ class DPatch(EvasionAttack):
                     raise ValueError("The target_label as list of integers needs to of length number of images in `x`.")
                 self.target_label = target_label
 
+        patched_images, transforms = self._augment_images_with_patch(
+            x, self._patch, random_location=True, channels_first=self.estimator.channels_first
+        )
+        patch_target: List[Dict[str, np.ndarray]] = list()
+
+        if self.target_label:
+
+            for i_image in range(patched_images.shape[0]):
+                i_x_1 = transforms[i_image]["i_x_1"]
+                i_x_2 = transforms[i_image]["i_x_2"]
+                i_y_1 = transforms[i_image]["i_y_1"]
+                i_y_2 = transforms[i_image]["i_y_2"]
+
+                target_dict = dict()
+                target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
+                target_dict["labels"] = np.asarray([self.target_label[i_image], ])
+                target_dict["scores"] = np.asarray([1.0, ])
+
+                patch_target.append(target_dict)
+
+        else:
+
+            predictions = self.estimator.predict(x=patched_images)
+
+            for i_image in range(patched_images.shape[0]):
+                target_dict = dict()
+                target_dict["boxes"] = predictions[i_image]["boxes"]
+                target_dict["labels"] = predictions[i_image]["labels"]
+                target_dict["scores"] = predictions[i_image]["scores"]
+
+                patch_target.append(target_dict)
+
         for i_step in trange(self.max_iter, desc="DPatch iteration", disable=not self.verbose):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
-
-            patched_images, transforms = self._augment_images_with_patch(
-                x, self._patch, random_location=True, channels_first=self.estimator.channels_first
-            )
-            patch_target: List[Dict[str, np.ndarray]] = list()
-
-            if self.target_label:
-
-                for i_image in range(patched_images.shape[0]):
-                    i_x_1 = transforms[i_image]["i_x_1"]
-                    i_x_2 = transforms[i_image]["i_x_2"]
-                    i_y_1 = transforms[i_image]["i_y_1"]
-                    i_y_2 = transforms[i_image]["i_y_2"]
-
-                    target_dict = dict()
-                    target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                    target_dict["labels"] = np.asarray([self.target_label[i_image],])
-                    target_dict["scores"] = np.asarray([1.0,])
-
-                    patch_target.append(target_dict)
-
-            else:
-
-                predictions = self.estimator.predict(x=patched_images)
-
-                for i_image in range(patched_images.shape[0]):
-                    target_dict = dict()
-                    target_dict["boxes"] = predictions[i_image]["boxes"]
-                    target_dict["labels"] = predictions[i_image]["labels"]
-                    target_dict["scores"] = predictions[i_image]["scores"]
-
-                    patch_target.append(target_dict)
 
             num_batches = math.ceil(x.shape[0] / self.batch_size)
             patch_gradients = np.zeros_like(self._patch)
