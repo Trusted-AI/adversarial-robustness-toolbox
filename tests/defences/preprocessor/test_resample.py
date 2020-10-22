@@ -39,12 +39,6 @@ def audio_batch(request):
     return test_input, test_output, sample_rate_orig, sample_rate_new
 
 
-@pytest.fixture
-def image_batch():
-    """Create image fixture of shape (batch_size, channels, width, height)."""
-    return np.zeros((2, 1, 4, 4))
-
-
 @pytest.mark.framework_agnostic
 def test_sample_rate_original_error(art_warning):
     try:
@@ -66,9 +60,9 @@ def test_sample_rate_new_error(art_warning):
 
 
 @pytest.mark.framework_agnostic
-def test_non_temporal_data_error(art_warning, image_batch):
+def test_non_temporal_data_error(art_warning, image_batch_small):
     try:
-        test_input = image_batch
+        test_input = image_batch_small
         resample = Resample(16000, 16000)
 
         exc_msg = "Resampling can only be applied to temporal data across at least one channel."

@@ -74,12 +74,6 @@ def video_batch(request, channels_first):
     return test_input, test_output
 
 
-@pytest.fixture
-def tabular_batch():
-    """Create tabular data fixture of shape (batch_size, features)."""
-    return np.zeros((2, 4))
-
-
 @pytest.mark.framework_agnostic
 @pytest.mark.parametrize("channels_first", [True, False])
 def test_jpeg_compression_image_data(art_warning, image_batch, channels_first, framework):

@@ -59,6 +59,7 @@ class BoundaryAttack(EvasionAttack):
         "sample_size",
         "init_size",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
@@ -74,6 +75,7 @@ class BoundaryAttack(EvasionAttack):
         num_trial: int = 25,
         sample_size: int = 20,
         init_size: int = 100,
+        verbose: bool = True,
     ) -> None:
         """
         Create a boundary attack instance.
@@ -87,6 +89,7 @@ class BoundaryAttack(EvasionAttack):
         :param num_trial: Maximum number of trials per iteration.
         :param sample_size: Number of samples per trial.
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=estimator)
 
@@ -99,6 +102,7 @@ class BoundaryAttack(EvasionAttack):
         self.sample_size = sample_size
         self.init_size = init_size
         self.batch_size = 1
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -140,7 +144,7 @@ class BoundaryAttack(EvasionAttack):
         x_adv = x.astype(ART_NUMPY_DTYPE)
 
         # Generate the adversarial samples
-        for ind, val in enumerate(tqdm(x_adv, desc="Boundary attack")):
+        for ind, val in enumerate(tqdm(x_adv, desc="Boundary attack", disable=not self.verbose)):
             if self.targeted:
                 x_adv[ind] = self._perturb(
                     x=val,
@@ -398,3 +402,6 @@ class BoundaryAttack(EvasionAttack):
 
         if self.step_adapt <= 0 or self.step_adapt >= 1:
             raise ValueError("The adaptation factor must be in the range (0, 1).")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

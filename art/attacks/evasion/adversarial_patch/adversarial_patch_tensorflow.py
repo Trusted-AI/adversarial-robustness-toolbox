@@ -58,6 +58,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         "max_iter",
         "batch_size",
         "patch_shape",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
@@ -72,6 +73,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         max_iter: int = 500,
         batch_size: int = 16,
         patch_shape: Optional[Tuple[int, int, int]] = None,
+        verbose: bool = True,
     ):
         """
         Create an instance of the :class:`.AdversarialPatchTensorFlowV2`.
@@ -87,6 +89,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         :param max_iter: The number of optimization steps.
         :param batch_size: The size of the training batch.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape HWC (width, height, nb_channels).
+        :param verbose: Show progress bars.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
@@ -102,6 +105,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         else:
             self.patch_shape = patch_shape
         self.image_shape = classifier.input_shape
+        self.verbose = verbose
         self._check_params()
 
         if self.estimator.channels_first:
@@ -352,7 +356,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 .repeat(math.ceil(x.shape[0] / self.batch_size))
             )
 
-        for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2"):
+        for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2", disable=not self.verbose):
             for images, target in dataset:
                 _ = self._train_step(images=images, target=target)
 
