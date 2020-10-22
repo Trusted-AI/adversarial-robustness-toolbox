@@ -283,7 +283,7 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
-def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -> np.ndarray:
+def projection(values: np.ndarray, eps: Union[float, np.ndarray], norm_p: Union[int, float, str]) -> np.ndarray:
     """
     Project `values` on the L_p norm ball of size `eps`.
 
@@ -297,21 +297,39 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -
     values_tmp = values.reshape((values.shape[0], -1))
 
     if norm_p == 2:
+        if isinstance(eps, np.ndarray):
+            raise NotImplementedError(
+                "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
+            )
+
         values_tmp = values_tmp * np.expand_dims(
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
         )
+
     elif norm_p == 1:
+        if isinstance(eps, np.ndarray):
+            raise NotImplementedError(
+                "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
+            )
+
         values_tmp = values_tmp * np.expand_dims(
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
         )
+
     elif norm_p in [np.inf, "inf"]:
+        if isinstance(eps, np.ndarray):
+            eps = eps * np.ones_like(values)
+            eps = eps.reshape(shape=[eps.shape[0], -1])
+
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+
     else:
         raise NotImplementedError(
             'Values of `norm_p` different from 1, 2, `np.inf` and "inf" are currently not ' "supported."
         )
 
     values = values_tmp.reshape(values.shape)
+
     return values
 
 
