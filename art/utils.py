@@ -315,7 +315,13 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -
     return values
 
 
-def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, float, str]) -> np.ndarray:
+def random_sphere(
+    nb_points: int,
+    nb_dims: int,
+    radius: Union[float, np.ndarray],
+    norm: Union[int, float, str],
+    original_shape: Optional[np.ndarray] = None
+) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
 
@@ -323,9 +329,15 @@ def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, 
     :param nb_dims: Dimensionality of the sphere.
     :param radius: Radius of the sphere.
     :param norm: Current support: 1, 2, np.inf, "inf".
+    :param original_shape: The original shape of the input batch.
     :return: The generated random sphere.
     """
     if norm == 1:
+        if isinstance(radius, np.ndarray):
+            raise NotImplementedError(
+                "The parameter `radius` of type `np.ndarray` is not supported to use with norm 1."
+            )
+
         a_tmp = np.zeros(shape=(nb_points, nb_dims + 1))
         a_tmp[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
 
@@ -333,13 +345,25 @@ def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, 
             a_tmp[i, 1:-1] = np.sort(np.random.uniform(0, a_tmp[i, -1], nb_dims - 1))
 
         res = (a_tmp[:, 1:] - a_tmp[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
+
     elif norm == 2:
+        if isinstance(radius, np.ndarray):
+            raise NotImplementedError(
+                "The parameter `radius` of type `np.ndarray` is not supported to use with norm 2."
+            )
+
         a_tmp = np.random.randn(nb_points, nb_dims)
         s_2 = np.sum(a_tmp ** 2, axis=1)
         base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
         res = a_tmp * (np.tile(base, (nb_dims, 1))).T
+
     elif norm in [np.inf, "inf"]:
-        res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
+        if isinstance(radius, np.ndarray):
+            radius = radius * np.ones(original_shape)
+            radius = radius.reshape(shape=[radius.shape[0], -1])
+
+        res = np.random.uniform(-radius, radius, (nb_points, nb_dims))
+
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))
 
