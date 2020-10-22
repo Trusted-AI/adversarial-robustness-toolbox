@@ -162,32 +162,6 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         return targets
 
-    @staticmethod
-    def _get_mask(x: np.ndarray, classifier_mixin: bool = True, **kwargs) -> np.ndarray:
-        """
-        Get the mask from the kwargs.
-
-        :param x: An array with the original inputs.
-        :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :type mask: `np.ndarray`
-        :return: The mask.
-        """
-        mask = kwargs.get("mask")
-
-        if mask is not None:
-            if classifier_mixin:
-                # Ensure the mask is broadcastable
-                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                    raise ValueError("Mask shape must be broadcastable to input shape.")
-
-            else:
-                raise ValueError("Mask is only supported for classification.")
-
-        return mask
-
     def _check_params(self) -> None:
         super(ProjectedGradientDescentCommon, self)._check_params()
 
