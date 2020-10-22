@@ -151,23 +151,63 @@ class FastGradientMethod(EvasionAttack):
             # Get current predictions
             active_indices = np.arange(len(batch))
             current_eps = self.eps_step
-            while active_indices.size > 0 and current_eps <= self.eps:
+
+            if isinstance(self.eps, np.ndarray):
+                partial_stop_condition = (current_eps <= self.eps).all()
+            else:
+                partial_stop_condition = current_eps <= self.eps
+
+            while active_indices.size > 0 and partial_stop_condition:
                 # Adversarial crafting
                 current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
+
                 # Update
                 batch[active_indices] = current_x[active_indices]
                 adv_preds = self.estimator.predict(batch)
+
                 # If targeted active check to see whether we have hit the target, otherwise head to anything but
                 if self.targeted:
                     active_indices = np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0]
                 else:
                     active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0]
 
+                # Update current eps and check the stop condition
                 current_eps += self.eps_step
+
+                if isinstance(self.eps, np.ndarray):
+                    partial_stop_condition = (current_eps <= self.eps).all()
+                else:
+                    partial_stop_condition = current_eps <= self.eps
 
             adv_x[batch_index_1:batch_index_2] = batch
 
         return adv_x
+
+    @staticmethod
+    def _get_mask(x: np.ndarray, classifier_mixin: bool = True, **kwargs) -> np.ndarray:
+        """
+        Get the mask from the kwargs.
+
+        :param x: An array with the original inputs.
+        :param classifier_mixin: Whether the estimator is of type `ClassifierMixin`.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: The mask.
+        """
+        mask = kwargs.get("mask")
+
+        if mask is not None:
+            if classifier_mixin:
+                # Ensure the mask is broadcastable
+                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
+                    raise ValueError("Mask shape must be broadcastable to input shape.")
+
+            else:
+                raise ValueError("Mask is only supported for classification.")
+
+        return mask
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """Generate adversarial samples and return them in an array.
@@ -201,11 +241,8 @@ class FastGradientMethod(EvasionAttack):
                 )
             y = y / np.sum(y, axis=1, keepdims=True)
 
-            mask = kwargs.get("mask")
-            if mask is not None:
-                # ensure the mask is broadcastable:
-                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                    raise ValueError("mask shape must be broadcastable to input shape")
+            # Get the mask
+            mask = self._get_mask(x, **kwargs)
 
             # Return adversarial examples computed with minimal perturbation if option is active
             rate_best: Optional[float]
@@ -251,8 +288,8 @@ class FastGradientMethod(EvasionAttack):
             if self.minimal:
                 raise ValueError("Minimal perturbation is only supported for classification.")
 
-            if kwargs.get("mask") is not None:
-                raise ValueError("Mask is only supported for classification.")
+            # Get the mask
+            mask = self._get_mask(x, classifier_mixin=False, **kwargs)
 
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided
@@ -338,7 +375,9 @@ class FastGradientMethod(EvasionAttack):
         else:
             return grad * (mask.astype(ART_NUMPY_DTYPE))
 
-    def _apply_perturbation(self, batch: np.ndarray, perturbation: np.ndarray, eps_step: float) -> np.ndarray:
+    def _apply_perturbation(
+        self, batch: np.ndarray, perturbation: np.ndarray, eps_step: Union[float, np.ndarray]
+    ) -> np.ndarray:
         batch = batch + eps_step * perturbation
 
         if self.estimator.clip_values is not None:
@@ -353,15 +392,15 @@ class FastGradientMethod(EvasionAttack):
         x_init: np.ndarray,
         y: np.ndarray,
         mask: Optional[np.ndarray],
-        eps: float,
-        eps_step: float,
+        eps: Union[float, np.ndarray],
+        eps_step: Union[float, np.ndarray],
         project: bool,
         random_init: bool,
     ) -> np.ndarray:
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:]).item()
-            random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            random_perturbation = random_sphere(n, m, eps, self.norm, x.shape).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             if mask is not None:
                 random_perturbation = random_perturbation * (mask.astype(ART_NUMPY_DTYPE))
             x_adv = x.astype(ART_NUMPY_DTYPE) + random_perturbation
@@ -372,7 +411,7 @@ class FastGradientMethod(EvasionAttack):
         else:
             x_adv = x.astype(ART_NUMPY_DTYPE)
 
-            # Compute perturbation with implicit batching
+        # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
