@@ -43,39 +43,20 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
+class PyTorchEspresso(SpeechRecognizerMixin, PyTorchEstimator):
     """
     This class implements a model-specific automatic speech recognizer using the end-to-end speech recognizer
-    DeepSpeech and PyTorch.
-
-    | Paper link: https://arxiv.org/abs/1512.02595
+    in Espresso.
     """
 
     def __init__(
-        self,
-        model: Optional["DeepSpeech"] = None,
-        pretrained_model: Optional[str] = None,
-        filename: Optional[str] = None,
-        url: Optional[str] = None,
-        use_half: bool = False,
-        optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
-        use_amp: bool = False,
-        opt_level: str = "O1",
-        loss_scale: Optional[Union[float, str]] = 1.0,
-        decoder_type: str = "greedy",
-        lm_path: str = "",
-        top_paths: int = 1,
-        alpha: float = 0.0,
-        beta: float = 0.0,
-        cutoff_top_n: int = 40,
-        cutoff_prob: float = 1.0,
-        beam_width: int = 10,
-        lm_workers: int = 4,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = None,
-        device_type: str = "gpu",
+            self,
+            infer_args,
+            clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+            preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+            postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+            preprocessing: "PREPROCESSING_TYPE" = None,
+            device_type: str = "cpu",
     ):
         """
         Initialization of an instance PyTorchDeepSpeech.
@@ -128,10 +109,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        from deepspeech_pytorch.configs.inference_config import LMConfig
-        from deepspeech_pytorch.enums import DecoderType
-        from deepspeech_pytorch.utils import load_decoder, load_model
-
         from fairseq import checkpoint_utils, options, tasks, utils
         from fairseq.data import encoders
         import sentencepiece as spm
@@ -169,38 +146,34 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
-        # Save first version of the optimizer
-        self._optimizer = optimizer
-        self._use_amp = use_amp
+        # # Save first version of the optimizer
+        # self._optimizer = optimizer
+        # self._use_amp = use_amp
 
         # construct args
-        parser = options.get_generation_parser(
-            default_task="speech_recognition_espresso")
-        self.args = options.parse_args_and_arch(parser)
-        self.args.eos_factor = eos_factor
-        self.args.lm_weight = lm_weight
-        self.args.subwordlm_weight = subwordlm_weight
-        self.args.oov_penalty = oov_penalty
-        self.args.disable_open_vocab = disable_open_vocab
+        self.infer_args = infer_args
 
         # setup task
-        self.task = tasks.setup_task(self.args)
-        self.dictionary = task.target_dictionary
-        self.tokenizer = enocoders.build_tokenizer(args)
-        self.bpe = encoders.build_bpe(self.args)
-        self.generator = task.build_generator(self.models, self.args)
-        self.sp = spm.SentencePieceProcessor()
-        self.sp.Load(spm_path)
+        self.infer_task = tasks.setup_task(self.infer_args)
+        self.infer_task.feat_dim = 83
 
+        # load_model_ensemble
         self.models, self._model_args = checkpoint_utils.load_model_ensemble(
-            utils.split_paths(self.args.path),
-            arg_overrides=eval(self.args.model_overrides),
-            task=self.task,
-            suffix=getattr(self.args, "checkpoint_suffix", ""),
+            utils.split_paths(self.infer_args.path),
+            arg_overrides=eval(self.infer_args.model_overrides),
+            task=self.infer_task,
+            suffix=getattr(self.infer_args, "checkpoint_suffix", ""),
         )
 
         for m in self.models:
             m.to(self._device)
+        
+        self.dictionary = self.infer_task.target_dictionary
+        self.generator = self.infer_task.build_generator(self.models, self.infer_args)
+        self.tokenizer = encoders.build_tokenizer(self.infer_args)
+        self.bpe = encoders.build_bpe(self.infer_args)
+        self.sp = spm.SentencePieceProcessor()
+        self.sp.Load(self.infer_args.sentencepiece_model)
 
     def predict(
         self, x: np.ndarray, batch_size: int = 128, **kwargs
@@ -231,9 +204,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x_, y=None, fit=False)
-
-        # Compute real input sizes
-        input_sizes = input_rates.mul_(inputs.size()[-1]).int()
 
         # Run prediction with batch processing
         results = []
@@ -333,8 +303,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             x=x_preprocessed[begin:end])
         loss, sample_size_i, logging_output = self.task.train_step(
             sample=batch,
-            model=self.model
-            criterion=self.criterion
+            model=self.model,
+            criterion=self.criterion,
             optimizer=self._optimizer,
         )
 
@@ -408,8 +378,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
                 loss, sample_size_i, logging_output = self.task.train_step(
                     sample=batch,
-                    model=self.model
-                    criterion=self.criterion
+                    model=self.model,
+                    criterion=self.criterion,
                     optimizer=self._optimizer,
                 )
 
@@ -420,7 +390,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         compute_gradient: bool = False,
         tensor_input: bool = False,
         real_lengths: Optional[np.ndarray] = None,
-    ) -> Tuple[Dict, List]:
+    ):
         """
         Transform the user input space into the model input space.
 
@@ -468,33 +438,34 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             }
             return batch_dict
 
-        # These parameters are needed for the transformation
-        sample_rate = self._model.audio_conf.sample_rate
-        window_size = self._model.audio_conf.window_size
-        window_stride = self._model.audio_conf.window_stride
+        # # These parameters are needed for the transformation
+        # sample_rate = self._model.audio_conf.sample_rate
+        # window_size = self._model.audio_conf.window_size
+        # window_stride = self._model.audio_conf.window_stride
 
-        n_fft = int(sample_rate * window_size)
-        hop_length = int(sample_rate * window_stride)
-        win_length = n_fft
+        # n_fft = int(sample_rate * window_size)
+        # hop_length = int(sample_rate * window_stride)
+        # win_length = n_fft
 
-        window = self._model.audio_conf.window.value
+        # window = self._model.audio_conf.window.value
 
-        if window == "hamming":
-            window_fn = torch.hamming_window
-        elif window == "hann":
-            window_fn = torch.hann_window
-        elif window == "blackman":
-            window_fn = torch.blackman_window
-        elif window == "bartlett":
-            window_fn = torch.bartlett_window
-        else:
-            raise NotImplementedError(
-                "Spectrogram window %s not supported." % window)
+        # if window == "hamming":
+        #     window_fn = torch.hamming_window
+        # elif window == "hann":
+        #     window_fn = torch.hann_window
+        # elif window == "blackman":
+        #     window_fn = torch.blackman_window
+        # elif window == "bartlett":
+        #     window_fn = torch.bartlett_window
+        # else:
+        #     raise NotImplementedError(
+        #         "Spectrogram window %s not supported." % window)
 
-        # Create a transformer to transform between the two spaces
-        transformer = torchaudio.transforms.Spectrogram(
-            n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=window_fn, power=None
-        )
+        # # Create a transformer to transform between the two spaces
+        # transformer = torchaudio.transforms.Spectrogram(
+        #     n_fft=n_fft, hop_length=hop_length, win_length=win_length, window_fn=window_fn, power=None
+        # )
+        transformer = torchaudio.transforms.Spectrogram()
         transformer.to(self._device)
 
         # We must process each sequence separately due to the diversity of their length
