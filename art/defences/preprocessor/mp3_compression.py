@@ -149,13 +149,22 @@ class Mp3Compression(Preprocessor):
         # apply mp3 compression per audio item
         x_mp3 = x.copy()
         for i, x_i in enumerate(tqdm(x, desc="MP3 compression", disable=not self.verbose)):
-            if x.dtype == np.object and x_i.ndim == 1:
-                x_i = np.expand_dims(x_i, axis=1)
+            x_i_ndim_0 = x_i.ndim
+            if x.dtype == np.object:
+                if x_i.ndim == 1:
+                    x_i = np.expand_dims(x_i, axis=1)
+
+                if x_i_ndim_0 == 2 and self.channels_first:
+                    x_i = np.swapaxes(x_i, 0, 1)
 
             x_i = wav_to_mp3(x_i, self.sample_rate)
 
             if x.dtype == np.object:
-                x_i = np.squeeze(x_i)
+                if x_i_ndim_0 == 2 and self.channels_first:
+                    x_i = np.swapaxes(x_i, 0, 1)
+
+                if x_i_ndim_0 == 1:
+                    x_i = np.squeeze(x_i)
 
             x_mp3[i] = x_i
 
