@@ -24,7 +24,7 @@ This module implements the adversarial and imperceptible attack on automatic spe
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Tuple
+from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 import scipy.signal as ss
@@ -32,6 +32,10 @@ import scipy.signal as ss
 from art.attacks.attack import EvasionAttack
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
+from art.utils import pad_audio_input
+
+if TYPE_CHECKING:
+    from tensorflow.compat.v1 import Tensor
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +48,14 @@ class ImperceptibleAsr(EvasionAttack):
     """
 
     attack_params = EvasionAttack.attack_params + [
+        "masker",
         "eps",
         "learning_rate_1",
         "max_iter_1",
+        "alpha",
+        "learning_rate_2",
+        "max_iter_2",
+        "batch_size",
     ]
 
     _estimator_requirements = (TensorFlowV2Estimator, SpeechRecognizerMixin)
@@ -54,9 +63,14 @@ class ImperceptibleAsr(EvasionAttack):
     def __init__(
         self,
         estimator: "TensorFlowV2Estimator",
+        masker: "PsychoacousticMasker",
         eps: float = 2000,
         learning_rate_1: float = 100,
         max_iter_1: int = 1000,
+        alpha: float = 0.05,
+        learning_rate_2: float = 1,
+        max_iter_2: int = 4000,
+        batch_size: int = 16,
     ) -> None:
         """
         Create an instance of the :class:`.ImperceptibleAsr`.
@@ -66,13 +80,39 @@ class ImperceptibleAsr(EvasionAttack):
         :param learning_rate_1: Learning rate for stage 1 of attack.
         :param max_iter_1: Number of iterations for stage 1 of attack.
         """
+        import tensorflow.compat.v1 as tf1
+
+        # disable eager execution as Lingvo uses tensorflow.compat.v1 API
+        tf1.disable_eager_execution()
+
         # Super initialization
         super().__init__(estimator=estimator)
+        self.masker = masker
         self.eps = eps
         self.learning_rate_1 = learning_rate_1
         self.max_iter_1 = max_iter_1
+        self.alpha = alpha
+        self.learning_rate_2 = learning_rate_2
+        self.max_iter_2 = max_iter_2
         self._targeted = True
+        self.batch_size = batch_size
         self._check_params()
+
+        # init some aliases
+        self._window_size = masker.window_size
+        self._hop_size = masker.hop_size
+        self._sample_rate = masker.sample_rate
+
+        # TensorFlow placeholders
+        self._delta = tf1.placeholder(tf1.float32, shape=[None, None], name="art_delta")
+        self._power_spectral_density_maximum_tf = tf1.placeholder(tf1.float32, shape=[None, None], name="art_psd_max")
+        self._masking_threshold_tf = tf1.placeholder(
+            tf1.float32, shape=[None, None, None], name="art_masking_threshold"
+        )
+        # TensorFlow loss gradient ops
+        self._loss_gradient_masking_threshold_op_tf = self._loss_gradient_masking_threshold_tf(
+            self._delta, self._power_spectral_density_maximum_tf, self._masking_threshold_tf
+        )
 
     def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -141,6 +181,180 @@ class ImperceptibleAsr(EvasionAttack):
                 x_adversarial[j] = x_perturbed[j]
 
         return np.array(x_adversarial, dtype=object)
+
+    def _create_imperceptible(self, x: np.ndarray, x_adversarial: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """
+        Create imperceptible, adversarial example with small perturbation.
+
+        This method implements the part of the paper by Qin et al. (2019) that is described as the second stage of the
+        attack. The resulting adversarial audio samples are able to successfully deceive the ASR estimator and are
+        imperceptible to the human ear.
+
+        :param x: An array with the original inputs to be attacked.
+        :param x_adversarial: An array with the adversarial examples.
+        :param y: Target values of shape (batch_size,). Each sample in `y` is a string and it may possess different
+            lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
+        :return: An array with the imperceptible, adversarial outputs.
+        """
+        batch_size = x.shape[0]
+        alpha_min = 0.0005
+
+        alpha = np.array([self.alpha] * batch_size)
+        loss_theta_previous = [np.inf] * batch_size
+        x_imperceptible = [None] * batch_size
+        # if inputs are *not* ragged, we can't multiply alpha * gradients_theta
+        if x.ndim != 1:
+            alpha = np.expand_dims(alpha, axis=-1)
+
+        perturbation = x_adversarial - x
+        x_perturbed = x_adversarial.copy()
+
+        for i in range(self.max_iter_2):
+            # get loss gradients of both losses
+            gradients_net = self.estimator.loss_gradient(x_perturbed, y, batch_mode=True)
+            gradients_theta, loss_theta = self._loss_gradient_masking_threshold(perturbation, x)
+
+            # perform gradient descent steps
+            x_perturbed = x_perturbed - self.learning_rate_2 * (gradients_net + alpha * gradients_theta)
+
+            if i % 20 == 0 or i % 50 == 0:
+                prediction = self.estimator.predict(x_perturbed, batch_size=batch_size)
+                for j in range(batch_size):
+                    # validate if adversarial target succeeds, i.e. f(x_perturbed)=y
+                    if i % 20 == 0 and prediction[j] == y[j].upper():
+                        # increase alpha
+                        alpha[j] *= 1.2
+                        # save current best imperceptible, adversarial example
+                        if loss_theta[j] < loss_theta_previous[j]:
+                            x_imperceptible[j] = x_perturbed[j]
+                            loss_theta_previous[j] = loss_theta[j]
+
+                    # validate if adversarial target fails, i.e. f(x_perturbed)!=y
+                    if i % 50 == 0 and prediction[j] != y[j].upper():
+                        # decrease alpha
+                        alpha[j] = max(alpha[j] * 0.8, alpha_min)
+                logger.info("Current iteration %s, alpha %s, loss theta %s", i, alpha, loss_theta)
+
+        # return perturbed x if no adversarial example found
+        for j in range(batch_size):
+            if x_imperceptible[j] is None:
+                logger.critical("Adversarial attack stage 2 for x_%s was not successful", j)
+                x_imperceptible[j] = x_perturbed[j]
+
+        return np.array(x_imperceptible, dtype=object)
+
+    def _loss_gradient_masking_threshold(self, perturbation: np.ndarray, x: np.ndarray) -> np.ndarray:
+        """Compute loss gradient of the global masking threshold w.r.t. the PSD approximate of the perturbation.
+
+        The loss is defined as the hinge loss w.r.t. to the frequency masking threshold of the original audio input `x`
+        and the normalized power spectral density estimate of the perturbation. In order to stabilize the optimization
+        problem during back-propagation, the `10*log`-terms are canceled out.
+
+        :param perturbation: Adversarial perturbation.
+        :param x: An array with the original inputs to be attacked.
+        :return: Tuple consisting of the loss gradient, which has same shape as `perturbation`, and loss value.
+        """
+        # pad input
+        perturbation_padded, delta_mask = pad_audio_input(perturbation)
+        x_padded, _ = pad_audio_input(x)
+
+        # calculate masking threshold and PSD maximum
+        masking_threshold = []
+        psd_maximum = []
+        for x_i in x_padded:
+            mt, pm = self.masker.calculate_threshold_and_psd_maximum(x_i)
+            masking_threshold.append(mt)
+            psd_maximum.append(pm)
+        masking_threshold = np.array(masking_threshold)
+        psd_maximum = np.array(psd_maximum)
+
+        # stabilize masking threshold loss by canceling out the "10*log" term in power spectral density and masking threshold
+        masking_threshold_stabilized = 10 ** (masking_threshold * 0.1)
+        psd_maximum_stabilized = 10 ** (psd_maximum * 0.1)
+
+        # get loss gradients (TensorFlow)
+        feed_dict = {
+            self._delta: perturbation_padded,
+            self._power_spectral_density_maximum_tf: psd_maximum_stabilized,
+            self._masking_threshold_tf: masking_threshold_stabilized,
+        }
+        gradients_padded, loss = self.estimator._sess.run(self._loss_gradient_masking_threshold_op_tf, feed_dict)
+
+        # undo padding, i.e. change gradients shape from (nb_samples, max_length) to (nb_samples)
+        lengths = delta_mask.sum(axis=1)
+        gradients = list()
+        for gradient_padded, length in zip(gradients_padded, lengths):
+            gradient = gradient_padded[:length]
+            gradients.append(gradient)
+
+        return np.array(gradients), loss
+
+    def _loss_gradient_masking_threshold_tf(
+        self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor", masking_threshold_stabilized: "Tensor"
+    ) -> "Tensor":
+        """
+        Compute loss gradient of the masking threshold loss in TensorFlow.
+
+        Note that the PSD maximum and masking threshold are required to be stabilized, i.e. have the `10*log10`-term
+        canceled out. Following Qin et al (2019) this mitigates optimization instabilities.
+
+        :param perturbation: Adversarial perturbation.
+        :param psd_maximum_stabilized: Stabilized maximum across frames, i.e. shape is `(batch_size, frame_length)`, of
+            the original unnormalized PSD of `x`.
+        :param masking_threshold_stabilized: Stabilized masking threshold for the original input `x`.
+        :return: Approximate PSD tensor of shape `(batch_size, window_size // 2 + 1, frame_length)`.
+        """
+        import tensorflow.compat.v1 as tf1
+
+        # calculate approximate power spectral density
+        psd_perturbation = self._approximate_power_spectral_density_tf(perturbation, psd_maximum_stabilized)
+
+        # calculate hinge loss
+        loss = tf1.reduce_mean(
+            tf1.nn.relu(psd_perturbation - masking_threshold_stabilized), axis=[1, 2], keepdims=False
+        )
+
+        # compute loss gradient
+        loss_gradient = tf1.gradients(loss, [perturbation])[0]
+        return loss_gradient, loss
+
+    def _approximate_power_spectral_density_tf(
+        self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor"
+    ) -> "Tensor":
+        """
+        Approximate the power spectral density for a perturbation `perturbation` in TensorFlow.
+
+        Note that a stabilized PSD approximate is returned, where the `10*log10`-term has been canceled out.
+        Following Qin et al (2019) this mitigates optimization instabilities.
+
+        :param perturbation: Adversarial perturbation.
+        :param psd_maximum_stabilized: Stabilized maximum across frames, i.e. shape is `(batch_size, frame_length)`, of
+            the original unnormalized PSD of `x`.
+        :return: Approximate PSD tensor of shape `(batch_size, window_size // 2 + 1, frame_length)`.
+        """
+        import tensorflow.compat.v1 as tf1
+
+        # compute short-time Fourier transform (STFT)
+        stft_matrix = tf1.signal.stft(perturbation, self._window_size, self._hop_size, fft_length=self._window_size)
+
+        # compute power spectral density (PSD)
+        # note: fixes implementation of Qin et al. by also considering the square root of gain_factor
+        gain_factor = 8.0 / 3.0
+        psd_matrix = gain_factor * tf1.square(tf1.abs(stft_matrix / self._window_size))
+
+        # approximate normalized psd: psd_matrix_approximated = 10^((96.0 - psd_matrix_max + psd_matrix)/10)
+        psd_matrix_approximated = tf1.pow(10.0, 9.6) / tf1.expand_dims(psd_maximum_stabilized, -1) * psd_matrix
+
+        # return PSD matrix such that shape is (batch_size, window_size // 2 + 1, frame_length)
+        return tf1.transpose(psd_matrix_approximated, [0, 2, 1])
+
+    def _approximate_power_spectral_density_torch(self):
+        """Approximate the power spectral density for a perturbation `perturbation` in PyTorch."""
+        raise NotImplementedError
+
+    def _loss_gradient_masking_threshold_torch(self):
+        """Compute loss gradient of the masking threshold loss in PyTorch."""
+        raise NotImplementedError
 
     def _check_params(self) -> None:
         """

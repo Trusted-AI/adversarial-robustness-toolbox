@@ -21,6 +21,7 @@ import logging
 
 import numpy as np
 import pytest
+import tensorflow as tf
 from numpy.testing import assert_array_equal
 
 from art.attacks.attack import EvasionAttack
@@ -59,6 +60,16 @@ def audio_data():
     return test_input
 
 
+@pytest.fixture
+def audio_batch_padded():
+    """
+    Create audio fixtures of shape (batch_size=2,) with elements of variable length.
+    """
+    sample_rate = 16000
+    test_input = np.zeros((2, sample_rate)) * 2e3
+    return test_input
+
+
 class TensorFlowV2AsrDummy(TensorFlowV2Estimator, SpeechRecognizerMixin):
     def get_activations():
         pass
@@ -82,7 +93,7 @@ class TestImperceptibleAsr:
         assert issubclass(ImperceptibleAsr, EvasionAttack)
 
     def test_implements_abstract_methods(self):
-        ImperceptibleAsr(estimator=TensorFlowV2AsrDummy())
+        ImperceptibleAsr(estimator=TensorFlowV2AsrDummy(), masker=PsychoacousticMasker())
 
     def test_create_adversarial_numpy(self, mocker, audio_data):
         test_input = audio_data
@@ -91,7 +102,9 @@ class TestImperceptibleAsr:
         mocker.patch.object(TensorFlowV2AsrDummy, "predict", return_value=test_target)
 
         # learning rate of zero ensures that adversarial example equals test input
-        imperceptible_asr = ImperceptibleAsr(estimator=TensorFlowV2AsrDummy(), max_iter_1=10, learning_rate_1=0)
+        imperceptible_asr = ImperceptibleAsr(
+            estimator=TensorFlowV2AsrDummy(), masker=PsychoacousticMasker(), max_iter_1=10, learning_rate_1=0
+        )
         adversarial = imperceptible_asr._create_adversarial(test_input, test_target)
 
         # test shape and adversarial example result
@@ -101,6 +114,32 @@ class TestImperceptibleAsr:
     # # TODO does only work with TF2 >= 2.2....
     # def test_classifier_type_check_fail(self):
     #    backend_test_classifier_type_check_fail(ImperceptibleAsr, [TensorFlowV2Estimator, SpeechRecognizerMixin])
+
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
+    def test_loss_gradient_masking_threshold_tf(self, audio_batch_padded):
+        import tensorflow.compat.v1 as tf1
+
+        tf1.reset_default_graph()
+
+        test_delta = audio_batch_padded
+        test_psd_maxium = np.ones((test_delta.shape[0], 28))
+        test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
+
+        # TODO mock masker
+        imperceptible_asr = ImperceptibleAsr(
+            estimator=TensorFlowV2AsrDummy(), masker=PsychoacousticMasker(), max_iter_1=10, learning_rate_1=0
+        )
+        feed_dict = {
+            imperceptible_asr._delta: test_delta,
+            imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maxium,
+            imperceptible_asr._masking_threshold_tf: test_masking_threshold,
+        }
+        with tf1.Session() as sess:
+            loss_gradient, loss = sess.run(imperceptible_asr._loss_gradient_masking_threshold_op_tf, feed_dict)
+
+        assert loss_gradient.shape == test_delta.shape
+        assert loss.ndim == 1 and loss.shape[0] == test_delta.shape[0]
 
 
 class TestPsychoacousticMasker:
