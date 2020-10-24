@@ -116,15 +116,41 @@ class ImperceptibleAsr(EvasionAttack):
 
     def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
-        Generate adversarial examples and return them as an array. This method should be overridden by all concrete
-        evasion attack implementations.
+        Generate imperceptible, adversarial examples.
 
         :param x: An array with the original inputs to be attacked.
-        :param y: Correct labels or target labels for `x`, depending if the attack is targeted or not. This parameter
-            is only used by some of the attacks.
+        :param y: Target values of shape (batch_size,). Each sample in `y` is a string and it may possess different
+            lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
         :return: An array holding the adversarial examples.
         """
-        pass
+        nb_samples = x.shape[0]
+
+        x_imperceptible = [None] * nb_samples
+
+        nb_batches = int(np.ceil(nb_samples / float(self.batch_size)))
+        for m in range(nb_batches):
+            # batch indices
+            begin, end = m * self.batch_size, min((m + 1) * self.batch_size, nb_samples)
+
+            # create batch of adversarial examples
+            x_imperceptible[begin:end] = self._generate_batch(x[begin:end], y[begin:end])
+        return np.array(x_imperceptible, dtype=object)
+
+    def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
+        """Create imperceptible, adversarial sample.
+
+        This is a helper method that calls the methods to create an adversarial
+        (:func:`~art.attack.evasion.imperceptible_asr.imperceptible_asr.ImperceptibleAsr._create_adversarial`) and
+        imperceptible
+        (:func:`~art.attack.evasion.imperceptible_asr.imperceptible_asr.ImperceptibleAsr._create_imperceptible`) example
+        subsequently.
+        """
+        # create adversarial example
+        x_adversarial = self._create_adversarial(x, y)
+
+        # make adversarial example imperceptible
+        x_imperceptible = self._create_imperceptible(x, x_adversarial, y)
+        return x_imperceptible
 
     def _create_adversarial(self, x, y) -> np.ndarray:
         """
