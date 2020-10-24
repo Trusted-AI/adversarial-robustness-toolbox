@@ -126,7 +126,7 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     else:
 
                         raise ValueError(
-                            "The loss `difference_logits_ratio` has not been validate completely. It seems that "
+                            "The loss `difference_logits_ratio` has not been validate completely. It seems that the "
                             "commented implemented below is failing to selected the second largest logit for cases "
                             "where the largest logit is the true logit. For future work `difference_logits_ratio` and "
                             "loss_fn should return the same loss value."
