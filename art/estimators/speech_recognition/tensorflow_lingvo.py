@@ -38,6 +38,7 @@ if TYPE_CHECKING:
     from art.defences.postprocessor.postprocessor import Postprocessor
 
     from tensorflow.compat.v1 import Tensor
+    from tensorflow.compat.v1 import Session
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,9 @@ logger = logging.getLogger(__name__)
 class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
     """
     This class implements the task-specific Lingvo ASR model of Qin et al. (2019).
+
+    The estimator uses a pre-trained model provided by Qin et al., which is trained using the Lingvo library and the
+    LibriSpeech dataset.
 
     | Paper link: http://proceedings.mlr.press/v97/qin19a.html
     |             https://arxiv.org/abs/1902.08295
@@ -109,6 +113,7 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
         random_seed: Optional[int] = None,
+        sess: Optional["Session"] = None,
     ):
         """
         Initialization.
@@ -174,15 +179,25 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         self._mask_frequency = tf1.placeholder(tf1.float32, shape=[None, None, 80], name="art_mask_frequency")
 
         # init Lingvo computation graph
-        self._sess = tf1.Session()
-        model, task = self._load_model()
+        self._sess = tf1.Session() if sess is None else sess
+        model, task, cluster = self._load_model()
         self._model = model
         self._task = task
+        self._cluster = cluster
         self._metrics = None
 
         # add prediction and loss gradient ops to graph
         self._predict_batch_op = self._predict_batch(self._x_padded, self._y_target, self._mask_frequency)
         self._loss_gradient_op = self._loss_gradient(self._x_padded, self._y_target, self._mask_frequency)
+
+    @property
+    def sess(self) -> "Session":
+        """
+        Get current TensorFlow session.
+
+        :return: The current TensorFlow session.
+        """
+        return self._sess
 
     @staticmethod
     def _check_and_download_file(uri: str, basename: str, *paths: str) -> str:
@@ -264,7 +279,7 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         # set 'enable_asserts'-flag to False (Note: this flag ensures correct GPU support)
         tf1.flags.FLAGS.enable_asserts = False
 
-        return model, task
+        return model, task, cluster
 
     def _create_decoder_input(self, x: "Tensor", y: "Tensor", mask_frequency: "Tensor") -> "Tensor":
         """Create decoder input per batch."""
@@ -350,12 +365,15 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
     def _predict_batch(self, x: "Tensor", y: "Tensor", mask_frequency: "Tensor") -> "Tensor":
         """Create prediction operation for a batch of padded inputs."""
+        import tensorflow.compat.v1 as tf1
+
         # create decoder inputs
         decoder_inputs = self._create_decoder_input(x, y, mask_frequency)
 
         # call decoder
-        if not self._metrics:
-            self._metrics = self._task.FPropDefaultTheta(decoder_inputs)
+        if self._metrics is None:
+            with self._cluster, tf1.device(self._cluster.GetPlacer()):
+                self._metrics = self._task.FPropDefaultTheta(decoder_inputs)
         predictions = self._task.Decode(decoder_inputs)
 
         return predictions
@@ -412,8 +430,9 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         decoder_inputs = self._create_decoder_input(x, y, mask)
 
         # call decoder
-        if not self._metrics:
-            self._metrics = self._task.FPropDefaultTheta(decoder_inputs)
+        if self._metrics is None:
+            with self._cluster, tf1.device(self._cluster.GetPlacer()):
+                self._metrics = self._task.FPropDefaultTheta(decoder_inputs)
 
         # compute loss gradient
         loss = tf1.get_collection("per_loss")[0]
@@ -462,7 +481,7 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
 
-        return np.array(gradients)
+        return np.array(gradients, dtype=object)
 
     def _loss_gradient_per_sequence(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
@@ -488,7 +507,7 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
             gradient = self._sess.run(self._loss_gradient_op, feed_dict)
             gradients.append(np.squeeze(gradient))
 
-        return np.array(gradients)
+        return np.array(gradients, dtype=object)
 
     def set_learning_phase(self) -> None:
         raise NotImplementedError

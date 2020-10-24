@@ -45,7 +45,8 @@ def audio_data():
             np.ones(sample_rate * 2) * 2e3,
             np.ones(sample_rate * 3) * 3e3,
             np.ones(sample_rate * 3) * 3e3,
-        ]
+        ],
+        dtype=object
     )
     return test_input
 
@@ -128,7 +129,7 @@ class TestLingvoAsr:
 
         tf1.reset_default_graph()
 
-        test_input = np.array([np.array([1]), np.array([2] * 480)])
+        test_input = np.array([np.array([1]), np.array([2] * 480)], dtype=object)
         test_mask = np.array([[True] + [False] * 479, [True] * 480])
         test_output = np.array([[1] + [0] * 479, [2] * 480])
 
@@ -210,7 +211,7 @@ class TestLingvoAsr:
         lingvo = LingvoAsr()
 
         gradients = lingvo._loss_gradient_per_batch(test_input, test_target)
-        gradients_abs_sum = np.array([np.abs(g).sum() for g in gradients])
+        gradients_abs_sum = np.array([np.abs(g).sum() for g in gradients], dtype=object)
 
         # test shape, equal inputs have equal gradients, non-zero inputs have non-zero gradient sums
         assert [x.shape for x in test_input] == [g.shape for g in gradients]
@@ -228,7 +229,7 @@ class TestLingvoAsr:
         lingvo = LingvoAsr()
 
         gradients = lingvo._loss_gradient_per_sequence(test_input, test_target)
-        gradients_abs_sum = np.array([np.abs(g).sum() for g in gradients])
+        gradients_abs_sum = np.array([np.abs(g).sum() for g in gradients], dtype=object)
 
         # test shape, equal inputs have equal gradients, non-zero inputs have non-zero gradient sums
         assert [x.shape for x in test_input] == [g.shape for g in gradients]
@@ -286,7 +287,7 @@ class TestLingvoAsrLibriSpeechSamples:
             audios.append(audio)
             transcripts.append(sample["transcript"])
 
-        audio_batch = np.array(audios)
+        audio_batch = np.array(audios, dtype=object)
 
         lingvo = LingvoAsr(random_seed=314159)
         prediction = lingvo.predict(audio_batch, batch_size=1)
@@ -306,15 +307,15 @@ class TestLingvoAsrLibriSpeechSamples:
             audios.append(audio)
             transcripts.append(sample["transcript"])
 
-        audio_batch = np.array(audios)
+        audio_batch = np.array(audios, dtype=object)
         target_batch = np.array(transcripts)
 
         lingvo = LingvoAsr(random_seed=314159)
         gradient_batch = lingvo._loss_gradient_per_batch(audio_batch, target_batch)
         gradient_sequence = lingvo._loss_gradient_per_sequence(audio_batch, target_batch)
 
-        gradient_batch_sum = np.array([np.abs(gb).sum() for gb in gradient_batch])
-        gradient_sequence_sum = np.array([np.abs(gs).sum() for gs in gradient_sequence])
+        gradient_batch_sum = np.array([np.abs(gb).sum() for gb in gradient_batch], dtype=object)
+        gradient_sequence_sum = np.array([np.abs(gs).sum() for gs in gradient_sequence], dtype=object)
 
         # test loss gradients per batch and per sequence are the same
         assert_allclose(gradient_sequence_sum, gradient_batch_sum, rtol=1e-05)
