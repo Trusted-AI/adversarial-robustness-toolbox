@@ -56,9 +56,9 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x_train: np.ndarray,
         y_train: np.ndarray,
-        batch_size: int,
-        eps_multiplier: float,
-        ub_pct_poison,
+        ub_pct_poison: float, # TODO: change name to exp_poison
+        batch_size: int = 128,
+        eps_multiplier: float = 1.5,
     ) -> None:
         """
         Create an :class:`.SpectralSignatureDefense` object with the provided classifier.
