@@ -183,7 +183,28 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
 
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
+
+                # Compute batch_eps and batch_eps_step
+                if isinstance(self.eps, np.ndarray):
+                    if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                        batch_eps = self.eps[batch_index_1:batch_index_2]
+                        batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
+
+                    else:
+                        batch_eps = self.eps
+                        batch_eps_step = self.eps_step
+
+                else:
+                    batch_eps = self.eps
+                    batch_eps_step = self.eps_step
+
+                adv_x[batch_index_1:batch_index_2] = self._generate_batch(
+                    x=batch,
+                    targets=batch_labels,
+                    mask=mask_batch,
+                    eps=batch_eps,
+                    eps_step=batch_eps_step
+                )
 
             if self.num_random_init > 1:
                 rate = 100 * compute_success(
@@ -204,7 +225,14 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x_best
 
-    def _generate_batch(self, x: "torch.Tensor", targets: "torch.Tensor", mask: "torch.Tensor") -> np.ndarray:
+    def _generate_batch(
+        self,
+        x: "torch.Tensor",
+        targets: "torch.Tensor",
+        mask: "torch.Tensor",
+        eps: Union[float, np.ndarray],
+        eps_step: Union[float, np.ndarray]
+    ) -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in an array.
 
@@ -213,6 +241,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
         inputs = x.to(self.estimator.device)
@@ -224,7 +254,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_torch(
-                adv_x, inputs, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x, inputs, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x.cpu().detach().numpy()
