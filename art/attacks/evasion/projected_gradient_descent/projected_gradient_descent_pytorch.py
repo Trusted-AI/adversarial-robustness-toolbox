@@ -380,18 +380,32 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         values_tmp = values.reshape(values.shape[0], -1)
 
         if norm_p == 2:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
+                )
+
             values_tmp = values_tmp * torch.min(
                 torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
                 eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
             ).unsqueeze_(-1)
 
         elif norm_p == 1:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
+                )
+
             values_tmp = values_tmp * torch.min(
                 torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
                 eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
             ).unsqueeze_(-1)
 
         elif norm_p in [np.inf, "inf"]:
+            if isinstance(eps, np.ndarray):
+                eps = eps * np.ones_like(values)
+                eps = eps.reshape(shape=[eps.shape[0], -1])
+
             values_tmp = values_tmp.sign() * torch.min(
                 values_tmp.abs(), torch.tensor([eps], dtype=torch.float32).to(self.estimator.device)
             )
