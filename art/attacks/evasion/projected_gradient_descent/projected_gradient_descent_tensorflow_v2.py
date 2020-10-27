@@ -221,7 +221,14 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return adv_x_best
 
-    def _generate_batch(self, x: "tf.Tensor", targets: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
+    def _generate_batch(
+        self,
+        x: "tf.Tensor",
+        targets: "tf.Tensor",
+        mask: "tf.Tensor",
+        eps: Union[float, np.ndarray],
+        eps_step: Union[float, np.ndarray]
+    ) -> "tf.Tensor":
         """
         Generate a batch of adversarial samples and return them in an array.
 
@@ -230,12 +237,14 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
         adv_x = x
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_tf(
-                adv_x, x, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x, x, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x
@@ -285,7 +294,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         else:
             return grad * mask
 
-    def _apply_perturbation(self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: float) -> "tf.Tensor":
+    def _apply_perturbation(
+        self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[float, np.ndarray]
+    ) -> "tf.Tensor":
         """
         Apply perturbation on examples.
 
@@ -310,8 +321,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         x_init: "tf.Tensor",
         y: "tf.Tensor",
         mask: "tf.Tensor",
-        eps: float,
-        eps_step: float,
+        eps: Union[float, np.ndarray],
+        eps_step: Union[float, np.ndarray],
         random_init: bool,
     ) -> "tf.Tensor":
         """
@@ -338,7 +349,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             n = x.shape[0]
             m = np.prod(x.shape[1:]).item()
 
-            random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            random_perturbation = random_sphere(n, m, eps, self.norm, tuple(x.shape)).reshape(x.shape).astype(
+                ART_NUMPY_DTYPE
+            )
             random_perturbation = tf.convert_to_tensor(random_perturbation)
             if mask is not None:
                 random_perturbation = random_perturbation * mask
@@ -367,7 +380,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         return x_adv
 
     @staticmethod
-    def _projection(values: "tf.Tensor", eps: float, norm_p: Union[int, float, str]) -> "tf.Tensor":
+    def _projection(values: "tf.Tensor", eps: Union[float, np.ndarray], norm_p: Union[int, float, str]) -> "tf.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
