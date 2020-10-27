@@ -181,15 +181,15 @@ class FastGradientMethod(EvasionAttack):
                 # Update current eps and check the stop condition
                 if isinstance(self.eps, np.ndarray):
                     if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
-                        current_eps += self.eps_step[batch_index_1:batch_index_2]
+                        current_eps = current_eps + self.eps_step[batch_index_1:batch_index_2]
                         partial_stop_condition = (current_eps <= self.eps[batch_index_1:batch_index_2]).all()
 
                     else:
-                        current_eps += self.eps_step
+                        current_eps = current_eps + self.eps_step
                         partial_stop_condition = (current_eps <= self.eps).all()
 
                 else:
-                    current_eps += self.eps_step
+                    current_eps = current_eps + self.eps_step
                     partial_stop_condition = current_eps <= self.eps
 
             adv_x[batch_index_1:batch_index_2] = batch
