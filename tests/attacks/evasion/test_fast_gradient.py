@@ -86,12 +86,9 @@ def test_masked_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for
 
 
 @pytest.mark.framework_agnostic
-def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, mnist_shape):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
-        attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
-        attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
-        attack.set_params(**attack_params)
 
         expected_values = {
             "x_test_mean": ExpectedValue(0.03896513, 0.01),
@@ -99,7 +96,27 @@ def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_d
             "x_test_max": ExpectedValue(0.30000000, 0.00001),
             "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 2, 4, 7, 0, 4, 7, 2, 0, 7, 0]), 2),
         }
+
+        attack = FastGradientMethod(classifier, eps=1.0, batch_size=11)
+
+        # Test eps of float type
+        attack_params = {"minimal": True, "eps_step": 0.1, "eps": 5.0}
+        attack.set_params(**attack_params)
+
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+
+        # Test eps of array type 1
+        eps = np.ones(shape=mnist_shape) * 5.0
+        eps_step = np.ones_like(eps) * 0.1
+
+        attack_params = {"minimal": True, "eps_step": eps_step, "eps": eps}
+        attack.set_params(**attack_params)
+
+        backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+
+        assert False
+
+
     except ARTTestException as e:
         art_warning(e)
 
@@ -134,7 +151,7 @@ def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator
                 "y_test_pred_adv_expected": ExpectedValue(np.asarray([7, 2, 4, 4, 4, 7, 7, 4, 0, 4, 4]), 2),
             }
 
-        attack = FastGradientMethod(classifier, eps=1, norm=norm, batch_size=128)
+        attack = FastGradientMethod(classifier, eps=1.0, norm=norm, batch_size=128)
 
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
     except ARTTestException as e:
