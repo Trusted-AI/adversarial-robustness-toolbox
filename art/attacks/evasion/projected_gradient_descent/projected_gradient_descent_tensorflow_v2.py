@@ -396,16 +396,30 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         values_tmp = tf.reshape(values, (values.shape[0], -1))
 
         if norm_p == 2:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
+                )
+
             values_tmp = values_tmp * tf.expand_dims(
                 tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=2, axis=1) + tol)), axis=1
             )
 
         elif norm_p == 1:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
+                )
+
             values_tmp = values_tmp * tf.expand_dims(
                 tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=1, axis=1) + tol)), axis=1
             )
 
         elif norm_p in ["inf", np.inf]:
+            if isinstance(eps, np.ndarray):
+                eps = eps * np.ones(shape=values.shape)
+                eps = eps.reshape(shape=[eps.shape[0], -1])
+
             values_tmp = tf.sign(values_tmp) * tf.minimum(tf.math.abs(values_tmp), eps)
 
         else:
