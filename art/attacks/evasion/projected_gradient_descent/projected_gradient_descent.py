@@ -237,9 +237,6 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
 
-        if self.norm in ["inf", np.inf] and self.eps_step > self.eps:
-            raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
-
         if self.max_iter <= 0:
             raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
 

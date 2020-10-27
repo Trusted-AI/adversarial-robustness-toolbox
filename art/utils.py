@@ -319,7 +319,7 @@ def projection(values: np.ndarray, eps: Union[float, np.ndarray], norm_p: Union[
     elif norm_p in [np.inf, "inf"]:
         if isinstance(eps, np.ndarray):
             eps = eps * np.ones_like(values)
-            eps = eps.reshape(shape=[eps.shape[0], -1])
+            eps = eps.reshape([eps.shape[0], -1])
 
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
 
@@ -378,7 +378,7 @@ def random_sphere(
     elif norm in [np.inf, "inf"]:
         if isinstance(radius, np.ndarray):
             radius = radius * np.ones(original_shape)
-            radius = radius.reshape(shape=[radius.shape[0], -1])
+            radius = radius.reshape([radius.shape[0], -1])
 
         res = np.random.uniform(-radius, radius, (nb_points, nb_dims))
 

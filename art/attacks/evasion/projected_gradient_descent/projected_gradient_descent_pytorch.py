@@ -313,7 +313,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x = x + eps_step * perturbation
+        eps_step = np.array(eps_step, dtype=ART_NUMPY_DTYPE)
+        x = x + torch.tensor(eps_step).to(self.estimator.device) * perturbation
 
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
@@ -434,7 +435,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):
                 eps = eps * np.ones_like(values)
-                eps = eps.reshape(shape=[eps.shape[0], -1])
+                eps = eps.reshape([eps.shape[0], -1])
 
             values_tmp = values_tmp.sign() * torch.min(
                 values_tmp.abs(), torch.tensor([eps], dtype=torch.float32).to(self.estimator.device)
