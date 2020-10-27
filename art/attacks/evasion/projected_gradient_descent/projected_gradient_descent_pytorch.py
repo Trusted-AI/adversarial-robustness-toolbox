@@ -270,7 +270,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         else:
             return grad * mask
 
-    def _apply_perturbation(self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: float) -> "torch.Tensor":
+    def _apply_perturbation(
+        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[float, np.ndarray]
+    ) -> "torch.Tensor":
         """
         Apply perturbation on examples.
 
@@ -298,8 +300,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         x_init: "torch.Tensor",
         y: "torch.Tensor",
         mask: "torch.Tensor",
-        eps: float,
-        eps_step: float,
+        eps: Union[float, np.ndarray],
+        eps_step: Union[float, np.ndarray],
         random_init: bool,
     ) -> "torch.Tensor":
         """
@@ -326,7 +328,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             n = x.shape[0]
             m = np.prod(x.shape[1:]).item()
 
-            random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            random_perturbation = random_sphere(n, m, eps, self.norm, tuple(x.shape)).reshape(x.shape).astype(
+                ART_NUMPY_DTYPE
+            )
             random_perturbation = torch.from_numpy(random_perturbation).to(self.estimator.device)
 
             if mask is not None:
@@ -358,7 +362,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x_adv
 
-    def _projection(self, values: "torch.Tensor", eps: float, norm_p: Union[int, float, str]) -> "torch.Tensor":
+    def _projection(
+        self, values: "torch.Tensor", eps: Union[float, np.ndarray], norm_p: Union[int, float, str]
+    ) -> "torch.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
