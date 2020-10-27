@@ -96,7 +96,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
             )
 
         if loss_type is None:
-            if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=np.float32))):
+            if hasattr(estimator, "predict") and is_probability(
+                estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=np.float32))
+            ):
                 raise ValueError(
                     "AutoProjectedGradientDescent is expecting logits as estimator output, the provided "
                     "estimator seems to predict probabilities."
