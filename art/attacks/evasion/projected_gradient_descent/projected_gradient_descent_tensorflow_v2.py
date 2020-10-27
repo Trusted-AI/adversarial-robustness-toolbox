@@ -179,7 +179,28 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                     (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
 
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
+
+                # Compute batch_eps and batch_eps_step
+                if isinstance(self.eps, np.ndarray):
+                    if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                        batch_eps = self.eps[batch_index_1:batch_index_2]
+                        batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
+
+                    else:
+                        batch_eps = self.eps
+                        batch_eps_step = self.eps_step
+
+                else:
+                    batch_eps = self.eps
+                    batch_eps_step = self.eps_step
+
+                adv_x[batch_index_1:batch_index_2] = self._generate_batch(
+                    x=batch,
+                    targets=batch_labels,
+                    mask=mask_batch,
+                    eps=batch_eps,
+                    eps_step=batch_eps_step
+                )
 
             if self.num_random_init > 1:
                 rate = 100 * compute_success(
