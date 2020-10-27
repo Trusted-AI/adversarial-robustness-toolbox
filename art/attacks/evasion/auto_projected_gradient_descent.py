@@ -138,7 +138,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         #     # Not completely sure if the following line is correct.
                         #     # `i_y_pred_arg[:, -2], i_y_pred_arg[:, -1]` seems closer to the output of `loss_fn` than
                         #     # `i_y_pred_arg[:, -1], i_y_pred_arg[:, -2]`
-                        #     i_z_i = tf.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -2], i_y_pred_arg[:, -1])
+                        #     i_z_i = tf.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -2],
+                        #                      i_y_pred_arg[:, -1])
                         #
                         #     z_1 = tf.gather(y_pred, i_y_pred_arg[:, -1], axis=1, batch_dims=0)
                         #     z_3 = tf.gather(y_pred, i_y_pred_arg[:, -3], axis=1, batch_dims=0)
@@ -157,7 +158,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         # def loss_fn(y_true, y_pred):
                         #     i_y_true = np.argmax(y_true, axis=1)
                         #     i_y_pred_arg = np.argsort(y_pred, axis=1)
-                        #     i_z_i = np.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -1], i_y_pred_arg[:, -2])
+                        #     i_z_i = np.where(i_y_pred_arg[:, -1] != i_y_true[:], i_y_pred_arg[:, -1],
+                        #                      i_y_pred_arg[:, -2])
                         #
                         #     z_1 = y_pred[:, i_y_pred_arg[:, -1]]
                         #     z_3 = y_pred[:, i_y_pred_arg[:, -3]]
@@ -174,7 +176,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
                         #     return np.mean(dlr)
                         #
                         # self._loss_fn = loss_fn
-                        # self._loss_object = difference_logits_ratio(y_true=estimator._labels_ph, y_pred=estimator._output)
+                        # self._loss_object = difference_logits_ratio(y_true=estimator._labels_ph,
+                        #                                             y_pred=estimator._output)
 
                 estimator_apgd = TensorFlowClassifier(
                     input_ph=estimator._input_ph,
