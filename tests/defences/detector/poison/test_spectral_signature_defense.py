@@ -32,7 +32,7 @@ NB_TRAIN, NB_TEST, BATCH_SIZE, EPS_MULTIPLIER, UB_PCT_POISON = 30000, 10, 128, 1
 
 
 @pytest.mark.xfail
-@pytest.mark.parametrize("params", [dict(batch_size=-1), dict(eps_multiplier=-1.0), dict(ub_pct_poison=2.0)])
+@pytest.mark.parametrize("params", [dict(batch_size=-1), dict(eps_multiplier=-1.0), dict(expected_pp_poison=2.0)])
 @pytest.mark.framework_agnostic
 def test_wrong_parameters(params, art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
