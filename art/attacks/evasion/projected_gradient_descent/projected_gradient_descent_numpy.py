@@ -283,7 +283,12 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
                 if self.num_random_init > 1:
                     rate = 100 * compute_success(
-                        self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size,  # type: ignore
+                        self.estimator,
+                        x,
+                        targets,
+                        adv_x,
+                        self.targeted,
+                        batch_size=self.batch_size,  # type: ignore
                     )
                     if rate_best is None or rate > rate_best or adv_x_best is None:
                         rate_best = rate
@@ -297,7 +302,12 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                 if rate_best is not None
                 else 100
                 * compute_success(
-                    self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size,  # type: ignore
+                    self.estimator,
+                    x,
+                    y,
+                    adv_x_best,
+                    self.targeted,
+                    batch_size=self.batch_size,  # type: ignore
                 ),
             )
         else:

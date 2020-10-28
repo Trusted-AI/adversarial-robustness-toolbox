@@ -249,9 +249,7 @@ class FastGradientMethod(EvasionAttack):
 
                 # Use model predictions as correct outputs
                 logger.info("Using model predictions as correct labels for FGM.")
-                y = get_labels_np_array(
-                    self.estimator.predict(x, batch_size=self.batch_size)  # type: ignore
-                )
+                y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
             y = y / np.sum(y, axis=1, keepdims=True)
 
             # Get the mask
@@ -263,18 +261,37 @@ class FastGradientMethod(EvasionAttack):
                 logger.info("Performing minimal perturbation FGM.")
                 adv_x_best = self._minimal_perturbation(x, y, mask)
                 rate_best = 100 * compute_success(
-                    self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size,  # type: ignore
+                    self.estimator,
+                    x,
+                    y,
+                    adv_x_best,
+                    self.targeted,
+                    batch_size=self.batch_size,  # type: ignore
                 )
             else:
                 adv_x_best = None
                 rate_best = None
 
                 for _ in range(max(1, self.num_random_init)):
-                    adv_x = self._compute(x, x, y, mask, self.eps, self.eps, self._project, self.num_random_init > 0,)
+                    adv_x = self._compute(
+                        x,
+                        x,
+                        y,
+                        mask,
+                        self.eps,
+                        self.eps,
+                        self._project,
+                        self.num_random_init > 0,
+                    )
 
                     if self.num_random_init > 1:
                         rate = 100 * compute_success(
-                            self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size,  # type: ignore
+                            self.estimator,
+                            x,
+                            y,
+                            adv_x,
+                            self.targeted,
+                            batch_size=self.batch_size,  # type: ignore
                         )
                         if rate_best is None or rate > rate_best or adv_x_best is None:
                             rate_best = rate
@@ -313,7 +330,16 @@ class FastGradientMethod(EvasionAttack):
                 logger.info("Using model predictions as correct labels for FGM.")
                 y = self.estimator.predict(x, batch_size=self.batch_size)
 
-            adv_x_best = self._compute(x, x, y, None, self.eps, self.eps, self._project, self.num_random_init > 0,)
+            adv_x_best = self._compute(
+                x,
+                x,
+                y,
+                None,
+                self.eps,
+                self.eps,
+                self._project,
+                self.num_random_init > 0,
+            )
 
         return adv_x_best
 
@@ -322,9 +348,7 @@ class FastGradientMethod(EvasionAttack):
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if (
-            not (isinstance(self.eps, float) and isinstance(self.eps_step, float))
-        ) and (
+        if (not (isinstance(self.eps, float) and isinstance(self.eps_step, float))) and (
             not (isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray))
         ):
             raise TypeError(

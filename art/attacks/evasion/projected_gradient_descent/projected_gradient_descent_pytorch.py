@@ -159,7 +159,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         else:
             dataset = torch.utils.data.TensorDataset(
-                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)), torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
             )
 
         data_loader = torch.utils.data.DataLoader(
@@ -199,11 +200,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     batch_eps_step = self.eps_step
 
                 adv_x[batch_index_1:batch_index_2] = self._generate_batch(
-                    x=batch,
-                    targets=batch_labels,
-                    mask=mask_batch,
-                    eps=batch_eps,
-                    eps_step=batch_eps_step
+                    x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
                 )
 
             if self.num_random_init > 1:
@@ -231,7 +228,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         targets: "torch.Tensor",
         mask: "torch.Tensor",
         eps: Union[float, np.ndarray],
-        eps_step: Union[float, np.ndarray]
+        eps_step: Union[float, np.ndarray],
     ) -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in an array.
@@ -254,7 +251,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_torch(
-                adv_x, inputs, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x,
+                inputs,
+                targets,
+                mask,
+                eps,
+                eps_step,
+                self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x.cpu().detach().numpy()
@@ -359,8 +362,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             n = x.shape[0]
             m = np.prod(x.shape[1:]).item()
 
-            random_perturbation = random_sphere(n, m, eps, self.norm, tuple(x.shape)).reshape(x.shape).astype(
-                ART_NUMPY_DTYPE
+            random_perturbation = (
+                random_sphere(n, m, eps, self.norm, tuple(x.shape)).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             )
             random_perturbation = torch.from_numpy(random_perturbation).to(self.estimator.device)
 
@@ -416,10 +419,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
                 )
 
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
-            ).unsqueeze_(-1)
+            values_tmp = (
+                values_tmp
+                * torch.min(
+                    torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                    eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
+                ).unsqueeze_(-1)
+            )
 
         elif norm_p == 1:
             if isinstance(eps, np.ndarray):
@@ -427,10 +433,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
                 )
 
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
-            ).unsqueeze_(-1)
+            values_tmp = (
+                values_tmp
+                * torch.min(
+                    torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                    eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
+                ).unsqueeze_(-1)
+            )
 
         elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):

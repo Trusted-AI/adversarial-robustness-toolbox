@@ -191,9 +191,7 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if (
-            not (isinstance(self.eps, float) and isinstance(self.eps_step, float))
-        ) and (
+        if (not (isinstance(self.eps, float) and isinstance(self.eps_step, float))) and (
             not (isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray))
         ):
             raise TypeError(
