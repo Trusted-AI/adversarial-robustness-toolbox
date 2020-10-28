@@ -45,7 +45,7 @@ class VideoCompression(Preprocessor):
     parameter. More information on the constant rate factor: https://trac.ffmpeg.org/wiki/Encode/H.264.
     """
 
-    params = ["video_format", "constant_rate_factor", "channels_first"]
+    params = ["video_format", "constant_rate_factor", "channels_first", "verbose"]
 
     def __init__(
         self,
@@ -55,6 +55,7 @@ class VideoCompression(Preprocessor):
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        verbose: bool = False,
     ):
         """
         Create an instance of VideoCompression.
@@ -64,6 +65,7 @@ class VideoCompression(Preprocessor):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         """
         super().__init__()
         self._is_fitted = True
@@ -72,6 +74,7 @@ class VideoCompression(Preprocessor):
         self.video_format = video_format
         self.constant_rate_factor = constant_rate_factor
         self.channels_first = channels_first
+        self.verbose = verbose
         self._check_params()
 
     @property
@@ -128,7 +131,7 @@ class VideoCompression(Preprocessor):
         # apply video compression per video item
         x_compressed = x.copy()
         with TemporaryDirectory(dir=ART_DATA_PATH) as tmp_dir:
-            for i, x_i in enumerate(tqdm(x, desc="Video compression")):
+            for i, x_i in enumerate(tqdm(x, desc="Video compression", disable=not self.verbose)):
                 x_compressed[i] = compress_video(x_i, self.video_format, self.constant_rate_factor, dir_=tmp_dir)
 
         if self.channels_first:
@@ -148,3 +151,6 @@ class VideoCompression(Preprocessor):
     def _check_params(self) -> None:
         if not (isinstance(self.constant_rate_factor, (int, np.int)) and 0 <= self.constant_rate_factor < 52):
             raise ValueError("Constant rate factor must be an integer in the range [0, 51].")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

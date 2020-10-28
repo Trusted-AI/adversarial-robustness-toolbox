@@ -41,16 +41,20 @@ class DecisionTreeAttack(EvasionAttack):
     | Paper link: https://arxiv.org/abs/1605.07277
     """
 
-    attack_params = ["classifier", "offset"]
+    attack_params = ["classifier", "offset", "verbose"]
     _estimator_requirements = (ScikitlearnDecisionTreeClassifier,)
 
-    def __init__(self, classifier: ScikitlearnDecisionTreeClassifier, offset: float = 0.001) -> None:
+    def __init__(
+        self, classifier: ScikitlearnDecisionTreeClassifier, offset: float = 0.001, verbose: bool = True,
+    ) -> None:
         """
         :param classifier: A trained scikit-learn decision tree model.
         :param offset: How much the value is pushed away from tree's threshold.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         self.offset = offset
+        self.verbose = verbose
         self._check_params()
 
     def _df_subtree(
@@ -107,7 +111,7 @@ class DecisionTreeAttack(EvasionAttack):
         y = check_and_transform_label_format(y, self.estimator.nb_classes, return_one_hot=False)
         x_adv = x.copy()
 
-        for index in trange(x_adv.shape[0], desc="Decision tree attack"):
+        for index in trange(x_adv.shape[0], desc="Decision tree attack", disable=not self.verbose):
             path = self.estimator.get_decision_path(x_adv[index])
             legitimate_class = np.argmax(self.estimator.predict(x_adv[index].reshape(1, -1)))
             position = -2
@@ -156,3 +160,6 @@ class DecisionTreeAttack(EvasionAttack):
 
         if self.offset <= 0:
             raise ValueError("The offset parameter must be strictly positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

@@ -59,6 +59,7 @@ class FrameSaliencyAttack(EvasionAttack):
         "method",
         "frame_index",
         "batch_size",
+        "verbose",
     ]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
 
@@ -69,6 +70,7 @@ class FrameSaliencyAttack(EvasionAttack):
         method: str = "iterative_saliency",
         frame_index: int = 1,
         batch_size: int = 1,
+        verbose: bool = True,
     ):
         """
         :param classifier: A trained classifier.
@@ -80,6 +82,7 @@ class FrameSaliencyAttack(EvasionAttack):
                        original attack).
         :param frame_index: Index of the axis in input (feature) array `x` representing the frame dimension.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
 
@@ -87,6 +90,7 @@ class FrameSaliencyAttack(EvasionAttack):
         self.method = method
         self.frame_index = frame_index
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -146,7 +150,7 @@ class FrameSaliencyAttack(EvasionAttack):
         x_adv_new = self.attacker.generate(x, targets, mask=mask)
 
         # Here starts the main iteration:
-        for i in trange(nb_frames, desc="Frame saliency"):
+        for i in trange(nb_frames, desc="Frame saliency", disable=not self.verbose):
             # Check if attack has already succeeded for all inputs:
             if sum(attack_failure) == 0:
                 break
@@ -217,3 +221,6 @@ class FrameSaliencyAttack(EvasionAttack):
 
         if not self.estimator == self.attacker.estimator:
             raise Warning("Different classifiers given for computation of saliency scores and adversarial noise.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
