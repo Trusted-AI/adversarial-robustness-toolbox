@@ -282,14 +282,30 @@ class FastGradientMethod(EvasionAttack):
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
-        if self.norm in [np.inf, "inf"]:
-            grad = np.sign(grad)
-        elif self.norm == 1:
-            ind = tuple(range(1, len(batch.shape)))
-            grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
-        elif self.norm == 2:
-            ind = tuple(range(1, len(batch.shape)))
-            grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
+        def _apply_norm(grad, object_type=False):
+            if self.norm in [np.inf, "inf"]:
+                grad = np.sign(grad)
+            elif self.norm == 1:
+                if not object_type:
+                    ind = tuple(range(1, len(batch.shape)))
+                else:
+                    ind = None
+                grad = grad / (np.sum(np.abs(grad), axis=ind, keepdims=True) + tol)
+            elif self.norm == 2:
+                if not object_type:
+                    ind = tuple(range(1, len(batch.shape)))
+                else:
+                    ind = None
+                grad = grad / (np.sqrt(np.sum(np.square(grad), axis=ind, keepdims=True)) + tol)
+            return grad
+
+        if batch.dtype == np.object:
+            for i_sample in range(batch.shape[0]):
+                grad[i_sample] = _apply_norm(grad[i_sample], object_type=True)
+                assert batch[i_sample].shape == grad[i_sample].shape
+        else:
+            grad = _apply_norm(grad)
+
         assert batch.shape == grad.shape
 
         if mask is None:
@@ -329,11 +345,15 @@ class FastGradientMethod(EvasionAttack):
                 clip_min, clip_max = self.estimator.clip_values
                 x_adv = np.clip(x_adv, clip_min, clip_max)
         else:
-            x_adv = x.astype(ART_NUMPY_DTYPE)
+            if x.dtype == np.object:
+                x_adv = x.copy()
+            else:
+                x_adv = x.astype(ART_NUMPY_DTYPE)
 
             # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+            batch_index_2 = min(batch_index_2, x.shape[0])
             batch = x_adv[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
 
@@ -351,9 +371,15 @@ class FastGradientMethod(EvasionAttack):
             x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
 
             if project:
-                perturbation = projection(
-                    x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2], eps, self.norm
-                )
-                x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
+                if x_adv.dtype == np.object:
+                    for i_sample in range(batch_index_1, batch_index_2):
+                        perturbation = projection(x_adv[i_sample] - x_init[i_sample], eps, self.norm)
+                    x_adv[i_sample] = x_init[i_sample] + perturbation
+
+                else:
+                    perturbation = projection(
+                        x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2], eps, self.norm
+                    )
+                    x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
 
         return x_adv
