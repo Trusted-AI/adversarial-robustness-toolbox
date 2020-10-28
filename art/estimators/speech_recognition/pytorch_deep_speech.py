@@ -411,6 +411,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         results = self._apply_preprocessing_gradient(x_, results)
 
+        if x.dtype != np.object:
+            results = np.array([i for i in results], dtype=x.dtype)
+            assert results.shape == x.shape and results.dtype == x.dtype
+
         return results
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
