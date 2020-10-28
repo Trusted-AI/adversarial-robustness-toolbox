@@ -150,7 +150,8 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         if self.eps_multiplier < 0:
             raise ValueError("eps_multiplier must be positive. Unsupported value: " + str(self.eps_multiplier))
         if self.expected_pp_poison < 0 or self.expected_pp_poison > 1:
-            raise ValueError("expected_pp_poison must be between 0 and 1. Unsupported value: " + str(self.expected_pp_poison))
+            raise ValueError("expected_pp_poison must be between 0 and 1. Unsupported value: " +
+                             str(self.expected_pp_poison))
 
 
 def spectral_signature_scores(matrix_r: np.ndarray) -> np.ndarray:
