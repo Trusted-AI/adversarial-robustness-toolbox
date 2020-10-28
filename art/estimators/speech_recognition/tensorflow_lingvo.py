@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
+class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
     """
     This class implements the task-specific Lingvo ASR model of Qin et al. (2019).
 
@@ -126,8 +126,8 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
-            used for data preprocessing. The first value will be subtracted from the input. The input will then
-               be divided by the second one.
+                used for data preprocessing. The first value will be subtracted from the input. The input will then
+                be divided by the second one.
         :param random_seed: Specify a random seed.
         """
         import pkg_resources
@@ -143,23 +143,20 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
             preprocessing=preprocessing,
         )
         self.random_seed = random_seed
-        if self.preprocessing is not None:
-            raise ValueError("This estimator does not support `preprocessing`.")
-        if self.preprocessing_defences is not None:
-            raise ValueError("This estimator does not support `preprocessing_defences`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
         # check required TensorFlow version
-        assert tf1.__version__ == "2.1.0", "The Lingvo estimator only supports TensorFlow 2.1.0."
+        if tf1.__version__ != "2.1.0":
+            raise AssertionError("The Lingvo estimator only supports TensorFlow 2.1.0.")
 
         # check required Python version
-        assert sys.version_info[:2] == (3, 6), "The Lingvo estimator only supports Python 3.6."
+        if sys.version_info[:2] != (3, 6):
+            raise AssertionError("The Lingvo estimator only supports Python 3.6.")
 
         # check required Lingvo version
-        assert (
-            pkg_resources.get_distribution("lingvo").version == "0.6.4"
-        ), "The Lingvo estimator only supports Lingvo 0.6.4"
+        if pkg_resources.get_distribution("lingvo").version != "0.6.4":
+            raise AssertionError("The Lingvo estimator only supports Lingvo 0.6.4")
 
         # disable eager execution as Lingvo uses tensorflow.compat.v1 API
         tf1.disable_eager_execution()
@@ -396,9 +393,19 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
                 "The LingvoAsr estimator can only be used temporal data of type mono. Please remove any channel"
                 "dimension."
             )
+        # if inputs have 32-bit floating point wav format, the preprocessing argument is required
+        is_normalized = max(map(max, np.abs(x))) <= 1.0
+        if is_normalized and self.preprocessing is None:
+            raise ValueError(
+                "The LingvoAsr estimator requires input values in the range [-32768, 32767] or normalized input values"
+                " with correct preprocessing argument (mean=0, stddev=1/normalization_factor)."
+            )
 
         nb_samples = x.shape[0]
         assert nb_samples % batch_size == 0, "Number of samples must be divisible by batch_size"
+
+        # Apply preprocessing
+        x, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         y = list()
         nb_batches = int(np.ceil(nb_samples / float(batch_size)))
@@ -419,7 +426,7 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
             # extract and append transcription result
             y += y_batch["topk_decoded"][:, 0].tolist()
 
-        y_decoded = [item.decode("utf-8") for item in y]
+        y_decoded = [item.decode("utf-8").upper() for item in y]
         return np.array(y_decoded, dtype=str)
 
     def _loss_gradient(self, x: "Tensor", y: "Tensor", mask: "Tensor") -> "Tensor":
@@ -451,10 +458,27 @@ class LingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         :param batch_mode: If `True` calculate gradient per batch or otherwise per sequence.
         :return: Loss gradients of the same shape as `x`.
         """
+        # if inputs have 32-bit floating point wav format, the preprocessing argument is required
+        is_normalized = max(map(max, np.abs(x))) <= 1.0
+        if is_normalized and self.preprocessing is None:
+            raise ValueError(
+                "The LingvoAsr estimator requires input values in the range [-32768, 32767] or normalized input values"
+                " with correct preprocessing argument (mean=0, stddev=1/normalization_factor)."
+            )
+
+        # Lingvo model works with lower case transcriptions
+        y = np.array([y_i.lower() for y_i in y])
+
+        # Apply preprocessing
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
+
         if batch_mode:
-            gradients = self._loss_gradient_per_batch(x, y)
+            gradients = self._loss_gradient_per_batch(x_preprocessed, y_preprocessed)
         else:
-            gradients = self._loss_gradient_per_sequence(x, y)
+            gradients = self._loss_gradient_per_sequence(x_preprocessed, y_preprocessed)
+
+        # Apply preprocessing gradients
+        gradients = self._apply_preprocessing_gradient(x, gradients)
         return gradients
 
     def _loss_gradient_per_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
