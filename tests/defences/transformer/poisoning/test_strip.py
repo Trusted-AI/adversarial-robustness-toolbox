@@ -40,7 +40,3 @@ def test_strip(art_warning, get_default_mnist_subset, image_dl_estimator):
         defense_cleanse.mitigate(x_test_mnist)
     except ARTTestException as e:
         art_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
