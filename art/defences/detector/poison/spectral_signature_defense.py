@@ -48,7 +48,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         "y_train",
         "batch_size",
         "eps_multiplier",
-        "ub_pct_poison",
+        "expected_pp_poison",
     ]
 
     def __init__(
@@ -56,7 +56,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x_train: np.ndarray,
         y_train: np.ndarray,
-        ub_pct_poison: float, # TODO: change name to exp_poison
+        expected_pp_poison: float,
         batch_size: int = 128,
         eps_multiplier: float = 1.5,
     ) -> None:
@@ -66,15 +66,15 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         :param classifier: Model evaluated for poison.
         :param x_train: Dataset used to train the classifier.
         :param y_train: Labels used to train the classifier.
-        :param batch_size: Size of batches.
-        :param eps_multiplier:
-        :param ub_pct_poison:
+        :param expected_pp_poison: The expected percentage of poison in the dataset
+        :param batch_size: The batch size for predictions
+        :param eps_multiplier: The multiplier to add to the previous expectation. Numbers higher than one represent
+                               a potentially higher false positive rate, but may detect more poison samples
         """
-        # TODO: fill in comments
         super().__init__(classifier, x_train, y_train)
         self.batch_size = batch_size
         self.eps_multiplier = eps_multiplier
-        self.ub_pct_poison = ub_pct_poison
+        self.expected_pp_poison = expected_pp_poison
         self.y_train_sparse = np.argmax(y_train, axis=1)
         self.evaluator = GroundTruthEvaluator()
         self._check_params()
@@ -122,7 +122,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
             # Check for empty list
             if len(feature):
                 score = spectral_signature_scores(np.vstack(feature))
-                score_cutoff = np.quantile(score, max(1 - self.eps_multiplier * self.ub_pct_poison, 0.0))
+                score_cutoff = np.quantile(score, max(1 - self.eps_multiplier * self.expected_pp_poison, 0.0))
                 score_by_class.append(score)
                 keep_by_class.append(score < score_cutoff)
             else:
@@ -149,8 +149,8 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
             raise ValueError("Batch size must be positive integer. Unsupported batch size: " + str(self.batch_size))
         if self.eps_multiplier < 0:
             raise ValueError("eps_multiplier must be positive. Unsupported value: " + str(self.eps_multiplier))
-        if self.ub_pct_poison < 0 or self.ub_pct_poison > 1:
-            raise ValueError("ub_pct_poison must be between 0 and 1. Unsupported value: " + str(self.ub_pct_poison))
+        if self.expected_pp_poison < 0 or self.expected_pp_poison > 1:
+            raise ValueError("expected_pp_poison must be between 0 and 1. Unsupported value: " + str(self.expected_pp_poison))
 
 
 def spectral_signature_scores(matrix_r: np.ndarray) -> np.ndarray:
