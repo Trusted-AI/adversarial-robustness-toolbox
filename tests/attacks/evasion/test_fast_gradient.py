@@ -46,7 +46,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 def test_classifier_defended_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod, defended=True)
-        attack = FastGradientMethod(classifier, eps=1, batch_size=128)
+        attack = FastGradientMethod(classifier, eps=1.0, batch_size=128)
         backend_test_defended_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
         art_warning(e)
@@ -86,7 +86,7 @@ def test_masked_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for
 
 
 @pytest.mark.framework_agnostic
-def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, mnist_shape):
+def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
         classifier = image_dl_estimator_for_attack(FastGradientMethod)
 
@@ -106,7 +106,8 @@ def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_d
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
         # Test eps of array type 1
-        eps = np.ones(shape=mnist_shape) * 5.0
+        (_, _, x_test_mnist, _) = fix_get_mnist_subset
+        eps = np.ones(shape=x_test_mnist.shape) * 5.0
         eps_step = np.ones_like(eps) * 0.1
 
         attack_params = {"minimal": True, "eps_step": eps_step, "eps": eps}
@@ -114,8 +115,32 @@ def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_d
 
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
-        assert False
+        # Test eps of array type 2
+        eps = np.ones(shape=x_test_mnist.shape[1:]) * 5.0
+        eps_step = np.ones_like(eps) * 0.1
 
+        attack_params = {"minimal": True, "eps_step": eps_step, "eps": eps}
+        attack.set_params(**attack_params)
+
+        backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+
+        # Test eps of array type 3
+        eps = np.ones(shape=x_test_mnist.shape[2:]) * 5.0
+        eps_step = np.ones_like(eps) * 0.1
+
+        attack_params = {"minimal": True, "eps_step": eps_step, "eps": eps}
+        attack.set_params(**attack_params)
+
+        backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
+
+        # Test eps of array type 4
+        eps = np.ones(shape=x_test_mnist.shape[3:]) * 5.0
+        eps_step = np.ones_like(eps) * 0.1
+
+        attack_params = {"minimal": True, "eps_step": eps_step, "eps": eps}
+        attack.set_params(**attack_params)
+
+        backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
 
     except ARTTestException as e:
         art_warning(e)
