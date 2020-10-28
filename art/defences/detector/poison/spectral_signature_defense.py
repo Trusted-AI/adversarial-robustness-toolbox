@@ -126,7 +126,6 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
                 score_by_class.append(score)
                 keep_by_class.append(score < score_cutoff)
             else:
-                # TODO: what score/keep to use when features is empty list? Currently using zero/True
                 score_by_class.append([0])
                 keep_by_class.append([True])
 
@@ -163,5 +162,5 @@ def spectral_signature_scores(matrix_r: np.ndarray) -> np.ndarray:
     # Following Algorithm #1 in paper, use SVD of centered features, not of covariance
     _, _, matrix_v = np.linalg.svd(matrix_m, full_matrices=False)
     eigs = matrix_v[:1]
-    score = np.matmul(matrix_m, np.transpose(eigs)) ** 2
+    score = np.expand_dims(np.linalg.norm(np.matmul(matrix_m, np.transpose(eigs)), axis=1), axis=1)
     return score
