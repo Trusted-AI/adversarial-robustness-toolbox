@@ -266,8 +266,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                                      prediction output. If transcription_output is not available, then probability
                                      output is returned.
         :type transcription_output: `bool`
-        :return: Probability (if transcription_output is None or False) or transcription (if transcription_output is
-                 True) predictions:
+        :return: Predicted probability (if transcription_output False) or transcription (default, if
+                 transcription_output is True or None):
                  - Probability return is a tuple of (probs, sizes), where `probs` is the probability of characters of
                  shape (nb_samples, seq_length, nb_classes) and `sizes` is the real sequence length of shape
                  (nb_samples,).
@@ -335,7 +335,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         # Check if users want transcription outputs
         transcription_output = kwargs.get("transcription_output")
 
-        if transcription_output is None or transcription_output is False:
+        if transcription_output is False:
             return result_outputs, result_output_sizes
 
         # Now users want transcription outputs
@@ -410,6 +410,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             )[:-2]
 
         results = self._apply_preprocessing_gradient(x_, results)
+
+        if x.dtype != np.object:
+            results = np.array([i for i in results], dtype=x.dtype)
+            assert results.shape == x.shape and results.dtype == x.dtype
 
         return results
 
