@@ -49,6 +49,7 @@ class Model(nn.Module):
 @pytest.mark.only_with_platform("pytorch")
 def test_device(art_warning):
     try:
+
         class Flatten(nn.Module):
             def forward(self, x):
                 n, _, _, _ = x.size()
@@ -141,5 +142,92 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
         predictions_2 = loaded_model.predict(x_test_mnist)
         accuracy_2 = np.sum(np.argmax(predictions_2, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
         assert accuracy_1 == accuracy_2
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skipModule("apex.amp")
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.parametrize("device_type", ["cpu", "gpu"])
+def test_loss_gradient_amp(
+    art_warning,
+    get_default_mnist_subset,
+    image_dl_estimator,
+    expected_values,
+    mnist_shape,
+    device_type,
+):
+    import torch
+    import torch.nn as nn
+
+    from art.estimators.classification.pytorch import PyTorchClassifier
+
+    try:
+        (expected_gradients_1, expected_gradients_2) = expected_values()
+
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+        classifier, _ = image_dl_estimator(from_logits=True)
+        optimizer = torch.optim.Adam(classifier.model.parameters(), lr=0.01)
+
+        # Redefine the classifier with amp
+        clip_values = (0, 1)
+        criterion = nn.CrossEntropyLoss()
+        classifier = PyTorchClassifier(
+            clip_values=clip_values,
+            model=classifier.model,
+            preprocessing_defences=[],
+            loss=criterion,
+            input_shape=(1, 28, 28),
+            nb_classes=10,
+            device_type=device_type,
+            optimizer=optimizer,
+            use_amp=True,
+            loss_scale=1.0,
+        )
+
+        # Compute loss gradients
+        gradients = classifier.loss_gradient(x_test_mnist, y_test_mnist)
+
+        # Test shape
+        assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
+
+        # First test of gradients
+        sub_gradients = gradients[0, 0, :, 14]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_1, decimal=4,
+        )
+
+        # Second test of gradients
+        sub_gradients = gradients[0, 0, 14, :]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_2, decimal=4,
+        )
+
+        # Compute loss gradients with framework
+        gradients = classifier.loss_gradient_framework(
+            torch.tensor(x_test_mnist).to(classifier.device), torch.tensor(y_test_mnist).to(classifier.device)
+        )
+        gradients = gradients.cpu().numpy()
+
+        # Test shape
+        assert gradients.shape == (x_test_mnist.shape[0],) + mnist_shape
+
+        # First test of gradients
+        sub_gradients = gradients[0, 0, :, 14]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_1, decimal=4,
+        )
+
+        # Second test of gradients
+        sub_gradients = gradients[0, 0, 14, :]
+
+        np.testing.assert_array_almost_equal(
+            sub_gradients, expected_gradients_2, decimal=4,
+        )
+
     except ARTTestException as e:
         art_warning(e)

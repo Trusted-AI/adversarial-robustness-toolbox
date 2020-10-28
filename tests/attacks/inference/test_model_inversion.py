@@ -88,7 +88,3 @@ def test_classifier_type_check_fail(art_warning):
         backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassifierMixin, ClassGradientsMixin])
     except ARTTestException as e:
         art_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))

@@ -56,6 +56,7 @@ class ShadowAttack(EvasionAttack):
         "lambda_s",
         "batch_size",
         "targeted",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
@@ -73,6 +74,7 @@ class ShadowAttack(EvasionAttack):
         lambda_s: float = 0.5,
         batch_size: int = 400,
         targeted: bool = False,
+        verbose: bool = True,
     ):
         """
         Create an instance of the :class:`.ShadowAttack`.
@@ -86,6 +88,7 @@ class ShadowAttack(EvasionAttack):
         :param lambda_s: Scalar penalty weight for similarity of color channels in perturbation.
         :param batch_size: The size of the training batch.
         :param targeted: True if the attack is targeted.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=estimator)
 
@@ -97,6 +100,7 @@ class ShadowAttack(EvasionAttack):
         self.lambda_c = lambda_c
         self.lambda_s = lambda_s
         self._targeted = targeted
+        self.verbose = verbose
         self._check_params()
 
         self.framework: Optional[str]
@@ -146,7 +150,7 @@ class ShadowAttack(EvasionAttack):
             - (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2
         )
 
-        for _ in trange(self.nb_steps, desc="Shadow attack"):
+        for _ in trange(self.nb_steps, desc="Shadow attack", disable=not self.verbose):
             gradients_ce = np.mean(
                 self.estimator.loss_gradient(x=x_batch + perturbation, y=y_batch, sampling=False)
                 * (1 - 2 * int(self.targeted)),
@@ -281,3 +285,6 @@ class ShadowAttack(EvasionAttack):
 
         if not isinstance(self.targeted, bool):
             raise ValueError("The targeted argument must be of type bool.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

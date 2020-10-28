@@ -156,7 +156,6 @@ class TestImperceptibleASRPytorch:
                 batch_size=2,
                 use_amp=False,
                 opt_level="O1",
-                loss_scale=1,
             )
 
         # With amp
@@ -186,7 +185,6 @@ class TestImperceptibleASRPytorch:
                 batch_size=2,
                 use_amp=True,
                 opt_level="O1",
-                loss_scale=1,
             )
 
         # Test transcription output

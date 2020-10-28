@@ -63,6 +63,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         input_shape: Tuple[int, ...],
         nb_classes: int,
         optimizer: Optional["torch.optim.Optimizer"] = None,  # type: ignore
+        use_amp: bool = False,
+        opt_level: str = "O1",
+        loss_scale: Optional[Union[float, str]] = "dynamic",
         channel_index=Deprecated,
         channels_first: bool = True,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -80,6 +83,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                categorical, i.e. not converted to one-hot encoding.
         :param input_shape: The shape of one input instance.
         :param optimizer: The optimizer used to train the classifier.
+        :param use_amp: Whether to use the automatic mixed precision tool to enable mixed precision training or
+                        gradient computation, e.g. with loss gradient computation. When set to True, this option is
+                        only triggered if there are GPUs available.
+        :param opt_level: Specify a pure or mixed precision optimization level. Used when use_amp is True. Accepted
+                          values are `O0`, `O1`, `O2`, and `O3`.
+        :param loss_scale: Loss scaling. Used when use_amp is True. If passed as a string, must be a string
+                           representing a number, e.g., “1.0”, or the string “dynamic”.
         :param nb_classes: The number of classes of the model.
         :param optimizer: The optimizer used to train the classifier.
         :param channel_index: Index of the axis in data containing the color channels or features.
@@ -120,6 +130,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model = self._make_model_wrapper(model)
         self._loss = loss
         self._optimizer = optimizer
+        self._use_amp = use_amp
         self._learning_phase: Optional[bool] = None
 
         # Get the internal layers
@@ -139,6 +150,33 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         else:
             self._reduce_labels = False
             self._int_labels = False
+
+        # Setup for AMP use
+        if self._use_amp:
+            from apex import amp
+
+            if self._optimizer is None:
+                logger.warning(
+                    "An optimizer is needed to use the automatic mixed precision tool, but none for provided. "
+                    "A default optimizer is used."
+                )
+
+                # Create the optimizers
+                parameters = self._model.parameters()
+                self._optimizer = torch.optim.SGD(parameters, lr=0.01)
+
+            if self.device.type == "cpu":
+                enabled = False
+            else:
+                enabled = True
+
+            self._model, self._optimizer = amp.initialize(
+                models=self._model,
+                optimizers=self._optimizer,
+                enabled=enabled,
+                opt_level=opt_level,
+                loss_scale=loss_scale,
+            )
 
     @property
     def device(self) -> "torch.device":
@@ -183,6 +221,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
+        # Put the model in the eval mode
         self._model.eval()
 
         # Apply preprocessing
@@ -222,6 +261,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
+        # Put the model in the training mode
+        self._model.train()
+
         if self._optimizer is None:
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
 
@@ -255,8 +297,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                 # Form the loss function
                 loss = self._loss(model_outputs[-1], o_batch)
 
-                # Actual training
-                loss.backward()
+                # Do training
+                if self._use_amp:
+                    from apex import amp
+
+                    with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                        scaled_loss.backward()
+
+                else:
+                    loss.backward()
+
                 self._optimizer.step()
 
     def fit_generator(self, generator: "DataGenerator", nb_epochs: int = 20, **kwargs) -> None:
@@ -270,6 +320,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
         from art.data_generators import PyTorchDataGenerator
+
+        # Put the model in the training mode
+        self._model.train()
 
         if self._optimizer is None:
             raise ValueError("An optimizer is needed to train the model, but none for provided.")
@@ -301,9 +354,18 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
                     # Form the loss function
                     loss = self._loss(model_outputs[-1], o_batch)
 
-                    # Actual training
-                    loss.backward()
+                    # Do training
+                    if self._use_amp:
+                        from apex import amp
+
+                        with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                            scaled_loss.backward()
+
+                    else:
+                        loss.backward()
+
                     self._optimizer.step()
+
         else:
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
@@ -422,10 +484,12 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Compute the loss and return
         model_outputs = self._model(inputs_t)
         prev_reduction = self._loss.reduction
-        # return individual loss values
+
+        # Return individual loss values
         self._loss.reduction = "none"
         loss = self._loss(model_outputs[-1], labels_t)
         self._loss.reduction = prev_reduction
+
         return loss.detach().numpy()
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
@@ -460,7 +524,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model.zero_grad()
 
         # Compute gradients
-        loss.backward()
+        if self._use_amp:
+            from apex import amp
+
+            with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                scaled_loss.backward()
+
+        else:
+            loss.backward()
+
+        # Get results
         grads = inputs_t.grad.cpu().numpy().copy()  # type: ignore
         grads = self._apply_preprocessing_gradient(x, grads)
         assert grads.shape == x.shape
@@ -492,7 +565,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._model.zero_grad()
 
         # Compute gradients
-        loss.backward()
+        if self._use_amp:
+            from apex import amp
+
+            with amp.scale_loss(loss, self._optimizer) as scaled_loss:
+                scaled_loss.backward()
+
+        else:
+            loss.backward()
+
+        # Get results
         grads = x.grad
         assert grads.shape == x.shape  # type: ignore
 
@@ -548,6 +630,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             results.append(layer_output.detach().cpu().numpy())
 
         results = np.concatenate(results)
+
         return results
 
     def set_learning_phase(self, train: bool) -> None:
@@ -655,7 +738,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return repr_
 
-    def _make_model_wrapper(self, model: "torch.nn.Module"):
+    def _make_model_wrapper(self, model: "torch.nn.Module") -> "torch.nn.Module":
         # Try to import PyTorch and create an internal class that acts like a model wrapper extending torch.nn.Module
         try:
             import torch.nn as nn

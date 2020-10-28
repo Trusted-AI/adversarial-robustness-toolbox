@@ -38,7 +38,7 @@ from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt
 
 logger = logging.getLogger(__name__)
 
-deep_learning_frameworks = ["keras", "tensorflow", "pytorch", "kerastf", "mxnet"]
+deep_learning_frameworks = ["keras", "tensorflow1", "tensorflow2", "pytorch", "kerastf", "mxnet"]
 non_deep_learning_frameworks = ["scikitlearn"]
 
 art_supported_frameworks = []
@@ -47,14 +47,24 @@ art_supported_frameworks.extend(non_deep_learning_frameworks)
 
 master_seed(1234)
 
-default_framework = "tensorflow"
+
+def get_default_framework():
+    import tensorflow as tf
+    default_framework = "tensorflow"
+
+    if tf.__version__[0] == "2":
+        default_framework = "tensorflow2"
+    else:
+        default_framework = "tensorflow1"
+
+    return default_framework
 
 
 def pytest_addoption(parser):
     parser.addoption(
         "--mlFramework",
         action="store",
-        default=default_framework,
+        default=get_default_framework(),
         help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is `tensorflow`. "
              "Other options available are {0}".format(art_supported_frameworks),
     )
@@ -143,17 +153,11 @@ def estimator_for_attack(framework):
 @pytest.fixture(autouse=True)
 def setup_tear_down_framework(framework):
     # Ran before each test
-    if framework == "keras":
-        pass
-    if framework == "tensorflow":
+    if framework == "tensorflow1" or framework == "tensorflow2":
         import tensorflow as tf
 
         if tf.__version__[0] != "2":
             tf.reset_default_graph()
-    if framework == "pytorch":
-        pass
-    if framework == "scikitlearn":
-        pass
     yield True
 
     # Ran after each test
@@ -161,16 +165,10 @@ def setup_tear_down_framework(framework):
         import keras
 
         keras.backend.clear_session()
-    if framework == "tensorflow":
-        pass
-    if framework == "pytorch":
-        pass
-    if framework == "scikitlearn":
-        pass
 
 
 @pytest.fixture
-def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default_batch_size):
+def image_iterator(framework, get_default_mnist_subset, default_batch_size):
     (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
     def _get_image_iterator():
@@ -187,13 +185,12 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
             )
             return keras_gen.flow(x_train_mnist, y_train_mnist, batch_size=default_batch_size)
 
-        if framework == "tensorflow":
+        if framework == "tensorflow1":
             import tensorflow as tf
-            if not is_tf_version_2:
-                x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
-                y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
-                dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
-                return dataset.make_initializable_iterator()
+            x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
+            y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
+            dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+            return dataset.make_initializable_iterator()
 
         if framework == "pytorch":
             import torch
@@ -215,7 +212,7 @@ def image_iterator(framework, is_tf_version_2, get_default_mnist_subset, default
 
 
 @pytest.fixture
-def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, image_iterator, default_batch_size):
+def image_data_generator(framework, get_default_mnist_subset, image_iterator, default_batch_size):
     def _image_data_generator(**kwargs):
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
 
@@ -229,13 +226,12 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
                 batch_size=default_batch_size,
             )
 
-        if framework == "tensorflow":
-            if not is_tf_version_2:
-                data_generator = TensorFlowDataGenerator(
-                    sess=kwargs["sess"], iterator=image_it, iterator_type="initializable", iterator_arg={},
-                    size=x_train_mnist.shape[0],
-                    batch_size=default_batch_size,
-                )
+        if framework == "tensorflow1":
+            data_generator = TensorFlowDataGenerator(
+                sess=kwargs["sess"], iterator=image_it, iterator_type="initializable", iterator_arg={},
+                size=x_train_mnist.shape[0],
+                batch_size=default_batch_size,
+            )
 
         if framework == "pytorch":
             data_generator = PyTorchDataGenerator(iterator=image_it, size=x_train_mnist.shape[0],
@@ -256,7 +252,7 @@ def image_data_generator(framework, is_tf_version_2, get_default_mnist_subset, i
 
 
 @pytest.fixture
-def store_expected_values(request, is_tf_version_2):
+def store_expected_values(request):
     """
     Stores expected values to be retrieved by the expected_values fixture
     Note1: Numpy arrays MUST be converted to list before being stored as json
@@ -269,11 +265,6 @@ def store_expected_values(request, is_tf_version_2):
     def _store_expected_values(values_to_store, framework=""):
 
         framework_name = framework
-        if framework == "tensorflow":
-            if is_tf_version_2:
-                framework_name = "tensorflow2"
-            else:
-                framework_name = "tensorflow1"
         if framework_name is not "":
             framework_name = "_" + framework_name
 
@@ -299,7 +290,7 @@ def store_expected_values(request, is_tf_version_2):
 
 
 @pytest.fixture
-def expected_values(framework, request, is_tf_version_2):
+def expected_values(framework, request):
     """
     Retrieves the expected values that were stored using the store_expected_values fixture
     :param request:
@@ -309,11 +300,6 @@ def expected_values(framework, request, is_tf_version_2):
     file_name = request.node.location[0].split("/")[-1][:-3] + ".json"
 
     framework_name = framework
-    if framework == "tensorflow":
-        if is_tf_version_2:
-            framework_name = "tensorflow2"
-        else:
-            framework_name = "tensorflow1"
     if framework_name is not "":
         framework_name = "_" + framework_name
 
@@ -495,7 +481,7 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                         raise ARTTestFixtureNotImplemented(
                             "This combination of loss function options is currently not supported.",
                             image_dl_estimator.__name__, framework)
-        if framework == "tensorflow":
+        if framework == "tensorflow1" or framework == "tensorflow2":
             if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs)
                 return classifier, sess
@@ -571,7 +557,7 @@ def tabular_dl_estimator(framework):
                 kr_classifier = get_tabular_classifier_kr()
                 classifier = KerasClassifier(model=kr_classifier.model, use_logits=False, channels_first=True)
 
-        if framework == "tensorflow":
+        if framework == "tensorflow1" or framework == "tensorflow2":
             if clipped:
                 classifier, _ = get_tabular_classifier_tf()
 
@@ -604,29 +590,26 @@ def create_test_image(create_test_dir):
 
 @pytest.fixture(scope="session")
 def framework(request):
-    mlFramework = request.config.getoption("--mlFramework")
-    if mlFramework not in art_supported_frameworks:
+    ml_framework = request.config.getoption("--mlFramework")
+    if ml_framework == "tensorflow":
+        import tensorflow as tf
+        if tf.__version__[0] == "2":
+            ml_framework = "tensorflow2"
+        else:
+            ml_framework = "tensorflow1"
+
+    if ml_framework not in art_supported_frameworks:
         raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
-            mlFramework, " ".join(art_supported_frameworks)))
+            ml_framework, " ".join(art_supported_frameworks)))
     # if utils_test.is_valid_framework(mlFramework):
     #     raise Exception("The mlFramework specified was incorrect. Valid options available
     #     are {0}".format(art_supported_frameworks))
-    return mlFramework
+    return ml_framework
 
 
 @pytest.fixture(scope="session")
 def default_batch_size():
     yield 16
-
-
-@pytest.fixture(scope="session")
-def is_tf_version_2():
-    import tensorflow as tf
-
-    if tf.__version__[0] == "2":
-        yield True
-    else:
-        yield False
 
 
 @pytest.fixture(scope="session")
@@ -725,9 +708,10 @@ def only_with_platform(request, framework):
 
 
 # ART test fixture to skip test for specific mlFramework values
-# eg: @pytest.mark.skipMlFramework("tensorflow","scikitlearn")
+# eg: @pytest.mark.skipMlFramework("tensorflow", "keras", "pytorch", "scikitlearn",
+# "mxnet", "kerastf", "non_dl_frameworks", "dl_frameworks")
 @pytest.fixture(autouse=True)
-def skip_by_platform(request, framework):
+def skip_by_framework(request, framework):
     if request.node.get_closest_marker("skipMlFramework"):
         framework_to_skip_list = list(request.node.get_closest_marker("skipMlFramework").args)
         if "dl_frameworks" in framework_to_skip_list:
@@ -735,6 +719,10 @@ def skip_by_platform(request, framework):
 
         if "non_dl_frameworks" in framework_to_skip_list:
             framework_to_skip_list.extend(non_deep_learning_frameworks)
+
+        if "tensorflow" in framework_to_skip_list:
+            framework_to_skip_list.append("tensorflow1")
+            framework_to_skip_list.append("tensorflow2")
 
         if framework in framework_to_skip_list:
             pytest.skip("skipped on this platform: {}".format(framework))
@@ -762,5 +750,44 @@ def make_customer_record():
 @pytest.fixture(autouse=True)
 def framework_agnostic(request, framework):
     if request.node.get_closest_marker("framework_agnostic"):
-        if framework != default_framework:
+        if framework != get_default_framework():
             pytest.skip("framework agnostic test skipped for framework : {}".format(framework))
+
+
+# ART test fixture to skip test for specific required modules
+# eg: @pytest.mark.skipModule("deepspeech_pytorch", "apex.amp", "object_detection")
+@pytest.fixture(autouse=True)
+def skip_by_module(request):
+    import importlib
+
+    if request.node.get_closest_marker("skipModule"):
+        module_to_skip_list = list(request.node.get_closest_marker("skipModule").args)
+
+        if "deepspeech_pytorch" in module_to_skip_list:
+            deepspeech_pytorch_spec = importlib.util.find_spec("deepspeech_pytorch")
+            deepspeech_pytorch_found = deepspeech_pytorch_spec is not None
+
+            if not deepspeech_pytorch_found:
+                pytest.skip(
+                    "Skip unittests if the `deepspeech_pytorch` module is not found because of pre-trained model."
+                )
+
+        if "object_detection" in module_to_skip_list:
+            object_detection_spec = importlib.util.find_spec("object_detection")
+            object_detection_found = object_detection_spec is not None
+
+            if not object_detection_found:
+                pytest.skip(
+                    "Skip unittests if the `object_detection` module is not found because of pre-trained model."
+                )
+
+        if "apex.amp" in module_to_skip_list:
+            apex_spec = importlib.util.find_spec("apex")
+            if apex_spec is not None:
+                amp_spec = importlib.util.find_spec("apex.amp")
+            else:
+                amp_spec = None
+            amp_found = amp_spec is not None
+
+            if not amp_found:
+                pytest.skip("Skip unittests if the `apex.amp` module is not found.")
