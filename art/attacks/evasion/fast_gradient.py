@@ -236,7 +236,7 @@ class FastGradientMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         # Ensure eps is broadcastable
-        self._check_eps(x=x)
+        self._check_compatibility_input_and_eps(x=x)
 
         if isinstance(self.estimator, ClassifierMixin):
             y = check_and_transform_label_format(y, self.estimator.nb_classes)
