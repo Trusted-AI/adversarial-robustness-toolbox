@@ -396,13 +396,17 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
                   of shape `(nb_samples,)`.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': the sum of the output will be divided by the number of elements in the output,
+                   'sum': the output will be summed.
         :return: Array of losses of the same shape as `x`.
         """
         import torch  # lgtm [py/repeated-import]
@@ -422,8 +426,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Compute the loss and return
         model_outputs = self._model(inputs_t)
         prev_reduction = self._loss.reduction
-        # return individual loss values
-        self._loss.reduction = "none"
+
+        # Return individual loss values
+        self._loss.reduction = reduction
         loss = self._loss(model_outputs[-1], labels_t)
         self._loss.reduction = prev_reduction
         return loss.detach().numpy()
