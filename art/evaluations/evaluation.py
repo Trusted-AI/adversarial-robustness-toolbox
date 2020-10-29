@@ -22,5 +22,5 @@ from typing import Any
 
 class Evaluation(ABC):
     @abstractmethod
-    def evaluate(self, **kwargs) -> Any:
+    def evaluate(self, *args, **kwargs) -> Any:
         raise NotImplementedError
