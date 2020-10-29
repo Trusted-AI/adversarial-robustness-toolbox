@@ -31,7 +31,7 @@ from tqdm import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.utils import Deprecated, deprecated_keyword_arg
+from art.utils import Deprecated, deprecated_keyword_arg, ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     from art.utils import OBJECT_DETECTOR_TYPE
@@ -81,9 +81,15 @@ class DPatch(EvasionAttack):
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.batch_size = batch_size
-        self._patch = np.random.randint(
-            self.estimator.clip_values[0], self.estimator.clip_values[1], size=patch_shape
-        ).astype(np.float32)
+        if self.estimator.clip_values is None:
+            self._patch = np.zeros(shape=patch_shape, dtype=ART_NUMPY_DTYPE)
+        else:
+            self._patch = (
+                np.random.randint(0, 255, size=patch_shape)
+                / 255
+                * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
+                + self.estimator.clip_values[0]
+            ).astype(ART_NUMPY_DTYPE)
         self.verbose = verbose
         self._check_params()
 
@@ -123,41 +129,41 @@ class DPatch(EvasionAttack):
                     raise ValueError("The target_label as list of integers needs to of length number of images in `x`.")
                 self.target_label = target_label
 
+        patched_images, transforms = self._augment_images_with_patch(
+            x, self._patch, random_location=True, channels_first=self.estimator.channels_first
+        )
+        patch_target: List[Dict[str, np.ndarray]] = list()
+
+        if self.target_label:
+
+            for i_image in range(patched_images.shape[0]):
+                i_x_1 = transforms[i_image]["i_x_1"]
+                i_x_2 = transforms[i_image]["i_x_2"]
+                i_y_1 = transforms[i_image]["i_y_1"]
+                i_y_2 = transforms[i_image]["i_y_2"]
+
+                target_dict = dict()
+                target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
+                target_dict["labels"] = np.asarray([self.target_label[i_image], ])
+                target_dict["scores"] = np.asarray([1.0, ])
+
+                patch_target.append(target_dict)
+
+        else:
+
+            predictions = self.estimator.predict(x=patched_images)
+
+            for i_image in range(patched_images.shape[0]):
+                target_dict = dict()
+                target_dict["boxes"] = predictions[i_image]["boxes"]
+                target_dict["labels"] = predictions[i_image]["labels"]
+                target_dict["scores"] = predictions[i_image]["scores"]
+
+                patch_target.append(target_dict)
+
         for i_step in trange(self.max_iter, desc="DPatch iteration", disable=not self.verbose):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
-
-            patched_images, transforms = self._augment_images_with_patch(
-                x, self._patch, random_location=True, channels_first=self.estimator.channels_first
-            )
-            patch_target: List[Dict[str, np.ndarray]] = list()
-
-            if self.target_label:
-
-                for i_image in range(patched_images.shape[0]):
-                    i_x_1 = transforms[i_image]["i_x_1"]
-                    i_x_2 = transforms[i_image]["i_x_2"]
-                    i_y_1 = transforms[i_image]["i_y_1"]
-                    i_y_2 = transforms[i_image]["i_y_2"]
-
-                    target_dict = dict()
-                    target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                    target_dict["labels"] = np.asarray([self.target_label[i_image],])
-                    target_dict["scores"] = np.asarray([1.0,])
-
-                    patch_target.append(target_dict)
-
-            else:
-
-                predictions = self.estimator.predict(x=patched_images)
-
-                for i_image in range(patched_images.shape[0]):
-                    target_dict = dict()
-                    target_dict["boxes"] = predictions[i_image]["boxes"].detach().cpu().numpy()
-                    target_dict["labels"] = predictions[i_image]["labels"].detach().cpu().numpy()
-                    target_dict["scores"] = predictions[i_image]["scores"].detach().cpu().numpy()
-
-                    patch_target.append(target_dict)
 
             num_batches = math.ceil(x.shape[0] / self.batch_size)
             patch_gradients = np.zeros_like(self._patch)
@@ -170,7 +176,7 @@ class DPatch(EvasionAttack):
                     x=patched_images[i_batch_start:i_batch_end], y=patch_target[i_batch_start:i_batch_end],
                 )
 
-                for i_image in range(patched_images.shape[0]):
+                for i_image in range(gradients.shape[0]):
 
                     i_x_1 = transforms[i_batch_start + i_image]["i_x_1"]
                     i_x_2 = transforms[i_batch_start + i_image]["i_x_2"]
@@ -189,9 +195,10 @@ class DPatch(EvasionAttack):
             else:
                 self._patch = self._patch + np.sign(patch_gradients) * self.learning_rate
 
-            self._patch = np.clip(
-                self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
-            )
+            if self.estimator.clip_values is not None:
+                self._patch = np.clip(
+                    self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
+                )
 
         return self._patch
 
@@ -271,8 +278,8 @@ class DPatch(EvasionAttack):
         return patched_images
 
     def _check_params(self) -> None:
-        if not isinstance(self.patch_shape, tuple):
-            raise ValueError("The patch shape must be a tuple of integers.")
+        if not isinstance(self.patch_shape, (tuple, list)) or not all(isinstance(s, int) for s in self.patch_shape):
+            raise ValueError("The patch shape must be either a tuple or list of integers.")
         if len(self.patch_shape) != 3:
             raise ValueError("The length of patch shape must be 3.")
 

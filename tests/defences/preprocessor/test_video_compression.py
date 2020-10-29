@@ -42,12 +42,6 @@ def video_batch(channels_first):
     return test_input, test_output
 
 
-@pytest.fixture
-def image_batch():
-    """Create image fixture of shape (batch_size, channels, width, height)."""
-    return np.zeros((2, 1, 4, 4))
-
-
 @pytest.mark.parametrize("channels_first", [True, False])
 @pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn")
 def test_video_compresssion(art_warning, video_batch, channels_first):
@@ -81,9 +75,9 @@ def test_constant_rate_factor_error(art_warning, constant_rate_factor):
         art_warning(e)
 
 
-def test_non_spatio_temporal_data_error(art_warning, image_batch):
+def test_non_spatio_temporal_data_error(art_warning, image_batch_small):
     try:
-        test_input = image_batch
+        test_input = image_batch_small
         video_compression = VideoCompression(video_format="")
 
         exc_msg = "Video compression can only be applied to spatio-temporal data."

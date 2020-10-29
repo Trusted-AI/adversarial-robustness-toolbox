@@ -60,12 +60,6 @@ def audio_batch(request, channels_first):
     return test_input, test_output, audio_input.sample_rate
 
 
-@pytest.fixture
-def image_batch():
-    """Create image fixture of shape (batch_size, channels, width, height)."""
-    return np.zeros((2, 1, 4, 4))
-
-
 def test_sample_rate_error(art_warning):
     try:
         exc_msg = "Sample rate be must a positive integer."
@@ -75,9 +69,9 @@ def test_sample_rate_error(art_warning):
         art_warning(e)
 
 
-def test_non_temporal_data_error(art_warning, image_batch):
+def test_non_temporal_data_error(art_warning, image_batch_small):
     try:
-        test_input = image_batch
+        test_input = image_batch_small
         mp3compression = Mp3Compression(sample_rate=16000)
 
         exc_msg = "Mp3 compression can only be applied to temporal data across at least one channel."

@@ -143,9 +143,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             if not np.all(self.clip_values[1] == 1):
                 raise ValueError("This estimator requires normalized input audios with clip_vales=(-1, 1).")
 
-        # Check preprocessing and postprocessing defences
-        if self.preprocessing_defences is not None:
-            raise ValueError("This estimator does not support `preprocessing_defences`.")
+        # Check postprocessing defences
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
 
@@ -268,8 +266,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                                      prediction output. If transcription_output is not available, then probability
                                      output is returned.
         :type transcription_output: `bool`
-        :return: Probability (if transcription_output is None or False) or transcription (if transcription_output is
-                 True) predictions:
+        :return: Predicted probability (if transcription_output False) or transcription (default, if
+                 transcription_output is True or None):
                  - Probability return is a tuple of (probs, sizes), where `probs` is the probability of characters of
                  shape (nb_samples, seq_length, nb_classes) and `sizes` is the real sequence length of shape
                  (nb_samples,).
@@ -278,7 +276,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x_ = np.array([x_i for x_i in x] + [np.array([0.1]), np.array([0.1, 0.2])])[:-2]
+        x_ = np.empty(len(x), dtype=object)
+        x_[:] = list(x)
 
         # Put the model in the eval mode
         self._model.eval()
@@ -337,7 +336,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         # Check if users want transcription outputs
         transcription_output = kwargs.get("transcription_output")
 
-        if transcription_output is None or transcription_output is False:
+        if transcription_output is False:
             return result_outputs, result_output_sizes
 
         # Now users want transcription outputs
@@ -363,7 +362,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         """
         from warpctc_pytorch import CTCLoss
 
-        x_ = np.array([x_i for x_i in x] + [np.array([0.1]), np.array([0.1, 0.2])])[:-2]
+        x_ = np.empty(len(x), dtype=object)
+        x_[:] = list(x)
 
         # Put the model in the training mode
         self._model.train()
@@ -405,7 +405,17 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             results.append(x_preprocessed[i].grad.cpu().numpy().copy())
 
         results = np.array(results)
+
+        if results.shape[0] == 1:
+            results_ = np.empty(len(results), dtype=object)
+            results_[:] = list(results)
+            results = results_
+
         results = self._apply_preprocessing_gradient(x_, results)
+
+        if x.dtype != np.object:
+            results = np.array([i for i in results], dtype=x.dtype)
+            assert results.shape == x.shape and results.dtype == x.dtype
 
         return results
 
@@ -457,9 +467,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 )
 
                 # Extract random batch
-                i_batch = np.array(
-                    [x_i for x_i in x_preprocessed[ind[begin:end]]] + [np.array([0.1]), np.array([0.1, 0.2])]
-                )[:-2]
+                i_batch = np.empty(len(x_preprocessed[ind[begin:end]]), dtype=object)
+                i_batch[:] = list(x_preprocessed[ind[begin:end]])
                 o_batch = y_preprocessed[ind[begin:end]]
 
                 # Transform data into the model input space
