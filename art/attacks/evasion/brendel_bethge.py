@@ -245,7 +245,7 @@ class BFGSB(object):
                     if dk * alpha < temp2:
                         temp1 = temp2 / dk
                     else:
-                        temp2 = u[i] - x_cp[i]
+                        temp2 = u[i] - x_cp[i]  # lgtm [py/multiple-definition]
             else:
                 temp2 = u[i] - x_cp[i]
                 if temp1 <= 0:
