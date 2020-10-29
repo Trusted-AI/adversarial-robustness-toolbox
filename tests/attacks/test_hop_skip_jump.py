@@ -91,7 +91,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
@@ -103,7 +103,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=tfc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -128,7 +128,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
@@ -140,7 +140,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=2
         hsj = HopSkipJump(classifier=tfc, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -163,7 +163,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
@@ -174,7 +174,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=tfc, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -197,7 +197,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
@@ -208,7 +208,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
@@ -250,7 +250,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
@@ -262,7 +262,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=krc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -287,7 +287,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
@@ -299,7 +299,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=2
         hsj = HopSkipJump(classifier=krc, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -322,7 +322,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
@@ -333,7 +333,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=krc, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -356,7 +356,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
@@ -367,7 +367,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - self.x_test_mnist)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
@@ -409,7 +409,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - x_test)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test.shape[1:]))
@@ -421,7 +421,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - x_test)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # First targeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=ptc, targeted=True, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -446,7 +446,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - x_test)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test.shape[1:]))
@@ -458,7 +458,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - x_test)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=2
         hsj = HopSkipJump(classifier=ptc, targeted=False, max_iter=2, max_eval=100, init_eval=10)
@@ -481,7 +481,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - x_test)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test.shape[1:]))
@@ -492,7 +492,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - x_test)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Second untargeted attack and norm=np.inf
         hsj = HopSkipJump(classifier=ptc, targeted=False, max_iter=2, max_eval=100, init_eval=10, norm=np.Inf)
@@ -515,7 +515,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - x_test)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Test the masking 2
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test.shape[1:]))
@@ -526,7 +526,7 @@ class TestHopSkipJump(TestBase):
         self.assertAlmostEqual(float(np.max(np.abs(mask_diff))), 0.0, delta=0.00001)
 
         unmask_diff = mask * (x_test_adv - x_test)
-        self.assertGreaterEqual(float(np.sum(np.abs(unmask_diff))), 0.5)
+        self.assertGreater(float(np.sum(np.abs(unmask_diff))), 0.0)
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)

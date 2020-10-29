@@ -352,7 +352,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return grads
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -360,10 +360,36 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                   nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
                   of shape `(nb_samples,)`.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': Not supported
+                   'sum': Not supported
         :return: Loss values.
         :rtype: Format as expected by the `model`
         """
-        raise NotImplementedError
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        if self.loss is None:
+            raise TypeError("The loss placeholder `loss` is required for computing losses, but it is not defined.")
+
+        if reduction == "none":
+            _loss = self._loss
+        elif reduction == "mean":
+            _loss = tf.reduce_mean(self._loss)
+        elif reduction == "sum":
+            _loss = tf.reduce_sum(self._loss)
+
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
+
+        # Create feed_dict
+        feed_dict = {self._input_ph: x_preprocessed, self._labels_ph: y}
+        feed_dict.update(self._feed_dict)
+
+        # Run train step
+        loss_value = self._sess.run(_loss, feed_dict=feed_dict)
+
+        return loss_value
 
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
@@ -922,23 +948,30 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         return gradients
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
                   of shape `(nb_samples,)`.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': the sum of the output will be divided by the number of elements in the output,
+                   'sum': the output will be summed.
         :return: Array of losses of the same shape as `x`.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         if self._loss_object is None:
-            raise TypeError(
-                "The loss function `loss_object` is required for computing losses, but it has not been " "defined."
-            )
+            raise TypeError("The loss function `loss_object` is required for computing losses, but it is not defined.")
         prev_reduction = self._loss_object.reduction
-        self._loss_object.reduction = tf.keras.losses.Reduction.NONE
+        if reduction == "none":
+            self._loss_object.reduction = tf.keras.losses.Reduction.NONE
+        elif reduction == "mean":
+            self._loss_object.reduction = tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE
+        elif reduction == "sum":
+            self._loss_object.reduction = tf.keras.losses.Reduction.SUM
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
