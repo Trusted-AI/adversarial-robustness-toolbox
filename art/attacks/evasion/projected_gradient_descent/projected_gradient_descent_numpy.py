@@ -248,7 +248,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         :return: An array holding the adversarial examples.
         """
         # Ensure eps is broadcastable
-        self._check_eps(x=x)
+        self._check_compatibility_input_and_eps(x=x)
 
         # Check whether random eps is enabled
         self._random_eps()
