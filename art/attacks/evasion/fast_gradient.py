@@ -374,7 +374,7 @@ class FastGradientMethod(EvasionAttack):
                 if x_adv.dtype == np.object:
                     for i_sample in range(batch_index_1, batch_index_2):
                         perturbation = projection(x_adv[i_sample] - x_init[i_sample], eps, self.norm)
-                    x_adv[i_sample] = x_init[i_sample] + perturbation
+                        x_adv[i_sample] = x_init[i_sample] + perturbation
 
                 else:
                     perturbation = projection(
