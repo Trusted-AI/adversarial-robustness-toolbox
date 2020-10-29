@@ -102,10 +102,9 @@ class FastGradientMethod(EvasionAttack):
         self._project = True
         FastGradientMethod._check_params(self)
 
-    def _check_eps(self, x: np.ndarray):
+    def _check_compatibility_input_and_eps(self, x: np.ndarray):
         """
-        Check the correctness of the `eps` attribute, and implicitly check the correctness of the `eps_step`
-        attribute because `eps` and `eps_step` have same shape.
+        Check the compatibility of the input with `eps` and `eps_step` which are of the same shape.
 
         :param x: An array with the original inputs.
         """
