@@ -283,7 +283,7 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
-def projection(values: np.ndarray, eps: Union[float, np.ndarray], norm_p: Union[int, float, str]) -> np.ndarray:
+def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]) -> np.ndarray:
     """
     Project `values` on the L_p norm ball of size `eps`.
 
@@ -336,7 +336,7 @@ def projection(values: np.ndarray, eps: Union[float, np.ndarray], norm_p: Union[
 def random_sphere(
     nb_points: int,
     nb_dims: int,
-    radius: Union[float, np.ndarray],
+    radius: Union[int, float, np.ndarray],
     norm: Union[int, float, str],
     original_shape: Optional[Tuple] = None
 ) -> np.ndarray:

@@ -48,8 +48,8 @@ class BasicIterativeMethod(ProjectedGradientDescent):
     def __init__(
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-        eps: Union[float, np.ndarray] = 0.3,
-        eps_step: Union[float, np.ndarray] = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         batch_size: int = 32,

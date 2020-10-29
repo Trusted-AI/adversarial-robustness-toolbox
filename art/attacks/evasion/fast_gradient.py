@@ -70,8 +70,8 @@ class FastGradientMethod(EvasionAttack):
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         norm: Union[int, float, str] = np.inf,
-        eps: Union[float, np.ndarray] = 0.3,
-        eps_step: Union[float, np.ndarray] = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
@@ -347,14 +347,14 @@ class FastGradientMethod(EvasionAttack):
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if (not (isinstance(self.eps, float) and isinstance(self.eps_step, float))) and (
+        if (not (isinstance(self.eps, (int, float)) and isinstance(self.eps_step, (int, float)))) and (
             not (isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray))
         ):
             raise TypeError(
                 "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type."
             )
 
-        if isinstance(self.eps, float):
+        if isinstance(self.eps, (int, float)):
             if self.eps <= 0:
                 raise ValueError("The perturbation size `eps` has to be positive.")
 
@@ -412,7 +412,7 @@ class FastGradientMethod(EvasionAttack):
             return grad * (mask.astype(ART_NUMPY_DTYPE))
 
     def _apply_perturbation(
-        self, batch: np.ndarray, perturbation: np.ndarray, eps_step: Union[float, np.ndarray]
+        self, batch: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
     ) -> np.ndarray:
         batch = batch + eps_step * perturbation
 
@@ -428,8 +428,8 @@ class FastGradientMethod(EvasionAttack):
         x_init: np.ndarray,
         y: np.ndarray,
         mask: Optional[np.ndarray],
-        eps: Union[float, np.ndarray],
-        eps_step: Union[float, np.ndarray],
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
         project: bool,
         random_init: bool,
     ) -> np.ndarray:
