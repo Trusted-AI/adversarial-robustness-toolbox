@@ -1001,6 +1001,7 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
                 if verbose:
                     with tqdm() as t:
                         last_block = [0]
+
                         def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
                             """
                             :param blocks: Number of blocks transferred so far [default: 1].
