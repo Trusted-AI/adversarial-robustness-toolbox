@@ -30,18 +30,13 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipMlFramework("keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.skipMlFramework("tensorflow1", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("targeted", [True, False])
 @pytest.mark.parametrize("norm", [1, 2, np.inf, "inf"])
 def test_generate(
-    art_warning, get_default_mnist_subset, image_dl_estimator_for_attack, is_tf_version_2, targeted, norm
+    art_warning, get_default_mnist_subset, image_dl_estimator_for_attack, targeted, norm
 ):
     try:
-
-        if not is_tf_version_2:
-            logging.warning("Couldn't perform this test because it only supports TensorFlow v2.")
-            return
-
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
         classifier = image_dl_estimator_for_attack(BrendelBethgeAttack, defended=False, from_logits=True)
 
