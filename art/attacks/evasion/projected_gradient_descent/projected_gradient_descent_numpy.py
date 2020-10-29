@@ -252,12 +252,12 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         # Check whether random eps is enabled
         self._random_eps()
 
+        # Get the mask
+        mask = self._get_mask(x, **kwargs)
+
         if isinstance(self.estimator, ClassifierMixin):
             # Set up targets
             targets = self._set_targets(x, y)
-
-            # Get the mask
-            mask = self._get_mask(x, **kwargs)
 
             # Start to compute adversarial examples
             adv_x_best = None
@@ -316,11 +316,11 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             # Set up targets
             targets = self._set_targets(x, y, classifier_mixin=False)
 
-            # Get the mask
-            mask = self._get_mask(x, classifier_mixin=False, **kwargs)
-
             # Start to compute adversarial examples
-            adv_x = x.astype(ART_NUMPY_DTYPE)
+            if x.dtype == np.object:
+                adv_x = x.copy()
+            else:
+                adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", disable=not self.verbose):
                 adv_x = self._compute(

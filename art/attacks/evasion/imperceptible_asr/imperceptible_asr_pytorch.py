@@ -162,6 +162,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         super().__init__(estimator=estimator)
 
         # Set attack attributes
+        self._targeted = True
         self.initial_eps = initial_eps
         self.max_iter_1st_stage = max_iter_1st_stage
         self.max_iter_2nd_stage = max_iter_2nd_stage
@@ -230,7 +231,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         # Check validity of attack attributes
         self._check_params()
 
-    def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
         Generate adversarial samples and return them in an array.
 
@@ -243,6 +244,10 @@ class ImperceptibleASRPytorch(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         import torch  # lgtm [py/repeated-import]
+
+        if y is None:
+            raise ValueError("`ImperceptibleASRPytorch` is a targeted attack and requires the definition of target"
+                             "labels `y`. Currently `y` is set to `None`.")
 
         # Start to compute adversarial examples
         adv_x = x.copy()
