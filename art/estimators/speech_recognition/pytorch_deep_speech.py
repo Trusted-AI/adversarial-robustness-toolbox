@@ -277,7 +277,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         import torch  # lgtm [py/repeated-import]
 
         x_ = np.empty(len(x), dtype=object)
-        x_[:] = x
+        x_[:] = list(x)
 
         # Put the model in the eval mode
         self._model.eval()
@@ -363,7 +363,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         from warpctc_pytorch import CTCLoss
 
         x_ = np.empty(len(x), dtype=object)
-        x_[:] = x
+        x_[:] = list(x)
 
         # Put the model in the training mode
         self._model.train()
@@ -408,7 +408,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         if results.shape[0] == 1:
             results_ = np.empty(len(results), dtype=object)
-            results_[:] = results
+            results_[:] = list(results)
             results = results_
 
         results = self._apply_preprocessing_gradient(x_, results)
@@ -468,7 +468,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
                 # Extract random batch
                 i_batch = np.empty(len(x_preprocessed[ind[begin:end]]), dtype=object)
-                i_batch[:] = x_preprocessed[ind[begin:end]]
+                i_batch[:] = list(x_preprocessed[ind[begin:end]])
                 o_batch = y_preprocessed[ind[begin:end]]
 
                 # Transform data into the model input space
