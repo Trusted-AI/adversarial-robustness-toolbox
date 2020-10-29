@@ -57,8 +57,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         self,
         estimator: "TensorFlowV2Classifier",
         norm: Union[int, float, str] = np.inf,
-        eps: Union[float, np.ndarray] = 0.3,
-        eps_step: Union[float, np.ndarray] = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -229,8 +229,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         x: "tf.Tensor",
         targets: "tf.Tensor",
         mask: "tf.Tensor",
-        eps: Union[float, np.ndarray],
-        eps_step: Union[float, np.ndarray],
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
     ) -> "tf.Tensor":
         """
         Generate a batch of adversarial samples and return them in an array.
@@ -304,7 +304,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             return grad * mask
 
     def _apply_perturbation(
-        self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[float, np.ndarray]
+        self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[int, float, np.ndarray]
     ) -> "tf.Tensor":
         """
         Apply perturbation on examples.
@@ -330,8 +330,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         x_init: "tf.Tensor",
         y: "tf.Tensor",
         mask: "tf.Tensor",
-        eps: Union[float, np.ndarray],
-        eps_step: Union[float, np.ndarray],
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
         random_init: bool,
     ) -> "tf.Tensor":
         """
@@ -389,7 +389,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         return x_adv
 
     @staticmethod
-    def _projection(values: "tf.Tensor", eps: Union[float, np.ndarray], norm_p: Union[int, float, str]) -> "tf.Tensor":
+    def _projection(
+        values: "tf.Tensor", eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]
+    ) -> "tf.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 

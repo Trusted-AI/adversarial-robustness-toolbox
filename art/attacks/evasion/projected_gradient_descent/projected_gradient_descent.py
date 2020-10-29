@@ -78,8 +78,8 @@ class ProjectedGradientDescent(EvasionAttack):
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         norm: Union[int, float, str] = np.inf,
-        eps: Union[float, np.ndarray] = 0.3,
-        eps_step: Union[float, np.ndarray] = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -191,21 +191,21 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if (not (isinstance(self.eps, float) and isinstance(self.eps_step, float))) and (
+        if (not (isinstance(self.eps, (int, float)) and isinstance(self.eps_step, (int, float)))) and (
             not (isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray))
         ):
             raise TypeError(
                 "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type."
             )
 
-        if isinstance(self.eps, float):
+        if isinstance(self.eps, (int, float)):
             if self.eps <= 0:
                 raise ValueError("The perturbation size `eps` has to be positive.")
 
             if self.eps_step <= 0:
                 raise ValueError("The perturbation step-size `eps_step` has to be positive.")
 
-            if self.eps_step > self.eps:
+            if self.norm in ["inf", np.inf] and self.eps_step > self.eps:
                 raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         else:
@@ -220,7 +220,7 @@ class ProjectedGradientDescent(EvasionAttack):
                     "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
                 )
 
-            if (self.eps_step > self.eps).any():
+            if self.norm in ["inf", np.inf] and (self.eps_step > self.eps).any():
                 raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         if not isinstance(self.targeted, bool):

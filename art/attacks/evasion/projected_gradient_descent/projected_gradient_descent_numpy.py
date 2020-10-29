@@ -65,8 +65,8 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         self,
         estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
         norm: Union[int, float, str] = np.inf,
-        eps: Union[float, np.ndarray] = 0.3,
-        eps_step: Union[float, np.ndarray] = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -108,7 +108,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         ProjectedGradientDescentCommon._check_params(self)
 
         if self.random_eps:
-            if isinstance(eps, float):
+            if isinstance(eps, (int, float)):
                 lower, upper = 0, eps
                 mu, sigma = 0, (eps / 2)
             else:
@@ -124,7 +124,7 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         if self.random_eps:
             ratio = self.eps_step / self.eps
 
-            if isinstance(self.eps, float):
+            if isinstance(self.eps, (int, float)):
                 self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
             else:
                 self.eps = np.round(self.norm_dist.rvs(size=self.eps.shape), 10)
@@ -165,12 +165,11 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
     def _check_params(self) -> None:
         super(ProjectedGradientDescentCommon, self)._check_params()
 
-        if isinstance(self.eps, float):
-            if self.eps_step > self.eps:
-                raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
-        else:
-            if (self.eps_step > self.eps).any():
-                raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
+        if (self.norm in ["inf", np.inf]) and (
+            (isinstance(self.eps, (int, float)) and self.eps_step > self.eps)
+            or (isinstance(self.eps, np.ndarray) and (self.eps_step > self.eps).any())
+        ):
+            raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         if self.max_iter <= 0:
             raise ValueError("The number of iterations `max_iter` has to be a positive integer.")
@@ -189,8 +188,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         self,
         estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
         norm: Union[int, float, str] = np.inf,
-        eps: Union[float, np.ndarray] = 0.3,
-        eps_step: Union[float, np.ndarray] = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,

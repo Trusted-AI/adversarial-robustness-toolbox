@@ -58,8 +58,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         self,
         estimator: Union["PyTorchClassifier", "PyTorchFasterRCNN"],
         norm: Union[int, float, str] = np.inf,
-        eps: Union[float, np.ndarray] = 0.3,
-        eps_step: Union[float, np.ndarray] = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -227,8 +227,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         x: "torch.Tensor",
         targets: "torch.Tensor",
         mask: "torch.Tensor",
-        eps: Union[float, np.ndarray],
-        eps_step: Union[float, np.ndarray],
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
     ) -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in an array.
@@ -304,7 +304,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             return grad * mask
 
     def _apply_perturbation(
-        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[float, np.ndarray]
+        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
     ) -> "torch.Tensor":
         """
         Apply perturbation on examples.
@@ -334,8 +334,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         x_init: "torch.Tensor",
         y: "torch.Tensor",
         mask: "torch.Tensor",
-        eps: Union[float, np.ndarray],
-        eps_step: Union[float, np.ndarray],
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
         random_init: bool,
     ) -> "torch.Tensor":
         """
@@ -397,7 +397,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         return x_adv
 
     def _projection(
-        self, values: "torch.Tensor", eps: Union[float, np.ndarray], norm_p: Union[int, float, str]
+        self, values: "torch.Tensor", eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]
     ) -> "torch.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
