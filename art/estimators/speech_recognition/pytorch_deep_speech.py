@@ -75,6 +75,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = None,
         device_type: str = "gpu",
+        verbose: bool = True,
     ):
         """
         Initialization of an instance PyTorchDeepSpeech.
@@ -136,6 +137,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
+        self.verbose = verbose
+
         # Check clip values
         if self.clip_values is not None:
             if not np.all(self.clip_values[0] == -1):
@@ -190,7 +193,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
 
             # Download model
-            model_path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=False)
+            model_path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=False, verbose=self.verbose)
 
             # Then load model
             self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
