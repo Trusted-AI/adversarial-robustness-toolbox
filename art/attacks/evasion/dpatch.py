@@ -109,8 +109,27 @@ class DPatch(EvasionAttack):
         :param x: Sample images.
         :param y: Target labels for object detector.
         :param target_label: The target label of the DPatch attack.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
+        :type mask: `np.ndarray`
         :return: Adversarial patch.
         """
+        mask = kwargs.get("mask")
+        if (
+            mask is not None
+            and (mask.dtype != np.bool)
+            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
+            or not (
+                (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])
+                or (mask.shape[1] == x.shape[2] and mask.shape[2] == x.shape[3])
+            )
+        ):
+            raise ValueError(
+                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
+                "shape of `x` (N, H, W) without their channel dimensions."
+            )
+
         channel_index = 1 if self.estimator.channels_first else x.ndim - 1
         if x.shape[channel_index] != self.patch_shape[channel_index - 1]:
             raise ValueError("The color channel index of the images and the patch have to be identical.")
@@ -131,7 +150,7 @@ class DPatch(EvasionAttack):
                 self.target_label = target_label
 
         patched_images, transforms = self._augment_images_with_patch(
-            x, self._patch, random_location=True, channels_first=self.estimator.channels_first
+            x, self._patch, random_location=True, channels_first=self.estimator.channels_first, mask=mask
         )
         patch_target: List[Dict[str, np.ndarray]] = list()
 
@@ -145,8 +164,8 @@ class DPatch(EvasionAttack):
 
                 target_dict = dict()
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                target_dict["labels"] = np.asarray([self.target_label[i_image], ])
-                target_dict["scores"] = np.asarray([1.0, ])
+                target_dict["labels"] = np.asarray([self.target_label[i_image],])
+                target_dict["scores"] = np.asarray([1.0,])
 
                 patch_target.append(target_dict)
 
@@ -206,7 +225,12 @@ class DPatch(EvasionAttack):
     @staticmethod
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def _augment_images_with_patch(
-        x: np.ndarray, patch: np.ndarray, random_location: bool, channels_first: bool, channel_index=Deprecated
+        x: np.ndarray,
+        patch: np.ndarray,
+        random_location: bool,
+        channels_first: bool,
+        channel_index=Deprecated,
+        mask: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, List[Dict[str, int]]]:
         """
         Augment images with patch.
@@ -218,6 +242,10 @@ class DPatch(EvasionAttack):
         :param channels_first: Set channels first or last.
         :param channel_index: Index of the color channel.
         :type channel_index: `int`
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
+        :type mask: `np.ndarray`
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -238,8 +266,32 @@ class DPatch(EvasionAttack):
         for i_image in range(x.shape[0]):
 
             if random_location:
-                i_x_1 = random.randint(0, x_copy.shape[1] - 1 - patch_copy.shape[0])
-                i_y_1 = random.randint(0, x_copy.shape[2] - 1 - patch_copy.shape[1])
+                if mask is None:
+                    i_x_1 = random.randint(0, x_copy.shape[1] - 1 - patch_copy.shape[0])
+                    i_y_1 = random.randint(0, x_copy.shape[2] - 1 - patch_copy.shape[1])
+                else:
+
+                    if mask.shape[0] == 1:
+                        mask_2d = mask[0, :, :]
+                    else:
+                        mask_2d = mask[i_image, :, :]
+
+                    edge_x_0 = patch_copy.shape[0] // 2
+                    edge_x_1 = patch_copy.shape[0] - edge_x_0
+                    edge_y_0 = patch_copy.shape[1] // 2
+                    edge_y_1 = patch_copy.shape[1] - edge_y_0
+
+                    mask_2d[0:edge_x_0, :] = False
+                    mask_2d[-edge_x_1:, :] = False
+                    mask_2d[:, 0:edge_y_0] = False
+                    mask_2d[:, -edge_y_1:] = False
+
+                    num_pos = np.argwhere(mask_2d).shape[0]
+                    pos_id = np.random.choice(num_pos, size=1)
+                    pos = np.argwhere(mask_2d > 0)[pos_id[0]]
+                    i_x_1 = pos[0] - edge_x_0
+                    i_y_1 = pos[1] - edge_y_0
+
             else:
                 i_x_1 = 0
                 i_y_1 = 0
