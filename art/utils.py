@@ -36,7 +36,7 @@ import numpy as np
 from scipy.special import gammainc
 import six
 
-from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
+from art import config
 
 logger = logging.getLogger(__name__)
 
@@ -642,7 +642,7 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
     path = get_file(
         "cifar-10-batches-py",
         extract=True,
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         url="http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
     )
 
@@ -677,12 +677,12 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
 
 def load_mnist(raw: bool = False,) -> DATASET_TYPE:
     """
-    Loads MNIST dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads MNIST dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :return: `(x_train, y_train), (x_test, y_test), min, max`.
     """
-    path = get_file("mnist.npz", path=ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz",)
+    path = get_file("mnist.npz", path=config.ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz",)
 
     dict_mnist = np.load(path)
     x_train = dict_mnist["x_train"]
@@ -705,7 +705,7 @@ def load_mnist(raw: bool = False,) -> DATASET_TYPE:
 
 def load_stl() -> DATASET_TYPE:
     """
-    Loads the STL-10 dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads the STL-10 dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :return: `(x_train, y_train), (x_test, y_test), min, max`.
     """
@@ -715,7 +715,7 @@ def load_stl() -> DATASET_TYPE:
 
     path = get_file(
         "stl10_binary",
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         extract=True,
         url="https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz",
     )
@@ -748,7 +748,7 @@ def load_stl() -> DATASET_TYPE:
 
 def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     """
-    Loads the UCI Iris dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads the UCI Iris dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
@@ -757,12 +757,12 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     # Download data if needed
     path = get_file(
         "iris.data",
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         extract=False,
         url="https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
     )
 
-    data = np.loadtxt(path, delimiter=",", usecols=(0, 1, 2, 3), dtype=ART_NUMPY_DTYPE)
+    data = np.loadtxt(path, delimiter=",", usecols=(0, 1, 2, 3), dtype=config.ART_NUMPY_DTYPE)
     labels = np.loadtxt(path, delimiter=",", usecols=4, dtype=str)
 
     # Preprocess
@@ -798,7 +798,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
 
 def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: bool = False) -> DATASET_TYPE:
     """
-    Loads the UCI Nursery dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads the UCI Nursery dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, categorical data is one-hot
                 encoded and data is scaled using sklearn's StandardScaler.
@@ -815,7 +815,7 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     # Download data if needed
     path = get_file(
         "nursery.data",
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         extract=False,
         url="https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
     )
@@ -962,9 +962,9 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
     :return: Path to the downloaded file.
     """
     if path is None:
-        from art.config import ART_DATA_PATH
+        from art import config
 
-        path_ = os.path.expanduser(ART_DATA_PATH)
+        path_ = os.path.expanduser(config.ART_DATA_PATH)
     else:
         path_ = os.path.expanduser(path)
     if not os.access(path_, os.W_OK):

@@ -26,7 +26,7 @@ import numpy as np
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.tensorflow import TensorFlowEstimator
 from art.utils import get_file
-from art.config import ART_DATA_PATH
+from art import config
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -253,7 +253,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 )
 
             # Download and extract
-            path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
+            path = get_file(filename=filename, path=config.ART_DATA_PATH, url=url, extract=True)
 
             # Load model config
             pipeline_config = path + "/pipeline.config"

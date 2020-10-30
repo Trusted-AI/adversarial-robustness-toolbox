@@ -28,7 +28,7 @@ from typing import List, Optional, Union, TYPE_CHECKING
 import numpy as np
 
 from art.estimators.classification.classifier import ClassifierDecisionTree
-from art.config import ART_DATA_PATH
+from art import config
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -138,7 +138,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
                      the default data location of the library `ART_DATA_PATH`.
         """
         if path is None:
-            full_path = os.path.join(ART_DATA_PATH, filename)
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]

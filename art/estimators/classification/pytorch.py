@@ -30,7 +30,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.estimators.classification.classifier import (
     ClassGradientsMixin,
     ClassifierMixin,
@@ -658,7 +658,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         import torch  # lgtm [py/repeated-import]
 
         if path is None:
-            full_path = os.path.join(ART_DATA_PATH, filename)
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
@@ -704,7 +704,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Recover model
         self.__dict__.update(state)
-        full_path = os.path.join(ART_DATA_PATH, state["model_name"])
+        full_path = os.path.join(config.ART_DATA_PATH, state["model_name"])
         model = state["inner_model"]
         model.load_state_dict(torch.load(str(full_path) + ".model"))
         model.eval()
