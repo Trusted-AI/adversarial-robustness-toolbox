@@ -158,26 +158,16 @@ class JpegCompression(Preprocessor):
             x = x * 255
         x = x.astype("uint8")
 
-        # Set image mode
-        if x.shape[-1] == 1:
-            image_mode = "L"
-        elif x.shape[-1] == 3:
-            image_mode = "RGB"
-        else:
-            raise NotImplementedError("Currently only support `RGB` and `L` images.")
-
-        # Prepare grayscale images for "L" mode
-        if image_mode == "L":
-            x = np.squeeze(x, axis=-1)
-
         # Compress one image at a time
         x_jpeg = x.copy()
         for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression", disable=not self.verbose):
-            x_jpeg[idx] = self._compress(x[idx], image_mode)
-
-        # Undo preparation grayscale images for "L" mode
-        if image_mode == "L":
-            x_jpeg = np.expand_dims(x_jpeg, axis=-1)
+            if x.shape[-1] == 3:
+                x_jpeg[idx] = self._compress(x[idx], mode="RGB")
+            else:
+                for i_channel in range(x.shape[-1]):
+                    x_channel = x[idx[0], idx[1], ..., i_channel]
+                    x_channel = self._compress(x_channel, mode="L")
+                    x_jpeg[idx[0], idx[1], :, :, i_channel] = x_channel
 
         # Convert to ART dtype
         if self.clip_values[1] == 1.0:
