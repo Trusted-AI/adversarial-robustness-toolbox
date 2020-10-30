@@ -242,9 +242,9 @@ class DPatch(EvasionAttack):
         :param channels_first: Set channels first or last.
         :param channel_index: Index of the color channel.
         :type channel_index: `int`
-        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
-                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
-                     features for which the mask is zero will not be adversarially perturbed.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
         :type mask: `np.ndarray`
         """
         # Remove in 1.5.0
