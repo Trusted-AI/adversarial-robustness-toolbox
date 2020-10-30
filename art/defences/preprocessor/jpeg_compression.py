@@ -47,6 +47,10 @@ class JpegCompression(Preprocessor):
     """
     Implement the JPEG compression defence approach.
 
+    For input images or videos with 3 color channels the compression is applied in mode `RGB`
+    (3x8-bit pixels, true color), for all other numbers of channels the compression is applied for each channel with
+    mode `L` (8-bit pixels, black and white).
+
     | Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
 
 
@@ -124,6 +128,10 @@ class JpegCompression(Preprocessor):
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply JPEG compression to sample `x`.
+
+        For input images or videos with 3 color channels the compression is applied in mode `RGB`
+        (3x8-bit pixels, true color), for all other numbers of channels the compression is applied for each channel with
+        mode `L` (8-bit pixels, black and white).
 
         :param x: Sample to compress with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`. `x` values are expected to be in
                   the data range [0, 1] or [0, 255].
