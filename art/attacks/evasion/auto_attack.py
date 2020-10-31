@@ -179,7 +179,9 @@ class AutoAttack(EvasionAttack):
             if attack.targeted:
                 attack.set_params(targeted=False)
 
-            x_adv, sample_is_robust = self._run_attack(x=x_adv, y=y, mask=mask, sample_is_robust=sample_is_robust, attack=attack)
+            x_adv, sample_is_robust = self._run_attack(
+                x=x_adv, y=y, mask=mask, sample_is_robust=sample_is_robust, attack=attack
+            )
 
         # Targeted attacks
         if self.targeted:
