@@ -146,7 +146,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
         )
 
-    def _train_step(self, images: "tf.Tensor", target: Optional["tf.Tensor"] = None) -> "tf.Tensor":
+    def _train_step(
+        self, images: "tf.Tensor", target: Optional["tf.Tensor"] = None, mask: Optional["tf.Tensor"] = None
+    ) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         if target is None:
@@ -157,7 +159,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         with tf.GradientTape() as tape:
             tape.watch(self._patch)
-            loss = self._loss(images, target)
+            loss = self._loss(images, target, mask)
 
         gradients = tape.gradient(loss, [self._patch])
 
@@ -168,10 +170,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _probabilities(self, images: "tf.Tensor") -> "tf.Tensor":
+    def _probabilities(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        patched_input = self._random_overlay(images, self._patch)
+        patched_input = self._random_overlay(images, self._patch, mask=mask)
 
         patched_input = tf.clip_by_value(
             patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1],
@@ -181,10 +183,10 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return probabilities
 
-    def _loss(self, images: "tf.Tensor", target: "tf.Tensor") -> "tf.Tensor":
+    def _loss(self, images: "tf.Tensor", target: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        probabilities = self._probabilities(images)
+        probabilities = self._probabilities(images, mask)
 
         self._loss_per_example = tf.keras.losses.categorical_crossentropy(
             y_true=target, y_pred=probabilities, from_logits=False, label_smoothing=0
@@ -218,6 +220,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         images: Union[np.ndarray, "tf.Tensor"],
         patch: Union[np.ndarray, "tf.Variable"],
         scale: Optional[float] = None,
+        mask: Optional[Union[np.ndarray, "tf.Tensor"]] = None,
     ) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
         import tensorflow_addons as tfa
@@ -278,7 +281,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         transform_vectors = list()
 
-        for _ in range(nb_samples):
+        for i_sample in range(nb_samples):
             if scale is None:
                 im_scale = np.random.uniform(low=self.scale_min, high=self.scale_max)
             else:
@@ -287,8 +290,27 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             padding_after_scaling_h = self.image_shape[self.i_h] - im_scale * padded_patch.shape[self.i_h]
             padding_after_scaling_w = self.image_shape[self.i_w] - im_scale * padded_patch.shape[self.i_w]
 
-            x_shift = np.random.uniform(-padding_after_scaling_w, padding_after_scaling_w)
-            y_shift = np.random.uniform(-padding_after_scaling_h, padding_after_scaling_h)
+            mask_2d = mask[i_sample, :, :]
+
+            if mask_2d is None:
+                x_shift = np.random.uniform(-padding_after_scaling_w, padding_after_scaling_w)
+                y_shift = np.random.uniform(-padding_after_scaling_h, padding_after_scaling_h)
+            else:
+                edge_x_0 = (self.patch_shape[self.i_h] * scale) // 2
+                edge_x_1 = self.patch_shape[self.i_h] * scale - edge_x_0
+                edge_y_0 = (self.patch_shape[self.i_w] * scale) // 2
+                edge_y_1 = self.patch_shape[self.i_w] * scale - edge_y_0
+
+                mask_2d[0:edge_x_0, :] = False
+                mask_2d[-edge_x_1:, :] = False
+                mask_2d[:, 0:edge_y_0] = False
+                mask_2d[:, -edge_y_1:] = False
+
+                num_pos = np.argwhere(mask_2d).shape[0]
+                pos_id = np.random.choice(num_pos, size=1)
+                pos = np.argwhere(mask_2d > 0)[pos_id[0]]
+                x_shift = pos[0] - self.image_shape[self.i_h] / 2.0
+                y_shift = pos[1] - self.image_shape[self.i_w] / 2.0
 
             phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max)) / 90.0 * (math.pi / 2.0)
 
@@ -335,30 +357,71 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         :param x: An array with the original input images of shape NHWC or input videos of shape NFHWC.
         :param y: An array with the original true labels.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
+        :type mask: `np.ndarray`
         :return: An array with adversarial patch and an array of the patch mask.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
+        shuffle = kwargs.get("shuffle", True)
+        mask = kwargs.get("mask")
+        if (
+            mask is not None
+            and (mask.dtype != np.bool)
+            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
+            or not (
+                (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])
+                or (mask.shape[1] == x.shape[2] and mask.shape[2] == x.shape[3])
+            )
+        ):
+            raise ValueError(
+                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
+                "shape of `x` (N, H, W) without their channel dimensions."
+            )
+
+        if mask is not None and mask.shape[0] == 1:
+            mask = np.repeat(mask, repeats=x.shape[0], axis=0)
+
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
-        shuffle = kwargs.get("shuffle", True)
-        if shuffle:
-            dataset = (
-                tf.data.Dataset.from_tensor_slices((x, y))
-                .shuffle(10000)
-                .batch(self.batch_size)
-                .repeat(math.ceil(x.shape[0] / self.batch_size))
-            )
+        if mask is None:
+            if shuffle:
+                dataset = (
+                    tf.data.Dataset.from_tensor_slices((x, y))
+                    .shuffle(10000)
+                    .batch(self.batch_size)
+                    .repeat(math.ceil(x.shape[0] / self.batch_size))
+                )
+            else:
+                dataset = (
+                    tf.data.Dataset.from_tensor_slices((x, y))
+                    .batch(self.batch_size)
+                    .repeat(math.ceil(x.shape[0] / self.batch_size))
+                )
         else:
-            dataset = (
-                tf.data.Dataset.from_tensor_slices((x, y))
-                .batch(self.batch_size)
-                .repeat(math.ceil(x.shape[0] / self.batch_size))
-            )
+            if shuffle:
+                dataset = (
+                    tf.data.Dataset.from_tensor_slices((x, y, mask))
+                    .shuffle(10000)
+                    .batch(self.batch_size)
+                    .repeat(math.ceil(x.shape[0] / self.batch_size))
+                )
+            else:
+                dataset = (
+                    tf.data.Dataset.from_tensor_slices((x, y, mask))
+                    .batch(self.batch_size)
+                    .repeat(math.ceil(x.shape[0] / self.batch_size))
+                )
 
         for _ in trange(self.max_iter, desc="Adversarial Patch TensorFlow v2", disable=not self.verbose):
-            for images, target in dataset:
-                _ = self._train_step(images=images, target=target)
+            if mask is None:
+                for images, target in dataset:
+                    _ = self._train_step(images=images, target=target, mask=None)
+            else:
+                for images, target, mask_i in dataset:
+                    _ = self._train_step(images=images, target=target, mask=mask_i)
 
         return (
             self._patch.numpy(),
