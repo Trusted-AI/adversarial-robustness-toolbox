@@ -163,9 +163,8 @@ class AdversarialPatchNumpy(EvasionAttack):
         logger.info("Creating adversarial patch.")
 
         mask = kwargs.get("mask")
-        if (
-            mask is not None
-            and (mask.dtype != np.bool)
+        if mask is not None and (
+            (mask.dtype != np.bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
             or not (
                 (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])

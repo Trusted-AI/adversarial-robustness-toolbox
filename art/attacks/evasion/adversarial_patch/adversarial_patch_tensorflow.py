@@ -290,12 +290,12 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             padding_after_scaling_h = self.image_shape[self.i_h] - im_scale * padded_patch.shape[self.i_h]
             padding_after_scaling_w = self.image_shape[self.i_w] - im_scale * padded_patch.shape[self.i_w]
 
-            mask_2d = mask[i_sample, :, :]
-
-            if mask_2d is None:
+            if mask is None:
                 x_shift = np.random.uniform(-padding_after_scaling_w, padding_after_scaling_w)
                 y_shift = np.random.uniform(-padding_after_scaling_h, padding_after_scaling_h)
             else:
+                mask_2d = mask[i_sample, :, :]
+
                 edge_x_0 = (self.patch_shape[self.i_h] * scale) // 2
                 edge_x_1 = self.patch_shape[self.i_h] * scale - edge_x_0
                 edge_y_0 = (self.patch_shape[self.i_w] * scale) // 2
@@ -367,9 +367,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         shuffle = kwargs.get("shuffle", True)
         mask = kwargs.get("mask")
-        if (
-            mask is not None
-            and (mask.dtype != np.bool)
+        if mask is not None and (
+            (mask.dtype != np.bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
             or not (
                 (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])
