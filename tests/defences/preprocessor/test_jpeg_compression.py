@@ -103,6 +103,8 @@ def test_jpeg_compression_video_data(art_warning, video_batch, channels_first):
 def test_jpeg_compress(art_warning, image_batch, channels_first):
     try:
         test_input, test_output = image_batch
+        # Run only for grayscale [1] and RGB [3] data because testing `_compress` which is applied internally only to
+        # either grayscale or RGB data.
         if test_input.shape[-1] in [1, 3]:
             jpeg_compression = JpegCompression(clip_values=(0, 255))
 
