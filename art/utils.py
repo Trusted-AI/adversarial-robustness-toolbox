@@ -985,7 +985,7 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
     download = not os.path.exists(full_path)
 
     if download:
-        #         logger.info("Downloading data from %s", url)
+        logger.info("Downloading data from %s", url)
         error_msg = "URL fetch failure on {}: {} -- {}"
         try:
             try:
