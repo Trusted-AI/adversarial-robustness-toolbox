@@ -116,6 +116,8 @@ class DPatch(EvasionAttack):
         :return: Adversarial patch.
         """
         mask = kwargs.get("mask")
+        if mask is not None:
+            mask = mask.copy()
         if (
             mask is not None
             and (mask.dtype != np.bool)

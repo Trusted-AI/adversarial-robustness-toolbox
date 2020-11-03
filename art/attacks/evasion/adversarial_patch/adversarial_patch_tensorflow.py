@@ -367,6 +367,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         shuffle = kwargs.get("shuffle", True)
         mask = kwargs.get("mask")
+        if mask is not None:
+            mask = mask.copy()
         if mask is not None and (
             (mask.dtype != np.bool)
             or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
