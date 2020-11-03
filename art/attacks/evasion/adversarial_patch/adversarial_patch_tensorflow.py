@@ -429,17 +429,26 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).numpy()[0],
         )
 
-    def apply_patch(self, x: np.ndarray, scale: float, patch_external: Optional[np.ndarray] = None) -> np.ndarray:
+    def apply_patch(
+        self,
+        x: np.ndarray,
+        scale: float,
+        patch_external: Optional[np.ndarray] = None,
+        mask: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.
 
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :param patch_external: External patch to apply to images `x`.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
         :return: The patched samples.
         """
         patch = patch_external if patch_external is not None else self._patch
-        return self._random_overlay(images=x, patch=patch, scale=scale).numpy()
+        return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).numpy()
 
     def reset_patch(self, initial_patch_value: np.ndarray) -> None:
         """

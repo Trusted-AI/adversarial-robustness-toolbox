@@ -311,7 +311,11 @@ class DPatch(EvasionAttack):
         return x_copy, transformations
 
     def apply_patch(
-        self, x: np.ndarray, patch_external: Optional[np.ndarray] = None, random_location: bool = False,
+        self,
+        x: np.ndarray,
+        patch_external: Optional[np.ndarray] = None,
+        random_location: bool = False,
+        mask: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         Apply the adversarial patch to images.
@@ -319,6 +323,9 @@ class DPatch(EvasionAttack):
         :param x: Images to be patched.
         :param patch_external: External patch to apply to images `x`. If None the attacks patch will be applied.
         :param random_location: True if patch location should be random.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
         :return: The patched images.
         """
         if patch_external is not None:
@@ -327,7 +334,11 @@ class DPatch(EvasionAttack):
             patch_local = self._patch
 
         patched_images, _ = self._augment_images_with_patch(
-            x=x, patch=patch_local, random_location=random_location, channels_first=self.estimator.channels_first
+            x=x,
+            patch=patch_local,
+            random_location=random_location,
+            channels_first=self.estimator.channels_first,
+            mask=mask,
         )
 
         return patched_images

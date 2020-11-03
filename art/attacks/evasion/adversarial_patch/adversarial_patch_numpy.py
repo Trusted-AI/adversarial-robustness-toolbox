@@ -214,13 +214,18 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         return self.patch, self._get_circular_patch_mask()
 
-    def apply_patch(self, x: np.ndarray, scale: float, patch_external: np.ndarray = None) -> np.ndarray:
+    def apply_patch(
+        self, x: np.ndarray, scale: float, patch_external: np.ndarray = None, mask: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.
 
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :param patch_external: External patch to apply to images `x`.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
         :return: The patched instances.
         """
         patch = patch_external if patch_external is not None else self.patch
