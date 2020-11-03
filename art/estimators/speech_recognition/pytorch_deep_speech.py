@@ -193,7 +193,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
 
             # Download model
-            model_path = get_file(filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose)
+            model_path = get_file(
+                filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose
+            )
 
             # Then load model
             self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
