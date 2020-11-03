@@ -16,5 +16,6 @@ from art.estimators import classification
 from art.estimators import encoding
 from art.estimators import generation
 from art.estimators import object_detection
+from art.estimators import poison_mitigation
 from art.estimators import regression
 from art.estimators import speech_recognition

@@ -50,7 +50,7 @@ class DataGenerator:
         return (255 * np.ones(data_shape)).astype(ART_NUMPY_DTYPE)
 
 
-@pytest.fixture(params=[1, 3], ids=["grayscale", "RGB"])
+@pytest.fixture(params=[1, 2, 3, 5], ids=["grayscale", "grayscale-2", "RGB", "grayscale-5"])
 def image_batch(request, channels_first):
     """
     Image fixtures of shape NHWC and NCHW.
@@ -62,7 +62,7 @@ def image_batch(request, channels_first):
     return test_input, test_output
 
 
-@pytest.fixture(params=[1, 3], ids=["grayscale", "RGB"])
+@pytest.fixture(params=[1, 2, 3, 5], ids=["grayscale", "grayscale-2", "RGB", "grayscale-5"])
 def video_batch(request, channels_first):
     """
     Video fixtures of shape NFHWC and NCFHW.
@@ -103,13 +103,16 @@ def test_jpeg_compression_video_data(art_warning, video_batch, channels_first):
 def test_jpeg_compress(art_warning, image_batch, channels_first):
     try:
         test_input, test_output = image_batch
-        jpeg_compression = JpegCompression(clip_values=(0, 255))
+        # Run only for grayscale [1] and RGB [3] data because testing `_compress` which is applied internally only to
+        # either grayscale or RGB data.
+        if test_input.shape[-1] in [1, 3]:
+            jpeg_compression = JpegCompression(clip_values=(0, 255))
 
-        image_mode = "RGB" if test_input.shape[-1] == 3 else "L"
-        test_single_input = np.squeeze(test_input[0]).astype(np.uint8)
-        test_single_output = np.squeeze(test_output[0]).astype(np.uint8)
+            image_mode = "RGB" if test_input.shape[-1] == 3 else "L"
+            test_single_input = np.squeeze(test_input[0]).astype(np.uint8)
+            test_single_output = np.squeeze(test_output[0]).astype(np.uint8)
 
-        assert_array_equal(jpeg_compression._compress(test_single_input, image_mode), test_single_output)
+            assert_array_equal(jpeg_compression._compress(test_single_input, image_mode), test_single_output)
     except ARTTestException as e:
         art_warning(e)
 
