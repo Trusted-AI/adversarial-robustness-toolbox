@@ -47,6 +47,10 @@ class JpegCompression(Preprocessor):
     """
     Implement the JPEG compression defence approach.
 
+    For input images or videos with 3 color channels the compression is applied in mode `RGB`
+    (3x8-bit pixels, true color), for all other numbers of channels the compression is applied for each channel with
+    mode `L` (8-bit pixels, black and white).
+
     | Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
 
 
@@ -125,6 +129,10 @@ class JpegCompression(Preprocessor):
         """
         Apply JPEG compression to sample `x`.
 
+        For input images or videos with 3 color channels the compression is applied in mode `RGB`
+        (3x8-bit pixels, true color), for all other numbers of channels the compression is applied for each channel with
+        mode `L` (8-bit pixels, black and white).
+
         :param x: Sample to compress with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`. `x` values are expected to be in
                   the data range [0, 1] or [0, 255].
         :param y: Labels of the sample `x`. This function does not affect them in any way.
@@ -158,26 +166,16 @@ class JpegCompression(Preprocessor):
             x = x * 255
         x = x.astype("uint8")
 
-        # Set image mode
-        if x.shape[-1] == 1:
-            image_mode = "L"
-        elif x.shape[-1] == 3:
-            image_mode = "RGB"
-        else:
-            raise NotImplementedError("Currently only support `RGB` and `L` images.")
-
-        # Prepare grayscale images for "L" mode
-        if image_mode == "L":
-            x = np.squeeze(x, axis=-1)
-
         # Compress one image at a time
         x_jpeg = x.copy()
         for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression", disable=not self.verbose):
-            x_jpeg[idx] = self._compress(x[idx], image_mode)
-
-        # Undo preparation grayscale images for "L" mode
-        if image_mode == "L":
-            x_jpeg = np.expand_dims(x_jpeg, axis=-1)
+            if x.shape[-1] == 3:
+                x_jpeg[idx] = self._compress(x[idx], mode="RGB")
+            else:
+                for i_channel in range(x.shape[-1]):
+                    x_channel = x[idx[0], idx[1], ..., i_channel]
+                    x_channel = self._compress(x_channel, mode="L")
+                    x_jpeg[idx[0], idx[1], :, :, i_channel] = x_channel
 
         # Convert to ART dtype
         if self.clip_values[1] == 1.0:

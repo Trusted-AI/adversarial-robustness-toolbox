@@ -17,6 +17,9 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
+  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/transformer --mlFramework=$mlFramework --skip_travis=True --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/transformer tests"; fi
+
   pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
