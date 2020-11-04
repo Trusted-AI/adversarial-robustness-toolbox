@@ -42,24 +42,25 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_generate_default(fix_get_mnist_subset):
+def test_generate_default(fix_get_mnist_subset, is_tf_version_2):
 
-    classifier, _ = get_image_classifier_tf(from_logits=True)
+    if is_tf_version_2:
+        classifier, _ = get_image_classifier_tf(from_logits=True)
 
-    attack = AutoAttack(
-        estimator=classifier, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, batch_size=32, estimator_orig=None,
-    )
+        attack = AutoAttack(
+            estimator=classifier, norm=np.inf, eps=0.3, eps_step=0.1, attacks=None, batch_size=32, estimator_orig=None,
+        )
 
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
+        x_train_mnist_adv = attack.generate(x=x_train_mnist, y=y_train_mnist)
 
-    assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0292, abs=0.105)
-    assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
+        assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.0292, abs=0.105)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(0.3, abs=0.05)
 
 
 @pytest.mark.only_with_platform("tensorflow")
-def test_generate_attacks_and_targeted(fix_get_mnist_subset):
+def test_generate_attacks_and_targeted(fix_get_mnist_subset, is_tf_version_2):
 
     classifier, _ = get_image_classifier_tf(from_logits=True)
     norm = np.inf
@@ -81,6 +82,12 @@ def test_generate_attacks_and_targeted(fix_get_mnist_subset):
             loss_type="cross_entropy",
         )
     )
+
+    if is_tf_version_2:
+        loss_type_2 = "difference_logits_ratio"
+    else:
+        loss_type_2 = "cross_entropy"
+
     attacks.append(
         AutoProjectedGradientDescent(
             estimator=classifier,
@@ -91,7 +98,7 @@ def test_generate_attacks_and_targeted(fix_get_mnist_subset):
             targeted=False,
             nb_random_init=5,
             batch_size=batch_size,
-            loss_type="difference_logits_ratio",
+            loss_type=loss_type_2,
         )
     )
     attacks.append(DeepFool(classifier=classifier, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size))

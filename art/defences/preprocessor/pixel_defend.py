@@ -54,7 +54,7 @@ class PixelDefend(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["clip_values", "eps", "pixel_cnn"]
+    params = ["clip_values", "eps", "pixel_cnn", "verbose"]
 
     def __init__(
         self,
@@ -64,6 +64,7 @@ class PixelDefend(Preprocessor):
         batch_size: int = 128,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        verbose: bool = False,
     ) -> None:
         """
         Create an instance of pixel defence.
@@ -72,6 +73,7 @@ class PixelDefend(Preprocessor):
                for features.
         :param eps: Defense parameter 0-255.
         :param pixel_cnn: Pre-trained PixelCNN model.
+        :param verbose: Show progress bars.
         """
         super().__init__()
         self._is_fitted = True
@@ -81,6 +83,7 @@ class PixelDefend(Preprocessor):
         self.eps = eps
         self.batch_size = batch_size
         self.pixel_cnn = pixel_cnn
+        self.verbose = verbose
         self._check_params()
 
     @property
@@ -114,7 +117,7 @@ class PixelDefend(Preprocessor):
         x = x.reshape((x.shape[0], -1))
 
         # Start defence one image at a time
-        for i, x_i in enumerate(tqdm(x, desc="PixelDefend")):
+        for i, x_i in enumerate(tqdm(x, desc="PixelDefend", disable=not self.verbose)):
             for feat_index in range(x.shape[1]):
                 # Setup the search space
                 f_probs = probs[i, feat_index, :]
@@ -176,3 +179,6 @@ class PixelDefend(Preprocessor):
 
         if self.batch_size <= 0:
             raise ValueError("The batch size `batch_size` has to be positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

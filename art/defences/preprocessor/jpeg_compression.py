@@ -55,7 +55,7 @@ class JpegCompression(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["quality", "channel_index", "channels_first", "clip_values"]
+    params = ["quality", "channel_index", "channels_first", "clip_values", "verbose"]
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def __init__(
@@ -66,6 +66,7 @@ class JpegCompression(Preprocessor):
         channels_first: bool = False,
         apply_fit: bool = True,
         apply_predict: bool = True,
+        verbose: bool = False,
     ):
         """
         Create an instance of JPEG compression.
@@ -78,6 +79,7 @@ class JpegCompression(Preprocessor):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -95,6 +97,7 @@ class JpegCompression(Preprocessor):
         self.channel_index = channel_index
         self.channels_first = channels_first
         self.clip_values = clip_values
+        self.verbose = verbose
         self._check_params()
 
     @property
@@ -169,7 +172,7 @@ class JpegCompression(Preprocessor):
 
         # Compress one image at a time
         x_jpeg = x.copy()
-        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression"):
+        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression", disable=not self.verbose):
             x_jpeg[idx] = self._compress(x[idx], image_mode)
 
         # Undo preparation grayscale images for "L" mode
@@ -218,3 +221,6 @@ class JpegCompression(Preprocessor):
 
         if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
             raise ValueError("'clip_values' max value must be either 1 or 255.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

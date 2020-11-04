@@ -54,6 +54,7 @@ class SpatialTransformation(EvasionAttack):
         "num_translations",
         "max_rotation",
         "num_rotations",
+        "verbose",
     ]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin)
 
@@ -64,6 +65,7 @@ class SpatialTransformation(EvasionAttack):
         num_translations: int = 1,
         max_rotation: float = 0.0,
         num_rotations: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         :param classifier: A trained classifier.
@@ -73,12 +75,14 @@ class SpatialTransformation(EvasionAttack):
         :param max_rotation: The maximum rotation in either direction in degrees. The value is expected to be in the
                range `[0, 180]`.
         :param num_rotations: The number of rotations to search on grid spacing.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         self.max_translation = max_translation
         self.num_translations = num_translations
         self.max_rotation = max_rotation
         self.num_rotations = num_rotations
+        self.verbose = verbose
         self._check_params()
 
         self.fooling_rate: Optional[float] = None
@@ -139,7 +143,11 @@ class SpatialTransformation(EvasionAttack):
             rot = 0.0
 
             # Initialize progress bar
-            pbar = tqdm(len(grid_trans_x) * len(grid_trans_y) * len(grid_rot), desc="Spatial transformation")
+            pbar = tqdm(
+                len(grid_trans_x) * len(grid_trans_y) * len(grid_rot),
+                desc="Spatial transformation",
+                disable=not self.verbose,
+            )
 
             for trans_x_i in grid_trans_x:
                 for trans_y_i in grid_trans_y:
@@ -207,3 +215,6 @@ class SpatialTransformation(EvasionAttack):
 
         if not isinstance(self.num_rotations, int) or self.num_rotations <= 0:
             raise ValueError("The number of rotations must be a positive integer.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
