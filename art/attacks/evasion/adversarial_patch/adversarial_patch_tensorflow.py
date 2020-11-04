@@ -289,19 +289,21 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                 im_scale = scale
 
             if mask is None:
-                padding_after_scaling_h = (self.image_shape[self.i_h] - im_scale * padded_patch.shape[
-                    self.i_h + 1]) / 2.0
-                padding_after_scaling_w = (self.image_shape[self.i_w] - im_scale * padded_patch.shape[
-                    self.i_w + 1]) / 2.0
+                padding_after_scaling_h = (
+                    self.image_shape[self.i_h] - im_scale * padded_patch.shape[self.i_h + 1]
+                ) / 2.0
+                padding_after_scaling_w = (
+                    self.image_shape[self.i_w] - im_scale * padded_patch.shape[self.i_w + 1]
+                ) / 2.0
                 x_shift = np.random.uniform(-padding_after_scaling_w, padding_after_scaling_w)
                 y_shift = np.random.uniform(-padding_after_scaling_h, padding_after_scaling_h)
             else:
                 mask_2d = mask[i_sample, :, :]
 
-                edge_x_0 = int(im_scale * padded_patch.shape[self.i_w+1]) // 2
-                edge_x_1 = int(im_scale * padded_patch.shape[self.i_w+1]) - edge_x_0
-                edge_y_0 = int(im_scale * padded_patch.shape[self.i_h+1]) // 2
-                edge_y_1 = int(im_scale * padded_patch.shape[self.i_h+1]) - edge_y_0
+                edge_x_0 = int(im_scale * padded_patch.shape[self.i_w + 1]) // 2
+                edge_x_1 = int(im_scale * padded_patch.shape[self.i_w + 1]) - edge_x_0
+                edge_y_0 = int(im_scale * padded_patch.shape[self.i_h + 1]) // 2
+                edge_y_1 = int(im_scale * padded_patch.shape[self.i_h + 1]) - edge_y_0
 
                 mask_2d[0:edge_x_0, :] = False
                 if edge_x_1 > 0:
@@ -346,8 +348,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR",)
         padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
 
-        image_mask = tfa.image.transform(image_mask, translation_vectors, "BILINEAR", )
-        padded_patch = tfa.image.transform(padded_patch, translation_vectors, "BILINEAR", )
+        image_mask = tfa.image.transform(image_mask, translation_vectors, "BILINEAR",)
+        padded_patch = tfa.image.transform(padded_patch, translation_vectors, "BILINEAR",)
 
         if self.nb_dims == 4:
             image_mask = tf.stack([image_mask] * images.shape[1], axis=1)
