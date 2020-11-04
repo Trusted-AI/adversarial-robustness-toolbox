@@ -274,12 +274,16 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
 
-    def _compute_perturbation(self, batch: np.ndarray, batch_labels: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    def _compute_perturbation(self, batch: np.ndarray, batch_labels: np.ndarray, mask: Optional[np.ndarray]) -> np.ndarray:
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
+
+        # Apply mask
+        if mask is not None:
+            grad[mask != 0.0] = 0.0
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
@@ -308,10 +312,7 @@ class FastGradientMethod(EvasionAttack):
 
         assert batch.shape == grad.shape
 
-        if mask is None:
-            return grad
-        else:
-            return grad * (mask.astype(ART_NUMPY_DTYPE))
+        return grad
 
     def _apply_perturbation(self, batch: np.ndarray, perturbation: np.ndarray, eps_step: float) -> np.ndarray:
         batch = batch + eps_step * perturbation

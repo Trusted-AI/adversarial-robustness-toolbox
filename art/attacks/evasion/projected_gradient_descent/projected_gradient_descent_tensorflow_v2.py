@@ -240,6 +240,10 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
         )
 
+        # Apply mask
+        if mask is not None:
+            grad[mask != 0.0] = 0.0
+
         # Apply norm bound
         if self.norm == np.inf:
             grad = tf.sign(grad)
@@ -256,10 +260,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         assert x.shape == grad.shape
 
-        if mask is None:
-            return grad
-        else:
-            return grad * mask
+        return grad
 
     def _apply_perturbation(self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: float) -> "tf.Tensor":
         """
