@@ -280,6 +280,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         padded_patch = tf.cast(padded_patch, images.dtype)
 
         transform_vectors = list()
+        translation_vectors = list()
 
         for i_sample in range(nb_samples):
             if scale is None:
@@ -287,32 +288,35 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             else:
                 im_scale = scale
 
-            padding_after_scaling_h = self.image_shape[self.i_h] - im_scale * padded_patch.shape[self.i_h]
-            padding_after_scaling_w = self.image_shape[self.i_w] - im_scale * padded_patch.shape[self.i_w]
-
             if mask is None:
+                padding_after_scaling_h = (self.image_shape[self.i_h] - im_scale * padded_patch.shape[
+                    self.i_h + 1]) / 2.0
+                padding_after_scaling_w = (self.image_shape[self.i_w] - im_scale * padded_patch.shape[
+                    self.i_w + 1]) / 2.0
                 x_shift = np.random.uniform(-padding_after_scaling_w, padding_after_scaling_w)
                 y_shift = np.random.uniform(-padding_after_scaling_h, padding_after_scaling_h)
             else:
                 mask_2d = mask[i_sample, :, :]
 
-                edge_x_0 = (self.patch_shape[self.i_h] * scale) // 2
-                edge_x_1 = self.patch_shape[self.i_h] * scale - edge_x_0
-                edge_y_0 = (self.patch_shape[self.i_w] * scale) // 2
-                edge_y_1 = self.patch_shape[self.i_w] * scale - edge_y_0
+                edge_x_0 = int(im_scale * padded_patch.shape[self.i_w+1]) // 2
+                edge_x_1 = int(im_scale * padded_patch.shape[self.i_w+1]) - edge_x_0
+                edge_y_0 = int(im_scale * padded_patch.shape[self.i_h+1]) // 2
+                edge_y_1 = int(im_scale * padded_patch.shape[self.i_h+1]) - edge_y_0
 
                 mask_2d[0:edge_x_0, :] = False
-                mask_2d[-edge_x_1:, :] = False
+                if edge_x_1 > 0:
+                    mask_2d[-edge_x_1:, :] = False
                 mask_2d[:, 0:edge_y_0] = False
-                mask_2d[:, -edge_y_1:] = False
+                if edge_y_1 > 0:
+                    mask_2d[:, -edge_y_1:] = False
 
                 num_pos = np.argwhere(mask_2d).shape[0]
                 pos_id = np.random.choice(num_pos, size=1)
-                pos = np.argwhere(mask_2d > 0)[pos_id[0]]
-                x_shift = pos[0] - self.image_shape[self.i_h] / 2.0
-                y_shift = pos[1] - self.image_shape[self.i_w] / 2.0
+                pos = np.argwhere(mask_2d)[pos_id[0]]
+                x_shift = pos[1] - self.image_shape[self.i_w] // 2
+                y_shift = pos[0] - self.image_shape[self.i_h] // 2
 
-            phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max)) / 90.0 * (math.pi / 2.0)
+            phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max)) / 180.0 * math.pi
 
             # Rotation
             rotation_matrix = np.array(
@@ -332,13 +336,18 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             x_origin_delta = x_origin - x_origin_shifted
             y_origin_delta = y_origin - y_origin_shifted
 
-            a_2 = x_origin_delta - (x_shift / (2 * im_scale))
-            b_2 = y_origin_delta - (y_shift / (2 * im_scale))
+            # a_2 = x_origin_delta - (x_shift / im_scale)
+            # b_2 = y_origin_delta - (y_shift / im_scale)
 
-            transform_vectors.append([a_0, a_1, a_2, b_0, b_1, b_2, 0, 0])
+            # transform_vectors.append([a_0, a_1, a_2, b_0, b_1, b_2, 0, 0])
+            transform_vectors.append([a_0, a_1, x_origin_delta, b_0, b_1, y_origin_delta, 0, 0])
+            translation_vectors.append([1, 0, -x_shift, 0, 1, -y_shift, 0, 0])
 
         image_mask = tfa.image.transform(image_mask, transform_vectors, "BILINEAR",)
         padded_patch = tfa.image.transform(padded_patch, transform_vectors, "BILINEAR",)
+
+        image_mask = tfa.image.transform(image_mask, translation_vectors, "BILINEAR", )
+        padded_patch = tfa.image.transform(padded_patch, translation_vectors, "BILINEAR", )
 
         if self.nb_dims == 4:
             image_mask = tf.stack([image_mask] * images.shape[1], axis=1)
@@ -447,6 +456,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
                      center location of the patch during sampling.
         :return: The patched samples.
         """
+        if mask is not None:
+            mask = mask.copy()
         patch = patch_external if patch_external is not None else self._patch
         return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).numpy()
 

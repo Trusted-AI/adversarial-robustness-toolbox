@@ -228,6 +228,8 @@ class AdversarialPatchNumpy(EvasionAttack):
                      center location of the patch during sampling.
         :return: The patched instances.
         """
+        if mask is not None:
+            mask = mask.copy()
         patch = patch_external if patch_external is not None else self.patch
         patched_x, _, _ = self._augment_images_with_random_patch(x, patch, mask=mask, scale=scale)
         return patched_x
@@ -473,10 +475,10 @@ class AdversarialPatchNumpy(EvasionAttack):
                 shift_h = 0
                 shift_w = 0
         else:
-            edge_x_0 = (self.patch_shape[self.i_h] * scale) // 2
-            edge_x_1 = self.patch_shape[self.i_h] * scale - edge_x_0
-            edge_y_0 = (self.patch_shape[self.i_w] * scale) // 2
-            edge_y_1 = self.patch_shape[self.i_w] * scale - edge_y_0
+            edge_x_0 = int(self.patch_shape[self.i_h] * scale) // 2
+            edge_x_1 = int(self.patch_shape[self.i_h] * scale) - edge_x_0
+            edge_y_0 = int(self.patch_shape[self.i_w] * scale) // 2
+            edge_y_1 = int(self.patch_shape[self.i_w] * scale) - edge_y_0
 
             mask_2d[0:edge_x_0, :] = False
             mask_2d[-edge_x_1:, :] = False
@@ -485,7 +487,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
             num_pos = np.argwhere(mask_2d).shape[0]
             pos_id = np.random.choice(num_pos, size=1)
-            pos = np.argwhere(mask_2d > 0)[pos_id[0]]
+            pos = np.argwhere(mask_2d)[pos_id[0]]
             shift_h = pos[0] - (self.estimator.input_shape[self.i_h]) / 2.0
             shift_w = pos[1] - (self.estimator.input_shape[self.i_w]) / 2.0
 
