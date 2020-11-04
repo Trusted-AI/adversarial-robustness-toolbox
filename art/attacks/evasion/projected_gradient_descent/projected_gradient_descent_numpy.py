@@ -172,12 +172,16 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
                 raise ValueError("Mask shape must be broadcastable to input shape.")
 
             if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):
-                raise ValueError("The `mask` has to be either of type np.float32, np.float64 or np.bool. The provided"
-                                 "`mask` is of type {}.".format(mask.dtype))
+                raise ValueError(
+                    "The `mask` has to be either of type np.float32, np.float64 or np.bool. The provided"
+                    "`mask` is of type {}.".format(mask.dtype)
+                )
 
             if np.issubdtype(mask.dtype, np.floating) and np.amin(mask) < 0.0:
-                raise ValueError("The `mask` of type np.float32 or np.float64 requires all elements to be either zero"
-                                 "or positive values.")
+                raise ValueError(
+                    "The `mask` of type np.float32 or np.float64 requires all elements to be either zero"
+                    "or positive values."
+                )
 
         return mask
 

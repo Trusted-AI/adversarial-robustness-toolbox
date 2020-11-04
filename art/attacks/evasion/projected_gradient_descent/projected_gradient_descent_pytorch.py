@@ -226,7 +226,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation(self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"]) -> "torch.Tensor":
+    def _compute_perturbation(
+        self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"]
+    ) -> "torch.Tensor":
         """
         Compute perturbations.
 

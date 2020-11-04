@@ -274,7 +274,9 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
 
-    def _compute_perturbation(self, batch: np.ndarray, batch_labels: np.ndarray, mask: Optional[np.ndarray]) -> np.ndarray:
+    def _compute_perturbation(
+        self, batch: np.ndarray, batch_labels: np.ndarray, mask: Optional[np.ndarray]
+    ) -> np.ndarray:
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
