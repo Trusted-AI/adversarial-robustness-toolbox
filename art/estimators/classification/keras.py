@@ -356,7 +356,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         loss_value = k.eval(loss)
 
         if reduction == "none":
-            loss_value = loss_value
+            pass
         elif reduction == "mean":
             loss_value = np.mean(loss_value, axis=0)
         elif reduction == "sum":
