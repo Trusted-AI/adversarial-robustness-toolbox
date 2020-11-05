@@ -537,7 +537,11 @@ class Wasserstein(EvasionAttack):
 
         for i in range(kernel_size):
             for j in range(kernel_size):
-                cost_matrix[i, j] = (abs(i - center) ** 2 + abs(j - center) ** 2) ** (p / 2)
+                # The code of the paper of this attack (https://arxiv.org/abs/1902.07906) implements the cost as:
+                # cost_matrix[i, j] = (abs(i - center) ** 2 + abs(j - center) ** 2) ** (p / 2)
+                # which only can reproduce L2-norm for p=1 correctly
+                cost_matrix[i, j] = (abs(i - center) ** p + abs(j - center) ** p) ** (1 / p)
+
 
         return cost_matrix
 
