@@ -542,7 +542,6 @@ class Wasserstein(EvasionAttack):
                 # which only can reproduce L2-norm for p=1 correctly
                 cost_matrix[i, j] = (abs(i - center) ** p + abs(j - center) ** p) ** (1 / p)
 
-
         return cost_matrix
 
     @staticmethod
