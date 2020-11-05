@@ -3,7 +3,6 @@ import os
 from os import listdir, path
 import pickle
 import tempfile
-import warnings
 
 import keras
 import numpy as np
