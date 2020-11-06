@@ -14,7 +14,7 @@ cma==3.0.3
 pandas==1.1.2
 
 # frameworks
-h5py==2.10.0
+h5py==3.0.0
 # supported versions: (tensorflow==2.2.0 with keras==2.3.1) or (tensorflow==1.15.3 with keras==2.2.5)
 tensorflow
 keras
