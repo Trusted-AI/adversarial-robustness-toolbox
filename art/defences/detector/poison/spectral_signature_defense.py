@@ -163,5 +163,6 @@ def spectral_signature_scores(matrix_r: np.ndarray) -> np.ndarray:
     # Following Algorithm #1 in paper, use SVD of centered features, not of covariance
     _, _, matrix_v = np.linalg.svd(matrix_m, full_matrices=False)
     eigs = matrix_v[:1]
-    score = np.expand_dims(np.linalg.norm(np.matmul(matrix_m, np.transpose(eigs)), axis=1), axis=1)
+    corrs = np.matmul(eigs, np.transpose(matrix_r))
+    score = np.expand_dims(np.linalg.norm(corrs, axis=1), axis=1)
     return score
