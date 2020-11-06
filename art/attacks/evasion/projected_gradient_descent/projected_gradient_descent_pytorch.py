@@ -252,7 +252,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         # Apply mask
         if mask is not None:
-            grad[mask == 0.0] = 0.0
+            grad = torch.where(mask == 0.0, torch.tensor(0.0), grad)
 
         # Apply norm bound
         if self.norm in ["inf", np.inf]:

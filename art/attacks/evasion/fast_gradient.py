@@ -285,7 +285,7 @@ class FastGradientMethod(EvasionAttack):
 
         # Apply mask
         if mask is not None:
-            grad[mask == 0.0] = 0.0
+            grad = np.where(mask == 0.0, 0.0, grad)
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
