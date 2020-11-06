@@ -197,7 +197,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             return np.argmax(y, axis=1)
         elif self._reduce_labels:  # float labels
             y_index = np.argmax(y, axis=1).astype(np.float32)
-            # y_index = np.expand_dims(y_index, axis=1)
+            y_index = np.expand_dims(y_index, axis=1)
             return y_index
         else:
             return y
