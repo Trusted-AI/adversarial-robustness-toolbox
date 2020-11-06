@@ -152,39 +152,6 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         return targets
 
-    @staticmethod
-    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Get the mask from the kwargs.
-
-        :param x: An array with the original inputs.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :type mask: `np.ndarray`
-        :return: The mask.
-        """
-        mask = kwargs.get("mask")
-
-        if mask is not None:
-            # Ensure the mask is broadcastable
-            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                raise ValueError("Mask shape must be broadcastable to input shape.")
-
-            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):
-                raise ValueError(
-                    "The `mask` has to be either of type np.float32, np.float64 or np.bool. The provided"
-                    "`mask` is of type {}.".format(mask.dtype)
-                )
-
-            if np.issubdtype(mask.dtype, np.floating) and np.amin(mask) < 0.0:
-                raise ValueError(
-                    "The `mask` of type np.float32 or np.float64 requires all elements to be either zero"
-                    "or positive values."
-                )
-
-        return mask
-
     def _check_params(self) -> None:
         super(ProjectedGradientDescentCommon, self)._check_params()
 

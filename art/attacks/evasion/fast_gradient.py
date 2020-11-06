@@ -285,7 +285,7 @@ class FastGradientMethod(EvasionAttack):
 
         # Apply mask
         if mask is not None:
-            grad[mask != 0.0] = 0.0
+            grad[mask == 0.0] = 0.0
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
@@ -386,3 +386,36 @@ class FastGradientMethod(EvasionAttack):
                     x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
 
         return x_adv
+
+    @staticmethod
+    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Get the mask from the kwargs.
+
+        :param x: An array with the original inputs.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: The mask.
+        """
+        mask = kwargs.get("mask")
+
+        if mask is not None:
+            # Ensure the mask is broadcastable
+            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
+                raise ValueError("Mask shape must be broadcastable to input shape.")
+
+            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):
+                raise ValueError(
+                    "The `mask` has to be either of type np.float32, np.float64 or np.bool. The provided"
+                    "`mask` is of type {}.".format(mask.dtype)
+                )
+
+            if np.issubdtype(mask.dtype, np.floating) and np.amin(mask) < 0.0:
+                raise ValueError(
+                    "The `mask` of type np.float32 or np.float64 requires all elements to be either zero"
+                    "or positive values."
+                )
+
+        return mask
