@@ -46,7 +46,6 @@ def test_wrong_parameters(params, art_warning, get_default_mnist_subset, image_d
         art_warning(e)
 
 
-
 @pytest.mark.framework_agnostic
 def test_detect_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
