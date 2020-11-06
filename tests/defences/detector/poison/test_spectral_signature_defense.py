@@ -43,7 +43,7 @@ def test_wrong_parameters(params, art_warning, get_default_mnist_subset, image_d
         classifier.fit(x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], nb_epochs=1)
         defence = SpectralSignatureDefense(classifier, x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], **params)
     except ARTTestException as e:
-        art_warning(e)\
+        art_warning(e)
 
 
 
@@ -78,7 +78,3 @@ def test_evaluate_defense(art_warning, get_default_mnist_subset, image_dl_estima
         print(res)
     except ARTTestException as e:
         art_warning(e)
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
