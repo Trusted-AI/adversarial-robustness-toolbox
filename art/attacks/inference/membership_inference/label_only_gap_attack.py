@@ -21,12 +21,16 @@ This module implements the Label Only Gap Attack `.
 | Paper link: https://arxiv.org/abs/2007.14321
 """
 import logging
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from art.attacks.attack import InferenceAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +45,7 @@ class LabelOnlyGapAttack(InferenceAttack):
     attack_params = InferenceAttack.attack_params
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
-    def __init__(self, estimator):
+    def __init__(self, estimator: "CLASSIFIER_TYPE"):
         """
         Create a `LabelOnlyGapAttack` instance of a Label Only Gap Attack.
 

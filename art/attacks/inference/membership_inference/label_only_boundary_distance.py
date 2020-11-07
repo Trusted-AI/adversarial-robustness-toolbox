@@ -21,13 +21,16 @@ This module implements the Label-Only Inference Attack based on Decision Boundar
 | Paper link: https://arxiv.org/abs/2007.14321
 """
 import logging
-from typing import Optional, NoReturn
+from typing import Optional, NoReturn, TYPE_CHECKING
 
 import numpy as np
 
 from art.attacks.attack import InferenceAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +65,7 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
 
         :param x: Input data.
         :param y: True labels for `x`.
+        :param kwargs: Parameters for HopSkipJump attack except argument `estimator`.
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
