@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the classifier `BlackBoxClassifier` for black-box classifiers.
+This module implements the Label-Only Inference Attack based on Decision Boundary.
 """
 import logging
 from typing import Optional
