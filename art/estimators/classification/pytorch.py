@@ -204,7 +204,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             if isinstance(y, torch.Tensor):
                 return torch.argmax(y, dim=1).type("torch.FloatTensor")
             else:
-                return np.argmax(y, axis=1).astype(np.float32)
+                y_index = np.argmax(y, axis=1).astype(np.float32)
+                y_index = np.expand_dims(y_index, axis=1)
+                return y_index
         else:
             return y
 

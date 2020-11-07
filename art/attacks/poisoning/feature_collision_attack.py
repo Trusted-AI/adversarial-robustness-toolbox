@@ -227,6 +227,37 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         beta = self.similarity_coeff * (num_activations / num_features) ** 2
         return np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)
 
+    def _check_params(self) -> None:
+        if self.learning_rate <= 0:
+            raise ValueError("Learning rate must be strictly positive")
+
+        if self.max_iter < 1:
+            raise ValueError("Value of max_iter at least 1")
+
+        if not isinstance(self.feature_layer, (str, int)):
+            raise TypeError("Feature layer should be a string or int")
+
+        if self.decay_coeff <= 0:
+            raise ValueError("Decay coefficient must be positive")
+
+        if self.stopping_tol <= 0:
+            raise ValueError("Stopping tolerance must be positive")
+
+        if self.obj_threshold and self.obj_threshold <= 0:
+            raise ValueError("Objective threshold must be positive")
+
+        if self.num_old_obj <= 0:
+            raise ValueError("Number of old stored objectives must be positive")
+
+        if self.max_iter <= 0:
+            raise ValueError("Number of old stored objectives must be positive")
+
+        if self.watermark and not (isinstance(self.watermark, float) and 0 <= self.watermark < 1):
+            raise ValueError("Watermark must be between 0 and 1")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
+
 
 def get_class_name(obj: object) -> str:
     """
@@ -270,34 +301,3 @@ def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):
         import mxnet
 
         return mxnet.ndarray.norm(tensor, ord=norm_type)
-
-    def _check_params(self) -> None:
-        if self.learning_rate <= 0:
-            raise ValueError("Learning rate must be strictly positive")
-
-        if self.max_iter < 1:
-            raise ValueError("Value of max_iter at least 1")
-
-        if not isinstance(self.feature_layer, (str, int)):
-            raise TypeError("Feature layer should be a string or int")
-
-        if self.decay_coeff <= 0:
-            raise ValueError("Decay coefficient must be positive")
-
-        if self.stopping_tol <= 0:
-            raise ValueError("Stopping tolerance must be positive")
-
-        if self.obj_threshold and self.obj_threshold <= 0:
-            raise ValueError("Objective threshold must be positive")
-
-        if self.num_old_obj <= 0:
-            raise ValueError("Number of old stored objectives must be positive")
-
-        if self.max_iter <= 0:
-            raise ValueError("Number of old stored objectives must be positive")
-
-        if self.watermark and not (isinstance(self.watermark, float) and 0 <= self.watermark < 1):
-            raise ValueError("Watermark must be between 0 and 1")
-
-        if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
