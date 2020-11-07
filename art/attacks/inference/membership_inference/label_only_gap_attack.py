@@ -17,9 +17,10 @@
 # SOFTWARE.
 """
 This module implements the Label Only Gap Attack `.
+
+| Paper link: https://arxiv.org/abs/2007.14321
 """
 import logging
-from typing import Optional
 
 import numpy as np
 
@@ -33,6 +34,8 @@ logger = logging.getLogger(__name__)
 class LabelOnlyGapAttack(InferenceAttack):
     """
     Implementation of Label Only Gap Attack.
+
+    | Paper link: https://arxiv.org/abs/2007.14321
     """
 
     attack_params = InferenceAttack.attack_params
@@ -47,6 +50,16 @@ class LabelOnlyGapAttack(InferenceAttack):
         super().__init__(estimator=estimator)
         self._check_params()
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Infer membership of input `x` in estimator's training data.
+
+        :param x: Input data.
+        :param y: True labels for `x`.
+        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
+        """
         y_pred = self.estimator.predict(x=x)
         return np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)
+
+    def _check_params(self) -> None:
+        pass

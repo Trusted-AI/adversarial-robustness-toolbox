@@ -17,9 +17,11 @@
 # SOFTWARE.
 """
 This module implements the Label-Only Inference Attack based on Decision Boundary.
+
+| Paper link: https://arxiv.org/abs/2007.14321
 """
 import logging
-from typing import Optional
+from typing import Optional, NoReturn
 
 import numpy as np
 
@@ -33,24 +35,35 @@ logger = logging.getLogger(__name__)
 class LabelOnlyDecisionBoundary(InferenceAttack):
     """
     Implementation of Label-Only Inference Attack based on Decision Boundary.
+
+    | Paper link: https://arxiv.org/abs/2007.14321
     """
 
-    attack_params = InferenceAttack.attack_params + ["distance_cutoff_tau",]
+    attack_params = InferenceAttack.attack_params + [
+        "distance_threshold_tau",
+    ]
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
-    def __init__(self, estimator: "CLASSIFIER_TYPE", distance_cutoff_tau: Optional[float] = None):
+    def __init__(self, estimator: "CLASSIFIER_TYPE", distance_threshold_tau: Optional[float] = None):
         """
         Create a `LabelOnlyDecisionBoundary` instance for Label-Only Inference Attack based on Decision Boundary.
 
         :param estimator: A trained classification estimator.
-        :param distance_cutoff_tau: Cut-off distance for decision boundary. Samples with boundary distances larger than
-                                    cut-off are considered members of the training dataset.
+        :param distance_threshold_tau: Threshold distance for decision boundary. Samples with boundary distances larger
+                                       than threshold are considered members of the training dataset.
         """
         super().__init__(estimator=estimator)
-        self.distance_cutoff_tau = distance_cutoff_tau
+        self.distance_threshold_tau = distance_threshold_tau
         self._check_params()
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+        """
+        Infer membership of input `x` in estimator's training data.
+
+        :param x: Input data.
+        :param y: True labels for `x`.
+        :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
+        """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
         hsj = HopSkipJump(classifier=self.estimator, **kwargs)
@@ -62,11 +75,28 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
 
         distance[np.argmax(y_pred, axis=1) != np.argmax(y, axis=1)] = 0
 
-        is_member = np.where(distance > self.distance_cutoff_tau, 1, 0)
+        is_member = np.where(distance > self.distance_threshold_tau, 1, 0)
 
         return is_member
 
-    def calibrate_distance_cutoff(self, classifier_train, x_train, y_train, x_test, y_test, **kwargs):
+    def calibrate_distance_threshold(
+        self,
+        classifier_train: "CLASSIFIER_TYPE",
+        x_train: np.ndarray,
+        y_train: np.ndarray,
+        x_test: np.ndarray,
+        y_test: np.ndarray,
+        **kwargs
+    ) -> NoReturn:
+        """
+        Calibrate distance threshold maximising the membership inference accuracy on `x_train` and `x_test`.
+
+        :param classifier_train: A trained classifier
+        :param x_train: Training data.
+        :param y_train: Labels of training data `x_train`.
+        :param x_test: Test data.
+        :param y_test: Labels of test data `x_test`.
+        """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
         hsj = HopSkipJump(classifier=classifier_train, **kwargs)
@@ -83,23 +113,27 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
         distance_train[np.argmax(y_train_pred, axis=1) != np.argmax(y_train, axis=1)] = 0
         distance_test[np.argmax(y_test_pred, axis=1) != np.argmax(y_test, axis=1)] = 0
 
-        tau_increment = np.amax([np.amax(distance_train), np.amax(distance_test)]) / 100
+        num_increments = 100
+        tau_increment = np.amax([np.amax(distance_train), np.amax(distance_test)]) / num_increments
 
         acc_max = 0.0
-        distance_cutoff_tau = 0.0
+        distance_threshold_tau = 0.0
 
-        for i_tau in range(1, 100):
+        for i_tau in range(1, num_increments):
 
             is_member_train = np.where(distance_train > i_tau * tau_increment, 1, 0)
             is_member_test = np.where(distance_test > i_tau * tau_increment, 1, 0)
 
             acc = (np.sum(is_member_train) + (is_member_test.shape[0] - np.sum(is_member_test))) / (
-                        is_member_train.shape[0] + is_member_test.shape[0])
-
-            print(i_tau, i_tau * tau_increment, acc)
+                is_member_train.shape[0] + is_member_test.shape[0]
+            )
 
             if acc > acc_max:
-                distance_cutoff_tau = i_tau * tau_increment
+                distance_threshold_tau = i_tau * tau_increment
                 acc_max = acc
 
-        self.distance_cutoff_tau = distance_cutoff_tau
+        self.distance_threshold_tau = distance_threshold_tau
+
+    def _check_params(self) -> None:
+        if not isinstance(self.distance_threshold_tau, (int, float)) or self.distance_threshold_tau <= 0.0:
+            raise ValueError("The distance threshold `distance_threshold_tau` needs to be a positive float.")
