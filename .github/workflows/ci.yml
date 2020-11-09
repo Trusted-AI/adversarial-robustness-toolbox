@@ -50,6 +50,7 @@ jobs:
           pip3 install -q -r requirements.txt
           pip list
       - name: Run Tests
+        shell: bash
         run: ./run_tests.sh
   style:
     name: Style Check
