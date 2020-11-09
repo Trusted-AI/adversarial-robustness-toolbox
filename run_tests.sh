@@ -131,7 +131,7 @@ declare -a art=("tests/test_data_generators.py" \
                 "tests/test_utils.py" \
                 "tests/test_visualization.py" )
 
-tests_modules=("attacks" \
+declare -a tests_modules=("attacks" \
                "classifiers" \
                "object_detectors" \
                "speech_recognizers" \
