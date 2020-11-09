@@ -96,10 +96,11 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
         # perform an evasion attack on proxy classifier
-        perturbed_input = self.attack.generate(x, y)
+        estimated_labels = self.proxy_classifier.predict(x) if y is None else y
+        perturbed_input = self.attack.generate(x, estimated_labels)
 
         # add the backdoor trigger from the backdoor attack
-        return self.backdoor.poison(perturbed_input, y)
+        return self.backdoor.poison(perturbed_input, estimated_labels)
 
     def _check_params(self) -> None:
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
