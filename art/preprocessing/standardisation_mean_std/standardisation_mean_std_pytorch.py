@@ -21,9 +21,6 @@ This module implements the standardisation with mean and standard deviation.
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
-import numpy as np
-
-from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
 if TYPE_CHECKING:
