@@ -38,6 +38,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import (
     compute_success,
+    compute_success_array,
     get_labels_np_array,
     check_and_transform_label_format,
 )
@@ -266,9 +267,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
             # Start to compute adversarial examples
             adv_x_best = None
-            rate_best = None
 
-            for _ in trange(
+            for rand_init_num in trange(
                 max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose
             ):
                 adv_x = x.astype(ART_NUMPY_DTYPE)
@@ -286,21 +286,21 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     )
 
                 if self.num_random_init > 1:
-                    rate = 100 * compute_success(
-                        self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size,  # type: ignore
-                    )
-                    if rate_best is None or rate > rate_best or adv_x_best is None:
-                        rate_best = rate
-                        adv_x_best = adv_x
+                    if rand_init_num == 0:
+                        # initial random restart: we only have this set of adversarial examples for now
+                        adv_x_best = np.copy(adv_x)
+                    else:
+                        # replace adversarial examples if they are successful
+                        attack_success = compute_success_array(self.estimator, x, y,
+                                                               adv_x, self.targeted, batch_size=self.batch_size)
+                        adv_x_best[attack_success] = adv_x[attack_success]
+
                 else:
                     adv_x_best = adv_x
 
             logger.info(
                 "Success rate of attack: %.2f%%",
-                rate_best
-                if rate_best is not None
-                else 100
-                * compute_success(
+                100 * compute_success(
                     self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size,  # type: ignore
                 ),
             )
