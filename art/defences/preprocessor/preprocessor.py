@@ -25,7 +25,7 @@ from typing import List, Optional, Tuple, Any, TYPE_CHECKING
 
 import numpy as np
 
-from art.utils import ART_NUMPY_DTYPE
+from art import config
 
 if TYPE_CHECKING:
     import torch
@@ -272,9 +272,9 @@ class PreprocessorTensorFlowV2(Preprocessor):
 
         def get_gradient(x, grad):
             with tf.GradientTape() as tape:
-                x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
+                x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
                 tape.watch(x)
-                grad = tf.convert_to_tensor(grad, dtype=ART_NUMPY_DTYPE)
+                grad = tf.convert_to_tensor(grad, dtype=config.ART_NUMPY_DTYPE)
 
                 x_prime = self.estimate_forward(x)
 
