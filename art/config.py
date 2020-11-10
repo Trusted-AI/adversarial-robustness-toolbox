@@ -37,6 +37,20 @@ if not os.access(_folder, os.W_OK):
     _folder = "/tmp"
 _folder = os.path.join(_folder, ".art")
 
+
+def set_data_path(path):
+    expanded_path = os.path.abspath(os.path.expanduser(path))
+    os.makedirs(expanded_path, exist_ok=True)
+    if not os.access(expanded_path, os.R_OK):
+        raise OSError(f"path {expanded_path} cannot be read from")
+    elif not os.access(expanded_path, os.W_OK):
+        logger.warning(f"path {expanded_path} is read only")
+
+    global ART_DATA_PATH
+    ART_DATA_PATH = expanded_path
+    logger.info(f"set ART_DATA_PATH to {expanded_path}")
+
+
 # Load data from configuration file if it exists. Otherwise create one.
 _config_path = os.path.expanduser(os.path.join(_folder, "config.json"))
 if os.path.exists(_config_path):
@@ -72,11 +86,5 @@ if not os.path.exists(_config_path):
     except IOError:
         logger.warning("Unable to create configuration file", exc_info=True)
 
-if not os.path.exists(_config["ART_DATA_PATH"]):
-    try:
-        os.makedirs(_config["ART_DATA_PATH"])
-    except OSError:
-        logger.warning("Unable to create folder for ART_DATA_PATH dir.", exc_info=True)
-
 if "ART_DATA_PATH" in _config:
-    ART_DATA_PATH = _config["ART_DATA_PATH"]
+    set_data_path(_config["ART_DATA_PATH"])
