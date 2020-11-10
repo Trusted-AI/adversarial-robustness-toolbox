@@ -28,7 +28,7 @@ from typing import Optional, TYPE_CHECKING, Union
 import numpy as np
 
 from art.defences.transformer.transformer import Transformer
-from art.estimators.certification.neural_cleanse.keras import KerasNeuralCleanse
+from art.estimators.poison_mitigation.neural_cleanse import KerasNeuralCleanse
 from art.estimators.classification.keras import KerasClassifier
 
 if TYPE_CHECKING:
