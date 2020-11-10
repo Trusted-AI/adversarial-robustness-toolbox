@@ -68,7 +68,7 @@ class StandardisationMeanStdTensorFlowV2(PreprocessorTensorFlowV2):
         """
         Apply local spatial smoothing to sample `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         mean = np.asarray(self.mean, dtype=ART_NUMPY_DTYPE)
         std = np.asarray(self.std, dtype=ART_NUMPY_DTYPE)
