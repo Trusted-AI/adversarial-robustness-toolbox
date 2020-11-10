@@ -1,38 +1,38 @@
-# # MIT License
-# #
-# # Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
-# #
-# # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
-# # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
-# # rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
-# # persons to whom the Software is furnished to do so, subject to the following conditions:
-# #
-# # The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
-# # Software.
-# #
-# # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
-# # WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-# # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
-# # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-# # SOFTWARE.
-# from __future__ import absolute_import, division, print_function, unicode_literals
+# MIT License
 #
-# import logging
-# import unittest
-# import numpy as np
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
 #
-# from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
-# from art.estimators.classification.keras import KerasClassifier
-# from art.estimators.estimator import BaseEstimator
-# from art.estimators.classification.classifier import ClassifierMixin
-# from art.utils import get_labels_np_array
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
 #
-# from tests.utils import TestBase
-# from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-# from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
-# from tests.attacks.utils import backend_test_classifier_type_check_fail
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
 #
-# logger = logging.getLogger(__name__)
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import logging
+import unittest
+import numpy as np
+
+from art.attacks.evasion.virtual_adversarial import VirtualAdversarialMethod
+from art.estimators.classification.keras import KerasClassifier
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
+from art.utils import get_labels_np_array
+
+from tests.utils import TestBase
+from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
+from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.attacks.utils import backend_test_classifier_type_check_fail
+
+logger = logging.getLogger(__name__)
 #
 #
 # class TestVirtualAdversarial(TestBase):
