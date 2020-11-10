@@ -35,7 +35,10 @@ for mlFramework in "${mlFrameworkList[@]}"; do
   pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/attacks/inference/ --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/inference"; fi
 
-  pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/classifiersFrameworks/  --mlFramework=$mlFramework --skip_travis=True --durations=0
+  pytest -q -s tests/attacks/evasion/test_brendel_and_bethge.py --mlFramework=$mlFramework --durations=0
+  if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_brendel_and_bethge.py"; fi
+
+  pytest --cov-report=xml --cov=art --cov-append -q -vv tests/classifiersFrameworks/  --mlFramework=$mlFramework --skip_travis=True --durations=0
   if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed classifiersFrameworks tests"; fi
 
   pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor/test_spatial_smoothing_pytorch.py  --mlFramework=$mlFramework --skip_travis=True --durations=0
