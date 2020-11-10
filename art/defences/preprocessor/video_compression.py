@@ -31,7 +31,7 @@ from typing import Optional, Tuple
 import numpy as np
 from tqdm import tqdm
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -130,7 +130,7 @@ class VideoCompression(Preprocessor):
 
         # apply video compression per video item
         x_compressed = x.copy()
-        with TemporaryDirectory(dir=ART_DATA_PATH) as tmp_dir:
+        with TemporaryDirectory(dir=config.ART_DATA_PATH) as tmp_dir:
             for i, x_i in enumerate(tqdm(x, desc="Video compression", disable=not self.verbose)):
                 x_compressed[i] = compress_video(x_i, self.video_format, self.constant_rate_factor, dir_=tmp_dir)
 

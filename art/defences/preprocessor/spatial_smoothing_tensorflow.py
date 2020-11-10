@@ -31,7 +31,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.utils import ART_NUMPY_DTYPE
+from art import config
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
@@ -155,9 +155,9 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         with tf.GradientTape() as tape:
-            x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
+            x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
             tape.watch(x)
-            grad = tf.convert_to_tensor(grad, dtype=ART_NUMPY_DTYPE)
+            grad = tf.convert_to_tensor(grad, dtype=config.ART_NUMPY_DTYPE)
 
             x_prime = self.estimate_forward(x)
 
