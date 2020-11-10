@@ -46,13 +46,15 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
     | Paper link: https://arxiv.org/abs/1708.06733
     """
 
-    attack_params = PoisoningAttackBlackBox.attack_params + ["backdoor", "proxy_classifier", "norm", "eps", "eps_step",
-                                                             "max_iter", "num_random_init"]
+    attack_params = PoisoningAttackBlackBox.attack_params + ["backdoor", "proxy_classifier", "target", "pp_poison",
+                                                             "norm", "eps", "eps_step", "max_iter", "num_random_init"]
     _estimator_requirements = ()
 
     def __init__(self,
                  backdoor: PoisoningAttackBackdoor,
                  proxy_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+                 target: np.ndarray,
+                 pp_poison: float = 0.33,
                  norm: Union[int, float, str] = np.inf,
                  eps: float = 0.3,
                  eps_step: float = 0.1,
@@ -65,6 +67,8 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         :param backdoor: the backdoor chosen for this attack
         :param proxy_classifier: the classifier for this attack ideally it solves the same or similar classification
                                  task as the original classifier
+        :param target: The target label to poison
+        :param pp_poison: The percentage of the data to poison. Note: Only data within the target label is poisoned
         :param norm: The norm of the adversarial perturbation supporting "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
@@ -75,6 +79,8 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         super().__init__()
         self.backdoor = backdoor
         self.proxy_classifier = proxy_classifier
+        self.target = target
+        self.pp_poison = pp_poison
         self.attack = ProjectedGradientDescent(proxy_classifier,
                                                norm=norm,
                                                eps=eps,
@@ -95,17 +101,28 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         :param broadcast: whether or not to broadcast single target label
         :return: An tuple holding the `(poisoning_examples, poisoning_labels)`.
         """
-        # perform an evasion attack on proxy classifier
-        estimated_labels = self.proxy_classifier.predict(x) if y is None else y
-        perturbed_input = self.attack.generate(x, estimated_labels)
+        data = np.copy(x)
+        estimated_labels = self.proxy_classifier.predict(data) if y is None else np.copy(y)
 
-        # add the backdoor trigger from the backdoor attack
-        return self.backdoor.poison(perturbed_input, estimated_labels)
+        # Selected target indices to poison
+        all_indices = np.arange(len(data))
+        target_indices = all_indices[np.all(estimated_labels == self.target, axis=1)]
+        num_poison = int(self.pp_poison * len(target_indices))
+        selected_indices = np.random.choice(target_indices, num_poison)
+
+        # Run untargeted PGD on selected points, making it hard to classify correctly
+        perturbed_input = self.attack.generate(data[selected_indices])
+
+        # Add backdoor and poison with the same label
+        poisoned_input, _ = self.backdoor.poison(perturbed_input, self.target, broadcast=True)
+        data[selected_indices] = poisoned_input
+
+        return data, estimated_labels
 
     def _check_params(self) -> None:
         if not isinstance(self.backdoor, PoisoningAttackBackdoor):
             raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
-        if not isinstance(self.proxy_classifier, ClassifierLossGradients):
-            raise ValueError("Proxy classifier should have loss gradients")
         if not isinstance(self.attack, ProjectedGradientDescent):
             raise ValueError("There was an issue creating the PGD attack")
+        if 1 < self.pp_poison < 0:
+            raise ValueError("pp_poison must be between 0 and 1")
