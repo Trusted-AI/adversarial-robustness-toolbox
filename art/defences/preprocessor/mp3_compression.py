@@ -110,9 +110,9 @@ class Mp3Compression(Preprocessor):
             # length. Writing and reading MP3 from local file system works without problems. It is
             # easy to move from using BytesIO to local read/writes with the following:
             # import os
-            # from art.config import ART_DATA_PATH
-            # tmp_wav = os.path.join(ART_DATA_PATH, "tmp.wav")
-            # tmp_mp3 = os.path.join(ART_DATA_PATH, "tmp.mp3")
+            # from art import config
+            # tmp_wav = os.path.join(config.ART_DATA_PATH, "tmp.wav")
+            # tmp_mp3 = os.path.join(config.ART_DATA_PATH, "tmp.mp3")
             from pydub import AudioSegment
             from scipy.io.wavfile import write
 

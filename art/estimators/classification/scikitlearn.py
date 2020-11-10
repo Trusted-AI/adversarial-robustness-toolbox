@@ -36,7 +36,7 @@ from art.estimators.classification.classifier import (
 )
 from art.estimators.scikitlearn import ScikitlearnEstimator
 from art.utils import to_categorical
-from art.config import ART_DATA_PATH
+from art import config
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -173,7 +173,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
                      the default data location of the library `ART_DATA_PATH`.
         """
         if path is None:
-            full_path = os.path.join(ART_DATA_PATH, filename)
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]

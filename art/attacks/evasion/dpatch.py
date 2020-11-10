@@ -31,7 +31,8 @@ from tqdm import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.utils import Deprecated, deprecated_keyword_arg, ART_NUMPY_DTYPE
+from art.utils import Deprecated, deprecated_keyword_arg
+from art import config
 
 if TYPE_CHECKING:
     from art.utils import OBJECT_DETECTOR_TYPE
@@ -82,14 +83,14 @@ class DPatch(EvasionAttack):
         self.max_iter = max_iter
         self.batch_size = batch_size
         if self.estimator.clip_values is None:
-            self._patch = np.zeros(shape=patch_shape, dtype=ART_NUMPY_DTYPE)
+            self._patch = np.zeros(shape=patch_shape, dtype=config.ART_NUMPY_DTYPE)
         else:
             self._patch = (
                 np.random.randint(0, 255, size=patch_shape)
                 / 255
                 * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
                 + self.estimator.clip_values[0]
-            ).astype(ART_NUMPY_DTYPE)
+            ).astype(config.ART_NUMPY_DTYPE)
         self.verbose = verbose
         self._check_params()
 
