@@ -23,7 +23,7 @@ from typing import Any, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.utils import ART_NUMPY_DTYPE
+from art import config
 from art.estimators.estimator import (
     BaseEstimator,
     LossGradientsMixin,
@@ -259,9 +259,9 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         if self.all_framework_preprocessing:
             with tf.GradientTape() as tape:
                 # Convert np arrays to TensorFlow tensors.
-                x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
+                x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
                 tape.watch(x)
-                gradients = tf.convert_to_tensor(gradients, dtype=ART_NUMPY_DTYPE)
+                gradients = tf.convert_to_tensor(gradients, dtype=config.ART_NUMPY_DTYPE)
                 x_orig = x
 
                 for preprocess in self.preprocessing:

@@ -31,6 +31,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
+from art import config
 from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
@@ -127,6 +128,45 @@ class SpatialSmoothingTensorFlowV2(PreprocessorTensorFlowV2):
         No need to estimate, since the forward pass is differentiable.
         """
         return self.forward(x, y)[0]
+
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+        """
+        Apply local spatial smoothing to sample `x`.
+
+        :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
+        :return: Smoothed sample.
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        x = tf.convert_to_tensor(x)
+        if y is not None:
+            y = tf.convert_to_tensor(y)
+
+        x, y = self.forward(x, y)
+
+        result = x.numpy()
+        if y is not None:
+            y = y.numpy()
+        return result, y
+
+    # Backward compatibility.
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        with tf.GradientTape() as tape:
+            x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
+            tape.watch(x)
+            grad = tf.convert_to_tensor(grad, dtype=config.ART_NUMPY_DTYPE)
+
+            x_prime = self.estimate_forward(x)
+
+        x_grad = tape.gradient(target=x_prime, sources=x, output_gradients=grad)
+
+        x_grad = x_grad.numpy()
+        if x_grad.shape != x.shape:
+            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+        return x_grad
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """

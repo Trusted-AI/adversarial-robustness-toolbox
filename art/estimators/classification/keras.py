@@ -38,7 +38,7 @@ from typing import (
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.estimators.keras import KerasEstimator
 from art.estimators.classification.classifier import (
     ClassifierMixin,
@@ -708,7 +708,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                      the default data location of the library `ART_DATA_PATH`.
         """
         if path is None:
-            full_path = os.path.join(ART_DATA_PATH, filename)
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
@@ -770,7 +770,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             from keras.models import load_model
 
-        full_path = os.path.join(ART_DATA_PATH, state["model_name"])
+        full_path = os.path.join(config.ART_DATA_PATH, state["model_name"])
         model = load_model(str(full_path))
 
         self._model = model

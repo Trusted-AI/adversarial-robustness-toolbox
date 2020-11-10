@@ -30,7 +30,7 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, TYPE_CHECK
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
@@ -536,7 +536,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
 
         if path is None:
-            full_path = os.path.join(ART_DATA_PATH, filename)
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
 
@@ -608,7 +608,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         import tensorflow as tf  # lgtm [py/repeated-import]
         from tensorflow.python.saved_model import tag_constants
 
-        full_path = os.path.join(ART_DATA_PATH, state["model_name"])
+        full_path = os.path.join(config.ART_DATA_PATH, state["model_name"])
 
         graph = tf.Graph()
         sess = tf.Session(graph=graph)
