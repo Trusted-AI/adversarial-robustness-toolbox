@@ -2009,7 +2009,9 @@ class BrendelBethgeAttack(EvasionAttack):
         elif isinstance(estimator, PyTorchClassifier):
             import torch
 
-            if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=config.ART_NUMPY_DTYPE))):
+            if is_probability(
+                estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=config.ART_NUMPY_DTYPE))
+            ):
                 raise ValueError(
                     "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
                     "the estimator has to to predict logits."
