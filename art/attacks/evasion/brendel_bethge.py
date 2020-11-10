@@ -44,7 +44,8 @@ from typing import Union, Optional, Tuple, TYPE_CHECKING
 import numpy as np
 import logging
 
-from art.utils import get_labels_np_array, check_and_transform_label_format, ART_NUMPY_DTYPE, is_probability
+from art import config
+from art.utils import get_labels_np_array, check_and_transform_label_format, is_probability
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
@@ -2008,7 +2009,7 @@ class BrendelBethgeAttack(EvasionAttack):
         elif isinstance(estimator, PyTorchClassifier):
             import torch
 
-            if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=ART_NUMPY_DTYPE))):
+            if is_probability(estimator.predict(x=np.ones(shape=(1, *estimator.input_shape), dtype=config.ART_NUMPY_DTYPE))):
                 raise ValueError(
                     "The provided estimator seems to predict probabilities. If loss_type='difference_logits_ratio' "
                     "the estimator has to to predict logits."
@@ -2198,7 +2199,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
         starting_points = self.mid_points(x0, x1, upper_bound, bounds)
 
-        x = starting_points.astype(ART_NUMPY_DTYPE)
+        x = starting_points.astype(config.ART_NUMPY_DTYPE)
         lrs = self.lr * np.ones(N)
         lr_reduction_interval = max(1, int(self.steps / self.lr_num_decay))
         converged = np.zeros(N, dtype=np.bool)
@@ -2303,7 +2304,7 @@ class BrendelBethgeAttack(EvasionAttack):
             # add step to current perturbation
             x = (x + deltas).reshape(original_shape)
 
-        return best_advs.astype(ART_NUMPY_DTYPE)
+        return best_advs.astype(config.ART_NUMPY_DTYPE)
 
     def norms(self, x: np.ndarray) -> np.ndarray:
         order = self.norm if self.norm != "inf" else np.inf
@@ -2345,7 +2346,7 @@ class BrendelBethgeAttack(EvasionAttack):
             clipped_delta = np.where(clipped_delta > epsilons * s, epsilons * s, clipped_delta)
             new_x = x0 + clipped_delta
 
-        return new_x.astype(ART_NUMPY_DTYPE)
+        return new_x.astype(config.ART_NUMPY_DTYPE)
 
     def _init_sample(
         self, x: np.ndarray, y: int, y_p: int, init_pred: int, adv_init: np.ndarray, clip_min: float, clip_max: float,
@@ -2372,7 +2373,7 @@ class BrendelBethgeAttack(EvasionAttack):
 
             # Attack unsatisfied yet and the initial image satisfied
             if adv_init is not None and init_pred == y:
-                return adv_init.astype(ART_NUMPY_DTYPE), init_pred
+                return adv_init.astype(config.ART_NUMPY_DTYPE), init_pred
 
             # Attack unsatisfied yet and the initial image unsatisfied
             for _ in range(self.init_size):
@@ -2402,7 +2403,7 @@ class BrendelBethgeAttack(EvasionAttack):
         else:
             # The initial image satisfied
             if adv_init is not None and init_pred != y_p:
-                return adv_init.astype(ART_NUMPY_DTYPE), y_p
+                return adv_init.astype(config.ART_NUMPY_DTYPE), y_p
 
             # The initial image unsatisfied
             for _ in range(self.init_size):
