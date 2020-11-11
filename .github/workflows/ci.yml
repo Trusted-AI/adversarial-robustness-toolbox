@@ -25,13 +25,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python: 3.6
+          - name: tensorflow
+            python: 3.6
             tensorflow: 1.15.3
             keras: 2.2.5
-          - python: 3.7
+          - name: keras
+            python: 3.7
             tensorflow: 2.2.0
             keras: 2.3.1
-    name: Run Tests (Python ${{ matrix.python }})
+          - name: kerastf
+            python: 3.7
+            tensorflow: 2.2.0
+            keras: 2.3.1
+          - name: pytorch
+            python: 3.7
+          - name: scikitlearn
+            python: 3.7
+          - name: mxnet
+            python: 3.7
+          - name: legacy
+            python: 3.7
+            tensorflow: 2.2.0
+            keras: 2.3.1
+
+    name: Run ${{ matrix.name }} Tests
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -40,6 +57,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Pre-install
+        if: {{ matrix.name == 'tensorflow' || matrix.name == 'keras' || matrix.name == 'kerastf' || matrix.name == 'legacy' }}
         run: |
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           sed -i "s/^tensorflow$/tensorflow==${{ matrix.tensorflow }}/" requirements.txt
@@ -49,8 +67,8 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -q -r requirements.txt
           pip list
-      - name: Run Tests
-        run: ./run_tests.sh
+      - name: Run ${{ matrix.name }} Tests
+        run: ./run_tests.sh ${{ matrix.name }}
   style:
     name: Style Check
     runs-on: ubuntu-latest
