@@ -57,7 +57,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Pre-install
-        if: {{ matrix.name == 'tensorflow' || matrix.name == 'keras' || matrix.name == 'kerastf' || matrix.name == 'legacy' }}
+        if: ${{ matrix.name == 'tensorflow' || matrix.name == 'keras' || matrix.name == 'kerastf' || matrix.name == 'legacy' }}
         run: |
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           sed -i "s/^tensorflow$/tensorflow==${{ matrix.tensorflow }}/" requirements.txt
