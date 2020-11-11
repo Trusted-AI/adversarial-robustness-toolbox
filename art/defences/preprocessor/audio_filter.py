@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -16,13 +16,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the total variance minimization defence `TotalVarMin`.
-
-| Paper link: https://openreview.net/forum?id=SyJ7ClWCb
-
-| Please keep in mind the limitations of defences. For more information on the limitations of this defence,
-    see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general, see
-    https://arxiv.org/abs/1902.06705
+This module implements the filter function for audio signals. It provides with an infinite impulse response (IIR) or
+finite impulse response (FIR) filter. This implementation is a wrapper around the `scipy.signal.lfilter` function in
+the `scipy` package.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -42,56 +38,49 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TotalVarMin(Preprocessor):
+class AudioFilter(Preprocessor):
     """
-    Implement the total variance minimization defence approach.
-
-    | Paper link: https://openreview.net/forum?id=SyJ7ClWCb
-
-    | Please keep in mind the limitations of defences. For more information on the limitations of this
-        defence, see https://arxiv.org/abs/1802.00420 . For details on how to evaluate classifier security in general,
-        see https://arxiv.org/abs/1902.06705
+    This module implements the filter function for audio signals. It provides with an infinite impulse response (IIR)
+    or finite impulse response (FIR) filter. This implementation is a wrapper around the `scipy.signal.lfilter`
+    function in the `scipy` package.
     """
 
-    params = ["prob", "norm", "lamb", "solver", "max_iter", "clip_values", "verbose"]
+    params = ["numerator_coef", "denominator_coef", "axis", "initial_cond"]
 
     def __init__(
         self,
-        prob: float = 0.3,
-        norm: int = 2,
-        lamb: float = 0.5,
-        solver: str = "L-BFGS-B",
-        max_iter: int = 10,
+        numerator_coef: np.ndarray,
+        denumerator_coef: np.ndarray,
+        axis: int = -1,
+        initial_cond: Optional[np.ndarray] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
-        verbose: bool = False,
     ):
         """
-        Create an instance of total variance minimization.
+        Create an instance of AudioFilter.
 
-        :param prob: Probability of the Bernoulli distribution.
-        :param norm: The norm (positive integer).
-        :param lamb: The lambda parameter in the objective function.
-        :param solver: Current support: `L-BFGS-B`, `CG`, `Newton-CG`.
-        :param max_iter: Maximum number of iterations when performing optimization.
+        :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
+        :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
+                                 denominator coefficients to [1, 0, 0,...], this preprocessor can be used to apply a
+                                 FIR filter.
+        :param axis: The axis of the input data array along which to apply the linear filter. The filter is applied to
+                     each subarray along this axis.
+        :param initial_cond: Initial conditions for the filter delays.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
-        :param verbose: Show progress bars.
         """
         super().__init__()
         self._is_fitted = True
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.prob = prob
-        self.norm = norm
-        self.lamb = lamb
-        self.solver = solver
-        self.max_iter = max_iter
+        self.numerator_coef = numerator_coef
+        self.denumerator_coef = denumerator_coef
+        self.axis = axis
+        self.initial_cond = initial_cond
         self.clip_values = clip_values
-        self.verbose = verbose
         self._check_params()
 
     @property
