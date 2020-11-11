@@ -118,92 +118,6 @@ class AudioFilter(Preprocessor):
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
 
-    def _minimize(self, x: np.ndarray, mask: np.ndarray) -> np.ndarray:
-        """
-        Minimize the total variance objective function.
-
-        :param x: Original image.
-        :param mask: A matrix that decides which points are kept.
-        :return: A new image.
-        """
-        z_min = x.copy()
-
-        for i in range(x.shape[2]):
-            res = minimize(
-                self._loss_func,
-                z_min[:, :, i].flatten(),
-                (x[:, :, i], mask[:, :, i], self.norm, self.lamb),
-                method=self.solver,
-                jac=self._deri_loss_func,
-                options={"maxiter": self.max_iter},
-            )
-            z_min[:, :, i] = np.reshape(res.x, z_min[:, :, i].shape)
-
-        return z_min
-
-    @staticmethod
-    def _loss_func(z_init: np.ndarray, x: np.ndarray, mask: np.ndarray, norm: int, lamb: float) -> float:
-        """
-        Loss function to be minimized.
-
-        :param z_init: Initial guess.
-        :param x: Original image.
-        :param mask: A matrix that decides which points are kept.
-        :param norm: The norm (positive integer).
-        :param lamb: The lambda parameter in the objective function.
-        :return: Loss value.
-        """
-        res = np.sqrt(np.power(z_init - x.flatten(), 2).dot(mask.flatten()))
-        z_init = np.reshape(z_init, x.shape)
-        res += lamb * np.linalg.norm(z_init[1:, :] - z_init[:-1, :], norm, axis=1).sum()
-        res += lamb * np.linalg.norm(z_init[:, 1:] - z_init[:, :-1], norm, axis=0).sum()
-
-        return res
-
-    @staticmethod
-    def _deri_loss_func(z_init: np.ndarray, x: np.ndarray, mask: np.ndarray, norm: int, lamb: float) -> float:
-        """
-        Derivative of loss function to be minimized.
-
-        :param z_init: Initial guess.
-        :param x: Original image.
-        :param mask: A matrix that decides which points are kept.
-        :param norm: The norm (positive integer).
-        :param lamb: The lambda parameter in the objective function.
-        :return: Derivative value.
-        """
-        # First compute the derivative of the first component of the loss function
-        nor1 = np.sqrt(np.power(z_init - x.flatten(), 2).dot(mask.flatten()))
-        if nor1 < 1e-6:
-            nor1 = 1e-6
-        der1 = ((z_init - x.flatten()) * mask.flatten()) / (nor1 * 1.0)
-
-        # Then compute the derivative of the second component of the loss function
-        z_init = np.reshape(z_init, x.shape)
-
-        if norm == 1:
-            z_d1 = np.sign(z_init[1:, :] - z_init[:-1, :])
-            z_d2 = np.sign(z_init[:, 1:] - z_init[:, :-1])
-        else:
-            z_d1_norm = np.power(np.linalg.norm(z_init[1:, :] - z_init[:-1, :], norm, axis=1), norm - 1)
-            z_d2_norm = np.power(np.linalg.norm(z_init[:, 1:] - z_init[:, :-1], norm, axis=0), norm - 1)
-            z_d1_norm[z_d1_norm < 1e-6] = 1e-6
-            z_d2_norm[z_d2_norm < 1e-6] = 1e-6
-            z_d1_norm = np.repeat(z_d1_norm[:, np.newaxis], z_init.shape[1], axis=1)
-            z_d2_norm = np.repeat(z_d2_norm[np.newaxis, :], z_init.shape[0], axis=0)
-            z_d1 = norm * np.power(z_init[1:, :] - z_init[:-1, :], norm - 1) / z_d1_norm
-            z_d2 = norm * np.power(z_init[:, 1:] - z_init[:, :-1], norm - 1) / z_d2_norm
-
-        der2 = np.zeros(z_init.shape)
-        der2[:-1, :] -= z_d1
-        der2[1:, :] += z_d1
-        der2[:, :-1] -= z_d2
-        der2[:, 1:] += z_d2
-        der2 = lamb * der2.flatten()
-
-        # Total derivative
-        return der1 + der2
-
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
@@ -211,29 +125,21 @@ class AudioFilter(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        if not isinstance(self.prob, (float, int)) or self.prob < 0.0 or self.prob > 1.0:
-            logger.error("Probability must be between 0 and 1.")
-            raise ValueError("Probability must be between 0 and 1.")
-
-        if not isinstance(self.norm, (int, np.int)) or self.norm <= 0:
-            logger.error("Norm must be a positive integer.")
-            raise ValueError("Norm must be a positive integer.")
-
-        if not (self.solver == "L-BFGS-B" or self.solver == "CG" or self.solver == "Newton-CG"):
-            logger.error("Current support only L-BFGS-B, CG, Newton-CG.")
-            raise ValueError("Current support only L-BFGS-B, CG, Newton-CG.")
-
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
-            logger.error("Number of iterations must be a positive integer.")
-            raise ValueError("Number of iterations must be a positive integer.")
+        if not isinstance(self.denumerator_coef, np.ndarray) or self.denumerator_coef[0] == 0:
+            raise ValueError("The first element of the denominator coefficient vector must be non zero.")
 
         if self.clip_values is not None:
-
             if len(self.clip_values) != 2:
                 raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
 
-        if not isinstance(self.verbose, bool):
-            raise ValueError("The argument `verbose` has to be of type bool.")
+        if not isinstance(self.numerator_coef, np.ndarray):
+            raise ValueError("The numerator coefficient vector has to be of type `np.ndarray`.")
+
+        if not isinstance(self.axis, int):
+            raise ValueError("The axis of the input data array has to be of type `int`.")
+
+        if self.initial_cond is not None and not isinstance(self.initial_cond, np.ndarray):
+            raise ValueError("The initial conditions for the filter delays must be of type `np.ndarray`.")
