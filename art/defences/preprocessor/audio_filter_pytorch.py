@@ -27,6 +27,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 from torchaudio.functional import lfilter
 import numpy as np
+from tqdm import tqdm
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
@@ -101,85 +102,68 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Apply local spatial smoothing to sample `x`.
+        Apply audio filter to a single sample `x`.
+
+        :param x: A single audio sample.
+        :param y: Label of the sample `x`. This function does not affect them in any way.
+        :return: Similar sample.
         """
-        x_ndim = x.ndim
-
-        # NHWC/NCFHW/NFHWC --> NCHW.
-        if x_ndim == 4:
-            if self.channels_first:
-                x_nchw = x
-            else:
-                # NHWC --> NCHW
-                x_nchw = x.permute(0, 3, 1, 2)
-        elif x_ndim == 5:
-            if self.channels_first:
-                # NCFHW --> NFCHW --> NCHW
-                nb_clips, channels, clip_size, height, width = x.shape
-                x_nchw = x.permute(0, 2, 1, 3, 4).reshape(nb_clips * clip_size, channels, height, width)
-            else:
-                # NFHWC --> NHWC --> NCHW
-                nb_clips, clip_size, height, width, channels = x.shape
-                x_nchw = x.reshape(nb_clips * clip_size, height, width, channels).permute(0, 3, 1, 2)
-        else:
-            raise ValueError(
-                "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data."
-            )
-
-        x_nchw = self.median_blur(x_nchw)
-
-        # NHWC/NCFHW/NFHWC <-- NCHW.
-        if x_ndim == 4:
-            if self.channels_first:
-                x = x_nchw
-            else:
-                #   NHWC <-- NCHW
-                x = x_nchw.permute(0, 2, 3, 1)
-        elif x_ndim == 5:  # lgtm [py/redundant-comparison]
-            if self.channels_first:
-                # NCFHW <-- NFCHW <-- NCHW
-                x_nfchw = x_nchw.reshape(nb_clips, clip_size, channels, height, width)
-                x = x_nfchw.permute(0, 2, 1, 3, 4)
-            else:
-                # NFHWC <-- NHWC <-- NCHW
-                x_nhwc = x_nchw.permute(0, 2, 3, 1)
-                x = x_nhwc.reshape(nb_clips, clip_size, height, width, channels)
+        x_preprocess = lfilter(b_coeffs=self.numerator_coef, a_coeffs=self.denumerator_coef, waveform=x, clamp=False)
 
         if self.clip_values is not None:
-            x = x.clamp(min=self.clip_values[0], max=self.clip_values[1])
+            x_preprocess = x_preprocess.clamp(min=self.clip_values[0], max=self.clip_values[1])
 
-        return x, y
+        return x_preprocess, y
 
     def estimate_forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
         """
         No need to estimate, since the forward pass is differentiable.
+
+        :param x: A single audio sample.
+        :param y: Label of the sample `x`. This function does not affect them in any way.
+        :return: Similar sample.
         """
-        return self.forward(x, y)[0]
+        return self.forward(x, y)
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply local spatial smoothing to sample `x`.
+        Apply audio filter to sample `x`.
 
-        :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
         :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :return: Smoothed sample.
+        :return: Similar samples.
         """
         import torch  # lgtm [py/repeated-import]
 
-        x = torch.tensor(x, device=self._device)
-        if y is not None:
-            y = torch.tensor(y, device=self._device)
+        x_preprocess = x.copy()
 
-        with torch.no_grad():
-            x, y = self.forward(x, y)
+        # Filter one input at a time
+        for i, x_preprocess_i in enumerate(tqdm(x_preprocess, desc="Apply audio filter", disable=not self.verbose)):
+            if np.min(x_preprocess_i) < -1.0 or np.max(x_preprocess_i) > 1.0:
+                raise ValueError(
+                    "Audio signals must be normalized to the range `[-1.0, 1.0]` to apply the audio filter function."
+                )
 
-        result = x.cpu().numpy()
-        if y is not None:
-            y = y.cpu().numpy()
-        return result, y
+            x_preprocess_i = torch.tensor(x_preprocess_i, device=self._device)
+
+            with torch.no_grad():
+                x_preprocess_i, _ = self.forward(x_preprocess_i)
+
+            x_preprocess[i] = x_preprocess_i.cpu().numpy()
+
+        return x_preprocess, y
 
     # Backward compatibility.
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        """
+        Provide an estimate of the gradients of the defence for the backward pass.
+
+        :param x: A single audio sample.
+        :param grad: Gradient value so far.
+        :return: The gradient (estimate) of the defence.
+        """
         import torch  # lgtm [py/repeated-import]
 
         x = torch.tensor(x, device=self._device, requires_grad=True)
@@ -199,11 +183,18 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
         pass
 
     def _check_params(self) -> None:
-        if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
-            raise ValueError("Sliding window size must be a positive integer.")
+        if not isinstance(self.denumerator_coef, np.ndarray) or self.denumerator_coef[0] == 0:
+            raise ValueError("The first element of the denominator coefficient vector must be non zero.")
 
-        if self.clip_values is not None and len(self.clip_values) != 2:
-            raise ValueError("'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range.")
+        if self.clip_values is not None:
+            if len(self.clip_values) != 2:
+                raise ValueError("`clip_values` should be a tuple of 2 floats containing the allowed data range.")
 
-        if self.clip_values is not None and np.array(self.clip_values[0] >= self.clip_values[1]).any():
-            raise ValueError("Invalid 'clip_values': min >= max.")
+            if np.array(self.clip_values[0] >= self.clip_values[1]).any():
+                raise ValueError("Invalid `clip_values`: min >= max.")
+
+        if not isinstance(self.numerator_coef, np.ndarray):
+            raise ValueError("The numerator coefficient vector has to be of type `np.ndarray`.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
