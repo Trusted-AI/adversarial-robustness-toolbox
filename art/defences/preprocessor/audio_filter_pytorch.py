@@ -108,7 +108,12 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
         :param y: Label of the sample `x`. This function does not affect them in any way.
         :return: Similar sample.
         """
-        x_preprocess = lfilter(b_coeffs=self.numerator_coef, a_coeffs=self.denumerator_coef, waveform=x, clamp=False)
+        x_preprocess = lfilter(
+            b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
+            a_coeffs=torch.tensor(self.denumerator_coef, device=self._device),
+            waveform=x,
+            clamp=False
+        )
 
         if self.clip_values is not None:
             x_preprocess = x_preprocess.clamp(min=self.clip_values[0], max=self.clip_values[1])
@@ -123,7 +128,7 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
         :param y: Label of the sample `x`. This function does not affect them in any way.
         :return: Similar sample.
         """
-        return self.forward(x, y)
+        return self.forward(x, y)[0]
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -172,8 +177,10 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
         x_prime = self.estimate_forward(x)
         x_prime.backward(grad)
         x_grad = x.grad.detach().cpu().numpy()
+
         if x_grad.shape != x.shape:
             raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+
         return x_grad
 
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
