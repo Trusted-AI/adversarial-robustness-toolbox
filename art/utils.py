@@ -163,9 +163,7 @@ if TYPE_CHECKING:
     ]
 
     OBJECT_DETECTOR_TYPE = Union[
-        ObjectDetector,
-        PyTorchFasterRCNN,
-        TensorFlowFasterRCNN,
+        ObjectDetector, PyTorchFasterRCNN, TensorFlowFasterRCNN,
     ]
 
 
@@ -218,9 +216,7 @@ def deprecated(end_version: str, *, reason: str = "", replaced_by: str = "") -> 
         def wrapper(*args, **kwargs):
             warnings.simplefilter("always", category=DeprecationWarning)
             warnings.warn(
-                deprecated_msg + replaced_msg + reason_msg,
-                category=DeprecationWarning,
-                stacklevel=2,
+                deprecated_msg + replaced_msg + reason_msg, category=DeprecationWarning, stacklevel=2,
             )
             warnings.simplefilter("default", category=DeprecationWarning)
             return function(*args, **kwargs)
@@ -314,8 +310,7 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
             raise NotImplementedError("The parameter `eps` of type `np.ndarray` is not supported to use with norm 1.")
 
         values_tmp = values_tmp * np.expand_dims(
-            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)),
-            axis=1,
+            np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
         )
 
     elif norm_p in [np.inf, "inf"]:
@@ -412,9 +407,7 @@ def original_to_tanh(
 
 
 def tanh_to_original(
-    x_tanh: np.ndarray,
-    clip_min: Union[float, np.ndarray],
-    clip_max: Union[float, np.ndarray],
+    x_tanh: np.ndarray, clip_min: Union[float, np.ndarray], clip_max: Union[float, np.ndarray],
 ) -> np.ndarray:
     """
     Transform input from tanh to original space.
@@ -545,10 +538,7 @@ def second_most_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np
     :param classifier: The classifier used for computing predictions.
     :return: Second most likely class predicted by `classifier` for sample `x` in one-hot encoding.
     """
-    return to_categorical(
-        np.argpartition(classifier.predict(x), -2, axis=1)[:, -2],
-        nb_classes=classifier.nb_classes,
-    )
+    return to_categorical(np.argpartition(classifier.predict(x), -2, axis=1)[:, -2], nb_classes=classifier.nb_classes,)
 
 
 def get_label_conf(y_vec: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
@@ -658,9 +648,7 @@ def compute_accuracy(preds: np.ndarray, labels: np.ndarray, abstain: bool = True
 # -------------------------------------------------------------------------------------------------- DATASET OPERATIONS
 
 
-def load_cifar10(
-    raw: bool = False,
-) -> DATASET_TYPE:
+def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
     """
     Loads CIFAR10 dataset from config.CIFAR10_PATH or downloads it if necessary.
 
@@ -726,9 +714,7 @@ def load_cifar10(
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_mnist(
-    raw: bool = False,
-) -> DATASET_TYPE:
+def load_mnist(raw: bool = False,) -> DATASET_TYPE:
     """
     Loads MNIST dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
@@ -828,32 +814,14 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     # Split training and test sets
     split_index = int((1 - test_set) * len(data) / 3)
     x_train = np.vstack((data[:split_index], data[50 : 50 + split_index], data[100 : 100 + split_index]))
-    y_train = np.vstack(
-        (
-            labels[:split_index],
-            labels[50 : 50 + split_index],
-            labels[100 : 100 + split_index],
-        )
-    )
+    y_train = np.vstack((labels[:split_index], labels[50 : 50 + split_index], labels[100 : 100 + split_index],))
 
     if split_index >= 49:
         x_test, y_test = None, None
     else:
 
-        x_test = np.vstack(
-            (
-                data[split_index:50],
-                data[50 + split_index : 100],
-                data[100 + split_index :],
-            )
-        )
-        y_test = np.vstack(
-            (
-                labels[split_index:50],
-                labels[50 + split_index : 100],
-                labels[100 + split_index :],
-            )
-        )
+        x_test = np.vstack((data[split_index:50], data[50 + split_index : 100], data[100 + split_index :],))
+        y_test = np.vstack((labels[split_index:50], labels[50 + split_index : 100], labels[100 + split_index :],))
         assert len(x_train) + len(x_test) == 150
 
         # Shuffle test set
@@ -970,9 +938,7 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
-def load_dataset(
-    name: str,
-) -> DATASET_TYPE:
+def load_dataset(name: str,) -> DATASET_TYPE:
     """
     Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
 
@@ -1139,10 +1105,7 @@ def clip_and_round(x: np.ndarray, clip_values: Optional["CLIP_VALUES_TYPE"], rou
 
 
 def preprocess(
-    x: np.ndarray,
-    y: np.ndarray,
-    nb_classes: int = 10,
-    clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+    x: np.ndarray, y: np.ndarray, nb_classes: int = 10, clip_values: Optional["CLIP_VALUES_TYPE"] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Scales `x` to [0, 1] and converts `y` to class categorical confidences.
