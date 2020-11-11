@@ -25,8 +25,8 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
+from scipy.signal import lfilter
 import numpy as np
-from scipy.optimize import minimize
 from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
@@ -45,7 +45,7 @@ class AudioFilter(Preprocessor):
     function in the `scipy` package.
     """
 
-    params = ["numerator_coef", "denominator_coef", "axis", "initial_cond"]
+    params = ["numerator_coef", "denominator_coef", "axis", "initial_cond", "verbose"]
 
     def __init__(
         self,
@@ -56,6 +56,7 @@ class AudioFilter(Preprocessor):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        verbose: bool = False,
     ):
         """
         Create an instance of AudioFilter.
@@ -71,6 +72,7 @@ class AudioFilter(Preprocessor):
                for features.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         """
         super().__init__()
         self._is_fitted = True
@@ -81,6 +83,7 @@ class AudioFilter(Preprocessor):
         self.axis = axis
         self.initial_cond = initial_cond
         self.clip_values = clip_values
+        self.verbose = verbose
         self._check_params()
 
     @property
@@ -93,27 +96,26 @@ class AudioFilter(Preprocessor):
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply total variance minimization to sample `x`.
+        Apply audio filter to sample `x`.
 
-        :param x: Sample to compress with shape `(batch_size, width, height, depth)`.
+        :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
+                  could have different lengths. A possible example of `x` could be:
+                  `x = np.array([np.array([0.1, 0.2, 0.1, 0.4]), np.array([0.3, 0.1])])`.
         :param y: Labels of the sample `x`. This function does not affect them in any way.
         :return: Similar samples.
         """
-        if len(x.shape) == 2:
-            raise ValueError(
-                "Feature vectors detected. Variance minimization can only be applied to data with spatial dimensions."
-            )
-        x_preproc = x.copy()
+        x_preprocess = x.copy()
 
-        # Minimize one input at a time
-        for i, x_i in enumerate(tqdm(x_preproc, desc="Variance minimization", disable=not self.verbose)):
-            mask = (np.random.rand(*x_i.shape) < self.prob).astype("int")
-            x_preproc[i] = self._minimize(x_i, mask)
+        # Filter one input at a time
+        for i, x_preprocess_i in enumerate(tqdm(x_preprocess, desc="Apply audio filter", disable=not self.verbose)):
+            x_preprocess[i] = lfilter(
+                b=self.numerator_coef, a=self.denumerator_coef, x=x_preprocess_i, axis=self.axis, zi=self.initial_cond
+            )
 
         if self.clip_values is not None:
-            np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
+            np.clip(x_preprocess, self.clip_values[0], self.clip_values[1], out=x_preprocess)
 
-        return x_preproc.astype(ART_NUMPY_DTYPE), y
+        return x_preprocess.astype(ART_NUMPY_DTYPE), y
 
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
@@ -143,3 +145,6 @@ class AudioFilter(Preprocessor):
 
         if self.initial_cond is not None and not isinstance(self.initial_cond, np.ndarray):
             raise ValueError("The initial conditions for the filter delays must be of type `np.ndarray`.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
