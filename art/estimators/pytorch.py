@@ -211,7 +211,6 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
-        import torch
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import (
             StandardisationMeanStdPyTorch,
@@ -220,30 +219,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         if not self.preprocessing:
             return gradients
 
-        if self.all_framework_preprocessing:
-            # Convert np arrays to torch tensors.
-            x = torch.tensor(x, device=self._device, requires_grad=True)
-            gradients = torch.tensor(gradients, device=self._device)
-            x_orig = x
-
-            for preprocess in self.preprocessing:
-                if fit:
-                    if preprocess.apply_fit:
-                        x = preprocess.estimate_forward(x)
-                else:
-                    if preprocess.apply_predict:
-                        x = preprocess.estimate_forward(x)
-
-            x.backward(gradients)
-
-            # Convert torch tensors back to np arrays.
-            gradients = x_orig.grad.detach().cpu().numpy()
-            if gradients.shape != x_orig.shape:
-                raise ValueError(
-                    "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
-                )
-
-        elif len(self.preprocessing) in [1, 2] and isinstance(
+        if len(self.preprocessing) in [1, 2] and isinstance(
             self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch)
         ):
             # Compatible with non-PyTorch defences if no chaining.

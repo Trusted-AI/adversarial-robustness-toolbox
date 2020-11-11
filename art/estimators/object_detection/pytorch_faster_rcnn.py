@@ -109,7 +109,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             if self.clip_values[1] <= 0:
                 raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
 
-        if self.preprocessing is not None:
+        if preprocessing is not None:
             raise ValueError("This estimator does not support `preprocessing`.")
         if self.postprocessing_defences is not None:
             raise ValueError("This estimator does not support `postprocessing_defences`.")
@@ -135,9 +135,18 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         self._model.eval()
         self.attack_losses: Tuple[str, ...] = attack_losses
 
+    @property
+    def device(self) -> "torch.device":
+        """
+        Get current used device.
+
+        :return: Current used device.
+        """
+        return self._device
+
     def loss_gradient(
         self, x: np.ndarray, y: Union[List[Dict[str, np.ndarray]], List[Dict[str, "torch.Tensor"]]], **kwargs
-    ) -> np.ndarray:
+    ) -> Union[np.ndarray, "torch.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -193,16 +202,25 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         loss.backward(retain_graph=True)  # type: ignore
 
         grad_list = list()
-        for img in image_tensor_list:
-            gradients = img.grad.cpu().numpy().copy()
-            grad_list.append(gradients)
+        if isinstance(x, np.ndarray):
+            for img in image_tensor_list:
+                gradients = img.grad.cpu().numpy().copy()
+                grad_list.append(gradients)
+            grads = np.stack(grad_list, axis=0)
+        else:
+            for img in image_tensor_list:
+                gradients = img.grad.copy()
+                grad_list.append(gradients)
+            grads = torch.stack(grad_list, dim=0)
 
-        grads = np.stack(grad_list, axis=0)
-
-        # BB
         grads = self._apply_preprocessing_gradient(x, grads)
-        grads = np.swapaxes(grads, 1, 3)
-        grads = np.swapaxes(grads, 1, 2)
+
+        if isinstance(x, np.ndarray):
+            grads = np.swapaxes(grads, 1, 3)
+            grads = np.swapaxes(grads, 1, 2)
+        else:
+            grads = grads.permute(0, 3, 1, 2)
+
         assert grads.shape == x.shape
 
         if self.clip_values is not None:

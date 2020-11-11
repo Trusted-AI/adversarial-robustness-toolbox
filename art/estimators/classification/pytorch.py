@@ -454,8 +454,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             grads = grads[None, ...]
 
         grads = np.swapaxes(np.array(grads), 0, 1)
-        if not self.all_framework_preprocessing:
-            grads = self._apply_preprocessing_gradient(x, grads)
+        grads = self._apply_preprocessing_gradient(x, grads)
 
         return grads
 
@@ -552,13 +551,13 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         else:
             loss.backward()
+
         if isinstance(x, torch.Tensor):
             grads = x_grad.grad
         else:
             grads = x_grad.grad.cpu().numpy().copy()  # type: ignore
 
-        if not self.all_framework_preprocessing:
-            grads = self._apply_preprocessing_gradient(x, grads)
+        grads = self._apply_preprocessing_gradient(x, grads)
 
         assert grads.shape == x.shape
 
