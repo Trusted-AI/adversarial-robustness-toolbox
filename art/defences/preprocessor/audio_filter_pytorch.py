@@ -16,19 +16,16 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the local spatial smoothing defence in `SpatialSmoothing` in PyTorch.
-
-| Paper link: https://arxiv.org/abs/1704.01155
-
-| Please keep in mind the limitations of defences. For more information on the limitations of this defence,
-    see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
-    https://arxiv.org/abs/1902.06705
+This module implements the filter function for audio signals in PyTorch. It provides with an infinite impulse response
+(IIR) or finite impulse response (FIR) filter. This implementation is a wrapper around the
+`torchaudio.functional.lfilter` function in the `torchaudio` package.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
+from torchaudio.functional import lfilter
 import numpy as np
 
 from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
@@ -40,35 +37,37 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class SpatialSmoothingPyTorch(PreprocessorPyTorch):
+class AudioFilterPyTorch(PreprocessorPyTorch):
     """
-    Implement the local spatial smoothing defence approach in PyTorch.
-
-    | Paper link: https://arxiv.org/abs/1704.01155
-
-    | Please keep in mind the limitations of defences. For more information on the limitations of this defence,
-        see https://arxiv.org/abs/1803.09868 . For details on how to evaluate classifier security in general, see
-        https://arxiv.org/abs/1902.06705
+    This module implements the filter function for audio signals in PyTorch. It provides with an infinite impulse
+    response (IIR) or finite impulse response (FIR) filter. This implementation is a wrapper around the
+    `torchaudio.functional.lfilter` function in the `torchaudio` package.
     """
+
+    params = ["numerator_coef", "denominator_coef", "verbose"]
 
     def __init__(
         self,
-        window_size: int = 3,
-        channels_first: bool = False,
+        numerator_coef: np.ndarray,
+        denumerator_coef: np.ndarray,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        verbose: bool = False,
         device_type: str = "gpu",
     ) -> None:
         """
-        Create an instance of local spatial smoothing.
+        Create an instance of AudioFilterPyTorch.
 
-        :window_size: Size of spatial smoothing window.
-        :param channels_first: Set channels first or last.
+        :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
+        :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
+                                 denominator coefficients to [1, 0, 0,...], this preprocessor can be used to apply a
+                                 FIR filter.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         :param device_type: Type of device on which the classifier is run, either `gpu` or `cpu`.
         """
         import torch  # lgtm [py/repeated-import]
@@ -77,9 +76,10 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.channels_first = channels_first
-        self.window_size = window_size
+        self.numerator_coef = numerator_coef
+        self.denumerator_coef = denumerator_coef
         self.clip_values = clip_values
+        self.verbose = verbose
         self._check_params()
 
         # Set device
@@ -88,61 +88,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         else:
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
-
-        from kornia.filters import MedianBlur
-
-        class MedianBlurCustom(MedianBlur):
-            """
-            An ongoing effort to reproduce the median blur function in SciPy.
-            """
-
-            def __init__(self, kernel_size: Tuple[int, int]) -> None:
-                super().__init__(kernel_size)
-
-                # Half-pad the input so that the output keeps the same shape.
-                # * center pixel located lower right
-                half_pad = [int(k % 2 == 0) for k in kernel_size]
-                self.p2d = [
-                    int(self.padding[-1]) + half_pad[-1],
-                    int(self.padding[-1]),
-                    int(self.padding[-2]) + half_pad[-2],
-                    int(self.padding[-2]),
-                ]
-                # PyTorch requires Padding size should be less than the corresponding input dimension,
-
-            def forward(self, input: "torch.Tensor"):  # type: ignore
-                import torch  # lgtm [py/repeated-import]
-                import torch.nn.functional as F
-
-                if not torch.is_tensor(input):
-                    raise TypeError("Input type is not a torch.Tensor. Got {}".format(type(input)))
-                if not len(input.shape) == 4:
-                    raise ValueError("Invalid input shape, we expect BxCxHxW. Got: {}".format(input.shape))
-                # prepare kernel
-                batch_size, channels, height, width = input.shape
-                kernel: torch.Tensor = self.kernel.to(input.device).to(input.dtype)
-                # map the local window to single vector
-
-                _input = input.reshape(batch_size * channels, 1, height, width)
-                if input.dtype == torch.int64:
-                    # "reflection_pad2d" not implemented for 'Long'
-                    # "reflect" in scipy.ndimage.median_filter has no equivalence in F.pad.
-                    # "reflect" in PyTorch maps to "mirror" in scipy.ndimage.median_filter.
-                    _input = _input.to(torch.float32)
-                    _input = F.pad(_input, self.p2d, "reflect")
-                    _input = _input.to(torch.int64)
-                else:
-                    _input = F.pad(_input, self.p2d, "reflect")
-
-                features: torch.Tensor = F.conv2d(_input, kernel, stride=1)
-                features = features.view(batch_size, channels, -1, height, width)  # BxCx(K_h * K_w)xHxW
-
-                # compute the median along the feature axis
-                # * torch.median(), if window size even, use smaller value (e.g. median(4,5)=4)
-                median: torch.Tensor = torch.median(features, dim=2)[0]
-                return median
-
-        self.median_blur = MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
 
     @property
     def apply_fit(self) -> bool:
