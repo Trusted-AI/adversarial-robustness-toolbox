@@ -20,100 +20,51 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 
 import numpy as np
-from numpy.testing import assert_array_equal
 import pytest
 
-from art.defences.preprocessor.spatial_smoothing_pytorch import SpatialSmoothingPyTorch
+from art.defences.preprocessor import AudioFilterPyTorch
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.xfail(
-    reason="""a) SciPy's "reflect" padding mode is not supported in PyTorch. The "reflect" model in PyTorch maps
-    to the "mirror" mode in SciPy; b) torch.median() takes the smaller value when the window size is even."""
-)
 @pytest.mark.only_with_platform("pytorch")
-def test_spatial_smoothing_median_filter_call(art_warning):
+@pytest.mark.parametrize("fir_filter", [False, True])
+def test_audio_filter(fir_filter, art_warning, expected_values):
     try:
-        test_input = np.array([[[[1, 2], [3, 4]]]])
-        test_output = np.array([[[[1, 2], [3, 3]]]])
-        spatial_smoothing = SpatialSmoothingPyTorch(channels_first=True, window_size=2)
+        # Load data for testing
+        expected_data = expected_values()
 
-        assert_array_equal(spatial_smoothing(test_input)[0], test_output)
-    except ARTTestException as e:
-        art_warning(e)
+        x1 = expected_data[0]
+        x2 = expected_data[1]
+        x3 = expected_data[2]
+        result_0 = expected_data[3]
+        result_1 = expected_data[4]
+        result_2 = expected_data[5]
 
+        # Create signal data
+        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)])
 
-@pytest.mark.only_with_platform("pytorch")
-def test_spatial_smoothing_median_filter_call_expected_behavior(art_warning):
-    try:
-        test_input = np.array([[[[1, 2], [3, 4]]]])
-        test_output = np.array([[[[2, 2], [2, 2]]]])
-        spatial_smoothing = SpatialSmoothingPyTorch(channels_first=True, window_size=2)
+        # Filter params
+        numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
 
-        assert_array_equal(spatial_smoothing(test_input)[0], test_output)
-    except ARTTestException as e:
-        art_warning(e)
+        if fir_filter:
+            denumerator_coef = np.array([1.0, 0.0, 0.0, 0.0])
+        else:
+            denumerator_coef = np.array([1.0, 0.1, 0.3, 0.4])
 
+        # Create filter
+        audio_filter = AudioFilterPyTorch(numerator_coef=numerator_coef, denumerator_coef=denumerator_coef)
 
-@pytest.mark.only_with_platform("pytorch")
-@pytest.mark.parametrize("channels_first", [True, False])
-@pytest.mark.parametrize(
-    "window_size",
-    [
-        1,
-        2,
-        pytest.param(
-            10,
-            marks=pytest.mark.xfail(
-                reason="Window size of 10 fails, because PyTorch requires that Padding size should be less than "
-                "the corresponding input dimension."
-            ),
-        ),
-    ],
-)
-def test_spatial_smoothing_image_data(art_warning, image_batch, channels_first, window_size):
-    try:
-        test_input, test_output = image_batch
-        spatial_smoothing = SpatialSmoothingPyTorch(channels_first=channels_first, window_size=window_size)
+        # Apply filter
+        result = audio_filter(x)
 
-        assert_array_equal(spatial_smoothing(test_input)[0], test_output)
-    except ARTTestException as e:
-        art_warning(e)
+        # Test
+        assert result[1] is None
+        np.testing.assert_array_almost_equal(result_0, result[0][0], decimal=0)
+        np.testing.assert_array_almost_equal(result_1, result[0][1], decimal=0)
+        np.testing.assert_array_almost_equal(result_2, result[0][2], decimal=0)
 
-
-@pytest.mark.only_with_platform("pytorch")
-@pytest.mark.parametrize("channels_first", [True, False])
-def test_spatial_smoothing_video_data(art_warning, video_batch, channels_first):
-    try:
-        test_input, test_output = video_batch
-        spatial_smoothing = SpatialSmoothingPyTorch(channels_first=channels_first, window_size=2)
-
-        assert_array_equal(spatial_smoothing(test_input)[0], test_output)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.only_with_platform("pytorch")
-def test_non_spatial_data_error(art_warning, tabular_batch):
-    try:
-        test_input = tabular_batch
-        spatial_smoothing = SpatialSmoothingPyTorch(channels_first=True)
-
-        exc_msg = "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data."
-        with pytest.raises(ValueError, match=exc_msg):
-            spatial_smoothing(test_input)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.only_with_platform("pytorch")
-def test_window_size_error(art_warning):
-    try:
-        exc_msg = "Sliding window size must be a positive integer."
-        with pytest.raises(ValueError, match=exc_msg):
-            SpatialSmoothingPyTorch(window_size=0)
     except ARTTestException as e:
         art_warning(e)
 
@@ -121,9 +72,14 @@ def test_window_size_error(art_warning):
 @pytest.mark.only_with_platform("pytorch")
 def test_triple_clip_values_error(art_warning):
     try:
-        exc_msg = "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
+        exc_msg = "`clip_values` should be a tuple of 2 floats containing the allowed data range."
         with pytest.raises(ValueError, match=exc_msg):
-            SpatialSmoothingPyTorch(clip_values=(0, 1, 2))
+            AudioFilterPyTorch(
+                numerator_coef=np.array([0.1, 0.2, 0.3]),
+                denumerator_coef=np.array([0.1, 0.2, 0.3]),
+                clip_values=(0, 1, 2)
+            )
+
     except ARTTestException as e:
         art_warning(e)
 
@@ -131,8 +87,13 @@ def test_triple_clip_values_error(art_warning):
 @pytest.mark.only_with_platform("pytorch")
 def test_relation_clip_values_error(art_warning):
     try:
-        exc_msg = "Invalid 'clip_values': min >= max."
+        exc_msg = "Invalid `clip_values`: min >= max."
         with pytest.raises(ValueError, match=exc_msg):
-            SpatialSmoothingPyTorch(clip_values=(1, 0))
+            AudioFilterPyTorch(
+                numerator_coef=np.array([0.1, 0.2, 0.3]),
+                denumerator_coef=np.array([0.1, 0.2, 0.3]),
+                clip_values=(1, 0)
+            )
+
     except ARTTestException as e:
         art_warning(e)
