@@ -939,7 +939,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                     lst = [unique_labels.index(i) for i in label]
                     gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
-                gradients = self._apply_preprocessing_gradient(x, gradients)
+                if not self.all_framework_preprocessing:
+                    gradients = self._apply_preprocessing_gradient(x, gradients)
 
             else:
                 raise NotImplementedError("Expecting eager execution.")
@@ -1034,7 +1035,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             raise NotImplementedError("Expecting eager execution.")
 
         # Apply preprocessing gradients
-        gradients = self._apply_preprocessing_gradient(x, gradients)
+        if not self.all_framework_preprocessing:
+            gradients = self._apply_preprocessing_gradient(x, gradients)
 
         return gradients
 

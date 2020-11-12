@@ -247,6 +247,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :return: Gradients after backward pass through preprocessing defences.
         :rtype: Format as expected by the `model`
         """
+        import tensorflow as tf  # lgtm [py/repeated-import]
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
         from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
             StandardisationMeanStdTensorFlowV2,
@@ -255,7 +256,32 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         if not self.preprocessing:
             return gradients
 
-        if len(self.preprocessing) in [1, 2] and isinstance(
+        if self.all_framework_preprocessing:
+            with tf.GradientTape() as tape:
+                # Convert np arrays to TensorFlow tensors.
+                x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
+                tape.watch(x)
+                gradients = tf.convert_to_tensor(gradients, dtype=config.ART_NUMPY_DTYPE)
+                x_orig = x
+
+                for preprocess in self.preprocessing:
+                    if fit:
+                        if preprocess.apply_fit:
+                            x = preprocess.estimate_forward(x)
+                    else:
+                        if preprocess.apply_predict:
+                            x = preprocess.estimate_forward(x)
+
+            x_grad = tape.gradient(target=x, sources=x_orig, output_gradients=gradients)
+
+            # Convert torch tensors back to np arrays.
+            gradients = x_grad.numpy()
+            if gradients.shape != x_orig.shape:
+                raise ValueError(
+                    "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
+                )
+
+        elif len(self.preprocessing) in [1, 2] and isinstance(
             self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
         ):
             # Compatible with non-TensorFlow defences if no chaining.
