@@ -29,6 +29,10 @@ jobs:
             python: 3.6
             tensorflow: 1.15.3
             keras: 2.2.5
+          - framework: tensorflow
+            python: 3.6
+            tensorflow: 2.2.0
+            keras: 2.3.1
           - framework: keras
             python: 3.7
             tensorflow: 2.2.0
@@ -48,7 +52,7 @@ jobs:
             tensorflow: 2.2.0
             keras: 2.3.1
 
-    name: Run ${{ matrix.framework }} Tests
+    name: Run ${{ matrix.framework }} ${{ matrix.tensorflow }} Tests
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
