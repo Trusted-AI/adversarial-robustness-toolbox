@@ -161,9 +161,7 @@ else
          run_test ${test}
       done
     done
-
-    #bash <(curl -s https://codecov.io/bash)
-
-
-    exit ${exit_code}
 fi
+
+#bash <(curl -s https://codecov.io/bash)
+exit ${exit_code}
