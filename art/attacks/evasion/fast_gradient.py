@@ -161,12 +161,14 @@ class FastGradientMethod(EvasionAttack):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        mask = kwargs.get("mask")
+
         if isinstance(self.estimator, ClassifierMixin):
             y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
@@ -182,11 +184,9 @@ class FastGradientMethod(EvasionAttack):
                 )
             y = y / np.sum(y, axis=1, keepdims=True)
 
-            mask = kwargs.get("mask")
-            if mask is not None:
-                # ensure the mask is broadcastable:
-                if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                    raise ValueError("mask shape must be broadcastable to input shape")
+            # Check the mask
+            if mask is not None and (len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]):
+                raise ValueError("Mask shape must be broadcastable to input shape.")
 
             # Return adversarial examples computed with minimal perturbation if option is active
             rate_best: Optional[float]
