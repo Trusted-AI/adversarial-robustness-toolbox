@@ -338,10 +338,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             x_origin_delta = x_origin - x_origin_shifted
             y_origin_delta = y_origin - y_origin_shifted
 
-            # a_2 = x_origin_delta - (x_shift / im_scale)
-            # b_2 = y_origin_delta - (y_shift / im_scale)
-
-            # transform_vectors.append([a_0, a_1, a_2, b_0, b_1, b_2, 0, 0])
+            # Run translation in a second step to position patch exactly inside of the mask
             transform_vectors.append([a_0, a_1, x_origin_delta, b_0, b_1, y_origin_delta, 0, 0])
             translation_vectors.append([1, 0, -x_shift, 0, 1, -y_shift, 0, 0])
 
