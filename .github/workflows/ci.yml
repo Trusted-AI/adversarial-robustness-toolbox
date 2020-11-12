@@ -54,7 +54,7 @@ jobs:
             tensorflow: 2.2.0
             keras: 2.3.1
 
-    name: Run ${{ matrix.framework }}${{ matrix.tf_version }} Tests
+    name: Run ${{ matrix.framework }} ${{ matrix.tf_version }} Tests
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -73,7 +73,7 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -q -r requirements.txt
           pip list
-      - name: Run ${{ matrix.framework }}${{ matrix.tf_version }} Tests
+      - name: Run ${{ matrix.framework }} ${{ matrix.tf_version }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}
   style:
     name: Style Check
