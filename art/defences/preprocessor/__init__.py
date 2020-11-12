@@ -1,6 +1,8 @@
 """
 Module implementing preprocessing defences against adversarial attacks.
 """
+from art.defences.preprocessor.audio_filter import AudioFilter
+from art.defences.preprocessor.audio_filter_pytorch import AudioFilterPyTorch
 from art.defences.preprocessor.feature_squeezing import FeatureSqueezing
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 from art.defences.preprocessor.inverse_gan import InverseGAN, DefenseGAN
