@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2018
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -23,87 +23,94 @@ import numpy as np
 import pytest
 from numpy.testing import assert_array_equal
 
-from art.defences.preprocessor import SpatialSmoothing
+from art.defences.preprocessor import AudioFilter
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.mark.framework_agnostic
-def test_spatial_smoothing_median_filter_call(art_warning):
+@pytest.mark.parametrize("fir_filter", [False, True])
+def test_audio_filter(fir_filter, art_warning):
     try:
-        test_input = np.array([[[[1, 2], [3, 4]]]])
-        test_output = np.array([[[[1, 2], [3, 3]]]])
-        spatial_smoothing = SpatialSmoothing(channels_first=True, window_size=2)
 
-        assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+        # Small data for testing
+        x1 = np.array(
+            [
+                -1.0376293e-03,
+                -1.0681478e-03,
+                -1.0986663e-03,
+                -1.1291848e-03,
+                -1.1291848e-03,
+                -1.1291848e-03,
+                -1.1902219e-03,
+                -1.1597034e-03,
+                -1.1902219e-03,
+                -1.1291848e-03,
+                -1.1291848e-03,
+                -1.0681478e-03,
+                -9.1555528e-04,
+            ]
+            * 100
+        )
+
+        x2 = np.array(
+            [
+                -1.8311106e-04,
+                -1.2207404e-04,
+                -6.1037019e-05,
+                0.0000000e00,
+                3.0518509e-05,
+                0.0000000e00,
+                -3.0518509e-05,
+                0.0000000e00,
+                0.0000000e00,
+                9.1555528e-05,
+                2.1362957e-04,
+                3.3570360e-04,
+                4.2725913e-04,
+                4.5777764e-04,
+                -1.8311106e-04,
+            ]
+            * 100
+        )
+
+        x3 = np.array(
+            [
+                -8.2399976e-04,
+                -7.0192572e-04,
+                -5.4933317e-04,
+                -4.2725913e-04,
+                -3.6622211e-04,
+                -2.7466659e-04,
+                -2.1362957e-04,
+                5.4933317e-04,
+                5.7985168e-04,
+                6.1037019e-04,
+                6.7140721e-04,
+                7.0192572e-04,
+                6.7140721e-04,
+                -1.5259255e-04,
+            ]
+            * 100
+        )
+
+        test_input = np.array([x1, x2, x3])
+
+        numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
+
+        if fir_filter:
+            denumerator_coef = np.array([1.0, 0.0, 0.0, 0.0])
+        else:
+            denumerator_coef = np.array([1.0, 0.1, 0.3, 0.4])
+
+#        test_output = np.array([[[[1, 2], [3, 3]]]])
+        audio_filter = AudioFilter(numerator_coef=numerator_coef, denumerator_coef=denumerator_coef)
+        print(fir_filter, audio_filter(test_input))
+
+#        assert_array_equal(spatial_smoothing(test_input)[0], test_output)
+
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.parametrize("channels_first", [True, False])
-@pytest.mark.parametrize("window_size", [1, 2, 10])
-@pytest.mark.framework_agnostic
-def test_spatial_smoothing_image_data(art_warning, image_batch, channels_first, window_size):
-    try:
-        test_input, test_output = image_batch
-        spatial_smoothing = SpatialSmoothing(channels_first=channels_first, window_size=window_size)
-
-        assert_array_equal(spatial_smoothing(test_input)[0], test_output)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.parametrize("channels_first", [True, False])
-@pytest.mark.framework_agnostic
-def test_spatial_smoothing_video_data(art_warning, video_batch, channels_first):
-    try:
-        test_input, test_output = video_batch
-        spatial_smoothing = SpatialSmoothing(channels_first=channels_first, window_size=2)
-
-        assert_array_equal(spatial_smoothing(test_input)[0], test_output)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.framework_agnostic
-def test_non_spatial_data_error(art_warning, tabular_batch):
-    try:
-        test_input = tabular_batch
-        spatial_smoothing = SpatialSmoothing(channels_first=True)
-
-        exc_msg = "Unrecognized input dimension. Spatial smoothing can only be applied to image and video data."
-        with pytest.raises(ValueError, match=exc_msg):
-            spatial_smoothing(test_input)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.framework_agnostic
-def test_window_size_error(art_warning):
-    try:
-        exc_msg = "Sliding window size must be a positive integer."
-        with pytest.raises(ValueError, match=exc_msg):
-            SpatialSmoothing(window_size=0)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.framework_agnostic
-def test_triple_clip_values_error(art_warning):
-    try:
-        exc_msg = "'clip_values' should be a tuple of 2 floats or arrays containing the allowed data range."
-        with pytest.raises(ValueError, match=exc_msg):
-            SpatialSmoothing(clip_values=(0, 1, 2))
-    except ARTTestException as e:
-        art_warning(e)
-
-
-@pytest.mark.framework_agnostic
-def test_relation_clip_values_error(art_warning):
-    try:
-        exc_msg = "Invalid 'clip_values': min >= max."
-        with pytest.raises(ValueError, match=exc_msg):
-            SpatialSmoothing(clip_values=(1, 0))
-    except ARTTestException as e:
-        art_warning(e)
