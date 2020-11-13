@@ -111,12 +111,18 @@ class HopSkipJump(EvasionAttack):
         :param x: An array with the original inputs to be attacked.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   (nb_samples,).
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
+        :type mask: `np.ndarray`
         :param x_adv_init: Initial array to act as initial adversarial examples. Same shape as `x`.
         :type x_adv_init: `np.ndarray`
         :param resume: Allow users to continue their previous attack.
         :type resume: `bool`
         :return: An array holding the adversarial examples.
         """
+        mask = kwargs.get("mask")
+
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         # Check whether users need a stateful attack
@@ -127,8 +133,14 @@ class HopSkipJump(EvasionAttack):
         else:
             start = 0
 
-        # Get the mask
-        mask = self._get_mask(x, **kwargs)
+        # Check the mask
+        if mask is not None:
+            if len(mask.shape) == len(x.shape):
+                mask = mask.astype(ART_NUMPY_DTYPE)
+            else:
+                mask = np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])
+        else:
+            mask = np.array([None] * x.shape[0])
 
         # Get clip_min and clip_max from the classifier or infer them from data
         if self.estimator.clip_values is not None:
@@ -202,36 +214,6 @@ class HopSkipJump(EvasionAttack):
         )
 
         return x_adv
-
-    @staticmethod
-    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Get the mask from the kwargs.
-
-        :param x: An array with the original inputs.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :type mask: `np.ndarray`
-        :return: The mask.
-        """
-        mask = kwargs.get("mask")
-
-        if mask is not None:
-            # Ensure the mask is broadcastable
-            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                raise ValueError("Mask shape must be broadcastable to input shape.")
-
-            # Process mask as for each example
-            if len(mask.shape) == len(x.shape):
-                mask = mask.astype(ART_NUMPY_DTYPE)
-            else:
-                mask = np.array([mask.astype(ART_NUMPY_DTYPE)] * x.shape[0])
-
-        else:
-            mask = np.array([None] * x.shape[0])
-
-        return mask
 
     def _perturb(
         self,
