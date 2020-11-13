@@ -124,5 +124,5 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
             raise ValueError("Backdoor must be of type PoisoningAttackBackdoor")
         if not isinstance(self.attack, ProjectedGradientDescent):
             raise ValueError("There was an issue creating the PGD attack")
-        if 1 < self.pp_poison < 0:
+        if not 0 < self.pp_poison < 1:
             raise ValueError("pp_poison must be between 0 and 1")
