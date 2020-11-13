@@ -127,7 +127,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         mask = kwargs.get("mask")
-        if mask is not None and len(mask.shape) > len(x.shape):
+        if mask is not None and mask.ndim > x.ndim:
             raise ValueError("Mask shape must be broadcastable to input shape.")
 
         # Ensure eps is broadcastable
