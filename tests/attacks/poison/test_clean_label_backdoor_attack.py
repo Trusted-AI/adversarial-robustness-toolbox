@@ -21,17 +21,11 @@ import logging
 import numpy as np
 import pytest
 
-from art.attacks.evasion import FastGradientMethod
 from art.attacks.poisoning import PoisoningAttackCleanLabelBackdoor, PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd
-from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.utils import to_categorical
 
-from tests.attacks.utils import backend_check_adverse_values, backend_test_defended_images
-from tests.attacks.utils import backend_test_random_initialisation_images, backend_targeted_images
-from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_masked_images
-from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import ExpectedValue, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
