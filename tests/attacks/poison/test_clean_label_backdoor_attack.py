@@ -1,0 +1,66 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+from __future__ import absolute_import, division, print_function, unicode_literals
+
+import logging
+import numpy as np
+import pytest
+
+from art.attacks.evasion import FastGradientMethod
+from art.attacks.poisoning import PoisoningAttackCleanLabelBackdoor, PoisoningAttackBackdoor
+from art.attacks.poisoning.perturbations import add_pattern_bd
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.utils import to_categorical
+
+from tests.attacks.utils import backend_check_adverse_values, backend_test_defended_images
+from tests.attacks.utils import backend_test_random_initialisation_images, backend_targeted_images
+from tests.attacks.utils import backend_targeted_tabular, backend_untargeted_tabular, backend_masked_images
+from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import ExpectedValue, ARTTestException
+
+logger = logging.getLogger(__name__)
+
+
+@pytest.mark.skipMlFramework("non_dl_frameworks")
+def test_poison(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        (x_train, y_train), (_, _) = get_default_mnist_subset
+        classifier, _ = image_dl_estimator()
+        target = to_categorical([9], 10)[0]
+        backdoor = PoisoningAttackBackdoor(add_pattern_bd)
+        attack = PoisoningAttackCleanLabelBackdoor(backdoor, classifier, target)
+        poison_data, poison_labels = attack.poison(x_train, y_train)
+
+        np.testing.assert_equal(poison_data.shape, x_train.shape)
+        np.testing.assert_equal(poison_labels.shape, y_train.shape)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.xfail(strict=True)
+@pytest.mark.parametrize("params", [dict(backdoor=np.array([1, 2, 3])), dict(pp_poison=-0.2), dict(pp_poison=1.2)])
+@pytest.mark.skipMlFramework("non_dl_frameworks")
+def test_failure_modes(art_warning, get_default_mnist_subset, image_dl_estimator, params):
+    try:
+        (x_train, y_train), (_, _) = get_default_mnist_subset
+        classifier, _ = image_dl_estimator()
+        target = to_categorical([9], 10)[0]
+        backdoor = PoisoningAttackBackdoor(add_pattern_bd)
+        attack = PoisoningAttackCleanLabelBackdoor(backdoor, classifier, target, **params)
+    except ARTTestException as e:
+        art_warning(e)
