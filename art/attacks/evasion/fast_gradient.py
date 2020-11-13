@@ -109,13 +109,9 @@ class FastGradientMethod(EvasionAttack):
         :param x: An array with the original inputs.
         """
         if isinstance(self.eps, np.ndarray):
-            if isinstance(self.estimator, ClassifierMixin):
-                # Ensure the eps array is broadcastable
-                if len(self.eps.shape) > len(x.shape) or self.eps.shape != x.shape[-len(self.eps.shape) :]:
-                    raise ValueError("The `eps` shape must be broadcastable to input shape.")
-
-            else:
-                raise ValueError("The `eps` array is only supported for classification.")
+            # Ensure the eps array is broadcastable
+            if self.eps.ndim > x.ndim:
+                raise ValueError("The `eps` shape must be broadcastable to input shape.")
 
     def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray, mask: np.ndarray) -> np.ndarray:
         """
@@ -231,7 +227,7 @@ class FastGradientMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         mask = kwargs.get("mask")
-        if mask is not None and (len(mask.shape) > len(x.shape)):
+        if mask is not None and mask.ndim > x.ndim:
             raise ValueError("Mask shape must be broadcastable to input shape.")
 
         # Ensure eps is broadcastable
