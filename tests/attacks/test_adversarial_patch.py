@@ -107,9 +107,9 @@ class TestAdversarialPatch(TestBase):
         target = np.zeros(self.x_train_mnist.shape[0])
         patch_adv, _ = attack_ap.generate(self.x_train_mnist, target, shuffle=False)
 
-        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.21282613, delta=0.05)
-        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.5411238, delta=0.05)
-        self.assertAlmostEqual(float(np.sum(patch_adv)), 378.3399658203125, delta=1.0)
+        self.assertAlmostEqual(patch_adv[8, 8, 0], 0.3776834, delta=0.05)
+        self.assertAlmostEqual(patch_adv[14, 14, 0], 0.4999926, delta=0.05)
+        self.assertAlmostEqual(float(np.sum(patch_adv)), 405.7377624511719, delta=1.0)
 
     @unittest.skipIf(
         int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) < 3,

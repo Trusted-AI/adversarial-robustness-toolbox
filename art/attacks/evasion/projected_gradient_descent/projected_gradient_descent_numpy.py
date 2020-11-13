@@ -152,27 +152,6 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
 
         return targets
 
-    @staticmethod
-    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Get the mask from the kwargs.
-
-        :param x: An array with the original inputs.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :type mask: `np.ndarray`
-        :return: The mask.
-        """
-        mask = kwargs.get("mask")
-
-        if mask is not None:
-            # Ensure the mask is broadcastable
-            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                raise ValueError("Mask shape must be broadcastable to input shape.")
-
-        return mask
-
     def _check_params(self) -> None:
         super(ProjectedGradientDescentCommon, self)._check_params()
 
@@ -248,21 +227,24 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
 
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        mask = kwargs.get("mask")
+
+        # Check the mask
+        if mask is not None and (len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]):
+            raise ValueError("Mask shape must be broadcastable to input shape.")
+
         # Check whether random eps is enabled
         self._random_eps()
 
         if isinstance(self.estimator, ClassifierMixin):
             # Set up targets
             targets = self._set_targets(x, y)
-
-            # Get the mask
-            mask = self._get_mask(x, **kwargs)
 
             # Start to compute adversarial examples
             adv_x_best = None
@@ -310,9 +292,6 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
             # Set up targets
             targets = self._set_targets(x, y, classifier_mixin=False)
-
-            # Get the mask
-            mask = self._get_mask(x, **kwargs)
 
             # Start to compute adversarial examples
             if x.dtype == np.object:

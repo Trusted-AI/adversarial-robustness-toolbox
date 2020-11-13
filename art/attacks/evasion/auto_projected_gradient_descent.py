@@ -360,8 +360,14 @@ class AutoProjectedGradientDescent(EvasionAttack):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
+        :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        mask = kwargs.get("mask")
+
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
         if y is None:
@@ -449,6 +455,9 @@ class AutoProjectedGradientDescent(EvasionAttack):
                     assert x_k.shape == grad.shape
 
                     perturbation = grad
+
+                    if mask is not None:
+                        perturbation = perturbation * (mask.astype(ART_NUMPY_DTYPE))
 
                     # Apply perturbation and clip
                     z_k_p_1 = x_k + eta * perturbation

@@ -29,7 +29,7 @@ import numpy as np
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.pytorch import PyTorchEstimator
 from art.utils import get_file
-from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
+from art import config
 
 if TYPE_CHECKING:
     import torch
@@ -193,7 +193,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 raise ValueError("The input pretrained model %s is not supported." % pretrained_model)
 
             # Download model
-            model_path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=False, verbose=self.verbose)
+            model_path = get_file(
+                filename=filename, path=config.ART_DATA_PATH, url=url, extract=False, verbose=self.verbose
+            )
 
             # Then load model
             self._model = load_model(device=self._device, model_path=model_path, use_half=use_half)
@@ -580,7 +582,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
             # Push the sequence to device
             if not tensor_input:
-                x[i] = x[i].astype(ART_NUMPY_DTYPE)
+                x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
                 x[i] = torch.tensor(x[i]).to(self._device)
 
             # Set gradient computation permission
