@@ -224,12 +224,16 @@ class FastGradientMethod(EvasionAttack):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        mask = kwargs.get("mask")
+        if mask is not None and (len(mask.shape) > len(x.shape)):
+            raise ValueError("Mask shape must be broadcastable to input shape.")
+
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)
 
@@ -245,9 +249,6 @@ class FastGradientMethod(EvasionAttack):
                 logger.info("Using model predictions as correct labels for FGM.")
                 y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
             y = y / np.sum(y, axis=1, keepdims=True)
-
-            # Get the mask
-            mask = self._get_mask(x, **kwargs)
 
             # Return adversarial examples computed with minimal perturbation if option is active
             rate_best: Optional[float]
@@ -292,9 +293,6 @@ class FastGradientMethod(EvasionAttack):
         else:
             if self.minimal:
                 raise ValueError("Minimal perturbation is only supported for classification.")
-
-            # Get the mask
-            mask = self._get_mask(x, classifier_mixin=False, **kwargs)
 
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided

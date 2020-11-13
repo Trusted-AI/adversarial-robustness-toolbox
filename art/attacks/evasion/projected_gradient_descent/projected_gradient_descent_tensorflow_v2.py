@@ -118,13 +118,17 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
+
+        mask = kwargs.get("mask")
+        if mask is not None and len(mask.shape) > len(x.shape):
+            raise ValueError("Mask shape must be broadcastable to input shape.")
 
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)
@@ -134,9 +138,6 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         # Set up targets
         targets = self._set_targets(x, y)
-
-        # Get the mask
-        mask = self._get_mask(x, **kwargs)
 
         # Create dataset
         if mask is not None:
@@ -230,11 +231,17 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         :param x: An array with the original inputs.
         :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+<<<<<<< HEAD
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
+=======
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
+>>>>>>> origin/dev_1.5.0
         :return: Adversarial examples.
         """
         adv_x = x
@@ -254,9 +261,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
         :return: Perturbations.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
@@ -330,9 +337,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
         :param random_init: Random initialisation within the epsilon ball. For random_init=False starting at the
