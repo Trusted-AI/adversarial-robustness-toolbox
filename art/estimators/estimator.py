@@ -52,8 +52,8 @@ class BaseEstimator(ABC):
 
     def __init__(
         self,
-        model=None,
-        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        model,
+        clip_values: Optional["CLIP_VALUES_TYPE"],
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
@@ -205,13 +205,14 @@ class BaseEstimator(ABC):
         return self._model
 
     @property
+    @abstractmethod
     def input_shape(self) -> Tuple[int, ...]:
         """
         Return the shape of one input sample.
 
         :return: Shape of one input sample.
         """
-        return self._input_shape  # type: ignore
+        raise NotImplementedError
 
     @property
     def clip_values(self) -> Optional["CLIP_VALUES_TYPE"]:
@@ -420,7 +421,7 @@ class NeuralNetworkMixin(ABC):
     """
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
-    def __init__(self, channel_index=Deprecated, channels_first: Optional[bool] = None, **kwargs) -> None:
+    def __init__(self, channels_first: Optional[bool], channel_index=Deprecated, **kwargs) -> None:
         """
         Initialize a neural network attributes.
 

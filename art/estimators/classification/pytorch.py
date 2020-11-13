@@ -191,6 +191,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     def model(self) -> "torch.nn.Module":
         return self._model._model
 
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
+
     def reduce_labels(self, y: np.ndarray) -> np.ndarray:
         # Check if the loss function requires as input index labels instead of one-hot-encoded labels
         if self._reduce_labels and self._int_labels:

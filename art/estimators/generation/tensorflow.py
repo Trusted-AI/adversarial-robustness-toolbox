@@ -21,7 +21,7 @@ This module implements the classifier `TensorFlowGenerator` for TensorFlow model
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
 
 from art.estimators.generation.generator import GeneratorMixin
 from art.estimators.tensorflow import TensorFlowEstimator
@@ -103,6 +103,15 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
             raise ValueError("A session cannot be None.")
             # TODO do the same thing for all not None variables
         self._sess = sess
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """

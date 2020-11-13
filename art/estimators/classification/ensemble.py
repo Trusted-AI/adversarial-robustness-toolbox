@@ -21,7 +21,7 @@ This module implements the classifier `EnsembleClassifier` for ensembles of mult
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -140,6 +140,15 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         self._classifiers = classifiers
         self._learning_phase: Optional[bool] = None
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs) -> np.ndarray:
         """
