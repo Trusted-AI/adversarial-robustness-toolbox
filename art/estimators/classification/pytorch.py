@@ -513,8 +513,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         # Apply preprocessing
         if self.all_framework_preprocessing:
             if isinstance(x, torch.Tensor):
-                x_grad = torch.tensor(x).to(self._device)
-                y_grad = torch.tensor(y).to(self._device)
+                x_grad = x.to(self._device)
+                y_grad = y.to(self._device)
             else:
                 x_grad = torch.from_numpy(x).to(self._device)
                 y_grad = torch.from_numpy(y.astype(np.uint8)).to(self._device)
