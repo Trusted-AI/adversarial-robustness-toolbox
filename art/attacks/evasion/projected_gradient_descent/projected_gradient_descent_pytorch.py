@@ -165,7 +165,6 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         # Start to compute adversarial examples
         adv_x = x.astype(ART_NUMPY_DTYPE)
-        data_loader = iter(dataset)
 
         # Compute perturbation with batching
         for (batch_id, batch_all) in enumerate(
