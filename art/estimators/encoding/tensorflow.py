@@ -80,6 +80,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
@@ -90,7 +91,6 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         self._nb_classes = int(model.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
-        self._model = model
         self._encoding_length = self._model.shape[1]
         self._loss = loss
         if feed_dict is None:

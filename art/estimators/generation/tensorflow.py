@@ -80,6 +80,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
@@ -89,7 +90,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
 
         self._input_ph = input_ph
         self._encoding_length = self._input_ph.shape[1]
-        self._model = model
         self._loss = loss
         if self._loss is not None:
             self._grad = tf.gradients(self._loss, self._input_ph)
