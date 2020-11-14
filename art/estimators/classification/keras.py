@@ -114,6 +114,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -122,7 +123,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             channels_first=channels_first,
         )
 
-        self._model = model
         self._input_layer = input_layer
         self._output_layer = output_layer
 

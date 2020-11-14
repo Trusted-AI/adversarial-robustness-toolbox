@@ -100,6 +100,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -108,7 +109,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             preprocessing=preprocessing,
         )
 
-        self._model = model
         self._loss = loss
         self._nb_classes = nb_classes
         self._input_shape = input_shape

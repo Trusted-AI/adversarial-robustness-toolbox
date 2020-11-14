@@ -74,13 +74,13 @@ class LightGBMClassifier(ClassifierDecisionTree):
             raise TypeError("Model must be of type lightgbm.Booster")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
 
-        self._model = model
         self._input_shape = (self._model.num_feature(),)
         self._nb_classes = self._get_nb_classes()
 

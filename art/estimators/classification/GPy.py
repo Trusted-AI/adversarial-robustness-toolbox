@@ -72,13 +72,13 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
             raise TypeError("Model must be of type GPy.models.GPClassification")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
         self._nb_classes = 2  # always binary
-        self._model = model
 
     @property
     def input_shape(self) -> Tuple[int, ...]:

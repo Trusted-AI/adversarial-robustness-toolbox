@@ -69,6 +69,7 @@ class DetectorClassifier(ClassifierNeuralNetwork):
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
         super().__init__(
+            model=None,
             clip_values=classifier.clip_values,
             preprocessing=preprocessing,
             channel_index=classifier.channel_index,
