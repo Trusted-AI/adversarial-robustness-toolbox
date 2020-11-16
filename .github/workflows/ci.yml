@@ -56,9 +56,6 @@ jobs:
           - framework: pytorch
             python: 3.7
           - framework: scikitlearn
-            scikit-learn: 0.21.3
-            python: 3.7
-          - framework: scikitlearn
             scikit-learn: 0.22.2
             python: 3.7
           - framework: scikitlearn
