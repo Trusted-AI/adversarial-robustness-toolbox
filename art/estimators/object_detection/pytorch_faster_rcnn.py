@@ -189,7 +189,9 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
                     x_grad.requires_grad = True
                     image_tensor_list_grad.append(x_grad)
                     x_grad_1 = torch.unsqueeze(x_grad, dim=0)
-                    x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(x_grad_1, y=[y[i]], fit=False, no_grad=False)
+                    x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
+                        x_grad_1, y=[y[i]], fit=False, no_grad=False
+                    )
                     x_preprocessed_i = torch.squeeze(x_preprocessed_i)
                     y_preprocessed.append(y_preprocessed_i[0])
                     inputs_t.append(x_preprocessed_i)
