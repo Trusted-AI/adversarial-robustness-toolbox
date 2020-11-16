@@ -67,6 +67,7 @@ class BlackBoxClassifier(Classifier):
                be divided by the second one.
         """
         super().__init__(
+            model=None,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,

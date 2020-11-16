@@ -409,6 +409,7 @@ class ScikitlearnDecisionTreeRegressor(ScikitlearnDecisionTreeClassifier):
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
+        self._model = model
 
     def get_values_at_node(self, node_id: int) -> np.ndarray:
         """
