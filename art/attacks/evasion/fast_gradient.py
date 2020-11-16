@@ -308,34 +308,36 @@ class FastGradientMethod(EvasionAttack):
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if (not (isinstance(self.eps, (int, float, np.ndarray)) and isinstance(self.eps_step, (int, float)))) and (
-            not (isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray) and self.minimal)
-        ):
-            raise TypeError(
-                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type."
-            )
-
         if isinstance(self.eps, (int, float)):
             if self.eps <= 0:
                 raise ValueError("The perturbation size `eps` has to be positive.")
+
+            if self.eps_step <= 0:
+                raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+
+            if self.norm in ["inf", np.inf] and self.eps_step > self.eps:
+                raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
+
         else:
             if (self.eps <= 0).any():
                 raise ValueError("The perturbation size `eps` has to be positive.")
 
-        if isinstance(self.eps_step, (int, float)):
-            if self.eps_step <= 0:
-                raise ValueError("The perturbation step-size `eps_step` has to be positive.")
-        else:
             if (self.eps_step <= 0).any():
                 raise ValueError("The perturbation step-size `eps_step` has to be positive.")
 
-        if (
-            isinstance(self.eps, np.ndarray)
-            and isinstance(self.eps_step, np.ndarray)
-            and self.eps.shape != self.eps_step.shape
+            if self.eps.shape != self.eps_step.shape:
+                raise ValueError(
+                    "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
+                )
+
+            if self.norm in ["inf", np.inf] and (self.eps_step > self.eps).any():
+                raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
+
+        if (not (isinstance(self.eps, (int, float)) and isinstance(self.eps_step, (int, float)))) and (
+            not (isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray))
         ):
-            raise ValueError(
-                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
+            raise TypeError(
+                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type."
             )
 
         if not isinstance(self.targeted, bool):
