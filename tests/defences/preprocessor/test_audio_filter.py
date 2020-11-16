@@ -67,3 +67,50 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
 
     except ARTTestException as e:
         art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test(fir_filter, art_warning, expected_values):
+    try:
+        # Load data for testing
+        expected_data = expected_values()
+
+        x1 = expected_data[0]
+        x2 = expected_data[1]
+        x3 = expected_data[2]
+        result_0 = expected_data[3]
+        result_1 = expected_data[4]
+        result_2 = expected_data[5]
+
+        # Create signal data
+        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)])
+
+
+@pytest.mark.framework_agnostic
+def test_triple_clip_values_error(art_warning):
+    try:
+        exc_msg = "`clip_values` should be a tuple of 2 floats containing the allowed data range."
+        with pytest.raises(ValueError, match=exc_msg):
+            AudioFilter(
+                numerator_coef=np.array([0.1, 0.2, 0.3]),
+                denumerator_coef=np.array([0.1, 0.2, 0.3]),
+                clip_values=(0, 1, 2)
+            )
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.framework_agnostic
+def test_relation_clip_values_error(art_warning):
+    try:
+        exc_msg = "Invalid `clip_values`: min >= max."
+        with pytest.raises(ValueError, match=exc_msg):
+            AudioFilter(
+                numerator_coef=np.array([0.1, 0.2, 0.3]),
+                denumerator_coef=np.array([0.1, 0.2, 0.3]),
+                clip_values=(1, 0)
+            )
+
+    except ARTTestException as e:
+        art_warning(e)
