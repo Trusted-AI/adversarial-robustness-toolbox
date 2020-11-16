@@ -173,6 +173,12 @@ demonstrates the generation and detection of backdoors into neural networks by p
   <img src="../utils/data/images/poisoning.png?raw=true" width="200" title="poisoning">
 </p>
 
+[poisoning_defense_neural_cleanse.ipynb](poisoning_defense_neural_cleanse.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_neural_cleanse.ipynb)]
+demonstrates a defense against poisoning attacks that generation the suspected backdoor and applies runtime mitigation methods on the classifier.
+
+[poisoning_defence_strip.ipynb](poisoning_defence_strip.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defence_strip.ipynb)]
+demonstrates a defense against input-agnostic backdoor attacks that filters suspicious inputs at runtime.
+
 ## Certification and Verification
 
 [output_randomized_smoothing_mnist.ipynb](output_randomized_smoothing_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/IBM/adversarial-robustness-toolbox/blob/main/notebooks/output_randomized_smoothing_mnist.ipynb)]

@@ -30,7 +30,7 @@ import numpy as np
 from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.estimators.certification.neural_cleanse.neural_cleanse import NeuralCleanseMixin
+from art.estimators.poison_mitigation.neural_cleanse.neural_cleanse import NeuralCleanseMixin
 from art.estimators.classification.keras import KerasClassifier, KERAS_MODEL_TYPE
 
 if TYPE_CHECKING:

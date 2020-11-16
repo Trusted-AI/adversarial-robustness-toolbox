@@ -112,9 +112,9 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-        from art.config import ART_DATA_PATH
+        from art import config
 
-        full_path = os.path.join(ART_DATA_PATH, "my_classifier")
+        full_path = os.path.join(config.ART_DATA_PATH, "my_classifier")
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)

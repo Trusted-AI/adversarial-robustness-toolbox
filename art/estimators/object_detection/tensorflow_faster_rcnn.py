@@ -26,7 +26,7 @@ import numpy as np
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.estimators.tensorflow import TensorFlowEstimator
 from art.utils import get_file
-from art.config import ART_DATA_PATH
+from art import config
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
@@ -237,7 +237,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               corresponding loss values.
                     - detections: a dictionary containing final detection results.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
         from object_detection.utils import variables_helper
 
         if obj_detection_model is None:
@@ -253,7 +253,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                 )
 
             # Download and extract
-            path = get_file(filename=filename, path=ART_DATA_PATH, url=url, extract=True)
+            path = get_file(filename=filename, path=config.ART_DATA_PATH, url=url, extract=True)
 
             # Load model config
             pipeline_config = path + "/pipeline.config"
@@ -321,7 +321,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     weights for groundtruth boxes.
         :return: Loss gradients of the same shape as `x`.
         """
-        import tensorflow as tf
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         # Only do loss_gradient if is_training is False
         if self.is_training:

@@ -7,3 +7,9 @@ Neural Cleanse
 .. autoclass:: NeuralCleanse
    :members:
    :special-members:
+
+STRIP
+--------------
+.. autoclass:: STRIP
+   :members:
+   :special-members:
