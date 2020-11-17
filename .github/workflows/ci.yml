@@ -82,7 +82,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python }}
-      - name: Pre-install
+      - name: Pre-install legacy
         if: ${{ matrix.framework == 'legacy' }}
         run: |
           sudo apt-get -y -q install ffmpeg libavcodec-extra
