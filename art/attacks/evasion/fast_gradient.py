@@ -417,7 +417,7 @@ class FastGradientMethod(EvasionAttack):
         if random_init:
             n = x.shape[0]
             m = np.prod(x.shape[1:]).item()
-            random_perturbation = random_sphere(n, m, eps, self.norm, x.shape).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+            random_perturbation = random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             if mask is not None:
                 random_perturbation = random_perturbation * (mask.astype(ART_NUMPY_DTYPE))
             x_adv = x.astype(ART_NUMPY_DTYPE) + random_perturbation

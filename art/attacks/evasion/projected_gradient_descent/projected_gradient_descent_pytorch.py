@@ -357,7 +357,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
             m = np.prod(x.shape[1:]).item()
 
             random_perturbation = (
-                random_sphere(n, m, eps, self.norm, tuple(x.shape)).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+                random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             )
             random_perturbation = torch.from_numpy(random_perturbation).to(self.estimator.device)
 

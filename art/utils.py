@@ -335,7 +335,6 @@ def random_sphere(
     nb_dims: int,
     radius: Union[int, float, np.ndarray],
     norm: Union[int, float, str],
-    original_shape: Optional[Tuple] = None,
 ) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
@@ -344,7 +343,6 @@ def random_sphere(
     :param nb_dims: Dimensionality of the sphere.
     :param radius: Radius of the sphere.
     :param norm: Current support: 1, 2, np.inf, "inf".
-    :param original_shape: The original shape of the input batch.
     :return: The generated random sphere.
     """
     if norm == 1:
@@ -374,8 +372,7 @@ def random_sphere(
 
     elif norm in [np.inf, "inf"]:
         if isinstance(radius, np.ndarray):
-            radius = radius * np.ones(original_shape)
-            radius = radius.reshape([radius.shape[0], -1])
+            radius = radius * np.ones(shape=(nb_points, nb_dims))
 
         res = np.random.uniform(-radius, radius, (nb_points, nb_dims))
 

@@ -353,7 +353,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             m = np.prod(x.shape[1:]).item()
 
             random_perturbation = (
-                random_sphere(n, m, eps, self.norm, tuple(x.shape)).reshape(x.shape).astype(ART_NUMPY_DTYPE)
+                random_sphere(n, m, eps, self.norm).reshape(x.shape).astype(ART_NUMPY_DTYPE)
             )
             random_perturbation = tf.convert_to_tensor(random_perturbation)
             if mask is not None:
