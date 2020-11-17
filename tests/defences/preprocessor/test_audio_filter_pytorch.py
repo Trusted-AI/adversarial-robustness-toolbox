@@ -28,7 +28,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("fir_filter", [False, True])
 def test_audio_filter(fir_filter, art_warning, expected_values):
     try:
@@ -69,7 +69,27 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+def test_default(art_warning):
+    try:
+        # Small data for testing
+        x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]])
+
+        # Create filter
+        audio_filter = AudioFilterPyTorch()
+
+        # Apply filter
+        result = audio_filter(x)
+
+        # Test
+        assert result[1] is None
+        np.testing.assert_array_almost_equal(x, result[0], decimal=0)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_triple_clip_values_error(art_warning):
     try:
         exc_msg = "`clip_values` should be a tuple of 2 floats containing the allowed data range."
@@ -84,7 +104,7 @@ def test_triple_clip_values_error(art_warning):
         art_warning(e)
 
 
-@pytest.mark.only_with_platform("pytorch")
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_relation_clip_values_error(art_warning):
     try:
         exc_msg = "Invalid `clip_values`: min >= max."

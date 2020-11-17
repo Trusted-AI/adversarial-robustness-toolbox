@@ -49,7 +49,7 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
 
         if fir_filter:
-            denumerator_coef = np.array([1.0, 0.0, 0.0, 0.0])
+            denumerator_coef = np.array([1.0])
         else:
             denumerator_coef = np.array([1.0, 0.1, 0.3, 0.4])
 
@@ -70,20 +70,23 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
 
 
 @pytest.mark.framework_agnostic
-def test(fir_filter, art_warning, expected_values):
+def test_default(art_warning):
     try:
-        # Load data for testing
-        expected_data = expected_values()
+        # Small data for testing
+        x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]])
 
-        x1 = expected_data[0]
-        x2 = expected_data[1]
-        x3 = expected_data[2]
-        result_0 = expected_data[3]
-        result_1 = expected_data[4]
-        result_2 = expected_data[5]
+        # Create filter
+        audio_filter = AudioFilter()
 
-        # Create signal data
-        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)])
+        # Apply filter
+        result = audio_filter(x)
+
+        # Test
+        assert result[1] is None
+        np.testing.assert_array_almost_equal(x, result[0], decimal=0)
+
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.framework_agnostic
