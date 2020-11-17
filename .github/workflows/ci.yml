@@ -74,7 +74,7 @@ jobs:
             keras: 2.4.3
             scikit-learn: 0.23.2
 
-    name: Run ${{ matrix.framework }} ${{ matrix.tf_version }} Tests
+    name: Run ${{ matrix.name }} Tests
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
