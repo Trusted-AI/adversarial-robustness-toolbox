@@ -531,7 +531,7 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     """
     preds_max = np.amax(preds, axis=1, keepdims=True)
     y = preds == preds_max
-
+    y = y.astype(np.uint8)
     return y
 
 
