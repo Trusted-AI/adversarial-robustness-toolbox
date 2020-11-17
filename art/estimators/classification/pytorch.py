@@ -512,12 +512,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         # Apply preprocessing
         if self.all_framework_preprocessing:
-            if isinstance(x, torch.Tensor):
-                x_grad = torch.tensor(x).to(self._device)
-                y_grad = torch.tensor(y).to(self._device)
-            else:
-                x_grad = torch.from_numpy(x).to(self._device)
-                y_grad = torch.from_numpy(y.astype(np.uint8)).to(self._device)
+            x_grad = torch.tensor(x).to(self._device)
+            y_grad = torch.tensor(y).to(self._device)
             x_grad.requires_grad = True
             inputs_t, y_preprocessed = self._apply_preprocessing(x_grad, y=y_grad, fit=False, no_grad=False)
         elif isinstance(x, np.ndarray):
