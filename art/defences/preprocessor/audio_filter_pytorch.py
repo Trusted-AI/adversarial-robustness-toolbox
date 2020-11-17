@@ -49,8 +49,8 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
 
     def __init__(
         self,
-        numerator_coef: np.ndarray,
-        denumerator_coef: np.ndarray,
+        numerator_coef: np.ndarray = np.array([1.0]),
+        denumerator_coef: np.ndarray = np.array([1.0]),
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -62,7 +62,7 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
 
         :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
         :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
-                                 denominator coefficients to [1, 0, 0,...], this preprocessor can be used to apply a
+                                 denominator coefficients to np.array([1.0]), this preprocessor can be used to apply a
                                  FIR filter.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
@@ -108,6 +108,8 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
         :param y: Label of the sample `x`. This function does not affect them in any way.
         :return: Similar sample.
         """
+        import torch  # lgtm [py/repeated-import]
+
         x_preprocess = lfilter(
             b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
             a_coeffs=torch.tensor(self.denumerator_coef, device=self._device),

@@ -49,8 +49,8 @@ class AudioFilter(Preprocessor):
 
     def __init__(
         self,
-        numerator_coef: np.ndarray,
-        denumerator_coef: np.ndarray,
+        numerator_coef: np.ndarray = np.array([1.0]),
+        denumerator_coef: np.ndarray = np.array([1.0]),
         axis: int = -1,
         initial_cond: Optional[np.ndarray] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -63,7 +63,7 @@ class AudioFilter(Preprocessor):
 
         :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
         :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
-                                 denominator coefficients to [1, 0, 0,...], this preprocessor can be used to apply a
+                                 denominator coefficients to np.array([1.0]), this preprocessor can be used to apply a
                                  FIR filter.
         :param axis: The axis of the input data array along which to apply the linear filter. The filter is applied to
                      each subarray along this axis.
@@ -111,11 +111,12 @@ class AudioFilter(Preprocessor):
             x_preprocess[i] = lfilter(
                 b=self.numerator_coef, a=self.denumerator_coef, x=x_preprocess_i, axis=self.axis, zi=self.initial_cond
             )
+            x_preprocess[i] = x_preprocess[i].astype(ART_NUMPY_DTYPE)
 
         if self.clip_values is not None:
             np.clip(x_preprocess, self.clip_values[0], self.clip_values[1], out=x_preprocess)
 
-        return x_preprocess.astype(ART_NUMPY_DTYPE), y
+        return x_preprocess, y
 
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         return grad
