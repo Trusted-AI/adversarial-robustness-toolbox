@@ -28,6 +28,7 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.skipModule("torchaudio")
 @pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("fir_filter", [False, True])
 def test_audio_filter(fir_filter, art_warning, expected_values):
@@ -69,6 +70,7 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         art_warning(e)
 
 
+@pytest.mark.skipModule("torchaudio")
 @pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_default(art_warning):
     try:
@@ -89,6 +91,7 @@ def test_default(art_warning):
         art_warning(e)
 
 
+@pytest.mark.skipModule("torchaudio")
 @pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_triple_clip_values_error(art_warning):
     try:
@@ -104,6 +107,7 @@ def test_triple_clip_values_error(art_warning):
         art_warning(e)
 
 
+@pytest.mark.skipModule("torchaudio")
 @pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_relation_clip_values_error(art_warning):
     try:
