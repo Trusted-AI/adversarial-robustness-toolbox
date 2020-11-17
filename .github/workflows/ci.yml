@@ -60,7 +60,7 @@ jobs:
             tensorflow: 2.3.1
             keras: 2.4.3
           - name: PyTorch (Python 3.7)
-           framework: pytorch
+            framework: pytorch
             python: 3.7
           - name: scikit-learn 0.22.2 (Python 3.7)
             framework: scikit-learn
