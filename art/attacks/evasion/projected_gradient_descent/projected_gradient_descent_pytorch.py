@@ -85,16 +85,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Show progress bars.
         """
-        if (
-            hasattr(estimator, "preprocessing")
-            and (estimator.preprocessing is not None and estimator.preprocessing != (0, 1))
-        ) or (
-            hasattr(estimator, "preprocessing_defences")
-            and (estimator.preprocessing_defences is not None and estimator.preprocessing_defences != [])
-        ):
+        if not estimator.all_framework_preprocessing:
             raise NotImplementedError(
-                "The framework-specific implementation currently does not apply preprocessing and "
-                "preprocessing defences."
+                "The framework-specific implementation only supports framework-specific preprocessing."
             )
 
         super(ProjectedGradientDescentPyTorch, self).__init__(
@@ -249,7 +242,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient_framework(x, y) * (1 - 2 * int(self.targeted))
+        grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
 
         # Apply norm bound
         if self.norm in ["inf", np.inf]:
