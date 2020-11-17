@@ -54,7 +54,7 @@ def test_one_shot(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
             "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 4, 4, 7, 7, 4, 7, 2, 2, 3, 0]), 2),
         }
 
-        attacker = FastGradientMethod(classifier, eps=1, batch_size=128)
+        attacker = FastGradientMethod(classifier, eps=1.0, batch_size=128)
         attack = FrameSaliencyAttack(classifier, attacker, "one_shot")
         backend_check_adverse_values(attack, fix_get_mnist_subset, expected_values)
     except ARTTestException as e:
