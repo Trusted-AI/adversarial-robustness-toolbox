@@ -114,7 +114,7 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
             b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
             a_coeffs=torch.tensor(self.denumerator_coef, device=self._device),
             waveform=x,
-            clamp=False
+            clamp=False,
         )
 
         if self.clip_values is not None:

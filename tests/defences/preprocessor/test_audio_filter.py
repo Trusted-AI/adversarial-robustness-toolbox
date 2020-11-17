@@ -97,7 +97,7 @@ def test_triple_clip_values_error(art_warning):
             AudioFilter(
                 numerator_coef=np.array([0.1, 0.2, 0.3]),
                 denumerator_coef=np.array([0.1, 0.2, 0.3]),
-                clip_values=(0, 1, 2)
+                clip_values=(0, 1, 2),
             )
 
     except ARTTestException as e:
@@ -110,9 +110,7 @@ def test_relation_clip_values_error(art_warning):
         exc_msg = "Invalid `clip_values`: min >= max."
         with pytest.raises(ValueError, match=exc_msg):
             AudioFilter(
-                numerator_coef=np.array([0.1, 0.2, 0.3]),
-                denumerator_coef=np.array([0.1, 0.2, 0.3]),
-                clip_values=(1, 0)
+                numerator_coef=np.array([0.1, 0.2, 0.3]), denumerator_coef=np.array([0.1, 0.2, 0.3]), clip_values=(1, 0)
             )
 
     except ARTTestException as e:
