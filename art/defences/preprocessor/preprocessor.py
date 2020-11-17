@@ -166,7 +166,7 @@ class PreprocessorPyTorch(Preprocessor):
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply local spatial smoothing to sample `x`.
+        Apply preprocessing to input `x` and labels `y`.
 
         :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
         :param y: Labels of the sample `x`. This function does not affect them in any way.
@@ -247,7 +247,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply local spatial smoothing to sample `x`.
+        Apply preprocessing to input `x` and labels `y`.
 
         :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
         :param y: Labels of the sample `x`. This function does not affect them in any way.
