@@ -63,11 +63,11 @@ jobs:
             framework: pytorch
             python: 3.7
           - name: scikit-learn 0.22.2 (Python 3.7)
-            framework: scikit-learn
+            framework: scikitlearn
             scikit-learn: 0.22.2
             python: 3.7
           - name: scikit-learn 0.23.2 (Python 3.8)
-            framework: scikit-learn
+            framework: scikitlearn
             scikit-learn: 0.23.2
             python: 3.8
           - name: mxnet (Python 3.7)
@@ -108,7 +108,7 @@ jobs:
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
       - name: Pre-install scikit-learn
-        if: ${{ matrix.framework == 'scikit-learn' }}
+        if: ${{ matrix.framework == 'scikitlearn' }}
         run: |
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           pip install scikit-learn==${{ matrix.scikit-learn }}
