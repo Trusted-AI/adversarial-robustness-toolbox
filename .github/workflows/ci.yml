@@ -89,7 +89,7 @@ jobs:
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install scikit-learn==${{ matrix.scikit-learn }}
-      - name: Pre-install
+      - name: Pre-install tensorflow
         if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' }}
         run: |
           sudo apt-get -y -q install ffmpeg libavcodec-extra
