@@ -120,7 +120,7 @@ else
                          "tests/defences/detector/poison/test_clustering_analyzer.py" \
                          "tests/defences/detector/poison/test_ground_truth_evaluator.py" \
                          "tests/defences/detector/poison/test_provenance_defence.py" \
-                         "tests/defences/detector/poison/test_roni.py" \ )
+                         "tests/defences/detector/poison/test_roni.py" )
 
     declare -a metrics=("tests/metrics/test_gradient_check.py" \
                         "tests/metrics/test_metrics.py" \
