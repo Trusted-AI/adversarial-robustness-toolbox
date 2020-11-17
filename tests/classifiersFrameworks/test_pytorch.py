@@ -217,7 +217,7 @@ def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator, de
         )
         assert len(classifier.preprocessing_defences) == 3
 
-        attack = FastGradientMethod(classifier, eps=1, batch_size=128)
+        attack = FastGradientMethod(classifier, eps=1.0, batch_size=128)
         backend_test_defended_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
         art_warning(e)
