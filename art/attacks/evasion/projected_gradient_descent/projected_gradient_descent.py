@@ -118,15 +118,10 @@ class ProjectedGradientDescent(EvasionAttack):
         self.verbose = verbose
         ProjectedGradientDescent._check_params(self)
 
-        no_preprocessing = self.estimator.preprocessing is None or (
-            np.all(self.estimator.preprocessing[0] == 0) and np.all(self.estimator.preprocessing[1] == 1)
-        )
-        no_defences = not self.estimator.preprocessing_defences and not self.estimator.postprocessing_defences
-
         self._attack: Union[
             ProjectedGradientDescentPyTorch, ProjectedGradientDescentTensorFlowV2, ProjectedGradientDescentNumpy
         ]
-        if isinstance(self.estimator, PyTorchClassifier) and no_preprocessing and no_defences:
+        if isinstance(self.estimator, PyTorchClassifier) and self.estimator.all_framework_preprocessing:
             self._attack = ProjectedGradientDescentPyTorch(
                 estimator=estimator,  # type: ignore
                 norm=norm,
@@ -140,7 +135,7 @@ class ProjectedGradientDescent(EvasionAttack):
                 verbose=verbose,
             )
 
-        elif isinstance(self.estimator, TensorFlowV2Classifier) and no_preprocessing and no_defences:
+        elif isinstance(self.estimator, TensorFlowV2Classifier) and self.estimator.all_framework_preprocessing:
             self._attack = ProjectedGradientDescentTensorFlowV2(
                 estimator=estimator,  # type: ignore
                 norm=norm,

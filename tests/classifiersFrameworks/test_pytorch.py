@@ -96,18 +96,18 @@ def _test_preprocessing_defences_backward(
 
     # The efficient defence-chaining.
     pseudo_gradients = np.random.randn(*x_test_mnist.shape)
-    gradients_in_chain = classifier._apply_preprocessing_defences_gradient(x_test_mnist, pseudo_gradients)
+    gradients_in_chain = classifier._apply_preprocessing_gradient(x_test_mnist, pseudo_gradients)
 
     # Apply the same backward pass one by one.
     x = x_test_mnist
     x_intermediates = [x]
-    for defence in classifier.preprocessing_defences[:-1]:
-        x = defence(x)[0]
+    for preprocess in classifier.preprocessing[:-1]:
+        x = preprocess(x)[0]
         x_intermediates.append(x)
 
     gradients = pseudo_gradients
-    for defence, x in zip(classifier.preprocessing_defences[::-1], x_intermediates[::-1]):
-        gradients = defence.estimate_gradient(x, gradients)
+    for preprocess, x in zip(classifier.preprocessing[::-1], x_intermediates[::-1]):
+        gradients = preprocess.estimate_gradient(x, gradients)
 
     np.testing.assert_array_almost_equal(gradients_in_chain, gradients, decimal=4)
 
