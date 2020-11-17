@@ -204,7 +204,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         if (
             isinstance(generator, MXDataGenerator)
-            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
+            and (self.preprocessing is None or self.preprocessing == [])
             and self.preprocessing == (0, 1)
         ):
             # Train directly in MXNet
@@ -497,7 +497,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
     def __repr__(self):
         repr_ = (
             "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r,"
-            " channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r,"
+            " channels_first=%r, clip_values=%r, preprocessing=%r, postprocessing_defences=%r,"
             " preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
@@ -510,7 +510,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 self.channel_index,
                 self.channels_first,
                 self.clip_values,
-                self.preprocessing_defences,
+                self.preprocessing,
                 self.postprocessing_defences,
                 self.preprocessing,
             )

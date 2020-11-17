@@ -106,7 +106,7 @@ class TestClassifier(TestBase):
         classifier = ClassifierInstance()
 
         x = np.random.rand(2, 3)
-        x_new = classifier._apply_preprocessing_standardisation(x)
+        x_new, _ = classifier._apply_preprocessing(x=x, y=None, fit=False)
         x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774], [0.78535858, 0.77997581, 0.27259261]])
         np.testing.assert_array_almost_equal(x_new, x_new_expected)
 
@@ -117,7 +117,9 @@ class TestClassifier(TestBase):
         self.assertIn("ClassifierInstance", repr_)
         self.assertIn("clip_values=None", repr_)
         self.assertIn("defences=None", repr_)
-        self.assertIn("preprocessing=(0, 1)", repr_)
+        self.assertIn(
+            "preprocessing=[StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)]", repr_
+        )
 
 
 class TestClassifierNeuralNetwork(TestBase):
@@ -134,7 +136,7 @@ class TestClassifierNeuralNetwork(TestBase):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
         x = np.random.rand(2, 3)
         x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774], [0.78535858, 0.77997581, 0.27259261]])
-        x_new = classifier._apply_preprocessing_standardisation(x)
+        x_new, _ = classifier._apply_preprocessing(x, y=None, fit=False)
         np.testing.assert_array_almost_equal(x_new, x_new_expected, decimal=4)
 
     def test_repr(self):
@@ -144,7 +146,9 @@ class TestClassifierNeuralNetwork(TestBase):
         self.assertIn(f"channel_index={Deprecated}, channels_first=True", repr_)
         self.assertIn("clip_values=[0. 1.]", repr_)
         self.assertIn("defences=None", repr_)
-        self.assertIn("preprocessing=(0, 1)", repr_)
+        self.assertIn(
+            "preprocessing=[StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)]", repr_
+        )
 
 
 if __name__ == "__main__":
