@@ -19,7 +19,7 @@ h5py==2.10.0
 tensorflow>=1.15.4
 keras>=2.2.5
 tensorflow-addons>=0.11.2
-mxnet==1.6.0
+mxnet==1.7.0.post1
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==1.6.0
 torchvision==0.7.0
