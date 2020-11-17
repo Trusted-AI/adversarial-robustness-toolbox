@@ -87,8 +87,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         if not estimator.all_framework_preprocessing:
             raise NotImplementedError(
-                "The framework-specific implementation currently does not apply preprocessing and "
-                "preprocessing defences."
+                "The framework-specific implementation only supports framework-specific preprocessing."
             )
 
         super(ProjectedGradientDescentPyTorch, self).__init__(
