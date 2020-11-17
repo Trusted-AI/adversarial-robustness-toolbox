@@ -309,7 +309,9 @@ class FastGradientMethod(EvasionAttack):
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
         if (not (isinstance(self.eps, (int, float, np.ndarray)) and isinstance(self.eps_step, (int, float)))) and (
-            not (isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray) and self.minimal)
+            hasattr(self, "minimal")
+            and self.minimal
+            and not (isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray))
         ):
             raise TypeError(
                 "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type."
