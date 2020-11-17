@@ -47,10 +47,16 @@ logger = logging.getLogger(__name__)
 
 DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
 CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
-PREPROCESSING_TYPE = Optional[Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]]
 
 if TYPE_CHECKING:
     # pylint: disable=R0401
+
+    from art.defences.preprocessor.preprocessor import Preprocessor
+
+    PREPROCESSING_TYPE = Optional[
+        Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
+    ]
+
     from art.estimators.classification.classifier import (
         Classifier,
         ClassifierLossGradients,
@@ -560,7 +566,7 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     """
     preds_max = np.amax(preds, axis=1, keepdims=True)
     y = preds == preds_max
-
+    y = y.astype(np.uint8)
     return y
 
 
