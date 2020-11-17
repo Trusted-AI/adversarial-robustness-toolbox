@@ -79,7 +79,7 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Apply local spatial smoothing to sample `x`.
+        Apply standardisation with mean and standard deviation to input `x`.
         """
         import torch  # lgtm [py/repeated-import]
 

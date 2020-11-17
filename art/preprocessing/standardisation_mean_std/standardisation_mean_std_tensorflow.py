@@ -66,7 +66,7 @@ class StandardisationMeanStdTensorFlowV2(PreprocessorTensorFlowV2):
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
-        Apply local spatial smoothing to sample `x`.
+        Apply standardisation with mean and standard deviation to input `x`.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
