@@ -1237,48 +1237,66 @@ def get_tabular_classifier_tf_v2():
 
 
 def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
+    from art.estimators.classification.scikitlearn import (
+        ScikitlearnDecisionTreeClassifier,
+        # ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+    )
+
+    available_models = {
+        "decisionTreeClassifier": ScikitlearnDecisionTreeClassifier,
+        # "extraTreeClassifier": ScikitlearnExtraTreeClassifier,
+        "adaBoostClassifier": ScikitlearnAdaBoostClassifier,
+        "baggingClassifier": ScikitlearnBaggingClassifier,
+        "extraTreesClassifier": ScikitlearnExtraTreesClassifier,
+        "gradientBoostingClassifier": ScikitlearnGradientBoostingClassifier,
+        "randomForestClassifier": ScikitlearnRandomForestClassifier,
+        "logisticRegression": ScikitlearnLogisticRegression,
+        "svc": ScikitlearnSVC,
+        "linearSVC": ScikitlearnSVC,
+    }
+
     if model_list_names is None:
-        model_list_names = [
-            "decisionTreeClassifier",
-            "extraTreeClassifier",
-            "adaBoostClassifier",
-            "baggingClassifier",
-            "extraTreesClassifier",
-            "gradientBoostingClassifier",
-            "randomForestClassifier",
-            "logisticRegression",
-            "svc",
-            "linearSVC",
-        ]
-    if clipped:
-        classifier_list = [
-            # os.path.join(os.path.dirname(os.path.dirname(__file__)),'utils/resources/models', 'W_DENSE3_IRIS.npy')
-            pickle.load(
-                open(
-                    os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)),
-                        "utils/resources/models/scikit/",
-                        model_name + "iris_clipped.sav",
-                    ),
-                    "rb",
-                )
-            )
-            for model_name in model_list_names
-        ]
+        model_dict_names = available_models
     else:
-        classifier_list = [
-            pickle.load(
+        model_dict_names = dict()
+        for name in model_list_names:
+            model_dict_names[name] = available_models[name]
+
+    classifier_list = list()
+
+    if clipped:
+        for model_name, model_class in model_dict_names.items():
+            model = pickle.load(
                 open(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)),
                         "utils/resources/models/scikit/",
-                        model_name + "iris_unclipped.sav",
+                        "scikit-" + model_name + "-iris-clipped.pickle",
                     ),
                     "rb",
                 )
             )
-            for model_name in model_list_names
-        ]
+            classifier_list.append(model_class(model=model, clip_values=(0, 1)))
+    else:
+        for model_name, model_class in model_dict_names.items():
+            model = pickle.load(
+                open(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models/scikit/",
+                        "scikit-" + model_name + "-iris-unclipped.pickle",
+                    ),
+                    "rb",
+                )
+            )
+            classifier_list.append(model_class(model=model, clip_values=None))
 
     return classifier_list
 

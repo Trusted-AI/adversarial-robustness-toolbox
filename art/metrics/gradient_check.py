@@ -42,7 +42,7 @@ def loss_gradient_check(estimator: "LossGradientsMixin", x: np.ndarray, y: np.nd
 
     is_bad = []
     for i in trange(len(x), desc="Gradient check"):
-        grad = estimator.loss_gradient([x[i]], [y[i]])
+        grad = estimator.loss_gradient(x[[i]], y[[i]])
         is_bad.append(
             [(np.min(grad) == 0 and np.max(grad) == 0), np.any(np.isnan(grad)), np.any(np.isinf(grad)),]
         )
