@@ -25,7 +25,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
-from torchaudio.functional import lfilter
 import numpy as np
 from tqdm import tqdm
 
@@ -109,6 +108,7 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
         :return: Similar sample.
         """
         import torch  # lgtm [py/repeated-import]
+        from torchaudio.functional import lfilter
 
         x_preprocess = lfilter(
             b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
