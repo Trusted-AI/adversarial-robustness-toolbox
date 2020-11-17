@@ -25,13 +25,36 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - python: 3.6
+          - framework: tensorflow
+            python: 3.6
             tensorflow: 1.15.3
+            tf_version: v1
             keras: 2.2.5
-          - python: 3.7
+          - framework: tensorflow
+            python: 3.6
+            tensorflow: 2.2.0
+            tf_version: v2
+            keras: 2.3.1
+          - framework: keras
+            python: 3.7
             tensorflow: 2.2.0
             keras: 2.3.1
-    name: Run Tests (Python ${{ matrix.python }})
+          - framework: kerastf
+            python: 3.7
+            tensorflow: 2.2.0
+            keras: 2.3.1
+          - framework: pytorch
+            python: 3.7
+          - framework: scikitlearn
+            python: 3.7
+          - framework: mxnet
+            python: 3.7
+          - framework: legacy
+            python: 3.7
+            tensorflow: 2.2.0
+            keras: 2.3.1
+
+    name: Run ${{ matrix.framework }} ${{ matrix.tf_version }} Tests
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -40,6 +63,7 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Pre-install
+        if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' || matrix.framework == 'legacy' }}
         run: |
           sudo apt-get -y -q install ffmpeg libavcodec-extra
           sed -i "s/^tensorflow$/tensorflow==${{ matrix.tensorflow }}/" requirements.txt
@@ -49,8 +73,8 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip3 install -q -r requirements.txt
           pip list
-      - name: Run Tests
-        run: ./run_tests.sh
+      - name: Run ${{ matrix.framework }} ${{ matrix.tf_version }} Tests
+        run: ./run_tests.sh ${{ matrix.framework }}
   style:
     name: Style Check
     runs-on: ubuntu-latest
