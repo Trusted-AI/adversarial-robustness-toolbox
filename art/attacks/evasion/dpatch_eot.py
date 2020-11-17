@@ -29,7 +29,7 @@ from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 from tqdm import trange
 
-from art.attacks.evasion import DPatch
+from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 from art.utils import Deprecated, deprecated_keyword_arg
@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class DPatchEoT(DPatch):
+class DPatchEoT(EvasionAttack):
     """
     Implementation of a particular variation of the DPatch attack.
 
@@ -49,7 +49,12 @@ class DPatchEoT(DPatch):
     | Paper link (physical-world patch from Lee & Kolter): https://arxiv.org/abs/1906.11897
     """
 
-    attack_params = DPatch.attack_params + [
+    attack_params = EvasionAttack.attack_params + [
+        "patch_shape",
+        "learning_rate",
+        "max_iter",
+        "batch_size",
+        "verbose",
         "patch_location",
         "crop_range",
         "brightness_range",
@@ -88,18 +93,29 @@ class DPatchEoT(DPatch):
         :param batch_size: The size of the training batch.
         :param verbose: Show progress bars.
         """
-        super().__init__(estimator=estimator,
-                         patch_shape=patch_shape,
-                         learning_rate=learning_rate,
-                         max_iter=max_iter,
-                         batch_size=batch_size,
-                         verbose=verbose)
 
+        super().__init__(estimator=estimator)
+
+        self.patch_shape = patch_shape
+        self.learning_rate = learning_rate
+        self.max_iter = max_iter
+        self.batch_size = batch_size
+        if self.estimator.clip_values is None:
+            self._patch = np.zeros(shape=patch_shape, dtype=config.ART_NUMPY_DTYPE)
+        else:
+            self._patch = (
+                    np.random.randint(0, 255, size=patch_shape)
+                    / 255
+                    * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
+                    + self.estimator.clip_values[0]
+            ).astype(config.ART_NUMPY_DTYPE)
+        self.verbose = verbose
         self.patch_location = patch_location
         self.crop_range = crop_range
         self.brightness_range = brightness_range
         self.rotation_weights = rotation_weights
         self.sample_size = sample_size
+        super()._check_params()
         self._check_params()
 
     def generate(
@@ -343,6 +359,29 @@ class DPatchEoT(DPatch):
         return x_patch
 
     def _check_params(self) -> None:
+        if not isinstance(self.patch_shape, (tuple, list)) or not all(isinstance(s, int) for s in self.patch_shape):
+            raise ValueError("The patch shape must be either a tuple or list of integers.")
+        if len(self.patch_shape) != 3:
+            raise ValueError("The length of patch shape must be 3.")
+
+        if not isinstance(self.learning_rate, float):
+            raise ValueError("The learning rate must be of type float.")
+        if self.learning_rate <= 0.0:
+            raise ValueError("The learning rate must be greater than 0.0.")
+
+        if not isinstance(self.max_iter, int):
+            raise ValueError("The number of optimization steps must be of type int.")
+        if self.max_iter <= 0:
+            raise ValueError("The number of optimization steps must be greater than 0.")
+
+        if not isinstance(self.batch_size, int):
+            raise ValueError("The batch size must be of type int.")
+        if self.batch_size <= 0:
+            raise ValueError("The batch size must be greater than 0.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
+
         if not isinstance(self.patch_location, (tuple, list)) \
                 or not all(isinstance(s, int) for s in self.patch_location):
             raise ValueError("The patch location must be either a tuple or list of integers.")
