@@ -26,6 +26,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/utils --mlFramework=$mlFramework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed utils tests"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/poison/ --mlFramework=$mlFramework  --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/poison tests"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv -s tests/attacks/evasion/ --mlFramework=$mlFramework  --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed attacks/evasion/test_shadow_attack.py"; fi
 
@@ -52,7 +55,6 @@ then
 else
     declare -a attacks=("tests/attacks/test_adversarial_patch.py" \
                         "tests/attacks/test_adversarial_embedding.py" \
-                        "tests/attacks/test_backdoor_attack.py" \
                         "tests/attacks/test_carlini.py" \
                         "tests/attacks/test_copycat_cnn.py" \
                         "tests/attacks/test_decision_tree_attack.py" \
