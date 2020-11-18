@@ -153,17 +153,16 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
             raise ValueError("expected_pp_poison must be between 0 and 1. Unsupported value: " +
                              str(self.expected_pp_poison))
 
-
-@staticmethod
-def spectral_signature_scores(matrix_r: np.ndarray) -> np.ndarray:
-    """
-    :param matrix_r: Matrix of feature representations.
-    :return: Outlier scores for each observation based on spectral signature.
-    """
-    matrix_m = matrix_r - np.mean(matrix_r, axis=0)
-    # Following Algorithm #1 in paper, use SVD of centered features, not of covariance
-    _, _, matrix_v = np.linalg.svd(matrix_m, full_matrices=False)
-    eigs = matrix_v[:1]
-    corrs = np.matmul(eigs, np.transpose(matrix_r))
-    score = np.expand_dims(np.linalg.norm(corrs, axis=1), axis=1)
-    return score
+    @staticmethod
+    def spectral_signature_scores(matrix_r: np.ndarray) -> np.ndarray:
+        """
+        :param matrix_r: Matrix of feature representations.
+        :return: Outlier scores for each observation based on spectral signature.
+        """
+        matrix_m = matrix_r - np.mean(matrix_r, axis=0)
+        # Following Algorithm #1 in paper, use SVD of centered features, not of covariance
+        _, _, matrix_v = np.linalg.svd(matrix_m, full_matrices=False)
+        eigs = matrix_v[:1]
+        corrs = np.matmul(eigs, np.transpose(matrix_r))
+        score = np.expand_dims(np.linalg.norm(corrs, axis=1), axis=1)
+        return score
