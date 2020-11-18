@@ -77,7 +77,6 @@ def SklearnClassifier(
     sklearn_name = model.__class__.__name__
     module = importlib.import_module("art.estimators.classification.scikitlearn")
     if hasattr(module, "Scikitlearn%s" % sklearn_name):
-        print('sklearn_name', sklearn_name)
         return getattr(module, "Scikitlearn%s" % sklearn_name)(
             model=model,
             clip_values=clip_values,
