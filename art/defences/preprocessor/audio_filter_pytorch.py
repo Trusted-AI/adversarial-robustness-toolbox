@@ -162,29 +162,6 @@ class AudioFilterPyTorch(PreprocessorPyTorch):
 
         return x_preprocess, y
 
-    # Backward compatibility.
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        """
-        Provide an estimate of the gradients of the defence for the backward pass.
-
-        :param x: A single audio sample.
-        :param grad: Gradient value so far.
-        :return: The gradient (estimate) of the defence.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        x = torch.tensor(x, device=self._device, requires_grad=True)
-        grad = torch.tensor(grad, device=self._device)
-
-        x_prime = self.estimate_forward(x)
-        x_prime.backward(grad)
-        x_grad = x.grad.detach().cpu().numpy()
-
-        if x_grad.shape != x.shape:
-            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
-
-        return x_grad
-
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
