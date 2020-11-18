@@ -98,7 +98,7 @@ class TestIterativeAttack(TestBase):
         x_test_original = x_test.copy()
 
         # Test BIM with np.inf norm
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, batch_size=128)
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1, batch_size=128)
         x_train_adv = attack.generate(x_train)
         x_test_adv = attack.generate(x_test)
 
@@ -119,6 +119,58 @@ class TestIterativeAttack(TestBase):
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
+
+        # Test eps of array type 1
+        eps = np.ones(shape=x_test.shape) * 1.0
+        eps_step = np.ones_like(eps) * 0.1
+
+        attack_params = {"eps_step": eps_step, "eps": eps}
+        attack.set_params(**attack_params)
+
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == test_y_pred).all())
+
+        # Test eps of array type 2
+        eps = np.ones(shape=x_test.shape[1:]) * 1.0
+        eps_step = np.ones_like(eps) * 0.1
+
+        attack_params = {"eps_step": eps_step, "eps": eps}
+        attack.set_params(**attack_params)
+
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == test_y_pred).all())
+
+        # Test eps of array type 3
+        eps = np.ones(shape=x_test.shape[2:]) * 1.0
+        eps_step = np.ones_like(eps) * 0.1
+
+        attack_params = {"eps_step": eps_step, "eps": eps}
+        attack.set_params(**attack_params)
+
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == test_y_pred).all())
+
+        # Test eps of array type 4
+        eps = np.ones(shape=x_test.shape[3:]) * 1.0
+        eps_step = np.ones_like(eps) * 0.1
+
+        attack_params = {"eps_step": eps_step, "eps": eps}
+        attack.set_params(**attack_params)
+
+        x_test_adv = attack.generate(x_test)
+        self.assertFalse((x_test == x_test_adv).all())
+
+        test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+        self.assertFalse((y_test == test_y_pred).all())
 
     def _test_mnist_targeted(self, classifier, x_test):
         x_test_original = x_test.copy()
@@ -163,7 +215,7 @@ class TestIterativeAttack(TestBase):
         classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, batch_size=128)
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -176,7 +228,7 @@ class TestIterativeAttack(TestBase):
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1)
+        attack = BasicIterativeMethod(classifier, targeted=True, eps=1.0, eps_step=0.1)
         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -192,7 +244,7 @@ class TestIterativeAttack(TestBase):
 
         # Recreate a classifier without clip values
         classifier = KerasClassifier(model=classifier._model, use_logits=False, channels_first=True)
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.2, batch_size=128)
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.2, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv > 1).any())
@@ -207,7 +259,7 @@ class TestIterativeAttack(TestBase):
         classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, max_iter=5)
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -220,7 +272,7 @@ class TestIterativeAttack(TestBase):
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1, max_iter=5)
+        attack = BasicIterativeMethod(classifier, targeted=True, eps=1.0, eps_step=0.1, max_iter=5)
         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -235,7 +287,7 @@ class TestIterativeAttack(TestBase):
         classifier = get_tabular_classifier_pt()
 
         # Test untargeted attack
-        attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1)
+        attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1)
         x_test_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -248,7 +300,7 @@ class TestIterativeAttack(TestBase):
 
         # Test targeted attack
         targets = random_targets(self.y_test_iris, nb_classes=3)
-        attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1, batch_size=128)
+        attack = BasicIterativeMethod(classifier, targeted=True, eps=1.0, eps_step=0.1, batch_size=128)
         x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
         self.assertFalse((self.x_test_iris == x_test_adv).all())
         self.assertTrue((x_test_adv <= 1).all())
@@ -278,7 +330,7 @@ class TestIterativeAttack(TestBase):
             classifier.fit(x=self.x_test_iris, y=self.y_test_iris)
 
             # Test untargeted attack
-            attack = BasicIterativeMethod(classifier, eps=1, eps_step=0.1, max_iter=5)
+            attack = BasicIterativeMethod(classifier, eps=1.0, eps_step=0.1, max_iter=5)
             x_test_adv = attack.generate(self.x_test_iris)
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())
@@ -294,7 +346,7 @@ class TestIterativeAttack(TestBase):
 
             # Test targeted attack
             targets = random_targets(self.y_test_iris, nb_classes=3)
-            attack = BasicIterativeMethod(classifier, targeted=True, eps=1, eps_step=0.1, batch_size=128, max_iter=5)
+            attack = BasicIterativeMethod(classifier, targeted=True, eps=1.0, eps_step=0.1, batch_size=128, max_iter=5)
             x_test_adv = attack.generate(self.x_test_iris, **{"y": targets})
             self.assertFalse((self.x_test_iris == x_test_adv).all())
             self.assertTrue((x_test_adv <= 1).all())

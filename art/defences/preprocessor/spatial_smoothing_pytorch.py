@@ -211,42 +211,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         """
         return self.forward(x, y)[0]
 
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
-        """
-        Apply local spatial smoothing to sample `x`.
-
-        :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
-        :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :return: Smoothed sample.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        x = torch.tensor(x, device=self._device)
-        if y is not None:
-            y = torch.tensor(y, device=self._device)
-
-        with torch.no_grad():
-            x, y = self.forward(x, y)
-
-        result = x.cpu().numpy()
-        if y is not None:
-            y = y.cpu().numpy()
-        return result, y
-
-    # Backward compatibility.
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        import torch  # lgtm [py/repeated-import]
-
-        x = torch.tensor(x, device=self._device, requires_grad=True)
-        grad = torch.tensor(grad, device=self._device)
-
-        x_prime = self.estimate_forward(x)
-        x_prime.backward(grad)
-        x_grad = x.grad.detach().cpu().numpy()
-        if x_grad.shape != x.shape:
-            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
-        return x_grad
-
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         No parameters to learn for this method; do nothing.
