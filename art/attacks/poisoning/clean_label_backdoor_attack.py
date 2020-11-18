@@ -28,7 +28,6 @@ from typing import Optional, Tuple, TYPE_CHECKING, Union
 from art.attacks import PoisoningAttackBlackBox
 from art.attacks.evasion import ProjectedGradientDescent
 from art.attacks.poisoning import PoisoningAttackBackdoor
-from art.estimators.classification.classifier import ClassifierLossGradients
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
