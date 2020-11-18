@@ -426,7 +426,7 @@ def tanh_to_original(
 # --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
 
 
-def to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None) -> np.ndarray:
+def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[int] = None) -> np.ndarray:
     """
     Convert an array of labels to binary class matrix.
 
@@ -1131,7 +1131,7 @@ def preprocess(
     return normalized_x, categorical_y
 
 
-def segment_by_class(data: np.ndarray, classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
+def segment_by_class(data: Union[np.ndarray, List[int]], classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
     """
     Returns segmented data according to specified features.
 
