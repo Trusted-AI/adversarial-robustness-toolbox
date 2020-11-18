@@ -24,7 +24,7 @@ import numpy as np
 from PIL import Image
 
 
-def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
+def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1, channels_first=False) -> np.ndarray:
     """
     Augments a matrix by setting value some `distance` away from the bottom-right edge to 1. Works for single images
     or a batch of images.
@@ -32,13 +32,19 @@ def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.
     :param x: N X W X H matrix or W X H matrix
     :param distance: Distance from bottom-right walls.
     :param pixel_value: Value used to replace the entries of the image matrix.
+    :param channels_first: If this value is set to true, a shape of N X C X W X H will be expected.
+                           Note: this only applies to images with a channel dimension.
     :return: Backdoored image.
     """
     x = np.array(x)
     shape = x.shape
     if len(shape) == 4:
-        width, height = x.shape[1:3]
-        x[:, width - distance, height - distance, :] = pixel_value
+        if channels_first:
+            width, height = x.shape[2:]
+            x[:, :, width - distance, height - distance] = pixel_value
+        else:
+            width, height = x.shape[1:3]
+            x[:, width - distance, height - distance, :] = pixel_value
     elif len(shape) == 3:
         width, height = x.shape[1:]
         x[:, width - distance, height - distance] = pixel_value
@@ -50,7 +56,7 @@ def add_single_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.
     return x
 
 
-def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np.ndarray:
+def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1, channels_first=False) -> np.ndarray:
     """
     Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
     edge to 1. Works for single images or a batch of images.
@@ -58,16 +64,25 @@ def add_pattern_bd(x: np.ndarray, distance: int = 2, pixel_value: int = 1) -> np
     :param x: N X W X H matrix or W X H matrix or N X W X H X C matrix, pixels will ne added to all channels
     :param distance: Distance from bottom-right walls.
     :param pixel_value: Value used to replace the entries of the image matrix.
+    :param channels_first: If this value is set to true, a shape of N X C X W X H will be expected.
+                           Note: this only applies to images with a channel dimension.
     :return: Backdoored image.
     """
     x = np.array(x)
     shape = x.shape
     if len(shape) == 4:
-        width, height = x.shape[1:3]
-        x[:, width - distance, height - distance, :] = pixel_value
-        x[:, width - distance - 1, height - distance - 1, :] = pixel_value
-        x[:, width - distance, height - distance - 2, :] = pixel_value
-        x[:, width - distance - 2, height - distance, :] = pixel_value
+        if channels_first:
+            width, height = x.shape[2:]
+            x[:, :, width - distance, height - distance] = pixel_value
+            x[:, :, width - distance - 1, height - distance - 1] = pixel_value
+            x[:, :, width - distance, height - distance - 2] = pixel_value
+            x[:, :, width - distance - 2, height - distance] = pixel_value
+        else:
+            width, height = x.shape[1:3]
+            x[:, width - distance, height - distance, :] = pixel_value
+            x[:, width - distance - 1, height - distance - 1, :] = pixel_value
+            x[:, width - distance, height - distance - 2, :] = pixel_value
+            x[:, width - distance - 2, height - distance, :] = pixel_value
     elif len(shape) == 3:
         width, height = x.shape[1:]
         x[:, width - distance, height - distance] = pixel_value
