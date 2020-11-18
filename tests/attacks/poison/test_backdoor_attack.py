@@ -34,12 +34,8 @@ PP_POISON = 0.33
 NB_EPOCHS = 3
 
 
-backdoor_path = os.path.join(
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-        "utils",
-        "data",
-        "backdoors",
-        "alert.png")
+backdoor_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                             "utils", "data", "backdoors", "alert.png")
 
 
 max_val = 1
