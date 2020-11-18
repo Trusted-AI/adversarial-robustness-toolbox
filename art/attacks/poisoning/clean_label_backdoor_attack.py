@@ -45,21 +45,31 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
     | Paper link: https://arxiv.org/abs/1708.06733
     """
 
-    attack_params = PoisoningAttackBlackBox.attack_params + ["backdoor", "proxy_classifier", "target", "pp_poison",
-                                                             "norm", "eps", "eps_step", "max_iter", "num_random_init"]
+    attack_params = PoisoningAttackBlackBox.attack_params + [
+        "backdoor",
+        "proxy_classifier",
+        "target",
+        "pp_poison",
+        "norm",
+        "eps",
+        "eps_step",
+        "max_iter",
+        "num_random_init",
+    ]
     _estimator_requirements = ()
 
-    def __init__(self,
-                 backdoor: PoisoningAttackBackdoor,
-                 proxy_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-                 target: np.ndarray,
-                 pp_poison: float = 0.33,
-                 norm: Union[int, float, str] = np.inf,
-                 eps: float = 0.3,
-                 eps_step: float = 0.1,
-                 max_iter: int = 100,
-                 num_random_init: int = 0,
-                 ) -> None:
+    def __init__(
+        self,
+        backdoor: PoisoningAttackBackdoor,
+        proxy_classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        target: np.ndarray,
+        pp_poison: float = 0.33,
+        norm: Union[int, float, str] = np.inf,
+        eps: float = 0.3,
+        eps_step: float = 0.1,
+        max_iter: int = 100,
+        num_random_init: int = 0,
+    ) -> None:
         """
         Creates a new Clean Label Backdoor poisoning attack
 
@@ -80,13 +90,15 @@ class PoisoningAttackCleanLabelBackdoor(PoisoningAttackBlackBox):
         self.proxy_classifier = proxy_classifier
         self.target = target
         self.pp_poison = pp_poison
-        self.attack = ProjectedGradientDescent(proxy_classifier,
-                                               norm=norm,
-                                               eps=eps,
-                                               eps_step=eps_step,
-                                               max_iter=max_iter,
-                                               targeted=False,
-                                               num_random_init=num_random_init)
+        self.attack = ProjectedGradientDescent(
+            proxy_classifier,
+            norm=norm,
+            eps=eps,
+            eps_step=eps_step,
+            max_iter=max_iter,
+            targeted=False,
+            num_random_init=num_random_init,
+        )
         self._check_params()
 
     def poison(
