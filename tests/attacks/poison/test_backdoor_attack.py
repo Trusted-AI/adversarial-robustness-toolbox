@@ -45,6 +45,7 @@ backdoor_path = os.path.join(
 
 max_val = 1
 
+
 @pytest.fixture()
 def poison_dataset(get_default_mnist_subset):
     (x_clean, y_clean), (_, _) = get_default_mnist_subset
