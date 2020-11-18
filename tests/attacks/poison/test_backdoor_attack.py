@@ -39,8 +39,7 @@ backdoor_path = os.path.join(
         "utils",
         "data",
         "backdoors",
-        "alert.png",
-    )
+        "alert.png")
 
 
 max_val = 1
