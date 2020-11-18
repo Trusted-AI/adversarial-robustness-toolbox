@@ -79,11 +79,11 @@ jobs:
             tensorflow: 2.2.1
             keras: 2.3.1
             scikit-learn: 0.22.2
-          - name: legacy (TensorFlow 2.3.1 Keras 2.3.1 scikit-learn 0.23.2 Python 3.8)
+          - name: legacy (TensorFlow 2.3.1 Keras 2.4.3 scikit-learn 0.23.2 Python 3.8)
             framework: legacy
             python: 3.8
             tensorflow: 2.3.1
-            keras: 2.3.1
+            keras: 2.4.3
             scikit-learn: 0.23.2
 
     name: Run ${{ matrix.name }} Tests
