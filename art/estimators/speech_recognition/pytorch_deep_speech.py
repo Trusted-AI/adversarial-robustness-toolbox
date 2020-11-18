@@ -584,10 +584,12 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             else:
                 target = list(filter(None, [label_map.get(letter) for letter in list(y[i])]))
 
-            # Push the sequence to device
+            # Push the sequence to device or apply preprocessing defences
             if not tensor_input:
                 x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
                 x[i] = torch.tensor(x[i]).to(self._device)
+            else:
+                x[i], _ = self._apply_preprocessing(x=x[i], y=None, no_grad=False)
 
             # Set gradient computation permission
             if compute_gradient:
