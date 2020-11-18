@@ -154,6 +154,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
                              str(self.expected_pp_poison))
 
 
+@staticmethod
 def spectral_signature_scores(matrix_r: np.ndarray) -> np.ndarray:
     """
     :param matrix_r: Matrix of feature representations.
