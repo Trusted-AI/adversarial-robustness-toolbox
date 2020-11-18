@@ -31,9 +31,7 @@ logger = logging.getLogger(__name__)
 NB_TRAIN, NB_TEST, BATCH_SIZE, EPS_MULTIPLIER, UB_PCT_POISON = 300, 10, 128, 1.5, 0.2
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("params", [dict(batch_size=-1), dict(eps_multiplier=-1.0), dict(expected_pp_poison=2.0)])
-@pytest.mark.framework_agnostic
 def test_wrong_parameters(params, art_warning, get_default_mnist_subset, image_dl_estimator):
     try:
         (x_train_mnist, y_train_mnist), (_, _) = get_default_mnist_subset
@@ -41,7 +39,8 @@ def test_wrong_parameters(params, art_warning, get_default_mnist_subset, image_d
         classifier, _ = image_dl_estimator()
 
         classifier.fit(x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], nb_epochs=1)
-        defence = SpectralSignatureDefense(classifier, x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], **params)
+        with pytest.raises(ValueError):
+            defence = SpectralSignatureDefense(classifier, x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], **params)
     except ARTTestException as e:
         art_warning(e)
 

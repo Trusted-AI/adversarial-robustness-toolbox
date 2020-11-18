@@ -56,7 +56,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x_train: np.ndarray,
         y_train: np.ndarray,
-        expected_pp_poison: float,
+        expected_pp_poison: float = 0.33,
         batch_size: int = 128,
         eps_multiplier: float = 1.5,
     ) -> None:
