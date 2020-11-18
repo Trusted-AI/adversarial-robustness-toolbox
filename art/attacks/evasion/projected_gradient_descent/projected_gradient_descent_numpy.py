@@ -65,8 +65,8 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         self,
         estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
         norm: Union[int, float, str] = np.inf,
-        eps: float = 0.3,
-        eps_step: float = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -108,8 +108,13 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         ProjectedGradientDescentCommon._check_params(self)
 
         if self.random_eps:
-            lower, upper = 0, eps
-            mu, sigma = 0, (eps / 2)
+            if isinstance(eps, (int, float)):
+                lower, upper = 0, eps
+                mu, sigma = 0, (eps / 2)
+            else:
+                lower, upper = np.zeros_like(eps), eps
+                mu, sigma = np.zeros_like(eps), (eps / 2)
+
             self.norm_dist = truncnorm((lower - mu) / sigma, (upper - mu) / sigma, loc=mu, scale=sigma)
 
     def _random_eps(self):
@@ -118,7 +123,12 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
         """
         if self.random_eps:
             ratio = self.eps_step / self.eps
-            self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
+
+            if isinstance(self.eps, (int, float)):
+                self.eps = np.round(self.norm_dist.rvs(1)[0], 10)
+            else:
+                self.eps = np.round(self.norm_dist.rvs(size=self.eps.shape), 10)
+
             self.eps_step = ratio * self.eps
 
     def _set_targets(self, x: np.ndarray, y: np.ndarray, classifier_mixin: bool = True) -> np.ndarray:
@@ -155,7 +165,10 @@ class ProjectedGradientDescentCommon(FastGradientMethod):
     def _check_params(self) -> None:
         super(ProjectedGradientDescentCommon, self)._check_params()
 
-        if self.eps_step > self.eps:
+        if (self.norm in ["inf", np.inf]) and (
+            (isinstance(self.eps, (int, float)) and self.eps_step > self.eps)
+            or (isinstance(self.eps, np.ndarray) and (self.eps_step > self.eps).any())
+        ):
             raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
 
         if self.max_iter <= 0:
@@ -175,8 +188,8 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         self,
         estimator: Union["CLASSIFIER_LOSS_GRADIENTS_TYPE", "OBJECT_DETECTOR_TYPE"],
         norm: Union[int, float, str] = np.inf,
-        eps: float = 0.3,
-        eps_step: float = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -236,11 +249,17 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         mask = kwargs.get("mask")
 
         # Check the mask
-        if mask is not None and (len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]):
+        if mask is not None and mask.ndim > x.ndim:
             raise ValueError("Mask shape must be broadcastable to input shape.")
+
+        # Ensure eps is broadcastable
+        self._check_compatibility_input_and_eps(x=x)
 
         # Check whether random eps is enabled
         self._random_eps()
+
+        # Get the mask
+        mask = self._get_mask(x, **kwargs)
 
         if isinstance(self.estimator, ClassifierMixin):
             # Set up targets
