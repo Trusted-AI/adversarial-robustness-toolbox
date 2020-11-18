@@ -147,13 +147,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
         from torch.autograd import Variable
 
-        if (
-            hasattr(estimator, "preprocessing")
-            and (estimator.preprocessing is not None and estimator.preprocessing != (0, 1))
-        ) or (
-            hasattr(estimator, "preprocessing_defences")
-            and (estimator.preprocessing_defences is not None and estimator.preprocessing_defences != [])
-        ):
+        if estimator.preprocessing:
             raise NotImplementedError(
                 "The framework-specific implementation currently does not apply preprocessing and "
                 "preprocessing defences."
