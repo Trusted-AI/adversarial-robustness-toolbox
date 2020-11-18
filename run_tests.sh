@@ -17,6 +17,9 @@ then
     echo "############## Running tests with framework $mlFramework ##############"
     echo "#######################################################################"
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_spectral_signature_defense.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_spectral_signature_defense.py tests"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
@@ -120,8 +123,7 @@ else
                          "tests/defences/detector/poison/test_clustering_analyzer.py" \
                          "tests/defences/detector/poison/test_ground_truth_evaluator.py" \
                          "tests/defences/detector/poison/test_provenance_defence.py" \
-                         "tests/defences/detector/poison/test_roni.py" \
-                         "tests/defences/detector/poison/test_spectral_signature_defense.py" )
+                         "tests/defences/detector/poison/test_roni.py" )
 
     declare -a metrics=("tests/metrics/test_gradient_check.py" \
                         "tests/metrics/test_metrics.py" \
