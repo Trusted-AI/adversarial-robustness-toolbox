@@ -21,7 +21,7 @@ This module implements the classifier `BlackBoxClassifier` for black-box classif
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -67,6 +67,7 @@ class BlackBoxClassifier(Classifier):
                be divided by the second one.
         """
         super().__init__(
+            model=None,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -76,6 +77,15 @@ class BlackBoxClassifier(Classifier):
         self._predictions = predict
         self._input_shape = input_shape
         self._nb_classes = nb_classes
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:

@@ -25,7 +25,7 @@ import json
 import logging
 import os
 import pickle
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -81,14 +81,23 @@ class XGBoostClassifier(ClassifierDecisionTree):
             raise TypeError("Model must be of type xgboost.Booster or xgboost.XGBClassifier.")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
-        self._model = model
         self._input_shape = (nb_features,)
         self._nb_classes = self._get_nb_classes(nb_classes)
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
