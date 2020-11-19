@@ -103,6 +103,8 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             preprocessing=preprocessing,
         )
 
+        self._input_shape = None
+
         if self.clip_values is not None:
             if self.clip_values[0] != 0:
                 raise ValueError("This classifier requires un-normalized input images with clip_vales=(0, max_value).")
@@ -134,6 +136,15 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         self._model.to(self._device)
         self._model.eval()
         self.attack_losses: Tuple[str, ...] = attack_losses
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     @property
     def device(self) -> "torch.device":

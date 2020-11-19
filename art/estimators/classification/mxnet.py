@@ -100,6 +100,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -108,7 +109,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             preprocessing=preprocessing,
         )
 
-        self._model = model
         self._loss = loss
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -122,6 +122,15 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         # Get the internal layer
         self._layer_names = self._get_layers()
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """

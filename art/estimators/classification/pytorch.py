@@ -117,6 +117,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -190,6 +191,15 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     @property
     def model(self) -> "torch.nn.Module":
         return self._model._model
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def reduce_labels(self, y: Union[np.ndarray, "torch.Tensor"]) -> Union[np.ndarray, "torch.Tensor"]:
         import torch  # lgtm [py/repeated-import]
