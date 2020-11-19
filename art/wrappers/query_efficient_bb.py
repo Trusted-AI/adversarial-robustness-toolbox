@@ -69,6 +69,15 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
         self.round_samples = round_samples
         self._nb_classes = self.classifier.nb_classes
 
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
+
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction of the classifier for input `x`.

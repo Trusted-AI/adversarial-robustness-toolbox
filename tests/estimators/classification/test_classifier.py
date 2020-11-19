@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 
 
 class ClassifierInstance(ClassifierMixin, BaseEstimator):
-    def __init__(self):
-        super(ClassifierInstance, self).__init__()
+    def __init__(self, clip_values=None, channels_first=True):
+        super(ClassifierInstance, self).__init__(model=None, clip_values=clip_values)
 
     def fit(self, x, y, **kwargs):
         pass
@@ -46,12 +46,17 @@ class ClassifierInstance(ClassifierMixin, BaseEstimator):
     def save(self, filename, path=None):
         pass
 
+    def input_shape(self):
+        pass
+
 
 class ClassifierNeuralNetworkInstance(
     ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
 ):
     def __init__(self, clip_values, channels_first=True):
-        super(ClassifierNeuralNetworkInstance, self).__init__(clip_values=clip_values, channels_first=channels_first)
+        super(ClassifierNeuralNetworkInstance, self).__init__(
+            model=None, clip_values=clip_values, channels_first=channels_first
+        )
 
     def class_gradient(self, x, label=None, **kwargs):
         pass
@@ -81,6 +86,9 @@ class ClassifierNeuralNetworkInstance(
         pass
 
     def set_learning_phase(self, train):
+        pass
+
+    def input_shape(self):
         pass
 
 
