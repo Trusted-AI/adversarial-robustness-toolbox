@@ -121,7 +121,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # train attack model
         self.attack_model.fit(x_train, y_ready)
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray = None, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
