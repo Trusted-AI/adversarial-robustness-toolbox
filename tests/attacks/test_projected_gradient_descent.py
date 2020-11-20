@@ -57,7 +57,7 @@ class TestPGD(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
-    def test_keras_mnist(self):
+    def test_9a_keras_mnist(self):
         classifier = get_image_classifier_kr()
 
         scores = classifier._model.evaluate(self.x_train_mnist, self.y_train_mnist)
@@ -69,7 +69,7 @@ class TestPGD(TestBase):
             classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
         )
 
-    def test_tensorflow_mnist(self):
+    def test_3_tensorflow_mnist(self):
         classifier, sess = get_image_classifier_tf()
 
         scores = get_labels_np_array(classifier.predict(self.x_train_mnist))
@@ -84,7 +84,7 @@ class TestPGD(TestBase):
             classifier, self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist
         )
 
-    def test_pytorch_mnist(self):
+    def test_5_pytorch_mnist(self):
         x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
         x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
         classifier = get_image_classifier_pt()
@@ -218,10 +218,10 @@ class TestPGD(TestBase):
         test_y_pred = get_labels_np_array(classifier.predict(x_test_adv))
         self.assertFalse((y_test == test_y_pred).all())
 
-    def test_classifier_type_check_fail(self):
+    def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
-    def test_keras_iris_clipped(self):
+    def test_8_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
@@ -249,7 +249,7 @@ class TestPGD(TestBase):
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Success rate of targeted PGD on Iris: %.2f%%", (acc * 100))
 
-    def test_keras_iris_unbounded(self):
+    def test_keras_9_iris_unbounded(self):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
@@ -265,7 +265,7 @@ class TestPGD(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
 
-    def test_tensorflow_iris(self):
+    def test_2_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
@@ -293,7 +293,7 @@ class TestPGD(TestBase):
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Success rate of targeted PGD on Iris: %.2f%%", (acc * 100))
 
-    def test_pytorch_iris_pt(self):
+    def test_4_pytorch_iris_pt(self):
         classifier = get_tabular_classifier_pt()
 
         # Test untargeted attack
@@ -321,7 +321,7 @@ class TestPGD(TestBase):
         acc = np.sum(preds_adv == np.argmax(targets, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Success rate of targeted PGD on Iris: %.2f%%", (acc * 100))
 
-    def test_scikitlearn(self):
+    def test_7_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
@@ -373,11 +373,11 @@ class TestPGD(TestBase):
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
     @unittest.skipIf(tf.__version__[0] != "2", "")
-    def test_framework_tensorflow_v2_mnist(self):
+    def test_4_framework_tensorflow_v2_mnist(self):
         classifier, _ = get_image_classifier_tf()
         self._test_framework_vs_numpy(classifier)
 
-    def test_framework_pytorch_mnist(self):
+    def test_6_framework_pytorch_mnist(self):
         self.x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
         self.x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
 
