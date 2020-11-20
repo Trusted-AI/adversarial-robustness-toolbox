@@ -419,9 +419,19 @@ def get_image_classifier_kr(
     :type load_init: `bool`
     :return: KerasClassifier, tf.Session()
     """
-    import keras
-    from keras.models import Sequential
-    from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+    import tensorflow as tf
+    tf_version = [int(v) for v in tf.__version__.split(".")]
+    if tf_version[0] == 2 and tf_version[1] >= 3:
+        is_tf23_keras24 = True
+        tf.compat.v1.disable_eager_execution()
+        from tensorflow import keras
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+    else:
+        is_tf23_keras24 = False
+        import keras
+        from keras.models import Sequential
+        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -429,16 +439,28 @@ def get_image_classifier_kr(
     model = Sequential()
 
     if load_init:
-        model.add(
-            Conv2D(
-                1,
-                kernel_size=(7, 7),
-                activation="relu",
-                input_shape=(28, 28, 1),
-                kernel_initializer=_kr_weights_loader("MNIST", "W", "CONV2D"),
-                bias_initializer=_kr_weights_loader("MNIST", "B", "CONV2D"),
+        if is_tf23_keras24:
+            model.add(
+                Conv2D(
+                    1,
+                    kernel_size=(7, 7),
+                    activation="relu",
+                    input_shape=(28, 28, 1),
+                    kernel_initializer=_tf_weights_loader("MNIST", "W", "CONV2D", 2),
+                    bias_initializer=_tf_weights_loader("MNIST", "B", "CONV2D", 2),
+                )
             )
-        )
+        else:
+            model.add(
+                Conv2D(
+                    1,
+                    kernel_size=(7, 7),
+                    activation="relu",
+                    input_shape=(28, 28, 1),
+                    kernel_initializer=_kr_weights_loader("MNIST", "W", "CONV2D"),
+                    bias_initializer=_kr_weights_loader("MNIST", "B", "CONV2D"),
+                )
+            )
     else:
         model.add(Conv2D(1, kernel_size=(7, 7), activation="relu", input_shape=(28, 28, 1)))
 
@@ -447,26 +469,46 @@ def get_image_classifier_kr(
 
     if from_logits:
         if load_init:
-            model.add(
-                Dense(
-                    10,
-                    activation="linear",
-                    kernel_initializer=_kr_weights_loader("MNIST", "W", "DENSE"),
-                    bias_initializer=_kr_weights_loader("MNIST", "B", "DENSE"),
+            if is_tf23_keras24:
+                model.add(
+                    Dense(
+                        10,
+                        activation="linear",
+                        kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                        bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+                    )
                 )
-            )
+            else:
+                model.add(
+                    Dense(
+                        10,
+                        activation="linear",
+                        kernel_initializer=_kr_weights_loader("MNIST", "W", "DENSE"),
+                        bias_initializer=_kr_weights_loader("MNIST", "B", "DENSE"),
+                    )
+                )
         else:
             model.add(Dense(10, activation="linear"))
     else:
         if load_init:
-            model.add(
-                Dense(
-                    10,
-                    activation="softmax",
-                    kernel_initializer=_kr_weights_loader("MNIST", "W", "DENSE"),
-                    bias_initializer=_kr_weights_loader("MNIST", "B", "DENSE"),
+            if is_tf23_keras24:
+                model.add(
+                    Dense(
+                        10,
+                        activation="softmax",
+                        kernel_initializer=_tf_weights_loader("MNIST", "W", "DENSE", 2),
+                        bias_initializer=_tf_weights_loader("MNIST", "B", "DENSE", 2),
+                    )
                 )
-            )
+            else:
+                model.add(
+                    Dense(
+                        10,
+                        activation="softmax",
+                        kernel_initializer=_kr_weights_loader("MNIST", "W", "DENSE"),
+                        bias_initializer=_kr_weights_loader("MNIST", "B", "DENSE"),
+                    )
+                )
         else:
             model.add(Dense(10, activation="softmax"))
 
@@ -1237,48 +1279,66 @@ def get_tabular_classifier_tf_v2():
 
 
 def get_tabular_classifier_scikit_list(clipped=False, model_list_names=None):
+    from art.estimators.classification.scikitlearn import (
+        ScikitlearnDecisionTreeClassifier,
+        # ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+    )
+
+    available_models = {
+        "decisionTreeClassifier": ScikitlearnDecisionTreeClassifier,
+        # "extraTreeClassifier": ScikitlearnExtraTreeClassifier,
+        "adaBoostClassifier": ScikitlearnAdaBoostClassifier,
+        "baggingClassifier": ScikitlearnBaggingClassifier,
+        "extraTreesClassifier": ScikitlearnExtraTreesClassifier,
+        "gradientBoostingClassifier": ScikitlearnGradientBoostingClassifier,
+        "randomForestClassifier": ScikitlearnRandomForestClassifier,
+        "logisticRegression": ScikitlearnLogisticRegression,
+        "svc": ScikitlearnSVC,
+        "linearSVC": ScikitlearnSVC,
+    }
+
     if model_list_names is None:
-        model_list_names = [
-            "decisionTreeClassifier",
-            "extraTreeClassifier",
-            "adaBoostClassifier",
-            "baggingClassifier",
-            "extraTreesClassifier",
-            "gradientBoostingClassifier",
-            "randomForestClassifier",
-            "logisticRegression",
-            "svc",
-            "linearSVC",
-        ]
-    if clipped:
-        classifier_list = [
-            # os.path.join(os.path.dirname(os.path.dirname(__file__)),'utils/resources/models', 'W_DENSE3_IRIS.npy')
-            pickle.load(
-                open(
-                    os.path.join(
-                        os.path.dirname(os.path.dirname(__file__)),
-                        "utils/resources/models/scikit/",
-                        model_name + "iris_clipped.sav",
-                    ),
-                    "rb",
-                )
-            )
-            for model_name in model_list_names
-        ]
+        model_dict_names = available_models
     else:
-        classifier_list = [
-            pickle.load(
+        model_dict_names = dict()
+        for name in model_list_names:
+            model_dict_names[name] = available_models[name]
+
+    classifier_list = list()
+
+    if clipped:
+        for model_name, model_class in model_dict_names.items():
+            model = pickle.load(
                 open(
                     os.path.join(
                         os.path.dirname(os.path.dirname(__file__)),
                         "utils/resources/models/scikit/",
-                        model_name + "iris_unclipped.sav",
+                        "scikit-" + model_name + "-iris-clipped.pickle",
                     ),
                     "rb",
                 )
             )
-            for model_name in model_list_names
-        ]
+            classifier_list.append(model_class(model=model, clip_values=(0, 1)))
+    else:
+        for model_name, model_class in model_dict_names.items():
+            model = pickle.load(
+                open(
+                    os.path.join(
+                        os.path.dirname(os.path.dirname(__file__)),
+                        "utils/resources/models/scikit/",
+                        "scikit-" + model_name + "-iris-unclipped.pickle",
+                    ),
+                    "rb",
+                )
+            )
+            classifier_list.append(model_class(model=model, clip_values=None))
 
     return classifier_list
 
@@ -1293,9 +1353,19 @@ def get_tabular_classifier_kr(load_init=True):
     :return: The trained model for Iris dataset and the session.
     :rtype: `tuple(KerasClassifier, tf.Session)`
     """
-    import keras
-    from keras.models import Sequential
-    from keras.layers import Dense
+    import tensorflow as tf
+    tf_version = [int(v) for v in tf.__version__.split(".")]
+    if tf_version[0] == 2 and tf_version[1] >= 3:
+        is_tf23_keras24 = True
+        tf.compat.v1.disable_eager_execution()
+        from tensorflow import keras
+        from tensorflow.keras.models import Sequential
+        from tensorflow.keras.layers import Dense
+    else:
+        is_tf23_keras24 = False
+        import keras
+        from keras.models import Sequential
+        from keras.layers import Dense
 
     from art.estimators.classification.keras import KerasClassifier
 
@@ -1303,31 +1373,58 @@ def get_tabular_classifier_kr(load_init=True):
     model = Sequential()
 
     if load_init:
-        model.add(
-            Dense(
-                10,
-                input_shape=(4,),
-                activation="relu",
-                kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE1"),
-                bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE1"),
+        if is_tf23_keras24:
+            model.add(
+                Dense(
+                    10,
+                    input_shape=(4,),
+                    activation="relu",
+                    kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE1", 2),
+                    bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE1", 2),
+                )
             )
-        )
-        model.add(
-            Dense(
-                10,
-                activation="relu",
-                kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE2"),
-                bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE2"),
+            model.add(
+                Dense(
+                    10,
+                    activation="relu",
+                    kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE2", 2),
+                    bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE2", 2),
+                )
             )
-        )
-        model.add(
-            Dense(
-                3,
-                activation="softmax",
-                kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE3"),
-                bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE3"),
+            model.add(
+                Dense(
+                    3,
+                    activation="softmax",
+                    kernel_initializer=_tf_weights_loader("IRIS", "W", "DENSE3", 2),
+                    bias_initializer=_tf_weights_loader("IRIS", "B", "DENSE3", 2),
+                )
             )
-        )
+        else:
+            model.add(
+                Dense(
+                    10,
+                    input_shape=(4,),
+                    activation="relu",
+                    kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE1"),
+                    bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE1"),
+                )
+            )
+            model.add(
+                Dense(
+                    10,
+                    activation="relu",
+                    kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE2"),
+                    bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE2"),
+                )
+            )
+            model.add(
+                Dense(
+                    3,
+                    activation="softmax",
+                    kernel_initializer=_kr_weights_loader("IRIS", "W", "DENSE3"),
+                    bias_initializer=_kr_weights_loader("IRIS", "B", "DENSE3"),
+                )
+            )
     else:
         model.add(Dense(10, input_shape=(4,), activation="relu"))
         model.add(Dense(10, activation="relu"))

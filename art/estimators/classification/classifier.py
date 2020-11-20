@@ -74,8 +74,8 @@ class InputFilter(ABCMeta):
             replacement_function.__name__ = "new_" + func_name
             return replacement_function
 
-        replacement_list_no_y = ["predict", "get_activations", "class_gradient"]
-        replacement_list_has_y = ["fit", "loss_gradient"]
+        replacement_list_no_y = ["predict", "get_activations"]
+        replacement_list_has_y = ["fit"]
 
         for item in replacement_list_no_y:
             if item in clsdict:
