@@ -27,7 +27,7 @@ import yaml
 import pprint
 
 from art.estimators.object_detection import PyTorchFasterRCNN
-from art.attacks.evasion import DPatchEoT
+from art.attacks.evasion import RobustDPatch
 
 
 COCO_INSTANCE_CATEGORY_NAMES = [
@@ -167,6 +167,7 @@ def plot_image_with_boxes(img, boxes, pred_cls):
     plt.imshow(img.astype(np.uint8), interpolation="nearest")
     plt.show()
 
+
 def get_loss(frcnn, x, y):
     frcnn._model.train()
     transform = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
@@ -180,41 +181,42 @@ def get_loss(frcnn, x, y):
         image_tensor_list.append(img)
 
     loss = frcnn._model(image_tensor_list, y)
-    for loss_type in ['loss_classifier', 'loss_box_reg', 'loss_objectness', 'loss_rpn_box_reg']:
+    for loss_type in ["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"]:
         loss[loss_type] = loss[loss_type].cpu().detach().numpy().item()
     return loss
 
+
 def append_loss_history(loss_history, output):
-    for loss in ['loss_classifier', 'loss_box_reg', 'loss_objectness', 'loss_rpn_box_reg']:
+    for loss in ["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"]:
         loss_history[loss] += [output[loss]]
     return loss_history
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--config', required=False, default=None, help='Path of config yaml file')
+    parser.add_argument("--config", required=False, default=None, help="Path of config yaml file")
     cmdline = parser.parse_args()
 
     if cmdline.config and os.path.exists(cmdline.config):
-        with open(cmdline.config, 'r') as cf:
+        with open(cmdline.config, "r") as cf:
             config = yaml.safe_load(cf.read())
     else:
         config = {
-                  "attack_losses": ["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
-                  "cuda_visible_devices": "1",
-                  "patch_shape": [450, 450, 3],
-                  "patch_location": [600, 750],
-                  "crop_range": [0, 0],
-                  "brightness_range": [1.0, 1.0],
-                  "rotation_weights": [1, 0, 0, 0],
-                  "sample_size": 1,
-                  "learning_rate": 1.0,
-                  "max_iter": 5000,
-                  "batch_size": 1,
-                  "image_file": "banner-diverse-group-of-people-2.jpg",
-                  "resume": False,
-                  "path": "xp/"
-                 }
+            "attack_losses": ["loss_classifier", "loss_box_reg", "loss_objectness", "loss_rpn_box_reg"],
+            "cuda_visible_devices": "1",
+            "patch_shape": [450, 450, 3],
+            "patch_location": [600, 750],
+            "crop_range": [0, 0],
+            "brightness_range": [1.0, 1.0],
+            "rotation_weights": [1, 0, 0, 0],
+            "sample_size": 1,
+            "learning_rate": 1.0,
+            "max_iter": 5000,
+            "batch_size": 1,
+            "image_file": "banner-diverse-group-of-people-2.jpg",
+            "resume": False,
+            "path": "xp/",
+        }
 
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(config)
@@ -226,10 +228,7 @@ if __name__ == '__main__':
         os.environ["CUDA_VISIBLE_DEVICES"] = config["cuda_visible_devices"]
 
     frcnn = PyTorchFasterRCNN(
-        clip_values=(0, 255),
-        channels_first=False,
-        attack_losses=config["attack_losses"],
-        device_type=device_type
+        clip_values=(0, 255), channels_first=False, attack_losses=config["attack_losses"], device_type=device_type
     )
 
     image_1 = cv2.imread(config["image_file"])
@@ -238,17 +237,18 @@ if __name__ == '__main__':
 
     image = np.stack([image_1], axis=0).astype(np.float32)
 
-    attack = DPatchEoT(frcnn,
-                       patch_shape=config["patch_shape"],
-                       patch_location=config["patch_location"],
-                       crop_range=config["crop_range"],
-                       brightness_range=config["brightness_range"],
-                       rotation_weights=config["rotation_weights"],
-                       sample_size=config["sample_size"],
-                       learning_rate=config["learning_rate"],
-                       max_iter=1,
-                       batch_size=config["batch_size"]
-                       )
+    attack = RobustDPatch(
+        frcnn,
+        patch_shape=config["patch_shape"],
+        patch_location=config["patch_location"],
+        crop_range=config["crop_range"],
+        brightness_range=config["brightness_range"],
+        rotation_weights=config["rotation_weights"],
+        sample_size=config["sample_size"],
+        learning_rate=config["learning_rate"],
+        max_iter=1,
+        batch_size=config["batch_size"],
+    )
 
     x = image.copy()
 
@@ -262,13 +262,10 @@ if __name__ == '__main__':
         patch = np.load(os.path.join(config["path"], "patch.npy"))
         attack._patch = patch
 
-        with open(os.path.join(config["path"], 'loss_history.json'), 'r') as file:
+        with open(os.path.join(config["path"], "loss_history.json"), "r") as file:
             loss_history = json.load(file)
     else:
-        loss_history = {'loss_classifier': [],
-                        'loss_box_reg': [],
-                        'loss_objectness': [],
-                        'loss_rpn_box_reg': []}
+        loss_history = {"loss_classifier": [], "loss_box_reg": [], "loss_objectness": [], "loss_rpn_box_reg": []}
 
     for i in range(config["max_iter"]):
         print("Iteration:", i)
@@ -279,8 +276,7 @@ if __name__ == '__main__':
         print(loss)
         loss_history = append_loss_history(loss_history, loss)
 
-        with open(os.path.join(config["path"], 'loss_history.json'), 'w') as file:
+        with open(os.path.join(config["path"], "loss_history.json"), "w") as file:
             file.write(json.dumps(loss_history))
 
-        np.save(os.path.join(config["path"], 'patch'), attack._patch)
-
+        np.save(os.path.join(config["path"], "patch"), attack._patch)

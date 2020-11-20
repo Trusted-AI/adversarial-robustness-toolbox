@@ -16,7 +16,10 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements a particular variation of the adversarial patch attack `DPatch` for object detectors.
+This module implements a variation of the adversarial patch attack `DPatch` for object detectors.
+It follows Lee & Kolter (2019) in using sign gradients with expectations over transformations.
+The particular transformations supported in this implementation are cropping, rotations by multiples of 90 degrees,
+and changes in the brightness of the image.
 
 | Paper link (original DPatch): https://arxiv.org/abs/1806.02299v4
 | Paper link (physical-world patch from Lee & Kolter): https://arxiv.org/abs/1906.11897
@@ -41,9 +44,12 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class DPatchEoT(EvasionAttack):
+class RobustDPatch(EvasionAttack):
     """
     Implementation of a particular variation of the DPatch attack.
+    It follows Lee & Kolter (2019) in using sign gradients with expectations over transformations.
+    The particular transformations supported in this implementation are cropping, rotations by multiples of 90 degrees,
+    and changes in the brightness of the image.
 
     | Paper link (original DPatch): https://arxiv.org/abs/1806.02299v4
     | Paper link (physical-world patch from Lee & Kolter): https://arxiv.org/abs/1906.11897
@@ -58,8 +64,7 @@ class DPatchEoT(EvasionAttack):
         "patch_location",
         "crop_range",
         "brightness_range",
-        "rotation_weights"
-        "sample_size",
+        "rotation_weights" "sample_size",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
@@ -79,7 +84,7 @@ class DPatchEoT(EvasionAttack):
         verbose: bool = True,
     ):
         """
-        Create an instance of the :class:`.DPatchEoT`.
+        Create an instance of the :class:`.RobustDPatch`.
 
         :param estimator: A trained object detector.
         :param patch_shape: The shape of the adversarial patch as a tuple of shape (height, width, nb_channels).
@@ -104,10 +109,10 @@ class DPatchEoT(EvasionAttack):
             self._patch = np.zeros(shape=patch_shape, dtype=config.ART_NUMPY_DTYPE)
         else:
             self._patch = (
-                    np.random.randint(0, 255, size=patch_shape)
-                    / 255
-                    * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
-                    + self.estimator.clip_values[0]
+                np.random.randint(0, 255, size=patch_shape)
+                / 255
+                * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
+                + self.estimator.clip_values[0]
             ).astype(config.ART_NUMPY_DTYPE)
         self.verbose = verbose
         self.patch_location = patch_location
@@ -118,14 +123,9 @@ class DPatchEoT(EvasionAttack):
         super()._check_params()
         self._check_params()
 
-    def generate(
-        self,
-        x: np.ndarray,
-        y: Optional[np.ndarray] = None,
-        **kwargs
-    ) -> np.ndarray:
+    def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
-        Generate DPatchEOT.
+        Generate RobustDPatch.
 
         :param x: Sample images.
         :param y: Target labels for object detector.
@@ -145,8 +145,10 @@ class DPatchEoT(EvasionAttack):
         else:
             image_height, image_width = x.shape[1:3]
 
-        if self.patch_location[0] + self.patch_shape[0] > image_height - self.crop_range[0] \
-                or self.patch_location[1] + self.patch_shape[1] > image_width - self.crop_range[1]:
+        if (
+            self.patch_location[0] + self.patch_shape[0] > image_height - self.crop_range[0]
+            or self.patch_location[1] + self.patch_shape[1] > image_width - self.crop_range[1]
+        ):
             raise ValueError("The patch (partially) lies outside the cropped image.")
 
         for i_step in trange(self.max_iter, desc="DPatchEOT iteration", disable=not self.verbose):
@@ -170,7 +172,8 @@ class DPatchEoT(EvasionAttack):
                     )
 
                     gradients = self.estimator.loss_gradient(
-                        x=patched_images, y=patch_target,
+                        x=patched_images,
+                        y=patch_target,
                     )
 
                     gradients = self._untransform_gradients(
@@ -180,7 +183,7 @@ class DPatchEoT(EvasionAttack):
                     patch_gradients = patch_gradients_old + np.sum(gradients, axis=0)
                     logger.debug(
                         "Gradient percentage diff: %f)",
-                        np.mean(np.sign(patch_gradients) != np.sign(patch_gradients_old))
+                        np.mean(np.sign(patch_gradients) != np.sign(patch_gradients_old)),
                     )
 
                     patch_gradients_old = patch_gradients
@@ -189,7 +192,9 @@ class DPatchEoT(EvasionAttack):
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
-                    self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
+                    self._patch,
+                    a_min=self.estimator.clip_values[0],
+                    a_max=self.estimator.clip_values[1],
                 )
 
         return self._patch
@@ -197,7 +202,7 @@ class DPatchEoT(EvasionAttack):
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def _augment_images_with_patch(
         self, x: np.ndarray, patch: np.ndarray, channels_first: bool, channel_index=Deprecated
-    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Union[int, bool]]]:
+    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Union[int, float]]]:
         """
         Augment images with patch.
 
@@ -241,17 +246,12 @@ class DPatchEoT(EvasionAttack):
         transformations.update({"crop_x": crop_x, "crop_y": crop_y})
 
         # 2) rotate images:
-        rotate_angle = random.choices(["0", "90", "180", "270"], weights=self.rotation_weights)[0]
+        rot90 = random.choices([0, 1, 2, 3], weights=self.rotation_weights)[0]
 
-        if rotate_angle in ["180", "270"]:
-            x_copy = x_copy[:, ::-1, ::-1]
-            x_patch = x_patch[:, ::-1, ::-1]
+        x_copy = np.rot90(x_copy, rot90, (1, 2))
+        x_patch = np.rot90(x_patch, rot90, (1, 2))
 
-        if rotate_angle in ["90", "270"]:
-            x_copy = np.transpose(x_copy, (0, 2, 1, 3))
-            x_patch = np.transpose(x_patch, (0, 2, 1, 3))
-
-        transformations.update({"rotate_angle": rotate_angle})
+        transformations.update({"rot90": rot90})
 
         # 3) adjust brightness:
         brightness = random.uniform(*self.brightness_range)
@@ -260,7 +260,7 @@ class DPatchEoT(EvasionAttack):
 
         transformations.update({"brightness": brightness})
 
-        print(transformations)
+        logger.debug("Transformations: %s", str(transformations))
 
         patch_target: List[Dict[str, np.ndarray]] = list()
         predictions = self.estimator.predict(x=x_copy)
@@ -279,8 +279,11 @@ class DPatchEoT(EvasionAttack):
 
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def _untransform_gradients(
-        self, gradients: np.ndarray, transforms: Dict[str, Union[int, bool]],
-            channels_first: bool, channel_index=Deprecated
+        self,
+        gradients: np.ndarray,
+        transforms: Dict[str, Union[int, float]],
+        channels_first: bool,
+        channel_index=Deprecated,
     ) -> np.ndarray:
         """
         Augment images with patch.
@@ -306,11 +309,8 @@ class DPatchEoT(EvasionAttack):
         gradients = transforms["brightness"] * gradients
 
         # Undo rotations:
-        if transforms["rotate_angle"] in ["90", "270"]:
-            gradients = np.transpose(gradients, (0, 2, 1, 3))
-
-        if transforms["rotate_angle"] in ["180", "270"]:
-            gradients = gradients[:, ::-1, ::-1]
+        rot90 = (4 - transforms["rot90"]) % 4
+        gradients = np.rot90(gradients, rot90, (1, 2))
 
         # Account for cropping when considering the upper left point of the patch:
         x_1 = self.patch_location[0] - transforms["crop_x"]
@@ -382,14 +382,14 @@ class DPatchEoT(EvasionAttack):
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
 
-        if not isinstance(self.patch_location, (tuple, list)) \
-                or not all(isinstance(s, int) for s in self.patch_location):
+        if not isinstance(self.patch_location, (tuple, list)) or not all(
+            isinstance(s, int) for s in self.patch_location
+        ):
             raise ValueError("The patch location must be either a tuple or list of integers.")
         if len(self.patch_location) != 2:
             raise ValueError("The length of patch location must be 2.")
 
-        if not isinstance(self.crop_range, (tuple, list)) \
-                or not all(isinstance(s, int) for s in self.crop_range):
+        if not isinstance(self.crop_range, (tuple, list)) or not all(isinstance(s, int) for s in self.crop_range):
             raise ValueError("The crop range must be either a tuple or list of integers.")
         if len(self.crop_range) != 2:
             raise ValueError("The length of crop range must be 2.")
@@ -400,8 +400,9 @@ class DPatchEoT(EvasionAttack):
         if self.patch_location[0] < self.crop_range[0] or self.patch_location[1] < self.crop_range[1]:
             raise ValueError("The patch location must be outside the crop range.")
 
-        if not isinstance(self.brightness_range, (tuple, list)) \
-                or not all(isinstance(s, float) for s in self.brightness_range):
+        if not isinstance(self.brightness_range, (tuple, list)) or not all(
+            isinstance(s, float) for s in self.brightness_range
+        ):
             raise ValueError("The brightness range must be either a tuple or list of floats.")
         if len(self.brightness_range) != 2:
             raise ValueError("The length of brightness range must be 2.")
@@ -412,8 +413,9 @@ class DPatchEoT(EvasionAttack):
         if self.brightness_range[0] > self.brightness_range[1]:
             raise ValueError("The first element of the brightness range must be less or equal to the second one.")
 
-        if not isinstance(self.rotation_weights, (tuple, list)) \
-                or not all(isinstance(s, float) or isinstance(s, int) for s in self.rotation_weights):
+        if not isinstance(self.rotation_weights, (tuple, list)) or not all(
+            isinstance(s, float) or isinstance(s, int) for s in self.rotation_weights
+        ):
             raise ValueError("The rotation sampling weights must be provided as tuple or list of float or int values.")
         if len(self.rotation_weights) != 4:
             raise ValueError("The number of rotation sampling weights must be 4.")
