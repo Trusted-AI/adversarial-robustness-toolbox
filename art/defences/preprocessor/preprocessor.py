@@ -97,18 +97,17 @@ class Preprocessor(abc.ABC):
         """
         pass
 
-    @abc.abstractmethod
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         """
         Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
         this is an estimate of the gradient, most often replacing the computation performed by the defence with the
-        identity function.
+        identity function (the default).
 
         :param x: Input data for which the gradient is estimated. First dimension is the batch size.
         :param grad: Gradient value so far.
         :return: The gradient (estimate) of the defence.
         """
-        raise NotImplementedError
+        return grad
 
     def set_params(self, **kwargs) -> None:
         """
