@@ -70,8 +70,8 @@ class FastGradientMethod(EvasionAttack):
         self,
         estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
         norm: Union[int, float, str] = np.inf,
-        eps: float = 0.3,
-        eps_step: float = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         targeted: bool = False,
         num_random_init: int = 0,
         batch_size: int = 32,
@@ -101,6 +101,17 @@ class FastGradientMethod(EvasionAttack):
         self.minimal = minimal
         self._project = True
         FastGradientMethod._check_params(self)
+
+    def _check_compatibility_input_and_eps(self, x: np.ndarray):
+        """
+        Check the compatibility of the input with `eps` and `eps_step` which are of the same shape.
+
+        :param x: An array with the original inputs.
+        """
+        if isinstance(self.eps, np.ndarray):
+            # Ensure the eps array is broadcastable
+            if self.eps.ndim > x.ndim:
+                raise ValueError("The `eps` shape must be broadcastable to input shape.")
 
     def _minimal_perturbation(self, x: np.ndarray, y: np.ndarray, mask: np.ndarray) -> np.ndarray:
         """
@@ -134,24 +145,72 @@ class FastGradientMethod(EvasionAttack):
 
             # Get current predictions
             active_indices = np.arange(len(batch))
-            current_eps = self.eps_step
-            while active_indices.size > 0 and current_eps <= self.eps:
+
+            if isinstance(self.eps, np.ndarray):
+                if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                    current_eps = self.eps_step[batch_index_1:batch_index_2]
+                    partial_stop_condition = (current_eps <= self.eps[batch_index_1:batch_index_2]).all()
+
+                else:
+                    current_eps = self.eps_step
+                    partial_stop_condition = (current_eps <= self.eps).all()
+
+            else:
+                current_eps = self.eps_step
+                partial_stop_condition = current_eps <= self.eps
+
+            while active_indices.size > 0 and partial_stop_condition:
                 # Adversarial crafting
                 current_x = self._apply_perturbation(x[batch_index_1:batch_index_2], perturbation, current_eps)
+
                 # Update
                 batch[active_indices] = current_x[active_indices]
                 adv_preds = self.estimator.predict(batch)
+
                 # If targeted active check to see whether we have hit the target, otherwise head to anything but
                 if self.targeted:
                     active_indices = np.where(np.argmax(batch_labels, axis=1) != np.argmax(adv_preds, axis=1))[0]
                 else:
                     active_indices = np.where(np.argmax(batch_labels, axis=1) == np.argmax(adv_preds, axis=1))[0]
 
-                current_eps += self.eps_step
+                # Update current eps and check the stop condition
+                if isinstance(self.eps, np.ndarray):
+                    if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                        current_eps = current_eps + self.eps_step[batch_index_1:batch_index_2]
+                        partial_stop_condition = (current_eps <= self.eps[batch_index_1:batch_index_2]).all()
+
+                    else:
+                        current_eps = current_eps + self.eps_step
+                        partial_stop_condition = (current_eps <= self.eps).all()
+
+                else:
+                    current_eps = current_eps + self.eps_step
+                    partial_stop_condition = current_eps <= self.eps
 
             adv_x[batch_index_1:batch_index_2] = batch
 
         return adv_x
+
+    @staticmethod
+    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Get the mask from the kwargs.
+
+        :param x: An array with the original inputs.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: The mask.
+        """
+        mask = kwargs.get("mask")
+
+        if mask is not None:
+            # Ensure the mask is broadcastable
+            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
+                raise ValueError("Mask shape must be broadcastable to input shape.")
+
+        return mask
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """Generate adversarial samples and return them in an array.
@@ -168,6 +227,11 @@ class FastGradientMethod(EvasionAttack):
         :return: An array holding the adversarial examples.
         """
         mask = kwargs.get("mask")
+        if mask is not None and mask.ndim > x.ndim:
+            raise ValueError("Mask shape must be broadcastable to input shape.")
+
+        # Ensure eps is broadcastable
+        self._check_compatibility_input_and_eps(x=x)
 
         if isinstance(self.estimator, ClassifierMixin):
             y = check_and_transform_label_format(y, self.estimator.nb_classes)
@@ -179,14 +243,8 @@ class FastGradientMethod(EvasionAttack):
 
                 # Use model predictions as correct outputs
                 logger.info("Using model predictions as correct labels for FGM.")
-                y = get_labels_np_array(
-                    self.estimator.predict(x, batch_size=self.batch_size)  # type: ignore
-                )
+                y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))  # type: ignore
             y = y / np.sum(y, axis=1, keepdims=True)
-
-            # Check the mask
-            if mask is not None and (len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]):
-                raise ValueError("Mask shape must be broadcastable to input shape.")
 
             # Return adversarial examples computed with minimal perturbation if option is active
             rate_best: Optional[float]
@@ -232,9 +290,6 @@ class FastGradientMethod(EvasionAttack):
             if self.minimal:
                 raise ValueError("Minimal perturbation is only supported for classification.")
 
-            if kwargs.get("mask") is not None:
-                raise ValueError("Mask is only supported for classification.")
-
             if y is None:
                 # Throw error if attack is targeted, but no targets are provided
                 if self.targeted:
@@ -253,11 +308,37 @@ class FastGradientMethod(EvasionAttack):
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if self.eps <= 0:
-            raise ValueError("The perturbation size `eps` has to be positive.")
+        if (not (isinstance(self.eps, (int, float, np.ndarray)) and isinstance(self.eps_step, (int, float)))) and (
+            hasattr(self, "minimal")
+            and self.minimal
+            and not (isinstance(self.eps, np.ndarray) and isinstance(self.eps_step, np.ndarray))
+        ):
+            raise TypeError(
+                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type."
+            )
 
-        if self.eps_step <= 0:
-            raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+        if isinstance(self.eps, (int, float)):
+            if self.eps <= 0:
+                raise ValueError("The perturbation size `eps` has to be positive.")
+        else:
+            if (self.eps <= 0).any():
+                raise ValueError("The perturbation size `eps` has to be positive.")
+
+        if isinstance(self.eps_step, (int, float)):
+            if self.eps_step <= 0:
+                raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+        else:
+            if (self.eps_step <= 0).any():
+                raise ValueError("The perturbation step-size `eps_step` has to be positive.")
+
+        if (
+            isinstance(self.eps, np.ndarray)
+            and isinstance(self.eps_step, np.ndarray)
+            and self.eps.shape != self.eps_step.shape
+        ):
+            raise ValueError(
+                "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same shape."
+            )
 
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
@@ -313,7 +394,9 @@ class FastGradientMethod(EvasionAttack):
         else:
             return grad * (mask.astype(ART_NUMPY_DTYPE))
 
-    def _apply_perturbation(self, batch: np.ndarray, perturbation: np.ndarray, eps_step: float) -> np.ndarray:
+    def _apply_perturbation(
+        self, batch: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
+    ) -> np.ndarray:
         batch = batch + eps_step * perturbation
 
         if self.estimator.clip_values is not None:
@@ -328,8 +411,8 @@ class FastGradientMethod(EvasionAttack):
         x_init: np.ndarray,
         y: np.ndarray,
         mask: Optional[np.ndarray],
-        eps: float,
-        eps_step: float,
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
         project: bool,
         random_init: bool,
     ) -> np.ndarray:
@@ -350,7 +433,7 @@ class FastGradientMethod(EvasionAttack):
             else:
                 x_adv = x.astype(ART_NUMPY_DTYPE)
 
-            # Compute perturbation with implicit batching
+        # Compute perturbation with implicit batching
         for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch_index_2 = min(batch_index_2, x.shape[0])
@@ -367,18 +450,39 @@ class FastGradientMethod(EvasionAttack):
             # Get perturbation
             perturbation = self._compute_perturbation(batch, batch_labels, mask_batch)
 
+            # Compute batch_eps and batch_eps_step
+            if isinstance(eps, np.ndarray):
+                if len(eps.shape) == len(x.shape) and eps.shape[0] == x.shape[0]:
+                    batch_eps = eps[batch_index_1:batch_index_2]
+                    batch_eps_step = eps_step[batch_index_1:batch_index_2]
+
+                else:
+                    batch_eps = eps
+                    batch_eps_step = eps_step
+
+            else:
+                batch_eps = eps
+                batch_eps_step = eps_step
+
             # Apply perturbation and clip
-            x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, eps_step)
+            x_adv[batch_index_1:batch_index_2] = self._apply_perturbation(batch, perturbation, batch_eps_step)
 
             if project:
                 if x_adv.dtype == np.object:
                     for i_sample in range(batch_index_1, batch_index_2):
-                        perturbation = projection(x_adv[i_sample] - x_init[i_sample], eps, self.norm)
+                        if isinstance(batch_eps, np.ndarray) and batch_eps.shape[0] == x_adv.shape[0]:
+                            perturbation = projection(
+                                x_adv[i_sample] - x_init[i_sample], batch_eps[i_sample], self.norm
+                            )
+
+                        else:
+                            perturbation = projection(x_adv[i_sample] - x_init[i_sample], batch_eps, self.norm)
+
                         x_adv[i_sample] = x_init[i_sample] + perturbation
 
                 else:
                     perturbation = projection(
-                        x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2], eps, self.norm
+                        x_adv[batch_index_1:batch_index_2] - x_init[batch_index_1:batch_index_2], batch_eps, self.norm
                     )
                     x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
 
