@@ -38,7 +38,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AudioFilter(Preprocessor):
+class LFilter(Preprocessor):
     """
     This module implements the filter function for audio signals. It provides with an infinite impulse response (IIR)
     or finite impulse response (FIR) filter. This implementation is a wrapper around the `scipy.signal.lfilter`

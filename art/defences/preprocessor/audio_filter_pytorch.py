@@ -37,7 +37,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AudioFilterPyTorch(PreprocessorPyTorch):
+class LFilterPyTorch(PreprocessorPyTorch):
     """
     This module implements the filter function for audio signals in PyTorch. It provides with an infinite impulse
     response (IIR) or finite impulse response (FIR) filter. This implementation is a wrapper around the
