@@ -69,6 +69,15 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
         self.round_samples = round_samples
         self._nb_classes = self.classifier.nb_classes
 
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
+
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction of the classifier for input `x`.
@@ -149,7 +158,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
                 axis=0,
             )
             grads.append(query_efficient_grad)
-        grads = self._apply_preprocessing_normalization_gradient(np.array(grads))
+        grads = self._apply_preprocessing_gradient(x, np.array(grads))
         return grads
 
     def _wrap_predict(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:
