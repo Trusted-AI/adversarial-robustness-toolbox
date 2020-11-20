@@ -121,7 +121,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # train attack model
         self.attack_model.fit(x_train, y_ready)
 
-    def infer(self, x: np.ndarray, y: np.ndarray = None, **kwargs) -> np.ndarray:
+    def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Infer the attacked feature.
 
@@ -131,7 +131,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :type values: `np.ndarray`
         :return: The inferred feature values.
         """
-        if y is not None and y.shape[0] != x.shape[0]:
+        if y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
         if self.estimator.input_shape[0] != x.shape[1] + 1:
             raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
