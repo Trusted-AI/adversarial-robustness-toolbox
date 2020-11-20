@@ -179,8 +179,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                 if y is not None:
                     y = y.cpu().numpy()
 
-        elif len(self.preprocessing) in [1, 2] and isinstance(
-            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch)
+        elif len(self.preprocessing) == 1 or (
+            len(self.preprocessing) == 2
+            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
         ):
             # Compatible with non-PyTorch defences if no chaining.
             for preprocess in self.preprocessing:
