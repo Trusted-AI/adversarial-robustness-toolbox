@@ -173,6 +173,15 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
             [input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss, self.loss_acc], updates=self.updates
         )
 
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
+
     def reset(self):
         """
         Reset the state of the defense

@@ -100,6 +100,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -108,7 +109,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             preprocessing=preprocessing,
         )
 
-        self._model = model
         self._loss = loss
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -122,6 +122,15 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         # Get the internal layer
         self._layer_names = self._get_layers()
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -195,7 +204,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         if (
             isinstance(generator, MXDataGenerator)
-            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
+            and (self.preprocessing is None or self.preprocessing == [])
             and self.preprocessing == (0, 1)
         ):
             # Train directly in MXNet
@@ -488,7 +497,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
     def __repr__(self):
         repr_ = (
             "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r,"
-            " channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r,"
+            " channels_first=%r, clip_values=%r, preprocessing=%r, postprocessing_defences=%r,"
             " preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
@@ -501,7 +510,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 self.channel_index,
                 self.channels_first,
                 self.clip_values,
-                self.preprocessing_defences,
+                self.preprocessing,
                 self.postprocessing_defences,
                 self.preprocessing,
             )

@@ -58,7 +58,7 @@ class TestHopSkipJump(TestBase):
         master_seed(seed=1234, set_tensorflow=True, set_torch=True)
         super().setUp()
 
-    def test_tensorflow_mnist(self):
+    def test_3_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -217,7 +217,7 @@ class TestHopSkipJump(TestBase):
         if sess is not None:
             sess.close()
 
-    def test_keras_mnist(self):
+    def test_8_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -375,7 +375,7 @@ class TestHopSkipJump(TestBase):
         # Clean-up session
         k.clear_session()
 
-    def test_pytorch_classifier(self):
+    def test_4_pytorch_classifier(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -531,7 +531,7 @@ class TestHopSkipJump(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_pytorch_resume(self):
+    def test_5_pytorch_resume(self):
         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
 
         # Build PyTorchClassifier
@@ -552,7 +552,7 @@ class TestHopSkipJump(TestBase):
 
         self.assertGreater(diff1, diff2)
 
-    def test_keras_iris_clipped(self):
+    def test_7_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
         # Norm=2
@@ -582,7 +582,7 @@ class TestHopSkipJump(TestBase):
         # Clean-up session
         k.clear_session()
 
-    def test_keras_iris_unbounded(self):
+    def test_7_keras_iris_unbounded(self):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
@@ -611,7 +611,7 @@ class TestHopSkipJump(TestBase):
         # Clean-up session
         k.clear_session()
 
-    def test_tensorflow_iris(self):
+    def test_2_tensorflow_iris(self):
         classifier, sess = get_tabular_classifier_tf()
 
         # Test untargeted attack and norm=2
@@ -668,7 +668,7 @@ class TestHopSkipJump(TestBase):
         if sess is not None:
             sess.close()
 
-    def test_pytorch_iris(self):
+    def test_4_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
         x_test = self.x_test_iris.astype(np.float32)
 
@@ -696,7 +696,7 @@ class TestHopSkipJump(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with HopSkipJump adversarial examples: %.2f%%", (acc * 100))
 
-    def test_scikitlearn(self):
+    def test_6_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
         from sklearn.tree import DecisionTreeClassifier, ExtraTreeClassifier
@@ -759,7 +759,7 @@ class TestHopSkipJump(TestBase):
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
+    def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(HopSkipJump, [BaseEstimator, ClassifierMixin])
 
 

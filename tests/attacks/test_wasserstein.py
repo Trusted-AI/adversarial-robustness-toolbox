@@ -442,9 +442,8 @@ class TestWasserstein(TestBase):
             ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
         ):
             def __init__(self):
-                super(DummyClassifier, self).__init__()
+                super(DummyClassifier, self).__init__(model=None, clip_values=None, channels_first=True)
                 self._nb_classes = 10
-                self._channels_first = True
 
             def class_gradient(self):
                 return None
@@ -468,6 +467,9 @@ class TestWasserstein(TestBase):
                 pass
 
             def set_learning_phase(self):
+                pass
+
+            def input_shape(self):
                 pass
 
         classifier = DummyClassifier()

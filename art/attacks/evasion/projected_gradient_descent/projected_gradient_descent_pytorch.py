@@ -58,8 +58,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         self,
         estimator: Union["PyTorchClassifier", "PyTorchFasterRCNN"],
         norm: Union[int, float, str] = np.inf,
-        eps: float = 0.3,
-        eps_step: float = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -85,16 +85,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Show progress bars.
         """
-        if (
-            hasattr(estimator, "preprocessing")
-            and (estimator.preprocessing is not None and estimator.preprocessing != (0, 1))
-        ) or (
-            hasattr(estimator, "preprocessing_defences")
-            and (estimator.preprocessing_defences is not None and estimator.preprocessing_defences != [])
-        ):
+        if not estimator.all_framework_preprocessing:
             raise NotImplementedError(
-                "The framework-specific implementation currently does not apply preprocessing and "
-                "preprocessing defences."
+                "The framework-specific implementation only supports framework-specific preprocessing."
             )
 
         super(ProjectedGradientDescentPyTorch, self).__init__(
@@ -128,10 +121,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         import torch  # lgtm [py/repeated-import]
 
         mask = kwargs.get("mask")
-
-        # Check the mask
-        if mask is not None and (len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]):
+        if mask is not None and mask.ndim > x.ndim:
             raise ValueError("Mask shape must be broadcastable to input shape.")
+
+        # Ensure eps is broadcastable
+        self._check_compatibility_input_and_eps(x=x)
 
         # Check whether random eps is enabled
         self._random_eps()
@@ -183,7 +177,24 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
 
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
+
+                # Compute batch_eps and batch_eps_step
+                if isinstance(self.eps, np.ndarray):
+                    if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                        batch_eps = self.eps[batch_index_1:batch_index_2]
+                        batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
+
+                    else:
+                        batch_eps = self.eps
+                        batch_eps_step = self.eps_step
+
+                else:
+                    batch_eps = self.eps
+                    batch_eps_step = self.eps_step
+
+                adv_x[batch_index_1:batch_index_2] = self._generate_batch(
+                    x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                )
 
             if self.num_random_init > 1:
                 rate = 100 * compute_success(
@@ -204,7 +215,14 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x_best
 
-    def _generate_batch(self, x: "torch.Tensor", targets: "torch.Tensor", mask: "torch.Tensor") -> np.ndarray:
+    def _generate_batch(
+        self,
+        x: "torch.Tensor",
+        targets: "torch.Tensor",
+        mask: "torch.Tensor",
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
+    ) -> np.ndarray:
         """
         Generate a batch of adversarial samples and return them in an array.
 
@@ -213,6 +231,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
         inputs = x.to(self.estimator.device)
@@ -224,7 +244,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_torch(
-                adv_x, inputs, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x, inputs, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x.cpu().detach().numpy()
@@ -251,7 +271,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad = self.estimator.loss_gradient_framework(x, y) * (1 - 2 * int(self.targeted))
+        grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
 
         # Apply mask
         if mask is not None:
@@ -273,7 +293,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return grad
 
-    def _apply_perturbation(self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: float) -> "torch.Tensor":
+    def _apply_perturbation(
+        self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
+    ) -> "torch.Tensor":
         """
         Apply perturbation on examples.
 
@@ -284,7 +306,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x = x + eps_step * perturbation
+        eps_step = np.array(eps_step, dtype=ART_NUMPY_DTYPE)
+        x = x + torch.tensor(eps_step).to(self.estimator.device) * perturbation
 
         if self.estimator.clip_values is not None:
             clip_min, clip_max = self.estimator.clip_values
@@ -301,8 +324,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         x_init: "torch.Tensor",
         y: "torch.Tensor",
         mask: "torch.Tensor",
-        eps: float,
-        eps_step: float,
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
         random_init: bool,
     ) -> "torch.Tensor":
         """
@@ -361,7 +384,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return x_adv
 
-    def _projection(self, values: "torch.Tensor", eps: float, norm_p: Union[int, float, str]) -> "torch.Tensor":
+    def _projection(
+        self, values: "torch.Tensor", eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]
+    ) -> "torch.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
@@ -377,18 +402,32 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         values_tmp = values.reshape(values.shape[0], -1)
 
         if norm_p == 2:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
+                )
+
             values_tmp = values_tmp * torch.min(
                 torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
                 eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
             ).unsqueeze_(-1)
 
         elif norm_p == 1:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
+                )
+
             values_tmp = values_tmp * torch.min(
                 torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
                 eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
             ).unsqueeze_(-1)
 
         elif norm_p in [np.inf, "inf"]:
+            if isinstance(eps, np.ndarray):
+                eps = eps * np.ones_like(values)
+                eps = eps.reshape([eps.shape[0], -1])
+
             values_tmp = values_tmp.sign() * torch.min(
                 values_tmp.abs(), torch.tensor([eps], dtype=torch.float32).to(self.estimator.device)
             )
