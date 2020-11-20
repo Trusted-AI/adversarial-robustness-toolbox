@@ -194,7 +194,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         else:
             input_is_tensor = False
 
-        if self.all_framework_preprocessing:
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             # Convert np arrays to torch tensors.
             if not input_is_tensor:
                 x = tf.convert_to_tensor(x)
