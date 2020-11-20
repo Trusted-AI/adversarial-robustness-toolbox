@@ -18,7 +18,7 @@
 """
 This module implements the evaluation of Security Curves.
 
-Examples of Security Curves can be found in Figure 6 of Madry et al., 2019 (https://arxiv.org/abs/1706.06083).
+Examples of Security Curves can be found in Figure 6 of Madry et al., 2017 (https://arxiv.org/abs/1706.06083).
 """
 from typing import List, NoReturn, Tuple, TYPE_CHECKING, Union
 
@@ -36,7 +36,7 @@ class SecurityCurve(Evaluation):
     """
     This class implements the evaluation of Security Curves.
 
-    Examples of Security Curves can be found in Figure 6 of Madry et al., 2019 (https://arxiv.org/abs/1706.06083).
+    Examples of Security Curves can be found in Figure 6 of Madry et al., 2017 (https://arxiv.org/abs/1706.06083).
     """
 
     def __init__(self, eps: Union[int, List[float], List[int]]):
@@ -105,7 +105,7 @@ class SecurityCurve(Evaluation):
         return self.eps_list, self.accuracy_adv_list, self.accuracy
 
     @property
-    def is_obfuscating_gradients(self) -> bool:
+    def detected_obfuscating_gradients(self) -> bool:
         """
         This property describes if the previous call to method `evaluate` identified potential gradient obfuscation.
         """
@@ -119,7 +119,7 @@ class SecurityCurve(Evaluation):
         **kwargs: Union[str, bool, int, float]
     ) -> NoReturn:
         """
-        Check if potential gradient obfuscated can be detected. Projected Gradient Descent with 100 iterations is run
+        Check if potential gradient obfuscation can be detected. Projected Gradient Descent with 100 iterations is run
         with maximum attack budget `eps` being equal to upper clip value of input data and `eps_step` of
         `eps / (max_iter / 2)`.
 
@@ -175,8 +175,7 @@ class SecurityCurve(Evaluation):
         :param y_pred: Predicted labels.
         :return: Accuracy.
         """
-        num_data = y.shape[0]
-        return np.sum(np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)) / num_data
+        return np.mean(np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)).item()
 
     def __repr__(self):
         repr_ = "{}(eps={})".format(self.__module__ + "." + self.__class__.__name__, self.eps,)
