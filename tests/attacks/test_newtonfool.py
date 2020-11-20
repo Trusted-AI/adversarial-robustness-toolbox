@@ -49,7 +49,7 @@ class TestNewtonFool(TestBase):
     def setUpClass(cls):
         super().setUpClass()
 
-    def test_tensorflow_mnist(self):
+    def test_3_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -75,7 +75,7 @@ class TestNewtonFool(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_keras_mnist(self):
+    def test_9_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -101,7 +101,7 @@ class TestNewtonFool(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_pytorch_mnist(self):
+    def test_5_pytorch_mnist(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -128,7 +128,7 @@ class TestNewtonFool(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
 
-    def test_keras_iris_clipped(self):
+    def test_7_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
         attack = NewtonFool(classifier, max_iter=5)
@@ -142,7 +142,7 @@ class TestNewtonFool(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with NewtonFool adversarial examples: %.2f%%", (acc * 100))
 
-    def test_keras_iris_unbounded(self):
+    def test_8_keras_iris_unbounded(self):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
@@ -156,7 +156,7 @@ class TestNewtonFool(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with NewtonFool adversarial examples: %.2f%%", (acc * 100))
 
-    def test_tensorflow_iris(self):
+    def test_2_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
 
         attack = NewtonFool(classifier, max_iter=5, batch_size=128)
@@ -170,7 +170,7 @@ class TestNewtonFool(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with NewtonFool adversarial examples: %.2f%%", (acc * 100))
 
-    def test_pytorch_iris(self):
+    def test_4_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
 
         attack = NewtonFool(classifier, max_iter=5, batch_size=128)
@@ -184,7 +184,7 @@ class TestNewtonFool(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with NewtonFool adversarial examples: %.2f%%", (acc * 100))
 
-    def test_scikitlearn(self):
+    def test_6_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
@@ -220,7 +220,7 @@ class TestNewtonFool(TestBase):
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
+    def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(NewtonFool, [BaseEstimator, ClassGradientsMixin])
 
 

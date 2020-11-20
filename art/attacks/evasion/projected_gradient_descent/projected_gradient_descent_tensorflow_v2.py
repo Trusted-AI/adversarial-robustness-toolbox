@@ -57,8 +57,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         self,
         estimator: "TensorFlowV2Classifier",
         norm: Union[int, float, str] = np.inf,
-        eps: float = 0.3,
-        eps_step: float = 0.1,
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         num_random_init: int = 0,
@@ -84,16 +84,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param verbose: Show progress bars.
         """
-        if (
-            hasattr(estimator, "preprocessing")
-            and (estimator.preprocessing is not None and estimator.preprocessing != (0, 1))
-        ) or (
-            hasattr(estimator, "preprocessing_defences")
-            and (estimator.preprocessing_defences is not None and estimator.preprocessing_defences != [])
-        ):
+        if not estimator.all_framework_preprocessing:
             raise NotImplementedError(
-                "The framework-specific implementation currently does not apply preprocessing and "
-                "preprocessing defences."
+                "The framework-specific implementation only supports framework-specific preprocessing."
             )
 
         super().__init__(
@@ -127,10 +120,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         mask = kwargs.get("mask")
-
-        # Check the mask
-        if mask is not None and (len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape):]):
+        if mask is not None and mask.ndim > x.ndim:
             raise ValueError("Mask shape must be broadcastable to input shape.")
+
+        # Ensure eps is broadcastable
+        self._check_compatibility_input_and_eps(x=x)
 
         # Check whether random eps is enabled
         self._random_eps()
@@ -179,7 +173,24 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                     (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
 
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
+
+                # Compute batch_eps and batch_eps_step
+                if isinstance(self.eps, np.ndarray):
+                    if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                        batch_eps = self.eps[batch_index_1:batch_index_2]
+                        batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
+
+                    else:
+                        batch_eps = self.eps
+                        batch_eps_step = self.eps_step
+
+                else:
+                    batch_eps = self.eps
+                    batch_eps_step = self.eps_step
+
+                adv_x[batch_index_1:batch_index_2] = self._generate_batch(
+                    x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                )
 
             if self.num_random_init > 1:
                 rate = 100 * compute_success(
@@ -200,21 +211,36 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         return adv_x_best
 
-    def _generate_batch(self, x: "tf.Tensor", targets: "tf.Tensor", mask: "tf.Tensor") -> "tf.Tensor":
+    def _generate_batch(
+        self,
+        x: "tf.Tensor",
+        targets: "tf.Tensor",
+        mask: "tf.Tensor",
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
+    ) -> "tf.Tensor":
         """
         Generate a batch of adversarial samples and return them in an array.
 
         :param x: An array with the original inputs.
         :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+<<<<<<< HEAD
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param eps_step: Attack step size (input variation) at each iteration.
+=======
         :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
                      Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
                      features for which the mask is zero will not be adversarially perturbed.
+>>>>>>> origin/dev_1.5.0
         :return: Adversarial examples.
         """
         adv_x = x
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_tf(
-                adv_x, x, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x, x, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x
@@ -239,7 +265,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
-        grad: tf.Tensor = self.estimator.loss_gradient_framework(x, y) * tf.constant(
+        grad: tf.Tensor = self.estimator.loss_gradient(x, y) * tf.constant(
             1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
         )
 
@@ -264,7 +290,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         else:
             return grad * mask
 
-    def _apply_perturbation(self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: float) -> "tf.Tensor":
+    def _apply_perturbation(
+        self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[int, float, np.ndarray]
+    ) -> "tf.Tensor":
         """
         Apply perturbation on examples.
 
@@ -289,8 +317,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         x_init: "tf.Tensor",
         y: "tf.Tensor",
         mask: "tf.Tensor",
-        eps: float,
-        eps_step: float,
+        eps: Union[int, float, np.ndarray],
+        eps_step: Union[int, float, np.ndarray],
         random_init: bool,
     ) -> "tf.Tensor":
         """
@@ -346,7 +374,9 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         return x_adv
 
     @staticmethod
-    def _projection(values: "tf.Tensor", eps: float, norm_p: Union[int, float, str]) -> "tf.Tensor":
+    def _projection(
+        values: "tf.Tensor", eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]
+    ) -> "tf.Tensor":
         """
         Project `values` on the L_p norm ball of size `eps`.
 
@@ -362,16 +392,30 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         values_tmp = tf.reshape(values, (values.shape[0], -1))
 
         if norm_p == 2:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
+                )
+
             values_tmp = values_tmp * tf.expand_dims(
                 tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=2, axis=1) + tol)), axis=1
             )
 
         elif norm_p == 1:
+            if isinstance(eps, np.ndarray):
+                raise NotImplementedError(
+                    "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
+                )
+
             values_tmp = values_tmp * tf.expand_dims(
                 tf.minimum(1.0, eps / (tf.norm(values_tmp, ord=1, axis=1) + tol)), axis=1
             )
 
         elif norm_p in ["inf", np.inf]:
+            if isinstance(eps, np.ndarray):
+                eps = eps * np.ones(shape=values.shape)
+                eps = eps.reshape([eps.shape[0], -1])
+
             values_tmp = tf.sign(values_tmp) * tf.minimum(tf.math.abs(values_tmp), eps)
 
         else:
