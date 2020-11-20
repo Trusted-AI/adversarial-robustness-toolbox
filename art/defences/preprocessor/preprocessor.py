@@ -264,7 +264,11 @@ class PreprocessorTensorFlowV2(Preprocessor):
             y = y.numpy()
         return result, y
 
-    def _get_gradient(self, x: "tf.Tensor", grad: "tf.Tensor") -> "tf.Tensor":
+    # Backward compatibility.
+    def _get_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        """
+        Helper function for estimate_gradient
+        """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         with tf.GradientTape() as tape:
