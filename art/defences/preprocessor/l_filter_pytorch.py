@@ -110,12 +110,19 @@ class LFilterPyTorch(PreprocessorPyTorch):
         import torch  # lgtm [py/repeated-import]
         from torchaudio.functional import lfilter
 
-        x_preprocess = lfilter(
-            b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
-            a_coeffs=torch.tensor(self.denumerator_coef, device=self._device),
-            waveform=x,
-            clamp=False,
-        )
+        if int(torch.__version__.split(".")[1]) > 5:
+            x_preprocess = lfilter(
+                b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
+                a_coeffs=torch.tensor(self.denumerator_coef, device=self._device),
+                waveform=x,
+                clamp=False,
+            )
+        else:
+            x_preprocess = lfilter(
+                b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
+                a_coeffs=torch.tensor(self.denumerator_coef, device=self._device),
+                waveform=x,
+            )
 
         if self.clip_values is not None:
             x_preprocess = x_preprocess.clamp(min=self.clip_values[0], max=self.clip_values[1])
