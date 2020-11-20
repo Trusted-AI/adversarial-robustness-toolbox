@@ -57,7 +57,7 @@ class TestAdversarialPatch(TestBase):
         master_seed(seed=1234)
         super().setUp()
 
-    def test_tensorflow_numpy(self):
+    def test_2_tensorflow_numpy(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -86,7 +86,7 @@ class TestAdversarialPatch(TestBase):
             sess.close()
 
     @unittest.skipIf(int(tf.__version__.split(".")[0]) != 2, reason="Skip unittests if not TensorFlow>=2.0.")
-    def test_tensorflow_v2_framework(self):
+    def test_3_tensorflow_v2_framework(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -115,7 +115,7 @@ class TestAdversarialPatch(TestBase):
         int(keras.__version__.split(".")[0]) == 2 and int(keras.__version__.split(".")[1]) < 3,
         reason="Skip unittests if not Keras>=2.3.",
     )
-    def test_keras(self):
+    def test_6_keras(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -133,7 +133,7 @@ class TestAdversarialPatch(TestBase):
         self.assertAlmostEqual(patch_adv[14, 14, 0], 0.6292826, delta=0.05)
         self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
 
-    def test_pytorch(self):
+    def test_4_pytorch(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -153,7 +153,7 @@ class TestAdversarialPatch(TestBase):
         self.assertAlmostEqual(patch_adv[0, 14, 14], 0.6292826, delta=0.05)
         self.assertAlmostEqual(float(np.sum(patch_adv)), 424.31439208984375, delta=1.0)
 
-    def test_failure_feature_vectors(self):
+    def test_5_failure_feature_vectors(self):
         classifier = get_tabular_classifier_kr()
         classifier._clip_values = (0, 1)
 
@@ -166,7 +166,7 @@ class TestAdversarialPatch(TestBase):
             str(context.exception),
         )
 
-    def test_classifier_type_check_fail(self):
+    def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(AdversarialPatch, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])
 
 

@@ -196,6 +196,15 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         self._sess.run(tf.global_variables_initializer())
         self._sess.run(tf.local_variables_initializer())
 
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
+
     @staticmethod
     def _load_model(
         images: "tf.Tensor",
