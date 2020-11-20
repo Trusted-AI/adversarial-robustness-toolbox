@@ -35,6 +35,9 @@ if TYPE_CHECKING:
 class Preprocessor(abc.ABC):
     """
     Abstract base class for preprocessing defences.
+
+    By default, the gradient is estimated using BPDA with the identity function.
+        To modify, override `estimate_gradient`
     """
 
     params: List[str] = []
