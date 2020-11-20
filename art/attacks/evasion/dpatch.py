@@ -144,8 +144,8 @@ class DPatch(EvasionAttack):
 
                 target_dict = dict()
                 target_dict["boxes"] = np.asarray([[i_x_1, i_y_1, i_x_2, i_y_2]])
-                target_dict["labels"] = np.asarray([self.target_label[i_image], ])
-                target_dict["scores"] = np.asarray([1.0, ])
+                target_dict["labels"] = np.asarray([self.target_label[i_image],])
+                target_dict["scores"] = np.asarray([1.0,])
 
                 patch_target.append(target_dict)
 
