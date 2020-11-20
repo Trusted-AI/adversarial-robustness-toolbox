@@ -131,6 +131,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Super initialization
         super().__init__(
+            model=None,
             clip_values=clip_values,
             channels_first=None,
             preprocessing_defences=preprocessing_defences,
