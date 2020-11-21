@@ -221,7 +221,12 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         if not self.preprocessing:
             return gradients
 
-        if self.all_framework_preprocessing:
+        if isinstance(x, torch.Tensor):
+            input_is_tensor = True
+        else:
+            input_is_tensor = False
+
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             # Convert np arrays to torch tensors.
             x = torch.tensor(x, device=self._device, requires_grad=True)
             gradients = torch.tensor(gradients, device=self._device)
@@ -244,8 +249,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
 
-        elif len(self.preprocessing) in [1, 2] and isinstance(
-            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch)
+        elif len(self.preprocessing) == 1 or (
+                len(self.preprocessing) == 2
+                and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
         ):
             # Compatible with non-PyTorch defences if no chaining.
             defence = self.preprocessing[0]
