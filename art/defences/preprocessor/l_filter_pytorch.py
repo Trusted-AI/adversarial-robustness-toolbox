@@ -76,8 +76,8 @@ class LFilterPyTorch(PreprocessorPyTorch):
 
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
-        self.numerator_coef = numerator_coef
-        self.denumerator_coef = denumerator_coef
+        self.numerator_coef = numerator_coef.astype(np.float32)
+        self.denumerator_coef = denumerator_coef.astype(np.float32)
         self.clip_values = clip_values
         self.verbose = verbose
         self._check_params()
