@@ -207,7 +207,7 @@ class PreprocessorPyTorch(Preprocessor):
             x_grad_list = list()
             for i, x_i in enumerate(x):
                 x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
-            x_grad = np.empty(len(x.shape[0]), dtype=object)
+            x_grad = np.empty(x.shape[0], dtype=object)
             x_grad[:] = list(x_grad_list)
         elif x.shape == grad.shape:
             x_grad = get_gradient(x=x, grad=grad)
