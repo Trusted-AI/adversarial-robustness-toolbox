@@ -205,8 +205,14 @@ class PreprocessorPyTorch(Preprocessor):
 
         if x.shape == grad.shape:
             x_grad = get_gradient(x=x, grad=grad)
+        elif x.dtype == np.object:
+            x_grad_list = list()
+            for i, x_i in enumerate(x):
+                x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
+            x_grad = np.empty(len(x.shape[0]), dtype=object)
+            x_grad[:] = list(x_grad_list)
         else:
-            # Special case for lass gradients
+            # Special case for loss gradients
             x_grad = np.zeros_like(grad)
             for i in range(grad.shape[1]):
                 x_grad[:, i, ...] = get_gradient(x=x, grad=grad[:, i, ...])
