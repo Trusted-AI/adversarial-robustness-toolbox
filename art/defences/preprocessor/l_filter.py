@@ -50,7 +50,7 @@ class LFilter(Preprocessor):
     def __init__(
         self,
         numerator_coef: np.ndarray = np.array([1.0]),
-        denumerator_coef: np.ndarray = np.array([1.0]),
+        denominator_coef: np.ndarray = np.array([1.0]),
         axis: int = -1,
         initial_cond: Optional[np.ndarray] = None,
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
@@ -79,7 +79,7 @@ class LFilter(Preprocessor):
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
         self.numerator_coef = numerator_coef
-        self.denumerator_coef = denumerator_coef
+        self.denominator_coef = denominator_coef
         self.axis = axis
         self.initial_cond = initial_cond
         self.clip_values = clip_values
@@ -109,7 +109,7 @@ class LFilter(Preprocessor):
         # Filter one input at a time
         for i, x_preprocess_i in enumerate(tqdm(x_preprocess, desc="Apply audio filter", disable=not self.verbose)):
             x_preprocess[i] = lfilter(
-                b=self.numerator_coef, a=self.denumerator_coef, x=x_preprocess_i, axis=self.axis, zi=self.initial_cond
+                b=self.numerator_coef, a=self.denominator_coef, x=x_preprocess_i, axis=self.axis, zi=self.initial_cond
             )
             x_preprocess[i] = x_preprocess[i].astype(ART_NUMPY_DTYPE)
 
@@ -128,7 +128,7 @@ class LFilter(Preprocessor):
         pass
 
     def _check_params(self) -> None:
-        if not isinstance(self.denumerator_coef, np.ndarray) or self.denumerator_coef[0] == 0:
+        if not isinstance(self.denominator_coef, np.ndarray) or self.denominator_coef[0] == 0:
             raise ValueError("The first element of the denominator coefficient vector must be non zero.")
 
         if self.clip_values is not None:

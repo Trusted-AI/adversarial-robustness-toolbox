@@ -49,7 +49,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
     def __init__(
         self,
         numerator_coef: np.ndarray = np.array([1.0]),
-        denumerator_coef: np.ndarray = np.array([1.0]),
+        denominator_coef: np.ndarray = np.array([1.0]),
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
@@ -77,7 +77,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         self._apply_fit = apply_fit
         self._apply_predict = apply_predict
         self.numerator_coef = numerator_coef.astype(np.float32)
-        self.denumerator_coef = denumerator_coef.astype(np.float32)
+        self.denominator_coef = denominator_coef.astype(np.float32)
         self.clip_values = clip_values
         self.verbose = verbose
         self._check_params()
@@ -113,14 +113,14 @@ class LFilterPyTorch(PreprocessorPyTorch):
         if int(torch.__version__.split(".")[1]) > 5:
             x_preprocess = lfilter(
                 b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
-                a_coeffs=torch.tensor(self.denumerator_coef, device=self._device),
+                a_coeffs=torch.tensor(self.denominator_coef, device=self._device),
                 waveform=x,
                 clamp=False,
             )
         else:
             x_preprocess = lfilter(
                 b_coeffs=torch.tensor(self.numerator_coef, device=self._device),
-                a_coeffs=torch.tensor(self.denumerator_coef, device=self._device),
+                a_coeffs=torch.tensor(self.denominator_coef, device=self._device),
                 waveform=x,
             )
 
@@ -176,7 +176,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         pass
 
     def _check_params(self) -> None:
-        if not isinstance(self.denumerator_coef, np.ndarray) or self.denumerator_coef[0] == 0:
+        if not isinstance(self.denominator_coef, np.ndarray) or self.denominator_coef[0] == 0:
             raise ValueError("The first element of the denominator coefficient vector must be non zero.")
 
         if self.clip_values is not None:
