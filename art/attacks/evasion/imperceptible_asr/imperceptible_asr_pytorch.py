@@ -245,8 +245,10 @@ class ImperceptibleASRPytorch(EvasionAttack):
         import torch  # lgtm [py/repeated-import]
 
         if y is None:
-            raise ValueError("`ImperceptibleASRPytorch` is a targeted attack and requires the definition of target"
-                             "labels `y`. Currently `y` is set to `None`.")
+            raise ValueError(
+                "`ImperceptibleASRPytorch` is a targeted attack and requires the definition of target"
+                "labels `y`. Currently `y` is set to `None`."
+            )
 
         # Start to compute adversarial examples
         adv_x = x.copy()
