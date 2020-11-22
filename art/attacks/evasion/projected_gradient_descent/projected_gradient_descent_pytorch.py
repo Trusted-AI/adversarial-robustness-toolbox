@@ -156,7 +156,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         else:
             dataset = torch.utils.data.TensorDataset(
-                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)), torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
             )
 
         data_loader = torch.utils.data.DataLoader(
@@ -168,7 +169,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         # Compute perturbation with batching
         for (batch_id, batch_all) in enumerate(
-                tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
+            tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
         ):
             if mask is not None:
                 (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
@@ -185,13 +186,20 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     adv_x[batch_index_1:batch_index_2] = np.copy(adversarial_batch)
                 else:
                     # return the successful adversarial examples
-                    attack_success = compute_success_array(self.estimator, batch, batch_labels,
-                                                           adversarial_batch, self.targeted, batch_size=self.batch_size)
+                    attack_success = compute_success_array(
+                        self.estimator,
+                        batch,
+                        batch_labels,
+                        adversarial_batch,
+                        self.targeted,
+                        batch_size=self.batch_size,
+                    )
                     adv_x[batch_index_1:batch_index_2][attack_success] = adversarial_batch[attack_success]
 
         logger.info(
             "Success rate of attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size))
+            100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size),
+        )
 
         return adv_x
 
@@ -215,7 +223,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_torch(
-                adv_x, inputs, targets, mask, self.eps, self.eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x,
+                inputs,
+                targets,
+                mask,
+                self.eps,
+                self.eps_step,
+                self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x.cpu().detach().numpy()
@@ -365,16 +379,22 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         values_tmp = values.reshape(values.shape[0], -1)
 
         if norm_p == 2:
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
-            ).unsqueeze_(-1)
+            values_tmp = (
+                values_tmp
+                * torch.min(
+                    torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                    eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
+                ).unsqueeze_(-1)
+            )
 
         elif norm_p == 1:
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
-            ).unsqueeze_(-1)
+            values_tmp = (
+                values_tmp
+                * torch.min(
+                    torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                    eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
+                ).unsqueeze_(-1)
+            )
 
         elif norm_p in [np.inf, "inf"]:
             values_tmp = values_tmp.sign() * torch.min(

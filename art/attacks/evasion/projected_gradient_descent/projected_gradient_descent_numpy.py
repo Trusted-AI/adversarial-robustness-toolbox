@@ -269,7 +269,9 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             adv_x = x.astype(ART_NUMPY_DTYPE)
 
             for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
-                for rand_init_num in trange(max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose):
+                for rand_init_num in trange(
+                    max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose
+                ):
                     batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                     batch_index_2 = min(batch_index_2, x.shape[0])
                     batch = x[batch_index_1:batch_index_2]
@@ -280,7 +282,9 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                         if len(mask.shape) == len(x.shape):
                             mask_batch = mask[batch_index_1:batch_index_2]
 
-                    for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", leave=False, disable=not self.verbose):
+                    for i_max_iter in trange(
+                        self.max_iter, desc="PGD - Iterations", leave=False, disable=not self.verbose
+                    ):
 
                         batch = self._compute(
                             batch,
@@ -299,14 +303,26 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                         adv_x[batch_index_1:batch_index_2] = np.copy(batch)
                     else:
                         # replace adversarial examples if they are successful
-                        attack_success = compute_success_array(self.estimator, x[batch_index_1:batch_index_2], targets[batch_index_1:batch_index_2],
-                                                                batch, self.targeted, batch_size=self.batch_size)
+                        attack_success = compute_success_array(
+                            self.estimator,
+                            x[batch_index_1:batch_index_2],
+                            targets[batch_index_1:batch_index_2],
+                            batch,
+                            self.targeted,
+                            batch_size=self.batch_size,
+                        )
                         adv_x[batch_index_1:batch_index_2][attack_success] = batch[attack_success]
 
             logger.info(
                 "Success rate of attack: %.2f%%",
-                100 * compute_success(
-                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size,  # type: ignore
+                100
+                * compute_success(
+                    self.estimator,
+                    x,
+                    targets,
+                    adv_x,
+                    self.targeted,
+                    batch_size=self.batch_size,  # type: ignore
                 ),
             )
         else:
