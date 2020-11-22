@@ -177,20 +177,17 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
-            if self.num_random_init > 1:
-                for rand_init_num in range(self.num_random_init):
-                    adversarial_batch = self._generate_batch(batch, batch_labels, mask_batch)
+            for rand_init_num in range(max(1, self.num_random_init)):
+                adversarial_batch = self._generate_batch(batch, batch_labels, mask_batch)
+
+                if rand_init_num == 0:
+                    # first iteration: use the adversarial examples as they are the only ones we have now
+                    adv_x[batch_index_1:batch_index_2] = np.copy(adversarial_batch)
+                else:
+                    # return the successful adversarial examples
                     attack_success = compute_success_array(self.estimator, batch, batch_labels,
                                                            adversarial_batch, self.targeted, batch_size=self.batch_size)
-
-                    if rand_init_num == 0:
-                        # first iteration: use the adversarial examples as they are the only ones we have now
-                        adv_x[batch_index_1:batch_index_2] = np.copy(adversarial_batch)
-                    else:
-                        # return the successful adversarial examples
-                        adv_x[batch_index_1:batch_index_2][attack_success] = adversarial_batch[attack_success]
-            else:
-                adv_x[batch_index_1:batch_index_2] = self._generate_batch(batch, batch_labels, mask_batch)
+                    adv_x[batch_index_1:batch_index_2][attack_success] = adversarial_batch[attack_success]
 
         logger.info(
             "Success rate of attack: %.2f%%",

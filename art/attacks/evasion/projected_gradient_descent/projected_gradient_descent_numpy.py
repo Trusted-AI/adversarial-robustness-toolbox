@@ -264,14 +264,15 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
 
             # Get the mask
             mask = self._get_mask(x, **kwargs)
+
             # Start to compute adversarial examples
             adv_x = x.astype(ART_NUMPY_DTYPE)
+
             for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
                 for rand_init_num in trange(max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose):
-
                     batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
                     batch_index_2 = min(batch_index_2, x.shape[0])
-                    batch = adv_x[batch_index_1:batch_index_2]
+                    batch = x[batch_index_1:batch_index_2]
                     batch_labels = targets[batch_index_1:batch_index_2]
                     mask_batch = mask
 
@@ -292,17 +293,15 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                             self.num_random_init > 0 and i_max_iter == 0,
                         )
 
-                    if self.num_random_init > 1:
-                        if rand_init_num == 0:
-                            # initial random restart: we only have this set of adversarial examples for now
-                            adv_x[batch_index_1:batch_index_2] = np.copy(batch)
-                        else:
-                            # replace adversarial examples if they are successful
-                            attack_success = compute_success_array(self.estimator, x[batch_index_1:batch_index_2], targets[batch_index_1:batch_index_2],
-                                                                    batch, self.targeted, batch_size=self.batch_size)
-                            adv_x[batch_index_1:batch_index_2][attack_success] = batch[attack_success]
-                    else:
+                    if rand_init_num == 0:
+                        # initial (and possibly only) random restart: we only have this set of
+                        # adversarial examples for now
                         adv_x[batch_index_1:batch_index_2] = np.copy(batch)
+                    else:
+                        # replace adversarial examples if they are successful
+                        attack_success = compute_success_array(self.estimator, x[batch_index_1:batch_index_2], targets[batch_index_1:batch_index_2],
+                                                                batch, self.targeted, batch_size=self.batch_size)
+                        adv_x[batch_index_1:batch_index_2][attack_success] = batch[attack_success]
 
             logger.info(
                 "Success rate of attack: %.2f%%",
