@@ -17,43 +17,29 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import os
 import logging
-import unittest
 
 import numpy as np
+import pytest
 
-from art.attacks.poisoning.feature_collision_attack import FeatureCollisionAttack
-
-from tests.utils import TestBase, master_seed, get_image_classifier_kr  # , get_image_classifier_tf
+from art.attacks.poisoning import FeatureCollisionAttack
+from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
+from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
+from art.utils import to_categorical
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 NB_EPOCHS = 3
 
 
-class TestFeatureCollision(TestBase):
-    """
-    A unittest class for testing Feature Collision attack.
-    """
+@pytest.fixture()
+def poison_dataset(get_default_mnist_subset, image_dl_estimator):
+    (x_clean, y_clean), (_, _) = get_default_mnist_subset
+    classifier, _ = image_dl_estimator()
 
-    @classmethod
-    def setUpClass(cls):
-        master_seed(seed=1234)
-        super().setUpClass()
-
-        cls.n_train = 10
-        cls.n_test = 10
-        cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
-        cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
-        cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
-        cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
-
-    def setUp(self):
-        master_seed(seed=301)
-        super().setUp()
-
-    @staticmethod
-    def poison_dataset(classifier, x_clean, y_clean):
+    def _poison_dataset():
         x_poison = np.copy(x_clean)
         y_poison = np.copy(y_clean)
         base = np.expand_dims(x_clean[0], axis=0)
@@ -66,29 +52,17 @@ class TestFeatureCollision(TestBase):
 
         return x_poison, y_poison
 
-    # def test_tensorflow(self):
-    #     """
-    #     First test with the TensorFlowClassifier.
-    #     :return:
-    #     """
-    #
-    #     tfc, sess = get_image_classifier_tf()
-    #     x_adv, y_adv = self.poison_dataset(tfc, self.x_train_mnist, self.y_train_mnist)
-    #     tfc.fit(x_adv, y_adv, nb_epochs=NB_EPOCHS, batch_size=32)
-    #
-    #     if sess is not None:
-    #         sess.close()
+    return _poison_dataset
 
-    def test_keras(self):
-        """
-        Test working keras implementation.
-        :return:
-        """
 
-        krc = get_image_classifier_kr()
-        x_adv, y_adv = self.poison_dataset(krc, self.x_train_mnist, self.y_train_mnist)
+@pytest.mark.skipMlFramework("non_dl_frameworks", "mxnet", "pytorch", "tensorflow")
+def test_poison(art_warning, image_dl_estimator, poison_dataset):
+    """
+    Test the backdoor attack with a pattern-based perturbation can be trained on classifier
+    """
+    try:
+        krc, _ = image_dl_estimator()
+        x_adv, y_adv = poison_dataset()
         krc.fit(x_adv, y_adv, nb_epochs=NB_EPOCHS, batch_size=32)
-
-
-if __name__ == "__main__":
-    unittest.main()
+    except ARTTestException as e:
+        art_warning(e)

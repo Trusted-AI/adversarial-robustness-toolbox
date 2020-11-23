@@ -63,7 +63,6 @@ else
                         "tests/attacks/test_decision_tree_attack.py" \
                         "tests/attacks/test_deepfool.py" \
                         "tests/attacks/test_elastic_net.py" \
-                        "tests/attacks/test_feature_collision.py" \
                         "tests/attacks/test_functionally_equivalent_extraction.py" \
                         "tests/attacks/test_hclu.py" \
                         "tests/attacks/test_input_filter.py" \
