@@ -147,7 +147,6 @@ def test_backdoor_image(art_warning, image_dl_estimator, poison_dataset, mxnet_o
         krc, _ = image_dl_estimator()
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = poison_dataset(
             lambda x: poison_image_1(x, channels_first=mxnet_or_pytorch))
-        # Shuffle training data
         n_train = np.shape(y_poisoned_raw)[0]
         shuffled_indices = np.arange(n_train)
         np.random.shuffle(shuffled_indices)
@@ -166,11 +165,17 @@ def test_multiple_perturbations(art_warning, image_dl_estimator, poison_dataset,
     """
     try:
         krc, _ = image_dl_estimator()
-        func1 = lambda x: poison_image_1(x, channels_first=mxnet_or_pytorch)
-        func2 = lambda x: add_pattern_bd(x, channels_first=mxnet_or_pytorch)
-        func3 = lambda x: poison_image_2(x, channels_first=mxnet_or_pytorch)
+
+        def func1(x):
+            return poison_image_1(x, channels_first=mxnet_or_pytorch)
+
+        def func2(x):
+            return add_pattern_bd(x, channels_first=mxnet_or_pytorch)
+
+        def func3(x):
+            return poison_image_2(x, channels_first=mxnet_or_pytorch)
+
         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = poison_dataset([func1, func2, func3])
-        # Shuffle training data
         n_train = np.shape(y_poisoned_raw)[0]
         shuffled_indices = np.arange(n_train)
         np.random.shuffle(shuffled_indices)
