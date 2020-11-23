@@ -133,7 +133,7 @@ class RobustDPatch(EvasionAttack):
         if x.shape[channel_index] != self.patch_shape[channel_index - 1]:
             raise ValueError("The color channel index of the images and the patch have to be identical.")
         if y is not None:
-            raise ValueError("The DPatchEOT attack does not use target labels.")
+            raise ValueError("The RobustDPatch attack does not use target labels.")
         if x.ndim != 4:
             raise ValueError("The adversarial patch can only be applied to images.")
 
