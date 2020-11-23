@@ -49,12 +49,12 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
 
         if fir_filter:
-            denumerator_coef = np.array([1.0])
+            denominator_coef = np.array([1.0])
         else:
-            denumerator_coef = np.array([1.0, 0.1, 0.3, 0.4])
+            denominator_coef = np.array([1.0, 0.1, 0.3, 0.4])
 
         # Create filter
-        audio_filter = LFilter(numerator_coef=numerator_coef, denumerator_coef=denumerator_coef)
+        audio_filter = LFilter(numerator_coef=numerator_coef, denominator_coef=denominator_coef)
 
         # Apply filter
         result = audio_filter(x)
@@ -96,7 +96,7 @@ def test_triple_clip_values_error(art_warning):
         with pytest.raises(ValueError, match=exc_msg):
             LFilter(
                 numerator_coef=np.array([0.1, 0.2, 0.3]),
-                denumerator_coef=np.array([0.1, 0.2, 0.3]),
+                denominator_coef=np.array([0.1, 0.2, 0.3]),
                 clip_values=(0, 1, 2),
             )
 
@@ -110,7 +110,7 @@ def test_relation_clip_values_error(art_warning):
         exc_msg = "Invalid `clip_values`: min >= max."
         with pytest.raises(ValueError, match=exc_msg):
             LFilter(
-                numerator_coef=np.array([0.1, 0.2, 0.3]), denumerator_coef=np.array([0.1, 0.2, 0.3]), clip_values=(1, 0)
+                numerator_coef=np.array([0.1, 0.2, 0.3]), denominator_coef=np.array([0.1, 0.2, 0.3]), clip_values=(1, 0)
             )
 
     except ARTTestException as e:
