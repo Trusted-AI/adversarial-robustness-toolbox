@@ -46,21 +46,10 @@ class StandardisationMeanStd(Preprocessor):
         :param mean: Mean.
         :param std: Standard Deviation.
         """
-        super().__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.mean = mean
         self.std = std
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None,) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -92,12 +81,6 @@ class StandardisationMeanStd(Preprocessor):
         gradient_back = gradient / std
 
         return gradient_back
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         pass
