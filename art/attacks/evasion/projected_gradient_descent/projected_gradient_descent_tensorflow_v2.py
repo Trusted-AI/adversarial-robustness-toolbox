@@ -140,7 +140,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
             if len(mask.shape) == len(x.shape):
                 dataset = tf.data.Dataset.from_tensor_slices(
-                    (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE), mask.astype(ART_NUMPY_DTYPE),)
+                    (
+                        x.astype(ART_NUMPY_DTYPE),
+                        targets.astype(ART_NUMPY_DTYPE),
+                        mask.astype(ART_NUMPY_DTYPE),
+                    )
                 ).batch(self.batch_size, drop_remainder=False)
 
             else:
@@ -154,7 +158,10 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         else:
             dataset = tf.data.Dataset.from_tensor_slices(
-                (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE),)
+                (
+                    x.astype(ART_NUMPY_DTYPE),
+                    targets.astype(ART_NUMPY_DTYPE),
+                )
             ).batch(self.batch_size, drop_remainder=False)
 
         # Start to compute adversarial examples
@@ -190,10 +197,12 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                 if rand_init_num == 0:
                     # first iteration: use the adversarial examples as they are the only ones we have now
                     adv_x[batch_index_1:batch_index_2] = self._generate_batch(
-                    x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step)
+                        x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                    )
                 else:
                     adversarial_batch = self._generate_batch(
-                        x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step)
+                        x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                    )
                     attack_success = compute_success_array(
                         self.estimator,
                         batch,
@@ -206,7 +215,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                     adv_x[batch_index_1:batch_index_2][attack_success] = adversarial_batch[attack_success]
 
         logger.info(
-            "Success rate of attack: %.2f%%", 100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size),
+            "Success rate of attack: %.2f%%",
+            100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size),
         )
 
         return adv_x
@@ -224,17 +234,26 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         :param x: An array with the original inputs.
         :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param eps_step: Attack step size (input variation) at each iteration.
         :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
                      Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
                      features for which the mask is zero will not be adversarially perturbed.
-        :param eps: Maximum perturbation that the attacker can introduce.
-        :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
         adv_x = x
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_tf(
-                adv_x, x, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x,
+                x,
+                targets,
+                mask,
+                eps,
+                eps_step,
+                self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x
