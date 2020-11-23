@@ -38,6 +38,7 @@ def fix_get_robust_dpatch():
         def __init__(self):
             self._clip_values = (0, 1)
             self.channels_first = False
+            self._input_shape = None
 
         def loss_gradient(self, x: np.ndarray, y: None, **kwargs):
             raise NotImplementedError
@@ -47,6 +48,10 @@ def fix_get_robust_dpatch():
 
         def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
             return [{"boxes": [], "labels": [], "scores": []}]
+
+        @property
+        def input_shape(self):
+            return self._input_shape
 
     frcnn = DummyObjectDetector()
     attack = RobustDPatch(
