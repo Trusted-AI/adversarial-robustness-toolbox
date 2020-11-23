@@ -282,13 +282,6 @@ class RobustDPatch(EvasionAttack):
         :param channel_index: Index of the color channel.
         :type channel_index: `int`
         """
-        # Remove in 1.5.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
 
         if channels_first:
             gradients = np.transpose(gradients, (0, 2, 3, 1))
