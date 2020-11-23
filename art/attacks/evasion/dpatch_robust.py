@@ -120,7 +120,6 @@ class RobustDPatch(EvasionAttack):
         self.brightness_range = brightness_range
         self.rotation_weights = rotation_weights
         self.sample_size = sample_size
-        super()._check_params()
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
