@@ -22,7 +22,7 @@ import pytest
 
 from art.attacks.evasion import RobustDPatch
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.estimators.object_detection.object_detector import ObjectDetectorMixin, ObjectDetector
+from art.estimators.object_detection.object_detector import ObjectDetectorMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import master_seed
