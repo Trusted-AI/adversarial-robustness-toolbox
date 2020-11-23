@@ -48,21 +48,10 @@ class StandardisationMeanStdTensorFlowV2(PreprocessorTensorFlowV2):
         :param mean: Mean.
         :param std: Standard Deviation.
         """
-        super().__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.mean = mean
         self.std = std
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
@@ -78,18 +67,6 @@ class StandardisationMeanStdTensorFlowV2(PreprocessorTensorFlowV2):
         x_norm = tf.cast(x_norm, dtype=ART_NUMPY_DTYPE)
 
         return x_norm, y
-
-    def estimate_forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> "tf.Tensor":
-        """
-        No need to estimate, since the forward pass is differentiable.
-        """
-        return self.forward(x, y)[0]
-
-    def fit(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         pass
