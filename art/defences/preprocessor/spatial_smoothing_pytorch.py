@@ -73,10 +73,8 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        super().__init__()
+        super().__init__(apply_fit=apply_fit, apply_predict=apply_predict)
 
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
         self.channels_first = channels_first
         self.window_size = window_size
         self.clip_values = clip_values
@@ -144,14 +142,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         self.median_blur = MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
 
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
-
     def forward(
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
@@ -204,18 +194,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             x = x.clamp(min=self.clip_values[0], max=self.clip_values[1])
 
         return x, y
-
-    def estimate_forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
-        """
-        No need to estimate, since the forward pass is differentiable.
-        """
-        return self.forward(x, y)[0]
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
