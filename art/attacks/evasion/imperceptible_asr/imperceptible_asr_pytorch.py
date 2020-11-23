@@ -36,6 +36,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNe
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
+from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     import torch
@@ -146,12 +147,6 @@ class ImperceptibleASRPytorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
         from torch.autograd import Variable
-
-        if estimator.preprocessing:
-            raise NotImplementedError(
-                "The framework-specific implementation currently does not apply preprocessing and "
-                "preprocessing defences."
-            )
 
         super().__init__(estimator=estimator)
 
@@ -343,11 +338,11 @@ class ImperceptibleASRPytorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize rescale
-        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float32) * self.initial_rescale
+        rescale = np.ones([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
-        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
@@ -513,12 +508,12 @@ class ImperceptibleASRPytorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize alpha and rescale
-        alpha = np.array([self.initial_alpha] * local_batch_size, dtype=np.float32)
-        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float32) * self.initial_rescale
+        alpha = np.array([self.initial_alpha] * local_batch_size, dtype=ART_NUMPY_DTYPE)
+        rescale = np.ones([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
-        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
@@ -675,7 +670,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         barks = 13 * np.arctan(0.00076 * freqs) + 3.5 * np.arctan(pow(freqs / 7500.0, 2))
 
         # Compute quiet threshold
-        ath = np.zeros(len(barks), dtype=np.float32) - np.inf
+        ath = np.zeros(len(barks), dtype=ART_NUMPY_DTYPE) - np.inf
         bark_idx = np.argmax(barks > 1)
         ath[bark_idx:] = (
             3.64 * pow(freqs[bark_idx:] * 0.001, -0.8)
@@ -697,7 +692,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
             if len(psd[:, i]) - 1 in masker_idx:
                 masker_idx = np.delete(masker_idx, len(psd[:, i]) - 1)
 
-            barks_psd = np.zeros([len(masker_idx), 3], dtype=np.float32)
+            barks_psd = np.zeros([len(masker_idx), 3], dtype=ART_NUMPY_DTYPE)
             barks_psd[:, 0] = barks[masker_idx]
             barks_psd[:, 1] = 10 * np.log10(
                 pow(10, psd[:, i][masker_idx - 1] / 10.0)
@@ -739,7 +734,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
             for m in range(barks_psd.shape[0]):
                 d_z = barks - barks_psd[m, 0]
                 zero_idx = np.argmax(d_z > 0)
-                s_f = np.zeros(len(d_z), dtype=np.float32)
+                s_f = np.zeros(len(d_z), dtype=ART_NUMPY_DTYPE)
                 s_f[:zero_idx] = 27 * d_z[:zero_idx]
                 s_f[zero_idx:] = (-27 + 0.37 * max(barks_psd[m, 1] - 40, 0)) * d_z[zero_idx:]
                 t_s.append(barks_psd[m, 1] + delta[m] + s_f)
