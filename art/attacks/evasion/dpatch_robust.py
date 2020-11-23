@@ -267,13 +267,11 @@ class RobustDPatch(EvasionAttack):
 
         return x_patch, patch_target, transformations
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def _untransform_gradients(
         self,
         gradients: np.ndarray,
         transforms: Dict[str, Union[int, float]],
         channels_first: bool,
-        channel_index=Deprecated,
     ) -> np.ndarray:
         """
         Augment images with patch.
