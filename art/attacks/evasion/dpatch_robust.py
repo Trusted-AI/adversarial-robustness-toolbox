@@ -199,7 +199,7 @@ class RobustDPatch(EvasionAttack):
 
     def _augment_images_with_patch(
         self, x: np.ndarray, patch: np.ndarray, channels_first: bool
-    ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Union[int, float]]]:
+    ) -> Tuple[np.ndarray, List[Dict[str, np.ndarray]], Dict[str, Union[int, float]]]:
         """
         Augment images with patch.
 
