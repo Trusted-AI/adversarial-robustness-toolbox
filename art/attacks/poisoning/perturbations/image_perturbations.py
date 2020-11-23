@@ -110,8 +110,7 @@ def insert_image(
     mode: str = "L",
 ) -> np.ndarray:
     """
-    Augments a matrix by setting a checkboard-like pattern of values some `distance` away from the bottom-right
-    edge to 1. Works for single images or a batch of images.
+    Pastes an image specified by the backdoor path onto a sample
 
     :param x: N X W X H matrix or W X H matrix.
     :param backdoor_path: The path to the image to insert as a backdoor.
