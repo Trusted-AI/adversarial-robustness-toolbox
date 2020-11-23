@@ -17,16 +17,12 @@
 # SOFTWARE.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import os
 import logging
 
 import numpy as np
 import pytest
 
 from art.attacks.poisoning import FeatureCollisionAttack
-from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
-from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
-from art.utils import to_categorical
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
