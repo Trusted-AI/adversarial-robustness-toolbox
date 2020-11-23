@@ -75,7 +75,7 @@ class RobustDPatch(EvasionAttack):
         patch_location: Tuple[int, int] = (0, 0),
         crop_range: Tuple[int, int] = (0, 0),
         brightness_range: Tuple[float, float] = (1.0, 1.0),
-        rotation_weights: Union[Tuple[float], Tuple[int]] = (1, 0, 0, 0),
+        rotation_weights: Union[Tuple[float, float, float, float], Tuple[int, int, int, int]] = (1, 0, 0, 0),
         sample_size: int = 1,
         learning_rate: float = 5.0,
         max_iter: int = 500,
