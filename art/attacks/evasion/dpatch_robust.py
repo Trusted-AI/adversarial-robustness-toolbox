@@ -199,9 +199,8 @@ class RobustDPatch(EvasionAttack):
 
         return self._patch
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def _augment_images_with_patch(
-        self, x: np.ndarray, patch: np.ndarray, channels_first: bool, channel_index=Deprecated
+        self, x: np.ndarray, patch: np.ndarray, channels_first: bool
     ) -> Tuple[np.ndarray, np.ndarray, Dict[str, Union[int, float]]]:
         """
         Augment images with patch.
