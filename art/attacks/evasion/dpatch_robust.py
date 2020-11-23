@@ -138,7 +138,7 @@ class RobustDPatch(EvasionAttack):
             raise ValueError("The adversarial patch can only be applied to images.")
 
         # Check whether patch fits into the cropped images:
-        if channel_index == 1:
+        if self.estimator.channels_first:
             image_height, image_width = x.shape[2:4]
         else:
             image_height, image_width = x.shape[1:3]
