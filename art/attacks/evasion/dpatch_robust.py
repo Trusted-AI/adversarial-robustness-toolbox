@@ -35,7 +35,6 @@ from tqdm import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.utils import Deprecated, deprecated_keyword_arg
 from art import config
 
 if TYPE_CHECKING:
