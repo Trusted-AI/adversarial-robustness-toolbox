@@ -277,8 +277,6 @@ class RobustDPatch(EvasionAttack):
         :param x: Sample images.
         :param patch: The patch to be applied.
         :param channels_first: Set channels first or last.
-        :param channel_index: Index of the color channel.
-        :type channel_index: `int`
         """
 
         if channels_first:
