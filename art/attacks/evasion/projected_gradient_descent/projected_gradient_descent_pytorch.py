@@ -189,11 +189,15 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                 batch_eps_step = self.eps_step
 
             for rand_init_num in range(max(1, self.num_random_init)):
-                adversarial_batch = self._generate_batch(x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step)
                 if rand_init_num == 0:
                     # first iteration: use the adversarial examples as they are the only ones we have now
-                    adv_x[batch_index_1:batch_index_2] = np.copy(adversarial_batch)
+                    adv_x[batch_index_1:batch_index_2] = self._generate_batch(x=batch, targets=batch_labels,
+                                                                              mask=mask_batch, eps=batch_eps,
+                                                                              eps_step=batch_eps_step)
                 else:
+                    adversarial_batch = self._generate_batch(x=batch, targets=batch_labels, mask=mask_batch,
+                                                             eps=batch_eps, eps_step=batch_eps_step)
+
                     # return the successful adversarial examples
                     attack_success = compute_success_array(
                         self.estimator,
@@ -419,7 +423,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):
-                eps = eps * np.ones_like(values)
+                eps = eps * np.ones_like(values.cpu())
                 eps = eps.reshape([eps.shape[0], -1])
 
             values_tmp = values_tmp.sign() * torch.min(
