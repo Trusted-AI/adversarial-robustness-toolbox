@@ -292,7 +292,15 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         self._model.eval()
 
         # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x_, y=None, fit=False)
+        x_preprocessed = []
+
+        for i in range(len(x_)):
+            x_preprocessed_i, _ = self._apply_preprocessing(
+                x=np.array([x_[i]], dtype=config.ART_NUMPY_DTYPE), y=None, fit=False
+            )
+            x_preprocessed.append(x_preprocessed_i[0])
+
+        x_preprocessed = np.array(x_preprocessed)
 
         # Transform x into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(x=x_preprocessed)
@@ -323,7 +331,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Aggregate results
         result_outputs = np.zeros(
-            (x_preprocessed.shape[0], result_output_sizes.max(), results[0].shape[-1]), dtype=np.float32
+            shape=(x_preprocessed.shape[0], result_output_sizes.max(), results[0].shape[-1]),
+            dtype=config.ART_NUMPY_DTYPE
         )
 
         for m in range(num_batch):
@@ -345,7 +354,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         # Check if users want transcription outputs
         transcription_output = kwargs.get("transcription_output")
 
-        if transcription_output is False:
+        if transcription_output is None or transcription_output is False:
             return result_outputs, result_output_sizes
 
         # Now users want transcription outputs
@@ -378,7 +387,18 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         self._model.train()
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x_, y, fit=False)
+        x_preprocessed = []
+        y_preprocessed = []
+
+        for i in range(len(x_)):
+            x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
+                x=np.array([x_[i]], dtype=config.ART_NUMPY_DTYPE), y=np.array([y[i]]), fit=False
+            )
+            x_preprocessed.append(x_preprocessed_i[0])
+            y_preprocessed.append(y_preprocessed_i[0])
+
+        x_preprocessed = np.array(x_preprocessed)
+        y_preprocessed = np.array(y_preprocessed)
 
         # Transform data into the model input space
         inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(
@@ -446,6 +466,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         from warpctc_pytorch import CTCLoss
 
+        x_ = np.empty(len(x), dtype=object)
+        x_[:] = list(x)
+
         # Put the model in the training mode
         self._model.train()
 
@@ -453,7 +476,18 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             raise ValueError("An optimizer is required to train the model, but none was provided.")
 
         # Apply preprocessing
-        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
+        x_preprocessed = []
+        y_preprocessed = []
+
+        for i in range(len(x_)):
+            x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
+                x=np.array([x_[i]], dtype=config.ART_NUMPY_DTYPE), y=np.array([y[i]]), fit=True
+            )
+            x_preprocessed.append(x_preprocessed_i[0])
+            y_preprocessed.append(y_preprocessed_i[0])
+
+        x_preprocessed = np.array(x_preprocessed)
+        y_preprocessed = np.array(y_preprocessed)
 
         # Train with batch processing
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
@@ -575,6 +609,15 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         # Create a label map
         label_map = dict([(self._model.labels[i], i) for i in range(len(self._model.labels))])
 
+        # Apply preprocessing if input is tensor
+        if tensor_input:
+            x_batch = []
+            for i in range(len(x)):
+                preprocessed_x_i, _ = self._apply_preprocessing(x=x[i], y=None, no_grad=False)
+                x_batch.append(preprocessed_x_i)
+
+            x = torch.stack(x_batch)
+
         # We must process each sequence separately due to the diversity of their length
         batch = []
         for i in range(len(x)):
@@ -588,8 +631,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             if not tensor_input:
                 x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
                 x[i] = torch.tensor(x[i]).to(self._device)
-            else:
-                x[i], _ = self._apply_preprocessing(x=x[i], y=None, no_grad=False)
 
             # Set gradient computation permission
             if compute_gradient:
