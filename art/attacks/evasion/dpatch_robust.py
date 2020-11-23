@@ -151,7 +151,7 @@ class RobustDPatch(EvasionAttack):
         ):
             raise ValueError("The patch (partially) lies outside the cropped image.")
 
-        for i_step in trange(self.max_iter, desc="DPatchEOT iteration", disable=not self.verbose):
+        for i_step in trange(self.max_iter, desc="RobustDPatch iteration", disable=not self.verbose):
             if i_step == 0 or (i_step + 1) % 100 == 0:
                 logger.info("Training Step: %i", i_step + 1)
 
