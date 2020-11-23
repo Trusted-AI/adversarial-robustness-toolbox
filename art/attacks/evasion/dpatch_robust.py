@@ -272,10 +272,10 @@ class RobustDPatch(EvasionAttack):
         channels_first: bool,
     ) -> np.ndarray:
         """
-        Augment images with patch.
+        Revert transformation on gradients.
 
-        :param x: Sample images.
-        :param patch: The patch to be applied.
+        :param gradients: The gradients to be reverse transformed.
+        :param transforms: The transformations in forward direction.
         :param channels_first: Set channels first or last.
         """
 
