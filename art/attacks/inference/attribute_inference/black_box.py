@@ -48,6 +48,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     used as a proxy.
     """
 
+    attack_params = AttributeInferenceAttack.attack_params + ["attack_feature"]
+
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
@@ -60,7 +62,8 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
         :param attack_feature: The index of the feature to be attacked.
         """
-        super().__init__(estimator=classifier, attack_feature=attack_feature)
+        super().__init__(estimator=classifier)
+        self.attack_feature = attack_feature
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -142,3 +145,107 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         x_test = np.concatenate((x, y), axis=1).astype(np.float32)
         return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
+
+    def _check_params(self) -> None:
+        if self.attack_feature < 0:
+            raise ValueError("Attack feature must be positive.")
+
+
+class AttributeInferenceBlackBoxOneHot(AttributeInferenceAttack):
+    """
+    Implementation of a simple black-box attribute inference attack.
+
+    The idea is to train a simple neural network to learn the attacked feature from the rest of the features and the
+    model's predictions. Assumes the availability of the attacked model's predictions for the samples under attack,
+    in addition to the rest of the feature values. If this is not available, the true class label of the samples may be
+    used as a proxy.
+    """
+
+    attack_params = AttributeInferenceAttack.attack_params + ["attack_feature_one_hot"]
+
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
+
+    def __init__(
+        self, classifier: "CLASSIFIER_TYPE", attack_feature_one_hot: slice,
+        attack_model: Optional["CLASSIFIER_TYPE"] = None,
+    ):
+        """
+        Create an AttributeInferenceBlackBox attack instance.
+
+        :param classifier: Target classifier.
+        :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
+        :param attack_feature_one_hot: A slice object representing the indexes of the one-hot encoded feature to attack.
+        """
+        super().__init__(estimator=classifier)
+        self.attack_feature_one_hot = attack_feature_one_hot
+
+        if attack_model:
+            if ClassifierMixin not in type(attack_model).__mro__:
+                raise ValueError("Attack model must be of type Classifier.")
+            self.attack_model = attack_model
+        else:
+            self.attack_model = MLPClassifier(
+                hidden_layer_sizes=(100,),
+                activation="relu",
+                solver="adam",
+                alpha=0.0001,
+                batch_size="auto",
+                learning_rate="constant",
+                learning_rate_init=0.001,
+                power_t=0.5,
+                max_iter=2000,
+                shuffle=True,
+                random_state=None,
+                tol=0.0001,
+                verbose=False,
+                warm_start=False,
+                momentum=0.9,
+                nesterovs_momentum=True,
+                early_stopping=False,
+                validation_fraction=0.1,
+                beta_1=0.9,
+                beta_2=0.999,
+                epsilon=1e-08,
+                n_iter_no_change=10,
+                max_fun=15000,
+            )
+        self._check_params()
+
+    def fit(self, x: np.ndarray) -> None:
+        """
+        Train the attack model.
+
+        :param x: Input to training process. Includes all features used to train the original model.
+        """
+
+        # Checks:
+        if self.estimator.input_shape[0] != x.shape[1]:
+            raise ValueError("Shape of x does not match input_shape of classifier")
+
+        # get model's predictions for x
+        predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
+
+        # get vector of attacked feature
+        y = x[:, self.attack_feature_one_hot]
+        # y_one_hot = float_to_categorical(y)
+        # y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+
+        # create training set for attack model
+        x_train = np.concatenate((np.delete(x, self.attack_feature_one_hot, 1), predictions), axis=1).astype(np.float32)
+
+        # train attack model
+        self.attack_model.fit(x_train, y)
+
+    def infer(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Infer the attacked feature.
+
+        :param x: Input to attack. Includes all features except the attacked feature.
+        :param y: Original model's predictions for x.
+        :return: The inferred feature values.
+        """
+        if y.shape[0] != x.shape[0]:
+            raise ValueError("Number of rows in x and y do not match")
+
+        x_test = np.concatenate((x, y), axis=1).astype(np.float32)
+        return np.array(self.attack_model.predict(x_test))

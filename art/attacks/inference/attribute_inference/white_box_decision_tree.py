@@ -44,6 +44,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
 
     | Paper link: https://dl.acm.org/doi/10.1145/2810103.2813677
     """
+    attack_params = AttributeInferenceAttack.attack_params + ["attack_feature"]
 
     _estimator_requirements = (ScikitlearnDecisionTreeClassifier,)
 
@@ -55,6 +56,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
+        self.attack_feature = attack_feature
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -138,3 +140,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
                 for index, value in enumerate(predicted_pred)
             ]
         )
+
+    def _check_params(self) -> None:
+        if self.attack_feature < 0:
+            raise ValueError("Attack feature must be positive.")

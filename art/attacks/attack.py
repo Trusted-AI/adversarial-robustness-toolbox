@@ -315,16 +315,14 @@ class AttributeInferenceAttack(InferenceAttack):
     Abstract base class for attribute inference attack classes.
     """
 
-    attack_params = InferenceAttack.attack_params + ["attack_feature"]
+    attack_params = InferenceAttack.attack_params
 
-    def __init__(self, estimator, attack_feature: int = 0):
+    def __init__(self, estimator, **kwargs):
         """
         :param estimator: A trained estimator targeted for inference attack.
         :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
-        :param attack_feature: The index of the feature to be attacked.
         """
         super().__init__(estimator)
-        self.attack_feature = attack_feature
 
     @abc.abstractmethod
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
