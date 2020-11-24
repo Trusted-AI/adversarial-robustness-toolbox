@@ -615,21 +615,21 @@ def default_batch_size():
 @pytest.fixture(scope="session")
 def load_iris_dataset():
     logging.info("Loading Iris dataset")
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset("iris")
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), min_, max_ = load_dataset("iris")
 
-    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris)
+    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), min_, max_
 
 
 @pytest.fixture(scope="function")
 def get_iris_dataset(load_iris_dataset, framework):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = load_iris_dataset
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), min_, max_ = load_iris_dataset
 
     x_train_iris_original = x_train_iris.copy()
     y_train_iris_original = y_train_iris.copy()
     x_test_iris_original = x_test_iris.copy()
     y_test_iris_original = y_test_iris.copy()
 
-    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris)
+    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), min_, max_
 
     np.testing.assert_array_almost_equal(x_train_iris_original, x_train_iris, decimal=3)
     np.testing.assert_array_almost_equal(y_train_iris_original, y_train_iris, decimal=3)
@@ -698,7 +698,7 @@ def get_mnist_dataset(load_mnist_dataset, mnist_shape):
     np.testing.assert_array_almost_equal(y_test_mnist_original, y_test_mnist, decimal=3)
 
 
-# ART test fixture to skip test for specific mlFramework values
+# ART test fixture to skip test for all mlFramework values except one
 # eg: @pytest.mark.only_with_platform("tensorflow")
 @pytest.fixture(autouse=True)
 def only_with_platform(request, framework):
