@@ -1,8 +1,6 @@
 """
 Module implementing preprocessing defences against adversarial attacks.
 """
-from art.defences.preprocessor.l_filter import LFilter
-from art.defences.preprocessor.l_filter_pytorch import LFilterPyTorch
 from art.defences.preprocessor.feature_squeezing import FeatureSqueezing
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
 from art.defences.preprocessor.inverse_gan import InverseGAN, DefenseGAN

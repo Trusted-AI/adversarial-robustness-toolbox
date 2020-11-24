@@ -22,7 +22,7 @@ import logging
 import numpy as np
 import pytest
 
-from art.defences.preprocessor import LFilterPyTorch
+from art.preprocessing import LFilterPyTorch
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
