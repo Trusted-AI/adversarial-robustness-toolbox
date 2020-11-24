@@ -17,8 +17,12 @@ then
     echo "############## Running tests with framework $mlFramework ##############"
     echo "#######################################################################"
 
+    # TODO: merge defences/detector/poison tests to one line
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_spectral_signature_defense.py --mlFramework=$mlFramework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_spectral_signature_defense.py tests"; fi
+
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_ground_truth_evaluator.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_ground_truth_evaluator.py tests"; fi
 
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
