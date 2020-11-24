@@ -228,22 +228,16 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         eps_step: Union[int, float, np.ndarray],
     ) -> "tf.Tensor":
         """
-                Generate a batch of adversarial samples and return them in an array.
+        Generate a batch of adversarial samples and return them in an array.
 
-                :param x: An array with the original inputs.
-                :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-        <<<<<<< HEAD
-                :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                             broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                             perturbed.
-                :param eps: Maximum perturbation that the attacker can introduce.
-                :param eps_step: Attack step size (input variation) at each iteration.
-        =======
-                :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
-                             Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
-                             features for which the mask is zero will not be adversarially perturbed.
-        >>>>>>> origin/dev_1.5.0
-                :return: Adversarial examples.
+        :param x: An array with the original inputs.
+        :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
+
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param eps_step: Attack step size (input variation) at each iteration.
         """
         adv_x = x
         for i_max_iter in range(self.max_iter):
