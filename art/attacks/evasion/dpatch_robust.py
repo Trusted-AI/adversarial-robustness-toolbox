@@ -63,7 +63,8 @@ class RobustDPatch(EvasionAttack):
         "patch_location",
         "crop_range",
         "brightness_range",
-        "rotation_weights" "sample_size",
+        "rotation_weights",
+        "sample_size",
     ]
 
     _estimator_requirements = (BaseEstimator, LossGradientsMixin, ObjectDetectorMixin)
