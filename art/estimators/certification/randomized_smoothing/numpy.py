@@ -55,7 +55,7 @@ class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, Cl
         :param alpha: The failure probability of smoothing
         """
         super().__init__(classifier)
-        #self.classifier = classifier
+        self.classifier = classifier
         self._nb_classes = classifier.nb_classes
         self.sample_size = sample_size
         self.scale = scale
