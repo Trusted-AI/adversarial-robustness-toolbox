@@ -25,6 +25,7 @@ from sklearn.svm import SVC, NuSVC
 
 from art.attacks.poisoning import PoisoningAttackSVM
 from art.estimators.classification.scikitlearn import ScikitlearnSVC, SklearnClassifier
+from art.utils import load_dataset
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import ARTTestException
 
@@ -32,6 +33,8 @@ logger = logging.getLogger(__name__)
 
 NB_TRAIN = 10
 NB_TEST = 100
+
+_, _, min_, max_ = load_dataset("iris")
 
 
 def find_duplicates(x_train):
@@ -51,7 +54,7 @@ def find_duplicates(x_train):
 
 @pytest.fixture()
 def get_iris(get_iris_dataset, image_dl_estimator):
-    (x_train, y_train), (x_test, y_test), min_, max_ = get_iris_dataset
+    (x_train, y_train), (x_test, y_test) = get_iris_dataset
     no_zero = np.where(np.argmax(y_train, axis=1) != 0)
     x_train = x_train[no_zero, :2][0]
     y_train = y_train[no_zero]
@@ -81,14 +84,14 @@ def get_iris(get_iris_dataset, image_dl_estimator):
     x_test = x_test[np.logical_not(test_dups)]
     y_test = y_test[np.logical_not(test_dups)]
 
-    return (x_train, y_train), (x_test, y_test), min_, max_
+    return (x_train, y_train), (x_test, y_test)
 
 
 @pytest.mark.only_with_platform("scikitlearn")
 @pytest.mark.parametrize("model", [SVC(kernel="sigmoid", gamma="auto"), NuSVC()])
 def test_unsupported_classifier(art_warning, get_iris, model):
     try:
-        (x_train, y_train), (x_test, y_test), _, _ = get_iris
+        (x_train, y_train), (x_test, y_test) = get_iris
         with pytest.raises(TypeError):
             _ = PoisoningAttackSVM(classifier=model, step=0.01, eps=1.0, x_train=x_train, y_train=y_train, x_val=x_test,
                                    y_val=y_test)
@@ -108,7 +111,7 @@ def test_classifier_type_check_fail(art_warning):
 @pytest.mark.parametrize("kernel", ["linear", "poly", "rbf"])
 def test_svc_kernels(art_warning, get_iris, kernel):
     try:
-        (x_train, y_train), (x_test, y_test), min_, max_ = get_iris
+        (x_train, y_train), (x_test, y_test) = get_iris
         x_train = x_train[:NB_TRAIN]
         y_train = y_train[:NB_TRAIN]
         x_test = x_test[:NB_TEST]

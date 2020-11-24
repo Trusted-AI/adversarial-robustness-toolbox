@@ -615,21 +615,21 @@ def default_batch_size():
 @pytest.fixture(scope="session")
 def load_iris_dataset():
     logging.info("Loading Iris dataset")
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), min_, max_ = load_dataset("iris")
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), _, _ = load_dataset("iris")
 
-    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), min_, max_
+    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris)
 
 
 @pytest.fixture(scope="function")
 def get_iris_dataset(load_iris_dataset, framework):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), min_, max_ = load_iris_dataset
+    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = load_iris_dataset
 
     x_train_iris_original = x_train_iris.copy()
     y_train_iris_original = y_train_iris.copy()
     x_test_iris_original = x_test_iris.copy()
     y_test_iris_original = y_test_iris.copy()
 
-    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris), min_, max_
+    yield (x_train_iris, y_train_iris), (x_test_iris, y_test_iris)
 
     np.testing.assert_array_almost_equal(x_train_iris_original, x_train_iris, decimal=3)
     np.testing.assert_array_almost_equal(y_train_iris_original, y_train_iris, decimal=3)
