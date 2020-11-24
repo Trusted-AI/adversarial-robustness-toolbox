@@ -120,9 +120,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         import torch  # lgtm [py/repeated-import]
 
-        mask = kwargs.get("mask")
-        if mask is not None and mask.ndim > x.ndim:
-            raise ValueError("Mask shape must be broadcastable to input shape.")
+        mask = self._get_mask(x, **kwargs)
 
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)

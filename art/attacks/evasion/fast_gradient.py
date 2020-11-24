@@ -191,27 +191,6 @@ class FastGradientMethod(EvasionAttack):
 
         return adv_x
 
-    @staticmethod
-    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Get the mask from the kwargs.
-
-        :param x: An array with the original inputs.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :type mask: `np.ndarray`
-        :return: The mask.
-        """
-        mask = kwargs.get("mask")
-
-        if mask is not None:
-            # Ensure the mask is broadcastable
-            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                raise ValueError("Mask shape must be broadcastable to input shape.")
-
-        return mask
-
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """Generate adversarial samples and return them in an array.
 
@@ -226,9 +205,7 @@ class FastGradientMethod(EvasionAttack):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        mask = kwargs.get("mask")
-        if mask is not None and mask.ndim > x.ndim:
-            raise ValueError("Mask shape must be broadcastable to input shape.")
+        mask = self._get_mask(x, **kwargs)
 
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)
@@ -506,8 +483,7 @@ class FastGradientMethod(EvasionAttack):
         mask = kwargs.get("mask")
 
         if mask is not None:
-            # Ensure the mask is broadcastable
-            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
+            if mask.ndim > x.ndim:
                 raise ValueError("Mask shape must be broadcastable to input shape.")
 
             if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):

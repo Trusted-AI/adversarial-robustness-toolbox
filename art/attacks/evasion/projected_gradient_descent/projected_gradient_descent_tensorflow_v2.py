@@ -119,9 +119,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        mask = kwargs.get("mask")
-        if mask is not None and mask.ndim > x.ndim:
-            raise ValueError("Mask shape must be broadcastable to input shape.")
+        mask = self._get_mask(x, **kwargs)
 
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)
@@ -224,17 +222,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         :param x: An array with the original inputs.
         :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-<<<<<<< HEAD
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :param eps: Maximum perturbation that the attacker can introduce.
-        :param eps_step: Attack step size (input variation) at each iteration.
-=======
         :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
                      Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
                      features for which the mask is zero will not be adversarially perturbed.
->>>>>>> origin/dev_1.5.0
+        :param eps: Maximum perturbation that the attacker can introduce.
+        :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
         adv_x = x
