@@ -40,7 +40,7 @@ class GroundTruthEvaluator:
         """
 
     def analyze_correctness(
-        self, assigned_clean_by_class: Union[np.ndarray, List[np.ndarray]], is_clean_by_class: list
+        self, assigned_clean_by_class: Union[np.ndarray, List[np.ndarray], List[List[int]]], is_clean_by_class: list
     ) -> Tuple[np.ndarray, str]:
         """
         For each training sample, determine whether the activation clustering method was correct.
