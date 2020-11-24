@@ -69,7 +69,6 @@ else
                         "tests/attacks/test_iterative_method.py" \
                         "tests/attacks/test_knockoff_nets.py" \
                         "tests/attacks/test_newtonfool.py" \
-                        "tests/attacks/test_poisoning_attack_svm.py" \
                         "tests/attacks/test_projected_gradient_descent.py" \
                         "tests/attacks/test_saliency_map.py" \
                         "tests/attacks/test_spatial_transformation.py" \
