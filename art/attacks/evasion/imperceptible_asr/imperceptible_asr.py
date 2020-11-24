@@ -294,7 +294,8 @@ class ImperceptibleAsr(EvasionAttack):
         masking_threshold = np.array(masking_threshold)
         psd_maximum = np.array(psd_maximum)
 
-        # stabilize masking threshold loss by canceling out the "10*log" term in power spectral density and masking threshold
+        # stabilize masking threshold loss by canceling out the "10*log" term in power spectral density and masking
+        # threshold
         masking_threshold_stabilized = 10 ** (masking_threshold * 0.1)
         psd_maximum_stabilized = 10 ** (psd_maximum * 0.1)
 
