@@ -95,8 +95,10 @@ class TestImperceptibleASR:
 
             # learning rate of zero ensures that adversarial example equals test input
             imperceptible_asr = ImperceptibleASR(
-                estimator=estimator, masker=PsychoacousticMasker(), max_iter_1=15, learning_rate_1=0
+                estimator=estimator, masker=PsychoacousticMasker(), max_iter_1=15, learning_rate_1=0.5
             )
+            # learning rate of zero ensures that adversarial example equals test input
+            imperceptible_asr.learning_rate_1 = 0
             adversarial = imperceptible_asr._create_adversarial(test_input, test_target)
 
             # test shape and adversarial example result
@@ -119,10 +121,11 @@ class TestImperceptibleASR:
                 return_value=(np.zeros_like(test_input), [0] * test_input.shape[0]),
             )
 
-            # learning rate of zero ensures that adversarial example equals test input
             imperceptible_asr = ImperceptibleASR(
-                estimator=estimator, masker=PsychoacousticMasker(), max_iter_2=25, learning_rate_2=0
+                estimator=estimator, masker=PsychoacousticMasker(), max_iter_2=25, learning_rate_2=0.5
             )
+            # learning rate of zero ensures that adversarial example equals test input
+            imperceptible_asr.learning_rate_2 = 0
             adversarial = imperceptible_asr._create_imperceptible(test_input, test_adversarial, test_target)
 
             # test shape and adversarial example result
@@ -143,7 +146,7 @@ class TestImperceptibleASR:
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
             imperceptible_asr = ImperceptibleASR(
-                estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(), max_iter_1=10, learning_rate_1=0
+                estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(),
             )
             feed_dict = {
                 imperceptible_asr._delta: test_delta,
@@ -170,7 +173,7 @@ class TestImperceptibleASR:
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
             imperceptible_asr = ImperceptibleASR(
-                estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(), max_iter_1=10, learning_rate_1=0
+                estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(),
             )
             feed_dict = {
                 imperceptible_asr._delta: test_delta,
@@ -197,7 +200,7 @@ class TestImperceptibleASR:
 
             masker = PsychoacousticMasker()
             imperceptible_asr = ImperceptibleASR(
-                estimator=asr_dummy_estimator(), masker=masker, max_iter_1=10, learning_rate_1=0
+                estimator=asr_dummy_estimator(), masker=masker,
             )
             feed_dict = {
                 imperceptible_asr._delta: test_delta,
