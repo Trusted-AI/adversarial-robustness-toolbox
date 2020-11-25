@@ -16,25 +16,18 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-<<<<<<< HEAD
-This module implements database reconstruction attacks.
-=======
 This module implements reconstruction attacks.
-
->>>>>>> aa4648f1927f6a659efd092873356090429d60e5
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, Tuple
 
 import numpy as np
 import sklearn
-from sklearn.naive_bayes import GaussianNB
-from sklearn.linear_model import LogisticRegression
 from scipy.optimize import fmin_l_bfgs_b
 
-from art.attacks import InferenceAttack
+from art.attacks.attack import ReconstructionAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.scikitlearn import ScikitlearnEstimator
@@ -42,7 +35,7 @@ from art.estimators.classification.scikitlearn import ScikitlearnEstimator
 logger = logging.getLogger(__name__)
 
 
-class DatabaseReconstruction(InferenceAttack):
+class DatabaseReconstruction(ReconstructionAttack):
     """
     Implementation of a database reconstruction attack. In this case, the adversary is assumed to have in his/her
     possession a model trained on a dataset, and all but one row of that training dataset. This attack attempts to
@@ -55,7 +48,7 @@ class DatabaseReconstruction(InferenceAttack):
         """
         Create a DatabaseReconstruction instance.
 
-        :param estimator: Target estimator.
+        :param estimator: Trained target estimator.
         """
         super().__init__(estimator=estimator)
 
@@ -75,20 +68,25 @@ class DatabaseReconstruction(InferenceAttack):
 
         return residual
 
-    def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+    def reconstruct(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
         Infer the missing row from x, y with which `estimator` was trained with.
 
         :param x: Known records of the training set of `estimator`.
         :param y: Known labels of the training set of `estimator`.
         """
+        if y is None:
+            y = self.estimator.predict(x=x)
+
+        if y.ndim == 2:
+            y = np.argmax(y, axis=1)
 
         tol = float("inf")
         x0 = x[0, :]
         x_guess = None
         y_guess = None
 
-        for _y in np.unique(y):
+        for _y in range(self.estimator.nb_classes):
             args = (_y, x, y, self._estimator, self.estimator, self.params)
             _x, _tol, _ = fmin_l_bfgs_b(
                 self.objective, x0, args=args, approx_grad=True, factr=100, pgtol=1e-10, bounds=None
@@ -99,5 +97,8 @@ class DatabaseReconstruction(InferenceAttack):
                 x_guess = _x
                 y_guess = _y
 
-        # return x_guess, y_guess, tol
-        return x_guess
+        x_reconstructed = np.expand_dims(x_guess, axis=0)
+        y_reconstructed = np.zeros(shape=(1, self.estimator.nb_classes))
+        y_reconstructed[0, y_guess] = 1
+
+        return x_reconstructed, y_reconstructed
