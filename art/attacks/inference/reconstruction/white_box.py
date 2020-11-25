@@ -16,8 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements attribute inference attacks.
-
+This module implements database reconstruction attacks.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -25,44 +24,39 @@ import logging
 from typing import Optional
 
 import numpy as np
+import sklearn
 from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from scipy.optimize import fmin_l_bfgs_b
 
 from art.attacks import InferenceAttack
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
+from art.estimators.classification.scikitlearn import ScikitlearnEstimator
 
 logger = logging.getLogger(__name__)
 
 
 class DatabaseReconstruction(InferenceAttack):
-    _estimator_requirements = ()
+
+    _estimator_requirements = (BaseEstimator, ClassifierMixin, ScikitlearnEstimator)
 
     def __init__(self, estimator):
-        super().__init__(estimator)
+        super().__init__(estimator=estimator)
 
-        self.parent_class, self.params = self.get_estimator_details(self._estimator)
-
-    @classmethod
-    def get_estimator_details(cls, estimator):
-        if isinstance(estimator, GaussianNB):
-            return GaussianNB, ("sigma_", "theta_")
-
-        if isinstance(estimator, LogisticRegression):
-            return LogisticRegression, ("intercept_", "coef_")
-
-        raise NotImplementedError("Database reconstruction attack not yet implemented for given estimator.")
+        self.params = self.estimator.get_trainable_attribute_names()
 
     @staticmethod
-    def objective(x, y, X_train, y_train, private_model, parent_model, params):
+    def objective(x, y, x_train, y_train, private_estimator, parent_model, params):
         """Objective function which we seek to minimise"""
 
-        model = parent_model()
-        model.fit(np.vstack((X_train, x)), np.hstack((y_train, y)))
+        model = sklearn.base.clone(parent_model.model, safe=True)
+        model.fit(np.vstack((x_train, x)), np.hstack((y_train, y)))
 
-        residual = 0
+        residual = 0.0
 
         for param in params:
-            residual += np.sum((model.__getattribute__(param) - private_model.__getattribute__(param)) ** 2)
+            residual += np.sum((model.__getattribute__(param) - private_estimator.model.__getattribute__(param)) ** 2)
 
         return residual
 
@@ -74,13 +68,14 @@ class DatabaseReconstruction(InferenceAttack):
         y_guess = None
 
         for _y in np.unique(y):
-            args = (_y, x, y, self._estimator, self.parent_class, self.params)
-            _x, _tol, _ = fmin_l_bfgs_b(self.objective, x0, args=args, approx_grad=True,
-                                        factr=100, pgtol=1e-10, bounds=None)
+            args = (_y, x, y, self._estimator, self.estimator, self.params)
+            _x, _tol, _ = fmin_l_bfgs_b(
+                self.objective, x0, args=args, approx_grad=True, factr=100, pgtol=1e-10, bounds=None
+            )
 
             if _tol < tol:
                 tol = _tol
                 x_guess = _x
                 y_guess = _y
 
-        return x_guess #, y_guess, tol
+        return x_guess  # , y_guess, tol

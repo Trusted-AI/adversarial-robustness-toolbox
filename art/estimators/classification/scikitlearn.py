@@ -982,6 +982,66 @@ class ScikitlearnLogisticRegression(ClassGradientsMixin, LossGradientsMixin, Sci
         gradients = self._apply_preprocessing_gradient(x, gradients)
         return gradients
 
+    @staticmethod
+    def get_trainable_attribute_names() -> Tuple[str, str]:
+        """
+        Get the names of trainable attributes.
+
+        :return: A tuple of trainable attributes.
+        """
+        return "intercept_", "coef_"
+
+
+class ScikitlearnGaussianNB(ScikitlearnClassifier):
+    """
+    Wrapper class for scikit-learn Gaussian Naive Bayes models.
+    """
+
+    def __init__(
+            self,
+            model: Union["sklearn.naive_bayes.GaussianNB"],
+            clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+            preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+            postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+            preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+    ) -> None:
+        """
+        Create a `Classifier` instance from a scikit-learn Gaussian Naive Bayes (GaussianNB) model.
+
+        :param model: scikit-learn Gaussian Naive Bayes (GaussianNB) model.
+        :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
+               for features.
+        :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
+        :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
+               be divided by the second one.
+        """
+        # pylint: disable=E0001
+        import sklearn  # lgtm [py/repeated-import]
+
+        if not isinstance(model, sklearn.naive_bayes.GaussianNB):
+            raise TypeError(
+                "Model must be of type sklearn.naive_bayes.GaussianNB. Found type {}".format(type(model))
+            )
+
+        super().__init__(
+            model=model,
+            clip_values=clip_values,
+            preprocessing_defences=preprocessing_defences,
+            postprocessing_defences=postprocessing_defences,
+            preprocessing=preprocessing,
+        )
+
+    @staticmethod
+    def get_trainable_attribute_names() -> Tuple[str, str]:
+        """
+        Get the names of trainable attributes.
+
+        :return: A tuple of trainable attributes.
+        """
+        return "sigma_", "theta_"
+
 
 class ScikitlearnSVC(ClassGradientsMixin, LossGradientsMixin, ScikitlearnClassifier):
     """

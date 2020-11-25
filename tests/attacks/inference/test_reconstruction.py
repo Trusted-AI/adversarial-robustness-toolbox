@@ -29,7 +29,7 @@ from art.attacks.inference.reconstruction import DatabaseReconstruction
 logger = logging.getLogger(__name__)
 
 
-def test_black_box(get_iris_dataset):
+def test_database_reconstruction(get_iris_dataset):
     (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = get_iris_dataset
     y_train_iris = np.array([np.argmax(y) for y in y_train_iris])
     y_test_iris = np.array([np.argmax(y) for y in y_test_iris])
@@ -39,15 +39,15 @@ def test_black_box(get_iris_dataset):
 
     x_input = np.vstack((x_train_iris, x_private))
     y_input = np.hstack((y_train_iris, y_private))
-    nb_private = GaussianNB().fit(x_input, y_input)
 
-    recon = DatabaseReconstruction(nb_private)
+    from art.estimators.classification.scikitlearn import ScikitlearnGaussianNB
+    nb_private = GaussianNB()
+    nb_private.fit(x_input, y_input)
+    estimator_private = ScikitlearnGaussianNB(model=nb_private)
+
+    recon = DatabaseReconstruction(estimator=estimator_private)
     output = recon.infer(x_train_iris, y_train_iris)
 
     assert output is not None
     assert np.shape(output) == (x_train_iris.shape[1],)
     assert np.isclose(output, x_private).all()
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=scikitlearn --durations=0".format(__file__).split(" "))
