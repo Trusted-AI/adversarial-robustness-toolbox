@@ -76,9 +76,14 @@ class ImperceptibleASR(EvasionAttack):
         Create an instance of the :class:`.ImperceptibleASR`.
 
         :param estimator: A trained speech recognition estimator.
+        :param masker: A Psychoacoustic masker.
         :param eps: Initial max norm bound for adversarial perturbation.
         :param learning_rate_1: Learning rate for stage 1 of attack.
         :param max_iter_1: Number of iterations for stage 1 of attack.
+        :param alpha: Initial alpha value for balancing stage 2 loss.
+        :param learning_rate_2: Learning rate for stage 2 of attack.
+        :param max_iter_2: Number of iterations for stage 2 of attack.
+        :param batch_size: Batch size.
         """
         import tensorflow.compat.v1 as tf1
 
@@ -267,7 +272,9 @@ class ImperceptibleASR(EvasionAttack):
 
         return np.array(x_imperceptible, dtype=object)
 
-    def _loss_gradient_masking_threshold(self, perturbation: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def _loss_gradient_masking_threshold(
+        self, perturbation: np.ndarray, x: np.ndarray
+    ) -> Tuple[np.ndarray, np.ndarray]:
         """
         Compute loss gradient of the global masking threshold w.r.t. the PSD approximate of the perturbation.
 
@@ -386,7 +393,36 @@ class ImperceptibleASR(EvasionAttack):
         """
         Apply attack-specific checks.
         """
-        pass
+        if self.eps <= 0:
+            raise ValueError("The perturbation max norm bound `eps` has to be positive.")
+
+        if not isinstance(self.alpha, float):
+            raise ValueError("The value of alpha must be of type float.")
+        if self.alpha <= 0.0:
+            raise ValueError("The value of alpha must be positive")
+
+        if not isinstance(self.max_iter_1, int):
+            raise ValueError("The maximum number of iterations for stage 1 must be of type int.")
+        if self.max_iter_1 <= 0:
+            raise ValueError("The maximum number of iterations for stage 1 must be greater than 0.")
+
+        if not isinstance(self.max_iter_2, int):
+            raise ValueError("The maximum number of iterations for stage 2 must be of type int.")
+        if self.max_iter_2 <= 0:
+            raise ValueError("The maximum number of iterations for stage 2 must be greater than 0.")
+
+        if not isinstance(self.learning_rate_1, float):
+            raise ValueError("The learning rate for stage 1 must be of type float.")
+        if self.learning_rate_1 <= 0.0:
+            raise ValueError("The learning rate for stage 1 must be greater than 0.0.")
+
+        if not isinstance(self.learning_rate_2, float):
+            raise ValueError("The learning rate for stage 2 must be of type float.")
+        if self.learning_rate_2 <= 0.0:
+            raise ValueError("The learning rate for stage 2 must be greater than 0.0.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")
 
 
 class PsychoacousticMasker:
