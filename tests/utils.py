@@ -420,6 +420,7 @@ def get_image_classifier_kr(
     :return: KerasClassifier, tf.Session()
     """
     import tensorflow as tf
+
     tf_version = [int(v) for v in tf.__version__.split(".")]
     if tf_version[0] == 2 and tf_version[1] >= 3:
         is_tf23_keras24 = True
@@ -1354,6 +1355,7 @@ def get_tabular_classifier_kr(load_init=True):
     :rtype: `tuple(KerasClassifier, tf.Session)`
     """
     import tensorflow as tf
+
     tf_version = [int(v) for v in tf.__version__.split(".")]
     if tf_version[0] == 2 and tf_version[1] >= 3:
         is_tf23_keras24 = True

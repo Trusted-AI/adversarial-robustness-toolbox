@@ -43,10 +43,9 @@ class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, Cl
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
-    def __init__(self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-                 sample_size: int,
-                 scale: float = 0.1,
-                 alpha: float = 0.001):
+    def __init__(
+        self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", sample_size: int, scale: float = 0.1, alpha: float = 0.001
+    ):
         """
         Create a randomized smoothing wrapper.
         :param classifier: The Classifier we want to wrap the functionality for the purpose of smoothing.
@@ -121,7 +120,7 @@ class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, Cl
         """
         return self.classifier.loss_gradient(x, y)
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int]]=None, **kwargs) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int]] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class

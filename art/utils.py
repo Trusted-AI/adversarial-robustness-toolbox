@@ -337,10 +337,7 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
 
 
 def random_sphere(
-    nb_points: int,
-    nb_dims: int,
-    radius: Union[int, float, np.ndarray],
-    norm: Union[int, float, str],
+    nb_points: int, nb_dims: int, radius: Union[int, float, np.ndarray], norm: Union[int, float, str],
 ) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
