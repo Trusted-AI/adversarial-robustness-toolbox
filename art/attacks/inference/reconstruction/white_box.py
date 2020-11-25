@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements attribute inference attacks.
+This module implements reconstruction attacks.
 
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -35,15 +35,28 @@ logger = logging.getLogger(__name__)
 
 
 class DatabaseReconstruction(InferenceAttack):
+    """
+    Implementation of a database reconstruction attack. In this case, the adversary is assumed to have in his/her
+    possession a model trained on a dataset, and all but one row of that training dataset. This attack attempts to
+    reconstruct the missing row.
+    """
     _estimator_requirements = ()
 
     def __init__(self, estimator):
+        """
+        Create a DatabaseReconstruction instance.
+
+        :param estimator: Target estimator.
+        """
         super().__init__(estimator)
 
         self.parent_class, self.params = self.get_estimator_details(self._estimator)
 
     @classmethod
     def get_estimator_details(cls, estimator):
+        """
+        Method to extract list of parameters of `estimator` with which to execute the attack.
+        """
         if isinstance(estimator, GaussianNB):
             return GaussianNB, ("sigma_", "theta_")
 
@@ -53,11 +66,11 @@ class DatabaseReconstruction(InferenceAttack):
         raise NotImplementedError("Database reconstruction attack not yet implemented for given estimator.")
 
     @staticmethod
-    def objective(x, y, X_train, y_train, private_model, parent_model, params):
+    def objective(x, y, x_train, y_train, private_model, parent_model, params):
         """Objective function which we seek to minimise"""
 
         model = parent_model()
-        model.fit(np.vstack((X_train, x)), np.hstack((y_train, y)))
+        model.fit(np.vstack((x_train, x)), np.hstack((y_train, y)))
 
         residual = 0
 
@@ -67,6 +80,12 @@ class DatabaseReconstruction(InferenceAttack):
         return residual
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
+        """
+        Infer the missing row from x, y with which `estimator` was trained with.
+
+        :param x: Known records of the training set of `estimator`.
+        :param y: Known labels of the training set of `estimator`.
+        """
 
         tol = float("inf")
         x0 = x[0, :]
@@ -83,4 +102,5 @@ class DatabaseReconstruction(InferenceAttack):
                 x_guess = _x
                 y_guess = _y
 
-        return x_guess #, y_guess, tol
+        # return x_guess, y_guess, tol
+        return x_guess
