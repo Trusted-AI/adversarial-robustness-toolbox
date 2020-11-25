@@ -21,31 +21,30 @@ import logging
 
 import numpy as np
 import pytest
-from numpy.testing import assert_array_equal
 
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleAsr, PsychoacousticMasker
+from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR, PsychoacousticMasker
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-class TestImperceptibleAsr:
+class TestImperceptibleASR:
     """
-    Test the ImperceptibleAsr attack.
+    Test the ImperceptibleASR attack.
     """
 
     @pytest.mark.skipMlFramework("pytorch", "tensorflow1", "mxnet", "kerastf", "non_dl_frameworks")
     def test_is_subclass(self, art_warning):
         try:
-            assert issubclass(ImperceptibleAsr, EvasionAttack)
+            assert issubclass(ImperceptibleASR, EvasionAttack)
         except ARTTestException as e:
             art_warning(e)
 
     @pytest.mark.skipMlFramework("pytorch", "tensorflow1", "mxnet", "kerastf", "non_dl_frameworks")
     def test_implements_abstract_methods(self, art_warning, asr_dummy_estimator):
         try:
-            ImperceptibleAsr(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
+            ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
         except ARTTestException as e:
             art_warning(e)
 
@@ -54,10 +53,10 @@ class TestImperceptibleAsr:
         try:
             test_input, test_target = audio_data
 
-            mocker.patch.object(ImperceptibleAsr, "_create_adversarial")
-            mocker.patch.object(ImperceptibleAsr, "_create_imperceptible")
+            mocker.patch.object(ImperceptibleASR, "_create_adversarial")
+            mocker.patch.object(ImperceptibleASR, "_create_imperceptible")
 
-            imperceptible_asr = ImperceptibleAsr(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
+            imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
             _ = imperceptible_asr._generate_batch(test_input, test_target)
 
             imperceptible_asr._create_adversarial.assert_called()
@@ -70,10 +69,10 @@ class TestImperceptibleAsr:
         try:
             test_input, test_target = audio_data
 
-            mocker.patch.object(ImperceptibleAsr, "_create_adversarial")
-            mocker.patch.object(ImperceptibleAsr, "_create_imperceptible")
+            mocker.patch.object(ImperceptibleASR, "_create_adversarial")
+            mocker.patch.object(ImperceptibleASR, "_create_imperceptible")
 
-            imperceptible_asr = ImperceptibleAsr(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
+            imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
             _ = imperceptible_asr._generate_batch(test_input, test_target)
 
             imperceptible_asr._create_adversarial.assert_called()
@@ -89,13 +88,13 @@ class TestImperceptibleAsr:
             estimator = asr_dummy_estimator()
             mocker.patch.object(estimator, "predict", return_value=test_target)
             mocker.patch.object(
-                ImperceptibleAsr,
+                ImperceptibleASR,
                 "_loss_gradient_masking_threshold",
                 return_value=(np.zeros_like(audio_data), [0] * test_input.shape[0]),
             )
 
             # learning rate of zero ensures that adversarial example equals test input
-            imperceptible_asr = ImperceptibleAsr(
+            imperceptible_asr = ImperceptibleASR(
                 estimator=estimator, masker=PsychoacousticMasker(), max_iter_1=15, learning_rate_1=0
             )
             adversarial = imperceptible_asr._create_adversarial(test_input, test_target)
@@ -115,13 +114,13 @@ class TestImperceptibleAsr:
             estimator = asr_dummy_estimator()
             mocker.patch.object(estimator, "predict", return_value=test_target)
             mocker.patch.object(
-                ImperceptibleAsr,
+                ImperceptibleASR,
                 "_loss_gradient_masking_threshold",
                 return_value=(np.zeros_like(test_input), [0] * test_input.shape[0]),
             )
 
             # learning rate of zero ensures that adversarial example equals test input
-            imperceptible_asr = ImperceptibleAsr(
+            imperceptible_asr = ImperceptibleASR(
                 estimator=estimator, masker=PsychoacousticMasker(), max_iter_2=25, learning_rate_2=0
             )
             adversarial = imperceptible_asr._create_imperceptible(test_input, test_adversarial, test_target)
@@ -143,7 +142,7 @@ class TestImperceptibleAsr:
             test_psd_maxium = np.ones((test_delta.shape[0], 28))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
-            imperceptible_asr = ImperceptibleAsr(
+            imperceptible_asr = ImperceptibleASR(
                 estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(), max_iter_1=10, learning_rate_1=0
             )
             feed_dict = {
@@ -170,7 +169,7 @@ class TestImperceptibleAsr:
             test_psd_maxium = np.ones((test_delta.shape[0], 28))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
-            imperceptible_asr = ImperceptibleAsr(
+            imperceptible_asr = ImperceptibleASR(
                 estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(), max_iter_1=10, learning_rate_1=0
             )
             feed_dict = {
@@ -197,7 +196,7 @@ class TestImperceptibleAsr:
             test_psd_maxium = np.ones((test_delta.shape[0], 28))
 
             masker = PsychoacousticMasker()
-            imperceptible_asr = ImperceptibleAsr(
+            imperceptible_asr = ImperceptibleASR(
                 estimator=asr_dummy_estimator(), masker=masker, max_iter_1=10, learning_rate_1=0
             )
             feed_dict = {
@@ -246,7 +245,7 @@ class TestPsychoacousticMasker:
 
             # test masker_idx shape and first, last maskers
             assert masker_idx.tolist() == [2, 5, 7, 9]
-            assert_array_equal(
+            np.testing.assert_array_equal(
                 maskers[[0, -1]], 10 * np.log10(np.sum(10 ** np.array([[1.0, 9.6, 9.0], [5.5, 9.1, 4.0]]), axis=1))
             )
         except ARTTestException as e:

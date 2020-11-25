@@ -1214,8 +1214,13 @@ def is_probability(vector: np.ndarray) -> bool:
     return is_sum_1 and is_smaller_1 and is_larger_0
 
 
-def pad_audio_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-    """Apply padding to a batch of audio samples such that it has shape of (batch_size, max_length)."""
+def pad_sequence_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Apply padding to a batch of 1-dimensional samples such that it has shape of (batch_size, max_length).
+
+    :param x: A batch of 1-dimensional input data, e.g. `np.array([np.array([1,2,3]), np.array([4,5,6,7])])`.
+    :return: The padded input batch and its corresponding mask.
+    """
     max_length = max(map(len, x))
     batch_size = x.shape[0]
 

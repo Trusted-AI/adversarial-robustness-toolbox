@@ -32,7 +32,7 @@ import scipy.signal as ss
 from art.attacks.attack import EvasionAttack
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
-from art.utils import pad_audio_input
+from art.utils import pad_sequence_input
 
 if TYPE_CHECKING:
     from tensorflow.compat.v1 import Tensor
@@ -40,7 +40,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ImperceptibleAsr(EvasionAttack):
+class ImperceptibleASR(EvasionAttack):
     """
     Implementation of the imperceptible attack against a speech recognition model.
 
@@ -64,18 +64,18 @@ class ImperceptibleAsr(EvasionAttack):
         self,
         estimator: "TensorFlowV2Estimator",
         masker: "PsychoacousticMasker",
-        eps: float = 2000,
-        learning_rate_1: float = 100,
+        eps: float = 2000.0,
+        learning_rate_1: float = 100.0,
         max_iter_1: int = 1000,
         alpha: float = 0.05,
-        learning_rate_2: float = 1,
+        learning_rate_2: float = 1.0,
         max_iter_2: int = 4000,
         batch_size: int = 16,
     ) -> None:
         """
-        Create an instance of the :class:`.ImperceptibleAsr`.
+        Create an instance of the :class:`.ImperceptibleASR`.
 
-        :param estimator: A trained classifier.
+        :param estimator: A trained speech recognition estimator.
         :param eps: Initial max norm bound for adversarial perturbation.
         :param learning_rate_1: Learning rate for stage 1 of attack.
         :param max_iter_1: Number of iterations for stage 1 of attack.
@@ -137,13 +137,11 @@ class ImperceptibleAsr(EvasionAttack):
         return np.array(x_imperceptible, dtype=object)
 
     def _generate_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
-        """Create imperceptible, adversarial sample.
+        """
+        Create imperceptible, adversarial sample.
 
-        This is a helper method that calls the methods to create an adversarial
-        (:func:`~art.attack.evasion.imperceptible_asr.imperceptible_asr.ImperceptibleAsr._create_adversarial`) and
-        imperceptible
-        (:func:`~art.attack.evasion.imperceptible_asr.imperceptible_asr.ImperceptibleAsr._create_imperceptible`) example
-        subsequently.
+        This is a helper method that calls the methods to create an adversarial (`ImperceptibleASR._create_adversarial`)
+        and imperceptible (`ImperceptibleASR._create_imperceptible`) example subsequently.
         """
         # create adversarial example
         x_adversarial = self._create_adversarial(x, y)
@@ -269,8 +267,9 @@ class ImperceptibleAsr(EvasionAttack):
 
         return np.array(x_imperceptible, dtype=object)
 
-    def _loss_gradient_masking_threshold(self, perturbation: np.ndarray, x: np.ndarray) -> np.ndarray:
-        """Compute loss gradient of the global masking threshold w.r.t. the PSD approximate of the perturbation.
+    def _loss_gradient_masking_threshold(self, perturbation: np.ndarray, x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Compute loss gradient of the global masking threshold w.r.t. the PSD approximate of the perturbation.
 
         The loss is defined as the hinge loss w.r.t. to the frequency masking threshold of the original audio input `x`
         and the normalized power spectral density estimate of the perturbation. In order to stabilize the optimization
@@ -281,8 +280,8 @@ class ImperceptibleAsr(EvasionAttack):
         :return: Tuple consisting of the loss gradient, which has same shape as `perturbation`, and loss value.
         """
         # pad input
-        perturbation_padded, delta_mask = pad_audio_input(perturbation)
-        x_padded, _ = pad_audio_input(x)
+        perturbation_padded, delta_mask = pad_sequence_input(perturbation)
+        x_padded, _ = pad_sequence_input(x)
 
         # calculate masking threshold and PSD maximum
         masking_threshold = []
@@ -394,8 +393,8 @@ class PsychoacousticMasker:
     """
     Implements psychoacoustic model of Lin and Abdulla (2015) following Qin et al. (2019) simplifications.
 
-    | Lin and Abdulla (2015), https://www.springer.com/gp/book/9783319079738
-    | Qin et al. (2019), http://proceedings.mlr.press/v97/qin19a.html
+    | Paper link: Lin and Abdulla (2015), https://www.springer.com/gp/book/9783319079738
+    | Paper link: Qin et al. (2019), http://proceedings.mlr.press/v97/qin19a.html
     """
 
     def __init__(self, window_size: int = 2048, hop_size: int = 512, sample_rate: int = 16000) -> None:
@@ -415,8 +414,9 @@ class PsychoacousticMasker:
         self._bark = None
         self._absolute_threshold_hearing = None
 
-    def calculate_threshold_and_psd_maximum(self, audio: np.ndarray):
-        """Compute the global masking threshold for an audio input and also return its maxium power spectral density.
+    def calculate_threshold_and_psd_maximum(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Compute the global masking threshold for an audio input and also return its maxium power spectral density.
 
         This method is the main method to call in order to obtain global masking thresholds for an audio input. It also
         returns the maxium power spectral density (PSD) for each frame. Given an audio input, the following steps are
@@ -502,7 +502,8 @@ class PsychoacousticMasker:
         return self._absolute_threshold_hearing
 
     def power_spectral_density(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Compute the power spectral density matrix for an audio input.
+        """
+        Compute the power spectral density matrix for an audio input.
 
         :param audio: Audio sample of shape `(length,)`.
         :return: PSD matrix of shape `(window_size // 2 + 1, frame_length)` and maxium vector of shape `(frame_length)`.
@@ -536,7 +537,8 @@ class PsychoacousticMasker:
 
     @staticmethod
     def find_maskers(psd_vector: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Identify maskers.
+        """
+        Identify maskers.
 
         Possible maskers are local PSD maxima. Following Qin et al., all maskers are treated as tonal. Thus neglecting
         the nontonal type.
@@ -552,7 +554,8 @@ class PsychoacousticMasker:
         return psd_maskers, masker_idx
 
     def filter_maskers(self, maskers: np.ndarray, masker_idx: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-        """Filter maskers.
+        """
+        Filter maskers.
 
         First, discard all maskers that are below the absolute threshold of hearing. Second, reduce pairs of maskers
         that are within 0.5 bark distance of each other by keeping the larger masker.
@@ -584,7 +587,8 @@ class PsychoacousticMasker:
         return maskers, masker_idx
 
     def calculate_individual_threshold(self, maskers: np.ndarray, masker_idx: np.ndarray) -> np.ndarray:
-        """Calculate individual masking threshold with frequency denoted at bark scale.
+        """
+        Calculate individual masking threshold with frequency denoted at bark scale.
 
         :param maskers: Masker PSD values.
         :param masker_idx: Masker indices.
@@ -609,7 +613,8 @@ class PsychoacousticMasker:
         return threshold
 
     def calculate_global_threshold(self, individual_threshold):
-        """Calculate global masking threshold.
+        """
+        Calculate global masking threshold.
 
         :param individual_threshold: Individual masking threshold vector.
         :return: Global threshold vector of shape `(window_size // 2 + 1)`.
