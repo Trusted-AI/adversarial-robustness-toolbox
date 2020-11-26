@@ -92,9 +92,18 @@ class TestMetrics(unittest.TestCase):
     @staticmethod
     def _cnn_mnist_k(input_shape):
         import tensorflow as tf
-        import keras
-        from keras.models import Sequential
-        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        tf_version = [int(v) for v in tf.__version__.split(".")]
+        if tf_version[0] == 2 and tf_version[1] >= 3:
+            is_tf23_keras24 = True
+            tf.compat.v1.disable_eager_execution()
+            from tensorflow import keras
+            from tensorflow.keras.models import Sequential
+            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        else:
+            is_tf23_keras24 = False
+            import keras
+            from keras.models import Sequential
+            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         # Create simple CNN
         model = Sequential()

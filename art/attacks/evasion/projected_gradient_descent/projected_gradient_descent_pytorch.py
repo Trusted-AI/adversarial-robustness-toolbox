@@ -32,6 +32,8 @@ import numpy as np
 from tqdm import trange, tqdm
 
 from art.config import ART_NUMPY_DTYPE
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentCommon,
 )
@@ -40,7 +42,6 @@ from art.utils import compute_success, random_sphere
 if TYPE_CHECKING:
     import torch
     from art.estimators.classification.pytorch import PyTorchClassifier
-    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +55,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
     | Paper link: https://arxiv.org/abs/1706.06083
     """
 
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
+
     def __init__(
         self,
-        estimator: Union["PyTorchClassifier", "PyTorchFasterRCNN"],
+        estimator: Union["PyTorchClassifier"],
         norm: Union[int, float, str] = np.inf,
         eps: Union[int, float, np.ndarray] = 0.3,
         eps_step: Union[int, float, np.ndarray] = 0.1,
@@ -120,9 +123,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         import torch  # lgtm [py/repeated-import]
 
-        mask = kwargs.get("mask")
-        if mask is not None and mask.ndim > x.ndim:
-            raise ValueError("Mask shape must be broadcastable to input shape.")
+        mask = self._get_mask(x, **kwargs)
 
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)
@@ -249,7 +250,9 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         return adv_x.cpu().detach().numpy()
 
-    def _compute_perturbation(self, x: "torch.Tensor", y: "torch.Tensor", mask: "torch.Tensor") -> "torch.Tensor":
+    def _compute_perturbation(
+        self, x: "torch.Tensor", y: "torch.Tensor", mask: Optional["torch.Tensor"]
+    ) -> "torch.Tensor":
         """
         Compute perturbations.
 
@@ -271,6 +274,10 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
 
+        # Apply mask
+        if mask is not None:
+            grad = torch.where(mask == 0.0, torch.tensor(0.0), grad)
+
         # Apply norm bound
         if self.norm in ["inf", np.inf]:
             grad = grad.sign()
@@ -285,10 +292,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         assert x.shape == grad.shape
 
-        if mask is None:
-            return grad
-        else:
-            return grad * mask
+        return grad
 
     def _apply_perturbation(
         self, x: "torch.Tensor", perturbation: "torch.Tensor", eps_step: Union[int, float, np.ndarray]
