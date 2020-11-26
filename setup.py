@@ -72,7 +72,7 @@ setup(
         "lightgbm": ["lightgbm"],
         "mxnet": ["mxnet"],
         "tensorflow": ["tensorflow", "tensorflow_addons", "h5py"],
-        "pytorch": ["torch", "torchvision"],
+        "pytorch": ["torch", "torchvision", "torchaudio"],
         "xgboost": ["xgboost"],
         "lingvo_asr": ["tensorflow-gpu==2.1.0", "lingvo==0.6.4"],
         "all": [
