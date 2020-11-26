@@ -38,7 +38,7 @@ from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt
 
 logger = logging.getLogger(__name__)
 
-deep_learning_frameworks = ["keras", "tensorflow1", "tensorflow2", "pytorch", "kerastf", "mxnet"]
+deep_learning_frameworks = ["keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet"]
 non_deep_learning_frameworks = ["scikitlearn"]
 
 art_supported_frameworks = []
@@ -723,6 +723,7 @@ def skip_by_framework(request, framework):
         if "tensorflow" in framework_to_skip_list:
             framework_to_skip_list.append("tensorflow1")
             framework_to_skip_list.append("tensorflow2")
+            framework_to_skip_list.append("tensorflow2v1")
 
         if framework in framework_to_skip_list:
             pytest.skip("skipped on this platform: {}".format(framework))
