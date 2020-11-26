@@ -35,7 +35,7 @@ NB_TRAIN, NB_POISON, NB_VALID, NB_TRUSTED = 40, 5, 40, 15
 kernel = "linear"
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def get_roni():
     (x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
     y_train = np.argmax(y_train, axis=1)
