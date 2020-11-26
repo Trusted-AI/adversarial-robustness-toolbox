@@ -40,6 +40,8 @@ if TYPE_CHECKING:
     from tensorflow.compat.v1 import Tensor
     from torch import Tensor as PTensor
 
+    from art.utils import SPEECH_RECOGNIZER_TYPE
+
 logger = logging.getLogger(__name__)
 
 
@@ -65,7 +67,7 @@ class ImperceptibleASR(EvasionAttack):
 
     def __init__(
         self,
-        estimator: Union["PyTorchEstimator", "TensorFlowV2Estimator"],
+        estimator: "SPEECH_RECOGNIZER_TYPE",
         masker: "PsychoacousticMasker",
         eps: float = 2000.0,
         learning_rate_1: float = 100.0,
@@ -349,7 +351,7 @@ class ImperceptibleASR(EvasionAttack):
 
     def _loss_gradient_masking_threshold_tf(
         self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor", masking_threshold_stabilized: "Tensor"
-    ) -> "Tensor":
+    ) -> Union["Tensor", "Tensor"]:
         """
         Compute loss gradient of the masking threshold loss in TensorFlow.
 
@@ -471,7 +473,6 @@ class ImperceptibleASR(EvasionAttack):
         psd_matrix_approximated = pow(10.0, 9.6) / torch.unsqueeze(psd_maximum_stabilized, 1) * psd_matrix
 
         # return PSD matrix such that shape is (batch_size, window_size // 2 + 1, frame_length)
-        # return torch.transpose(psd_matrix_approximated, 1, 2)
         return psd_matrix_approximated
 
     def _check_params(self) -> None:
