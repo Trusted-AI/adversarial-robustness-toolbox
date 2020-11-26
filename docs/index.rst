@@ -75,13 +75,15 @@ Supported Machine Learning Libraries
    modules/defences/transformer_poisoning
    modules/estimators
    modules/estimators/certification
-   modules/estimators/certification_neural_cleanse
    modules/estimators/certification_randomized_smoothing
    modules/estimators/classification
    modules/estimators/classification_scikitlearn
    modules/estimators/encoding
    modules/estimators/generation
    modules/estimators/object_detection
+   modules/estimators/poison_mitigation
+   modules/estimators/poison_mitigation_neural_cleanse
+   modules/estimators/poison_mitigation_strip
    modules/estimators/regression
    modules/estimators/speech_recognition
    modules/metrics

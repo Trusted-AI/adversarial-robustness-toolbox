@@ -1,11 +1,6 @@
 :mod:`art.estimators.certification.neural_cleanse`
 ==================================================
-.. automodule:: art.estimators.certification.neural_cleanse
-
-Mixin Base Class Neural Cleanse
--------------------------------
-.. autoclass:: NeuralCleanseMixin
-   :members:
+.. automodule:: art.estimators.poison_mitigation.neural_cleanse
 
 Keras Neural Cleanse Classifier
 -------------------------------
