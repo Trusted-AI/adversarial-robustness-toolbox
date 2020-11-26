@@ -191,7 +191,8 @@ class ClusteringAnalyzer:
         return all_assigned_clean, summary_poison_clusters, report
 
     def analyze_by_relative_size(
-        self, separated_clusters: Union[List[np.ndarray], List[List[int]]], size_threshold: float = 0.35, r_size: int = 2,
+            self, separated_clusters: Union[List[np.ndarray], List[List[int]]], size_threshold: float = 0.35,
+            r_size: int = 2,
     ) -> Tuple[np.ndarray, List[List[int]], Dict[str, Union[int, Dict]]]:
         """
         Assigns a cluster as poisonous if the smaller one contains less than threshold of the data.
