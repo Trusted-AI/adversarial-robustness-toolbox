@@ -349,3 +349,37 @@ class AttributeInferenceAttack(InferenceAttack):
     def _check_params(self) -> None:
         if self.attack_feature < 0:
             raise ValueError("Attack feature must be positive.")
+
+
+class ReconstructionAttack(Attack):
+    """
+    Abstract base class for reconstruction attack classes.
+    """
+
+    attack_params = InferenceAttack.attack_params
+
+    def __init__(self, estimator):
+        """
+        :param estimator: A trained estimator targeted for reconstruction attack.
+        """
+        super().__init__(estimator)
+
+    @abc.abstractmethod
+    def reconstruct(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Reconstruct the training dataset of and from the targeted estimator. This method
+        should be overridden by all concrete inference attack implementations.
+
+        :param x: An array with known records of the training set of `estimator`.
+        :param y: An array with known labels of the training set of `estimator`, if None predicted labels will be used.
+        :return: A tuple of two arrays for the reconstructed training input and labels.
+        """
+        raise NotImplementedError
+
+    def set_params(self, **kwargs) -> None:
+        """
+        Take in a dictionary of parameters and applies attack-specific checks before saving them as attributes.
+        """
+        # Save attack-specific parameters
+        super().set_params(**kwargs)
+        self._check_params()
