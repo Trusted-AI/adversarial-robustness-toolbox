@@ -90,7 +90,7 @@ class BoundaryAttack(EvasionAttack):
         :param num_trial: Maximum number of trials per iteration.
         :param sample_size: Number of samples per trial.
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
-        :param min_epsilon: Stop attack if perturbation is smaller than `min_epsilon`
+        :param min_epsilon: Stop attack if perturbation is smaller than `min_epsilon`.
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=estimator)
