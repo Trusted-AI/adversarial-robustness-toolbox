@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import get_file, make_directory
@@ -71,7 +71,7 @@ class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
     # provided by pip package need to be downloaded. Those downloads are pinned to the following commit:
     # https://github.com/tensorflow/lingvo/commit/9961306adf66f7340e27f109f096c9322d4f9636
     _LINGVO_CFG: Dict[str, Any] = {
-        "path": os.path.join(ART_DATA_PATH, "lingvo"),
+        "path": os.path.join(config.ART_DATA_PATH, "lingvo"),
         "model_data": {
             "uri": "http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001",
             "basename": "ckpt-00908156.data-00000-of-00001",
