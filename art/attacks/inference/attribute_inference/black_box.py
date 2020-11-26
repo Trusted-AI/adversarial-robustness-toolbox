@@ -51,8 +51,10 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
-        self, classifier: "CLASSIFIER_TYPE", attack_model: Optional["CLASSIFIER_TYPE"] = None,
-            attack_feature: Union[int, slice] = 0
+        self,
+        classifier: "CLASSIFIER_TYPE",
+        attack_model: Optional["CLASSIFIER_TYPE"] = None,
+        attack_feature: Union[int, slice] = 0,
     ):
         """
         Create an AttributeInferenceBlackBox attack instance.
@@ -62,7 +64,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
                                case of a one-hot encoded feature.
         """
-        super().__init__(estimator=classifier, attack_feature = attack_feature)
+        super().__init__(estimator=classifier, attack_feature=attack_feature)
         if isinstance(self.attack_feature, int):
             self.single_index_feature = True
         else:

@@ -147,6 +147,7 @@ def test_black_box_with_model(art_warning, decision_tree_estimator, get_iris_dat
     except ARTTestException as e:
         art_warning(e)
 
+
 @pytest.mark.skipMlFramework("dl_frameworks")
 def test_black_box_one_hot(art_warning, get_iris_dataset):
     try:
@@ -189,8 +190,7 @@ def test_black_box_one_hot(art_warning, get_iris_dataset):
         tree.fit(x_train, y_train)
         classifier = ScikitlearnDecisionTreeClassifier(tree)
 
-        attack = AttributeInferenceBlackBox(classifier,
-                                                  attack_feature=slice(attack_feature, attack_feature+3))
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=slice(attack_feature, attack_feature + 3))
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test)]).reshape(-1, 1)
@@ -207,7 +207,6 @@ def test_black_box_one_hot(art_warning, get_iris_dataset):
 
     except ARTTestException as e:
         art_warning(e)
-
 
 
 @pytest.mark.skipMlFramework("dl_frameworks")
