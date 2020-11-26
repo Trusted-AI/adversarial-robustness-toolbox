@@ -22,7 +22,7 @@ import logging
 import numpy as np
 import pytest
 
-from art.preprocessing import LFilter
+from art.preprocessing.audio import LFilter
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
