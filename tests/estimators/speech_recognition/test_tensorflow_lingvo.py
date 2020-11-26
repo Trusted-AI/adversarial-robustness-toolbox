@@ -26,7 +26,7 @@ from numpy.testing import assert_allclose, assert_array_equal
 from scipy.io.wavfile import read
 
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
-from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoAsr
+from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import get_file
 from tests.utils import ARTTestException
@@ -34,16 +34,16 @@ from tests.utils import ARTTestException
 logger = logging.getLogger(__name__)
 
 
-class TestTensorFlowLingvoAsr:
+class TestTensorFlowLingvoASR:
     """
-    Test the TensorFlowLingvoAsr estimator.
+    Test the TensorFlowLingvoASR estimator.
     """
 
     @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_is_subclass(self, art_warning):
         try:
-            assert issubclass(TensorFlowLingvoAsr, (SpeechRecognizerMixin, TensorFlowV2Estimator))
+            assert issubclass(TensorFlowLingvoASR, (SpeechRecognizerMixin, TensorFlowV2Estimator))
         except ARTTestException as e:
             art_warning(e)
 
@@ -54,7 +54,7 @@ class TestTensorFlowLingvoAsr:
             import tensorflow.compat.v1 as tf1
 
             tf1.reset_default_graph()
-            TensorFlowLingvoAsr()
+            TensorFlowLingvoASR()
         except ARTTestException as e:
             art_warning(e)
 
@@ -66,7 +66,7 @@ class TestTensorFlowLingvoAsr:
 
             tf1.reset_default_graph()
 
-            TensorFlowLingvoAsr()
+            TensorFlowLingvoASR()
             graph = tf1.get_default_graph()
             assert graph.get_operations()
         except ARTTestException as e:
@@ -83,7 +83,7 @@ class TestTensorFlowLingvoAsr:
             test_input, test_mask_frequency = audio_batch_padded
             test_target_dummy = np.array(["DUMMY"] * test_input.shape[0])
 
-            lingvo = TensorFlowLingvoAsr()
+            lingvo = TensorFlowLingvoASR()
             decoder_input_tf = lingvo._create_decoder_input(lingvo._x_padded, lingvo._y_target, lingvo._mask_frequency)
 
             decoder_input = lingvo._sess.run(
@@ -109,7 +109,7 @@ class TestTensorFlowLingvoAsr:
             tf1.reset_default_graph()
 
             test_input, _ = audio_batch_padded
-            lingvo = TensorFlowLingvoAsr()
+            lingvo = TensorFlowLingvoASR()
             features_tf = lingvo._create_log_mel_features(lingvo._x_padded)
 
             features = lingvo._sess.run(features_tf, {lingvo._x_padded: test_input})
@@ -130,7 +130,7 @@ class TestTensorFlowLingvoAsr:
             test_mask = np.array([[True] + [False] * 479, [True] * 480])
             test_output = np.array([[1] + [0] * 479, [2] * 480])
 
-            lingvo = TensorFlowLingvoAsr()
+            lingvo = TensorFlowLingvoASR()
             output, mask, mask_freq = lingvo._pad_audio_input(test_input)
             assert_array_equal(test_output, output)
             assert_array_equal(test_mask, mask)
@@ -148,7 +148,7 @@ class TestTensorFlowLingvoAsr:
             test_input, test_mask_frequency = audio_batch_padded
             test_target_dummy = np.array(["DUMMY"] * test_input.shape[0])
 
-            lingvo = TensorFlowLingvoAsr()
+            lingvo = TensorFlowLingvoASR()
             feed_dict = {
                 lingvo._x_padded: test_input,
                 lingvo._y_target: test_target_dummy,
@@ -184,7 +184,7 @@ class TestTensorFlowLingvoAsr:
 
             test_input = audio_data
 
-            lingvo = TensorFlowLingvoAsr()
+            lingvo = TensorFlowLingvoASR()
             predictions = lingvo.predict(test_input, batch_size=2)
             assert predictions.shape == test_input.shape
             assert isinstance(predictions[0], np.str_)
@@ -202,7 +202,7 @@ class TestTensorFlowLingvoAsr:
             test_input, test_mask_frequency = audio_batch_padded
             test_target_dummy = np.array(["DUMMY"] * test_input.shape[0])
 
-            lingvo = TensorFlowLingvoAsr()
+            lingvo = TensorFlowLingvoASR()
             feed_dict = {
                 lingvo._x_padded: test_input,
                 lingvo._y_target: test_target_dummy,
@@ -226,7 +226,7 @@ class TestTensorFlowLingvoAsr:
             test_input = audio_data
             test_target = np.array(["This", "is", "a dummy", "a dummy"])
 
-            lingvo = TensorFlowLingvoAsr()
+            lingvo = TensorFlowLingvoASR()
 
             if batch_mode:
                 gradients = lingvo._loss_gradient_per_batch(test_input, test_target)
@@ -242,7 +242,7 @@ class TestTensorFlowLingvoAsr:
             art_warning(e)
 
 
-class TestTensorFlowLingvoAsrLibriSpeechSamples:
+class TestTensorFlowLingvoASRLibriSpeechSamples:
     # specify LibriSpeech samples for download and with transcriptions
     samples = {
         "3575-170457-0013.wav": {
@@ -295,7 +295,7 @@ class TestTensorFlowLingvoAsrLibriSpeechSamples:
 
             audio_batch = np.array(audios, dtype=object)
 
-            lingvo = TensorFlowLingvoAsr()
+            lingvo = TensorFlowLingvoASR()
             prediction = lingvo.predict(audio_batch, batch_size=1)
             assert prediction[0] == transcripts[0]
         except ARTTestException as e:
@@ -321,7 +321,7 @@ class TestTensorFlowLingvoAsrLibriSpeechSamples:
             audio_batch = np.array(audios, dtype=object)
             target_batch = np.array(transcripts)
 
-            lingvo = TensorFlowLingvoAsr()
+            lingvo = TensorFlowLingvoASR()
             gradient_batch = lingvo._loss_gradient_per_batch(audio_batch, target_batch)
             gradient_sequence = lingvo._loss_gradient_per_sequence(audio_batch, target_batch)
 

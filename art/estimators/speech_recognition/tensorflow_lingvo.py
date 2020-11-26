@@ -43,7 +43,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
+class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
     """
     This class implements the task-specific Lingvo ASR model of Qin et al. (2019).
 
@@ -402,14 +402,14 @@ class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         """
         if x[0].ndim != 1:
             raise ValueError(
-                "The LingvoAsr estimator can only be used temporal data of type mono. Please remove any channel"
+                "The LingvoASR estimator can only be used temporal data of type mono. Please remove any channel"
                 "dimension."
             )
         # if inputs have 32-bit floating point wav format, the preprocessing argument is required
         is_normalized = max(map(max, np.abs(x))) <= 1.0
         if is_normalized and self.preprocessing is None:
             raise ValueError(
-                "The LingvoAsr estimator requires input values in the range [-32768, 32767] or normalized input values"
+                "The LingvoASR estimator requires input values in the range [-32768, 32767] or normalized input values"
                 " with correct preprocessing argument (mean=0, stddev=1/normalization_factor)."
             )
 
@@ -474,7 +474,7 @@ class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         is_normalized = max(map(max, np.abs(x))) <= 1.0
         if is_normalized and self.preprocessing is None:
             raise ValueError(
-                "The LingvoAsr estimator requires input values in the range [-32768, 32767] or normalized input values"
+                "The LingvoASR estimator requires input values in the range [-32768, 32767] or normalized input values"
                 " with correct preprocessing argument (mean=0, stddev=1/normalization_factor)."
             )
 
