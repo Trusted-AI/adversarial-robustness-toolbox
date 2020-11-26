@@ -57,7 +57,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         device_type: str = "gpu",
     ) -> None:
         """
-        Create an instance of AudioFilterPyTorch.
+        Create an instance of LFilterPyTorch.
 
         :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
         :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
@@ -91,7 +91,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Apply audio filter to a single sample `x`.
+        Apply filter to a single sample `x`.
 
         :param x: A single audio sample.
         :param y: Label of the sample `x`. This function does not affect them in any way.
@@ -121,7 +121,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply audio filter to sample `x`.
+        Apply filter to sample `x`.
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:

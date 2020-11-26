@@ -59,7 +59,7 @@ class LFilter(Preprocessor):
         verbose: bool = False,
     ):
         """
-        Create an instance of AudioFilter.
+        Create an instance of LFilter.
 
         :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
         :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
@@ -86,7 +86,7 @@ class LFilter(Preprocessor):
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply audio filter to sample `x`.
+        Apply filter to sample `x`.
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
