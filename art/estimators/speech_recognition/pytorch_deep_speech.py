@@ -258,7 +258,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 enabled = True
 
             self._model, self._optimizer = amp.initialize(
-                models=self._model, optimizers=self._optimizer, enabled=enabled, opt_level=opt_level, loss_scale=1.0,
+                models=self._model,
+                optimizers=self._optimizer,
+                enabled=enabled,
+                opt_level=opt_level,
+                loss_scale=1.0,
             )
 
     def predict(
@@ -324,7 +328,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         # Aggregate results
         result_outputs = np.zeros(
             shape=(x_preprocessed.shape[0], result_output_sizes.max(), results[0].shape[-1]),
-            dtype=config.ART_NUMPY_DTYPE
+            dtype=config.ART_NUMPY_DTYPE,
         )
 
         for m in range(num_batch):
@@ -517,7 +521,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 self._optimizer.step()
 
     def preprocess_transform_model_input(
-        self, x: "torch.Tensor", y: np.ndarray, real_lengths: np.ndarray,
+        self,
+        x: "torch.Tensor",
+        y: np.ndarray,
+        real_lengths: np.ndarray,
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
@@ -548,7 +555,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Transform the input space
         inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
-            x=x, y=y, compute_gradient=False, tensor_input=True, real_lengths=real_lengths,
+            x=x,
+            y=y,
+            compute_gradient=False,
+            tensor_input=True,
+            real_lengths=real_lengths,
         )
 
         return inputs, targets, input_rates, target_sizes, batch_idx

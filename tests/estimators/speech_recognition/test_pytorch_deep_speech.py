@@ -58,7 +58,7 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
             [
                 np.array(x1 * 100, dtype=ART_NUMPY_DTYPE),
                 np.array(x2 * 100, dtype=ART_NUMPY_DTYPE),
-                np.array(x3 * 100, dtype=ART_NUMPY_DTYPE)
+                np.array(x3 * 100, dtype=ART_NUMPY_DTYPE),
             ]
         )
 
