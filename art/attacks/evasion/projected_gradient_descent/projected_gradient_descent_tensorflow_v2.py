@@ -119,9 +119,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        mask = kwargs.get("mask")
-        if mask is not None and mask.ndim > x.ndim:
-            raise ValueError("Mask shape must be broadcastable to input shape.")
+        mask = self._get_mask(x, **kwargs)
 
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)
@@ -232,7 +230,6 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         :param x: An array with the original inputs.
         :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-
         :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
                      Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
                      features for which the mask is zero will not be adversarially perturbed.
@@ -277,6 +274,10 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
         )
 
+        # Apply mask
+        if mask is not None:
+            grad = tf.where(mask == 0.0, 0.0, grad)
+
         # Apply norm bound
         if self.norm == np.inf:
             grad = tf.sign(grad)
@@ -293,10 +294,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         assert x.shape == grad.shape
 
-        if mask is None:
-            return grad
-        else:
-            return grad * mask
+        return grad
 
     def _apply_perturbation(
         self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[int, float, np.ndarray]
