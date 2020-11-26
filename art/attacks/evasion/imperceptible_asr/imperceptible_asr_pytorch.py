@@ -450,12 +450,8 @@ class ImperceptibleASRPytorch(EvasionAttack):
         masked_adv_input = adv_input * torch.tensor(input_mask).to(self.estimator.device)
 
         # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.transform_model_input(
-            x=masked_adv_input.to(self.estimator.device),
-            y=original_output,
-            compute_gradient=False,
-            tensor_input=True,
-            real_lengths=real_lengths,
+        inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.preprocess_transform_model_input(
+            x=masked_adv_input.to(self.estimator.device), y=original_output, real_lengths=real_lengths,
         )
 
         # Compute real input sizes
