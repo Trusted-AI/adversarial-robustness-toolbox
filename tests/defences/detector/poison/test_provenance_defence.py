@@ -21,6 +21,7 @@ import logging
 import unittest
 
 import numpy as np
+# import pytest
 from sklearn.svm import SVC
 
 from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
@@ -40,6 +41,10 @@ NB_DEVICES = 4
 kernel = "linear"
 
 
+# @pytest.fixture()
+# def get_prov_defense():
+
+
 class TestProvenanceDefence(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -49,7 +54,7 @@ class TestProvenanceDefence(unittest.TestCase):
         y_test = np.argmax(y_test, axis=1)
         zero_or_four = np.logical_or(y_train == 4, y_train == 0, y_train == 9)
         x_train = x_train[zero_or_four]
-        y_train = y_train[zero_or_four]
+        y_train: np.ndarray = y_train[zero_or_four]
         tr_labels = np.zeros((y_train.shape[0], 2))
         tr_labels[y_train == 0] = np.array([1, 0])
         tr_labels[y_train == 4] = np.array([0, 1])
@@ -57,7 +62,7 @@ class TestProvenanceDefence(unittest.TestCase):
 
         zero_or_four = np.logical_or(y_test == 4, y_test == 0)
         x_test = x_test[zero_or_four]
-        y_test = y_test[zero_or_four]
+        y_test: np.ndarray = y_test[zero_or_four]
         te_labels = np.zeros((y_test.shape[0], 2))
         te_labels[y_test == 0] = np.array([1, 0])
         te_labels[y_test == 4] = np.array([0, 1])
