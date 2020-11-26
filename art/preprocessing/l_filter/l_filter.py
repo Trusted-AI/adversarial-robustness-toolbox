@@ -30,7 +30,7 @@ import numpy as np
 from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor.preprocessor import Preprocessor
+from art.preprocessing.preprocessing import Preprocessor
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE

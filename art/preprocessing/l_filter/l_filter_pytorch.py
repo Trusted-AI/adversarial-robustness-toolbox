@@ -28,7 +28,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 from tqdm import tqdm
 
-from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
+from art.preprocessing.preprocessing import PreprocessorPyTorch
 
 if TYPE_CHECKING:
     import torch

@@ -24,7 +24,7 @@ from typing import Optional, Tuple
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor.preprocessor import Preprocessor
+from art.preprocessing.preprocessing import Preprocessor
 
 
 logger = logging.getLogger(__name__)
