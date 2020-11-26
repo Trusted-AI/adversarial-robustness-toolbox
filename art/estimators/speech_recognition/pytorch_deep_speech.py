@@ -36,7 +36,7 @@ if TYPE_CHECKING:
 
     from deepspeech_pytorch.model import DeepSpeech
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor.preprocessor import Preprocessor
     from art.defences.postprocessor.postprocessor import Postprocessor
 
@@ -131,7 +131,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Super initialization
         super().__init__(
+            model=None,
             clip_values=clip_values,
+            channels_first=None,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,

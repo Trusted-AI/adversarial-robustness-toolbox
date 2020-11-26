@@ -205,10 +205,16 @@ class PreprocessorPyTorch(Preprocessor):
 
             return x_grad
 
-        if x.shape == grad.shape:
+        if x.dtype == np.object:
+            x_grad_list = list()
+            for i, x_i in enumerate(x):
+                x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
+            x_grad = np.empty(x.shape[0], dtype=object)
+            x_grad[:] = list(x_grad_list)
+        elif x.shape == grad.shape:
             x_grad = get_gradient(x=x, grad=grad)
         else:
-            # Special case for lass gradients
+            # Special case for loss gradients
             x_grad = np.zeros_like(grad)
             for i in range(grad.shape[1]):
                 x_grad[:, i, ...] = get_gradient(x=x, grad=grad[:, i, ...])
@@ -268,35 +274,41 @@ class PreprocessorTensorFlowV2(Preprocessor):
         return result, y
 
     # Backward compatibility.
-    def _get_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        """
-        Helper function for estimate_gradient
-        """
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        with tf.GradientTape() as tape:
-            x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
-            tape.watch(x)
-            grad = tf.convert_to_tensor(grad, dtype=config.ART_NUMPY_DTYPE)
+        def get_gradient(x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+            """
+            Helper function for estimate_gradient
+            """
 
-            x_prime = self.estimate_forward(x)
+            with tf.GradientTape() as tape:
+                x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
+                tape.watch(x)
+                grad = tf.convert_to_tensor(grad, dtype=config.ART_NUMPY_DTYPE)
 
-        x_grad = tape.gradient(target=x_prime, sources=x, output_gradients=grad)
+                x_prime = self.estimate_forward(x)
 
-        x_grad = x_grad.numpy()
-        if x_grad.shape != x.shape:
-            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+            x_grad = tape.gradient(target=x_prime, sources=x, output_gradients=grad)
 
-        return x_grad
+            x_grad = x_grad.numpy()
+            if x_grad.shape != x.shape:
+                raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
 
-    # Backward compatibility.
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        if x.shape == grad.shape:
-            x_grad = self._get_gradient(x=x, grad=grad)
+            return x_grad
+
+        if x.dtype == np.object:
+            x_grad_list = list()
+            for i, x_i in enumerate(x):
+                x_grad_list.append(get_gradient(x=x_i, grad=grad[i]))
+            x_grad = np.empty(x.shape[0], dtype=object)
+            x_grad[:] = list(x_grad_list)
+        elif x.shape == grad.shape:
+            x_grad = get_gradient(x=x, grad=grad)
         else:
-            # Special case for lass gradients
+            # Special case for loss gradients
             x_grad = np.zeros_like(grad)
             for i in range(grad.shape[1]):
-                x_grad[:, i, ...] = self._get_gradient(x=x, grad=grad[:, i, ...])
+                x_grad[:, i, ...] = get_gradient(x=x, grad=grad[:, i, ...])
 
         return x_grad

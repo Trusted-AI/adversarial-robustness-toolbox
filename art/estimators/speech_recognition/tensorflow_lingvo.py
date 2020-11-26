@@ -136,6 +136,7 @@ class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         # Super initialization
         super().__init__(
+            model=None,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
