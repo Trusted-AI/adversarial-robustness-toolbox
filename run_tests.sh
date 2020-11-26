@@ -27,6 +27,9 @@ then
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_clustering_analyzer.py --mlFramework=$mlFramework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_clustering_analyzer.py tests"; fi
 
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_roni.py --mlFramework=$mlFramework --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_roni.py tests"; fi
+
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
 
@@ -127,9 +130,7 @@ else
                          "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
                          "tests/defences/detector/evasion/test_detector.py" \
                          "tests/defences/detector/poison/test_activation_defence.py" \
-                         "tests/defences/detector/poison/test_clustering_analyzer.py" \
-                         "tests/defences/detector/poison/test_provenance_defence.py" \
-                         "tests/defences/detector/poison/test_roni.py" )
+                         "tests/defences/detector/poison/test_provenance_defence.py" )
 
     declare -a metrics=("tests/metrics/test_gradient_check.py" \
                         "tests/metrics/test_metrics.py" \
