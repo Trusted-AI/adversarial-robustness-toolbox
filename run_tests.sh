@@ -112,7 +112,6 @@ else
                          "tests/defences/test_gaussian_noise.py" \
                          "tests/defences/test_high_confidence.py" \
                          "tests/defences/test_label_smoothing.py" \
-                         "tests/defences/test_neural_cleanse.py" \
                          "tests/defences/test_pixel_defend.py" \
                          "tests/defences/test_reverse_sigmoid.py" \
                          "tests/defences/test_rounded.py" \

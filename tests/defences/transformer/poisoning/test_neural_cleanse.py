@@ -1,6 +1,6 @@
 # MIT License
 #
-# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2019
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
 # documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -18,16 +18,11 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import os
-import unittest
 import keras
+import pytest
 
 from art.defences.transformer.poisoning import NeuralCleanse
-from art.utils import load_dataset
 
-from tests.utils import master_seed, get_image_classifier_kr
-
-os.environ["KMP_DUPLICATE_LIB_OK"] = "True"
 logger = logging.getLogger(__name__)
 
 BATCH_SIZE = 100
@@ -35,42 +30,17 @@ NB_TRAIN = 5000
 NB_TEST = 10
 
 
-class TestNeuralCleanse(unittest.TestCase):
-    """
-    A unittest class for testing Randomized Smoothing as a post-processing step for classifiers.
-    """
+@pytest.mark.only_with_platform("keras")
+def test_mitigate(get_default_mnist_subset, image_dl_estimator, types):
+    (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
+    krc, _ = image_dl_estimator()
 
-    @classmethod
-    def setUpClass(cls):
-        # Get MNIST
-        (x_train, y_train), (x_test, y_test), _, _ = load_dataset("mnist")
-        x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
-        x_test, y_test = x_test[:NB_TEST], y_test[:NB_TEST]
-        cls.mnist = (x_train, y_train), (x_test, y_test)
-
-    def setUp(self):
-        master_seed(seed=1234)
-
-    def test_keras(self):
-        """
-        Test with a KerasClassifier.
-        :return:
-        """
-        if keras.__version__ != "2.2.4":
-            self.assertRaises(NotImplementedError)
-        else:
-            # Build KerasClassifier
-            krc = get_image_classifier_kr()
-
-            # Get MNIST
-            (x_train, y_train), (x_test, y_test) = self.mnist
-
-            krc.fit(x_train, y_train, nb_epochs=1)
-
+    if keras.__version__ != "2.2.4":
+        with pytest.raises(NotImplementedError):
             cleanse = NeuralCleanse(krc)
             defense_cleanse = cleanse(krc, steps=2)
-            defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
-
-
-if __name__ == "__main__":
-    unittest.main()
+    else:
+        krc.fit(x_train, y_train, nb_epochs=1)
+        cleanse = NeuralCleanse(krc)
+        defense_cleanse = cleanse(krc, steps=2)
+        defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
