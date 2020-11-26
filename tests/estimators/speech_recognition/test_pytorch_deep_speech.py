@@ -22,6 +22,7 @@ import logging
 import numpy as np
 import pytest
 
+from art.config import ART_NUMPY_DTYPE
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,13 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         expected_gradients3 = expected_data[9]
 
         # Create signal data
-        x = np.array([np.array(x1 * 100), np.array(x2 * 100), np.array(x3 * 100)])
+        x = np.array(
+            [
+                np.array(x1 * 100, dtype=ART_NUMPY_DTYPE),
+                np.array(x2 * 100, dtype=ART_NUMPY_DTYPE),
+                np.array(x3 * 100, dtype=ART_NUMPY_DTYPE)
+            ]
+        )
 
         # Create labels
         y = np.array(["SIX", "HI", "GOOD"])
@@ -83,9 +90,9 @@ def test_pytorch_deep_speech(art_warning, expected_values, use_amp, device_type)
         assert grads[1].shape == (1500,)
         assert grads[2].shape == (1400,)
 
-        np.testing.assert_array_almost_equal(grads[0][0:20], expected_gradients1, decimal=0)
-        np.testing.assert_array_almost_equal(grads[1][0:20], expected_gradients2, decimal=0)
-        np.testing.assert_array_almost_equal(grads[2][0:20], expected_gradients3, decimal=0)
+        np.testing.assert_array_almost_equal(grads[0][0:20], expected_gradients1, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[1][0:20], expected_gradients2, decimal=-2)
+        np.testing.assert_array_almost_equal(grads[2][0:20], expected_gradients3, decimal=-2)
 
         # Now test fit function
         # Create the optimizer
