@@ -25,6 +25,8 @@ from typing import List, Optional, Tuple, Any, TYPE_CHECKING
 
 import numpy as np
 
+from art import config
+
 if TYPE_CHECKING:
     import torch
     import tensorflow as tf
@@ -33,15 +35,22 @@ if TYPE_CHECKING:
 class Preprocessor(abc.ABC):
     """
     Abstract base class for preprocessing defences.
+
+    By default, the gradient is estimated using BPDA with the identity function.
+        To modify, override `estimate_gradient`
     """
 
     params: List[str] = []
 
-    def __init__(self) -> None:
+    def __init__(self, is_fitted: bool = False, apply_fit: bool = True, apply_predict: bool = True) -> None:
         """
         Create a preprocessing object.
+
+        Optionally, set attributes.
         """
-        self._is_fitted = False
+        self._is_fitted = bool(is_fitted)
+        self._apply_fit = bool(apply_fit)
+        self._apply_predict = bool(apply_predict)
 
     @property
     def is_fitted(self) -> bool:
@@ -53,24 +62,22 @@ class Preprocessor(abc.ABC):
         return self._is_fitted
 
     @property
-    @abc.abstractmethod
     def apply_fit(self) -> bool:
         """
         Property of the defence indicating if it should be applied at training time.
 
         :return: `True` if the defence should be applied when fitting a model, `False` otherwise.
         """
-        raise NotImplementedError
+        return self._apply_fit
 
     @property
-    @abc.abstractmethod
     def apply_predict(self) -> bool:
         """
         Property of the defence indicating if it should be applied at test time.
 
         :return: `True` if the defence should be applied at prediction time, `False` otherwise.
         """
-        raise NotImplementedError
+        return self._apply_predict
 
     @abc.abstractmethod
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
@@ -83,7 +90,6 @@ class Preprocessor(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
     def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
         """
         Fit the parameters of the data preprocessor if it has any.
@@ -92,20 +98,19 @@ class Preprocessor(abc.ABC):
         :param y: Labels for the training set.
         :param kwargs: Other parameters.
         """
-        raise NotImplementedError
+        pass
 
-    @abc.abstractmethod
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         """
         Provide an estimate of the gradients of the defence for the backward pass. If the defence is not differentiable,
         this is an estimate of the gradient, most often replacing the computation performed by the defence with the
-        identity function.
+        identity function (the default).
 
         :param x: Input data for which the gradient is estimated. First dimension is the batch size.
         :param grad: Gradient value so far.
         :return: The gradient (estimate) of the defence.
         """
-        raise NotImplementedError
+        return grad
 
     def set_params(self, **kwargs) -> None:
         """
@@ -148,7 +153,6 @@ class PreprocessorPyTorch(Preprocessor):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
     def estimate_forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
         """
         Provide a differentiable estimate of the forward function, so that autograd can calculate gradients
@@ -160,7 +164,56 @@ class PreprocessorPyTorch(Preprocessor):
         :param y: Labels to be preprocessed.
         :return: Preprocessed data.
         """
-        raise NotImplementedError
+        return self.forward(x, y=y)[0]
+
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+        """
+        Apply preprocessing to input `x` and labels `y`.
+
+        :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
+        :return: Smoothed sample.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        x = torch.tensor(x, device=self._device)
+        if y is not None:
+            y = torch.tensor(y, device=self._device)
+
+        with torch.no_grad():
+            x, y = self.forward(x, y)
+
+        result = x.cpu().numpy()
+        if y is not None:
+            y = y.cpu().numpy()
+        return result, y
+
+    # Backward compatibility.
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        import torch  # lgtm [py/repeated-import]
+
+        def get_gradient(x, grad):
+            x = torch.tensor(x, device=self._device, requires_grad=True)
+            grad = torch.tensor(grad, device=self._device)
+
+            x_prime = self.estimate_forward(x)
+            x_prime.backward(grad)
+            x_grad = x.grad.detach().cpu().numpy()
+
+            if x_grad.shape != x.shape:
+                raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+
+            return x_grad
+
+        if x.shape == grad.shape:
+            x_grad = get_gradient(x=x, grad=grad)
+        else:
+            # Special case for lass gradients
+            x_grad = np.zeros_like(grad)
+            for i in range(grad.shape[1]):
+                x_grad[:, i, ...] = get_gradient(x=x, grad=grad[:, i, ...])
+
+        return x_grad
 
 
 class PreprocessorTensorFlowV2(Preprocessor):
@@ -180,7 +233,6 @@ class PreprocessorTensorFlowV2(Preprocessor):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
     def estimate_forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> "tf.Tensor":
         """
         Provide a differentiable estimate of the forward function, so that autograd can calculate gradients
@@ -192,4 +244,59 @@ class PreprocessorTensorFlowV2(Preprocessor):
         :param y: Labels to be preprocessed.
         :return: Preprocessed data.
         """
-        raise NotImplementedError
+        return self.forward(x, y=y)[0]
+
+    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+        """
+        Apply preprocessing to input `x` and labels `y`.
+
+        :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
+        :param y: Labels of the sample `x`. This function does not affect them in any way.
+        :return: Smoothed sample.
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        x = tf.convert_to_tensor(x)
+        if y is not None:
+            y = tf.convert_to_tensor(y)
+
+        x, y = self.forward(x, y)
+
+        result = x.numpy()
+        if y is not None:
+            y = y.numpy()
+        return result, y
+
+    # Backward compatibility.
+    def _get_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        """
+        Helper function for estimate_gradient
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        with tf.GradientTape() as tape:
+            x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
+            tape.watch(x)
+            grad = tf.convert_to_tensor(grad, dtype=config.ART_NUMPY_DTYPE)
+
+            x_prime = self.estimate_forward(x)
+
+        x_grad = tape.gradient(target=x_prime, sources=x, output_gradients=grad)
+
+        x_grad = x_grad.numpy()
+        if x_grad.shape != x.shape:
+            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
+
+        return x_grad
+
+    # Backward compatibility.
+    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        if x.shape == grad.shape:
+            x_grad = self._get_gradient(x=x, grad=grad)
+        else:
+            # Special case for lass gradients
+            x_grad = np.zeros_like(grad)
+            for i in range(grad.shape[1]):
+                x_grad[:, i, ...] = self._get_gradient(x=x, grad=grad[:, i, ...])
+
+        return x_grad

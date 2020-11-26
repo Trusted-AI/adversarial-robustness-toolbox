@@ -53,7 +53,7 @@ class TestSaliencyMap(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
-    def test_keras_mnist(self):
+    def test_9_keras_mnist(self):
         x_test_original = self.x_test_mnist.copy()
 
         # Keras classifier
@@ -102,7 +102,7 @@ class TestSaliencyMap(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_tensorflow_mnist(self):
+    def test_3_tensorflow_mnist(self):
         x_test_original = self.x_test_mnist.copy()
 
         # Create basic CNN on MNIST using TensorFlow
@@ -152,7 +152,7 @@ class TestSaliencyMap(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_pytorch_mnist(self):
+    def test_5_pytorch_mnist(self):
         x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
         x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
         x_test_original = x_test_mnist.copy()
@@ -204,7 +204,7 @@ class TestSaliencyMap(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_keras_iris_vector_clipped(self):
+    def test_7_keras_iris_vector_clipped(self):
         classifier = get_tabular_classifier_kr()
 
         attack = SaliencyMapMethod(classifier, theta=1)
@@ -218,7 +218,7 @@ class TestSaliencyMap(TestBase):
         accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with JSMA adversarial examples: %.2f%%", (accuracy * 100))
 
-    def test_keras_iris_vector_unbounded(self):
+    def test_8_keras_iris_vector_unbounded(self):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
@@ -227,7 +227,7 @@ class TestSaliencyMap(TestBase):
         x_test_iris_adv = attack.generate(self.x_test_iris)
         self.assertFalse((self.x_test_iris == x_test_iris_adv).all())
 
-    def test_tensorflow_iris_vector(self):
+    def test_2_tensorflow_iris_vector(self):
         classifier, _ = get_tabular_classifier_tf()
 
         attack = SaliencyMapMethod(classifier, theta=1)
@@ -241,7 +241,7 @@ class TestSaliencyMap(TestBase):
         accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with JSMA adversarial examples: %.2f%%", (accuracy * 100))
 
-    def test_pytorch_iris_vector(self):
+    def test_4_pytorch_iris_vector(self):
         classifier = get_tabular_classifier_pt()
 
         attack = SaliencyMapMethod(classifier, theta=1)
@@ -255,7 +255,7 @@ class TestSaliencyMap(TestBase):
         accuracy = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with JSMA adversarial examples: %.2f%%", (accuracy * 100))
 
-    def test_scikitlearn(self):
+    def test_6_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
@@ -290,7 +290,7 @@ class TestSaliencyMap(TestBase):
             # Check that x_test has not been modified by attack and classifier
             self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_iris))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
+    def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(SaliencyMapMethod, [BaseEstimator, ClassGradientsMixin])
 
 

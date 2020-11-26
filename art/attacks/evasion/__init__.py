@@ -43,3 +43,5 @@ from art.attacks.evasion.square_attack import SquareAttack
 from art.attacks.evasion.simba import SimBA
 from art.attacks.evasion.shapeshifter import ShapeShifter
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPytorch
+from art.attacks.evasion.brendel_bethge import BrendelBethgeAttack
+from art.attacks.evasion.dpatch_robust import RobustDPatch

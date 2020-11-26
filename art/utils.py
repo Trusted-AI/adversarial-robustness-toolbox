@@ -35,8 +35,9 @@ import zipfile
 import numpy as np
 from scipy.special import gammainc
 import six
+from tqdm import tqdm
 
-from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE
+from art import config
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +47,16 @@ logger = logging.getLogger(__name__)
 
 DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
 CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
-PREPROCESSING_TYPE = Optional[Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]]
 
 if TYPE_CHECKING:
     # pylint: disable=R0401
+
+    from art.defences.preprocessor.preprocessor import Preprocessor
+
+    PREPROCESSING_TYPE = Optional[
+        Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
+    ]
+
     from art.estimators.classification.classifier import (
         Classifier,
         ClassifierLossGradients,
@@ -283,7 +290,7 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
-def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -> np.ndarray:
+def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]) -> np.ndarray:
     """
     Project `values` on the L_p norm ball of size `eps`.
 
@@ -297,25 +304,44 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float, str]) -
     values_tmp = values.reshape((values.shape[0], -1))
 
     if norm_p == 2:
+        if isinstance(eps, np.ndarray):
+            raise NotImplementedError("The parameter `eps` of type `np.ndarray` is not supported to use with norm 2.")
+
         values_tmp = values_tmp * np.expand_dims(
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
         )
+
     elif norm_p == 1:
+        if isinstance(eps, np.ndarray):
+            raise NotImplementedError("The parameter `eps` of type `np.ndarray` is not supported to use with norm 1.")
+
         values_tmp = values_tmp * np.expand_dims(
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
         )
+
     elif norm_p in [np.inf, "inf"]:
+        if isinstance(eps, np.ndarray):
+            eps = eps * np.ones_like(values)
+            eps = eps.reshape([eps.shape[0], -1])
+
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+
     else:
         raise NotImplementedError(
             'Values of `norm_p` different from 1, 2, `np.inf` and "inf" are currently not ' "supported."
         )
 
     values = values_tmp.reshape(values.shape)
+
     return values
 
 
-def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, float, str]) -> np.ndarray:
+def random_sphere(
+    nb_points: int,
+    nb_dims: int,
+    radius: Union[int, float, np.ndarray],
+    norm: Union[int, float, str],
+) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
 
@@ -326,6 +352,11 @@ def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, 
     :return: The generated random sphere.
     """
     if norm == 1:
+        if isinstance(radius, np.ndarray):
+            raise NotImplementedError(
+                "The parameter `radius` of type `np.ndarray` is not supported to use with norm 1."
+            )
+
         a_tmp = np.zeros(shape=(nb_points, nb_dims + 1))
         a_tmp[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
 
@@ -333,13 +364,24 @@ def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, 
             a_tmp[i, 1:-1] = np.sort(np.random.uniform(0, a_tmp[i, -1], nb_dims - 1))
 
         res = (a_tmp[:, 1:] - a_tmp[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
+
     elif norm == 2:
+        if isinstance(radius, np.ndarray):
+            raise NotImplementedError(
+                "The parameter `radius` of type `np.ndarray` is not supported to use with norm 2."
+            )
+
         a_tmp = np.random.randn(nb_points, nb_dims)
         s_2 = np.sum(a_tmp ** 2, axis=1)
         base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
         res = a_tmp * (np.tile(base, (nb_dims, 1))).T
+
     elif norm in [np.inf, "inf"]:
-        res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
+        if isinstance(radius, np.ndarray):
+            radius = radius * np.ones(shape=(nb_points, nb_dims))
+
+        res = np.random.uniform(-radius, radius, (nb_points, nb_dims))
+
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))
 
@@ -384,7 +426,7 @@ def tanh_to_original(
 # --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
 
 
-def to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None) -> np.ndarray:
+def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[int] = None) -> np.ndarray:
     """
     Convert an array of labels to binary class matrix.
 
@@ -524,7 +566,7 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     """
     preds_max = np.amax(preds, axis=1, keepdims=True)
     y = preds == preds_max
-
+    y = y.astype(np.uint8)
     return y
 
 
@@ -642,7 +684,7 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
     path = get_file(
         "cifar-10-batches-py",
         extract=True,
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         url="http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
     )
 
@@ -677,12 +719,12 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
 
 def load_mnist(raw: bool = False,) -> DATASET_TYPE:
     """
-    Loads MNIST dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads MNIST dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :return: `(x_train, y_train), (x_test, y_test), min, max`.
     """
-    path = get_file("mnist.npz", path=ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz",)
+    path = get_file("mnist.npz", path=config.ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz",)
 
     dict_mnist = np.load(path)
     x_train = dict_mnist["x_train"]
@@ -705,7 +747,7 @@ def load_mnist(raw: bool = False,) -> DATASET_TYPE:
 
 def load_stl() -> DATASET_TYPE:
     """
-    Loads the STL-10 dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads the STL-10 dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :return: `(x_train, y_train), (x_test, y_test), min, max`.
     """
@@ -715,7 +757,7 @@ def load_stl() -> DATASET_TYPE:
 
     path = get_file(
         "stl10_binary",
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         extract=True,
         url="https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz",
     )
@@ -748,7 +790,7 @@ def load_stl() -> DATASET_TYPE:
 
 def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     """
-    Loads the UCI Iris dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads the UCI Iris dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
@@ -757,12 +799,12 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     # Download data if needed
     path = get_file(
         "iris.data",
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         extract=False,
         url="https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
     )
 
-    data = np.loadtxt(path, delimiter=",", usecols=(0, 1, 2, 3), dtype=ART_NUMPY_DTYPE)
+    data = np.loadtxt(path, delimiter=",", usecols=(0, 1, 2, 3), dtype=config.ART_NUMPY_DTYPE)
     labels = np.loadtxt(path, delimiter=",", usecols=4, dtype=str)
 
     # Preprocess
@@ -798,7 +840,7 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
 
 def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: bool = False) -> DATASET_TYPE:
     """
-    Loads the UCI Nursery dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads the UCI Nursery dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, categorical data is one-hot
                 encoded and data is scaled using sklearn's StandardScaler.
@@ -815,7 +857,7 @@ def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: boo
     # Download data if needed
     path = get_file(
         "nursery.data",
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         extract=False,
         url="https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
     )
@@ -949,7 +991,7 @@ def _extract(full_path: str, path: str) -> bool:
     return True
 
 
-def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool = False) -> str:
+def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool = False, verbose: bool = False) -> str:
     """
     Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
     path `path` (default is ~/.art/data). and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip formats
@@ -959,12 +1001,13 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
     :param url: Download URL.
     :param path: Folder to store the download. If not specified, `~/.art/data` is used instead.
     :param extract: If true, tries to extract the archive.
+    :param verbose: If true, print download progress bar.
     :return: Path to the downloaded file.
     """
     if path is None:
-        from art.config import ART_DATA_PATH
+        from art import config
 
-        path_ = os.path.expanduser(ART_DATA_PATH)
+        path_ = os.path.expanduser(config.ART_DATA_PATH)
     else:
         path_ = os.path.expanduser(path)
     if not os.access(path_, os.W_OK):
@@ -996,7 +1039,26 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
 
                 ssl._create_default_https_context = ssl._create_unverified_context
 
-                urlretrieve(url, full_path)
+                if verbose:
+                    with tqdm() as t:
+                        last_block = [0]
+
+                        def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
+                            """
+                            :param blocks: Number of blocks transferred so far [default: 1].
+                            :param block_size: Size of each block (in tqdm units) [default: 1].
+                            :param total_size: Total size (in tqdm units). If [default: None] or -1, remains unchanged.
+                            """
+                            if total_size not in (None, -1):
+                                t.total = total_size
+                            displayed = t.update((blocks - last_block[0]) * block_size)
+                            last_block[0] = blocks
+                            return displayed
+
+                        urlretrieve(url, full_path, reporthook=progress_bar)
+                else:
+                    urlretrieve(url, full_path)
+
             except HTTPError as exception:
                 raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
             except URLError as exception:
@@ -1069,7 +1131,7 @@ def preprocess(
     return normalized_x, categorical_y
 
 
-def segment_by_class(data: np.ndarray, classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
+def segment_by_class(data: Union[np.ndarray, List[int]], classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
     """
     Returns segmented data according to specified features.
 

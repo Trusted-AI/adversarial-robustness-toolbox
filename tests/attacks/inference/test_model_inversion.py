@@ -27,6 +27,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -62,30 +63,28 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
     np.testing.assert_array_less(diff_noisy, diff_inferred)
 
 
-@pytest.mark.skipMlFramework("pytorch")
-def test_miface(fix_get_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(MIFace)
-    # TODO this if statement must be removed once we have a classifier for both image and tabular data
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+@pytest.mark.framework_agnostic
+def test_miface(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(MIFace)
 
-    # for the one-shot method, frame saliency attack should resort to plain FastGradientMethod
-    # expected_values = {
-    #     "x_test_mean": ExpectedValue(0.2346725, 0.002),
-    #     "x_test_min": ExpectedValue(-1.0, 0.00001),
-    #     "x_test_max": ExpectedValue(1.0, 0.00001),
-    #     "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 4, 4, 7, 7, 4, 7, 2, 2, 3, 0]), 2),
-    # }
+        # for the one-shot method, frame saliency attack should resort to plain FastGradientMethod
+        # expected_values = {
+        #     "x_test_mean": ExpectedValue(0.2346725, 0.002),
+        #     "x_test_min": ExpectedValue(-1.0, 0.00001),
+        #     "x_test_max": ExpectedValue(1.0, 0.00001),
+        #     "y_test_pred_adv_expected": ExpectedValue(np.asarray([4, 4, 4, 7, 7, 4, 7, 2, 2, 3, 0]), 2),
+        # }
 
-    for classifier in classifier_list:
         attack = MIFace(classifier, max_iter=150, batch_size=3)
         backend_check_inferred_values(attack, fix_get_mnist_subset, classifier)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(MIFace, (BaseEstimator, ClassifierMixin, ClassGradientsMixin))
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
+@pytest.mark.framework_agnostic
+def test_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(MIFace, [BaseEstimator, ClassifierMixin, ClassGradientsMixin])
+    except ARTTestException as e:
+        art_warning(e)

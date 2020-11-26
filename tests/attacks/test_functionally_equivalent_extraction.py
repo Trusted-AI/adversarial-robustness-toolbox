@@ -39,11 +39,12 @@ from tests.attacks.utils import backend_test_classifier_type_check_fail
 logger = logging.getLogger(__name__)
 
 
+@unittest.skip("Needs update of critical points.")
 @unittest.skipIf(
     tf.__version__[0] != "2" or (tf.__version__[0] == "1" and tf.__version__.split(".")[1] != "15"),
     reason="Skip unittests if not TensorFlow v2 or 1.15 because of pre-trained model.",
 )
-class TestFastGradientMethodImages(TestBase):
+class TestFunctionallyEquivalentExtraction(TestBase):
     @classmethod
     def setUpClass(cls):
         master_seed(seed=1234, set_tensorflow=True)

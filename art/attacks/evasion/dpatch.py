@@ -31,7 +31,8 @@ from tqdm import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.object_detection.object_detector import ObjectDetectorMixin
-from art.utils import Deprecated, deprecated_keyword_arg, ART_NUMPY_DTYPE
+from art.utils import Deprecated, deprecated_keyword_arg
+from art import config
 
 if TYPE_CHECKING:
     from art.utils import OBJECT_DETECTOR_TYPE
@@ -82,14 +83,14 @@ class DPatch(EvasionAttack):
         self.max_iter = max_iter
         self.batch_size = batch_size
         if self.estimator.clip_values is None:
-            self._patch = np.zeros(shape=patch_shape, dtype=ART_NUMPY_DTYPE)
+            self._patch = np.zeros(shape=patch_shape, dtype=config.ART_NUMPY_DTYPE)
         else:
             self._patch = (
                 np.random.randint(0, 255, size=patch_shape)
                 / 255
                 * (self.estimator.clip_values[1] - self.estimator.clip_values[0])
                 + self.estimator.clip_values[0]
-            ).astype(ART_NUMPY_DTYPE)
+            ).astype(config.ART_NUMPY_DTYPE)
         self.verbose = verbose
         self._check_params()
 
@@ -108,8 +109,29 @@ class DPatch(EvasionAttack):
         :param x: Sample images.
         :param y: Target labels for object detector.
         :param target_label: The target label of the DPatch attack.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
+        :type mask: `np.ndarray`
         :return: Adversarial patch.
         """
+        mask = kwargs.get("mask")
+        if mask is not None:
+            mask = mask.copy()
+        if (
+            mask is not None
+            and (mask.dtype != np.bool)
+            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
+            or not (
+                (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])
+                or (mask.shape[1] == x.shape[2] and mask.shape[2] == x.shape[3])
+            )
+        ):
+            raise ValueError(
+                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
+                "shape of `x` (N, H, W) without their channel dimensions."
+            )
+
         channel_index = 1 if self.estimator.channels_first else x.ndim - 1
         if x.shape[channel_index] != self.patch_shape[channel_index - 1]:
             raise ValueError("The color channel index of the images and the patch have to be identical.")
@@ -130,7 +152,7 @@ class DPatch(EvasionAttack):
                 self.target_label = target_label
 
         patched_images, transforms = self._augment_images_with_patch(
-            x, self._patch, random_location=True, channels_first=self.estimator.channels_first
+            x, self._patch, random_location=True, channels_first=self.estimator.channels_first, mask=mask
         )
         patch_target: List[Dict[str, np.ndarray]] = list()
 
@@ -205,7 +227,12 @@ class DPatch(EvasionAttack):
     @staticmethod
     @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
     def _augment_images_with_patch(
-        x: np.ndarray, patch: np.ndarray, random_location: bool, channels_first: bool, channel_index=Deprecated
+        x: np.ndarray,
+        patch: np.ndarray,
+        random_location: bool,
+        channels_first: bool,
+        channel_index=Deprecated,
+        mask: Optional[np.ndarray] = None,
     ) -> Tuple[np.ndarray, List[Dict[str, int]]]:
         """
         Augment images with patch.
@@ -217,6 +244,10 @@ class DPatch(EvasionAttack):
         :param channels_first: Set channels first or last.
         :param channel_index: Index of the color channel.
         :type channel_index: `int`
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
+        :type mask: `np.ndarray`
         """
         # Remove in 1.5.0
         if channel_index == 3:
@@ -237,8 +268,32 @@ class DPatch(EvasionAttack):
         for i_image in range(x.shape[0]):
 
             if random_location:
-                i_x_1 = random.randint(0, x_copy.shape[1] - 1 - patch_copy.shape[0])
-                i_y_1 = random.randint(0, x_copy.shape[2] - 1 - patch_copy.shape[1])
+                if mask is None:
+                    i_x_1 = random.randint(0, x_copy.shape[1] - 1 - patch_copy.shape[0])
+                    i_y_1 = random.randint(0, x_copy.shape[2] - 1 - patch_copy.shape[1])
+                else:
+
+                    if mask.shape[0] == 1:
+                        mask_2d = mask[0, :, :]
+                    else:
+                        mask_2d = mask[i_image, :, :]
+
+                    edge_x_0 = patch_copy.shape[0] // 2
+                    edge_x_1 = patch_copy.shape[0] - edge_x_0
+                    edge_y_0 = patch_copy.shape[1] // 2
+                    edge_y_1 = patch_copy.shape[1] - edge_y_0
+
+                    mask_2d[0:edge_x_0, :] = False
+                    mask_2d[-edge_x_1:, :] = False
+                    mask_2d[:, 0:edge_y_0] = False
+                    mask_2d[:, -edge_y_1:] = False
+
+                    num_pos = np.argwhere(mask_2d).shape[0]
+                    pos_id = np.random.choice(num_pos, size=1)
+                    pos = np.argwhere(mask_2d > 0)[pos_id[0]]
+                    i_x_1 = pos[0] - edge_x_0
+                    i_y_1 = pos[1] - edge_y_0
+
             else:
                 i_x_1 = 0
                 i_y_1 = 0
@@ -256,7 +311,11 @@ class DPatch(EvasionAttack):
         return x_copy, transformations
 
     def apply_patch(
-        self, x: np.ndarray, patch_external: Optional[np.ndarray] = None, random_location: bool = False,
+        self,
+        x: np.ndarray,
+        patch_external: Optional[np.ndarray] = None,
+        random_location: bool = False,
+        mask: Optional[np.ndarray] = None,
     ) -> np.ndarray:
         """
         Apply the adversarial patch to images.
@@ -264,6 +323,9 @@ class DPatch(EvasionAttack):
         :param x: Images to be patched.
         :param patch_external: External patch to apply to images `x`. If None the attacks patch will be applied.
         :param random_location: True if patch location should be random.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
         :return: The patched images.
         """
         if patch_external is not None:
@@ -272,7 +334,11 @@ class DPatch(EvasionAttack):
             patch_local = self._patch
 
         patched_images, _ = self._augment_images_with_patch(
-            x=x, patch=patch_local, random_location=random_location, channels_first=self.estimator.channels_first
+            x=x,
+            patch=patch_local,
+            random_location=random_location,
+            channels_first=self.estimator.channels_first,
+            mask=mask,
         )
 
         return patched_images

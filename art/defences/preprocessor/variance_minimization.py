@@ -81,10 +81,7 @@ class TotalVarMin(Preprocessor):
         :param apply_predict: True if applied during predicting.
         :param verbose: Show progress bars.
         """
-        super().__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.prob = prob
         self.norm = norm
         self.lamb = lamb
@@ -93,14 +90,6 @@ class TotalVarMin(Preprocessor):
         self.clip_values = clip_values
         self.verbose = verbose
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -125,9 +114,6 @@ class TotalVarMin(Preprocessor):
             np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
 
         return x_preproc.astype(ART_NUMPY_DTYPE), y
-
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        return grad
 
     def _minimize(self, x: np.ndarray, mask: np.ndarray) -> np.ndarray:
         """
@@ -214,12 +200,6 @@ class TotalVarMin(Preprocessor):
 
         # Total derivative
         return der1 + der2
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         if not isinstance(self.prob, (float, int)) or self.prob < 0.0 or self.prob > 1.0:

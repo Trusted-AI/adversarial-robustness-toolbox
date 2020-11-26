@@ -23,7 +23,7 @@ import unittest
 
 import numpy as np
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.utils import load_mnist, load_cifar10
 from art.visualization import create_sprite, convert_to_rgb, save_image, plot_3d
 
@@ -41,20 +41,20 @@ class TestVisualization(unittest.TestCase):
 
         f_name = "image1.png"
         save_image(x[0], f_name)
-        path = os.path.join(ART_DATA_PATH, f_name)
+        path = os.path.join(config.ART_DATA_PATH, f_name)
         self.assertTrue(os.path.isfile(path))
         os.remove(path)
 
         f_name = "image2.jpg"
         save_image(x[1], f_name)
-        path = os.path.join(ART_DATA_PATH, f_name)
+        path = os.path.join(config.ART_DATA_PATH, f_name)
         self.assertTrue(os.path.isfile(path))
         os.remove(path)
 
         folder = "images123456"
         f_name_with_dir = os.path.join(folder, "image3.png")
         save_image(x[3], f_name_with_dir)
-        path = os.path.join(ART_DATA_PATH, f_name_with_dir)
+        path = os.path.join(config.ART_DATA_PATH, f_name_with_dir)
         self.assertTrue(os.path.isfile(path))
         os.remove(path)
         os.rmdir(os.path.split(path)[0])  # Remove also test folder
@@ -62,7 +62,7 @@ class TestVisualization(unittest.TestCase):
         folder = os.path.join("images123456", "inner")
         f_name_with_dir = os.path.join(folder, "image4.png")
         save_image(x[3], f_name_with_dir)
-        path_nested = os.path.join(ART_DATA_PATH, f_name_with_dir)
+        path_nested = os.path.join(config.ART_DATA_PATH, f_name_with_dir)
         self.assertTrue(os.path.isfile(path_nested))
         os.remove(path_nested)
         os.rmdir(os.path.split(path_nested)[0])  # Remove inner test folder
@@ -92,7 +92,7 @@ class TestVisualization(unittest.TestCase):
 
         sprite = create_sprite(x)
         f_name = "test_sprite_mnist.png"
-        path = os.path.join(ART_DATA_PATH, f_name)
+        path = os.path.join(config.ART_DATA_PATH, f_name)
         save_image(sprite, path)
         self.assertTrue(os.path.isfile(path))
 
@@ -105,7 +105,7 @@ class TestVisualization(unittest.TestCase):
 
         sprite = create_sprite(x)
         f_name = "test_cifar.jpg"
-        path = os.path.join(ART_DATA_PATH, f_name)
+        path = os.path.join(config.ART_DATA_PATH, f_name)
         save_image(sprite, path)
         self.assertTrue(os.path.isfile(path))
 

@@ -23,7 +23,7 @@ from typing import Any, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.utils import ART_NUMPY_DTYPE
+from art import config
 from art.estimators.estimator import (
     BaseEstimator,
     LossGradientsMixin,
@@ -108,7 +108,19 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         Estimator class for TensorFlow v2 models.
         """
+        preprocessing = kwargs.get("preprocessing")
+        if isinstance(preprocessing, tuple):
+            from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
+                StandardisationMeanStdTensorFlowV2,
+            )
+
+            kwargs["preprocessing"] = StandardisationMeanStdTensorFlowV2(mean=preprocessing[0], std=preprocessing[1])
+
         super().__init__(**kwargs)
+
+        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+
+        self.all_framework_preprocessing = all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing])
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
@@ -148,12 +160,12 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         """
         raise NotImplementedError
 
-    def _apply_preprocessing_defences(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
+    def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should
         only be called from function `_apply_preprocessing`.
 
-        The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing_defences().
+        The method overrides art.estimators.estimator::BaseEstimator._apply_preprocessing().
         It requires all defenses to have a method `forward()`.
         It converts numpy arrays to TensorFlow tensors first, then chains a series of defenses by calling
         defence.forward() which contains TensorFlow operations. At the end, it converts TensorFlow tensors
@@ -169,52 +181,59 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
-        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
+            StandardisationMeanStdTensorFlowV2,
+        )
 
-        if (
-            not hasattr(self, "preprocessing_defences")
-            or self.preprocessing_defences is None
-            or len(self.preprocessing_defences) == 0
-        ):
+        if not self.preprocessing:
             return x, y
 
-        if len(self.preprocessing_defences) == 1:
-            # Compatible with non-TensorFlow defences if no chaining.
-            defence = self.preprocessing_defences[0]
-            x, y = defence(x, y)
+        if isinstance(x, tf.Tensor):
+            input_is_tensor = True
         else:
-            # Check if all defences are implemented in TensorFlow.
-            for defence in self.preprocessing_defences:
-                if not isinstance(defence, PreprocessorTensorFlowV2):
-                    raise NotImplementedError(f"{defence.__class__} is not TensorFlow-specific.")
+            input_is_tensor = False
 
+        if self.all_framework_preprocessing:
             # Convert np arrays to torch tensors.
-            x = tf.convert_to_tensor(x)
-            if y is not None:
-                y = tf.convert_to_tensor(y)
+            if not input_is_tensor:
+                x = tf.convert_to_tensor(x)
+                if y is not None:
+                    y = tf.convert_to_tensor(y)
 
-            for defence in self.preprocessing_defences:
+            for preprocess in self.preprocessing:
                 if fit:
-                    if defence.apply_fit:
-                        x, y = defence.forward(x, y)
+                    if preprocess.apply_fit:
+                        x, y = preprocess.forward(x, y)
                 else:
-                    if defence.apply_predict:
-                        x, y = defence.forward(x, y)
+                    if preprocess.apply_predict:
+                        x, y = preprocess.forward(x, y)
 
             # Convert torch tensors back to np arrays.
-            x = x.numpy()
-            if y is not None:
-                y = y.numpy()
+            if not input_is_tensor:
+                x = x.numpy()
+                if y is not None:
+                    y = y.numpy()
+
+        elif len(self.preprocessing) in [1, 2] and isinstance(
+            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
+        ):
+            # Compatible with non-TensorFlow defences if no chaining.
+            for preprocess in self.preprocessing:
+                x, y = preprocess(x, y)
+
+        else:
+            raise NotImplementedError("The current combination of preprocessing types is not supported.")
 
         return x, y
 
-    def _apply_preprocessing_defences_gradient(self, x, gradients, fit=False):
+    def _apply_preprocessing_gradient(self, x, gradients, fit=False):
         """
         Apply the backward pass to the gradients through all preprocessing defences that have been applied to `x`
         and `y` in the forward pass. This function is should only be called from function
         `_apply_preprocessing_gradient`.
 
-        The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_defences_gradient().
+        The method overrides art.estimators.estimator::LossGradientsMixin._apply_preprocessing_gradient().
         It requires all defenses to have a method estimate_forward().
         It converts numpy arrays to TensorFlow tensors first, then chains a series of defenses by calling
         defence.estimate_forward() which contains differentiable estimate of the operations. At the end,
@@ -229,39 +248,29 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
-        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
+        from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
+            StandardisationMeanStdTensorFlowV2,
+        )
 
-        if (
-            not hasattr(self, "preprocessing_defences")
-            or self.preprocessing_defences is None
-            or len(self.preprocessing_defences) == 0
-        ):
+        if not self.preprocessing:
             return gradients
 
-        if len(self.preprocessing_defences) == 1:
-            # Compatible with non-TensorFlow defences if no chaining.
-            defence = self.preprocessing_defences[0]
-            gradients = defence.estimate_gradient(x, gradients)
-        else:
-            # Check if all defences are implemented in TensorFlow.
-            for defence in self.preprocessing_defences:
-                if not isinstance(defence, PreprocessorTensorFlowV2):
-                    raise NotImplementedError(f"{defence.__class__} is not TensorFlowV2-specific.")
-
+        if self.all_framework_preprocessing:
             with tf.GradientTape() as tape:
                 # Convert np arrays to TensorFlow tensors.
-                x = tf.convert_to_tensor(x, dtype=ART_NUMPY_DTYPE)
+                x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
                 tape.watch(x)
-                gradients = tf.convert_to_tensor(gradients, dtype=ART_NUMPY_DTYPE)
+                gradients = tf.convert_to_tensor(gradients, dtype=config.ART_NUMPY_DTYPE)
                 x_orig = x
 
-                for defence in self.preprocessing_defences:
+                for preprocess in self.preprocessing:
                     if fit:
-                        if defence.apply_fit:
-                            x = defence.estimate_forward(x)
+                        if preprocess.apply_fit:
+                            x = preprocess.estimate_forward(x)
                     else:
-                        if defence.apply_predict:
-                            x = defence.estimate_forward(x)
+                        if preprocess.apply_predict:
+                            x = preprocess.estimate_forward(x)
 
             x_grad = tape.gradient(target=x, sources=x_orig, output_gradients=gradients)
 
@@ -271,4 +280,15 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 raise ValueError(
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
+
+        elif len(self.preprocessing) in [1, 2] and isinstance(
+            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
+        ):
+            # Compatible with non-TensorFlow defences if no chaining.
+            defence = self.preprocessing[0]
+            gradients = defence.estimate_gradient(x, gradients)
+
+        else:
+            raise NotImplementedError("The current combination of preprocessing types is not supported.")
+
         return gradients

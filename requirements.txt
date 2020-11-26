@@ -2,7 +2,7 @@
 numpy==1.19.2
 scipy==1.4.1
 matplotlib==3.3.2
-scikit-learn==0.22.2
+scikit-learn>=0.22.2
 six==1.15.0
 Pillow==7.2.0
 tqdm==4.49.0
@@ -15,13 +15,13 @@ pandas==1.1.2
 
 # frameworks
 h5py==2.10.0
-# supported versions: (tensorflow==2.2.0 with keras==2.3.1) or (tensorflow==1.15.3 with keras==2.2.5)
-tensorflow
-keras
-tensorflow-addons==0.11.2
+# supported versions: (tensorflow==2.2.0 with keras==2.3.1) or (tensorflow==1.15.4 with keras==2.2.5)
+tensorflow>=1.15.4
+keras>=2.2.5
+tensorflow-addons>=0.11.2
 mxnet==1.6.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
-torch==1.5.0+cpu
+torch==1.6.0
 torchvision==0.7.0
 catboost==0.24.1
 GPy==1.9.9
@@ -29,12 +29,21 @@ lightgbm==3.0.0
 xgboost==1.2.0
 kornia==0.4.0
 
+# Lingvo ASR dependencies
+# supported versions: (lingvo==0.6.4 with tensorflow-gpu==2.1.0)
+# note: due to conflicts with other TF1/2 version supported by ART, the dependencies are not installed by default
+#tensorflow-gpu==2.1.0
+#lingvo==0.6.4
+
 # other
 pytest==5.4.1
 pytest-pep8==1.0.6
 pytest-mock==3.3.1
+pytest-cov==2.10.1
 codecov==2.1.9
 requests==2.24.0
+
+
 
 # ART
 -e .

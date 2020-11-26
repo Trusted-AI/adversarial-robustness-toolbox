@@ -8,9 +8,9 @@ with open("README.md", "r") as fh:
 
 install_requires = [
     "numpy",
-    "scipy==1.4.1",
+    "scipy>=1.4.1",
     "matplotlib",
-    "scikit-learn==0.22.2",
+    "scikit-learn>=0.22.2",
     "six",
     "setuptools",
     "Pillow",
@@ -30,9 +30,9 @@ docs_require = [
     "sphinx-autodoc-typehints",
     "matplotlib",
     "numpy",
-    "scipy==1.4.1",
-    "six==1.13.0",
-    "scikit-learn==0.22.2",
+    "scipy>=1.4.1",
+    "six>=1.13.0",
+    "scikit-learn>=0.22.2",
     "Pillow>=6.0.0",
 ]
 
@@ -74,6 +74,7 @@ setup(
         "tensorflow": ["tensorflow", "tensorflow_addons", "h5py"],
         "pytorch": ["torch", "torchvision"],
         "xgboost": ["xgboost"],
+        "lingvo_asr": ["tensorflow-gpu==2.1.0", "lingvo==0.6.4"],
         "all": [
             "mxnet",
             "catboost",
