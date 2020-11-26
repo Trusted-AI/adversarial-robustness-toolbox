@@ -246,20 +246,13 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        mask = kwargs.get("mask")
-
-        # Check the mask
-        if mask is not None and mask.ndim > x.ndim:
-            raise ValueError("Mask shape must be broadcastable to input shape.")
+        mask = self._get_mask(x, **kwargs)
 
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)
 
         # Check whether random eps is enabled
         self._random_eps()
-
-        # Get the mask
-        mask = self._get_mask(x, **kwargs)
 
         if isinstance(self.estimator, ClassifierMixin):
             # Set up targets
