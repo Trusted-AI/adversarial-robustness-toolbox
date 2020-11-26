@@ -38,7 +38,7 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
 
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPytorch
-    from art.defences.preprocessor import AudioFilterPyTorch
+    from art.defences.preprocessor import LFilterPyTorch
 
     try:
         # Load data for testing
@@ -49,16 +49,22 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         x3 = expected_data[2]
 
         # Create signal data
-        x = np.array([np.array(x1 * 100), np.array(x2 * 100), np.array(x3 * 100)])
+        x = np.array(
+            [
+                np.array(x1 * 100, dtype=ART_NUMPY_DTYPE),
+                np.array(x2 * 100, dtype=ART_NUMPY_DTYPE),
+                np.array(x3 * 100, dtype=ART_NUMPY_DTYPE)
+            ]
+        )
 
         # Create labels
         y = np.array(["S", "I", "GD"])
 
         # Create DeepSpeech estimator with preprocessing
-        numerator_coef = np.array([0.0000001, 0.0000002, -0.0000001, -0.0000002], dtype=ART_NUMPY_DTYPE)
-        denumerator_coef = np.array([1.0, 0.0, 0.0, 0.0], dtype=ART_NUMPY_DTYPE)
-        audio_filter = AudioFilterPyTorch(
-            numerator_coef=numerator_coef, denumerator_coef=denumerator_coef, device_type=device_type
+        numerator_coef = np.array([0.0000001, 0.0000002, -0.0000001, -0.0000002])
+        denominator_coef = np.array([1.0, 0.0, 0.0, 0.0])
+        audio_filter = LFilterPyTorch(
+            numerator_coef=numerator_coef, denominator_coef=denominator_coef, device_type=device_type
         )
 
         speech_recognizer = PyTorchDeepSpeech(
@@ -72,8 +78,8 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         asr_attack = ImperceptibleASRPytorch(
             estimator=speech_recognizer,
             initial_eps=0.001,
-            max_iter_1st_stage=50,
-            max_iter_2nd_stage=50,
+            max_iter_1st_stage=5,
+            max_iter_2nd_stage=5,
             learning_rate_1st_stage=0.00001,
             learning_rate_2nd_stage=0.001,
             optimizer_1st_stage=torch.optim.SGD,
@@ -92,11 +98,11 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
             opt_level="O1",
         )
 
-        # First with preprocessing ====================
         # Test transcription output
         transcriptions_preprocessing = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
 
         expected_transcriptions = np.array(["", "", ""])
+
         assert (expected_transcriptions == transcriptions_preprocessing).all()
 
         # Generate attack
@@ -106,38 +112,6 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         assert x_adv_preprocessing[0].shape == x[0].shape
         assert x_adv_preprocessing[1].shape == x[1].shape
         assert x_adv_preprocessing[2].shape == x[2].shape
-
-        # Second without preprocessing ====================
-        # Remove preprocessing
-        speech_recognizer.preprocessing = []
-
-        # Test transcription output
-        transcriptions = speech_recognizer.predict(x, batch_size=2, transcription_output=True)
-
-        expected_transcriptions = np.array(["", "", ""])
-        assert (expected_transcriptions == transcriptions).all()
-
-        # Generate attack
-        x_adv = asr_attack.generate(x, y)
-
-        # Test shape
-        assert x_adv[0].shape == x[0].shape
-        assert x_adv[1].shape == x[1].shape
-        assert x_adv[2].shape == x[2].shape
-
-        # Test transcription adversarial output
-        # This test is commented by now because of the difference in the prediction function of the estimator
-        # in the eval() mode vs the train() mode. This test is already tested with the train() mode of the estimator
-        # and it passed. For the eval() mode, we need to test on much larger data sets, i.e., with increasing
-        # batch size to hundreds.
-
-        # adv_transcriptions = speech_recognizer.predict(x_adv, batch_size=2, transcription_output=True)
-        # assert (adv_transcriptions == y).all()
-
-        # Test attack with and without preprocessing
-        assert np.sum(np.abs(x_adv[0] - x_adv_preprocessing[0])) > 0
-        assert np.sum(np.abs(x_adv[1] - x_adv_preprocessing[1])) > 0
-        assert np.sum(np.abs(x_adv[2] - x_adv_preprocessing[2])) > 0
 
     except ARTTestException as e:
         art_warning(e)
