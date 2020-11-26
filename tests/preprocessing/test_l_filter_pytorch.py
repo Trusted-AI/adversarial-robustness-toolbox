@@ -23,6 +23,7 @@ import numpy as np
 import pytest
 
 from art.preprocessing import LFilterPyTorch
+from art.config import ART_NUMPY_DTYPE
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -44,7 +45,13 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         result_2 = expected_data[5]
 
         # Create signal data
-        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)])
+        x = np.array(
+            [
+                np.array(x1 * 2, dtype=ART_NUMPY_DTYPE),
+                np.array(x2 * 2, dtype=ART_NUMPY_DTYPE),
+                np.array(x3 * 2, dtype=ART_NUMPY_DTYPE)
+            ]
+        )
 
         # Filter params
         numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
@@ -75,7 +82,7 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
 def test_default(art_warning):
     try:
         # Small data for testing
-        x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]])
+        x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]], dtype=ART_NUMPY_DTYPE)
 
         # Create filter
         audio_filter = LFilterPyTorch()
