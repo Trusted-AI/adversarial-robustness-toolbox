@@ -18,20 +18,8 @@ then
     echo "#######################################################################"
 
     # TODO: merge defences/detector/poison tests to one line
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_spectral_signature_defense.py --mlFramework=$mlFramework --skip_travis=True --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_spectral_signature_defense.py tests"; fi
-
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_ground_truth_evaluator.py --mlFramework=$mlFramework --skip_travis=True --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_ground_truth_evaluator.py tests"; fi
-
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_clustering_analyzer.py --mlFramework=$mlFramework --skip_travis=True --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_clustering_analyzer.py tests"; fi
-
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_roni.py --mlFramework=$mlFramework --skip_travis=True --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_roni.py tests"; fi
-
-    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison/test_provenance_defence.py --mlFramework=$mlFramework --skip_travis=True --durations=0
-    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison/test_provenance_defence.py tests"; fi
+    pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison --mlFramework=$mlFramework --skip_travis=True --durations=0
+    if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison tests"; fi
 
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/preprocessor --mlFramework=$mlFramework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/preprocessor tests"; fi
@@ -131,8 +119,7 @@ else
                          "tests/defences/test_thermometer_encoding.py" \
                          "tests/defences/test_variance_minimization.py" \
                          "tests/defences/detector/evasion/subsetscanning/test_detector.py" \
-                         "tests/defences/detector/evasion/test_detector.py" \
-                         "tests/defences/detector/poison/test_activation_defence.py" )
+                         "tests/defences/detector/evasion/test_detector.py" )
 
     declare -a metrics=("tests/metrics/test_gradient_check.py" \
                         "tests/metrics/test_metrics.py" \
