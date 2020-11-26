@@ -804,13 +804,6 @@ def skip_by_module(request):
     if request.node.get_closest_marker("skipModule"):
         module_to_skip_list = list(request.node.get_closest_marker("skipModule").args)
 
-        if "torchaudio" in module_to_skip_list:
-            torchaudio_spec = importlib.util.find_spec("torchaudio")
-            torchaudio_found = torchaudio_spec is not None
-
-            if not torchaudio_found:
-                pytest.skip("Skip unittests if the `torchaudio` module is not found.")
-
         if "deepspeech_pytorch" in module_to_skip_list:
             deepspeech_pytorch_spec = importlib.util.find_spec("deepspeech_pytorch")
             deepspeech_pytorch_found = deepspeech_pytorch_spec is not None
