@@ -25,9 +25,7 @@ import torch.nn as nn
 import torch.optim as optim
 from sklearn.tree import DecisionTreeClassifier
 
-from art.attacks.inference.attribute_inference.black_box import (
-    AttributeInferenceBlackBox, AttributeInferenceBlackBoxOneHot
-)
+from art.attacks.inference.attribute_inference.black_box import AttributeInferenceBlackBox
 from art.attacks.inference.attribute_inference.white_box_decision_tree import AttributeInferenceWhiteBoxDecisionTree
 from art.attacks.inference.attribute_inference.white_box_lifestyle_decision_tree import (
     AttributeInferenceWhiteBoxLifestyleDecisionTree,
@@ -192,8 +190,8 @@ def test_black_box_one_hot(art_warning, get_iris_dataset):
         tree.fit(x_train, y_train)
         classifier = ScikitlearnDecisionTreeClassifier(tree)
 
-        attack = AttributeInferenceBlackBoxOneHot(classifier,
-                                                  attack_feature_one_hot=slice(attack_feature, attack_feature+3))
+        attack = AttributeInferenceBlackBox(classifier,
+                                                  attack_feature=slice(attack_feature, attack_feature+3))
         # get original model's predictions
         x_train_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_train)]).reshape(-1, 1)
         x_test_predictions = np.array([np.argmax(arr) for arr in classifier.predict(x_test)]).reshape(-1, 1)
@@ -265,6 +263,28 @@ def test_white_box_lifestyle(art_warning, decision_tree_estimator, get_iris_data
         assert np.sum(train_diff) / len(inferred_train) == pytest.approx(0.3357, abs=0.03)
         assert np.sum(test_diff) / len(inferred_test) == pytest.approx(0.3149, abs=0.03)
         # assert np.sum(train_diff) / len(inferred_train) < np.sum(test_diff) / len(inferred_test)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator_for_attack(AttributeInferenceBlackBox)
+        (x_train, y_train), (x_test, y_test) = get_iris_dataset
+
+        with pytest.raises(ValueError):
+            AttributeInferenceBlackBox(classifier, attack_feature="a")
+        with pytest.raises(ValueError):
+            AttributeInferenceBlackBox(classifier, attack_feature=-3)
+        attack = AttributeInferenceBlackBox(classifier)
+        with pytest.raises(ValueError):
+            attack.fit(np.delete(x_train, 1, 1))
+        with pytest.raises(ValueError):
+            attack.fit(x_train, 8)
+        with pytest.raises(ValueError):
+            attack.infer(x_train, y_test)
+        with pytest.raises(ValueError):
+            attack.infer(x_train, y_train)
     except ARTTestException as e:
         art_warning(e)
 
