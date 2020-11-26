@@ -277,7 +277,7 @@ class PreprocessorTensorFlowV2(Preprocessor):
     def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        def get_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
+        def get_gradient(x: np.ndarray, grad: np.ndarray) -> np.ndarray:
             """
             Helper function for estimate_gradient
             """
