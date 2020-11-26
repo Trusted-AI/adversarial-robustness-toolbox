@@ -75,7 +75,7 @@ class BoundaryAttack(EvasionAttack):
         num_trial: int = 25,
         sample_size: int = 20,
         init_size: int = 100,
-        min_epsilon: float = None,
+        min_epsilon: Optional[float] = None,
         verbose: bool = True,
     ) -> None:
         """
