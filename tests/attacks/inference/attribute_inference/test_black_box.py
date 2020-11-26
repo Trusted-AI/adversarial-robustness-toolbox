@@ -275,11 +275,12 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
             AttributeInferenceBlackBox(classifier, attack_feature="a")
         with pytest.raises(ValueError):
             AttributeInferenceBlackBox(classifier, attack_feature=-3)
+        attack = AttributeInferenceBlackBox(classifier, attack_feature=8)
+        with pytest.raises(ValueError):
+            attack.fit(x_train)
         attack = AttributeInferenceBlackBox(classifier)
         with pytest.raises(ValueError):
             attack.fit(np.delete(x_train, 1, 1))
-        with pytest.raises(ValueError):
-            attack.fit(x_train, 8)
         with pytest.raises(ValueError):
             attack.infer(x_train, y_test)
         with pytest.raises(ValueError):
