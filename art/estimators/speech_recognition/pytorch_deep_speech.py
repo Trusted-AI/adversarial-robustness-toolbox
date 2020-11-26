@@ -636,7 +636,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             else:
                 target = list(filter(None, [label_map.get(letter) for letter in list(y[i])]))
 
-            # Push the sequence to device or apply preprocessing defences
+            # Push the sequence to device 
             if not tensor_input:
                 x[i] = x[i].astype(config.ART_NUMPY_DTYPE)
                 x[i] = torch.tensor(x[i]).to(self._device)
