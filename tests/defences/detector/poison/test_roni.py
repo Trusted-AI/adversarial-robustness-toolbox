@@ -35,7 +35,7 @@ NB_TRAIN, NB_POISON, NB_VALID, NB_TRUSTED = 40, 5, 40, 15
 kernel = "linear"
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def get_roni():
     (x_train, y_train), (x_test, y_test), min_, max_ = load_mnist()
     y_train = np.argmax(y_train, axis=1)
@@ -116,6 +116,7 @@ def get_roni():
     return mnist, classifier, defense_cal, defence_no_cal
 
 
+@pytest.mark.only_with_platform("scikitlearn")
 def test_wrong_parameters(get_roni):
     mnist, classifier, defense_cal, defence_no_cal = get_roni
     (all_data, _), (_, y_test), (_, _), (_, _), (_, _) = mnist
@@ -129,6 +130,7 @@ def test_wrong_parameters(get_roni):
         defense_cal.set_params(x_train=all_data, y_train=y_test)
 
 
+@pytest.mark.only_with_platform("scikitlearn")
 def test_detect_poison(get_roni):
     mnist, classifier, defense_cal, defence_no_cal = get_roni
     _, clean_trust = defense_cal.detect_poison()
@@ -145,7 +147,8 @@ def test_detect_poison(get_roni):
     assert pc_tp_no_cal >= 0.7
 
 
-def test_evaluate_defense():
+@pytest.mark.only_with_platform("scikitlearn")
+def test_evaluate_defense(get_roni):
     mnist, classifier, defense_cal, defence_no_cal = get_roni
     real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
     defence_no_cal.detect_poison()
