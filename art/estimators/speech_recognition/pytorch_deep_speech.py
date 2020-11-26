@@ -292,18 +292,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         self._model.eval()
 
         # Apply preprocessing
-        x_preprocessed = []
-
-        for i in range(len(x_)):
-            x_preprocessed_i, _ = self._apply_preprocessing(
-                x=np.array([x_[i]], dtype=config.ART_NUMPY_DTYPE), y=None, fit=False
-            )
-            x_preprocessed.append(x_preprocessed_i[0])
-
-        x_preprocessed = np.array(x_preprocessed)
+        x_preprocessed, _ = self._apply_preprocessing(x_, y=None, fit=False)
 
         # Transform x into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(x=x_preprocessed)
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(x=x_preprocessed)
 
         # Compute real input sizes
         input_sizes = input_rates.mul_(inputs.size()[-1]).int()
@@ -387,21 +379,10 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         self._model.train()
 
         # Apply preprocessing
-        x_preprocessed = []
-        y_preprocessed = []
-
-        for i in range(len(x_)):
-            x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
-                x=np.array([x_[i]], dtype=config.ART_NUMPY_DTYPE), y=np.array([y[i]]), fit=False
-            )
-            x_preprocessed.append(x_preprocessed_i[0])
-            y_preprocessed.append(y_preprocessed_i[0])
-
-        x_preprocessed = np.array(x_preprocessed)
-        y_preprocessed = np.array(y_preprocessed)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x_, y, fit=False)
 
         # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
             x=x_preprocessed, y=y_preprocessed, compute_gradient=True
         )
 
@@ -476,18 +457,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             raise ValueError("An optimizer is required to train the model, but none was provided.")
 
         # Apply preprocessing
-        x_preprocessed = []
-        y_preprocessed = []
-
-        for i in range(len(x_)):
-            x_preprocessed_i, y_preprocessed_i = self._apply_preprocessing(
-                x=np.array([x_[i]], dtype=config.ART_NUMPY_DTYPE), y=np.array([y[i]]), fit=True
-            )
-            x_preprocessed.append(x_preprocessed_i[0])
-            y_preprocessed.append(y_preprocessed_i[0])
-
-        x_preprocessed = np.array(x_preprocessed)
-        y_preprocessed = np.array(y_preprocessed)
+        x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=True)
 
         # Train with batch processing
         num_batch = int(np.ceil(len(x_preprocessed) / float(batch_size)))
@@ -515,7 +485,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 o_batch = y_preprocessed[ind[begin:end]]
 
                 # Transform data into the model input space
-                inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(
+                inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
                     x=i_batch, y=o_batch, compute_gradient=False
                 )
 
@@ -546,7 +516,44 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
                 self._optimizer.step()
 
-    def transform_model_input(
+    def preprocess_transform_model_input(
+        self, x: "torch.Tensor", y: np.ndarray, real_lengths: np.ndarray,
+    ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
+        """
+        Apply preprocessing and then transform the user input space into the model input space. This function is used
+        by the ASR attack to attack into the PytorchDeepSpeech estimator whose defences are called with the
+        `_apply_preprocessing` function.
+
+        :param x: Samples of shape (nb_samples, seq_length).
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param real_lengths: Real lengths of original sequences.
+        :return: A tuple of inputs and targets in the model space with the original index
+                 `(inputs, targets, input_percentages, target_sizes, batch_idx)`, where:
+                 - inputs: model inputs of shape (nb_samples, nb_frequencies, seq_length).
+                 - targets: ground truth targets of shape (sum over nb_samples of real seq_lengths).
+                 - input_percentages: percentages of real inputs in inputs.
+                 - target_sizes: list of real seq_lengths.
+                 - batch_idx: original index of inputs.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # Apply preprocessing
+        x_batch = []
+        for i in range(len(x)):
+            preprocessed_x_i, _ = self._apply_preprocessing(x=x[i], y=None, no_grad=False)
+            x_batch.append(preprocessed_x_i)
+
+        x = torch.stack(x_batch)
+
+        # Transform the input space
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
+            x=x, y=y, compute_gradient=False, tensor_input=True, real_lengths=real_lengths,
+        )
+
+        return inputs, targets, input_rates, target_sizes, batch_idx
+
+    def _transform_model_input(
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         y: Optional[np.ndarray] = None,
@@ -608,15 +615,6 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Create a label map
         label_map = dict([(self._model.labels[i], i) for i in range(len(self._model.labels))])
-
-        # Apply preprocessing if input is tensor
-        if tensor_input:
-            x_batch = []
-            for i in range(len(x)):
-                preprocessed_x_i, _ = self._apply_preprocessing(x=x[i], y=None, no_grad=False)
-                x_batch.append(preprocessed_x_i)
-
-            x = torch.stack(x_batch)
 
         # We must process each sequence separately due to the diversity of their length
         batch = []
