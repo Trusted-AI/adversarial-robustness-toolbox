@@ -31,7 +31,7 @@ NB_TEST = 10
 
 
 @pytest.mark.only_with_platform("keras")
-def test_mitigate(get_default_mnist_subset, image_dl_estimator, types):
+def test_mitigate(get_default_mnist_subset, image_dl_estimator):
     (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
     krc, _ = image_dl_estimator()
 
