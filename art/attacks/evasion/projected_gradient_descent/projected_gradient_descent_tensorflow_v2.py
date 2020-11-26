@@ -32,6 +32,8 @@ import numpy as np
 from tqdm import trange, tqdm
 
 from art.config import ART_NUMPY_DTYPE
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentCommon,
 )
@@ -52,6 +54,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     | Paper link: https://arxiv.org/abs/1706.06083
     """
+
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
 
     def __init__(
         self,
