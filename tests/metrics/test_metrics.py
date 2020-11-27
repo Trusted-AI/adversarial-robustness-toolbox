@@ -92,6 +92,7 @@ class TestMetrics(unittest.TestCase):
     @staticmethod
     def _cnn_mnist_k(input_shape):
         import tensorflow as tf
+
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
             is_tf23_keras24 = True

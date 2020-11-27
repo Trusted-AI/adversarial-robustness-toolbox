@@ -145,9 +145,7 @@ class TestImperceptibleASR:
             test_psd_maxium = np.ones((test_delta.shape[0], 28))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
-            imperceptible_asr = ImperceptibleASR(
-                estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(),
-            )
+            imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(),)
             feed_dict = {
                 imperceptible_asr._delta: test_delta,
                 imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maxium,
@@ -172,9 +170,7 @@ class TestImperceptibleASR:
             test_psd_maxium = np.ones((test_delta.shape[0], 28))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
-            imperceptible_asr = ImperceptibleASR(
-                estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(),
-            )
+            imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(),)
             feed_dict = {
                 imperceptible_asr._delta: test_delta,
                 imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maxium,
@@ -199,9 +195,7 @@ class TestImperceptibleASR:
             test_psd_maxium = np.ones((test_delta.shape[0], 28))
 
             masker = PsychoacousticMasker()
-            imperceptible_asr = ImperceptibleASR(
-                estimator=asr_dummy_estimator(), masker=masker,
-            )
+            imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=masker,)
             feed_dict = {
                 imperceptible_asr._delta: test_delta,
                 imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maxium,
