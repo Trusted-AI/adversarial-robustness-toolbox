@@ -46,6 +46,7 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
         member. Otherwise, it is not a member.
     """
 
+    attack_params = InferenceAttack.attack_params
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(self, classifier: "CLASSIFIER_TYPE"):
@@ -71,10 +72,9 @@ class MembershipInferenceBlackBoxRuleBased(InferenceAttack):
             raise ValueError("Shape of x does not match input_shape of classifier")
 
         y = check_and_transform_label_format(y, len(np.unique(y)), return_one_hot=True)
-        y = np.array([np.argmax(arr) for arr in y]).reshape(-1, 1)
         if y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
 
         # get model's predictions for x
-        predictions = np.array([np.argmax(arr) for arr in self.estimator.predict(x)]).reshape(-1, 1)
-        return np.asarray([1 if p == y[index] else 0 for index, p in enumerate(predictions)])
+        y_pred = self.estimator.predict(x=x)
+        return (np.argmax(y, axis=1) == np.argmax(y_pred, axis=1)).astype(np.int)

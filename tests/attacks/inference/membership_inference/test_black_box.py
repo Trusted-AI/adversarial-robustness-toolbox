@@ -23,7 +23,6 @@ import pytest
 import keras
 
 from art.attacks.inference.membership_inference.black_box import MembershipInferenceBlackBox
-from art.attacks.inference.membership_inference.black_box_rule_based import MembershipInferenceBlackBoxRuleBased
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
@@ -35,24 +34,6 @@ logger = logging.getLogger(__name__)
 attack_train_ratio = 0.5
 num_classes_iris = 3
 num_classes_mnist = 10
-
-
-def test_rule_based_image(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack):
-    try:
-        classifier = image_dl_estimator_for_attack(MembershipInferenceBlackBoxRuleBased)
-        attack = MembershipInferenceBlackBoxRuleBased(classifier)
-        backend_check_membership_accuracy_no_fit(attack, get_default_mnist_subset, 0.8)
-    except ARTTestException as e:
-        art_warning(e)
-
-
-def test_rule_based_tabular(art_warning, get_iris_dataset, tabular_dl_estimator_for_attack):
-    try:
-        classifier = tabular_dl_estimator_for_attack(MembershipInferenceBlackBoxRuleBased)
-        attack = MembershipInferenceBlackBoxRuleBased(classifier)
-        backend_check_membership_accuracy_no_fit(attack, get_iris_dataset, 0.06)
-    except ARTTestException as e:
-        art_warning(e)
 
 
 def test_black_box_image(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack):
@@ -169,7 +150,6 @@ def test_errors(art_warning, tabular_dl_estimator_for_attack, get_iris_dataset):
 
 def test_classifier_type_check_fail(art_warning):
     try:
-        backend_test_classifier_type_check_fail(MembershipInferenceBlackBoxRuleBased, [BaseEstimator, ClassifierMixin])
         backend_test_classifier_type_check_fail(MembershipInferenceBlackBox, [BaseEstimator, ClassifierMixin])
     except ARTTestException as e:
         art_warning(e)
