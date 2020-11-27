@@ -254,10 +254,12 @@ class ImperceptibleASR(EvasionAttack):
         if x.ndim != 1:
             alpha = np.expand_dims(alpha, axis=-1)
 
-        perturbation = x_adversarial - x
         x_perturbed = x_adversarial.copy()
 
         for i in range(self.max_iter_2):
+            # get perturbation
+            perturbation = x_perturbed - x
+
             # get loss gradients of both losses
             gradients_net = self.estimator.loss_gradient(x_perturbed, y, batch_mode=True)
             gradients_theta, loss_theta = self._loss_gradient_masking_threshold(perturbation, x)
