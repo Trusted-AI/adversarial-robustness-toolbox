@@ -29,6 +29,7 @@ import numpy as np
 from tqdm import tqdm
 
 from art.preprocessing.preprocessing import PreprocessorPyTorch
+from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     import torch
@@ -74,8 +75,8 @@ class LFilterPyTorch(PreprocessorPyTorch):
 
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
 
-        self.numerator_coef = numerator_coef.astype(np.float32)
-        self.denominator_coef = denominator_coef.astype(np.float32)
+        self.numerator_coef = numerator_coef.astype(ART_NUMPY_DTYPE)
+        self.denominator_coef = denominator_coef.astype(ART_NUMPY_DTYPE)
         self.clip_values = clip_values
         self.verbose = verbose
         self._check_params()
@@ -165,3 +166,8 @@ class LFilterPyTorch(PreprocessorPyTorch):
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")
+
+        if len(self.denominator_coef) != len(self.numerator_coef):
+            raise ValueError(
+                "The denominator coefficient vector and the numerator coefficient vector must have the same length."
+            )
