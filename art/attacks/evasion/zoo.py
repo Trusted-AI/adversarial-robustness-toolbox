@@ -344,7 +344,10 @@ class ZooAttack(EvasionAttack):
         else:
             x_orig = x_batch
             self._reset_adam(np.prod(self.estimator.input_shape).item())
-            self._current_noise.fill(0)
+            if x_batch.shape == self._current_noise.shape:
+                self._current_noise.fill(0)
+            else:
+                self._current_noise = np.zeros(x_batch.shape, dtype=ART_NUMPY_DTYPE)
             x_adv = x_orig.copy()
 
         # Initialize best distortions, best changed labels and best attacks
@@ -537,7 +540,10 @@ class ZooAttack(EvasionAttack):
             # Reset variables to original size and value
             if dims == x.shape:
                 resized_x = x
-                self._current_noise.fill(0)
+                if x.shape == self._current_noise.shape:
+                    self._current_noise.fill(0)
+                else:
+                    self._current_noise = np.zeros(x.shape, dtype=ART_NUMPY_DTYPE)
             else:
                 resized_x = zoom(x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3],),)
                 self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)

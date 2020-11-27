@@ -194,7 +194,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         else:
             input_is_tensor = False
 
-        if self.all_framework_preprocessing:
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             # Convert np arrays to torch tensors.
             if not input_is_tensor:
                 x = tf.convert_to_tensor(x)
@@ -215,8 +215,9 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 if y is not None:
                     y = y.numpy()
 
-        elif len(self.preprocessing) in [1, 2] and isinstance(
-            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
+        elif len(self.preprocessing) == 1 or (
+            len(self.preprocessing) == 2
+            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
         ):
             # Compatible with non-TensorFlow defences if no chaining.
             for preprocess in self.preprocessing:
@@ -256,7 +257,12 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         if not self.preprocessing:
             return gradients
 
-        if self.all_framework_preprocessing:
+        if isinstance(x, tf.Tensor):
+            input_is_tensor = True
+        else:
+            input_is_tensor = False
+
+        if self.all_framework_preprocessing and not (not input_is_tensor and x.dtype == np.object):
             with tf.GradientTape() as tape:
                 # Convert np arrays to TensorFlow tensors.
                 x = tf.convert_to_tensor(x, dtype=config.ART_NUMPY_DTYPE)
@@ -281,8 +287,9 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
 
-        elif len(self.preprocessing) in [1, 2] and isinstance(
-            self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
+        elif len(self.preprocessing) == 1 or (
+                len(self.preprocessing) == 2
+                and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
         ):
             # Compatible with non-TensorFlow defences if no chaining.
             defence = self.preprocessing[0]
