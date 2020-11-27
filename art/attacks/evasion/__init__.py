@@ -12,6 +12,7 @@ from art.attacks.evasion.elastic_net import ElasticNet
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.attacks.evasion.hclu import HighConfidenceLowUncertainty
 from art.attacks.evasion.hop_skip_jump import HopSkipJump
+from art.attacks.evasion.imperceptible_asr.imperceptible_asr import ImperceptibleASR
 from art.attacks.evasion.iterative_method import BasicIterativeMethod
 from art.attacks.evasion.newtonfool import NewtonFool
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
@@ -44,3 +45,4 @@ from art.attacks.evasion.simba import SimBA
 from art.attacks.evasion.shapeshifter import ShapeShifter
 from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPytorch
 from art.attacks.evasion.brendel_bethge import BrendelBethgeAttack
+from art.attacks.evasion.dpatch_robust import RobustDPatch

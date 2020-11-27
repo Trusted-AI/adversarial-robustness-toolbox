@@ -32,10 +32,12 @@ import numpy as np
 from tqdm import trange, tqdm
 
 from art.config import ART_NUMPY_DTYPE
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentCommon,
 )
-from art.utils import compute_success, random_sphere
+from art.utils import compute_success, random_sphere, compute_success_array
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -52,6 +54,8 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
     | Paper link: https://arxiv.org/abs/1706.06083
     """
+
+    _estimator_requirements = (BaseEstimator, LossGradientsMixin, ClassifierMixin)
 
     def __init__(
         self,
@@ -119,9 +123,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        mask = kwargs.get("mask")
-        if mask is not None and mask.ndim > x.ndim:
-            raise ValueError("Mask shape must be broadcastable to input shape.")
+        mask = self._get_mask(x, **kwargs)
 
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)
@@ -138,7 +140,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
             if len(mask.shape) == len(x.shape):
                 dataset = tf.data.Dataset.from_tensor_slices(
-                    (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE), mask.astype(ART_NUMPY_DTYPE),)
+                    (
+                        x.astype(ART_NUMPY_DTYPE),
+                        targets.astype(ART_NUMPY_DTYPE),
+                        mask.astype(ART_NUMPY_DTYPE),
+                    )
                 ).batch(self.batch_size, drop_remainder=False)
 
             else:
@@ -152,64 +158,68 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         else:
             dataset = tf.data.Dataset.from_tensor_slices(
-                (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE),)
+                (
+                    x.astype(ART_NUMPY_DTYPE),
+                    targets.astype(ART_NUMPY_DTYPE),
+                )
             ).batch(self.batch_size, drop_remainder=False)
 
         # Start to compute adversarial examples
-        adv_x_best = None
-        rate_best = None
+        adv_x = x.astype(ART_NUMPY_DTYPE)
+        data_loader = iter(dataset)
 
-        for _ in trange(max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose):
-            adv_x = x.astype(ART_NUMPY_DTYPE)
-            data_loader = iter(dataset)
+        # Compute perturbation with batching
+        for (batch_id, batch_all) in enumerate(
+            tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
+        ):
+            if mask is not None:
+                (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
+            else:
+                (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
 
-            # Compute perturbation with batching
-            for (batch_id, batch_all) in enumerate(
-                tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
-            ):
-                if mask is not None:
-                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
-                else:
-                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
-                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-
-                # Compute batch_eps and batch_eps_step
-                if isinstance(self.eps, np.ndarray):
-                    if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
-                        batch_eps = self.eps[batch_index_1:batch_index_2]
-                        batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
-
-                    else:
-                        batch_eps = self.eps
-                        batch_eps_step = self.eps_step
+            # Compute batch_eps and batch_eps_step
+            if isinstance(self.eps, np.ndarray):
+                if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                    batch_eps = self.eps[batch_index_1:batch_index_2]
+                    batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
 
                 else:
                     batch_eps = self.eps
                     batch_eps_step = self.eps_step
 
-                adv_x[batch_index_1:batch_index_2] = self._generate_batch(
-                    x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
-                )
-
-            if self.num_random_init > 1:
-                rate = 100 * compute_success(
-                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size
-                )
-                if rate_best is None or rate > rate_best or adv_x_best is None:
-                    rate_best = rate
-                    adv_x_best = adv_x
             else:
-                adv_x_best = adv_x
+                batch_eps = self.eps
+                batch_eps_step = self.eps_step
+
+            for rand_init_num in range(max(1, self.num_random_init)):
+                if rand_init_num == 0:
+                    # first iteration: use the adversarial examples as they are the only ones we have now
+                    adv_x[batch_index_1:batch_index_2] = self._generate_batch(
+                        x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                    )
+                else:
+                    adversarial_batch = self._generate_batch(
+                        x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                    )
+                    attack_success = compute_success_array(
+                        self.estimator,
+                        batch,
+                        batch_labels,
+                        adversarial_batch,
+                        self.targeted,
+                        batch_size=self.batch_size,
+                    )
+                    # return the successful adversarial examples
+                    adv_x[batch_index_1:batch_index_2][attack_success] = adversarial_batch[attack_success]
 
         logger.info(
             "Success rate of attack: %.2f%%",
-            rate_best
-            if rate_best is not None
-            else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size),
         )
 
-        return adv_x_best
+        return adv_x
 
     def _generate_batch(
         self,
@@ -224,23 +234,23 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         :param x: An array with the original inputs.
         :param targets: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)`.
-<<<<<<< HEAD
         :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
                      broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
                      perturbed.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
-=======
-        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
-                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
-                     features for which the mask is zero will not be adversarially perturbed.
->>>>>>> origin/dev_1.5.0
         :return: Adversarial examples.
         """
         adv_x = x
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_tf(
-                adv_x, x, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x,
+                x,
+                targets,
+                mask,
+                eps,
+                eps_step,
+                self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x
@@ -269,6 +279,10 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
         )
 
+        # Apply mask
+        if mask is not None:
+            grad = tf.where(mask == 0.0, 0.0, grad)
+
         # Apply norm bound
         if self.norm == np.inf:
             grad = tf.sign(grad)
@@ -285,10 +299,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         assert x.shape == grad.shape
 
-        if mask is None:
-            return grad
-        else:
-            return grad * mask
+        return grad
 
     def _apply_perturbation(
         self, x: "tf.Tensor", perturbation: "tf.Tensor", eps_step: Union[int, float, np.ndarray]
