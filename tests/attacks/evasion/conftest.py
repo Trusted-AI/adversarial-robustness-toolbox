@@ -69,7 +69,7 @@ def audio_batch_padded():
 def asr_dummy_estimator(framework):
     def _asr_dummy_estimator(**kwargs):
         asr_dummy = None
-        if framework == "tensorflow2":
+        if framework == "tensorflow2v1":
 
             class TensorFlowV2ASRDummy(TensorFlowV2Estimator, SpeechRecognizerMixin):
                 def get_activations():
