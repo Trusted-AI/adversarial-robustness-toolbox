@@ -54,13 +54,15 @@ def backend_check_membership_accuracy(attack, dataset, attack_train_ratio, appro
     attack_test_size = int(len(x_test) * attack_train_ratio)
 
     # infer attacked feature on remainder of data
-    kwargs = {"targeted": False,
-              "norm": 2,
-              "max_iter": 2,
-              "max_eval": 4,
-              "init_eval": 1,
-              "init_size": 1,
-              "verbose": False}
+    kwargs = {
+        "targeted": False,
+        "norm": 2,
+        "max_iter": 2,
+        "max_eval": 4,
+        "init_eval": 1,
+        "init_size": 1,
+        "verbose": False,
+    }
     inferred_train = attack.infer(x_train[attack_train_size:], y_train[attack_train_size:], **kwargs)
     inferred_test = attack.infer(x_test[attack_test_size:], y_test[attack_test_size:], **kwargs)
 
