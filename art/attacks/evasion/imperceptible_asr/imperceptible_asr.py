@@ -494,8 +494,8 @@ class ImperceptibleASR(EvasionAttack):
 
         if not isinstance(self.max_iter_2, int):
             raise ValueError("The maximum number of iterations for stage 2 must be of type int.")
-        if self.max_iter_2 <= 0:
-            raise ValueError("The maximum number of iterations for stage 2 must be greater than 0.")
+        if self.max_iter_2 < 0:
+            raise ValueError("The maximum number of iterations for stage 2 must be non-negative.")
 
         if not isinstance(self.learning_rate_1, float):
             raise ValueError("The learning rate for stage 1 must be of type float.")
