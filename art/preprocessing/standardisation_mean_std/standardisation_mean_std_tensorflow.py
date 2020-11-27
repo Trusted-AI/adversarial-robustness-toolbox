@@ -24,7 +24,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
-from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
