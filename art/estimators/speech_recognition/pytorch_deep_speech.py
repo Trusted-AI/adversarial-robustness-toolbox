@@ -295,7 +295,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         x_preprocessed, _ = self._apply_preprocessing(x_, y=None, fit=False)
 
         # Transform x into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(x=x_preprocessed)
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(x=x_preprocessed)
 
         # Compute real input sizes
         input_sizes = input_rates.mul_(inputs.size()[-1]).int()
@@ -323,7 +323,8 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         # Aggregate results
         result_outputs = np.zeros(
-            (x_preprocessed.shape[0], result_output_sizes.max(), results[0].shape[-1]), dtype=np.float32
+            shape=(x_preprocessed.shape[0], result_output_sizes.max(), results[0].shape[-1]),
+            dtype=config.ART_NUMPY_DTYPE,
         )
 
         for m in range(num_batch):
@@ -345,7 +346,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         # Check if users want transcription outputs
         transcription_output = kwargs.get("transcription_output")
 
-        if transcription_output is False:
+        if transcription_output is None or transcription_output is False:
             return result_outputs, result_output_sizes
 
         # Now users want transcription outputs
@@ -381,7 +382,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x_, y, fit=False)
 
         # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
             x=x_preprocessed, y=y_preprocessed, compute_gradient=True
         )
 
@@ -446,6 +447,9 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
         from warpctc_pytorch import CTCLoss
 
+        x_ = np.empty(len(x), dtype=object)
+        x_[:] = list(x)
+
         # Put the model in the training mode
         self._model.train()
 
@@ -481,7 +485,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
                 o_batch = y_preprocessed[ind[begin:end]]
 
                 # Transform data into the model input space
-                inputs, targets, input_rates, target_sizes, batch_idx = self.transform_model_input(
+                inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
                     x=i_batch, y=o_batch, compute_gradient=False
                 )
 
@@ -512,7 +516,44 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
 
                 self._optimizer.step()
 
-    def transform_model_input(
+    def preprocess_transform_model_input(
+        self, x: "torch.Tensor", y: np.ndarray, real_lengths: np.ndarray,
+    ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
+        """
+        Apply preprocessing and then transform the user input space into the model input space. This function is used
+        by the ASR attack to attack into the PytorchDeepSpeech estimator whose defences are called with the
+        `_apply_preprocessing` function.
+
+        :param x: Samples of shape (nb_samples, seq_length).
+        :param y: Target values of shape (nb_samples). Each sample in `y` is a string and it may possess different
+                  lengths. A possible example of `y` could be: `y = np.array(['SIXTY ONE', 'HELLO'])`.
+        :param real_lengths: Real lengths of original sequences.
+        :return: A tuple of inputs and targets in the model space with the original index
+                 `(inputs, targets, input_percentages, target_sizes, batch_idx)`, where:
+                 - inputs: model inputs of shape (nb_samples, nb_frequencies, seq_length).
+                 - targets: ground truth targets of shape (sum over nb_samples of real seq_lengths).
+                 - input_percentages: percentages of real inputs in inputs.
+                 - target_sizes: list of real seq_lengths.
+                 - batch_idx: original index of inputs.
+        """
+        import torch  # lgtm [py/repeated-import]
+
+        # Apply preprocessing
+        x_batch = []
+        for i in range(len(x)):
+            preprocessed_x_i, _ = self._apply_preprocessing(x=x[i], y=None, no_grad=False)
+            x_batch.append(preprocessed_x_i)
+
+        x = torch.stack(x_batch)
+
+        # Transform the input space
+        inputs, targets, input_rates, target_sizes, batch_idx = self._transform_model_input(
+            x=x, y=y, compute_gradient=False, tensor_input=True, real_lengths=real_lengths,
+        )
+
+        return inputs, targets, input_rates, target_sizes, batch_idx
+
+    def _transform_model_input(
         self,
         x: Union[np.ndarray, "torch.Tensor"],
         y: Optional[np.ndarray] = None,
