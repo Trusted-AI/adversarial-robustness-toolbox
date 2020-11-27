@@ -96,10 +96,14 @@ class EOTImageRotationTensorFlowV2(PreprocessorTensorFlowV2):
                         t=x_preprocess_i, clip_value_min=-self.angles_range, clip_value_max=self.angles_range, name=None
                     )
                 x_preprocess_list.append(x_preprocess_i)
-                y_preprocess_list.append(y[i_image])
+                if y is not None:
+                    y_preprocess_list.append(y[i_image])
 
         x_preprocess = tf.stack(x_preprocess_list, axis=0, name=None)
-        y_preprocess = tf.stack(y_preprocess_list, axis=0, name=None)
+        if y is None:
+            y_preprocess = y
+        else:
+            y_preprocess = tf.stack(y_preprocess_list, axis=0, name=None)
 
         return x_preprocess, y_preprocess
 
