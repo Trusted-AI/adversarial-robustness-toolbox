@@ -239,9 +239,6 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
                      perturbed.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
-        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
-                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
-                     features for which the mask is zero will not be adversarially perturbed.
         :return: Adversarial examples.
         """
         adv_x = x
