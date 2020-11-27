@@ -388,7 +388,7 @@ class ImperceptibleASR(EvasionAttack):
 
         See also `ImperceptibleASR._loss_gradient_masking_threshold_tf`.
         """
-        import torch
+        import torch  # lgtm [py/import-and-import-from]
 
         # define tensors
         perturbation_torch = torch.from_numpy(perturbation).to(self.estimator._device)
@@ -453,7 +453,7 @@ class ImperceptibleASR(EvasionAttack):
 
         See also `ImperceptibleASR._approximate_power_spectral_density_tf`.
         """
-        import torch
+        import torch  # lgtm [py/import-and-import-from]
 
         # compute short-time Fourier transform (STFT)
         stft_matrix = torch.stft(
