@@ -37,7 +37,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent_numpy import (
     ProjectedGradientDescentCommon,
 )
-from art.utils import compute_success, random_sphere
+from art.utils import compute_success, random_sphere, compute_success_array
 
 if TYPE_CHECKING:
     import torch
@@ -154,7 +154,8 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         else:
             dataset = torch.utils.data.TensorDataset(
-                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)), torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(x.astype(ART_NUMPY_DTYPE)),
+                torch.from_numpy(targets.astype(ART_NUMPY_DTYPE)),
             )
 
         data_loader = torch.utils.data.DataLoader(
@@ -162,59 +163,61 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         )
 
         # Start to compute adversarial examples
-        adv_x_best = None
-        rate_best = None
+        adv_x = x.astype(ART_NUMPY_DTYPE)
 
-        for _ in trange(max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose):
-            adv_x = x.astype(ART_NUMPY_DTYPE)
+        # Compute perturbation with batching
+        for (batch_id, batch_all) in enumerate(
+            tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
+        ):
+            if mask is not None:
+                (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
+            else:
+                (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
 
-            # Compute perturbation with batching
-            for (batch_id, batch_all) in enumerate(
-                tqdm(data_loader, desc="PGD - Batches", leave=False, disable=not self.verbose)
-            ):
-                if mask is not None:
-                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], batch_all[2]
-                else:
-                    (batch, batch_labels, mask_batch) = batch_all[0], batch_all[1], None
+            batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
 
-                batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-
-                # Compute batch_eps and batch_eps_step
-                if isinstance(self.eps, np.ndarray):
-                    if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
-                        batch_eps = self.eps[batch_index_1:batch_index_2]
-                        batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
-
-                    else:
-                        batch_eps = self.eps
-                        batch_eps_step = self.eps_step
+            # Compute batch_eps and batch_eps_step
+            if isinstance(self.eps, np.ndarray):
+                if len(self.eps.shape) == len(x.shape) and self.eps.shape[0] == x.shape[0]:
+                    batch_eps = self.eps[batch_index_1:batch_index_2]
+                    batch_eps_step = self.eps_step[batch_index_1:batch_index_2]
 
                 else:
                     batch_eps = self.eps
                     batch_eps_step = self.eps_step
 
-                adv_x[batch_index_1:batch_index_2] = self._generate_batch(
-                    x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
-                )
-
-            if self.num_random_init > 1:
-                rate = 100 * compute_success(
-                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size
-                )
-                if rate_best is None or rate > rate_best or adv_x_best is None:
-                    rate_best = rate
-                    adv_x_best = adv_x
             else:
-                adv_x_best = adv_x
+                batch_eps = self.eps
+                batch_eps_step = self.eps_step
+
+            for rand_init_num in range(max(1, self.num_random_init)):
+                if rand_init_num == 0:
+                    # first iteration: use the adversarial examples as they are the only ones we have now
+                    adv_x[batch_index_1:batch_index_2] = self._generate_batch(
+                        x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                    )
+                else:
+                    adversarial_batch = self._generate_batch(
+                        x=batch, targets=batch_labels, mask=mask_batch, eps=batch_eps, eps_step=batch_eps_step
+                    )
+
+                    # return the successful adversarial examples
+                    attack_success = compute_success_array(
+                        self.estimator,
+                        batch,
+                        batch_labels,
+                        adversarial_batch,
+                        self.targeted,
+                        batch_size=self.batch_size,
+                    )
+                    adv_x[batch_index_1:batch_index_2][attack_success] = adversarial_batch[attack_success]
 
         logger.info(
             "Success rate of attack: %.2f%%",
-            rate_best
-            if rate_best is not None
-            else 100 * compute_success(self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size),
         )
 
-        return adv_x_best
+        return adv_x
 
     def _generate_batch(
         self,
@@ -245,7 +248,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_torch(
-                adv_x, inputs, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
+                adv_x,
+                inputs,
+                targets,
+                mask,
+                eps,
+                eps_step,
+                self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x.cpu().detach().numpy()
@@ -408,10 +417,13 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 2."
                 )
 
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
-            ).unsqueeze_(-1)
+            values_tmp = (
+                values_tmp
+                * torch.min(
+                    torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                    eps / (torch.norm(values_tmp, p=2, dim=1) + tol),
+                ).unsqueeze_(-1)
+            )
 
         elif norm_p == 1:
             if isinstance(eps, np.ndarray):
@@ -419,14 +431,17 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
                     "The parameter `eps` of type `np.ndarray` is not supported to use with norm 1."
                 )
 
-            values_tmp = values_tmp * torch.min(
-                torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
-                eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
-            ).unsqueeze_(-1)
+            values_tmp = (
+                values_tmp
+                * torch.min(
+                    torch.tensor([1.0], dtype=torch.float32).to(self.estimator.device),
+                    eps / (torch.norm(values_tmp, p=1, dim=1) + tol),
+                ).unsqueeze_(-1)
+            )
 
         elif norm_p in [np.inf, "inf"]:
             if isinstance(eps, np.ndarray):
-                eps = eps * np.ones_like(values)
+                eps = eps * np.ones_like(values.cpu())
                 eps = eps.reshape([eps.shape[0], -1])
 
             values_tmp = values_tmp.sign() * torch.min(
