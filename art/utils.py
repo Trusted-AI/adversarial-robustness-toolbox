@@ -93,6 +93,9 @@ if TYPE_CHECKING:
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 
+    from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
+    from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoAsr
+
     CLASSIFIER_TYPE = Union[
         Classifier,
         BlackBoxClassifier,
@@ -172,6 +175,10 @@ if TYPE_CHECKING:
         ObjectDetector, PyTorchFasterRCNN, TensorFlowFasterRCNN,
     ]
 
+    SPEECH_RECOGNIZER_TYPE = Union[
+        PyTorchDeepSpeech,
+        TensorFlowLingvoAsr,
+    ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 

@@ -24,18 +24,23 @@ This module implements the adversarial and imperceptible attack on automatic spe
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, Tuple, Union
 
 import numpy as np
 import scipy.signal as ss
 
 from art.attacks.attack import EvasionAttack
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import pad_sequence_input
 
 if TYPE_CHECKING:
     from tensorflow.compat.v1 import Tensor
+    from torch import Tensor as PTensor
+
+    from art.utils import SPEECH_RECOGNIZER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -58,11 +63,11 @@ class ImperceptibleASR(EvasionAttack):
         "batch_size",
     ]
 
-    _estimator_requirements = (TensorFlowV2Estimator, SpeechRecognizerMixin)
+    _estimator_requirements = (NeuralNetworkMixin, LossGradientsMixin, BaseEstimator, SpeechRecognizerMixin)
 
     def __init__(
         self,
-        estimator: "TensorFlowV2Estimator",
+        estimator: "SPEECH_RECOGNIZER_TYPE",
         masker: "PsychoacousticMasker",
         eps: float = 2000.0,
         learning_rate_1: float = 100.0,
@@ -85,10 +90,6 @@ class ImperceptibleASR(EvasionAttack):
         :param max_iter_2: Number of iterations for stage 2 of attack.
         :param batch_size: Batch size.
         """
-        import tensorflow.compat.v1 as tf1
-
-        # disable eager execution as Lingvo uses tensorflow.compat.v1 API
-        tf1.disable_eager_execution()
 
         # Super initialization
         super().__init__(estimator=estimator)
@@ -108,16 +109,34 @@ class ImperceptibleASR(EvasionAttack):
         self._hop_size = masker.hop_size
         self._sample_rate = masker.sample_rate
 
-        # TensorFlow placeholders
-        self._delta = tf1.placeholder(tf1.float32, shape=[None, None], name="art_delta")
-        self._power_spectral_density_maximum_tf = tf1.placeholder(tf1.float32, shape=[None, None], name="art_psd_max")
-        self._masking_threshold_tf = tf1.placeholder(
-            tf1.float32, shape=[None, None, None], name="art_masking_threshold"
-        )
-        # TensorFlow loss gradient ops
-        self._loss_gradient_masking_threshold_op_tf = self._loss_gradient_masking_threshold_tf(
-            self._delta, self._power_spectral_density_maximum_tf, self._masking_threshold_tf
-        )
+        if isinstance(self.estimator, TensorFlowV2Estimator):
+            import tensorflow.compat.v1 as tf1
+
+            # set framework attribute
+            self._framework = "tensorflow"
+
+            # disable eager execution and use tensorflow.compat.v1 API, e.g. Lingvo uses TF2v1 AP
+            tf1.disable_eager_execution()
+
+            # TensorFlow placeholders
+            self._delta = tf1.placeholder(tf1.float32, shape=[None, None], name="art_delta")
+            self._power_spectral_density_maximum_tf = tf1.placeholder(
+                tf1.float32, shape=[None, None], name="art_psd_max"
+            )
+            self._masking_threshold_tf = tf1.placeholder(
+                tf1.float32, shape=[None, None, None], name="art_masking_threshold"
+            )
+            # TensorFlow loss gradient ops
+            self._loss_gradient_masking_threshold_op_tf = self._loss_gradient_masking_threshold_tf(
+                self._delta, self._power_spectral_density_maximum_tf, self._masking_threshold_tf
+            )
+
+        elif isinstance(self.estimator, PyTorchEstimator):
+            # set framework attribute
+            self._framework = "pytorch"
+        else:
+            # set framework attribute
+            self._framework = None
 
     def generate(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
@@ -235,10 +254,12 @@ class ImperceptibleASR(EvasionAttack):
         if x.ndim != 1:
             alpha = np.expand_dims(alpha, axis=-1)
 
-        perturbation = x_adversarial - x
         x_perturbed = x_adversarial.copy()
 
         for i in range(self.max_iter_2):
+            # get perturbation
+            perturbation = x_perturbed - x
+
             # get loss gradients of both losses
             gradients_net = self.estimator.loss_gradient(x_perturbed, y, batch_mode=True)
             gradients_theta, loss_theta = self._loss_gradient_masking_threshold(perturbation, x)
@@ -305,13 +326,21 @@ class ImperceptibleASR(EvasionAttack):
         masking_threshold_stabilized = 10 ** (masking_threshold * 0.1)
         psd_maximum_stabilized = 10 ** (psd_maximum * 0.1)
 
-        # get loss gradients (TensorFlow)
-        feed_dict = {
-            self._delta: perturbation_padded,
-            self._power_spectral_density_maximum_tf: psd_maximum_stabilized,
-            self._masking_threshold_tf: masking_threshold_stabilized,
-        }
-        gradients_padded, loss = self.estimator._sess.run(self._loss_gradient_masking_threshold_op_tf, feed_dict)
+        if self._framework == "tensorflow":
+            # get loss gradients (TensorFlow)
+            feed_dict = {
+                self._delta: perturbation_padded,
+                self._power_spectral_density_maximum_tf: psd_maximum_stabilized,
+                self._masking_threshold_tf: masking_threshold_stabilized,
+            }
+            gradients_padded, loss = self.estimator._sess.run(self._loss_gradient_masking_threshold_op_tf, feed_dict)
+        elif self._framework == "pytorch":
+            # get loss gradients (TensorFlow)
+            gradients_padded, loss = self._loss_gradient_masking_threshold_torch(
+                perturbation_padded, psd_maximum_stabilized, masking_threshold_stabilized
+            )
+        else:
+            raise NotImplementedError
 
         # undo padding, i.e. change gradients shape from (nb_samples, max_length) to (nb_samples)
         lengths = delta_mask.sum(axis=1)
@@ -320,11 +349,11 @@ class ImperceptibleASR(EvasionAttack):
             gradient = gradient_padded[:length]
             gradients.append(gradient)
 
-        return np.array(gradients), loss
+        return np.array(gradients, dtype=object), loss
 
     def _loss_gradient_masking_threshold_tf(
         self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor", masking_threshold_stabilized: "Tensor"
-    ) -> "Tensor":
+    ) -> Union["Tensor", "Tensor"]:
         """
         Compute loss gradient of the masking threshold loss in TensorFlow.
 
@@ -350,6 +379,41 @@ class ImperceptibleASR(EvasionAttack):
         # compute loss gradient
         loss_gradient = tf1.gradients(loss, [perturbation])[0]
         return loss_gradient, loss
+
+    def _loss_gradient_masking_threshold_torch(
+        self, perturbation: np.ndarray, psd_maximum_stabilized: np.ndarray, masking_threshold_stabilized: np.ndarray
+    ) -> Union[np.ndarray, np.ndarray]:
+        """
+        Compute loss gradient of the masking threshold loss in PyTorch.
+
+        See also `ImperceptibleASR._loss_gradient_masking_threshold_tf`.
+        """
+        import torch
+
+        # define tensors
+        perturbation_torch = torch.from_numpy(perturbation).to(self.estimator._device)
+        masking_threshold_stabilized_torch = torch.from_numpy(masking_threshold_stabilized).to(self.estimator._device)
+        psd_maximum_stabilized_torch = torch.from_numpy(psd_maximum_stabilized).to(self.estimator._device)
+
+        # track gradient of perturbation
+        perturbation_torch.requires_grad = True
+
+        # calculate approximate power spectral density
+        psd_perturbation = self._approximate_power_spectral_density_torch(
+            perturbation_torch, psd_maximum_stabilized_torch
+        )
+
+        # calculate hinge loss
+        loss = torch.mean(
+            torch.nn.functional.relu(psd_perturbation - masking_threshold_stabilized_torch), dim=(1, 2), keepdims=False
+        )
+
+        # compute loss gradient
+        loss.sum().backward()
+        loss_gradient = perturbation_torch.grad.cpu().numpy()
+        loss_value = loss.detach().cpu().numpy()
+
+        return loss_gradient, loss_value
 
     def _approximate_power_spectral_density_tf(
         self, perturbation: "Tensor", psd_maximum_stabilized: "Tensor"
@@ -381,13 +445,37 @@ class ImperceptibleASR(EvasionAttack):
         # return PSD matrix such that shape is (batch_size, window_size // 2 + 1, frame_length)
         return tf1.transpose(psd_matrix_approximated, [0, 2, 1])
 
-    def _approximate_power_spectral_density_torch(self):
-        """Approximate the power spectral density for a perturbation `perturbation` in PyTorch."""
-        raise NotImplementedError
+    def _approximate_power_spectral_density_torch(
+        self, perturbation: "PTensor", psd_maximum_stabilized: "PTensor"
+    ) -> "PTensor":
+        """
+        Approximate the power spectral density for a perturbation `perturbation` in PyTorch.
 
-    def _loss_gradient_masking_threshold_torch(self):
-        """Compute loss gradient of the masking threshold loss in PyTorch."""
-        raise NotImplementedError
+        See also `ImperceptibleASR._approximate_power_spectral_density_tf`.
+        """
+        import torch
+
+        # compute short-time Fourier transform (STFT)
+        stft_matrix = torch.stft(
+            perturbation,
+            n_fft=self._window_size,
+            hop_length=self._hop_size,
+            win_length=self._window_size,
+            center=False,
+            window=torch.hann_window(self._window_size).to(self.estimator._device),
+        ).to(self.estimator._device)
+        stft_matrix_abs = torch.sqrt(torch.sum(torch.square(stft_matrix), -1))
+
+        # compute power spectral density (PSD)
+        # note: fixes implementation of Qin et al. by also considering the square root of gain_factor
+        gain_factor = 8.0 / 3.0
+        psd_matrix = gain_factor * torch.square(stft_matrix_abs / self._window_size)
+
+        # approximate normalized psd: psd_matrix_approximated = 10^((96.0 - psd_matrix_max + psd_matrix)/10)
+        psd_matrix_approximated = pow(10.0, 9.6) / torch.unsqueeze(psd_maximum_stabilized, 1) * psd_matrix
+
+        # return PSD matrix such that shape is (batch_size, window_size // 2 + 1, frame_length)
+        return psd_matrix_approximated
 
     def _check_params(self) -> None:
         """
@@ -408,8 +496,8 @@ class ImperceptibleASR(EvasionAttack):
 
         if not isinstance(self.max_iter_2, int):
             raise ValueError("The maximum number of iterations for stage 2 must be of type int.")
-        if self.max_iter_2 <= 0:
-            raise ValueError("The maximum number of iterations for stage 2 must be greater than 0.")
+        if self.max_iter_2 < 0:
+            raise ValueError("The maximum number of iterations for stage 2 must be non-negative.")
 
         if not isinstance(self.learning_rate_1, float):
             raise ValueError("The learning rate for stage 1 must be of type float.")
