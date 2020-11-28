@@ -521,7 +521,7 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
     ) -> Tuple["torch.Tensor", "torch.Tensor", "torch.Tensor", "torch.Tensor", List]:
         """
         Apply preprocessing and then transform the user input space into the model input space. This function is used
-        by the ASR attack to attack into the PytorchDeepSpeech estimator whose defences are called with the
+        by the ASR attack to attack into the PyTorchDeepSpeech estimator whose defences are called with the
         `_apply_preprocessing` function.
 
         :param x: Samples of shape (nb_samples, seq_length).

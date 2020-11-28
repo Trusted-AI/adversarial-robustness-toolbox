@@ -661,7 +661,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __getstate__(self) -> Dict[str, Any]:
         """
-        Use to ensure `PytorchClassifier` can be pickled.
+        Use to ensure `PyTorchClassifier` can be pickled.
 
         :return: State dictionary with instance parameters.
         """
@@ -683,7 +683,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """
-        Use to ensure `PytorchClassifier` can be unpickled.
+        Use to ensure `PyTorchClassifier` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         """

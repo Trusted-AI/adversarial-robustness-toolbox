@@ -71,7 +71,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         verbose: bool = True,
     ):
         """
-        Create a :class:`.ProjectedGradientDescentPytorch` instance.
+        Create a :class:`.ProjectedGradientDescentPyTorch` instance.
 
         :param estimator: An trained estimator.
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.

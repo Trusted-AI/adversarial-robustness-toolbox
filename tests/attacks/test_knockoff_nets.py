@@ -307,7 +307,7 @@ class TestKnockoffNets(TestBase):
 
     def test_4_pytorch_iris(self):
         """
-        Third test for Pytorch.
+        Third test for PyTorch.
         :return:
         """
         # Build PyTorchClassifier

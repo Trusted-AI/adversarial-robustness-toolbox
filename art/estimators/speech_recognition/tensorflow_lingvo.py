@@ -50,21 +50,17 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
     The estimator uses a pre-trained model provided by Qin et al., which is trained using the Lingvo library and the
     LibriSpeech dataset.
 
-    | Paper link: http://proceedings.mlr.press/v97/qin19a.html
-    |             https://arxiv.org/abs/1902.08295
+    | Paper link: http://proceedings.mlr.press/v97/qin19a.html, https://arxiv.org/abs/1902.08295
 
-    .. warning::
-
-    In order to calculate loss gradients, this estimator requires a user-patched Lingvo module. A patched source file
-    for the `lingvo.tasks.asr.decoder` module will be automatically applied. The original source file can be found in
-    `<PYTHON_SITE_PACKAGES>/lingvo/tasks/asr/decoder.py` and will be patched as outlined in the following commit diff:
-
-    * https://github.com/yaq007/lingvo/commit/414e035b2c60372de732c9d67db14d1003be6dd6
+    .. warning:: In order to calculate loss gradients, this estimator requires a user-patched Lingvo module. A patched
+                 source file for the `lingvo.tasks.asr.decoder` module will be automatically applied. The original
+                 source file can be found in `<PYTHON_SITE_PACKAGES>/lingvo/tasks/asr/decoder.py` and will be patched as
+                 outlined in the following commit diff:
+                 https://github.com/yaq007/lingvo/commit/414e035b2c60372de732c9d67db14d1003be6dd6
 
     The patched `decoder_patched.py` can be found in `ART_DATA_PATH/lingvo/asr`.
 
-    Note: Run `python -m site` to obtain a list of possible candidates where to find the `<PYTHON_SITE_PACKAGES`
-    folder.
+    Note: Run `python -m site` to obtain a list of possible candidates where to find the `<PYTHON_SITE_PACKAGES` folder.
     """
 
     # Note: Support for the estimator is pinned to Lingvo version 0.6.4. Some additional source files that are not

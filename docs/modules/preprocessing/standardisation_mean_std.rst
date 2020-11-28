@@ -1,0 +1,18 @@
+:mod:`art.preprocessing.standardisation_mean_std`
+=================================================
+.. automodule:: art.preprocessing.standardisation_mean_std
+
+Standardisation Mean and Std
+----------------------------
+.. autoclass:: StandardisationMeanStd
+   :members:
+
+Standardisation Mean and Std - PyTorch
+--------------------------------------
+.. autoclass:: StandardisationMeanStdPyTorch
+   :members:
+
+Standardisation Mean and Std - TensorFlow V2
+--------------------------------------------
+.. autoclass:: StandardisationMeanStdTensorFlowV2
+   :members:
