@@ -20,7 +20,7 @@ This module implements the evaluation of Security Curves.
 
 Examples of Security Curves can be found in Figure 6 of Madry et al., 2017 (https://arxiv.org/abs/1706.06083).
 """
-from typing import List, NoReturn, Tuple, TYPE_CHECKING, Union
+from typing import List, Optional, Tuple, TYPE_CHECKING, Union
 
 import numpy as np
 from matplotlib import pyplot as plt
@@ -47,9 +47,9 @@ class SecurityCurve(Evaluation):
         """
 
         self.eps = eps
-        self.eps_list = list()
-        self.accuracy_adv_list = list()
-        self.accuracy = None
+        self.eps_list: List[float] = list()
+        self.accuracy_adv_list: List[float] = list()
+        self.accuracy: Optional[float] = None
 
     def evaluate(
         self,
@@ -109,7 +109,7 @@ class SecurityCurve(Evaluation):
         """
         This property describes if the previous call to method `evaluate` identified potential gradient obfuscation.
         """
-        return self._is_obfuscating_gradients
+        return self._detected_obfuscating_gradients
 
     def _check_gradient(
         self,
@@ -117,7 +117,7 @@ class SecurityCurve(Evaluation):
         x: np.ndarray,
         y: np.ndarray,
         **kwargs: Union[str, bool, int, float]
-    ) -> NoReturn:
+    ) -> None:
         """
         Check if potential gradient obfuscation can be detected. Projected Gradient Descent with 100 iterations is run
         with maximum attack budget `eps` being equal to upper clip value of input data and `eps_step` of
@@ -145,11 +145,11 @@ class SecurityCurve(Evaluation):
 
         # Decide of obfuscated gradients likely
         if accuracy_adv > 1 / classifier.nb_classes:
-            self._is_obfuscating_gradients = True
+            self._detected_obfuscating_gradients = True
         else:
-            self._is_obfuscating_gradients = False
+            self._detected_obfuscating_gradients = False
 
-    def plot(self) -> NoReturn:
+    def plot(self) -> None:
         """
         Plot the Security Curve of adversarial accuracy as function opf attack budget `eps` together with the accuracy
         on benign samples.
@@ -159,7 +159,7 @@ class SecurityCurve(Evaluation):
         plt.legend()
         plt.xlabel("Attack budget eps")
         plt.ylabel("Accuracy")
-        if self.is_obfuscating_gradients:
+        if self.detected_obfuscating_gradients:
             plt.title("Potential gradient obfuscation detected.")
         else:
             plt.title("No gradient obfuscation detected")

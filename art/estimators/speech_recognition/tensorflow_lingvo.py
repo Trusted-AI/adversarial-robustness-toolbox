@@ -179,7 +179,7 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         self._mask_frequency = tf1.placeholder(tf1.float32, shape=[None, None, 80], name="art_mask_frequency")
 
         # init Lingvo computation graph
-        self._sess = tf1.Session() if sess is None else sess
+        self._sess: "Session" = tf1.Session() if sess is None else sess
         model, task, cluster = self._load_model()
         self._model = model
         self._task = task
@@ -545,8 +545,8 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         return np.array(gradients, dtype=object)
 
-    def set_learning_phase(self) -> None:
+    def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError
 
-    def get_activations(self) -> np.ndarray:
+    def get_activations(self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False) -> np.ndarray:
         raise NotImplementedError

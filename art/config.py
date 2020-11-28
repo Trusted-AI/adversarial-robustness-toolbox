@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 # ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
 
 ART_NUMPY_DTYPE = np.float32
+ART_DATA_PATH: str
 
 # --------------------------------------------------------------------------------------------- DEFAULT PACKAGE CONFIGS
 

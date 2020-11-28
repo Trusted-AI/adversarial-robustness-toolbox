@@ -73,8 +73,8 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
             raise ValueError("Missing parameter `priors`.")
         if "values" not in kwargs.keys():
             raise ValueError("Missing parameter `values`.")
-        priors = kwargs.get("priors")
-        values = kwargs.get("values")
+        priors: np.ndarray = kwargs.get("priors")
+        values: np.ndarray = kwargs.get("values")
 
         # Checks:
         if self.estimator.input_shape[0] != x.shape[1] + 1:

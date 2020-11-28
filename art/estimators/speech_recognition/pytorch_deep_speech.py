@@ -410,11 +410,11 @@ class PyTorchDeepSpeech(SpeechRecognizerMixin, PyTorchEstimator):
             loss.backward()
 
         # Get results
-        results = []
+        results_list = list()
         for i in range(len(x_preprocessed)):
-            results.append(x_preprocessed[i].grad.cpu().numpy().copy())
+            results_list.append(x_preprocessed[i].grad.cpu().numpy().copy())
 
-        results = np.array(results)
+        results = np.array(results_list)
 
         if results.shape[0] == 1:
             results_ = np.empty(len(results), dtype=object)

@@ -204,7 +204,7 @@ class RobustDPatch(EvasionAttack):
         :param channels_first: Set channels first or last.
         """
 
-        transformations = dict()
+        transformations: Dict[str, Union[float, int]] = dict()
         x_copy = x.copy()
         patch_copy = patch.copy()
         x_patch = x.copy()
@@ -283,8 +283,8 @@ class RobustDPatch(EvasionAttack):
         gradients = np.rot90(gradients, rot90, (1, 2))
 
         # Account for cropping when considering the upper left point of the patch:
-        x_1 = self.patch_location[0] - transforms["crop_x"]
-        y_1 = self.patch_location[1] - transforms["crop_y"]
+        x_1 = self.patch_location[0] - int(transforms["crop_x"])
+        y_1 = self.patch_location[1] - int(transforms["crop_y"])
         x_2 = x_1 + self.patch_shape[0]
         y_2 = y_1 + self.patch_shape[1]
         gradients = gradients[:, x_1:x_2, y_1:y_2, :]

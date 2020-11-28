@@ -96,33 +96,6 @@ if TYPE_CHECKING:
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
     from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
 
-    CLASSIFIER_TYPE = Union[
-        Classifier,
-        BlackBoxClassifier,
-        CatBoostARTClassifier,
-        DetectorClassifier,
-        EnsembleClassifier,
-        GPyGaussianProcessClassifier,
-        KerasClassifier,
-        LightGBMClassifier,
-        MXClassifier,
-        PyTorchClassifier,
-        ScikitlearnClassifier,
-        ScikitlearnDecisionTreeClassifier,
-        ScikitlearnDecisionTreeRegressor,
-        ScikitlearnExtraTreeClassifier,
-        ScikitlearnAdaBoostClassifier,
-        ScikitlearnBaggingClassifier,
-        ScikitlearnExtraTreesClassifier,
-        ScikitlearnGradientBoostingClassifier,
-        ScikitlearnRandomForestClassifier,
-        ScikitlearnLogisticRegression,
-        ScikitlearnSVC,
-        TensorFlowClassifier,
-        TensorFlowV2Classifier,
-        XGBoostClassifier,
-    ]
-
     CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[
         ClassifierLossGradients,
         EnsembleClassifier,
@@ -169,6 +142,34 @@ if TYPE_CHECKING:
         ScikitlearnGradientBoostingClassifier,
         ScikitlearnRandomForestClassifier,
         XGBoostClassifier,
+    ]
+
+    CLASSIFIER_TYPE = Union[
+        Classifier,
+        BlackBoxClassifier,
+        CatBoostARTClassifier,
+        DetectorClassifier,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        LightGBMClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+        XGBoostClassifier,
+        CLASSIFIER_NEURALNETWORK_TYPE,
     ]
 
     OBJECT_DETECTOR_TYPE = Union[
