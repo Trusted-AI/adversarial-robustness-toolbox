@@ -189,7 +189,7 @@ class ProjectedGradientDescent(EvasionAttack):
         if self.norm not in [1, 2, np.inf, "inf"]:
             raise ValueError('Norm order must be either 1, 2, `np.inf` or "inf".')
 
-        if not (isinstance(self.eps, (int, float, np.ndarray)) and isinstance(self.eps_step, (int, float))):
+        if not (isinstance(self.eps, (int, float, np.ndarray)) and isinstance(self.eps_step, (int, float, np.ndarray))):
             raise TypeError(
                 "The perturbation size `eps` and the perturbation step-size `eps_step` must have the same type."
             )
