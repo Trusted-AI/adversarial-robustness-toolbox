@@ -40,16 +40,19 @@ _folder = os.path.join(_folder, ".art")
 
 
 def set_data_path(path):
+    """
+    Set the path for ART's data directory (ART_DATA_PATH).
+    """
     expanded_path = os.path.abspath(os.path.expanduser(path))
     os.makedirs(expanded_path, exist_ok=True)
     if not os.access(expanded_path, os.R_OK):
         raise OSError(f"path {expanded_path} cannot be read from")
-    elif not os.access(expanded_path, os.W_OK):
-        logger.warning(f"path {expanded_path} is read only")
+    if not os.access(expanded_path, os.W_OK):
+        logger.warning(f"path %s is read only", expanded_path)
 
     global ART_DATA_PATH
     ART_DATA_PATH = expanded_path
-    logger.info(f"set ART_DATA_PATH to {expanded_path}")
+    logger.info(f"set ART_DATA_PATH to %s", expanded_path)
 
 
 # Load data from configuration file if it exists. Otherwise create one.
