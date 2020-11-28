@@ -17,7 +17,6 @@
 # SOFTWARE.
 """
 This module implements attribute inference attacks.
-
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -27,7 +26,7 @@ from typing import Optional, TYPE_CHECKING
 import numpy as np
 
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
-from art.attacks import AttributeInferenceAttack
+from art.attacks.attack import AttributeInferenceAttack
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE

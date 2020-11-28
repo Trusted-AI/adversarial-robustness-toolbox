@@ -168,9 +168,13 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         self.loss_combined = self.loss_ce + self.loss_reg * self.cost_tensor
         self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
 
-        self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss_combined)
+        self.updates = self.opt.get_updates(
+            params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss_combined
+        )
         self.train = K.function(
-            [input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss_combined, self.loss_acc], updates=self.updates
+            [input_tensor, y_true_tensor],
+            [self.loss_ce, self.loss_reg, self.loss_combined, self.loss_acc],
+            updates=self.updates,
         )
 
     @property
