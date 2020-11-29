@@ -321,6 +321,7 @@ class AttributeInferenceAttack(InferenceAttack):
         """
         :param estimator: A trained estimator targeted for inference attack.
         :type estimator: :class:`.art.estimators.estimator.BaseEstimator`
+        :param attack_feature: The index of the feature to be attacked.
         """
         super().__init__(estimator)
         self.attack_feature = attack_feature
@@ -344,10 +345,6 @@ class AttributeInferenceAttack(InferenceAttack):
         # Save attack-specific parameters
         super().set_params(**kwargs)
         self._check_params()
-
-    def _check_params(self) -> None:
-        if self.attack_feature < 0:
-            raise ValueError("Attack feature must be positive.")
 
 
 class ReconstructionAttack(Attack):
