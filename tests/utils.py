@@ -854,7 +854,7 @@ def get_image_classifier_kr_tf(loss_name="categorical_crossentropy", loss_type="
 
 def get_image_classifier_kr_tf_binary():
     """
-    Standard Tensorflow-Keras binary classifier for unit testing
+    Standard TensorFlow-Keras binary classifier for unit testing
 
     :return: KerasClassifier
     """
@@ -892,7 +892,7 @@ def get_image_classifier_kr_tf_binary():
 
 def get_image_classifier_kr_tf_with_wildcard():
     """
-    Standard Tensorflow-Keras binary classifier for unit testing
+    Standard TensorFlow-Keras binary classifier for unit testing
 
     :return: KerasClassifier
     """

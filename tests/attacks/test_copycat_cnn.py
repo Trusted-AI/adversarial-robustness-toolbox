@@ -260,7 +260,7 @@ class TestCopycatCNNVectors(TestBase):
         optimizer = tf.train.AdamOptimizer(learning_rate=0.001)
         train = optimizer.minimize(loss)
 
-        # Tensorflow session and initialization
+        # TensorFlow session and initialization
         sess.run(tf.global_variables_initializer())
 
         # Train the classifier

@@ -39,7 +39,7 @@ class TestTensorFlowLingvoASR:
     Test the TensorFlowLingvoASR estimator.
     """
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_is_subclass(self, art_warning):
         try:
@@ -47,7 +47,7 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_implements_abstract_methods(self, art_warning):
         try:
@@ -58,7 +58,7 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_load_model(self, art_warning):
         try:
@@ -72,7 +72,7 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_create_decoder_input(self, art_warning, audio_batch_padded):
         try:
@@ -100,7 +100,7 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_create_log_mel_features(self, art_warning, audio_batch_padded):
         try:
@@ -118,7 +118,7 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_pad_audio_input(self, art_warning):
         try:
@@ -137,7 +137,7 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_predict_batch(self, art_warning, audio_batch_padded):
         try:
@@ -174,7 +174,7 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_predict(self, art_warning, audio_data):
         try:
@@ -191,7 +191,7 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_loss_gradient_tensor(self, art_warning, audio_batch_padded):
         try:
@@ -214,7 +214,7 @@ class TestTensorFlowLingvoASR:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     @pytest.mark.parametrize("batch_mode", [True, False])
     def test_loss_gradient_batch_mode(self, art_warning, batch_mode, audio_data):
@@ -277,7 +277,7 @@ class TestTensorFlowLingvoASRLibriSpeechSamples:
         },
     }
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     def test_predict(self, art_warning):
         try:
@@ -301,7 +301,7 @@ class TestTensorFlowLingvoASRLibriSpeechSamples:
         except ARTTestException as e:
             art_warning(e)
 
-    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires Tensorflow 2.1.0")
+    @pytest.mark.skipif(tf.__version__ != "2.1.0", reason="requires TensorFlow 2.1.0")
     @pytest.mark.skipMlFramework("pytorch", "mxnet", "kerastf", "non_dl_frameworks")
     @pytest.mark.xfail(reason="Known issue that needs further investigation")
     def test_loss_gradient(self, art_warning):
