@@ -1,4 +1,4 @@
-"""Basic Iterative Method (BIM)
+"""
 Module providing adversarial attacks under a common interface.
 """
 from art.attacks.attack import Attack, EvasionAttack, PoisoningAttack, PoisoningAttackBlackBox, PoisoningAttackWhiteBox
