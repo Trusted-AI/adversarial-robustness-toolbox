@@ -94,34 +94,7 @@ if TYPE_CHECKING:
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-    from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoAsr
-
-    CLASSIFIER_TYPE = Union[
-        Classifier,
-        BlackBoxClassifier,
-        CatBoostARTClassifier,
-        DetectorClassifier,
-        EnsembleClassifier,
-        GPyGaussianProcessClassifier,
-        KerasClassifier,
-        LightGBMClassifier,
-        MXClassifier,
-        PyTorchClassifier,
-        ScikitlearnClassifier,
-        ScikitlearnDecisionTreeClassifier,
-        ScikitlearnDecisionTreeRegressor,
-        ScikitlearnExtraTreeClassifier,
-        ScikitlearnAdaBoostClassifier,
-        ScikitlearnBaggingClassifier,
-        ScikitlearnExtraTreesClassifier,
-        ScikitlearnGradientBoostingClassifier,
-        ScikitlearnRandomForestClassifier,
-        ScikitlearnLogisticRegression,
-        ScikitlearnSVC,
-        TensorFlowClassifier,
-        TensorFlowV2Classifier,
-        XGBoostClassifier,
-    ]
+    from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
 
     CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[
         ClassifierLossGradients,
@@ -171,13 +144,40 @@ if TYPE_CHECKING:
         XGBoostClassifier,
     ]
 
+    CLASSIFIER_TYPE = Union[
+        Classifier,
+        BlackBoxClassifier,
+        CatBoostARTClassifier,
+        DetectorClassifier,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        LightGBMClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+        XGBoostClassifier,
+        CLASSIFIER_NEURALNETWORK_TYPE,
+    ]
+
     OBJECT_DETECTOR_TYPE = Union[
         ObjectDetector, PyTorchFasterRCNN, TensorFlowFasterRCNN,
     ]
 
     SPEECH_RECOGNIZER_TYPE = Union[
-        PyTorchDeepSpeech,
-        TensorFlowLingvoAsr,
+        PyTorchDeepSpeech, TensorFlowLingvoASR,
     ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
@@ -344,10 +344,7 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
 
 
 def random_sphere(
-    nb_points: int,
-    nb_dims: int,
-    radius: Union[int, float, np.ndarray],
-    norm: Union[int, float, str],
+    nb_points: int, nb_dims: int, radius: Union[int, float, np.ndarray], norm: Union[int, float, str],
 ) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.

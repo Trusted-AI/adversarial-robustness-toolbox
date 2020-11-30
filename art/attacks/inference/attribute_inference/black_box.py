@@ -17,7 +17,6 @@
 # SOFTWARE.
 """
 This module implements attribute inference attacks.
-
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -29,7 +28,7 @@ from sklearn.neural_network import MLPClassifier
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.attacks import AttributeInferenceAttack
+from art.attacks.attack import AttributeInferenceAttack
 from art.utils import check_and_transform_label_format, float_to_categorical
 
 if TYPE_CHECKING:

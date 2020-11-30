@@ -225,7 +225,7 @@ class DPatch(EvasionAttack):
         return self._patch
 
     @staticmethod
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def _augment_images_with_patch(
         x: np.ndarray,
         patch: np.ndarray,
@@ -249,7 +249,7 @@ class DPatch(EvasionAttack):
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:

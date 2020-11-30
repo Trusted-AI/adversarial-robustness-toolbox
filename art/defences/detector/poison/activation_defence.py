@@ -84,6 +84,7 @@ class ActivationDefence(PoisonFilteringDefence):
         :param generator: A data generator to be used instead of `x_train` and `y_train`.
         """
         super().__init__(classifier, x_train, y_train)
+        self.classifier: "CLASSIFIER_NEURALNETWORK_TYPE" = classifier
         self.nb_clusters = 2
         self.clustering_method = "KMeans"
         self.nb_dims = 10
@@ -566,7 +567,10 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         logger.info("Getting activations")
 
-        nb_layers = len(self.classifier.layer_names)
+        if self.classifier.layer_names is not None:
+            nb_layers = len(self.classifier.layer_names)
+        else:
+            raise ValueError("No layer names identified.")
         protected_layer = nb_layers - 1
 
         if self.generator is not None:

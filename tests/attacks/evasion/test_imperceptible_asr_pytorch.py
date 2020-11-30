@@ -37,7 +37,7 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
     import torch
 
     from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
-    from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPytorch
+    from art.attacks.evasion.imperceptible_asr.imperceptible_asr_pytorch import ImperceptibleASRPyTorch
     from art.defences.preprocessor import LFilterPyTorch
 
     try:
@@ -75,7 +75,7 @@ def test_imperceptible_asr_pytorch(art_warning, expected_values, use_amp, device
         )
 
         # Create attack
-        asr_attack = ImperceptibleASRPytorch(
+        asr_attack = ImperceptibleASRPyTorch(
             estimator=speech_recognizer,
             initial_eps=0.001,
             max_iter_1st_stage=5,

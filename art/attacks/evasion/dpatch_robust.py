@@ -170,10 +170,7 @@ class RobustDPatch(EvasionAttack):
                         x[i_batch_start:i_batch_end], self._patch, channels_first=self.estimator.channels_first
                     )
 
-                    gradients = self.estimator.loss_gradient(
-                        x=patched_images,
-                        y=patch_target,
-                    )
+                    gradients = self.estimator.loss_gradient(x=patched_images, y=patch_target,)
 
                     gradients = self._untransform_gradients(
                         gradients, transforms, channels_first=self.estimator.channels_first
@@ -191,9 +188,7 @@ class RobustDPatch(EvasionAttack):
 
             if self.estimator.clip_values is not None:
                 self._patch = np.clip(
-                    self._patch,
-                    a_min=self.estimator.clip_values[0],
-                    a_max=self.estimator.clip_values[1],
+                    self._patch, a_min=self.estimator.clip_values[0], a_max=self.estimator.clip_values[1],
                 )
 
         return self._patch
@@ -209,7 +204,7 @@ class RobustDPatch(EvasionAttack):
         :param channels_first: Set channels first or last.
         """
 
-        transformations = dict()
+        transformations: Dict[str, Union[float, int]] = dict()
         x_copy = x.copy()
         patch_copy = patch.copy()
         x_patch = x.copy()
@@ -267,10 +262,7 @@ class RobustDPatch(EvasionAttack):
         return x_patch, patch_target, transformations
 
     def _untransform_gradients(
-        self,
-        gradients: np.ndarray,
-        transforms: Dict[str, Union[int, float]],
-        channels_first: bool,
+        self, gradients: np.ndarray, transforms: Dict[str, Union[int, float]], channels_first: bool,
     ) -> np.ndarray:
         """
         Revert transformation on gradients.
@@ -291,8 +283,8 @@ class RobustDPatch(EvasionAttack):
         gradients = np.rot90(gradients, rot90, (1, 2))
 
         # Account for cropping when considering the upper left point of the patch:
-        x_1 = self.patch_location[0] - transforms["crop_x"]
-        y_1 = self.patch_location[1] - transforms["crop_y"]
+        x_1 = self.patch_location[0] - int(transforms["crop_x"])
+        y_1 = self.patch_location[1] - int(transforms["crop_y"])
         x_2 = x_1 + self.patch_shape[0]
         y_2 = y_1 + self.patch_shape[1]
         gradients = gradients[:, x_1:x_2, y_1:y_2, :]

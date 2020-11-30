@@ -29,7 +29,7 @@ import logging
 from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange, tqdm
+from tqdm import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -140,11 +140,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             # those for the current batch. Otherwise (i.e. mask is meant to be broadcasted), keep it as it is.
             if len(mask.shape) == len(x.shape):
                 dataset = tf.data.Dataset.from_tensor_slices(
-                    (
-                        x.astype(ART_NUMPY_DTYPE),
-                        targets.astype(ART_NUMPY_DTYPE),
-                        mask.astype(ART_NUMPY_DTYPE),
-                    )
+                    (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE), mask.astype(ART_NUMPY_DTYPE),)
                 ).batch(self.batch_size, drop_remainder=False)
 
             else:
@@ -158,10 +154,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
 
         else:
             dataset = tf.data.Dataset.from_tensor_slices(
-                (
-                    x.astype(ART_NUMPY_DTYPE),
-                    targets.astype(ART_NUMPY_DTYPE),
-                )
+                (x.astype(ART_NUMPY_DTYPE), targets.astype(ART_NUMPY_DTYPE),)
             ).batch(self.batch_size, drop_remainder=False)
 
         # Start to compute adversarial examples
@@ -244,13 +237,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         adv_x = x
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_tf(
-                adv_x,
-                x,
-                targets,
-                mask,
-                eps,
-                eps_step,
-                self.num_random_init > 0 and i_max_iter == 0,
+                adv_x, x, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,
             )
 
         return adv_x

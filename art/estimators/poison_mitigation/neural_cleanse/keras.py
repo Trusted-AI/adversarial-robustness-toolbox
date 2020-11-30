@@ -165,12 +165,16 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
 
         self.cost = self.init_cost
         self.cost_tensor = K.variable(self.cost)
-        self.loss = self.loss_ce + self.loss_reg * self.cost_tensor
+        self.loss_combined = self.loss_ce + self.loss_reg * self.cost_tensor
         self.opt = Adam(lr=self.learning_rate, beta_1=0.5, beta_2=0.9)
 
-        self.updates = self.opt.get_updates(params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss)
+        self.updates = self.opt.get_updates(
+            params=[self.pattern_tensor_raw, self.mask_tensor_raw], loss=self.loss_combined
+        )
         self.train = K.function(
-            [input_tensor, y_true_tensor], [self.loss_ce, self.loss_reg, self.loss, self.loss_acc], updates=self.updates
+            [input_tensor, y_true_tensor],
+            [self.loss_ce, self.loss_reg, self.loss_combined, self.loss_acc],
+            updates=self.updates,
         )
 
     @property
@@ -305,7 +309,10 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         :param x: Input for computing the activations.
         :return: The output of `layer`, where the first dimension is the batch size corresponding to `x`.
         """
-        penultimate_layer = len(self.layer_names) - 2
+        if self.layer_names is not None:
+            penultimate_layer = len(self.layer_names) - 2
+        else:
+            raise ValueError("No layer names found.")
         return self.get_activations(x, penultimate_layer, batch_size=self.batch_size, framework=False)
 
     def _prune_neuron_at_index(self, index: int) -> None:
@@ -314,7 +321,10 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
 
         :param index: An index of the penultimate layer
         """
-        layer = self._model.layers[len(self.layer_names) - 2]
+        if self.layer_names is not None:
+            layer = self._model.layers[len(self.layer_names) - 2]
+        else:
+            raise ValueError("No layer names found.")
         weights, biases = layer.get_weights()
         weights[:, index] = np.zeros_like(weights[:, index])
         biases[index] = 0
