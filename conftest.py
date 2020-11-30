@@ -176,6 +176,11 @@ def setup_tear_down_framework(framework):
 
         if tf.__version__[0] != "2":
             tf.reset_default_graph()
+
+    if framework == "tensorflow2v1":
+        import tensorflow.compat.v1 as tf1
+
+        tf1.reset_default_graph()
     yield True
 
     # Ran after each test
