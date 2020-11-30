@@ -305,12 +305,7 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                 "Success rate of attack: %.2f%%",
                 100
                 * compute_success(
-                    self.estimator,
-                    x,
-                    targets,
-                    adv_x,
-                    self.targeted,
-                    batch_size=self.batch_size,  # type: ignore
+                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size,  # type: ignore
                 ),
             )
         else:

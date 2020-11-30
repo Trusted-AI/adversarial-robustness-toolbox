@@ -54,7 +54,7 @@ class ThermometerEncoding(Preprocessor):
 
     params = ["clip_values", "num_space", "channel_index", "channels_first"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         clip_values: "CLIP_VALUES_TYPE",
@@ -76,7 +76,7 @@ class ThermometerEncoding(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 2:
             channels_first = False
         elif channel_index == 1:
@@ -123,7 +123,7 @@ class ThermometerEncoding(Preprocessor):
         onehot_rep = to_categorical(pos.reshape(-1), self.num_space)
 
         for i in range(self.num_space - 1):
-            onehot_rep[:, i] += np.sum(onehot_rep[:, i + 1:], axis=1)
+            onehot_rep[:, i] += np.sum(onehot_rep[:, i + 1 :], axis=1)
 
         return onehot_rep.flatten()
 

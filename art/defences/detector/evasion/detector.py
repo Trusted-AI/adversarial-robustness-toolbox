@@ -118,7 +118,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         return self.detector.clip_values
 
     @property  # type: ignore
-    @deprecated(end_version="1.5.0", replaced_by="channels_first")
+    @deprecated(end_version="1.6.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 
@@ -262,7 +262,7 @@ class BinaryActivationDetector(
         return self.detector.clip_values
 
     @property  # type: ignore
-    @deprecated(end_version="1.5.0", replaced_by="channels_first")
+    @deprecated(end_version="1.6.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 

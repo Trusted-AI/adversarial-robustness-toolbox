@@ -166,6 +166,13 @@ class PreprocessorPyTorch(Preprocessor):
         """
         return self.forward(x, y=y)[0]
 
+    @property
+    def device(self):
+        """
+        Type of device on which the classifier is run, either `gpu` or `cpu`.
+        """
+        return self._device
+
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply preprocessing to input `x` and labels `y`.
@@ -176,9 +183,9 @@ class PreprocessorPyTorch(Preprocessor):
         """
         import torch  # lgtm [py/repeated-import]
 
-        x = torch.tensor(x, device=self._device)
+        x = torch.tensor(x, device=self.device)
         if y is not None:
-            y = torch.tensor(y, device=self._device)
+            y = torch.tensor(y, device=self.device)
 
         with torch.no_grad():
             x, y = self.forward(x, y)
@@ -193,8 +200,8 @@ class PreprocessorPyTorch(Preprocessor):
         import torch  # lgtm [py/repeated-import]
 
         def get_gradient(x, grad):
-            x = torch.tensor(x, device=self._device, requires_grad=True)
-            grad = torch.tensor(grad, device=self._device)
+            x = torch.tensor(x, device=self.device, requires_grad=True)
+            grad = torch.tensor(grad, device=self.device)
 
             x_prime = self.estimate_forward(x)
             x_prime.backward(grad)

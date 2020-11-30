@@ -288,8 +288,8 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 )
 
         elif len(self.preprocessing) == 1 or (
-                len(self.preprocessing) == 2
-                and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
+            len(self.preprocessing) == 2
+            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
         ):
             # Compatible with non-TensorFlow defences if no chaining.
             defence = self.preprocessing[0]

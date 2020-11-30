@@ -52,7 +52,7 @@ class SpatialSmoothing(Preprocessor):
 
     params = ["window_size", "channel_index", "channels_first", "clip_values"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         window_size: int = 3,
@@ -74,7 +74,7 @@ class SpatialSmoothing(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:

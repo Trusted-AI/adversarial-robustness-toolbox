@@ -59,7 +59,7 @@ class LFilter(Preprocessor):
         verbose: bool = False,
     ):
         """
-        Create an instance of AudioFilter.
+        Create an instance of LFilter.
 
         :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
         :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
@@ -74,10 +74,8 @@ class LFilter(Preprocessor):
         :param apply_predict: True if applied during predicting.
         :param verbose: Show progress bars.
         """
-        super().__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
+
         self.numerator_coef = numerator_coef
         self.denominator_coef = denominator_coef
         self.axis = axis
@@ -86,17 +84,9 @@ class LFilter(Preprocessor):
         self.verbose = verbose
         self._check_params()
 
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
-
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply audio filter to sample `x`.
+        Apply filter to sample `x`.
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
@@ -117,15 +107,6 @@ class LFilter(Preprocessor):
             np.clip(x_preprocess, self.clip_values[0], self.clip_values[1], out=x_preprocess)
 
         return x_preprocess, y
-
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        return grad
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         if not isinstance(self.denominator_coef, np.ndarray) or self.denominator_coef[0] == 0:

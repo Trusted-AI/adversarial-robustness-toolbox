@@ -31,7 +31,7 @@ from tqdm import trange
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 from art.estimators.estimator import BaseEstimator
-from art.attacks import InferenceAttack
+from art.attacks.attack import InferenceAttack
 from art.utils import get_labels_np_array, check_and_transform_label_format
 
 if TYPE_CHECKING:

@@ -22,13 +22,15 @@ import logging
 import numpy as np
 import pytest
 
-from art.preprocessing import LFilter
+from art.preprocessing.audio import LFilterPyTorch
+from art.config import ART_NUMPY_DTYPE
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.skipModule("torchaudio")
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("fir_filter", [False, True])
 def test_audio_filter(fir_filter, art_warning, expected_values):
     try:
@@ -43,18 +45,24 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         result_2 = expected_data[5]
 
         # Create signal data
-        x = np.array([np.array(x1 * 2), np.array(x2 * 2), np.array(x3 * 2)])
+        x = np.array(
+            [
+                np.array(x1 * 2, dtype=ART_NUMPY_DTYPE),
+                np.array(x2 * 2, dtype=ART_NUMPY_DTYPE),
+                np.array(x3 * 2, dtype=ART_NUMPY_DTYPE),
+            ]
+        )
 
         # Filter params
         numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
 
         if fir_filter:
-            denominator_coef = np.array([1.0])
+            denominator_coef = np.array([1.0, 0.0, 0.0, 0.0])
         else:
             denominator_coef = np.array([1.0, 0.1, 0.3, 0.4])
 
         # Create filter
-        audio_filter = LFilter(numerator_coef=numerator_coef, denominator_coef=denominator_coef)
+        audio_filter = LFilterPyTorch(numerator_coef=numerator_coef, denominator_coef=denominator_coef)
 
         # Apply filter
         result = audio_filter(x)
@@ -69,14 +77,15 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         art_warning(e)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.skipModule("torchaudio")
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_default(art_warning):
     try:
         # Small data for testing
-        x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]])
+        x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]], dtype=ART_NUMPY_DTYPE)
 
         # Create filter
-        audio_filter = LFilter()
+        audio_filter = LFilterPyTorch()
 
         # Apply filter
         result = audio_filter(x)
@@ -89,12 +98,13 @@ def test_default(art_warning):
         art_warning(e)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.skipModule("torchaudio")
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_triple_clip_values_error(art_warning):
     try:
         exc_msg = "`clip_values` should be a tuple of 2 floats containing the allowed data range."
         with pytest.raises(ValueError, match=exc_msg):
-            LFilter(
+            LFilterPyTorch(
                 numerator_coef=np.array([0.1, 0.2, 0.3]),
                 denominator_coef=np.array([0.1, 0.2, 0.3]),
                 clip_values=(0, 1, 2),
@@ -104,12 +114,13 @@ def test_triple_clip_values_error(art_warning):
         art_warning(e)
 
 
-@pytest.mark.framework_agnostic
+@pytest.mark.skipModule("torchaudio")
+@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 def test_relation_clip_values_error(art_warning):
     try:
         exc_msg = "Invalid `clip_values`: min >= max."
         with pytest.raises(ValueError, match=exc_msg):
-            LFilter(
+            LFilterPyTorch(
                 numerator_coef=np.array([0.1, 0.2, 0.3]), denominator_coef=np.array([0.1, 0.2, 0.3]), clip_values=(1, 0)
             )
 
