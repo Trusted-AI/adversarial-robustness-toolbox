@@ -6,3 +6,4 @@ EOT Image Rotation - TensorFlow V2
 ----------------------------------
 .. autoclass:: EOTImageRotationTensorFlowV2
    :members:
+   :special-members:
