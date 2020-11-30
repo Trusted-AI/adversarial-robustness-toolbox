@@ -36,7 +36,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin, BaseEstimator):
+class NumpyRandomizedSmoothing(
+    RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin, BaseEstimator  # lgtm [py/missing-call-to-init]
+):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
     in Cohen et al. (2019).
