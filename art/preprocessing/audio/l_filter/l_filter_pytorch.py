@@ -58,7 +58,7 @@ class LFilterPyTorch(PreprocessorPyTorch):
         device_type: str = "gpu",
     ) -> None:
         """
-        Create an instance of AudioFilterPyTorch.
+        Create an instance of LFilterPyTorch.
 
         :param numerator_coef: The numerator coefficient vector in a 1-D sequence.
         :param denominator_coef: The denominator coefficient vector in a 1-D sequence. By simply setting the array of
@@ -73,10 +73,8 @@ class LFilterPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        super().__init__()
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
 
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
         self.numerator_coef = numerator_coef.astype(ART_NUMPY_DTYPE)
         self.denominator_coef = denominator_coef.astype(ART_NUMPY_DTYPE)
         self.clip_values = clip_values
@@ -90,19 +88,11 @@ class LFilterPyTorch(PreprocessorPyTorch):
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
 
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
-
     def forward(
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
-        Apply audio filter to a single sample `x`.
+        Apply filter to a single sample `x`.
 
         :param x: A single audio sample.
         :param y: Label of the sample `x`. This function does not affect them in any way.
@@ -130,19 +120,9 @@ class LFilterPyTorch(PreprocessorPyTorch):
 
         return x_preprocess, y
 
-    def estimate_forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
-        """
-        No need to estimate, since the forward pass is differentiable.
-
-        :param x: A single audio sample.
-        :param y: Label of the sample `x`. This function does not affect them in any way.
-        :return: Similar sample.
-        """
-        return self.forward(x, y)[0]
-
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
-        Apply audio filter to sample `x`.
+        Apply filter to sample `x`.
 
         :param x: Samples of shape (nb_samples, seq_length). Note that, it is allowable that sequences in the batch
                   could have different lengths. A possible example of `x` could be:
@@ -169,12 +149,6 @@ class LFilterPyTorch(PreprocessorPyTorch):
             x_preprocess[i] = x_preprocess_i.cpu().numpy()
 
         return x_preprocess, y
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         if not isinstance(self.denominator_coef, np.ndarray) or self.denominator_coef[0] == 0:

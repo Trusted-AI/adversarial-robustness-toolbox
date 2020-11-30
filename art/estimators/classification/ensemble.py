@@ -44,7 +44,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
     trained when the ensemble is created and no training procedures are provided through this class.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         classifiers: List[ClassifierNeuralNetwork],
@@ -80,7 +80,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:

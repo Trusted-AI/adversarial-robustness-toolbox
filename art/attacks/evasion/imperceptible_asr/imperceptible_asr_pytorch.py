@@ -18,7 +18,7 @@
 """
 This module implements the imperceptible, robust, and targeted attack to generate adversarial examples for automatic
 speech recognition models. This attack will be implemented specifically for DeepSpeech model and is framework dependent,
-specifically for Pytorch.
+specifically for PyTorch.
 
 | Paper link: https://arxiv.org/abs/1903.10346
 """
@@ -44,11 +44,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ImperceptibleASRPytorch(EvasionAttack):
+class ImperceptibleASRPyTorch(EvasionAttack):
     """
     This class implements the imperceptible, robust, and targeted attack to generate adversarial examples for automatic
     speech recognition models. This attack will be implemented specifically for DeepSpeech model and is framework
-    dependent, specifically for Pytorch.
+    dependent, specifically for PyTorch.
 
     | Paper link: https://arxiv.org/abs/1903.10346
     """
@@ -108,7 +108,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         opt_level: str = "O1",
     ):
         """
-        Create a :class:`.ImperceptibleASRPytorch` instance.
+        Create a :class:`.ImperceptibleASRPyTorch` instance.
 
         :param estimator: A trained estimator.
         :param initial_eps: Initial maximum perturbation that the attacker can introduce.
@@ -236,7 +236,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
 
         if y is None:
             raise ValueError(
-                "`ImperceptibleASRPytorch` is a targeted attack and requires the definition of target"
+                "`ImperceptibleASRPyTorch` is a targeted attack and requires the definition of target"
                 "labels `y`. Currently `y` is set to `None`."
             )
 

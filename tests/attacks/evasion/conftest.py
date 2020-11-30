@@ -69,9 +69,9 @@ def audio_batch_padded():
 def asr_dummy_estimator(framework):
     def _asr_dummy_estimator(**kwargs):
         asr_dummy = None
-        if framework == "tensorflow2":
+        if framework == "tensorflow2v1":
 
-            class TensorFlowV2AsrDummy(TensorFlowV2Estimator, SpeechRecognizerMixin):
+            class TensorFlowV2ASRDummy(TensorFlowV2Estimator, SpeechRecognizerMixin):
                 def get_activations():
                     pass
 
@@ -88,10 +88,10 @@ def asr_dummy_estimator(framework):
                 def input_shape(self):
                     return None
 
-            asr_dummy = TensorFlowV2AsrDummy(channels_first=None, model=None, clip_values=None)
+            asr_dummy = TensorFlowV2ASRDummy(channels_first=None, model=None, clip_values=None)
         if framework == "pytorch":
 
-            class PyTorchAsrDummy(PyTorchEstimator, SpeechRecognizerMixin):
+            class PyTorchASRDummy(PyTorchEstimator, SpeechRecognizerMixin):
                 def get_activations():
                     pass
 
@@ -108,7 +108,7 @@ def asr_dummy_estimator(framework):
                 def input_shape(self):
                     return None
 
-            asr_dummy = PyTorchAsrDummy(channels_first=None, model=None, clip_values=None)
+            asr_dummy = PyTorchASRDummy(channels_first=None, model=None, clip_values=None)
         if asr_dummy is None:
             raise ARTTestFixtureNotImplemented(
                 "ASR dummy estimator not available for this framework", asr_dummy_estimator.__name__, framework

@@ -55,7 +55,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     This class implements a classifier with the PyTorch framework.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         model: "torch.nn.Module",
@@ -108,7 +108,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         """
         import torch  # lgtm [py/repeated-import]
 
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:
@@ -661,7 +661,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __getstate__(self) -> Dict[str, Any]:
         """
-        Use to ensure `PytorchClassifier` can be pickled.
+        Use to ensure `PyTorchClassifier` can be pickled.
 
         :return: State dictionary with instance parameters.
         """
@@ -683,7 +683,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
     def __setstate__(self, state: Dict[str, Any]) -> None:
         """
-        Use to ensure `PytorchClassifier` can be unpickled.
+        Use to ensure `PyTorchClassifier` can be unpickled.
 
         :param state: State dictionary with instance parameters to restore.
         """
