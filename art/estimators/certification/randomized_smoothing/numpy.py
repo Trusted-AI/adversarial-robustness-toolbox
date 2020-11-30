@@ -28,7 +28,7 @@ from art.estimators.estimator import BaseEstimator
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 import logging
-from typing import List, Union, TYPE_CHECKING
+from typing import List, Union, TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -68,6 +68,10 @@ class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, Cl
             alpha=alpha,
         )
         self.classifier = classifier
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        return self.classifier.input_shape
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
         """
