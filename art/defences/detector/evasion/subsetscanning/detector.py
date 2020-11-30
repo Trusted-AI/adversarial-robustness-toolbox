@@ -60,6 +60,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         :param verbose: Show progress bars.
         """
         super().__init__(
+            model=None,
             clip_values=classifier.clip_values,
             channel_index=classifier.channel_index,
             channels_first=classifier.channels_first,
@@ -238,7 +239,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         return self.detector.clip_values
 
     @property  # type: ignore
-    @deprecated(end_version="1.5.0", replaced_by="channels_first")
+    @deprecated(end_version="1.6.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 

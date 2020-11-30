@@ -44,9 +44,18 @@ class TestActivationDefence(unittest.TestCase):
         cls.mnist = (x_train, y_train), (x_test, y_test), (min_, max_)
 
         # Create simple keras model
-        import keras.backend as k
-        from keras.models import Sequential
-        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        import tensorflow as tf
+
+        tf_version = [int(v) for v in tf.__version__.split(".")]
+        if tf_version[0] == 2 and tf_version[1] >= 3:
+            tf.compat.v1.disable_eager_execution()
+            from tensorflow.keras import backend as k
+            from tensorflow.keras.models import Sequential
+            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        else:
+            import keras.backend as k
+            from keras.models import Sequential
+            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         k.set_learning_phase(1)
         model = Sequential()

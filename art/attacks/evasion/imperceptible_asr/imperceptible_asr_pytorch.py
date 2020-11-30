@@ -18,13 +18,14 @@
 """
 This module implements the imperceptible, robust, and targeted attack to generate adversarial examples for automatic
 speech recognition models. This attack will be implemented specifically for DeepSpeech model and is framework dependent,
-specifically for Pytorch.
+specifically for PyTorch.
 
 | Paper link: https://arxiv.org/abs/1903.10346
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
+
 from typing import Tuple, Optional, TYPE_CHECKING
 
 import numpy as np
@@ -35,6 +36,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNe
 from art.estimators.pytorch import PyTorchEstimator
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
+from art.config import ART_NUMPY_DTYPE
 
 if TYPE_CHECKING:
     import torch
@@ -42,11 +44,11 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ImperceptibleASRPytorch(EvasionAttack):
+class ImperceptibleASRPyTorch(EvasionAttack):
     """
     This class implements the imperceptible, robust, and targeted attack to generate adversarial examples for automatic
     speech recognition models. This attack will be implemented specifically for DeepSpeech model and is framework
-    dependent, specifically for Pytorch.
+    dependent, specifically for PyTorch.
 
     | Paper link: https://arxiv.org/abs/1903.10346
     """
@@ -106,7 +108,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         opt_level: str = "O1",
     ):
         """
-        Create a :class:`.ImperceptibleASRPytorch` instance.
+        Create a :class:`.ImperceptibleASRPyTorch` instance.
 
         :param estimator: A trained estimator.
         :param initial_eps: Initial maximum perturbation that the attacker can introduce.
@@ -145,18 +147,6 @@ class ImperceptibleASRPytorch(EvasionAttack):
         """
         import torch  # lgtm [py/repeated-import]
         from torch.autograd import Variable
-
-        if (
-            hasattr(estimator, "preprocessing")
-            and (estimator.preprocessing is not None and estimator.preprocessing != (0, 1))
-        ) or (
-            hasattr(estimator, "preprocessing_defences")
-            and (estimator.preprocessing_defences is not None and estimator.preprocessing_defences != [])
-        ):
-            raise NotImplementedError(
-                "The framework-specific implementation currently does not apply preprocessing and "
-                "preprocessing defences."
-            )
 
         super().__init__(estimator=estimator)
 
@@ -246,7 +236,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
 
         if y is None:
             raise ValueError(
-                "`ImperceptibleASRPytorch` is a targeted attack and requires the definition of target"
+                "`ImperceptibleASRPyTorch` is a targeted attack and requires the definition of target"
                 "labels `y`. Currently `y` is set to `None`."
             )
 
@@ -348,11 +338,11 @@ class ImperceptibleASRPytorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize rescale
-        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float32) * self.initial_rescale
+        rescale = np.ones([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
-        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
@@ -460,12 +450,8 @@ class ImperceptibleASRPytorch(EvasionAttack):
         masked_adv_input = adv_input * torch.tensor(input_mask).to(self.estimator.device)
 
         # Transform data into the model input space
-        inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.transform_model_input(
-            x=masked_adv_input.to(self.estimator.device),
-            y=original_output,
-            compute_gradient=False,
-            tensor_input=True,
-            real_lengths=real_lengths,
+        inputs, targets, input_rates, target_sizes, batch_idx = self.estimator.preprocess_transform_model_input(
+            x=masked_adv_input.to(self.estimator.device), y=original_output, real_lengths=real_lengths,
         )
 
         # Compute real input sizes
@@ -518,12 +504,12 @@ class ImperceptibleASRPytorch(EvasionAttack):
         local_max_length = np.max(real_lengths)
 
         # Initialize alpha and rescale
-        alpha = np.array([self.initial_alpha] * local_batch_size, dtype=np.float32)
-        rescale = np.ones([local_batch_size, local_max_length], dtype=np.float32) * self.initial_rescale
+        alpha = np.array([self.initial_alpha] * local_batch_size, dtype=ART_NUMPY_DTYPE)
+        rescale = np.ones([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE) * self.initial_rescale
 
         # Reformat input
-        input_mask = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
-        original_input = np.zeros([local_batch_size, local_max_length], dtype=np.float32)
+        input_mask = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
+        original_input = np.zeros([local_batch_size, local_max_length], dtype=ART_NUMPY_DTYPE)
 
         for local_batch_size_idx in range(local_batch_size):
             input_mask[local_batch_size_idx, : len(x[local_batch_size_idx])] = 1
@@ -680,7 +666,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
         barks = 13 * np.arctan(0.00076 * freqs) + 3.5 * np.arctan(pow(freqs / 7500.0, 2))
 
         # Compute quiet threshold
-        ath = np.zeros(len(barks), dtype=np.float32) - np.inf
+        ath = np.zeros(len(barks), dtype=ART_NUMPY_DTYPE) - np.inf
         bark_idx = np.argmax(barks > 1)
         ath[bark_idx:] = (
             3.64 * pow(freqs[bark_idx:] * 0.001, -0.8)
@@ -702,7 +688,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
             if len(psd[:, i]) - 1 in masker_idx:
                 masker_idx = np.delete(masker_idx, len(psd[:, i]) - 1)
 
-            barks_psd = np.zeros([len(masker_idx), 3], dtype=np.float32)
+            barks_psd = np.zeros([len(masker_idx), 3], dtype=ART_NUMPY_DTYPE)
             barks_psd[:, 0] = barks[masker_idx]
             barks_psd[:, 1] = 10 * np.log10(
                 pow(10, psd[:, i][masker_idx - 1] / 10.0)
@@ -744,7 +730,7 @@ class ImperceptibleASRPytorch(EvasionAttack):
             for m in range(barks_psd.shape[0]):
                 d_z = barks - barks_psd[m, 0]
                 zero_idx = np.argmax(d_z > 0)
-                s_f = np.zeros(len(d_z), dtype=np.float32)
+                s_f = np.zeros(len(d_z), dtype=ART_NUMPY_DTYPE)
                 s_f[:zero_idx] = 27 * d_z[:zero_idx]
                 s_f[zero_idx:] = (-27 + 0.37 * max(barks_psd[m, 1] - 40, 0)) * d_z[zero_idx:]
                 t_s.append(barks_psd[m, 1] + delta[m] + s_f)

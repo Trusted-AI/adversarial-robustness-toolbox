@@ -83,8 +83,6 @@ class FeatureAdversaries(EvasionAttack):
                        `scipy.optimize.show_options(solver='minimize', method='L-BFGS-B')`:
                        Minimize a scalar function of one or more variables using the L-BFGS-B algorithm.
 
-                       Options
-                       -------
                        disp : None or int
                            If `disp is None` (the default), then the supplied version of `iprint`
                            is used. If `disp is not None`, then it overrides the supplied version
@@ -120,8 +118,6 @@ class FeatureAdversaries(EvasionAttack):
                        maxls : int, optional
                            Maximum number of line search steps (per iteration). Default is 20.
 
-                       Notes
-                       -----
                        The option `ftol` is exposed via the `scipy.optimize.minimize` interface,
                        but calling `scipy.optimize.fmin_l_bfgs_b` directly exposes `factr`. The
                        relationship between the two is ``ftol = factr * numpy.finfo(float).eps``.

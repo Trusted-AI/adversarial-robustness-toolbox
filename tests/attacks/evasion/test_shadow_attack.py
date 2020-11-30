@@ -25,6 +25,7 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -38,10 +39,9 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(ShadowAttack)
-
-    for classifier in classifier_list:
+def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(ShadowAttack)
         attack = ShadowAttack(
             estimator=classifier,
             sigma=0.5,
@@ -58,14 +58,15 @@ def test_generate(fix_get_mnist_subset, image_dl_estimator_for_attack):
 
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:1], y=y_train_mnist[0:1])
 
-        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.34966960549354553, abs=0.06)
+        assert np.max(np.abs(x_train_mnist_adv - x_train_mnist[0:1])) == pytest.approx(0.38116083, abs=0.06)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("pytorch")
-def test_get_regularisation_loss_gradients(fix_get_mnist_subset, image_dl_estimator_for_attack):
-    classifier_list = image_dl_estimator_for_attack(ShadowAttack)
-
-    for classifier in classifier_list:
+def test_get_regularisation_loss_gradients(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        classifier = image_dl_estimator_for_attack(ShadowAttack)
 
         attack = ShadowAttack(
             estimator=classifier,
@@ -120,11 +121,13 @@ def test_get_regularisation_loss_gradients(fix_get_mnist_subset, image_dl_estima
             np.testing.assert_array_almost_equal(gradients[0, 0, 14, :], gradients_expected, decimal=3)
         else:
             np.testing.assert_array_almost_equal(gradients[0, 14, :, 0], gradients_expected, decimal=3)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(ShadowAttack, [BaseEstimator, LossGradientsMixin, ClassifierMixin])
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=pytorch --durations=0".format(__file__).split(" "))
+@pytest.mark.only_with_platform("pytorch")
+def test_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(ShadowAttack, [BaseEstimator, LossGradientsMixin, ClassifierMixin])
+    except ARTTestException as e:
+        art_warning(e)

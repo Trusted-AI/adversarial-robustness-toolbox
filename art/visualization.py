@@ -27,7 +27,7 @@ from typing import List, Optional, TYPE_CHECKING
 import numpy as np
 from PIL import Image
 
-from art.config import ART_DATA_PATH
+from art import config
 
 if TYPE_CHECKING:
     import matplotlib
@@ -97,7 +97,7 @@ def save_image(image_array: np.ndarray, f_name: str) -> None:
     :param image_array: Image to be saved.
     :param f_name: File name containing extension e.g., my_img.jpg, my_img.png, my_images/my_img.png.
     """
-    file_name = os.path.join(ART_DATA_PATH, f_name)
+    file_name = os.path.join(config.ART_DATA_PATH, f_name)
     folder = os.path.split(file_name)[0]
     if not os.path.exists(folder):
         os.makedirs(folder)
@@ -151,7 +151,7 @@ def plot_3d(
                     "Labels outside the range. Should start from zero and be sequential there after"
                 ) from IndexError
         if save:
-            file_name = os.path.realpath(os.path.join(ART_DATA_PATH, f_name))
+            file_name = os.path.realpath(os.path.join(config.ART_DATA_PATH, f_name))
             folder = os.path.split(file_name)[0]
 
             if not os.path.exists(folder):
