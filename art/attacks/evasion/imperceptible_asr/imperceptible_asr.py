@@ -540,10 +540,10 @@ class PsychoacousticMasker:
 
     def calculate_threshold_and_psd_maximum(self, audio: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
-        Compute the global masking threshold for an audio input and also return its maxium power spectral density.
+        Compute the global masking threshold for an audio input and also return its maximum power spectral density.
 
         This method is the main method to call in order to obtain global masking thresholds for an audio input. It also
-        returns the maxium power spectral density (PSD) for each frame. Given an audio input, the following steps are
+        returns the maximum power spectral density (PSD) for each frame. Given an audio input, the following steps are
         performed:
 
         1. STFT analysis and sound pressure level normalization
@@ -630,7 +630,7 @@ class PsychoacousticMasker:
         Compute the power spectral density matrix for an audio input.
 
         :param audio: Audio sample of shape `(length,)`.
-        :return: PSD matrix of shape `(window_size // 2 + 1, frame_length)` and maxium vector of shape `(frame_length)`.
+        :return: PSD matrix of shape `(window_size // 2 + 1, frame_length)` and maximum vector of shape `(frame_length)`.
         """
         # compute short-time Fourier transform (STFT)
         stft_params = {

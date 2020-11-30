@@ -142,13 +142,13 @@ class TestImperceptibleASR:
             tf1.reset_default_graph()
 
             test_delta = audio_batch_padded
-            test_psd_maxium = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0], 28))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(),)
             feed_dict = {
                 imperceptible_asr._delta: test_delta,
-                imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maxium,
+                imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maximum,
                 imperceptible_asr._masking_threshold_tf: test_masking_threshold,
             }
             with tf1.Session() as sess:
@@ -167,13 +167,13 @@ class TestImperceptibleASR:
             tf1.reset_default_graph()
 
             test_delta = audio_batch_padded
-            test_psd_maxium = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0], 28))
             test_masking_threshold = np.zeros((test_delta.shape[0], 1025, 28))
 
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker(),)
             feed_dict = {
                 imperceptible_asr._delta: test_delta,
-                imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maxium,
+                imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maximum,
                 imperceptible_asr._masking_threshold_tf: test_masking_threshold,
             }
             with tf1.Session() as sess:
@@ -192,13 +192,13 @@ class TestImperceptibleASR:
             tf1.reset_default_graph()
 
             test_delta = audio_batch_padded
-            test_psd_maxium = np.ones((test_delta.shape[0], 28))
+            test_psd_maximum = np.ones((test_delta.shape[0], 28))
 
             masker = PsychoacousticMasker()
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=masker,)
             feed_dict = {
                 imperceptible_asr._delta: test_delta,
-                imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maxium,
+                imperceptible_asr._power_spectral_density_maximum_tf: test_psd_maximum,
             }
 
             approximate_psd_tf = imperceptible_asr._approximate_power_spectral_density_tf(
