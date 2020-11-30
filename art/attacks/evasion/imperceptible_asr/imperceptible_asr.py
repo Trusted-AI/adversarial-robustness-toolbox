@@ -630,7 +630,8 @@ class PsychoacousticMasker:
         Compute the power spectral density matrix for an audio input.
 
         :param audio: Audio sample of shape `(length,)`.
-        :return: PSD matrix of shape `(window_size // 2 + 1, frame_length)` and maximum vector of shape `(frame_length)`.
+        :return: PSD matrix of shape `(window_size // 2 + 1, frame_length)` and maximum vector of shape
+        `(frame_length)`.
         """
         # compute short-time Fourier transform (STFT)
         stft_params = {
