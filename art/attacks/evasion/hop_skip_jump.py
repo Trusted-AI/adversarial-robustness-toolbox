@@ -24,7 +24,7 @@ predictions. It is an advanced version of the Boundary attack.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, Union, List, TYPE_CHECKING
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
