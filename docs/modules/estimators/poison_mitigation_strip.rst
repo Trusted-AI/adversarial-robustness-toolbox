@@ -1,5 +1,5 @@
-:mod:`art.estimators.certification.strip`
-=========================================
+:mod:`art.estimators.poison_mitigation.strip`
+=============================================
 .. automodule:: art.estimators.poison_mitigation.strip
 
 Mixin Base Class STRIP

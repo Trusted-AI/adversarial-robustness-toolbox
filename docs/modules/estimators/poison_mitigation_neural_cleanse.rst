@@ -1,5 +1,5 @@
-:mod:`art.estimators.certification.neural_cleanse`
-==================================================
+:mod:`art.estimators.poison_mitigation.neural_cleanse`
+======================================================
 .. automodule:: art.estimators.poison_mitigation.neural_cleanse
 
 Keras Neural Cleanse Classifier
