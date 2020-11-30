@@ -106,15 +106,18 @@ jobs:
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
           pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip list
       - name: Pre-install tensorflow
         if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' }}
         run: |
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install keras==${{ matrix.keras }}
+          pip list
       - name: Pre-install scikit-learn
         if: ${{ matrix.framework == 'scikitlearn' }}
         run: |
           pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip list
       - name: Install Dependencies
         run: |
           sudo apt-get update
