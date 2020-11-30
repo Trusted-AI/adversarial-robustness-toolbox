@@ -55,6 +55,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
+        self._check_params()
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -130,3 +131,7 @@ class AttributeInferenceWhiteBoxLifestyleDecisionTree(AttributeInferenceAttack):
             phi.append(num_value)
 
         return phi
+
+    def _check_params(self) -> None:
+        if self.attack_feature < 0:
+            raise ValueError("Attack feature must be positive.")
