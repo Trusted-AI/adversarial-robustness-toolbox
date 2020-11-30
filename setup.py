@@ -39,7 +39,7 @@ docs_require = [
 
 def read(rel_path):
     here = os.path.abspath(os.path.dirname(__file__))
-    with codecs.open(os.path.join(here, rel_path), "r") as fp:
+    with codecs.open(os.path.join(here, rel_path), "r", encoding="utf-8") as fp:
         return fp.read()
 
 
@@ -61,7 +61,7 @@ setup(
     author_email="irinutza.n@gmail.com",
     maintainer="Beat Buesser",
     maintainer_email="beat.buesser@ie.ibm.com",
-    url="https://github.com/IBM/adversarial-robustness-toolbox",
+    url="https://github.com/Trusted-AI/adversarial-robustness-toolbox",
     license="MIT",
     install_requires=install_requires,
     extras_require={

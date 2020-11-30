@@ -22,14 +22,13 @@ import logging
 import numpy as np
 import pytest
 
-from art.preprocessing import LFilterPyTorch
+from art.preprocessing.audio import LFilter
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.skipModule("torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.framework_agnostic
 @pytest.mark.parametrize("fir_filter", [False, True])
 def test_audio_filter(fir_filter, art_warning, expected_values):
     try:
@@ -50,12 +49,12 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         numerator_coef = np.array([0.1, 0.2, -0.1, -0.2])
 
         if fir_filter:
-            denominator_coef = np.array([1.0, 0.0, 0.0, 0.0])
+            denominator_coef = np.array([1.0])
         else:
             denominator_coef = np.array([1.0, 0.1, 0.3, 0.4])
 
         # Create filter
-        audio_filter = LFilterPyTorch(numerator_coef=numerator_coef, denominator_coef=denominator_coef)
+        audio_filter = LFilter(numerator_coef=numerator_coef, denominator_coef=denominator_coef)
 
         # Apply filter
         result = audio_filter(x)
@@ -70,15 +69,14 @@ def test_audio_filter(fir_filter, art_warning, expected_values):
         art_warning(e)
 
 
-@pytest.mark.skipModule("torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.framework_agnostic
 def test_default(art_warning):
     try:
         # Small data for testing
         x = np.array([[0.37, 0.68, 0.63, 0.48, 0.48, 0.18, 0.19]])
 
         # Create filter
-        audio_filter = LFilterPyTorch()
+        audio_filter = LFilter()
 
         # Apply filter
         result = audio_filter(x)
@@ -91,13 +89,12 @@ def test_default(art_warning):
         art_warning(e)
 
 
-@pytest.mark.skipModule("torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.framework_agnostic
 def test_triple_clip_values_error(art_warning):
     try:
         exc_msg = "`clip_values` should be a tuple of 2 floats containing the allowed data range."
         with pytest.raises(ValueError, match=exc_msg):
-            LFilterPyTorch(
+            LFilter(
                 numerator_coef=np.array([0.1, 0.2, 0.3]),
                 denominator_coef=np.array([0.1, 0.2, 0.3]),
                 clip_values=(0, 1, 2),
@@ -107,13 +104,12 @@ def test_triple_clip_values_error(art_warning):
         art_warning(e)
 
 
-@pytest.mark.skipModule("torchaudio")
-@pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
+@pytest.mark.framework_agnostic
 def test_relation_clip_values_error(art_warning):
     try:
         exc_msg = "Invalid `clip_values`: min >= max."
         with pytest.raises(ValueError, match=exc_msg):
-            LFilterPyTorch(
+            LFilter(
                 numerator_coef=np.array([0.1, 0.2, 0.3]), denominator_coef=np.array([0.1, 0.2, 0.3]), clip_values=(1, 0)
             )
 

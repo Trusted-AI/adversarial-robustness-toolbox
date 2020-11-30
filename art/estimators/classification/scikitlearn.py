@@ -998,12 +998,12 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
     """
 
     def __init__(
-            self,
-            model: Union["sklearn.naive_bayes.GaussianNB"],
-            clip_values: Optional["CLIP_VALUES_TYPE"] = None,
-            preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
-            postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-            preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        self,
+        model: Union["sklearn.naive_bayes.GaussianNB"],
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
+        preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
+        postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn Gaussian Naive Bayes (GaussianNB) model.
@@ -1021,9 +1021,7 @@ class ScikitlearnGaussianNB(ScikitlearnClassifier):
         import sklearn  # lgtm [py/repeated-import]
 
         if not isinstance(model, sklearn.naive_bayes.GaussianNB):
-            raise TypeError(
-                "Model must be of type sklearn.naive_bayes.GaussianNB. Found type {}".format(type(model))
-            )
+            raise TypeError("Model must be of type sklearn.naive_bayes.GaussianNB. Found type {}".format(type(model)))
 
         super().__init__(
             model=model,

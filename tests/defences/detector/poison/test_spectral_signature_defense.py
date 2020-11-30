@@ -53,9 +53,14 @@ def test_detect_poison(art_warning, get_default_mnist_subset, image_dl_estimator
         classifier, _ = image_dl_estimator()
 
         classifier.fit(x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], nb_epochs=1)
-        defence = SpectralSignatureDefense(classifier, x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN],
-                                           batch_size=BATCH_SIZE, eps_multiplier=EPS_MULTIPLIER,
-                                           expected_pp_poison=UB_PCT_POISON)
+        defence = SpectralSignatureDefense(
+            classifier,
+            x_train_mnist[:NB_TRAIN],
+            y_train_mnist[:NB_TRAIN],
+            batch_size=BATCH_SIZE,
+            eps_multiplier=EPS_MULTIPLIER,
+            expected_pp_poison=UB_PCT_POISON,
+        )
         report, is_clean = defence.detect_poison()
     except ARTTestException as e:
         art_warning(e)
@@ -69,9 +74,14 @@ def test_evaluate_defense(art_warning, get_default_mnist_subset, image_dl_estima
         classifier, _ = image_dl_estimator()
 
         classifier.fit(x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN], nb_epochs=1)
-        defence = SpectralSignatureDefense(classifier, x_train_mnist[:NB_TRAIN], y_train_mnist[:NB_TRAIN],
-                                           batch_size=BATCH_SIZE, eps_multiplier=EPS_MULTIPLIER,
-                                           expected_pp_poison=UB_PCT_POISON)
+        defence = SpectralSignatureDefense(
+            classifier,
+            x_train_mnist[:NB_TRAIN],
+            y_train_mnist[:NB_TRAIN],
+            batch_size=BATCH_SIZE,
+            eps_multiplier=EPS_MULTIPLIER,
+            expected_pp_poison=UB_PCT_POISON,
+        )
         res = defence.evaluate_defence(np.zeros(NB_TRAIN))
     except ARTTestException as e:
         art_warning(e)

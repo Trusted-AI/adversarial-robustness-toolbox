@@ -72,6 +72,7 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
                                a potentially higher false positive rate, but may detect more poison samples
         """
         super().__init__(classifier, x_train, y_train)
+        self.classifier: "CLASSIFIER_NEURALNETWORK_TYPE" = classifier
         self.batch_size = batch_size
         self.eps_multiplier = eps_multiplier
         self.expected_pp_poison = expected_pp_poison
@@ -109,7 +110,10 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         """
         self.set_params(**kwargs)
 
-        nb_layers = len(self.classifier.layer_names)
+        if self.classifier.layer_names is not None:
+            nb_layers = len(self.classifier.layer_names)
+        else:
+            raise ValueError("No layer names identified.")
         features_x_poisoned = self.classifier.get_activations(
             self.x_train, layer=nb_layers - 1, batch_size=self.batch_size
         )
@@ -150,8 +154,9 @@ class SpectralSignatureDefense(PoisonFilteringDefence):
         if self.eps_multiplier < 0:
             raise ValueError("eps_multiplier must be positive. Unsupported value: " + str(self.eps_multiplier))
         if self.expected_pp_poison < 0 or self.expected_pp_poison > 1:
-            raise ValueError("expected_pp_poison must be between 0 and 1. Unsupported value: " +
-                             str(self.expected_pp_poison))
+            raise ValueError(
+                "expected_pp_poison must be between 0 and 1. Unsupported value: " + str(self.expected_pp_poison)
+            )
 
     @staticmethod
     def spectral_signature_scores(matrix_r: np.ndarray) -> np.ndarray:

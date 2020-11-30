@@ -36,11 +36,7 @@ from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
-from art.utils import (
-    compute_success,
-    get_labels_np_array,
-    check_and_transform_label_format,
-)
+from art.utils import compute_success, get_labels_np_array, check_and_transform_label_format, compute_success_array
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE, OBJECT_DETECTOR_TYPE
@@ -259,43 +255,57 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
             targets = self._set_targets(x, y)
 
             # Start to compute adversarial examples
-            adv_x_best = None
-            rate_best = None
+            adv_x = x.astype(ART_NUMPY_DTYPE)
 
-            for _ in trange(
-                max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose
-            ):
-                adv_x = x.astype(ART_NUMPY_DTYPE)
+            for batch_id in range(int(np.ceil(x.shape[0] / float(self.batch_size)))):
+                for rand_init_num in trange(
+                    max(1, self.num_random_init), desc="PGD - Random Initializations", disable=not self.verbose
+                ):
+                    batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
+                    batch_index_2 = min(batch_index_2, x.shape[0])
+                    batch = x[batch_index_1:batch_index_2]
+                    batch_labels = targets[batch_index_1:batch_index_2]
+                    mask_batch = mask
 
-                for i_max_iter in trange(self.max_iter, desc="PGD - Iterations", leave=False, disable=not self.verbose):
-                    adv_x = self._compute(
-                        adv_x,
-                        x,
-                        targets,
-                        mask,
-                        self.eps,
-                        self.eps_step,
-                        self._project,
-                        self.num_random_init > 0 and i_max_iter == 0,
-                    )
+                    if mask is not None:
+                        if len(mask.shape) == len(x.shape):
+                            mask_batch = mask[batch_index_1:batch_index_2]
 
-                if self.num_random_init > 1:
-                    rate = 100 * compute_success(
-                        self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size,  # type: ignore
-                    )
-                    if rate_best is None or rate > rate_best or adv_x_best is None:
-                        rate_best = rate
-                        adv_x_best = adv_x
-                else:
-                    adv_x_best = adv_x
+                    for i_max_iter in trange(
+                        self.max_iter, desc="PGD - Iterations", leave=False, disable=not self.verbose
+                    ):
+                        batch = self._compute(
+                            batch,
+                            x[batch_index_1:batch_index_2],
+                            batch_labels,
+                            mask_batch,
+                            self.eps,
+                            self.eps_step,
+                            self._project,
+                            self.num_random_init > 0 and i_max_iter == 0,
+                        )
+
+                    if rand_init_num == 0:
+                        # initial (and possibly only) random restart: we only have this set of
+                        # adversarial examples for now
+                        adv_x[batch_index_1:batch_index_2] = np.copy(batch)
+                    else:
+                        # replace adversarial examples if they are successful
+                        attack_success = compute_success_array(
+                            self.estimator,
+                            x[batch_index_1:batch_index_2],
+                            targets[batch_index_1:batch_index_2],
+                            batch,
+                            self.targeted,
+                            batch_size=self.batch_size,
+                        )
+                        adv_x[batch_index_1:batch_index_2][attack_success] = batch[attack_success]
 
             logger.info(
                 "Success rate of attack: %.2f%%",
-                rate_best
-                if rate_best is not None
-                else 100
+                100
                 * compute_success(
-                    self.estimator, x, y, adv_x_best, self.targeted, batch_size=self.batch_size,  # type: ignore
+                    self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size,  # type: ignore
                 ),
             )
         else:
@@ -323,6 +333,4 @@ class ProjectedGradientDescentNumpy(ProjectedGradientDescentCommon):
                     self.num_random_init > 0 and i_max_iter == 0,
                 )
 
-            adv_x_best = adv_x
-
-        return adv_x_best
+        return adv_x

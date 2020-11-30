@@ -45,6 +45,7 @@ class TestActivationDefence(unittest.TestCase):
 
         # Create simple keras model
         import tensorflow as tf
+
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
             tf.compat.v1.disable_eager_execution()

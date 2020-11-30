@@ -30,3 +30,8 @@ Base Class Inference Attacks
 .. autoclass:: InferenceAttack
 .. autoclass:: AttributeInferenceAttack
    :members:
+
+Base Class Reconstruction Attacks
+---------------------------------
+.. autoclass:: ReconstructionAttack
+   :members:
