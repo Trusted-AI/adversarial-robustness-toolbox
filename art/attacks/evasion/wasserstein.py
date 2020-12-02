@@ -377,6 +377,7 @@ class Wasserstein(EvasionAttack):
         exp_alpha = np.exp(-alpha)
 
         beta = -self.regularization * grad
+        beta = beta.astype(np.float64)
         exp_beta = np.exp(-beta)
 
         # Check for overflow
