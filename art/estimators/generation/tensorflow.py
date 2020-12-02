@@ -160,9 +160,10 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
 
     def set_learning_phase(self, train: bool) -> None:
         """
-        do nothing.
+        Do nothing.
         """
-        raise NotImplementedError
+        if train:
+            raise NotImplementedError("Training is not implemented for this estimator.")
 
     @property
     def model(self) -> "tf.Tensor":

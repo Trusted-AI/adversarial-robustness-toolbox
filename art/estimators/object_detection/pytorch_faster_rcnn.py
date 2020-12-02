@@ -325,7 +325,11 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
         raise NotImplementedError
 
     def set_learning_phase(self, train: bool) -> None:
-        raise NotImplementedError
+        """
+        Do nothing.
+        """
+        if train:
+            raise NotImplementedError("Training is not implemented for this estimator.")
 
     def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """

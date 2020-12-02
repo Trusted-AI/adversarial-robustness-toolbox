@@ -1146,11 +1146,15 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
     def set_learning_phase(self, train: bool) -> None:
         """
+        Calling this method does not result in any operations or changes and simply passes. This method is implemented
+        to enable calling `set_learning_phase` independent of the estimator type and framework-specific requirements to
+        set the learning phase. For TensorFlow v2 the learning phase has not be defined.
+
         Set the learning phase for the backend framework.
 
         :param train: True to set the learning phase to training, False to set it to prediction.
         """
-        raise NotImplementedError
+        pass
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
