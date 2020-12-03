@@ -21,13 +21,15 @@ This module implements the Feature Adversaries attack.
 | Paper link: https://arxiv.org/abs/1511.05122
 """
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +51,7 @@ class FeatureAdversaries(EvasionAttack):
 
     def __init__(
         self,
-        classifier: ClassifierNeuralNetwork,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         delta: Optional[float] = None,
         layer: Optional[int] = None,
         batch_size: int = 32,
@@ -58,12 +60,11 @@ class FeatureAdversaries(EvasionAttack):
         Create a :class:`.FeatureAdversaries` instance.
 
         :param classifier: A trained classifier.
-        :type classifier: :class:`.Classifier`
         :param delta: The maximum deviation between source and guide images.
         :param layer: Index of the representation layer.
         :param batch_size: Batch size.
         """
-        super(FeatureAdversaries, self).__init__(classifier)
+        super().__init__(estimator=classifier)
 
         self.delta = delta
         self.layer = layer
@@ -82,8 +83,6 @@ class FeatureAdversaries(EvasionAttack):
                        `scipy.optimize.show_options(solver='minimize', method='L-BFGS-B')`:
                        Minimize a scalar function of one or more variables using the L-BFGS-B algorithm.
 
-                       Options
-                       -------
                        disp : None or int
                            If `disp is None` (the default), then the supplied version of `iprint`
                            is used. If `disp is not None`, then it overrides the supplied version
@@ -101,7 +100,7 @@ class FeatureAdversaries(EvasionAttack):
                            <= gtol`` where ``pg_i`` is the i-th component of the
                            projected gradient.
                        eps : float
-                           Step size used for numerical approximation of the jacobian.
+                           Step size used for numerical approximation of the Jacobian.
                        maxfun : int
                            Maximum number of function evaluations.
                        maxiter : int
@@ -119,8 +118,6 @@ class FeatureAdversaries(EvasionAttack):
                        maxls : int, optional
                            Maximum number of line search steps (per iteration). Default is 20.
 
-                       Notes
-                       -----
                        The option `ftol` is exposed via the `scipy.optimize.minimize` interface,
                        but calling `scipy.optimize.fmin_l_bfgs_b` directly exposes `factr`. The
                        relationship between the two is ``ftol = factr * numpy.finfo(float).eps``.
@@ -133,13 +130,13 @@ class FeatureAdversaries(EvasionAttack):
         from scipy.optimize import minimize, Bounds
         from scipy.linalg import norm
 
-        lb = x.flatten() - self.delta
-        lb[lb < self.estimator.clip_values[0]] = self.estimator.clip_values[0]
+        l_b = x.flatten() - self.delta
+        l_b[l_b < self.estimator.clip_values[0]] = self.estimator.clip_values[0]
 
-        ub = x.flatten() + self.delta
-        ub[ub > self.estimator.clip_values[1]] = self.estimator.clip_values[1]
+        u_b = x.flatten() + self.delta
+        u_b[u_b > self.estimator.clip_values[1]] = self.estimator.clip_values[1]
 
-        bound = Bounds(lb=lb, ub=ub, keep_feasible=False)
+        bound = Bounds(lb=l_b, ub=u_b, keep_feasible=False)
 
         guide_representation = self.estimator.get_activations(
             x=y.reshape(-1, *self.estimator.input_shape),  # type: ignore

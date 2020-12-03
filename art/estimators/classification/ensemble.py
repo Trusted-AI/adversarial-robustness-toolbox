@@ -21,7 +21,7 @@ This module implements the classifier `EnsembleClassifier` for ensembles of mult
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -30,7 +30,7 @@ from art.estimators.estimator import NeuralNetworkMixin
 from art.utils import Deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -44,7 +44,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
     trained when the ensemble is created and no training procedures are provided through this class.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         classifiers: List[ClassifierNeuralNetwork],
@@ -73,14 +73,14 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier. Not applicable
                in this classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one. Not applicable in this classifier.
         """
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:
@@ -88,7 +88,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(EnsembleClassifier, self).__init__(
+        super().__init__(
+            model=None,
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -140,6 +141,15 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         self._classifiers = classifiers
         self._learning_phase: Optional[bool] = None
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs) -> np.ndarray:
         """
@@ -307,5 +317,18 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
         :raises `NotImplementedException`: This method is not supported for ensembles.
+        """
+        raise NotImplementedError
+
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
         """
         raise NotImplementedError

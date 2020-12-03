@@ -44,7 +44,7 @@ class Resample(Preprocessor):
 
     params = ["sr_original", "sr_new", "channel_index", "channels_first"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         sr_original: int,
@@ -65,7 +65,7 @@ class Resample(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 2:
             channels_first = False
         elif channel_index == 1:
@@ -73,23 +73,12 @@ class Resample(Preprocessor):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super().__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.sr_original = sr_original
         self.sr_new = sr_new
         self.channel_index = channel_index
         self.channels_first = channels_first
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -107,15 +96,6 @@ class Resample(Preprocessor):
         sample_index = 2 if self.channels_first else 1
 
         return resampy.resample(x, self.sr_original, self.sr_new, axis=sample_index, filter="sinc_window"), y
-
-    def estimate_gradient(self, x, grad):
-        return grad
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         if not (isinstance(self.sr_original, (int, np.int)) and self.sr_original > 0):

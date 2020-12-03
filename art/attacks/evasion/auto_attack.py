@@ -21,7 +21,7 @@ This module implements the `AutoAttack` attack.
 | Paper link: https://arxiv.org/abs/2003.01690
 """
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -31,13 +31,22 @@ from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGra
 from art.attacks.evasion.deepfool import DeepFool
 from art.attacks.evasion.square_attack import SquareAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, ClassifierGradients
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array, check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
 
 class AutoAttack(EvasionAttack):
+    """
+    Implementation of the `AutoAttack` attack.
+
+    | Paper link: https://arxiv.org/abs/2003.01690
+    """
+
     attack_params = EvasionAttack.attack_params + [
         "norm",
         "eps",
@@ -45,42 +54,43 @@ class AutoAttack(EvasionAttack):
         "attacks",
         "batch_size",
         "estimator_orig",
+        "targeted",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        estimator: ClassifierGradients,
-        norm: Union[int, float] = np.inf,
+        estimator: "CLASSIFIER_TYPE",
+        norm: Union[int, float, str] = np.inf,
         eps: float = 0.3,
         eps_step: float = 0.1,
         attacks: Optional[List[EvasionAttack]] = None,
         batch_size: int = 32,
-        estimator_orig: Optional[BaseEstimator] = None,
+        estimator_orig: Optional["CLASSIFIER_TYPE"] = None,
+        targeted: bool = False,
     ):
         """
-        Create a :class:`.ProjectedGradientDescent` instance.
+        Create a :class:`.AutoAttack` instance.
 
         :param estimator: An trained estimator.
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 1 or 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 1 or 2.
         :param eps: Maximum perturbation that the attacker can introduce.
         :param eps_step: Attack step size (input variation) at each iteration.
-        :param attacks: The list of `art.attacks.EvasionAttack` attacks to be used for AutoAttack. If it is `None` the
-                        original AutoAttack (PGD, APGD-ce, APGD-dlr, FAB, Square) will be used.
+        :param attacks: The list of `art.attacks.EvasionAttack` attacks to be used for AutoAttack. If it is `None` or
+                        empty the standard attacks (PGD, APGD-ce, APGD-dlr, DeepFool, Square) will be used.
         :param batch_size: Size of the batch on which adversarial samples are generated.
         :param estimator_orig: Original estimator to be attacked by adversarial examples.
+        :param targeted: If False run only untargeted attacks, if True also run targeted attacks against each possible
+                         target.
         """
         super().__init__(estimator=estimator)
 
-        if estimator_orig is None:
-            estimator_orig = estimator
-
-        if attacks is None:
+        if attacks is None or not attacks:
             attacks = list()
             attacks.append(
                 AutoProjectedGradientDescent(
-                    estimator=estimator,
+                    estimator=estimator,  # type: ignore
                     norm=norm,
                     eps=eps,
                     eps_step=eps_step,
@@ -93,7 +103,7 @@ class AutoAttack(EvasionAttack):
             )
             attacks.append(
                 AutoProjectedGradientDescent(
-                    estimator=estimator,
+                    estimator=estimator,  # type: ignore
                     norm=norm,
                     eps=eps,
                     eps_step=eps_step,
@@ -105,7 +115,15 @@ class AutoAttack(EvasionAttack):
                 )
             )
             attacks.append(
-                DeepFool(classifier=estimator, max_iter=100, epsilon=1e-6, nb_grads=3, batch_size=batch_size)
+                (
+                    DeepFool(
+                        classifier=estimator,  # type: ignore
+                        max_iter=100,
+                        epsilon=1e-3,
+                        nb_grads=10,
+                        batch_size=batch_size,
+                    )
+                )
             )
             attacks.append(
                 SquareAttack(estimator=estimator, norm=norm, max_iter=5000, eps=eps, p_init=0.8, nb_restarts=5)
@@ -116,7 +134,12 @@ class AutoAttack(EvasionAttack):
         self.eps_step = eps_step
         self.attacks = attacks
         self.batch_size = batch_size
-        self.estimator_orig = estimator_orig
+        if estimator_orig is not None:
+            self.estimator_orig = estimator_orig
+        else:
+            self.estimator_orig = estimator
+
+        self._targeted = targeted
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -128,8 +151,14 @@ class AutoAttack(EvasionAttack):
                   (nb_samples,). Only provide this parameter if you'd like to use true labels when crafting adversarial
                   samples. Otherwise, model predictions are used as labels to avoid the "label leaking" effect
                   (explained in this paper: https://arxiv.org/abs/1611.01236). Default is `None`.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
+        :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
+        mask = kwargs.get("mask")
+
         x_adv = x.astype(ART_NUMPY_DTYPE)
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
@@ -137,39 +166,101 @@ class AutoAttack(EvasionAttack):
             y = get_labels_np_array(self.estimator.predict(x, batch_size=self.batch_size))
 
         # Determine correctly predicted samples
-        y_pred = self.estimator_orig.predict(x_adv)
+        y_pred = self.estimator_orig.predict(x.astype(ART_NUMPY_DTYPE))
         sample_is_robust = np.argmax(y_pred, axis=1) == np.argmax(y, axis=1)
 
+        # Untargeted attacks
         for attack in self.attacks:
+
+            # Stop if all samples are misclassified
             if np.sum(sample_is_robust) == 0:
                 break
 
-            x_robust = x_adv[sample_is_robust]
-            y_robust = y[sample_is_robust]
+            if attack.targeted:
+                attack.set_params(targeted=False)
 
-            # Generate adversarial examples with untargeted attack
-            x_robust_adv = attack.generate(x=x_robust, y=y_robust)
-            y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
-
-            rel_acc = 1e-4
-            norm_is_smaller_eps = (1 - rel_acc) * np.linalg.norm(
-                (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=self.norm
-            ) <= self.eps
-
-            sample_is_not_robust = np.logical_and(
-                np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1), norm_is_smaller_eps
+            x_adv, sample_is_robust = self._run_attack(
+                x=x_adv, y=y, mask=mask, sample_is_robust=sample_is_robust, attack=attack
             )
 
-            x_robust[sample_is_not_robust] = x_robust_adv[sample_is_not_robust]
-            x_adv[sample_is_robust] = x_robust
+        # Targeted attacks
+        if self.targeted:
+            # Labels for targeted attacks
+            y_t = np.array([range(y.shape[1])] * y.shape[0])
+            y_idx = np.argmax(y, axis=1)
+            y_idx = np.expand_dims(y_idx, 1)
+            y_t = y_t[y_t != y_idx]
+            targeted_labels = np.reshape(y_t, (y.shape[0], -1))
 
-            sample_is_robust[sample_is_robust] = np.invert(sample_is_not_robust)
+            for attack in self.attacks:
+
+                if attack.targeted is not None:
+
+                    if not attack.targeted:
+                        attack.set_params(targeted=True)
+
+                    for i in range(self.estimator.nb_classes - 1):
+                        # Stop if all samples are misclassified
+                        if np.sum(sample_is_robust) == 0:
+                            break
+
+                        target = check_and_transform_label_format(targeted_labels[:, i], self.estimator.nb_classes)
+
+                        x_adv, sample_is_robust = self._run_attack(
+                            x=x_adv, y=target, mask=mask, sample_is_robust=sample_is_robust, attack=attack
+                        )
 
         return x_adv
 
+    def _run_attack(
+        self, x: np.ndarray, y: np.ndarray, mask: np.ndarray, sample_is_robust: np.ndarray, attack: EvasionAttack,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Run attack.
+
+        :param x: An array of the original inputs.
+        :param y: An array of the labels.
+        :param mask: An array with a mask broadcastable to input `x` defining where to apply adversarial perturbations.
+                     Shape needs to be broadcastable to the shape of x and can also be of the same shape as `x`. Any
+                     features for which the mask is zero will not be adversarially perturbed.
+        :param sample_is_robust: Store the initial robustness of examples.
+        :param attack: Evasion attack to run.
+        :return: An array holding the adversarial examples.
+        """
+        # Attack only correctly classified samples
+        x_robust = x[sample_is_robust]
+        y_robust = y[sample_is_robust]
+
+        # Generate adversarial examples
+        x_robust_adv = attack.generate(x=x_robust, y=y_robust, mask=mask)
+        y_pred_robust_adv = self.estimator_orig.predict(x_robust_adv)
+
+        # Check and update successful examples
+        rel_acc = 1e-4
+        order = np.inf if self.norm == "inf" else self.norm
+        norm_is_smaller_eps = (1 - rel_acc) * np.linalg.norm(
+            (x_robust_adv - x_robust).reshape((x_robust_adv.shape[0], -1)), axis=1, ord=order
+        ) <= self.eps
+
+        if attack.targeted:
+            samples_misclassified = np.argmax(y_pred_robust_adv, axis=1) == np.argmax(y_robust, axis=1)
+        elif not attack.targeted:
+            samples_misclassified = np.argmax(y_pred_robust_adv, axis=1) != np.argmax(y_robust, axis=1)
+        else:
+            raise ValueError
+
+        sample_is_not_robust = np.logical_and(samples_misclassified, norm_is_smaller_eps)
+
+        x_robust[sample_is_not_robust] = x_robust_adv[sample_is_not_robust]
+        x[sample_is_robust] = x_robust
+
+        sample_is_robust[sample_is_robust] = np.invert(sample_is_not_robust)
+
+        return x, sample_is_robust
+
     def _check_params(self) -> None:
-        if self.norm not in [1, 2, np.inf]:
-            raise ValueError("The argument norm has to be either 1, 2, or np.inf.")
+        if self.norm not in [1, 2, np.inf, "inf"]:
+            raise ValueError('The argument norm has to be either 1, 2, np.inf, "inf".')
 
         if not isinstance(self.eps, (int, float)) or self.eps <= 0.0:
             raise ValueError("The argument eps has to be either of type int or float and larger than zero.")

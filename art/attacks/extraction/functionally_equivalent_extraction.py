@@ -41,7 +41,7 @@ from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.blackbox import BlackBoxClassifier
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 NUMPY_DTYPE = np.float64
 
@@ -58,7 +58,7 @@ class FunctionallyEquivalentExtraction(ExtractionAttack):
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
-    def __init__(self, classifier: "Classifier", num_neurons: Optional[int] = None) -> None:
+    def __init__(self, classifier: "CLASSIFIER_TYPE", num_neurons: Optional[int] = None) -> None:
         """
         Create a `FunctionallyEquivalentExtraction` instance.
 

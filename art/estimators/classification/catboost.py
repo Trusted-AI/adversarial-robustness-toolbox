@@ -21,16 +21,20 @@ This module implements the classifier `CatBoostARTClassifier` for CatBoost model
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union, TYPE_CHECKING
+import os
+import pickle
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.classification.classifier import ClassifierDecisionTree
+from art import config
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     from catboost.core import CatBoostClassifier
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
@@ -57,7 +61,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         :param model: CatBoost model.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
@@ -70,16 +74,25 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         if not isinstance(model, CatBoostClassifier):
             raise TypeError("Model must be of type catboost.core.CatBoostClassifier")
 
-        super(CatBoostARTClassifier, self).__init__(
+        super().__init__(
+            model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
 
-        self._model = model
         self._input_shape = (nb_features,)
         self._nb_classes = self._get_nb_classes()
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
@@ -114,7 +127,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
 
         return predictions
 
-    def _get_nb_classes(self) -> Optional[int]:
+    def _get_nb_classes(self) -> int:
         """
         Return the number of output classes.
 
@@ -123,12 +136,25 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         if self._model.classes_ is not None:
             return len(self._model.classes_)
 
-        return None
+        return -1
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
-        import pickle
+        """
+        Save a model to file in the format specific to the backend framework.
 
-        with open(filename + ".pickle", "wb") as file_pickle:
+        :param filename: Name of the file where to store the model.
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `ART_DATA_PATH`.
+        """
+        if path is None:
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
     def get_trees(self):

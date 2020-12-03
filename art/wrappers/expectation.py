@@ -23,17 +23,20 @@ This module implements the Expectation Over Transformation applied to classifier
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierGradients
 from art.wrappers.wrapper import ClassifierWrapper
+from art.estimators.classification.classifier import ClassifierClassLossGradients
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
+class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradients):
     """
     Implementation of Expectation Over Transformations applied to classifier predictions and gradients, as introduced
     in Athalye et al. (2017).
@@ -41,7 +44,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
     | Paper link: https://arxiv.org/abs/1707.07397
     """
 
-    def __init__(self, classifier: ClassifierGradients, sample_size: int, transformation) -> None:
+    def __init__(self, classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE", sample_size: int, transformation) -> None:
         """
         Create an expectation over transformations wrapper.
 
@@ -50,10 +53,19 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
         :param transformation: An iterator over transformations.
         :type transformation: :class:`.Classifier`
         """
-        super(ExpectationOverTransformations, self).__init__(classifier)
+        super().__init__(classifier)
         self.sample_size = sample_size
         self.transformation = transformation
         self._predict = self.classifier.predict
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -155,6 +167,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierGradients):
         """
         raise NotImplementedError
 
+    @property
     def nb_classes(self) -> int:
         """
         Return the number of output classes.

@@ -27,14 +27,17 @@ This module implements the total variance minimization defence `TotalVarMin`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from scipy.optimize import minimize
 from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
+
+if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +53,7 @@ class TotalVarMin(Preprocessor):
         see https://arxiv.org/abs/1902.06705
     """
 
-    params = ["prob", "norm", "lamb", "solver", "max_iter", "clip_values"]
+    params = ["prob", "norm", "lamb", "solver", "max_iter", "clip_values", "verbose"]
 
     def __init__(
         self,
@@ -59,9 +62,10 @@ class TotalVarMin(Preprocessor):
         lamb: float = 0.5,
         solver: str = "L-BFGS-B",
         max_iter: int = 10,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        verbose: bool = False,
     ):
         """
         Create an instance of total variance minimization.
@@ -75,26 +79,17 @@ class TotalVarMin(Preprocessor):
                for features.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         """
-        super(TotalVarMin, self).__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.prob = prob
         self.norm = norm
         self.lamb = lamb
         self.solver = solver
         self.max_iter = max_iter
         self.clip_values = clip_values
+        self.verbose = verbose
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -111,7 +106,7 @@ class TotalVarMin(Preprocessor):
         x_preproc = x.copy()
 
         # Minimize one input at a time
-        for i, x_i in enumerate(tqdm(x_preproc, desc="Variance minimization")):
+        for i, x_i in enumerate(tqdm(x_preproc, desc="Variance minimization", disable=not self.verbose)):
             mask = (np.random.rand(*x_i.shape) < self.prob).astype("int")
             x_preproc[i] = self._minimize(x_i, mask)
 
@@ -119,9 +114,6 @@ class TotalVarMin(Preprocessor):
             np.clip(x_preproc, self.clip_values[0], self.clip_values[1], out=x_preproc)
 
         return x_preproc.astype(ART_NUMPY_DTYPE), y
-
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        return grad
 
     def _minimize(self, x: np.ndarray, mask: np.ndarray) -> np.ndarray:
         """
@@ -209,12 +201,6 @@ class TotalVarMin(Preprocessor):
         # Total derivative
         return der1 + der2
 
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
-
     def _check_params(self) -> None:
         if not isinstance(self.prob, (float, int)) or self.prob < 0.0 or self.prob > 1.0:
             logger.error("Probability must be between 0 and 1.")
@@ -239,3 +225,6 @@ class TotalVarMin(Preprocessor):
 
             if np.array(self.clip_values[0] >= self.clip_values[1]).any():
                 raise ValueError("Invalid `clip_values`: min >= max.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

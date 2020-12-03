@@ -21,14 +21,14 @@ This module implements the classifier `BlackBoxClassifier` for black-box classif
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Callable, List, Optional, Tuple, Union, TYPE_CHECKING
+from typing import Callable, List, Optional, Tuple, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.classification.classifier import Classifier
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
@@ -62,11 +62,12 @@ class BlackBoxClassifier(Classifier):
                the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
-        super(BlackBoxClassifier, self).__init__(
+        super().__init__(
+            model=None,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -76,6 +77,15 @@ class BlackBoxClassifier(Classifier):
         self._predictions = predict
         self._input_shape = input_shape
         self._nb_classes = nb_classes
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
@@ -114,7 +124,7 @@ class BlackBoxClassifier(Classifier):
         :param kwargs: Dictionary of framework-specific arguments. These should be parameters supported by the
                `fit_generator` function in Keras and will be passed to this function as such. Including the number of
                epochs or the number of steps per epoch as part of this argument will result in as error.
-        :raises `NotImplementedException`: This method is not supported for blackbox classifiers.
+        :raises `NotImplementedException`: This method is not supported for black-box classifiers.
         """
         raise NotImplementedError
 
@@ -125,6 +135,6 @@ class BlackBoxClassifier(Classifier):
         :param filename: Name of the file where to store the model.
         :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
                      the default data location of the library `ART_DATA_PATH`.
-        :raises `NotImplementedException`: This method is not supported for blackbox classifiers.
+        :raises `NotImplementedException`: This method is not supported for black-box classifiers.
         """
         raise NotImplementedError

@@ -74,8 +74,8 @@ class InputFilter(ABCMeta):
             replacement_function.__name__ = "new_" + func_name
             return replacement_function
 
-        replacement_list_no_y = ["predict", "get_activations", "class_gradient"]
-        replacement_list_has_y = ["fit", "loss_gradient"]
+        replacement_list_no_y = ["predict", "get_activations"]
+        replacement_list_has_y = ["fit"]
 
         for item in replacement_list_no_y:
             if item in clsdict:
@@ -91,6 +91,10 @@ class ClassifierMixin(ABC, metaclass=InputFilter):
     """
     Mixin abstract base class defining functionality for classifiers.
     """
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(**kwargs)
+        self._nb_classes: int = -1
 
     @property
     def nb_classes(self) -> int:
@@ -128,12 +132,36 @@ class ClassGradientsMixin(ABC):
 
 
 class Classifier(ClassifierMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
+    pass
+
+
+class ClassifierLossGradients(ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
+    pass
+
+
+class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
     pass
 
 
 class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
     ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator, ABC
 ):
+    """
+    Typing variable definition.
+    """
+
     @abstractmethod
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
@@ -147,9 +175,9 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
         raise NotImplementedError
 
 
-class ClassifierGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
-    pass
-
-
 class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
     pass

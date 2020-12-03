@@ -39,7 +39,7 @@ import numpy as np
 # In the meantime, the modified implementation is used which is defined in the
 # lines `453-1457`.
 
-from scipy._lib.six import xrange, string_types
+from six import string_types
 from scipy._lib._util import check_random_state
 from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
@@ -51,7 +51,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import compute_success, to_categorical, check_and_transform_label_format
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,14 @@ class PixelThreshold(EvasionAttack):
     attack_params = EvasionAttack.attack_params + ["th", "es", "targeted", "verbose"]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
 
-    def __init__(self, classifier: "Classifier", th: Optional[int], es: int, targeted: bool, verbose: bool,) -> None:
+    def __init__(
+        self,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
+        th: Optional[int],
+        es: int,
+        targeted: bool,
+        verbose: bool = True,
+    ) -> None:
         """
         Create a :class:`.PixelThreshold` instance.
 
@@ -78,15 +85,15 @@ class PixelThreshold(EvasionAttack):
         :param th: threshold value of the Pixel/ Threshold attack. th=None indicates finding a minimum threshold.
         :param es: Indicates whether the attack uses CMAES (0) or DE (1) as Evolutionary Strategy.
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
-        :param verbose: Indicates whether to print verbose messages of ES used.
+        :param verbose: Print verbose messages of ES and show progress bars.
         """
-        super(PixelThreshold, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self._project = True
         self.type_attack = -1
         self.th = th
         self.es = es
-        self.targeted = targeted
+        self._targeted = targeted
         self.verbose = verbose
         PixelThreshold._check_params(self)
 
@@ -103,12 +110,18 @@ class PixelThreshold(EvasionAttack):
         if self.th is not None:
             if self.th <= 0:
                 raise ValueError("The perturbation size `eps` has to be positive.")
+
         if not isinstance(self.es, int):
             raise ValueError("The flag `es` has to be of type int.")
+
         if not isinstance(self.targeted, bool):
             raise ValueError("The flag `targeted` has to be of type bool.")
+
         if not isinstance(self.verbose, bool):
             raise ValueError("The flag `verbose` has to be of type bool.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, max_iter: int = 100, **kwargs) -> np.ndarray:
         """
@@ -139,7 +152,7 @@ class PixelThreshold(EvasionAttack):
             x = x * 255.0
 
         adv_x_best = []
-        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold"):
+        for image, target_class in tqdm(zip(x, y), desc="Pixel threshold", disable=not self.verbose):
             if self.th is None:
                 self.min_th = 127
                 start, end = 1, 127
@@ -157,7 +170,7 @@ class PixelThreshold(EvasionAttack):
                         self.min_th = threshold
                     if end < start:
                         if isinstance(image_result, list) and not image_result:
-                            success = False
+                            # success = False
                             image_result = image
                         break
             else:
@@ -304,7 +317,7 @@ class PixelAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         th: Optional[int] = None,
         es: int = 0,
         targeted: bool = False,
@@ -319,7 +332,7 @@ class PixelAttack(PixelThreshold):
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Indicates whether to print verbose messages of ES used.
         """
-        super(PixelAttack, self).__init__(classifier, th, es, targeted, verbose)
+        super().__init__(classifier, th, es, targeted, verbose)
         self.type_attack = 0
 
     def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
@@ -385,7 +398,7 @@ class ThresholdAttack(PixelThreshold):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         th: Optional[int] = None,
         es: int = 0,
         targeted: bool = False,
@@ -400,7 +413,7 @@ class ThresholdAttack(PixelThreshold):
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param verbose: Indicates whether to print verbose messages of ES used.
         """
-        super(ThresholdAttack, self).__init__(classifier, th, es, targeted, verbose)
+        super().__init__(classifier, th, es, targeted, verbose)
         self.type_attack = 1
 
     def _perturb_image(self, x: np.ndarray, img: np.ndarray) -> np.ndarray:
@@ -1127,7 +1140,7 @@ class DifferentialEvolutionSolver:
             self._calculate_population_energies()
 
         # do the optimisation.
-        for nit in xrange(1, self.maxiter + 1):
+        for nit in range(1, self.maxiter + 1):
             # evolve the population by a generation
             try:
                 next(self)
@@ -1373,33 +1386,33 @@ class DifferentialEvolutionSolver:
         """
         best1bin, best1exp
         """
-        r0, r1 = samples[:2]
-        return self.population[0] + self.scale * (self.population[r0] - self.population[r1])
+        r_0, r_1 = samples[:2]
+        return self.population[0] + self.scale * (self.population[r_0] - self.population[r_1])
 
     def _rand1(self, samples):
         """
         rand1bin, rand1exp
         """
-        r0, r1, r2 = samples[:3]
-        return self.population[r0] + self.scale * (self.population[r1] - self.population[r2])
+        r_0, r_1, r_2 = samples[:3]
+        return self.population[r_0] + self.scale * (self.population[r_1] - self.population[r_2])
 
     def _randtobest1(self, samples):
         """
         randtobest1bin, randtobest1exp
         """
-        r0, r1, r2 = samples[:3]
-        bprime = np.copy(self.population[r0])
+        r_0, r_1, r_2 = samples[:3]
+        bprime = np.copy(self.population[r_0])
         bprime += self.scale * (self.population[0] - bprime)
-        bprime += self.scale * (self.population[r1] - self.population[r2])
+        bprime += self.scale * (self.population[r_1] - self.population[r_2])
         return bprime
 
     def _currenttobest1(self, candidate, samples):
         """
         currenttobest1bin, currenttobest1exp
         """
-        r0, r1 = samples[:2]
+        r_0, r_1 = samples[:2]
         bprime = self.population[candidate] + self.scale * (
-            self.population[0] - self.population[candidate] + self.population[r0] - self.population[r1]
+            self.population[0] - self.population[candidate] + self.population[r_0] - self.population[r_1]
         )
         return bprime
 
@@ -1407,9 +1420,9 @@ class DifferentialEvolutionSolver:
         """
         best2bin, best2exp
         """
-        r0, r1, r2, r3 = samples[:4]
+        r_0, r_1, r_2, r_3 = samples[:4]
         bprime = self.population[0] + self.scale * (
-            self.population[r0] + self.population[r1] - self.population[r2] - self.population[r3]
+            self.population[r_0] + self.population[r_1] - self.population[r_2] - self.population[r_3]
         )
 
         return bprime
@@ -1418,9 +1431,9 @@ class DifferentialEvolutionSolver:
         """
         rand2bin, rand2exp
         """
-        r0, r1, r2, r3, r4 = samples
-        bprime = self.population[r0] + self.scale * (
-            self.population[r1] + self.population[r2] - self.population[r3] - self.population[r4]
+        r_0, r_1, r_2, r_3, r_4 = samples
+        bprime = self.population[r_0] + self.scale * (
+            self.population[r_1] + self.population[r_2] - self.population[r_3] - self.population[r_4]
         )
 
         return bprime

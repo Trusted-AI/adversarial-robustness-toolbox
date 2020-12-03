@@ -28,14 +28,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from io import BytesIO
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg
+
+if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +46,10 @@ logger = logging.getLogger(__name__)
 class JpegCompression(Preprocessor):
     """
     Implement the JPEG compression defence approach.
+
+    For input images or videos with 3 color channels the compression is applied in mode `RGB`
+    (3x8-bit pixels, true color), for all other numbers of channels the compression is applied for each channel with
+    mode `L` (8-bit pixels, black and white).
 
     | Paper link: https://arxiv.org/abs/1705.02900, https://arxiv.org/abs/1608.00853
 
@@ -52,17 +59,18 @@ class JpegCompression(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["quality", "channel_index", "channels_first", "clip_values"]
+    params = ["quality", "channel_index", "channels_first", "clip_values", "verbose"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
-        clip_values: CLIP_VALUES_TYPE,
+        clip_values: "CLIP_VALUES_TYPE",
         quality: int = 50,
         channel_index=Deprecated,
         channels_first: bool = False,
         apply_fit: bool = True,
         apply_predict: bool = True,
+        verbose: bool = False,
     ):
         """
         Create an instance of JPEG compression.
@@ -75,8 +83,9 @@ class JpegCompression(Preprocessor):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:
@@ -84,23 +93,13 @@ class JpegCompression(Preprocessor):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(JpegCompression, self).__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.quality = quality
         self.channel_index = channel_index
         self.channels_first = channels_first
         self.clip_values = clip_values
+        self.verbose = verbose
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def _compress(self, x: np.ndarray, mode: str) -> np.ndarray:
         """
@@ -118,6 +117,10 @@ class JpegCompression(Preprocessor):
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
         Apply JPEG compression to sample `x`.
+
+        For input images or videos with 3 color channels the compression is applied in mode `RGB`
+        (3x8-bit pixels, true color), for all other numbers of channels the compression is applied for each channel with
+        mode `L` (8-bit pixels, black and white).
 
         :param x: Sample to compress with shape of `NCHW`, `NHWC`, `NCFHW` or `NFHWC`. `x` values are expected to be in
                   the data range [0, 1] or [0, 255].
@@ -152,26 +155,16 @@ class JpegCompression(Preprocessor):
             x = x * 255
         x = x.astype("uint8")
 
-        # Set image mode
-        if x.shape[-1] == 1:
-            image_mode = "L"
-        elif x.shape[-1] == 3:
-            image_mode = "RGB"
-        else:
-            raise NotImplementedError("Currently only support `RGB` and `L` images.")
-
-        # Prepare grayscale images for "L" mode
-        if image_mode == "L":
-            x = np.squeeze(x, axis=-1)
-
         # Compress one image at a time
         x_jpeg = x.copy()
-        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression"):
-            x_jpeg[idx] = self._compress(x[idx], image_mode)
-
-        # Undo preparation grayscale images for "L" mode
-        if image_mode == "L":
-            x_jpeg = np.expand_dims(x_jpeg, axis=-1)
+        for idx in tqdm(np.ndindex(x.shape[:2]), desc="JPEG compression", disable=not self.verbose):
+            if x.shape[-1] == 3:
+                x_jpeg[idx] = self._compress(x[idx], mode="RGB")
+            else:
+                for i_channel in range(x.shape[-1]):
+                    x_channel = x[idx[0], idx[1], ..., i_channel]
+                    x_channel = self._compress(x_channel, mode="L")
+                    x_jpeg[idx[0], idx[1], :, :, i_channel] = x_channel
 
         # Convert to ART dtype
         if self.clip_values[1] == 1.0:
@@ -191,15 +184,6 @@ class JpegCompression(Preprocessor):
             x_jpeg = np.transpose(x_jpeg, (0, 4, 1, 2, 3))
         return x_jpeg, y
 
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        return grad
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
-
     def _check_params(self) -> None:
         if not isinstance(self.quality, (int, np.int)) or self.quality <= 0 or self.quality > 100:
             raise ValueError("Image quality must be a positive integer <= 100.")
@@ -215,3 +199,6 @@ class JpegCompression(Preprocessor):
 
         if self.clip_values[1] != 1.0 and self.clip_values[1] != 255:
             raise ValueError("'clip_values' max value must be either 1 or 255.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

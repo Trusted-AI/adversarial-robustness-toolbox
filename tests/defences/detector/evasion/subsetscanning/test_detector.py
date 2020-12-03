@@ -27,7 +27,7 @@ import keras.backend as k
 import numpy as np
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
-from art.defences.detector.evasion import SubsetScanningDetector
+from art.defences.detector.evasion.subsetscanning import SubsetScanningDetector
 from art.utils import load_dataset
 
 from tests.utils import master_seed, get_image_classifier_kr

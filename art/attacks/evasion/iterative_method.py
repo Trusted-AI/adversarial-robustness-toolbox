@@ -24,14 +24,14 @@ FGSM. This is a white-box attack.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING
+from typing import Union, TYPE_CHECKING
 
 import numpy as np
 
 from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import ClassifierGradients
+    from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +47,9 @@ class BasicIterativeMethod(ProjectedGradientDescent):
 
     def __init__(
         self,
-        estimator: "ClassifierGradients",
-        eps: float = 0.3,
-        eps_step: float = 0.1,
+        estimator: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
+        eps: Union[int, float, np.ndarray] = 0.3,
+        eps_step: Union[int, float, np.ndarray] = 0.1,
         max_iter: int = 100,
         targeted: bool = False,
         batch_size: int = 32,
@@ -64,7 +64,7 @@ class BasicIterativeMethod(ProjectedGradientDescent):
         :param targeted: Indicates whether the attack is targeted (True) or untargeted (False).
         :param batch_size: Size of the batch on which adversarial samples are generated.
         """
-        super(BasicIterativeMethod, self).__init__(
+        super().__init__(
             estimator=estimator,
             norm=np.inf,
             eps=eps,

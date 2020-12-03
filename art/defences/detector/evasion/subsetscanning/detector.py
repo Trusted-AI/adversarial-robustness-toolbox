@@ -29,13 +29,13 @@ import numpy as np
 from sklearn import metrics
 from tqdm import trange, tqdm
 
-from art.defences.detector.evasion import Scanner
+from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 from art.utils import deprecated
 
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE
+    from art.utils import CLIP_VALUES_TYPE
     from art.data_generators import DataGenerator
 
 logger = logging.getLogger(__name__)
@@ -48,15 +48,19 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
 
-    def __init__(self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str],) -> None:
+    def __init__(
+        self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str], verbose: bool = True
+    ) -> None:
         """
         Create a `SubsetScanningDetector` instance which is used to the detect the presence of adversarial samples.
 
         :param classifier: The model being evaluated for its robustness to anomalies (e.g. adversarial samples).
         :param bgd_data: The background data used to learn a null model. Typically dataset used to train the classifier.
         :param layer: The layer from which to extract activations to perform scan.
+        :param verbose: Show progress bars.
         """
-        super(SubsetScanningDetector, self).__init__(
+        super().__init__(
+            model=None,
             clip_values=classifier.clip_values,
             channel_index=classifier.channel_index,
             channels_first=classifier.channels_first,
@@ -65,8 +69,12 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         )
         self.detector = classifier
         self.bgd_data = bgd_data
+        self.verbose = verbose
 
         # Ensure that layer is well-defined
+        if classifier.layer_names is None:
+            raise ValueError("No layer names identified.")
+
         if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(
@@ -142,13 +150,15 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
 
         if clean_size is None and advs_size is None:
             # Individual scan
-            with tqdm(len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning") as pbar:
-                for j in range(len(clean_pvalranges)):
-                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(clean_pvalranges[j])
+            with tqdm(
+                len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning", disable=not self.verbose
+            ) as pbar:
+                for j, c_p in enumerate(clean_pvalranges):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(c_p)
                     clean_scores.append(best_score)
                     pbar.update(1)
-                for j in range(len(adv_pvalranges)):
-                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(adv_pvalranges[j])
+                for j, a_p in enumerate(adv_pvalranges):
+                    best_score, _, _, _ = Scanner.fgss_individ_for_nets(a_p)
                     adv_scores.append(best_score)
                     pbar.update(1)
 
@@ -156,7 +166,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
             len_adv_x = len(adv_x)
             len_clean_x = len(clean_x)
 
-            for _ in trange(run, desc="Subset scanning"):
+            for _ in trange(run, desc="Subset scanning", disable=not self.verbose):
                 np.random.seed()
 
                 advchoice = np.random.choice(range(len_adv_x), advs_size, replace=False)
@@ -203,6 +213,20 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
+
+    @property
     def nb_classes(self) -> int:
         return self.detector.nb_classes
 
@@ -215,7 +239,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         return self.detector.clip_values
 
     @property  # type: ignore
-    @deprecated(end_version="1.5.0", replaced_by="channels_first")
+    @deprecated(end_version="1.6.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 

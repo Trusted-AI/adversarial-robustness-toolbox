@@ -26,19 +26,18 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import random
 import types
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import tqdm
 
 from art.attacks.attack import EvasionAttack
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-    ClassifierNeuralNetwork,
-)
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import projection, get_labels_np_array, check_and_transform_label_format
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +61,7 @@ class UniversalPerturbation(EvasionAttack):
         "newtonfool": "art.attacks.evasion.newtonfool.NewtonFool",
         "jsma": "art.attacks.evasion.saliency_map.SaliencyMapMethod",
         "vat": "art.attacks.evasion.virtual_adversarial.VirtualAdversarialMethod",
+        "simba": "art.attacks.evasion.simba.SimBA",
     }
     attack_params = EvasionAttack.attack_params + [
         "attacker",
@@ -71,33 +71,36 @@ class UniversalPerturbation(EvasionAttack):
         "eps",
         "norm",
         "batch_size",
+        "verbose",
     ]
-    _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
+    _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: Union[ClassifierGradients, ClassifierNeuralNetwork],
+        classifier: "CLASSIFIER_TYPE",
         attacker: str = "deepfool",
         attacker_params: Optional[Dict[str, Any]] = None,
         delta: float = 0.2,
         max_iter: int = 20,
         eps: float = 10.0,
-        norm: int = np.inf,
+        norm: Union[int, float, str] = np.inf,
         batch_size: int = 32,
+        verbose: bool = True,
     ) -> None:
         """
         :param classifier: A trained classifier.
         :param attacker: Adversarial attack name. Default is 'deepfool'. Supported names: 'carlini', 'carlini_inf',
-                         'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat'.
+                         'deepfool', 'fgsm', 'bim', 'pgd', 'margin', 'ead', 'newtonfool', 'jsma', 'vat', 'simba'.
         :param attacker_params: Parameters specific to the adversarial attack. If this parameter is not specified,
                                 the default parameters of the chosen attack will be used.
         :param delta: desired accuracy
         :param max_iter: The maximum number of iterations for computing universal perturbation.
         :param eps: Attack step size (input variation).
-        :param norm: The norm of the adversarial perturbation. Possible values: np.inf, 2.
+        :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 2.
         :param batch_size: Batch size for model evaluations in UniversalPerturbation.
+        :param verbose: Show progress bars.
         """
-        super(UniversalPerturbation, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.attacker = attacker
         self.attacker_params = attacker_params
         self.delta = delta
@@ -105,7 +108,40 @@ class UniversalPerturbation(EvasionAttack):
         self.eps = eps
         self.norm = norm
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
+
+        # Attack properties
+        self._fooling_rate: Optional[float] = None
+        self._converged: Optional[bool] = None
+        self._noise: Optional[np.ndarray] = None
+
+    @property
+    def fooling_rate(self) -> Optional[float]:
+        """
+        The fooling rate of the universal perturbation on the most recent call to `generate`.
+
+        :return: Fooling Rate.
+        """
+        return self._fooling_rate
+
+    @property
+    def converged(self) -> Optional[bool]:
+        """
+        The convergence of universal perturbation generation.
+
+        :return: `True` if generation of universal perturbation has converged.
+        """
+        return self._converged
+
+    @property
+    def noise(self) -> Optional[np.ndarray]:
+        """
+        The universal perturbation.
+
+        :return: Universal perturbation.
+        """
+        return self._noise
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -136,7 +172,7 @@ class UniversalPerturbation(EvasionAttack):
 
         # Generate the adversarial examples
         nb_iter = 0
-        pbar = tqdm(self.max_iter, desc="Universal perturbation")
+        pbar = tqdm(self.max_iter, desc="Universal perturbation", disable=not self.verbose)
 
         while fooling_rate < 1.0 - self.delta and nb_iter < self.max_iter:
             # Go through all the examples randomly
@@ -174,25 +210,12 @@ class UniversalPerturbation(EvasionAttack):
             fooling_rate = np.sum(y_index != y_adv) / nb_instances
 
         pbar.close()
-        self.fooling_rate = fooling_rate
-        self.converged = nb_iter < self.max_iter
-        self.noise = noise
+        self._fooling_rate = fooling_rate
+        self._converged = nb_iter < self.max_iter
+        self._noise = noise
         logger.info("Success rate of universal perturbation attack: %.2f%%", 100 * fooling_rate)
 
         return x_adv
-
-    def _check_params(self) -> None:
-        if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
-            raise ValueError("The desired accuracy must be in the range [0, 1].")
-
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
-            raise ValueError("The number of iterations must be a positive integer.")
-
-        if not isinstance(self.eps, (float, int)) or self.eps <= 0:
-            raise ValueError("The eps coefficient must be a positive float.")
-
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
-            raise ValueError("The batch_size must be a positive integer.")
 
     def _get_attack(self, a_name: str, params: Optional[Dict[str, Any]] = None) -> EvasionAttack:
         """
@@ -212,7 +235,7 @@ class UniversalPerturbation(EvasionAttack):
 
             return a_instance
         except KeyError:
-            raise NotImplementedError("{} attack not supported".format(a_name))
+            raise NotImplementedError("{} attack not supported".format(a_name)) from KeyError
 
     @staticmethod
     def _get_class(class_name: str) -> types.ModuleType:
@@ -227,3 +250,19 @@ class UniversalPerturbation(EvasionAttack):
         class_module = getattr(module_, sub_mods[-1])
 
         return class_module
+
+    def _check_params(self) -> None:
+        if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
+            raise ValueError("The desired accuracy must be in the range [0, 1].")
+
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+            raise ValueError("The number of iterations must be a positive integer.")
+
+        if not isinstance(self.eps, (float, int)) or self.eps <= 0:
+            raise ValueError("The eps coefficient must be a positive float.")
+
+        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
+            raise ValueError("The batch_size must be a positive integer.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

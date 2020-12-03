@@ -66,7 +66,7 @@ class TestInputFilter(unittest.TestCase):
     def setUp(self):
         master_seed(1234)
 
-    def test_tensorflow_mnist(self):
+    def test_2_tensorflow_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
         classifier, sess = get_image_classifier_tf()
 
@@ -80,7 +80,7 @@ class TestInputFilter(unittest.TestCase):
 
         self._test_backend_mnist(classifier, x_train, y_train, x_test, y_test)
 
-    def test_pytorch_mnist(self):
+    def test_4_pytorch_mnist(self):
         (x_train, y_train), (x_test, y_test) = self.mnist
         x_train = np.swapaxes(x_train, 1, 3).astype(np.float32)
         x_test = np.swapaxes(x_test, 1, 3).astype(np.float32)
@@ -142,10 +142,10 @@ class TestInputFilter(unittest.TestCase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(np.array(x_test_original) - np.array(x_test)))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
+    def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(ProjectedGradientDescent, [BaseEstimator, LossGradientsMixin])
 
-    def test_keras_iris_clipped(self):
+    def test_6_keras_iris_clipped(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_tabular_classifier_kr()
 
@@ -161,7 +161,7 @@ class TestInputFilter(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
         logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
 
-    def test_keras_iris_unbounded(self):
+    def test_7_keras_iris_unbounded(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_tabular_classifier_kr()
 
@@ -178,7 +178,7 @@ class TestInputFilter(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
         logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
 
-    def test_tensorflow_iris(self):
+    def test_2_tensorflow_iris(self):
         (_, _), (x_test, y_test) = self.iris
         classifier, _ = get_tabular_classifier_tf()
 
@@ -194,7 +194,7 @@ class TestInputFilter(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
         logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
 
-    def test_pytorch_iris_pt(self):
+    def test_3_pytorch_iris_pt(self):
         (_, _), (x_test, y_test) = self.iris
         classifier = get_tabular_classifier_pt()
 
@@ -210,7 +210,7 @@ class TestInputFilter(unittest.TestCase):
         acc = np.sum(preds_adv == np.argmax(np.array(y_test), axis=1)) / len(y_test)
         logger.info("Accuracy on Iris with PGD adversarial examples: %.2f%%", (acc * 100))
 
-    def test_scikitlearn(self):
+    def test_5_scikitlearn(self):
         from sklearn.linear_model import LogisticRegression
         from sklearn.svm import SVC, LinearSVC
 
@@ -223,7 +223,6 @@ class TestInputFilter(unittest.TestCase):
         }
 
         (_, _), (x_test, y_test) = self.iris
-        x_test_original = x_test.copy()
 
         for (model_class, classifier_class) in scikitlearn_test_cases.items():
             model = model_class()

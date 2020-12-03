@@ -32,9 +32,15 @@ Auto Projected Gradient Descent (Auto-PGD)
    :members:
    :special-members:
 
-Decision-Based Attack / Boundary Attack
+Boundary Attack / Decision-Based Attack
 ---------------------------------------
 .. autoclass:: BoundaryAttack
+   :members:
+   :special-members:
+
+Brendel and Bethge Attack
+-------------------------
+.. autoclass:: BrendelBethgeAttack
    :members:
    :special-members:
 
@@ -68,6 +74,12 @@ DPatch
    :members:
    :special-members:
 
+RobustDPatch
+------------
+.. autoclass:: RobustDPatch
+   :members:
+   :special-members:
+
 Elastic Net Attack
 ------------------
 .. autoclass:: ElasticNet
@@ -92,15 +104,27 @@ Frame Saliency Attack
    :members:
    :special-members:
 
+High Confidence Low Uncertainty Attack
+--------------------------------------
+.. autoclass:: HighConfidenceLowUncertainty
+   :members:
+   :special-members:
+
 HopSkipJump Attack
 ------------------
 .. autoclass:: HopSkipJump
    :members:
    :special-members:
 
-High Confidence Low Uncertainty Attack
---------------------------------------
-.. autoclass:: HighConfidenceLowUncertainty
+Imperceptible ASR Attack
+------------------------
+.. autoclass:: ImperceptibleASR
+   :members:
+   :special-members:
+
+Imperceptible ASR Attack - PyTorch
+----------------------------------
+.. autoclass:: ImperceptibleASRPyTorch
    :members:
    :special-members:
 
@@ -164,6 +188,18 @@ Shadow Attack
    :members:
    :special-members:
 
+ShapeShifter Attack
+-------------------
+.. autoclass:: ShapeShifter
+   :members:
+   :special-members:
+
+SimBA Attack
+------------
+.. autoclass:: SimBA
+   :members:
+   :special-members:
+
 Spatial Transformations Attack
 ------------------------------
 .. autoclass:: SpatialTransformation
@@ -173,6 +209,12 @@ Spatial Transformations Attack
 Square Attack
 -------------
 .. autoclass:: SquareAttack
+   :members:
+   :special-members:
+
+Targeted Universal Perturbation Attack
+--------------------------------------
+.. autoclass:: TargetedUniversalPerturbation
    :members:
    :special-members:
 
@@ -194,7 +236,7 @@ Wasserstein Attack
    :members:
    :special-members:
 
-Zeroth-Order Optimization Attack (ZOO)
+Zeroth-Order Optimization (ZOO) Attack
 --------------------------------------
 .. autoclass:: ZooAttack
    :members:

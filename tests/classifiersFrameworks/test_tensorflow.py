@@ -15,445 +15,203 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import, division, print_function, unicode_literals
-
-import logging
-
 import numpy as np
 import pytest
+
 import tensorflow as tf
 
-from art.data_generators import TensorFlowDataGenerator
-from art.utils import Deprecated
-from tests.classifiersFrameworks.utils import (
-    backend_test_class_gradient,
-    backend_test_fit_generator,
-    backend_test_input_shape,
-    backend_test_layers,
-    backend_test_loss_gradient,
-    backend_test_nb_classes,
-    backend_test_repr,
-)
-from tests.utils import ExpectedValue
+from art.estimators.classification.tensorflow import TensorFlowV2Classifier
+from art.defences.preprocessor.spatial_smoothing import SpatialSmoothing
+from art.defences.preprocessor.spatial_smoothing_tensorflow import SpatialSmoothingTensorFlowV2
+from art.attacks.evasion import FastGradientMethod
 
-logger = logging.getLogger(__name__)
+from tests.attacks.utils import backend_test_defended_images
+from tests.utils import ARTTestException
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_predict(get_image_classifier_list, get_default_mnist_subset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+@pytest.fixture()
+def fix_get_mnist_subset(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    n_train = 100
+    n_test = 11
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
-    classifier, _ = get_image_classifier_list(one_classifier=True)
 
-    y_predicted = classifier.predict(x_test_mnist[0:1])
-    y_expected = np.asarray(
-        [
-            [
-                0.12109935,
-                0.0498215,
-                0.0993958,
-                0.06410097,
-                0.11366927,
-                0.04645343,
-                0.06419806,
-                0.30685693,
-                0.07616713,
-                0.05823758,
-            ]
-        ]
+# A generic test for various preprocessing_defences, forward pass.
+def _test_preprocessing_defences_forward(
+    get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+):
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+
+    classifier_, _ = image_dl_estimator()
+
+    clip_values = (0, 1)
+    loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+    classifier = TensorFlowV2Classifier(
+        clip_values=clip_values,
+        model=classifier_.model,
+        preprocessing_defences=preprocessing_defences,
+        loss_object=loss_object,
+        input_shape=(28, 28, 1),
+        nb_classes=10,
     )
-    np.testing.assert_array_almost_equal(y_predicted, y_expected, decimal=4)
+
+    predictions_classifier = classifier.predict(x_test_mnist)
+
+    # Apply the same defences by hand
+    x_test_defense = x_test_mnist
+    for defence in preprocessing_defences:
+        x_test_defense, _ = defence(x_test_defense, y_test_mnist)
+
+    x_test_defense = tf.convert_to_tensor(x_test_defense)
+    predictions_check = classifier_.model(x_test_defense)
+    predictions_check = predictions_check.cpu().numpy()
+
+    # Check that the prediction results match
+    np.testing.assert_array_almost_equal(predictions_classifier, predictions_check, decimal=4)
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_fit_generator(is_tf_version_2, get_default_mnist_subset, get_image_classifier_list):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+# A generic test for various preprocessing_defences, backward pass.
+def _test_preprocessing_defences_backward(
+    get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+):
+    (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
 
-    if not is_tf_version_2:
-        classifier, sess = get_image_classifier_list(one_classifier=True)
+    classifier_, _ = image_dl_estimator()
 
-        # Create TensorFlow data generator
-        x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
-        y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
-        dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
+    clip_values = (0, 1)
+    loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+    classifier = TensorFlowV2Classifier(
+        clip_values=clip_values,
+        model=classifier_.model,
+        preprocessing_defences=preprocessing_defences,
+        loss_object=loss_object,
+        input_shape=(28, 28, 1),
+        nb_classes=10,
+    )
 
-        iterator = dataset.make_initializable_iterator()
-        data_gen = TensorFlowDataGenerator(
-            sess=sess, iterator=iterator, iterator_type="initializable", iterator_arg={}, size=1000, batch_size=100
+    # The efficient defence-chaining.
+    pseudo_gradients = np.random.randn(*x_test_mnist.shape)
+    gradients_in_chain = classifier._apply_preprocessing_gradient(x_test_mnist, pseudo_gradients)
+
+    # Apply the same backward pass one by one.
+    x = x_test_mnist
+    x_intermediates = [x]
+    for preprocess in classifier.preprocessing[:-1]:
+        x = preprocess(x)[0]
+        x_intermediates.append(x)
+
+    gradients = pseudo_gradients
+    for preprocess, x in zip(classifier.preprocessing[::-1], x_intermediates[::-1]):
+        gradients = preprocess.estimate_gradient(x, gradients)
+
+    np.testing.assert_array_almost_equal(gradients_in_chain, gradients, decimal=4)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+def test_nodefence(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        preprocessing_defences = []
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
         )
-
-        expected_values = {"post_fit_accuracy": ExpectedValue(0.65, 0.02)}
-
-        backend_test_fit_generator(expected_values, classifier, data_gen, get_default_mnist_subset, nb_epochs=2)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_nb_classes(get_image_classifier_list):
-    backend_test_nb_classes(get_image_classifier_list)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_input_shape(get_image_classifier_list):
-    backend_test_input_shape(get_image_classifier_list)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_class_gradient(get_image_classifier_list, get_default_mnist_subset):
-    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-
-    classifier_logits, _ = get_image_classifier_list(one_classifier=True, from_logits=True)
-
-    expected_values = {
-        "expected_gradients_1_all_labels": ExpectedValue(
-            np.asarray(
-                [
-                    -0.03347399,
-                    -0.03195872,
-                    -0.02650188,
-                    0.04111874,
-                    0.08676253,
-                    0.03339913,
-                    0.06925241,
-                    0.09387045,
-                    0.15184258,
-                    -0.00684002,
-                    0.05070481,
-                    0.01409407,
-                    -0.03632583,
-                    0.00151133,
-                    0.05102589,
-                    0.00766463,
-                    -0.00898967,
-                    0.00232938,
-                    -0.00617045,
-                    -0.00201032,
-                    0.00410065,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_2_all_labels": ExpectedValue(
-            np.asarray(
-                [
-                    -0.09723657,
-                    -0.00240533,
-                    0.02445251,
-                    -0.00035474,
-                    0.04765627,
-                    0.04286841,
-                    0.07209076,
-                    0.0,
-                    0.0,
-                    -0.07938144,
-                    -0.00142567,
-                    0.02882954,
-                    -0.00049514,
-                    0.04170151,
-                    0.05102589,
-                    0.09544909,
-                    -0.04401167,
-                    -0.06158172,
-                    0.03359772,
-                    -0.00838454,
-                    0.01722163,
-                    -0.13376027,
-                    0.08206709,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_1_label5": ExpectedValue(
-            np.asarray(
-                [
-                    -0.03347399,
-                    -0.03195872,
-                    -0.02650188,
-                    0.04111874,
-                    0.08676253,
-                    0.03339913,
-                    0.06925241,
-                    0.09387045,
-                    0.15184258,
-                    -0.00684002,
-                    0.05070481,
-                    0.01409407,
-                    -0.03632583,
-                    0.00151133,
-                    0.05102589,
-                    0.00766463,
-                    -0.00898967,
-                    0.00232938,
-                    -0.00617045,
-                    -0.00201032,
-                    0.00410065,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_2_label5": ExpectedValue(
-            np.asarray(
-                [
-                    -0.09723657,
-                    -0.00240533,
-                    0.02445251,
-                    -0.00035474,
-                    0.04765627,
-                    0.04286841,
-                    0.07209076,
-                    0.0,
-                    0.0,
-                    -0.07938144,
-                    -0.00142567,
-                    0.02882954,
-                    -0.00049514,
-                    0.04170151,
-                    0.05102589,
-                    0.09544909,
-                    -0.04401167,
-                    -0.06158172,
-                    0.03359772,
-                    -0.00838454,
-                    0.01722163,
-                    -0.13376027,
-                    0.08206709,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_1_labelArray": ExpectedValue(
-            np.asarray(
-                [
-                    0.06860766,
-                    0.065502,
-                    0.08539103,
-                    0.13868105,
-                    -0.05520725,
-                    -0.18788849,
-                    0.02264893,
-                    0.02980516,
-                    0.2226511,
-                    0.11288887,
-                    -0.00678776,
-                    0.02045561,
-                    -0.03120914,
-                    0.00642691,
-                    0.08449504,
-                    0.02848018,
-                    -0.03251382,
-                    0.00854315,
-                    -0.02354656,
-                    -0.00767687,
-                    0.01565931,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_2_labelArray": ExpectedValue(
-            np.asarray(
-                [
-                    -0.0487146,
-                    -0.0171556,
-                    -0.03161772,
-                    -0.0420007,
-                    0.03360246,
-                    -0.01864819,
-                    0.00315916,
-                    0.0,
-                    0.0,
-                    -0.07631349,
-                    -0.00374462,
-                    0.04229517,
-                    -0.01131879,
-                    0.05044588,
-                    0.08449504,
-                    0.12417868,
-                    0.07536847,
-                    0.03906382,
-                    0.09467953,
-                    0.00543209,
-                    -0.00504872,
-                    -0.03366479,
-                    -0.00385999,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                ]
-            ),
-            4,
-        ),
-    }
-
-    labels = np.random.randint(5, size=x_test_mnist.shape[0])
-    backend_test_class_gradient(get_default_mnist_subset, classifier_logits, expected_values, labels)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_loss_gradient(get_default_mnist_subset, get_image_classifier_list):
-    expected_values = {
-        "expected_gradients_1": ExpectedValue(
-            np.asarray(
-                [
-                    5.59206062e-04,
-                    5.33892540e-04,
-                    6.48919027e-04,
-                    7.92516454e-04,
-                    -4.02929145e-04,
-                    -1.12814642e-03,
-                    1.85060024e-04,
-                    3.25053406e-05,
-                    8.16319487e-04,
-                    3.33394884e-04,
-                    3.17659928e-04,
-                    -2.42046357e-04,
-                    -7.81555660e-04,
-                    -4.69873514e-04,
-                    1.07115903e-03,
-                    4.08643362e-04,
-                    -3.44107364e-04,
-                    1.07128391e-04,
-                    -4.22919547e-04,
-                    -1.38615724e-04,
-                    2.82748661e-04,
-                    0.00000000e00,
-                    0.00000000e00,
-                    0.00000000e00,
-                    0.00000000e00,
-                    0.00000000e00,
-                    0.00000000e00,
-                    0.00000000e00,
-                ]
-            ),
-            4,
-        ),
-        "expected_gradients_2": ExpectedValue(
-            np.asarray(
-                [
-                    2.10802755e-05,
-                    2.13919120e-05,
-                    5.20980720e-05,
-                    5.48000680e-05,
-                    -2.30590031e-05,
-                    4.32076595e-05,
-                    2.74944887e-05,
-                    0.00000000e00,
-                    0.00000000e00,
-                    -5.83440997e-04,
-                    -6.16604229e-05,
-                    5.26219024e-04,
-                    -2.37398461e-04,
-                    5.27310593e-04,
-                    1.07115903e-03,
-                    1.27738668e-03,
-                    6.89289009e-04,
-                    1.33779933e-04,
-                    1.00320193e-03,
-                    1.68109560e-04,
-                    -2.86467184e-06,
-                    -5.58885862e-04,
-                    1.47416518e-04,
-                    0.00000000e00,
-                    0.00000000e00,
-                    0.00000000e00,
-                    0.00000000e00,
-                    0.00000000e00,
-                ]
-            ),
-            4,
-        ),
-    }
-
-    backend_test_loss_gradient(get_default_mnist_subset, get_image_classifier_list, expected_values)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_layers(is_tf_version_2, framework, get_default_mnist_subset, get_image_classifier_list):
-    if not is_tf_version_2:
-        backend_test_layers(framework, get_default_mnist_subset, get_image_classifier_list, batch_size=5)
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_set_learning(is_tf_version_2, get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    if not is_tf_version_2:
-        assert classifier._feed_dict == {}
-        classifier.set_learning_phase(False)
-        assert classifier._feed_dict[classifier._learning] is False
-        classifier.set_learning_phase(True)
-        assert classifier._feed_dict[classifier._learning]
-        assert classifier.learning_phase
-
-
-@pytest.mark.only_with_platform("tensorflow")
-def test_repr(is_tf_version_2, get_image_classifier_list):
-    classifier, _ = get_image_classifier_list(one_classifier=True)
-    if is_tf_version_2:
-        backend_test_repr(
-            classifier,
-            [
-                "TensorFlowV2Classifier",
-                "model=",
-                "nb_classes=10",
-                "input_shape=(28, 28, 1)",
-                "loss_object=<tensorflow.python.keras.losses." "SparseCategoricalCrossentropy",
-                "train_step=<function get_image_classifier_tf_v2." "<locals>.train_step",
-                f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
-                "preprocessing_defences=None, postprocessing_defences=None, preprocessing=(0, 1))",
-            ],
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
         )
+    except ARTTestException as e:
+        art_warning(e)
 
-    else:
 
-        backend_test_repr(
-            classifier,
-            [
-                "TensorFlowClassifier",
-                "input_ph=<tf.Tensor 'Placeholder:0' shape=(?, 28, 28, 1) dtype=float32>",
-                "output=<tf.Tensor 'Softmax:0' shape=(?, 10) dtype=float32>",
-                "labels_ph=<tf.Tensor 'Placeholder_1:0' shape=(?, 10) dtype=float32>",
-                "train=<tf.Operation 'Adam' type=NoOp>",
-                "loss=<tf.Tensor 'Mean:0' shape=() dtype=float32>",
-                "learning=None",
-                "sess=<tensorflow.python.client.session.Session object",
-                "TensorFlowClassifier",
-                f"channel_index={Deprecated}, channels_first=False, clip_values=array([0., 1.], dtype=float32), "
-                "preprocessing_defences=None, postprocessing_defences=None, "
-                "preprocessing=(0, 1))",
-            ],
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defence_tensorflow(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        preprocessing_defences = [smooth_3x3]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
         )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+    except ARTTestException as e:
+        art_warning(e)
 
 
-if __name__ == "__main__":
-    pytest.cmdline.main("-q {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defence_non_tensorflow(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        smooth_3x3 = SpatialSmoothing(window_size=3, channels_first=False)
+        preprocessing_defences = [smooth_3x3]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.xfail(reason="Preprocessing-defence chaining only supports defences implemented in TensorFlow v2.")
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defences_tensorflow_and_nontensorflow(art_warning, get_default_mnist_subset, image_dl_estimator, device_type):
+    try:
+        smooth_3x3_nonpth = SpatialSmoothing(window_size=3, channels_first=False)
+        smooth_3x3_pth = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        preprocessing_defences = [smooth_3x3_nonpth, smooth_3x3_pth]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+def test_defences_chaining(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
+        smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
+        preprocessing_defences = [smooth_3x3, smooth_5x5, smooth_7x7]
+        device_type = None
+        _test_preprocessing_defences_forward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+        _test_preprocessing_defences_backward(
+            get_default_mnist_subset, image_dl_estimator, device_type, preprocessing_defences
+        )
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.only_with_platform("tensorflow2")
+def test_fgsm_defences(art_warning, fix_get_mnist_subset, image_dl_estimator):
+    try:
+        clip_values = (0, 1)
+        smooth_3x3 = SpatialSmoothingTensorFlowV2(window_size=3, channels_first=False)
+        smooth_5x5 = SpatialSmoothingTensorFlowV2(window_size=5, channels_first=False)
+        smooth_7x7 = SpatialSmoothingTensorFlowV2(window_size=7, channels_first=False)
+        classifier_, _ = image_dl_estimator()
+
+        loss_object = tf.keras.losses.CategoricalCrossentropy(from_logits=True)
+        classifier = TensorFlowV2Classifier(
+            clip_values=clip_values,
+            model=classifier_.model,
+            preprocessing_defences=[smooth_3x3, smooth_5x5, smooth_7x7],
+            loss_object=loss_object,
+            input_shape=(28, 28, 1),
+            nb_classes=10,
+        )
+        assert len(classifier.preprocessing_defences) == 3
+
+        attack = FastGradientMethod(classifier, eps=1.0, batch_size=128)
+        backend_test_defended_images(attack, fix_get_mnist_subset)
+    except ARTTestException as e:
+        art_warning(e)

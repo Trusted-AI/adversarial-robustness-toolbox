@@ -21,16 +21,17 @@ This module implements the classifier `TensorFlowEncoder` for TensorFlow models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
 
 from art.estimators.encoding.encoder import EncoderMixin
 from art.estimators.tensorflow import TensorFlowEstimator
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import numpy as np
     import tensorflow as tf
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
@@ -53,32 +54,33 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
-        feed_dict: Dict[Any, Any] = {},
+        feed_dict: Optional[Dict[Any, Any]] = None,
     ):
         """
         Initialization specific to encoder estimator implementation in TensorFlow.
 
         :param input_ph: The input placeholder.
-        :param model: tensorflow model, neural network or other.
+        :param model: TensorFlow model, neural network or other.
         :param loss: The loss function for which to compute gradients. This parameter is necessary when training the
-            model and when computing gradients w.r.t. the loss function.
+                     model and when computing gradients w.r.t. the loss function.
         :param sess: Computation session.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` of floats or `np.ndarray` representing the minimum and
-               maximum values allowed for features. If floats are provided, these will be used as the range of all
-               features. If arrays are provided, each value will be considered the bound for a feature, thus
-               the shape of clip values needs to match the total number of features.
+                            maximum values allowed for features. If floats are provided, these will be used as the range
+                            of all features. If arrays are provided, each value will be considered the bound for a
+                            feature, thus the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
-            used for data preprocessing. The first value will be subtracted from the input. The input will then
-            be divided by the second one.
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
+                              used for data preprocessing. The first value will be subtracted from the input. The input
+                              will then be divided by the second one.
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
@@ -89,10 +91,12 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         self._nb_classes = int(model.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
-        self._model = model
         self._encoding_length = self._model.shape[1]
         self._loss = loss
-        self._feed_dict = feed_dict
+        if feed_dict is None:
+            self._feed_dict = dict()
+        else:
+            self._feed_dict = feed_dict
 
         # Assign session
         if sess is None:
@@ -103,6 +107,15 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
 
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
+
     def predict(self, x: "np.ndarray", batch_size: int = 128, **kwargs):
         """
         Perform prediction for a batch of inputs.
@@ -112,7 +125,10 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         :return: Array of encoding predictions of shape `(num_inputs, encoding_length)`.
         """
         logger.info("Encoding input")
-        y = self._sess.run(self._model, feed_dict={self._input_ph: x})
+        feed_dict = {self._input_ph: x}
+        if self._feed_dict is not None:
+            feed_dict.update(self._feed_dict)
+        y = self._sess.run(self._model, feed_dict=feed_dict)
         return y
 
     def fit(self, x: "np.ndarray", y: "np.ndarray", batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
@@ -138,6 +154,19 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
     def loss_gradient(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """
         No gradients to compute for this method; do nothing.
+        """
+        raise NotImplementedError
+
+    def loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
 

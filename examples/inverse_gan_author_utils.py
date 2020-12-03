@@ -1034,7 +1034,7 @@ class DefenseGANv2(AbstractModel):
         self.test_batch_size = self.batch_size
 
         # Defining batch_size in input placeholders is inevitable at least
-        # for now, because the z vectors are Tensorflow variables.
+        # for now, because the z vectors are TensorFlow variables.
         self.real_data_pl = tf.placeholder(tf.float32, shape=[self.batch_size] + self.image_dim,)
         self.real_data_test_pl = tf.placeholder(tf.float32, shape=[self.test_batch_size] + self.image_dim,)
 

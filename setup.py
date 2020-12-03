@@ -8,9 +8,9 @@ with open("README.md", "r") as fh:
 
 install_requires = [
     "numpy",
-    "scipy==1.4.1",
+    "scipy>=1.4.1",
     "matplotlib",
-    "scikit-learn==0.23.2",
+    "scikit-learn>=0.22.2",
     "six",
     "setuptools",
     "Pillow",
@@ -30,16 +30,16 @@ docs_require = [
     "sphinx-autodoc-typehints",
     "matplotlib",
     "numpy",
-    "scipy==1.4.1",
-    "six==1.13.0",
-    "scikit-learn==0.23.2",
+    "scipy>=1.4.1",
+    "six>=1.13.0",
+    "scikit-learn>=0.22.2",
     "Pillow>=6.0.0",
 ]
 
 
 def read(rel_path):
     here = os.path.abspath(os.path.dirname(__file__))
-    with codecs.open(os.path.join(here, rel_path), "r") as fp:
+    with codecs.open(os.path.join(here, rel_path), "r", encoding="utf-8") as fp:
         return fp.read()
 
 
@@ -61,7 +61,7 @@ setup(
     author_email="irinutza.n@gmail.com",
     maintainer="Beat Buesser",
     maintainer_email="beat.buesser@ie.ibm.com",
-    url="https://github.com/IBM/adversarial-robustness-toolbox",
+    url="https://github.com/Trusted-AI/adversarial-robustness-toolbox",
     license="MIT",
     install_requires=install_requires,
     extras_require={
@@ -72,8 +72,9 @@ setup(
         "lightgbm": ["lightgbm"],
         "mxnet": ["mxnet"],
         "tensorflow": ["tensorflow", "tensorflow_addons", "h5py"],
-        "pytorch": ["torch", "torchvision"],
+        "pytorch": ["torch", "torchvision", "torchaudio"],
         "xgboost": ["xgboost"],
+        "lingvo_asr": ["tensorflow-gpu==2.1.0", "lingvo==0.6.4"],
         "all": [
             "mxnet",
             "catboost",
@@ -84,6 +85,8 @@ setup(
             "torch",
             "torchvision",
             "xgboost",
+            "pandas",
+            "kornia",
         ],
     },
     classifiers=[

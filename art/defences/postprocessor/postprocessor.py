@@ -34,11 +34,15 @@ class Postprocessor(abc.ABC):
 
     params: List[str] = []
 
-    def __init__(self) -> None:
+    def __init__(self, is_fitted: bool = False, apply_fit: bool = True, apply_predict: bool = True) -> None:
         """
         Create a postprocessing object.
+
+        Optionally, set attributes.
         """
-        self._is_fitted = False
+        self._is_fitted = bool(is_fitted)
+        self._apply_fit = bool(apply_fit)
+        self._apply_predict = bool(apply_predict)
 
     @property
     def is_fitted(self) -> bool:
@@ -50,24 +54,22 @@ class Postprocessor(abc.ABC):
         return self._is_fitted
 
     @property
-    @abc.abstractmethod
     def apply_fit(self) -> bool:
         """
         Property of the defence indicating if it should be applied at training time.
 
         :return: `True` if the defence should be applied when fitting a model, `False` otherwise.
         """
-        raise NotImplementedError
+        return self._apply_fit
 
     @property
-    @abc.abstractmethod
     def apply_predict(self) -> bool:
         """
         Property of the defence indicating if it should be applied at test time.
 
         :return: `True` if the defence should be applied at prediction time, `False` otherwise.
         """
-        raise NotImplementedError
+        return self._apply_predict
 
     @abc.abstractmethod
     def __call__(self, preds: np.ndarray) -> np.ndarray:
@@ -79,7 +81,6 @@ class Postprocessor(abc.ABC):
         """
         raise NotImplementedError
 
-    @abc.abstractmethod
     def fit(self, preds: np.ndarray, **kwargs) -> None:
         """
         Fit the parameters of the postprocessor if it has any.
@@ -87,7 +88,7 @@ class Postprocessor(abc.ABC):
         :param preds: Training set to fit the postprocessor.
         :param kwargs: Other parameters.
         """
-        raise NotImplementedError
+        pass
 
     def set_params(self, **kwargs) -> None:
         """

@@ -31,8 +31,8 @@ logger = logging.getLogger(__name__)
 
 
 class ClassifierInstance(ClassifierMixin, BaseEstimator):
-    def __init__(self):
-        super(ClassifierInstance, self).__init__()
+    def __init__(self, clip_values=None, channels_first=True):
+        super(ClassifierInstance, self).__init__(model=None, clip_values=clip_values)
 
     def fit(self, x, y, **kwargs):
         pass
@@ -46,12 +46,17 @@ class ClassifierInstance(ClassifierMixin, BaseEstimator):
     def save(self, filename, path=None):
         pass
 
+    def input_shape(self):
+        pass
+
 
 class ClassifierNeuralNetworkInstance(
     ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
 ):
     def __init__(self, clip_values, channels_first=True):
-        super(ClassifierNeuralNetworkInstance, self).__init__(clip_values=clip_values, channels_first=channels_first)
+        super(ClassifierNeuralNetworkInstance, self).__init__(
+            model=None, clip_values=clip_values, channels_first=channels_first
+        )
 
     def class_gradient(self, x, label=None, **kwargs):
         pass
@@ -60,6 +65,9 @@ class ClassifierNeuralNetworkInstance(
         pass
 
     def get_activations(self, x, layer, batch_size):
+        pass
+
+    def loss(self, x, y, **kwargs):
         pass
 
     def loss_gradient(self, x, y, **kwargs):
@@ -80,6 +88,9 @@ class ClassifierNeuralNetworkInstance(
     def set_learning_phase(self, train):
         pass
 
+    def input_shape(self):
+        pass
+
 
 class TestClassifier(TestBase):
     @classmethod
@@ -95,7 +106,7 @@ class TestClassifier(TestBase):
         classifier = ClassifierInstance()
 
         x = np.random.rand(2, 3)
-        x_new = classifier._apply_preprocessing_standardisation(x)
+        x_new, _ = classifier._apply_preprocessing(x=x, y=None, fit=False)
         x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774], [0.78535858, 0.77997581, 0.27259261]])
         np.testing.assert_array_almost_equal(x_new, x_new_expected)
 
@@ -106,7 +117,9 @@ class TestClassifier(TestBase):
         self.assertIn("ClassifierInstance", repr_)
         self.assertIn("clip_values=None", repr_)
         self.assertIn("defences=None", repr_)
-        self.assertIn("preprocessing=(0, 1)", repr_)
+        self.assertIn(
+            "preprocessing=[StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)]", repr_
+        )
 
 
 class TestClassifierNeuralNetwork(TestBase):
@@ -123,7 +136,7 @@ class TestClassifierNeuralNetwork(TestBase):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
         x = np.random.rand(2, 3)
         x_new_expected = np.asarray([[0.19151945, 0.62210877, 0.43772774], [0.78535858, 0.77997581, 0.27259261]])
-        x_new = classifier._apply_preprocessing_standardisation(x)
+        x_new, _ = classifier._apply_preprocessing(x, y=None, fit=False)
         np.testing.assert_array_almost_equal(x_new, x_new_expected, decimal=4)
 
     def test_repr(self):
@@ -133,7 +146,9 @@ class TestClassifierNeuralNetwork(TestBase):
         self.assertIn(f"channel_index={Deprecated}, channels_first=True", repr_)
         self.assertIn("clip_values=[0. 1.]", repr_)
         self.assertIn("defences=None", repr_)
-        self.assertIn("preprocessing=(0, 1)", repr_)
+        self.assertIn(
+            "preprocessing=[StandardisationMeanStd(mean=0, std=1, apply_fit=True, apply_predict=True)]", repr_
+        )
 
 
 if __name__ == "__main__":

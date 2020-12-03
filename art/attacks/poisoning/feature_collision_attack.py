@@ -22,15 +22,18 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 from functools import reduce
 import logging
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassifierNeuralNetwork, ClassifierMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -57,13 +60,14 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         "max_iter",
         "similarity_coeff",
         "watermark",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin, KerasClassifier)
 
     def __init__(
         self,
-        classifier: ClassifierNeuralNetwork,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         target: np.ndarray,
         feature_layer: Union[str, int],
         learning_rate: float = 500 * 255.0,
@@ -74,6 +78,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         max_iter: int = 120,
         similarity_coeff: float = 256.0,
         watermark: Optional[float] = None,
+        verbose: bool = True,
     ):
         """
         Initialize an Feature Collision Clean-Label poisoning attack
@@ -89,8 +94,9 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         :param max_iter: The maximum number of iterations for the attack.
         :param similarity_coeff: The maximum number of iterations for the attack.
         :param watermark: Whether The opacity of the watermarked target image.
+        :param verbose: Show progress bars.
         """
-        super().__init__(classifier)
+        super().__init__(classifier=classifier)  # type: ignore
         self.target = target
         self.feature_layer = feature_layer
         self.learning_rate = learning_rate
@@ -101,6 +107,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         self.max_iter = max_iter
         self.similarity_coeff = similarity_coeff
         self.watermark = watermark
+        self.verbose = verbose
         self._check_params()
 
         self.target_placeholder, self.target_feature_rep = self.estimator.get_activations(
@@ -131,7 +138,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             old_objective = self.objective(poison_features, target_features, init_attack, old_attack)
             last_m_objectives = [old_objective]
 
-            for i in trange(self.max_iter, desc="Feature collision"):
+            for i in trange(self.max_iter, desc="Feature collision", disable=not self.verbose):
                 # forward step
                 new_attack = self.forward_step(old_attack)
 
@@ -140,7 +147,7 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
 
                 rel_change_val = np.linalg.norm(new_attack - old_attack) / np.linalg.norm(new_attack)
                 if rel_change_val < self.stopping_tol or self.obj_threshold and old_objective <= self.obj_threshold:
-                    logger.info("stopped after " + str(i) + " iterations due to small changes")
+                    logger.info("stopped after %d iterations due to small changes", i)
                     break
 
                 np.expand_dims(new_attack, axis=0)
@@ -169,26 +176,6 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
             final_attacks.append(final_poison)
 
         return np.vstack(final_attacks), self.estimator.predict(x)
-
-    def _check_params(self) -> None:
-        if self.learning_rate <= 0:
-            raise ValueError("Learning rate must be strictly positive")
-        if self.max_iter < 1:
-            raise ValueError("Value of max_iter at least 1")
-        if not (isinstance(self.feature_layer, str) or isinstance(self.feature_layer, int)):
-            raise TypeError("Feature layer should be a string or int")
-        if self.decay_coeff <= 0:
-            raise ValueError("Decay coefficient must be positive")
-        if self.stopping_tol <= 0:
-            raise ValueError("Stopping tolerance must be positive")
-        if self.obj_threshold and self.obj_threshold <= 0:
-            raise ValueError("Objective threshold must be positive")
-        if self.num_old_obj <= 0:
-            raise ValueError("Number of old stored objectives must be positive")
-        if self.max_iter <= 0:
-            raise ValueError("Number of old stored objectives must be positive")
-        if self.watermark and not (isinstance(self.watermark, float) and 0 <= self.watermark < 1):
-            raise ValueError("Watermark must be between 0 and 1")
 
     def forward_step(self, poison: np.ndarray) -> np.ndarray:
         """
@@ -240,6 +227,37 @@ class FeatureCollisionAttack(PoisoningAttackWhiteBox):
         beta = self.similarity_coeff * (num_activations / num_features) ** 2
         return np.linalg.norm(poison_feature_rep - target_feature_rep) + beta * np.linalg.norm(poison - base_image)
 
+    def _check_params(self) -> None:
+        if self.learning_rate <= 0:
+            raise ValueError("Learning rate must be strictly positive")
+
+        if self.max_iter < 1:
+            raise ValueError("Value of max_iter at least 1")
+
+        if not isinstance(self.feature_layer, (str, int)):
+            raise TypeError("Feature layer should be a string or int")
+
+        if self.decay_coeff <= 0:
+            raise ValueError("Decay coefficient must be positive")
+
+        if self.stopping_tol <= 0:
+            raise ValueError("Stopping tolerance must be positive")
+
+        if self.obj_threshold and self.obj_threshold <= 0:
+            raise ValueError("Objective threshold must be positive")
+
+        if self.num_old_obj <= 0:
+            raise ValueError("Number of old stored objectives must be positive")
+
+        if self.max_iter <= 0:
+            raise ValueError("Number of old stored objectives must be positive")
+
+        if self.watermark and not (isinstance(self.watermark, float) and 0 <= self.watermark < 1):
+            raise ValueError("Watermark must be between 0 and 1")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
+
 
 def get_class_name(obj: object) -> str:
     """
@@ -249,10 +267,11 @@ def get_class_name(obj: object) -> str:
     :return: A qualified class name.
     """
     module = obj.__class__.__module__
+
     if module is None or module == str.__class__.__module__:
         return obj.__class__.__name__
-    else:
-        return module + "." + obj.__class__.__name__
+
+    return module + "." + obj.__class__.__name__
 
 
 def tensor_norm(tensor, norm_type: Union[int, float, str] = 2):

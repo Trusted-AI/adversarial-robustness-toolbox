@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.transformer import DefensiveDistillation
+from art.defences.transformer.evasion import DefensiveDistillation
 
 from tests.utils import master_seed, TestBase
 from tests.utils import get_image_classifier_tf, get_image_classifier_pt, get_image_classifier_kr
@@ -67,7 +67,7 @@ class TestDefensiveDistillation(TestBase):
     def setUp(self):
         super().setUp()
 
-    def test_tensorflow_classifier(self):
+    def test_1_tensorflow_classifier(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -104,7 +104,7 @@ class TestDefensiveDistillation(TestBase):
         if sess is not None:
             sess.close()
 
-    def test_pytorch_classifier(self):
+    def test_3_pytorch_classifier(self):
         """
         Second test with the PyTorchClassifier.
         :return:
@@ -141,7 +141,7 @@ class TestDefensiveDistillation(TestBase):
 
         self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 28, 28, 1)).astype(np.float32)
 
-    def test_keras_classifier(self):
+    def test_5_keras_classifier(self):
         """
         Third test with the KerasClassifier.
         :return:
@@ -174,22 +174,7 @@ class TestDefensiveDistillation(TestBase):
         self.assertLess(ce, 10)
         self.assertGreaterEqual(ce, 0)
 
-
-class TestDefensiveDistillationVectors(TestBase):
-    """
-    A unittest class for testing the DefensiveDistillation transformer on vector data.
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=True)
-        super().setUpClass()
-
-    def setUp(self):
-        master_seed(seed=1234, set_tensorflow=True)
-        super().setUp()
-
-    def test_tensorflow_iris(self):
+    def test_2_tensorflow_iris(self):
         """
         First test for TensorFlow.
         :return:
@@ -205,7 +190,7 @@ class TestDefensiveDistillationVectors(TestBase):
 
         # Perform the transformation
         with self.assertRaises(ValueError) as context:
-            transformed_classifier = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
+            _ = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
 
         self.assertIn("The input trained classifier do not produce probability outputs.", str(context.exception))
 
@@ -213,7 +198,7 @@ class TestDefensiveDistillationVectors(TestBase):
         if sess is not None:
             sess.close()
 
-    def test_keras_iris(self):
+    def test_6_keras_iris(self):
         """
         Second test for Keras.
         :return:
@@ -246,9 +231,9 @@ class TestDefensiveDistillationVectors(TestBase):
         self.assertLess(ce, 20)
         self.assertGreaterEqual(ce, 0)
 
-    def test_pytorch_iris(self):
+    def test_4_pytorch_iris(self):
         """
-        Third test for Pytorch.
+        Third test for PyTorch.
         :return:
         """
         # Create the trained classifier
@@ -262,7 +247,7 @@ class TestDefensiveDistillationVectors(TestBase):
 
         # Perform the transformation
         with self.assertRaises(ValueError) as context:
-            transformed_classifier = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
+            _ = transformer(x=self.x_train_iris, transformed_classifier=transformed_classifier)
 
         self.assertIn("The input trained classifier do not produce probability outputs.", str(context.exception))
 

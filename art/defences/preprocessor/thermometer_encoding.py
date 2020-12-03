@@ -27,13 +27,16 @@ This module implements the thermometer encoding defence `ThermometerEncoding`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.config import ART_NUMPY_DTYPE, CLIP_VALUES_TYPE
+from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
 from art.utils import Deprecated, deprecated_keyword_arg, to_categorical
+
+if TYPE_CHECKING:
+    from art.utils import CLIP_VALUES_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -51,10 +54,10 @@ class ThermometerEncoding(Preprocessor):
 
     params = ["clip_values", "num_space", "channel_index", "channels_first"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
-        clip_values: CLIP_VALUES_TYPE,
+        clip_values: "CLIP_VALUES_TYPE",
         num_space: int = 10,
         channel_index=Deprecated,
         channels_first: bool = False,
@@ -73,7 +76,7 @@ class ThermometerEncoding(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 2:
             channels_first = False
         elif channel_index == 1:
@@ -81,23 +84,12 @@ class ThermometerEncoding(Preprocessor):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(ThermometerEncoding, self).__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.clip_values = clip_values
         self.num_space = num_space
         self.channel_index = channel_index
         self.channels_first = channels_first
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -146,6 +138,10 @@ class ThermometerEncoding(Preprocessor):
         :param grad: Gradient value so far.
         :return: The gradient (estimate) of the defence.
         """
+        if self.channels_first:
+            x = np.transpose(x, (0,) + tuple(range(2, len(x.shape))) + (1,))
+            grad = np.transpose(grad, (0,) + tuple(range(2, len(x.shape))) + (1,))
+
         thermometer_grad = np.zeros(x.shape[:-1] + (x.shape[-1] * self.num_space,))
         mask = np.array([x > k / self.num_space for k in range(self.num_space)])
         mask = np.moveaxis(mask, 0, -1)
@@ -155,13 +151,12 @@ class ThermometerEncoding(Preprocessor):
         grad = grad * thermometer_grad
         grad = np.reshape(grad, grad.shape[:-1] + (grad.shape[-1] // self.num_space, self.num_space))
         grad = np.sum(grad, -1)
-        return grad / (self.clip_values[1] - self.clip_values[0])
 
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
+        if self.channels_first:
+            x = np.transpose(x, (0,) + (len(x.shape) - 1,) + tuple(range(1, len(x.shape) - 1)))
+            grad = np.transpose(grad, (0,) + (len(x.shape) - 1,) + tuple(range(1, len(x.shape) - 1)))
+
+        return grad / (self.clip_values[1] - self.clip_values[0])
 
     def _check_params(self) -> None:
         if not isinstance(self.num_space, (int, np.int)) or self.num_space <= 0:
