@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from art.defences.detector.poisoning import ClusteringAnalyzer
+from art.defences.detector.poison import ClusteringAnalyzer
 
 logger = logging.getLogger(__name__)
 

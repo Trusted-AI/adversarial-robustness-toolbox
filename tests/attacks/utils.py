@@ -207,7 +207,7 @@ def backend_masked_images(attack, fix_get_mnist_subset):
 
     # generate a random mask:
     mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test_mnist.shape))
-    mask = mask.reshape(x_test_mnist.shape)
+    mask = mask.reshape(x_test_mnist.shape).astype(np.float32)
 
     x_test_adv = attack.generate(x_test_mnist, mask=mask)
     mask_diff = (1 - mask) * (x_test_adv - x_test_mnist)

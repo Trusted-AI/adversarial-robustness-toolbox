@@ -51,6 +51,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         :param detector: The detector architecture to be trained and applied for the binary classification.
         """
         super().__init__(
+            model=None,
             clip_values=detector.clip_values,
             channel_index=detector.channel_index,
             channels_first=detector.channels_first,
@@ -117,7 +118,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         return self.detector.clip_values
 
     @property  # type: ignore
-    @deprecated(end_version="1.5.0", replaced_by="channels_first")
+    @deprecated(end_version="1.6.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 
@@ -177,8 +178,10 @@ class BinaryActivationDetector(
         :param layer: Layer for computing the activations to use for training the detector.
         """
         super().__init__(
+            model=None,
             clip_values=detector.clip_values,
             channel_index=detector.channel_index,
+            channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
         )
@@ -259,7 +262,7 @@ class BinaryActivationDetector(
         return self.detector.clip_values
 
     @property  # type: ignore
-    @deprecated(end_version="1.5.0", replaced_by="channels_first")
+    @deprecated(end_version="1.6.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 

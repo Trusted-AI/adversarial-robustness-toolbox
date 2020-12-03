@@ -57,6 +57,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         "learning_rate",
         "max_iter",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassifierMixin)
@@ -72,6 +73,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         max_iter: int = 500,
         clip_patch: Union[list, tuple, None] = None,
         batch_size: int = 16,
+        verbose: bool = True,
     ) -> None:
         """
         Create an instance of the :class:`.AdversarialPatchNumpy`.
@@ -89,6 +91,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         :param clip_patch: The minimum and maximum values for each channel in the form
                [(float, float), (float, float), (float, float)].
         :param batch_size: The size of the training batch.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
 
@@ -100,6 +103,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.max_iter = max_iter
         self.batch_size = batch_size
         self.clip_patch = clip_patch
+        self.verbose = verbose
         self._check_params()
 
         if len(self.estimator.input_shape) not in [3, 4]:
@@ -150,9 +154,29 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         :param x: An array with the original input images of shape NHWC or NCHW or input videos of shape NFHWC or NFCHW.
         :param y: An array with the original true labels.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
+        :type mask: `np.ndarray`
         :return: An array with adversarial patch and an array of the patch mask.
         """
         logger.info("Creating adversarial patch.")
+
+        mask = kwargs.get("mask")
+        if mask is not None:
+            mask = mask.copy()
+        if mask is not None and (
+            (mask.dtype != np.bool)
+            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
+            or not (
+                (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])
+                or (mask.shape[1] == x.shape[2] and mask.shape[2] == x.shape[3])
+            )
+        ):
+            raise ValueError(
+                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
+                "shape of `x` (N, H, W) without their channel dimensions."
+            )
 
         if len(x.shape) == 2:
             raise ValueError(
@@ -162,8 +186,10 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
-        for _ in trange(self.max_iter, desc="Adversarial Patch Numpy"):
-            patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(x, self.patch)
+        for _ in trange(self.max_iter, desc="Adversarial Patch Numpy", disable=not self.verbose):
+            patched_images, patch_mask_transformed, transforms = self._augment_images_with_random_patch(
+                x, self.patch, mask=mask
+            )
 
             num_batches = int(math.ceil(x.shape[0] / self.batch_size))
             patch_gradients = np.zeros_like(self.patch)
@@ -188,17 +214,24 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         return self.patch, self._get_circular_patch_mask()
 
-    def apply_patch(self, x: np.ndarray, scale: float, patch_external: np.ndarray = None) -> np.ndarray:
+    def apply_patch(
+        self, x: np.ndarray, scale: float, patch_external: np.ndarray = None, mask: Optional[np.ndarray] = None
+    ) -> np.ndarray:
         """
         A function to apply the learned adversarial patch to images or videos.
 
         :param x: Instances to apply randomly transformed patch.
         :param scale: Scale of the applied patch in relation to the classifier input shape.
         :param patch_external: External patch to apply to images `x`.
+        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+                     (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
+                     center location of the patch during sampling.
         :return: The patched instances.
         """
+        if mask is not None:
+            mask = mask.copy()
         patch = patch_external if patch_external is not None else self.patch
-        patched_x, _, _ = self._augment_images_with_random_patch(x, patch, scale)
+        patched_x, _, _ = self._augment_images_with_random_patch(x, patch, mask=mask, scale=scale)
         return patched_x
 
     def _check_params(self) -> None:
@@ -233,6 +266,9 @@ class AdversarialPatchNumpy(EvasionAttack):
             raise ValueError("The batch size must be of type int.")
         if self.batch_size <= 0:
             raise ValueError("The batch size must be greater than 0.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")
 
     def _get_circular_patch_mask(self, sharpness: int = 40) -> np.ndarray:
         """
@@ -273,7 +309,7 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         return mask
 
-    def _augment_images_with_random_patch(self, images, patch, scale=None):
+    def _augment_images_with_random_patch(self, images, patch, mask=None, scale=None):
         """
         Augment images with randomly rotated, shifted and scaled patch.
         """
@@ -282,7 +318,17 @@ class AdversarialPatchNumpy(EvasionAttack):
         patch_mask_transformed_list = list()
 
         for i_image in range(images.shape[0]):
-            (patch_transformed, patch_mask_transformed, transformation,) = self._random_transformation(patch, scale)
+            if mask is not None:
+                if mask.shape[0] == 1:
+                    mask_2d = mask[0, :, :]
+                else:
+                    mask_2d = mask[i_image, :, :]
+            else:
+                mask_2d = mask
+
+            (patch_transformed, patch_mask_transformed, transformation,) = self._random_transformation(
+                patch, scale, mask_2d
+            )
 
             inverted_patch_mask_transformed = 1 - patch_mask_transformed
 
@@ -399,7 +445,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                 shift_hw = (0, shift_h, shift_w, 0)
         return shift(x, shift=shift_hw, order=1)
 
-    def _random_transformation(self, patch, scale):
+    def _random_transformation(self, patch, scale, mask_2d):
         patch_mask = self._get_circular_patch_mask()
         transformation = dict()
 
@@ -417,18 +463,39 @@ class AdversarialPatchNumpy(EvasionAttack):
         transformation["scale"] = scale
 
         # shift
-        shift_max_h = (self.estimator.input_shape[self.i_h] - self.patch_shape[self.i_h] * scale) / 2.0
-        shift_max_w = (self.estimator.input_shape[self.i_w] - self.patch_shape[self.i_w] * scale) / 2.0
-        if shift_max_h > 0 and shift_max_w > 0:
-            shift_h = random.uniform(-shift_max_h, shift_max_h)
-            shift_w = random.uniform(-shift_max_w, shift_max_w)
+        if mask_2d is None:
+            shift_max_h = (self.estimator.input_shape[self.i_h] - self.patch_shape[self.i_h] * scale) / 2.0
+            shift_max_w = (self.estimator.input_shape[self.i_w] - self.patch_shape[self.i_w] * scale) / 2.0
+            if shift_max_h > 0 and shift_max_w > 0:
+                shift_h = random.uniform(-shift_max_h, shift_max_h)
+                shift_w = random.uniform(-shift_max_w, shift_max_w)
+                patch = self._shift(patch, shift_h, shift_w)
+                patch_mask = self._shift(patch_mask, shift_h, shift_w)
+            else:
+                shift_h = 0
+                shift_w = 0
+        else:
+            edge_x_0 = int(self.patch_shape[self.i_h] * scale) // 2
+            edge_x_1 = int(self.patch_shape[self.i_h] * scale) - edge_x_0
+            edge_y_0 = int(self.patch_shape[self.i_w] * scale) // 2
+            edge_y_1 = int(self.patch_shape[self.i_w] * scale) - edge_y_0
+
+            mask_2d[0:edge_x_0, :] = False
+            mask_2d[-edge_x_1:, :] = False
+            mask_2d[:, 0:edge_y_0] = False
+            mask_2d[:, -edge_y_1:] = False
+
+            num_pos = np.argwhere(mask_2d).shape[0]
+            pos_id = np.random.choice(num_pos, size=1)
+            pos = np.argwhere(mask_2d)[pos_id[0]]
+            shift_h = pos[0] - (self.estimator.input_shape[self.i_h]) / 2.0
+            shift_w = pos[1] - (self.estimator.input_shape[self.i_w]) / 2.0
+
             patch = self._shift(patch, shift_h, shift_w)
             patch_mask = self._shift(patch_mask, shift_h, shift_w)
-            transformation["shift_h"] = shift_h
-            transformation["shift_w"] = shift_w
-        else:
-            transformation["shift_h"] = 0
-            transformation["shift_w"] = 0
+
+        transformation["shift_h"] = shift_h
+        transformation["shift_w"] = shift_w
 
         return patch, patch_mask, transformation
 

@@ -71,6 +71,7 @@ class UniversalPerturbation(EvasionAttack):
         "eps",
         "norm",
         "batch_size",
+        "verbose",
     ]
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
@@ -84,6 +85,7 @@ class UniversalPerturbation(EvasionAttack):
         eps: float = 10.0,
         norm: Union[int, float, str] = np.inf,
         batch_size: int = 32,
+        verbose: bool = True,
     ) -> None:
         """
         :param classifier: A trained classifier.
@@ -96,6 +98,7 @@ class UniversalPerturbation(EvasionAttack):
         :param eps: Attack step size (input variation).
         :param norm: The norm of the adversarial perturbation. Possible values: "inf", np.inf, 2.
         :param batch_size: Batch size for model evaluations in UniversalPerturbation.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
         self.attacker = attacker
@@ -105,7 +108,40 @@ class UniversalPerturbation(EvasionAttack):
         self.eps = eps
         self.norm = norm
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
+
+        # Attack properties
+        self._fooling_rate: Optional[float] = None
+        self._converged: Optional[bool] = None
+        self._noise: Optional[np.ndarray] = None
+
+    @property
+    def fooling_rate(self) -> Optional[float]:
+        """
+        The fooling rate of the universal perturbation on the most recent call to `generate`.
+
+        :return: Fooling Rate.
+        """
+        return self._fooling_rate
+
+    @property
+    def converged(self) -> Optional[bool]:
+        """
+        The convergence of universal perturbation generation.
+
+        :return: `True` if generation of universal perturbation has converged.
+        """
+        return self._converged
+
+    @property
+    def noise(self) -> Optional[np.ndarray]:
+        """
+        The universal perturbation.
+
+        :return: Universal perturbation.
+        """
+        return self._noise
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -136,7 +172,7 @@ class UniversalPerturbation(EvasionAttack):
 
         # Generate the adversarial examples
         nb_iter = 0
-        pbar = tqdm(self.max_iter, desc="Universal perturbation")
+        pbar = tqdm(self.max_iter, desc="Universal perturbation", disable=not self.verbose)
 
         while fooling_rate < 1.0 - self.delta and nb_iter < self.max_iter:
             # Go through all the examples randomly
@@ -174,25 +210,12 @@ class UniversalPerturbation(EvasionAttack):
             fooling_rate = np.sum(y_index != y_adv) / nb_instances
 
         pbar.close()
-        self.fooling_rate = fooling_rate
-        self.converged = nb_iter < self.max_iter
-        self.noise = noise
+        self._fooling_rate = fooling_rate
+        self._converged = nb_iter < self.max_iter
+        self._noise = noise
         logger.info("Success rate of universal perturbation attack: %.2f%%", 100 * fooling_rate)
 
         return x_adv
-
-    def _check_params(self) -> None:
-        if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
-            raise ValueError("The desired accuracy must be in the range [0, 1].")
-
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
-            raise ValueError("The number of iterations must be a positive integer.")
-
-        if not isinstance(self.eps, (float, int)) or self.eps <= 0:
-            raise ValueError("The eps coefficient must be a positive float.")
-
-        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
-            raise ValueError("The batch_size must be a positive integer.")
 
     def _get_attack(self, a_name: str, params: Optional[Dict[str, Any]] = None) -> EvasionAttack:
         """
@@ -227,3 +250,19 @@ class UniversalPerturbation(EvasionAttack):
         class_module = getattr(module_, sub_mods[-1])
 
         return class_module
+
+    def _check_params(self) -> None:
+        if not isinstance(self.delta, (float, int)) or self.delta < 0 or self.delta > 1:
+            raise ValueError("The desired accuracy must be in the range [0, 1].")
+
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+            raise ValueError("The number of iterations must be a positive integer.")
+
+        if not isinstance(self.eps, (float, int)) or self.eps <= 0:
+            raise ValueError("The eps coefficient must be a positive float.")
+
+        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size <= 0:
+            raise ValueError("The batch_size must be a positive integer.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

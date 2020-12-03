@@ -31,7 +31,7 @@ from tqdm import trange
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 from art.estimators.estimator import BaseEstimator
-from art.attacks import InferenceAttack
+from art.attacks.attack import InferenceAttack
 from art.utils import get_labels_np_array, check_and_transform_label_format
 
 if TYPE_CHECKING:
@@ -55,6 +55,7 @@ class MIFace(InferenceAttack):
         "threshold",
         "learning_rate",
         "batch_size",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin, ClassGradientsMixin)
@@ -67,6 +68,7 @@ class MIFace(InferenceAttack):
         threshold: float = 0.99,
         learning_rate: float = 0.1,
         batch_size: int = 1,
+        verbose: bool = True,
     ):
         """
         Create an MIFace attack instance.
@@ -76,6 +78,7 @@ class MIFace(InferenceAttack):
         :param window_length: Length of window for checking whether descent should be aborted.
         :param threshold: Threshold for descent stopping criterion.
         :param batch_size: Size of internal batches.
+        :param verbose: Show progress bars.
         """
         super().__init__(estimator=classifier)
 
@@ -84,6 +87,7 @@ class MIFace(InferenceAttack):
         self.threshold = threshold
         self.learning_rate = learning_rate
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def infer(self, x: Optional[np.ndarray], y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -109,7 +113,9 @@ class MIFace(InferenceAttack):
         x_infer = x.astype(ART_NUMPY_DTYPE)
 
         # Compute inversions with implicit batching
-        for batch_id in trange(int(np.ceil(x.shape[0] / float(self.batch_size))), desc="Model inversion"):
+        for batch_id in trange(
+            int(np.ceil(x.shape[0] / float(self.batch_size))), desc="Model inversion", disable=not self.verbose
+        ):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_infer[batch_index_1:batch_index_2]
             batch_labels = y[batch_index_1:batch_index_2]
@@ -139,3 +145,22 @@ class MIFace(InferenceAttack):
             x_infer[batch_index_1:batch_index_2] = batch
 
         return x_infer
+
+    def _check_params(self) -> None:
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter < 0:
+            raise ValueError("The number of iterations must be a non-negative integer.")
+
+        if not isinstance(self.window_length, (int, np.int)) or self.window_length < 0:
+            raise ValueError("The window length must be a non-negative integer.")
+
+        if not isinstance(self.threshold, float) or self.threshold < 0.0:
+            raise ValueError("The threshold must be a non-negative float.")
+
+        if not isinstance(self.learning_rate, float) or self.learning_rate < 0.0:
+            raise ValueError("The learning rate must be a non-negative float.")
+
+        if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 0:
+            raise ValueError("The batch size must be a non-negative integer.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

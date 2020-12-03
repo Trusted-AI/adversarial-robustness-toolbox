@@ -158,6 +158,7 @@ class PyTorchDataGenerator(DataGenerator):
             raise TypeError("Expected instance of PyTorch `DataLoader, received %s instead.`" % str(type(iterator)))
 
         self._iterator: DataLoader = iterator
+        self._current = iter(self.iterator)
 
     def get_batch(self) -> tuple:
         """
@@ -167,8 +168,11 @@ class PyTorchDataGenerator(DataGenerator):
         :return: A tuple containing a batch of data `(x, y)`.
         :rtype: `tuple`
         """
-        iter_ = iter(self.iterator)
-        batch = list(next(iter_))
+        try:
+            batch = list(next(self._current))
+        except StopIteration:
+            self._current = iter(self.iterator)
+            batch = list(next(self._current))
 
         for i, item in enumerate(batch):
             batch[i] = item.data.cpu().numpy()
@@ -196,6 +200,7 @@ class MXDataGenerator(DataGenerator):
             raise TypeError("Expected instance of Gluon `DataLoader, received %s instead.`" % str(type(iterator)))
 
         self._iterator = iterator
+        self._current = iter(self.iterator)
 
     def get_batch(self) -> tuple:
         """
@@ -204,8 +209,11 @@ class MXDataGenerator(DataGenerator):
 
         :return: A tuple containing a batch of data `(x, y)`.
         """
-        iter_ = iter(self.iterator)
-        batch = list(next(iter_))
+        try:
+            batch = list(next(self._current))
+        except StopIteration:
+            self._current = iter(self.iterator)
+            batch = list(next(self._current))
 
         for i, item in enumerate(batch):
             batch[i] = item.asnumpy()

@@ -31,7 +31,7 @@ from typing import Optional, Tuple
 import numpy as np
 from tqdm import tqdm
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.defences.preprocessor.preprocessor import Preprocessor
 
 logger = logging.getLogger(__name__)
@@ -45,7 +45,7 @@ class VideoCompression(Preprocessor):
     parameter. More information on the constant rate factor: https://trac.ffmpeg.org/wiki/Encode/H.264.
     """
 
-    params = ["video_format", "constant_rate_factor", "channels_first"]
+    params = ["video_format", "constant_rate_factor", "channels_first", "verbose"]
 
     def __init__(
         self,
@@ -55,6 +55,7 @@ class VideoCompression(Preprocessor):
         channels_first: bool = False,
         apply_fit: bool = False,
         apply_predict: bool = True,
+        verbose: bool = False,
     ):
         """
         Create an instance of VideoCompression.
@@ -64,23 +65,14 @@ class VideoCompression(Preprocessor):
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
+        :param verbose: Show progress bars.
         """
-        super().__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.video_format = video_format
         self.constant_rate_factor = constant_rate_factor
         self.channels_first = channels_first
+        self.verbose = verbose
         self._check_params()
-
-    @property
-    def apply_fit(self):
-        return self._apply_fit
-
-    @property
-    def apply_predict(self):
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -127,8 +119,8 @@ class VideoCompression(Preprocessor):
 
         # apply video compression per video item
         x_compressed = x.copy()
-        with TemporaryDirectory(dir=ART_DATA_PATH) as tmp_dir:
-            for i, x_i in enumerate(tqdm(x, desc="Video compression")):
+        with TemporaryDirectory(dir=config.ART_DATA_PATH) as tmp_dir:
+            for i, x_i in enumerate(tqdm(x, desc="Video compression", disable=not self.verbose)):
                 x_compressed[i] = compress_video(x_i, self.video_format, self.constant_rate_factor, dir_=tmp_dir)
 
         if self.channels_first:
@@ -136,15 +128,9 @@ class VideoCompression(Preprocessor):
 
         return x_compressed, y
 
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        return grad
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
-
     def _check_params(self) -> None:
         if not (isinstance(self.constant_rate_factor, (int, np.int)) and 0 <= self.constant_rate_factor < 52):
             raise ValueError("Constant rate factor must be an integer in the range [0, 51].")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

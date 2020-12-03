@@ -1,0 +1,159 @@
+name: Continuous Integration
+on:
+  # Run on manual trigger
+  workflow_dispatch:
+
+  # Run on pull requests
+  pull_request:
+    paths-ignore:
+      - '*.md'
+
+  # Run when pushing to main or dev branches
+  push:
+    branches:
+      - main
+      - dev*
+
+  # Run scheduled CI flow daily
+  schedule:
+    - cron: '0 8 * * *'
+
+jobs:
+  test:
+    runs-on: ubuntu-16.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: TensorFlow 1.15.4 (Keras 2.2.5 Python 3.7)
+            framework: tensorflow
+            python: 3.7
+            tensorflow: 1.15.4
+            tf_version: v1
+            keras: 2.2.5
+          - name: TensorFlow 2.2.0 (Keras 2.3.1 Python 3.7)
+            framework: tensorflow
+            python: 3.7
+            tensorflow: 2.2.0
+            tf_version: v2
+            keras: 2.3.1
+          - name: TensorFlow 2.2.0v1 (Keras 2.3.1 Python 3.7)
+            framework: tensorflow2v1
+            python: 3.7
+            tensorflow: 2.2.0
+            tf_version: v2
+            keras: 2.3.1
+          - name: TensorFlow 2.3.1 (Keras 2.4.3 Python 3.7)
+            framework: tensorflow
+            python: 3.7
+            tensorflow: 2.3.1
+            tf_version: v2
+            keras: 2.4.3
+          - name: TensorFlow 2.4.0rc3 (Keras 2.4.3 Python 3.8)
+            framework: tensorflow
+            python: 3.8
+            tensorflow: 2.4.0rc3
+            tf_version: v2
+            keras: 2.4.3
+          - name: Keras 2.3.1 (TensorFlow 2.2.1 Python 3.7)
+            framework: keras
+            python: 3.7
+            tensorflow: 2.2.1
+            keras: 2.3.1
+          - name: TensorFlow-Keras 2.3.1 (Keras 2.4.3 Python 3.7)
+            framework: kerastf
+            python: 3.7
+            tensorflow: 2.3.1
+            keras: 2.4.3
+          - name: PyTorch (Python 3.7)
+            framework: pytorch
+            python: 3.7
+          - name: scikit-learn 0.22.2 (Python 3.7)
+            framework: scikitlearn
+            scikit-learn: 0.22.2
+            python: 3.7
+          - name: scikit-learn 0.23.2 (Python 3.8)
+            framework: scikitlearn
+            scikit-learn: 0.23.2
+            python: 3.8
+          - name: mxnet (Python 3.7)
+            framework: mxnet
+            python: 3.7
+          - name: legacy (TensorFlow 2.2.1 Keras 2.3.1 scikit-learn 0.22.2 Python 3.7)
+            framework: legacy
+            python: 3.7
+            tensorflow: 2.2.1
+            keras: 2.3.1
+            scikit-learn: 0.22.2
+          - name: legacy (TensorFlow 2.3.1 Keras 2.4.3 scikit-learn 0.23.2 Python 3.8)
+            framework: legacy
+            python: 3.8
+            tensorflow: 2.3.1
+            keras: 2.4.3
+            scikit-learn: 0.23.2
+
+    name: Run ${{ matrix.name }} Tests
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          python -m pip install --upgrade pip setuptools wheel
+          pip3 install -q -r requirements.txt
+          pip list
+      - name: Pre-install legacy
+        if: ${{ matrix.framework == 'legacy' }}
+        run: |
+          pip install tensorflow==${{ matrix.tensorflow }}
+          pip install keras==${{ matrix.keras }}
+          pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip list
+      - name: Pre-install tensorflow
+        if: ${{ matrix.framework == 'tensorflow' || matrix.framework == 'keras' || matrix.framework == 'kerastf' }}
+        run: |
+          pip install tensorflow==${{ matrix.tensorflow }}
+          pip install keras==${{ matrix.keras }}
+          pip list
+      - name: Pre-install scikit-learn
+        if: ${{ matrix.framework == 'scikitlearn' }}
+        run: |
+          pip install scikit-learn==${{ matrix.scikit-learn }}
+          pip list
+      - name: Run ${{ matrix.name }} Tests
+        run: ./run_tests.sh ${{ matrix.framework }}
+  style:
+    name: Style Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Pre-install
+        run: |
+          sudo apt-get update
+          sudo apt-get -y -q install ffmpeg libavcodec-extra
+          pip install tensorflow==2.2.0
+          pip install keras==2.3.1
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -q pylint pycodestyle
+          pip install -q -r requirements.txt
+          pip list
+      - name: pycodestyle
+        run: (pycodestyle --ignore=C0330,C0415,E203,E231,W503 --max-line-length=120 art || exit 0)
+      - name: pylint
+        run: (pylint --disable=C0330,C0415,E203,E1136 -rn art || exit 0)
+      - name: Check Types (mypy)
+        run: (mypy art || exit 0)
+      - name: pytest
+        run: py.test --pep8 -m pep8

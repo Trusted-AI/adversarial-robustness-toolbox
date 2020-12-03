@@ -28,7 +28,7 @@ from typing import Any, Optional, Union, TYPE_CHECKING
 import numpy as np
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
-from art.attacks import InferenceAttack
+from art.attacks.attack import InferenceAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format
@@ -273,6 +273,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
                     inferred = predicted.detach().numpy()
                 else:
                     inferred = np.vstack((inferred, predicted.detach().numpy()))
+            inferred = inferred.reshape(-1).astype(np.int)
         else:
             inferred = np.array([np.argmax(arr) for arr in self.attack_model.predict(np.c_[features, y])])
         return inferred
