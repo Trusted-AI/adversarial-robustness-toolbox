@@ -25,9 +25,9 @@ import numpy as np
 
 from typing import Optional, Tuple, TYPE_CHECKING, Union
 
-from art.attacks import PoisoningAttackBlackBox
-from art.attacks.evasion import ProjectedGradientDescent
-from art.attacks.poisoning import PoisoningAttackBackdoor
+from art.attacks.attack import PoisoningAttackBlackBox
+from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE

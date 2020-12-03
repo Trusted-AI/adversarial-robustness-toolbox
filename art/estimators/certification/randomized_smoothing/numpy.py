@@ -24,10 +24,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 
+from art.estimators.estimator import BaseEstimator
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 import logging
-from typing import List, Union, TYPE_CHECKING
+from typing import List, Union, TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -35,7 +36,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin):
+class NumpyRandomizedSmoothing(
+    RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin, BaseEstimator  # lgtm [py/missing-call-to-init]
+):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
     in Cohen et al. (2019).
@@ -43,10 +46,9 @@ class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, Cl
     | Paper link: https://arxiv.org/abs/1902.02918
     """
 
-    def __init__(self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE",
-                 sample_size: int,
-                 scale: float = 0.1,
-                 alpha: float = 0.001):
+    def __init__(
+        self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", sample_size: int, scale: float = 0.1, alpha: float = 0.001
+    ):
         """
         Create a randomized smoothing wrapper.
         :param classifier: The Classifier we want to wrap the functionality for the purpose of smoothing.
@@ -54,12 +56,24 @@ class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, Cl
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing
         """
-        super().__init__(classifier)
+        super().__init__(
+            model=None,
+            input_shape=classifier.input_shape,
+            nb_classes=classifier.nb_classes,
+            channels_first=classifier.channels_first,
+            clip_values=classifier.clip_values,
+            preprocessing_defences=classifier.preprocessing_defences,
+            postprocessing_defences=classifier.postprocessing_defences,
+            preprocessing=classifier.preprocessing,
+            sample_size=sample_size,
+            scale=scale,
+            alpha=alpha,
+        )
         self.classifier = classifier
-        self._nb_classes = classifier.nb_classes
-        self.sample_size = sample_size
-        self.scale = scale
-        self.alpha = alpha
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        return self.classifier.input_shape
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
         """
@@ -121,7 +135,7 @@ class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, Cl
         """
         return self.classifier.loss_gradient(x, y)
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int]]=None, **kwargs) -> np.ndarray:
+    def class_gradient(self, x: np.ndarray, label: Union[int, List[int]] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class

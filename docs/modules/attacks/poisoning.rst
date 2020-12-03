@@ -15,7 +15,7 @@ Backdoor Poisoning Attack
    :special-members:
 
 Clean Label Backdoor Attack
--------------------------
+---------------------------
 .. autoclass:: PoisoningAttackCleanLabelBackdoor
    :members:
    :special-members:

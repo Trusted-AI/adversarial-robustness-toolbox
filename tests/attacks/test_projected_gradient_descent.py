@@ -158,7 +158,7 @@ class TestPGD(TestBase):
         # Test the masking
         attack = ProjectedGradientDescent(classifier, num_random_init=1)
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test.shape))
-        mask = mask.reshape(x_test.shape)
+        mask = mask.reshape(x_test.shape).astype(np.float32)
 
         x_test_adv = attack.generate(x_test, mask=mask)
         mask_diff = (1 - mask) * (x_test_adv - x_test)
@@ -629,11 +629,11 @@ class TestPGD(TestBase):
         )
 
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape))
-        mask = mask.reshape(self.x_train_mnist.shape)
+        mask = mask.reshape(self.x_train_mnist.shape).astype(np.float32)
         x_train_adv_np = attack_np.generate(self.x_train_mnist, mask=mask)
 
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
-        mask = mask.reshape(self.x_test_mnist.shape)
+        mask = mask.reshape(self.x_test_mnist.shape).astype(np.float32)
         x_test_adv_np = attack_np.generate(self.x_test_mnist, mask=mask)
 
         master_seed(1234)
@@ -650,11 +650,11 @@ class TestPGD(TestBase):
         )
 
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape))
-        mask = mask.reshape(self.x_train_mnist.shape)
+        mask = mask.reshape(self.x_train_mnist.shape).astype(np.float32)
         x_train_adv_fw = attack_fw.generate(self.x_train_mnist, mask=mask)
 
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape))
-        mask = mask.reshape(self.x_test_mnist.shape)
+        mask = mask.reshape(self.x_test_mnist.shape).astype(np.float32)
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist, mask=mask)
 
         # Test
@@ -680,11 +680,11 @@ class TestPGD(TestBase):
         )
 
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape[1:]))
-        mask = mask.reshape(self.x_train_mnist.shape[1:])
+        mask = mask.reshape(self.x_train_mnist.shape[1:]).astype(np.float32)
         x_train_adv_np = attack_np.generate(self.x_train_mnist, mask=mask)
 
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
-        mask = mask.reshape(self.x_test_mnist.shape[1:])
+        mask = mask.reshape(self.x_test_mnist.shape[1:]).astype(np.float32)
         x_test_adv_np = attack_np.generate(self.x_test_mnist, mask=mask)
 
         master_seed(1234)
@@ -701,11 +701,11 @@ class TestPGD(TestBase):
         )
 
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_train_mnist.shape[1:]))
-        mask = mask.reshape(self.x_train_mnist.shape[1:])
+        mask = mask.reshape(self.x_train_mnist.shape[1:]).astype(np.float32)
         x_train_adv_fw = attack_fw.generate(self.x_train_mnist, mask=mask)
 
         mask = np.random.binomial(n=1, p=0.5, size=np.prod(self.x_test_mnist.shape[1:]))
-        mask = mask.reshape(self.x_test_mnist.shape[1:])
+        mask = mask.reshape(self.x_test_mnist.shape[1:]).astype(np.float32)
         x_test_adv_fw = attack_fw.generate(self.x_test_mnist, mask=mask)
 
         # Test

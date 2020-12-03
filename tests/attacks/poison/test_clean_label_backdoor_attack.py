@@ -55,6 +55,6 @@ def test_failure_modes(art_warning, get_default_mnist_subset, image_dl_estimator
         target = to_categorical([9], 10)[0]
         backdoor = PoisoningAttackBackdoor(add_pattern_bd)
         with pytest.raises(ValueError):
-            attack = PoisoningAttackCleanLabelBackdoor(backdoor, classifier, target,**params)
+            attack = PoisoningAttackCleanLabelBackdoor(backdoor, classifier, target, **params)
     except ARTTestException as e:
         art_warning(e)

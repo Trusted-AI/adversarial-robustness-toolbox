@@ -191,27 +191,6 @@ class FastGradientMethod(EvasionAttack):
 
         return adv_x
 
-    @staticmethod
-    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
-        """
-        Get the mask from the kwargs.
-
-        :param x: An array with the original inputs.
-        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
-                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
-                     perturbed.
-        :type mask: `np.ndarray`
-        :return: The mask.
-        """
-        mask = kwargs.get("mask")
-
-        if mask is not None:
-            # Ensure the mask is broadcastable
-            if len(mask.shape) > len(x.shape) or mask.shape != x.shape[-len(mask.shape) :]:
-                raise ValueError("Mask shape must be broadcastable to input shape.")
-
-        return mask
-
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """Generate adversarial samples and return them in an array.
 
@@ -226,9 +205,7 @@ class FastGradientMethod(EvasionAttack):
         :type mask: `np.ndarray`
         :return: An array holding the adversarial examples.
         """
-        mask = kwargs.get("mask")
-        if mask is not None and mask.ndim > x.ndim:
-            raise ValueError("Mask shape must be broadcastable to input shape.")
+        mask = self._get_mask(x, **kwargs)
 
         # Ensure eps is broadcastable
         self._check_compatibility_input_and_eps(x=x)
@@ -355,12 +332,18 @@ class FastGradientMethod(EvasionAttack):
         if not isinstance(self.minimal, bool):
             raise ValueError("The flag `minimal` has to be of type bool.")
 
-    def _compute_perturbation(self, batch: np.ndarray, batch_labels: np.ndarray, mask: np.ndarray) -> np.ndarray:
+    def _compute_perturbation(
+        self, batch: np.ndarray, batch_labels: np.ndarray, mask: Optional[np.ndarray]
+    ) -> np.ndarray:
         # Pick a small scalar to avoid division by 0
         tol = 10e-8
 
         # Get gradient wrt loss; invert it if attack is targeted
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
+
+        # Apply mask
+        if mask is not None:
+            grad = np.where(mask == 0.0, 0.0, grad)
 
         # Apply norm bound
         def _apply_norm(grad, object_type=False):
@@ -389,10 +372,7 @@ class FastGradientMethod(EvasionAttack):
 
         assert batch.shape == grad.shape
 
-        if mask is None:
-            return grad
-        else:
-            return grad * (mask.astype(ART_NUMPY_DTYPE))
+        return grad
 
     def _apply_perturbation(
         self, batch: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
@@ -487,3 +467,35 @@ class FastGradientMethod(EvasionAttack):
                     x_adv[batch_index_1:batch_index_2] = x_init[batch_index_1:batch_index_2] + perturbation
 
         return x_adv
+
+    @staticmethod
+    def _get_mask(x: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Get the mask from the kwargs.
+
+        :param x: An array with the original inputs.
+        :param mask: An array with a mask to be applied to the adversarial perturbations. Shape needs to be
+                     broadcastable to the shape of x. Any features for which the mask is zero will not be adversarially
+                     perturbed.
+        :type mask: `np.ndarray`
+        :return: The mask.
+        """
+        mask = kwargs.get("mask")
+
+        if mask is not None:
+            if mask.ndim > x.ndim:
+                raise ValueError("Mask shape must be broadcastable to input shape.")
+
+            if not (np.issubdtype(mask.dtype, np.floating) or mask.dtype == np.bool):
+                raise ValueError(
+                    "The `mask` has to be either of type np.float32, np.float64 or np.bool. The provided"
+                    "`mask` is of type {}.".format(mask.dtype)
+                )
+
+            if np.issubdtype(mask.dtype, np.floating) and np.amin(mask) < 0.0:
+                raise ValueError(
+                    "The `mask` of type np.float32 or np.float64 requires all elements to be either zero"
+                    "or positive values."
+                )
+
+        return mask

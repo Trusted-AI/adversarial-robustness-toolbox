@@ -17,19 +17,18 @@
 # SOFTWARE.
 """
 This module implements attribute inference attacks.
-
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from sklearn.neural_network import MLPClassifier
 
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
-from art.attacks import AttributeInferenceAttack
+from art.attacks.attack import AttributeInferenceAttack
 from art.utils import check_and_transform_label_format, float_to_categorical
 
 if TYPE_CHECKING:
@@ -51,16 +50,24 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
-        self, classifier: "CLASSIFIER_TYPE", attack_model: Optional["CLASSIFIER_TYPE"] = None, attack_feature: int = 0
+        self,
+        classifier: "CLASSIFIER_TYPE",
+        attack_model: Optional["CLASSIFIER_TYPE"] = None,
+        attack_feature: Union[int, slice] = 0,
     ):
         """
         Create an AttributeInferenceBlackBox attack instance.
 
         :param classifier: Target classifier.
         :param attack_model: The attack model to train, optional. If none is provided, a default model will be created.
-        :param attack_feature: The index of the feature to be attacked.
+        :param attack_feature: The index of the feature to be attacked or a slice representing multiple indexes in
+                               case of a one-hot encoded feature.
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
+        if isinstance(self.attack_feature, int):
+            self.single_index_feature = True
+        else:
+            self.single_index_feature = False
 
         if attack_model:
             if ClassifierMixin not in type(attack_model).__mro__:
@@ -104,7 +111,7 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
         # Checks:
         if self.estimator.input_shape[0] != x.shape[1]:
             raise ValueError("Shape of x does not match input_shape of classifier")
-        if self.attack_feature >= x.shape[1]:
+        if self.single_index_feature and self.attack_feature >= x.shape[1]:
             raise ValueError("attack_feature must be a valid index to a feature in x")
 
         # get model's predictions for x
@@ -112,8 +119,10 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         # get vector of attacked feature
         y = x[:, self.attack_feature]
-        y_one_hot = float_to_categorical(y)
-        y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
+        y_ready = y
+        if self.single_index_feature:
+            y_one_hot = float_to_categorical(y)
+            y_ready = check_and_transform_label_format(y_one_hot, len(np.unique(y)), return_one_hot=True)
 
         # create training set for attack model
         x_train = np.concatenate((np.delete(x, self.attack_feature, 1), predictions), axis=1).astype(np.float32)
@@ -127,18 +136,27 @@ class AttributeInferenceBlackBox(AttributeInferenceAttack):
 
         :param x: Input to attack. Includes all features except the attacked feature.
         :param y: Original model's predictions for x.
-        :param values: Possible values for attacked feature.
+        :param values: Possible values for attacked feature. Only needed in case of categorical feature (not one-hot).
         :type values: `np.ndarray`
         :return: The inferred feature values.
         """
         if y.shape[0] != x.shape[0]:
             raise ValueError("Number of rows in x and y do not match")
-        if self.estimator.input_shape[0] != x.shape[1] + 1:
+        if self.single_index_feature and self.estimator.input_shape[0] != x.shape[1] + 1:
             raise ValueError("Number of features in x + 1 does not match input_shape of classifier")
 
-        if "values" not in kwargs.keys():
-            raise ValueError("Missing parameter `values`.")
-        values: np.ndarray = kwargs.get("values")
-
         x_test = np.concatenate((x, y), axis=1).astype(np.float32)
-        return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
+
+        if self.single_index_feature:
+            if "values" not in kwargs.keys():
+                raise ValueError("Missing parameter `values`.")
+            values: np.ndarray = kwargs.get("values")
+            return np.array([values[np.argmax(arr)] for arr in self.attack_model.predict(x_test)])
+        else:
+            return np.array(self.attack_model.predict(x_test))
+
+    def _check_params(self) -> None:
+        if not isinstance(self.attack_feature, int) and not isinstance(self.attack_feature, slice):
+            raise ValueError("Attack feature must be either an integer or a slice object.")
+        if isinstance(self.attack_feature, int) and self.attack_feature < 0:
+            raise ValueError("Attack feature index must be positive.")

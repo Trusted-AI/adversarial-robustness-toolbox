@@ -63,6 +63,7 @@ Supported Machine Learning Libraries
    modules/attacks/inference/attribute_inference
    modules/attacks/inference/membership_inference
    modules/attacks/inference/model_inversion
+   modules/attacks/inference/reconstruction
    modules/attacks/poisoning
    modules/defences
    modules/defences/detector_evasion
@@ -75,16 +76,22 @@ Supported Machine Learning Libraries
    modules/defences/transformer_poisoning
    modules/estimators
    modules/estimators/certification
-   modules/estimators/certification_neural_cleanse
    modules/estimators/certification_randomized_smoothing
    modules/estimators/classification
    modules/estimators/classification_scikitlearn
    modules/estimators/encoding
    modules/estimators/generation
    modules/estimators/object_detection
+   modules/estimators/poison_mitigation_neural_cleanse
+   modules/estimators/poison_mitigation_strip
    modules/estimators/regression
    modules/estimators/speech_recognition
+   modules/evaluations
    modules/metrics
+   modules/preprocessing
+   modules/preprocessing/audio
+   modules/preprocessing/expectation_over_transformation
+   modules/preprocessing/standardisation_mean_std
    modules/wrappers
    modules/data_generators
    modules/exceptions
@@ -92,14 +99,14 @@ Supported Machine Learning Libraries
    modules/tests/utils
 
 
-Indices and tables
+Indices and Tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
 
-.. _GitHub: https://github.com/IBM/adversarial-robustness-toolbox
-.. _attacks: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Attacks
-.. _defences: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Defences
-.. _metrics: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Metrics
+.. _GitHub: https://github.com/Trusted-AI/adversarial-robustness-toolbox
+.. _attacks: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Attacks
+.. _defences: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Defences
+.. _metrics: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Metrics
