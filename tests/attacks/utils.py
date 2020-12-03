@@ -54,7 +54,7 @@ def backend_test_defended_images(attack, mnist_dataset):
 
     check_adverse_example_x(x_train_adv, x_train_mnist)
 
-    y_train_pred_adv = get_labels_np_array(attack.classifier.predict(x_train_adv))
+    y_train_pred_adv = get_labels_np_array(attack.estimator.predict(x_train_adv))
     y_train_labels = get_labels_np_array(y_train_mnist)
 
     check_adverse_predicted_sample_y(y_train_pred_adv, y_train_labels)
@@ -62,7 +62,7 @@ def backend_test_defended_images(attack, mnist_dataset):
     x_test_adv = attack.generate(x_test_mnist)
     check_adverse_example_x(x_test_adv, x_test_mnist)
 
-    y_test_pred_adv = get_labels_np_array(attack.classifier.predict(x_test_adv))
+    y_test_pred_adv = get_labels_np_array(attack.estimator.predict(x_test_adv))
     check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
 
 
@@ -145,7 +145,7 @@ def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[],
 
 
 def backend_targeted_tabular(attack, fix_get_iris):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = fix_get_iris
+    (_, _), (x_test_iris, y_test_iris) = fix_get_iris
 
     targets = random_targets(y_test_iris, nb_classes=3)
     x_test_adv = attack.generate(x_test_iris, **{"y": targets})
@@ -176,7 +176,7 @@ def back_end_untargeted_images(attack, fix_get_mnist_subset, fix_mlFramework):
 
 
 def backend_untargeted_tabular(attack, iris_dataset, clipped):
-    (x_train_iris, y_train_iris), (x_test_iris, y_test_iris) = iris_dataset
+    (_, _), (x_test_iris, y_test_iris) = iris_dataset
 
     x_test_adv = attack.generate(x_test_iris)
 
@@ -207,7 +207,7 @@ def backend_masked_images(attack, fix_get_mnist_subset):
 
     # generate a random mask:
     mask = np.random.binomial(n=1, p=0.5, size=np.prod(x_test_mnist.shape))
-    mask = mask.reshape(x_test_mnist.shape)
+    mask = mask.reshape(x_test_mnist.shape).astype(np.float32)
 
     x_test_adv = attack.generate(x_test_mnist, mask=mask)
     mask_diff = (1 - mask) * (x_test_adv - x_test_mnist)

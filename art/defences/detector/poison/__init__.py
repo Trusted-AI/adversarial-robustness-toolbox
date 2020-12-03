@@ -1,6 +1,5 @@
 """
-Poison detection defence API. Use the :class:`.PoisonFilteringDefence` wrapper to be able to apply a defence for a
-preexisting model.
+Module implementing detector-based defences against poisoning attacks.
 """
 from art.defences.detector.poison.poison_filtering_defence import PoisonFilteringDefence
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator

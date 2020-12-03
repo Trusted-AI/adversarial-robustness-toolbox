@@ -21,8 +21,19 @@ This module implements mixin abstract base class for all object detectors in ART
 
 from abc import ABC
 
+from art.estimators.estimator import BaseEstimator
+from art.estimators.classification.classifier import LossGradientsMixin
+
 
 class ObjectDetectorMixin(ABC):
     """
     Mix-in Base class for ART object detectors.
     """
+
+
+class ObjectDetector(ObjectDetectorMixin, LossGradientsMixin, BaseEstimator, ABC):
+    """
+    Typing variable definition.
+    """
+
+    pass

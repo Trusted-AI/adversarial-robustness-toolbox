@@ -24,14 +24,14 @@ Paper link:
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
 
 if TYPE_CHECKING:
-    from art.config import PREPROCESSING_TYPE
+    from art.utils import PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -61,17 +61,19 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier. Not applicable
                in this classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one. Not applicable in this classifier.
         """
         if preprocessing_defences is not None:
             raise NotImplementedError("Preprocessing is not applicable in this classifier.")
 
-        super(DetectorClassifier, self).__init__(
+        super().__init__(
+            model=None,
             clip_values=classifier.clip_values,
             preprocessing=preprocessing,
             channel_index=classifier.channel_index,
+            channels_first=classifier.channels_first,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
         )
@@ -81,6 +83,15 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self._nb_classes = classifier.nb_classes + 1
         self._input_shape = classifier.input_shape
         self._learning_phase: Optional[bool] = None
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -230,6 +241,19 @@ class DetectorClassifier(ClassifierNeuralNetwork):
 
         return combined_grads
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
+
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
@@ -293,17 +317,12 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         self.detector.save(filename=filename + "_detector", path=path)
 
     def __repr__(self):
-        repr_ = (
-            "%s(classifier=%r, detector=%r, preprocessing_defences=%r, postprocessing_defences=%r, "
-            "preprocessing=%r)"
-            % (
-                self.__module__ + "." + self.__class__.__name__,
-                self.classifier,
-                self.detector,
-                self.preprocessing_defences,
-                self.postprocessing_defences,
-                self.preprocessing,
-            )
+        repr_ = "%s(classifier=%r, detector=%r, postprocessing_defences=%r, " "preprocessing=%r)" % (
+            self.__module__ + "." + self.__class__.__name__,
+            self.classifier,
+            self.detector,
+            self.postprocessing_defences,
+            self.preprocessing,
         )
 
         return repr_

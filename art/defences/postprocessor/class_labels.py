@@ -39,18 +39,7 @@ class ClassLabels(Postprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        super(ClassLabels, self).__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
 
     def __call__(self, preds: np.ndarray) -> np.ndarray:
         """
@@ -67,9 +56,3 @@ class ClassLabels(Postprocessor):
             class_labels[preds > 0.5] = 1
 
         return class_labels
-
-    def fit(self, preds: np.ndarray, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass

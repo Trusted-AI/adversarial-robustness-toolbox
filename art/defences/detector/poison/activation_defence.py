@@ -36,7 +36,7 @@ import numpy as np
 
 from sklearn.cluster import KMeans, MiniBatchKMeans
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.data_generators import DataGenerator
 from art.defences.detector.poison.clustering_analyzer import ClusteringAnalyzer
 from art.defences.detector.poison.ground_truth_evaluator import GroundTruthEvaluator
@@ -45,7 +45,7 @@ from art.utils import segment_by_class
 from art.visualization import create_sprite, save_image, plot_3d
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x_train: Optional[np.ndarray],
         y_train: Optional[np.ndarray],
         generator: Optional[DataGenerator] = None,
@@ -83,7 +83,8 @@ class ActivationDefence(PoisonFilteringDefence):
         :param y_train: Labels used to train the classifier.
         :param generator: A data generator to be used instead of `x_train` and `y_train`.
         """
-        super(ActivationDefence, self).__init__(classifier, x_train, y_train)
+        super().__init__(classifier, x_train, y_train)
+        self.classifier: "CLASSIFIER_NEURALNETWORK_TYPE" = classifier
         self.nb_clusters = 2
         self.clustering_method = "KMeans"
         self.nb_dims = 10
@@ -133,7 +134,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
             # calculate is_clean_by_class for each batch
             for batch_idx in range(num_samples // batch_size):  # type: ignore
-                x_batch, y_batch = self.generator.get_batch()
+                _, y_batch = self.generator.get_batch()
                 is_clean_batch = is_clean[batch_idx * batch_size : batch_idx * batch_size + batch_size]
                 clean_by_class_batch = self._segment_by_class(is_clean_batch, y_batch)
                 self.is_clean_by_class = [
@@ -187,7 +188,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
             # loop though the generator to generator a report
             for _ in range(num_samples // batch_size):  # type: ignore
-                x_batch, y_batch = self.generator.get_batch()
+                _, y_batch = self.generator.get_batch()
                 indices_by_class = self._segment_by_class(np.arange(batch_size), y_batch)
                 is_clean_lst = [0] * batch_size
                 for class_idx, idxs in enumerate(indices_by_class):
@@ -201,7 +202,7 @@ class ActivationDefence(PoisonFilteringDefence):
             self.activations_by_class = self._segment_by_class(activations, self.y_train)
         (self.clusters_by_class, self.red_activations_by_class,) = self.cluster_activations()
         report, self.assigned_clean_by_class = self.analyze_clusters()
-        # Here, assigned_clean_by_class[i][j] is 1 if the jth datapoint in the ith class was
+        # Here, assigned_clean_by_class[i][j] is 1 if the jth data point in the ith class was
         # determined to be clean by activation cluster
 
         # Build an array that matches the original indexes of x_train
@@ -219,7 +220,7 @@ class ActivationDefence(PoisonFilteringDefence):
     def cluster_activations(self, **kwargs) -> Tuple[List[List[int]], List[List[int]]]:
         """
         Clusters activations and returns cluster_by_class and red_activations_by_class, where cluster_by_class[i][j] is
-        the cluster to which the j-th datapoint in the ith class belongs and the correspondent activations reduced by
+        the cluster to which the j-th data point in the ith class belongs and the correspondent activations reduced by
         class red_activations_by_class[i][j].
 
         :param kwargs: A dictionary of cluster-specific parameters.
@@ -320,14 +321,14 @@ class ActivationDefence(PoisonFilteringDefence):
 
     @staticmethod
     def relabel_poison_ground_truth(
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x: np.ndarray,
         y_fix: np.ndarray,
         test_set_split: float = 0.7,
         tolerable_backdoor: float = 0.01,
         max_epochs: int = 50,
         batch_epochs: int = 10,
-    ) -> Tuple[float, "Classifier"]:
+    ) -> Tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `test_set_split` determines
         the percentage in x that will be used as training set, while `1-test_set_split` determines how many data points
@@ -348,8 +349,6 @@ class ActivationDefence(PoisonFilteringDefence):
         n_train = int(len(x) * test_set_split)
         x_train, x_test = x[:n_train], x[n_train:]
         y_train, y_test = y_fix[:n_train], y_fix[n_train:]
-
-        import time
 
         filename = "original_classifier" + str(time.time()) + ".p"
         ActivationDefence._pickle_classifier(classifier, filename)
@@ -376,14 +375,14 @@ class ActivationDefence(PoisonFilteringDefence):
 
     @staticmethod
     def relabel_poison_cross_validation(
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         x: np.ndarray,
         y_fix: np.ndarray,
         n_splits: int = 10,
         tolerable_backdoor: float = 0.01,
         max_epochs: int = 50,
         batch_epochs: int = 10,
-    ) -> Tuple[float, "Classifier"]:
+    ) -> Tuple[float, "CLASSIFIER_NEURALNETWORK_TYPE"]:
         """
         Revert poison attack by continue training the current classifier with `x`, `y_fix`. `n_splits` determines the
         number of cross validation splits.
@@ -434,14 +433,14 @@ class ActivationDefence(PoisonFilteringDefence):
         return curr_improvement, classifier
 
     @staticmethod
-    def _pickle_classifier(classifier: "Classifier", file_name: str) -> None:
+    def _pickle_classifier(classifier: "CLASSIFIER_NEURALNETWORK_TYPE", file_name: str) -> None:
         """
-        Pickles the self.classifier and stores it using the provided file_name in folder `art.ART_DATA_PATH`.
+        Pickles the self.classifier and stores it using the provided file_name in folder `art.config.ART_DATA_PATH`.
 
         :param classifier: Classifier to be pickled.
         :param file_name: Name of the file where the classifier will be pickled.
         """
-        full_path = os.path.join(ART_DATA_PATH, file_name)
+        full_path = os.path.join(config.ART_DATA_PATH, file_name)
         folder = os.path.split(full_path)[0]
         if not os.path.exists(folder):
             os.makedirs(folder)
@@ -450,14 +449,15 @@ class ActivationDefence(PoisonFilteringDefence):
             pickle.dump(classifier, f_classifier)
 
     @staticmethod
-    def _unpickle_classifier(file_name: str) -> "Classifier":
+    def _unpickle_classifier(file_name: str) -> "CLASSIFIER_NEURALNETWORK_TYPE":
         """
-        Unpickles classifier using the filename provided. Function assumes that the pickle is in `art.ART_DATA_PATH`.
+        Unpickles classifier using the filename provided. Function assumes that the pickle is in
+        `art.config.ART_DATA_PATH`.
 
         :param file_name: Path of the pickled classifier relative to `ART_DATA_PATH`.
         :return: The loaded classifier.
         """
-        full_path = os.path.join(ART_DATA_PATH, file_name)
+        full_path = os.path.join(config.ART_DATA_PATH, file_name)
         logger.info("Loading classifier from %s", full_path)
         with open(full_path, "rb") as f_classifier:
             loaded_classifier = pickle.load(f_classifier)
@@ -470,7 +470,7 @@ class ActivationDefence(PoisonFilteringDefence):
 
         :param file_name: File name without directory.
         """
-        full_path = os.path.join(ART_DATA_PATH, file_name)
+        full_path = os.path.join(config.ART_DATA_PATH, file_name)
         os.remove(full_path)
 
     def visualize_clusters(
@@ -478,11 +478,11 @@ class ActivationDefence(PoisonFilteringDefence):
     ) -> List[List[List[np.ndarray]]]:
         """
         This function creates the sprite/mosaic visualization for clusters. When save=True,
-        it also stores a sprite (mosaic) per cluster in ART_DATA_PATH.
+        it also stores a sprite (mosaic) per cluster in art.config.ART_DATA_PATH.
 
         :param x_raw: Images used to train the classifier (before pre-processing).
         :param save: Boolean specifying if image should be saved.
-        :param folder: Directory where the sprites will be saved inside ART_DATA_PATH folder.
+        :param folder: Directory where the sprites will be saved inside art.config.ART_DATA_PATH folder.
         :param kwargs: a dictionary of cluster-analysis-specific parameters.
         :return: Array with sprite images sprites_by_class, where sprites_by_class[i][j] contains the
                                   sprite of class i cluster j.
@@ -521,10 +521,10 @@ class ActivationDefence(PoisonFilteringDefence):
     def plot_clusters(self, save: bool = True, folder: str = ".", **kwargs) -> None:
         """
         Creates a 3D-plot to visualize each cluster each cluster is assigned a different color in the plot. When
-        save=True, it also stores the 3D-plot per cluster in ART_DATA_PATH.
+        save=True, it also stores the 3D-plot per cluster in art.config.ART_DATA_PATH.
 
         :param save: Boolean specifying if image should be saved.
-        :param folder: Directory where the sprites will be saved inside ART_DATA_PATH folder.
+        :param folder: Directory where the sprites will be saved inside art.config.ART_DATA_PATH folder.
         :param kwargs: a dictionary of cluster-analysis-specific parameters.
         """
         self.set_params(**kwargs)
@@ -567,7 +567,10 @@ class ActivationDefence(PoisonFilteringDefence):
         """
         logger.info("Getting activations")
 
-        nb_layers = len(self.classifier.layer_names)
+        if self.classifier.layer_names is not None:
+            nb_layers = len(self.classifier.layer_names)
+        else:
+            raise ValueError("No layer names identified.")
         protected_layer = nb_layers - 1
 
         if self.generator is not None:
@@ -599,7 +602,9 @@ class ActivationDefence(PoisonFilteringDefence):
         return segment_by_class(data, features, n_classes)
 
 
-def measure_misclassification(classifier: "Classifier", x_test: np.ndarray, y_test: np.ndarray) -> float:
+def measure_misclassification(
+    classifier: "CLASSIFIER_NEURALNETWORK_TYPE", x_test: np.ndarray, y_test: np.ndarray
+) -> float:
     """
     Computes 1-accuracy given x_test and y_test
 
@@ -613,7 +618,7 @@ def measure_misclassification(classifier: "Classifier", x_test: np.ndarray, y_te
 
 
 def train_remove_backdoor(
-    classifier: "Classifier",
+    classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
     x_train: np.ndarray,
     y_train: np.ndarray,
     x_test: np.ndarray,
@@ -630,7 +635,7 @@ def train_remove_backdoor(
     :param y_train: Labels used for training.
     :param x_test: Samples in test set.
     :param y_test: Labels in test set.
-    :param tolerable_backdoor: Parameter that determines how many missclassifications are acceptable.
+    :param tolerable_backdoor: Parameter that determines how many misclassifications are acceptable.
     :param max_epochs: maximum number of epochs to be run.
     :param batch_epochs: groups of epochs that will be run together before checking for termination.
     :return: (improve_factor, classifier).
@@ -662,7 +667,7 @@ def cluster_activations(
 ) -> Tuple[List[np.ndarray], List[np.ndarray]]:
     """
     Clusters activations and returns two arrays.
-    1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each datapoint
+    1) separated_clusters: where separated_clusters[i] is a 1D array indicating which cluster each data point
     in the class has been assigned.
     2) separated_reduced_activations: activations with dimensionality reduced using the specified reduce method.
 

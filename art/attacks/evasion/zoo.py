@@ -42,7 +42,7 @@ from art.utils import (
 )
 
 if TYPE_CHECKING:
-    from art.estimators.classification.classifier import Classifier
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -68,12 +68,13 @@ class ZooAttack(EvasionAttack):
         "nb_parallel",
         "batch_size",
         "variable_h",
+        "verbose",
     ]
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: "Classifier",
+        classifier: "CLASSIFIER_TYPE",
         confidence: float = 0.0,
         targeted: bool = False,
         learning_rate: float = 1e-2,
@@ -86,6 +87,7 @@ class ZooAttack(EvasionAttack):
         nb_parallel: int = 128,
         batch_size: int = 1,
         variable_h: float = 1e-4,
+        verbose: bool = True,
     ):
         """
         Create a ZOO attack instance.
@@ -111,8 +113,9 @@ class ZooAttack(EvasionAttack):
                encouraged for ZOO, as the algorithm already runs `nb_parallel` coordinate updates in parallel for each
                sample. The batch size is a multiplier of `nb_parallel` in terms of memory consumption.
         :param variable_h: Step size for numerical estimation of derivatives.
+        :param verbose: Show progress bars.
         """
-        super(ZooAttack, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         if len(classifier.input_shape) == 1:
             self.input_is_feature_vector = True
@@ -125,7 +128,7 @@ class ZooAttack(EvasionAttack):
             self.input_is_feature_vector = False
 
         self.confidence = confidence
-        self.targeted = targeted
+        self._targeted = targeted
         self.learning_rate = learning_rate
         self.max_iter = max_iter
         self.binary_search_steps = binary_search_steps
@@ -136,6 +139,7 @@ class ZooAttack(EvasionAttack):
         self.nb_parallel = nb_parallel
         self.batch_size = batch_size
         self.variable_h = variable_h
+        self.verbose = verbose
         self._check_params()
 
         # Initialize some internal variables
@@ -165,7 +169,7 @@ class ZooAttack(EvasionAttack):
         self.adam_epochs = None
 
     def _loss(
-        self, x: np.ndarray, x_adv: np.ndarray, target: np.ndarray, c_weight: float
+        self, x: np.ndarray, x_adv: np.ndarray, target: np.ndarray, c_weight: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """
         Compute the loss function values.
@@ -215,7 +219,7 @@ class ZooAttack(EvasionAttack):
         # Compute adversarial examples with implicit batching
         nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
         x_adv = []
-        for batch_id in trange(nb_batches, desc="ZOO"):
+        for batch_id in trange(nb_batches, desc="ZOO", disable=not self.verbose):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             x_batch = x[batch_index_1:batch_index_2]
             y_batch = y[batch_index_1:batch_index_2]
@@ -339,8 +343,11 @@ class ZooAttack(EvasionAttack):
             x_adv = x_orig.copy()
         else:
             x_orig = x_batch
-            self._reset_adam(np.prod(self.estimator.input_shape))
-            self._current_noise.fill(0)
+            self._reset_adam(np.prod(self.estimator.input_shape).item())
+            if x_batch.shape == self._current_noise.shape:
+                self._current_noise.fill(0)
+            else:
+                self._current_noise = np.zeros(x_batch.shape, dtype=ART_NUMPY_DTYPE)
             x_adv = x_orig.copy()
 
         # Initialize best distortions, best changed labels and best attacks
@@ -418,7 +425,7 @@ class ZooAttack(EvasionAttack):
 
         return best_dist, best_label, best_attack
 
-    def _optimizer(self, x: np.ndarray, targets: np.ndarray, c_batch: float) -> np.ndarray:
+    def _optimizer(self, x: np.ndarray, targets: np.ndarray, c_batch: np.ndarray) -> np.ndarray:
         # Variation of input for computing loss, same as in original implementation
         coord_batch = np.repeat(self._current_noise, 2 * self.nb_parallel, axis=0)
         coord_batch = coord_batch.reshape(2 * self.nb_parallel * self._current_noise.shape[0], -1)
@@ -477,7 +484,7 @@ class ZooAttack(EvasionAttack):
         mean: np.ndarray,
         var: np.ndarray,
         current_noise: np.ndarray,
-        learning_rate: np.ndarray,
+        learning_rate: float,
         adam_epochs: np.ndarray,
         proj: bool,
     ) -> np.ndarray:
@@ -527,13 +534,16 @@ class ZooAttack(EvasionAttack):
             dims = (x.shape[0], size_x, size_y, x.shape[-1])
         else:
             dims = (x.shape[0], x.shape[1], size_x, size_y)
-        nb_vars = np.prod(dims)
+        nb_vars = np.prod(dims).item()
 
         if reset:
             # Reset variables to original size and value
             if dims == x.shape:
                 resized_x = x
-                self._current_noise.fill(0)
+                if x.shape == self._current_noise.shape:
+                    self._current_noise.fill(0)
+                else:
+                    self._current_noise = np.zeros(x.shape, dtype=ART_NUMPY_DTYPE)
             else:
                 resized_x = zoom(x, (1, dims[1] / x.shape[1], dims[2] / x.shape[2], dims[3] / x.shape[3],),)
                 self._current_noise = np.zeros(dims, dtype=ART_NUMPY_DTYPE)
@@ -601,3 +611,6 @@ class ZooAttack(EvasionAttack):
 
         if not isinstance(self.batch_size, (int, np.int)) or self.batch_size < 1:
             raise ValueError("The batch size must be an integer greater than zero.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

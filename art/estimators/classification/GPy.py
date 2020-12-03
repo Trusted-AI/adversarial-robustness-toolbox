@@ -21,16 +21,19 @@ This module implements a wrapper class for GPy Gaussian Process classification m
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Union, TYPE_CHECKING
+import os
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierGradients
+from art.estimators.classification.classifier import ClassifierClassLossGradients
+from art import config
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     from GPy.models import GPClassification
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
 
@@ -38,7 +41,7 @@ logger = logging.getLogger(__name__)
 
 
 # pylint: disable=C0103
-class GPyGaussianProcessClassifier(ClassifierGradients):
+class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
     """
     Wrapper class for GPy Gaussian Process classification models.
     """
@@ -59,7 +62,7 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
@@ -68,14 +71,23 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
         if not isinstance(model, GPClassification):
             raise TypeError("Model must be of type GPy.models.GPClassification")
 
-        super(GPyGaussianProcessClassifier, self).__init__(
+        super().__init__(
+            model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
         self._nb_classes = 2  # always binary
-        self._model = model
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     # pylint: disable=W0221
     def class_gradient(  # type: ignore
@@ -201,4 +213,19 @@ class GPyGaussianProcessClassifier(ClassifierGradients):
         raise NotImplementedError
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
-        self.model.save_model(filename, save_data=False)
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `ART_DATA_PATH`.
+        """
+        if path is None:
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        self.model.save_model(full_path, save_data=False)

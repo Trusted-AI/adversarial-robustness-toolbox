@@ -1,9 +1,7 @@
 """
-Module providing extraction attacks under a common interface.
+Module providing inference attacks.
 """
-from art.attacks.inference.model_inversion import MIFace
-from art.attacks.inference.attribute_inference import (
-    AttributeInferenceBlackBox,
-    AttributeInferenceWhiteBoxLifestyleDecisionTree,
-    AttributeInferenceWhiteBoxDecisionTree,
-)
+from art.attacks.inference import attribute_inference
+from art.attacks.inference import membership_inference
+from art.attacks.inference import model_inversion
+from art.attacks.inference import reconstruction

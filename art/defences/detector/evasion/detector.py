@@ -26,29 +26,32 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.estimators.classification.classifier import ClassifierNeuralNetwork
+from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin, LossGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin, ClassGradientsMixin
 from art.utils import deprecated
 
 if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE
+    from art.utils import CLIP_VALUES_TYPE
     from art.data_generators import DataGenerator
+    from art.estimators.classification.classifier import ClassifierNeuralNetwork
 
 logger = logging.getLogger(__name__)
 
 
-class BinaryInputDetector(ClassifierNeuralNetwork):
+class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
 
-    def __init__(self, detector: ClassifierNeuralNetwork) -> None:
+    def __init__(self, detector: "ClassifierNeuralNetwork") -> None:
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
 
         :param detector: The detector architecture to be trained and applied for the binary classification.
         """
-        super(BinaryInputDetector, self).__init__(
+        super().__init__(
+            model=None,
             clip_values=detector.clip_values,
             channel_index=detector.channel_index,
             channels_first=detector.channels_first,
@@ -89,6 +92,20 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
+
+    @property
     def nb_classes(self) -> int:
         return self.detector.nb_classes
 
@@ -101,7 +118,7 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         return self.detector.clip_values
 
     @property  # type: ignore
-    @deprecated(end_version="1.5.0", replaced_by="channels_first")
+    @deprecated(end_version="1.6.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 
@@ -141,14 +158,16 @@ class BinaryInputDetector(ClassifierNeuralNetwork):
         self.detector.save(filename, path)
 
 
-class BinaryActivationDetector(ClassifierNeuralNetwork):
+class BinaryActivationDetector(
+    ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, NeuralNetworkMixin, BaseEstimator
+):
     """
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
 
     def __init__(
-        self, classifier: ClassifierNeuralNetwork, detector: ClassifierNeuralNetwork, layer: Union[int, str],
+        self, classifier: "ClassifierNeuralNetwork", detector: "ClassifierNeuralNetwork", layer: Union[int, str],
     ) -> None:  # lgtm [py/similar-function]
         """
         Create a `BinaryActivationDetector` instance which performs binary classification on activation information.
@@ -158,9 +177,11 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         :param detector: The detector architecture to be trained and applied for the binary classification.
         :param layer: Layer for computing the activations to use for training the detector.
         """
-        super(BinaryActivationDetector, self).__init__(
+        super().__init__(
+            model=None,
             clip_values=detector.clip_values,
             channel_index=detector.channel_index,
+            channels_first=detector.channels_first,
             preprocessing_defences=detector.preprocessing_defences,
             preprocessing=detector.preprocessing,
         )
@@ -168,6 +189,9 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         self.detector = detector
 
         # Ensure that layer is well-defined:
+        if classifier.layer_names is None:
+            raise ValueError("No layer names identified.")
+
         if isinstance(layer, int):
             if layer < 0 or layer >= len(classifier.layer_names):
                 raise ValueError(
@@ -212,6 +236,20 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
+    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        raise NotImplementedError
+
+    @property
     def nb_classes(self) -> int:
         return self.detector.nb_classes
 
@@ -224,7 +262,7 @@ class BinaryActivationDetector(ClassifierNeuralNetwork):
         return self.detector.clip_values
 
     @property  # type: ignore
-    @deprecated(end_version="1.5.0", replaced_by="channels_first")
+    @deprecated(end_version="1.6.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         return self.detector.channel_index
 

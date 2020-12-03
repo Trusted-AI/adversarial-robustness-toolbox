@@ -2,9 +2,21 @@
 ============================
 .. automodule:: art.attacks.poisoning
 
+Adversarial Embedding Attack
+----------------------------
+.. autoclass:: PoisoningAttackAdversarialEmbedding
+   :members:
+   :special-members:
+
 Backdoor Poisoning Attack
 -------------------------
 .. autoclass:: PoisoningAttackBackdoor
+   :members:
+   :special-members:
+
+Clean Label Backdoor Attack
+---------------------------
+.. autoclass:: PoisoningAttackCleanLabelBackdoor
    :members:
    :special-members:
 

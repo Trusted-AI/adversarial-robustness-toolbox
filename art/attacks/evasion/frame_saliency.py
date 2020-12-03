@@ -24,25 +24,23 @@ prioritize which parts of a sequential input should be perturbed based on salien
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
-from art.estimators.classification.classifier import ClassGradientsMixin, Classifier
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.attacks.attack import EvasionAttack
-from art.attacks.evasion import (
-    ProjectedGradientDescent,
-    BasicIterativeMethod,
-    FastGradientMethod,
-)
 from art.utils import (
     compute_success_array,
     get_labels_np_array,
     check_and_transform_label_format,
 )
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_NEURALNETWORK_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -61,16 +59,18 @@ class FrameSaliencyAttack(EvasionAttack):
         "method",
         "frame_index",
         "batch_size",
+        "verbose",
     ]
     _estimator_requirements = (BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin)
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: "CLASSIFIER_NEURALNETWORK_TYPE",
         attacker: EvasionAttack,
         method: str = "iterative_saliency",
         frame_index: int = 1,
         batch_size: int = 1,
+        verbose: bool = True,
     ):
         """
         :param classifier: A trained classifier.
@@ -82,13 +82,15 @@ class FrameSaliencyAttack(EvasionAttack):
                        original attack).
         :param frame_index: Index of the axis in input (feature) array `x` representing the frame dimension.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
-        super(FrameSaliencyAttack, self).__init__(classifier)
+        super().__init__(estimator=classifier)
 
         self.attacker = attacker
         self.method = method
         self.frame_index = frame_index
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -148,7 +150,7 @@ class FrameSaliencyAttack(EvasionAttack):
         x_adv_new = self.attacker.generate(x, targets, mask=mask)
 
         # Here starts the main iteration:
-        for i in trange(nb_frames, desc="Frame saliency"):
+        for i in trange(nb_frames, desc="Frame saliency", disable=not self.verbose):
             # Check if attack has already succeeded for all inputs:
             if sum(attack_failure) == 0:
                 break
@@ -185,7 +187,7 @@ class FrameSaliencyAttack(EvasionAttack):
         return np.invert(attack_success)
 
     def _compute_frames_to_perturb(
-        self, x_adv: np.ndarray, targets: np.ndarray, disregard: Optional[float] = None
+        self, x_adv: np.ndarray, targets: np.ndarray, disregard: Optional[np.ndarray] = None
     ) -> np.ndarray:
         saliency_score = self.estimator.loss_gradient(x_adv, targets)
         saliency_score = np.swapaxes(saliency_score, 1, self.frame_index)
@@ -198,14 +200,14 @@ class FrameSaliencyAttack(EvasionAttack):
         return np.argsort(-saliency_score, axis=1)
 
     def _check_params(self) -> None:
-        if (
-            not isinstance(self.attacker, ProjectedGradientDescent)
-            and not isinstance(self.attacker, BasicIterativeMethod)
-            and not isinstance(self.attacker, FastGradientMethod)
-        ):
+        from art.attacks.evasion.projected_gradient_descent.projected_gradient_descent import ProjectedGradientDescent
+        from art.attacks.evasion.iterative_method import BasicIterativeMethod
+        from art.attacks.evasion.fast_gradient import FastGradientMethod
+
+        if not isinstance(self.attacker, (ProjectedGradientDescent, BasicIterativeMethod, FastGradientMethod)):
             raise ValueError(
-                "The attacker must be either of class 'ProjectedGradientDescent', \
-                              'BasicIterativeMethod' or 'FastGradientMethod'"
+                "The attacker must be either of class 'ProjectedGradientDescent', 'BasicIterativeMethod' or "
+                "'FastGradientMethod'"
             )
 
         if self.method not in self.method_list:
@@ -219,3 +221,6 @@ class FrameSaliencyAttack(EvasionAttack):
 
         if not self.estimator == self.attacker.estimator:
             raise Warning("Different classifiers given for computation of saliency scores and adversarial noise.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

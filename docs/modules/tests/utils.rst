@@ -14,11 +14,16 @@ Trained Models for Unittests, MNIST
 .. autofunction:: get_image_classifier_tf_v2
 .. autofunction:: get_image_classifier_kr
 .. autofunction:: get_image_classifier_kr_tf
+.. autofunction:: get_image_classifier_kr_functional
+.. autofunction:: get_image_classifier_kr_tf_functional
+.. autofunction:: get_image_classifier_kr_tf_with_wildcard
 .. autofunction:: get_image_classifier_kr_tf_binary
 .. autofunction:: get_image_classifier_pt
 .. autofunction:: get_classifier_bb
-.. autofunction:: get_classifier_mx
+.. autofunction:: get_image_classifier_mxnet_custom_ini
 .. autofunction:: get_gan_inverse_gan_ft
+
+.. autofunction:: get_attack_classifier_pt
 
 .. autofunction:: check_adverse_example_x
 .. autofunction:: check_adverse_predicted_sample_y

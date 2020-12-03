@@ -23,7 +23,7 @@ This module implements the white-box attack `NewtonFool`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -31,11 +31,11 @@ from tqdm import trange
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierGradients,
-)
+from art.estimators.classification.classifier import ClassGradientsMixin
 from art.utils import to_categorical, compute_success
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +47,16 @@ class NewtonFool(EvasionAttack):
     | Paper link: http://doi.acm.org/10.1145/3134600.3134635
     """
 
-    attack_params = EvasionAttack.attack_params + ["max_iter", "eta", "batch_size"]
+    attack_params = EvasionAttack.attack_params + ["max_iter", "eta", "batch_size", "verbose"]
     _estimator_requirements = (BaseEstimator, ClassGradientsMixin)
 
     def __init__(
-        self, classifier: ClassifierGradients, max_iter: int = 100, eta: float = 0.01, batch_size: int = 1,
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        max_iter: int = 100,
+        eta: float = 0.01,
+        batch_size: int = 1,
+        verbose: bool = True,
     ) -> None:
         """
         Create a NewtonFool attack instance.
@@ -60,11 +65,13 @@ class NewtonFool(EvasionAttack):
         :param max_iter: The maximum number of iterations.
         :param eta: The eta coefficient.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param verbose: Show progress bars.
         """
-        super(NewtonFool, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
         self.max_iter = max_iter
         self.eta = eta
         self.batch_size = batch_size
+        self.verbose = verbose
         self._check_params()
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
@@ -82,7 +89,9 @@ class NewtonFool(EvasionAttack):
         pred_class = np.argmax(y_pred, axis=1)
 
         # Compute perturbation with implicit batching
-        for batch_id in trange(int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="NewtonFool"):
+        for batch_id in trange(
+            int(np.ceil(x_adv.shape[0] / float(self.batch_size))), desc="NewtonFool", disable=not self.verbose
+        ):
             batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
             batch = x_adv[batch_index_1:batch_index_2]
 
@@ -124,16 +133,6 @@ class NewtonFool(EvasionAttack):
         )
         return x_adv
 
-    def _check_params(self) -> None:
-        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
-            raise ValueError("The number of iterations must be a positive integer.")
-
-        if not isinstance(self.eta, (float, int, np.int)) or self.eta <= 0:
-            raise ValueError("The eta coefficient must be a positive float.")
-
-        if self.batch_size <= 0:
-            raise ValueError("The batch size `batch_size` has to be positive.")
-
     def _compute_theta(self, norm_batch: np.ndarray, score: np.ndarray, norm_grad: np.ndarray) -> np.ndarray:
         """
         Function to compute the theta at each step.
@@ -168,3 +167,16 @@ class NewtonFool(EvasionAttack):
         result = nom / denom.reshape((-1,) + (1,) * (len(grads.shape) - 1))
 
         return result
+
+    def _check_params(self) -> None:
+        if not isinstance(self.max_iter, (int, np.int)) or self.max_iter <= 0:
+            raise ValueError("The number of iterations must be a positive integer.")
+
+        if not isinstance(self.eta, (float, int, np.int)) or self.eta <= 0:
+            raise ValueError("The eta coefficient must be a positive float.")
+
+        if self.batch_size <= 0:
+            raise ValueError("The batch size `batch_size` has to be positive.")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

@@ -23,18 +23,21 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 from copy import deepcopy
 import json
 import logging
+import os
 import pickle
-from typing import List, Optional, Union, TYPE_CHECKING
+from typing import List, Optional, Union, Tuple, TYPE_CHECKING
 
 import numpy as np
 
 from art.estimators.classification.classifier import ClassifierDecisionTree
 from art.utils import to_categorical
+from art import config
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import xgboost  # lgtm [py/import-and-import-from]
 
-    from art.config import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
     from art.metrics.verification_decisions_trees import LeafNode, Tree
@@ -65,7 +68,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
                for features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :param nb_features: The number of features in the training data. Only used if it cannot be extracted from
@@ -77,15 +80,24 @@ class XGBoostClassifier(ClassifierDecisionTree):
         if not isinstance(model, Booster) and not isinstance(model, XGBClassifier):
             raise TypeError("Model must be of type xgboost.Booster or xgboost.XGBClassifier.")
 
-        super(XGBoostClassifier, self).__init__(
+        super().__init__(
+            model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
             preprocessing=preprocessing,
         )
-        self._model = model
         self._input_shape = (nb_features,)
         self._nb_classes = self._get_nb_classes(nb_classes)
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
@@ -126,7 +138,7 @@ class XGBoostClassifier(ClassifierDecisionTree):
 
         return y_prediction
 
-    def _get_nb_classes(self, nb_classes) -> Optional[int]:
+    def _get_nb_classes(self, nb_classes: Optional[int]) -> int:
         """
         Return the number of output classes.
 
@@ -143,15 +155,30 @@ class XGBoostClassifier(ClassifierDecisionTree):
                 raise NotImplementedError(
                     "Number of classes cannot be determined automatically. "
                     + "Please manually set argument nb_classes in XGBoostClassifier."
-                )
+                ) from AttributeError
 
         if isinstance(self._model, XGBClassifier):
             return self._model.n_classes_
 
-        return None
+        return -1
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
-        with open(filename + ".pickle", "wb") as file_pickle:
+        """
+        Save a model to file in the format specific to the backend framework.
+
+        :param filename: Name of the file where to store the model.
+        :param path: Path of the folder where to store the model. If no path is specified, the model will be stored in
+                     the default data location of the library `ART_DATA_PATH`.
+        """
+        if path is None:
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
+        else:
+            full_path = os.path.join(path, filename)
+        folder = os.path.split(full_path)[0]
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self._model, file=file_pickle)
 
     def get_trees(self) -> List["Tree"]:

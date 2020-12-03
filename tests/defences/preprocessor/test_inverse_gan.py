@@ -25,6 +25,7 @@ from art.defences.preprocessor.inverse_gan import InverseGAN
 from art.attacks.evasion import FastGradientMethod
 
 from tests.utils import get_gan_inverse_gan_ft
+from tests.utils import ARTTestException
 
 
 @pytest.fixture()
@@ -32,37 +33,30 @@ def fix_get_mnist_subset(get_mnist_dataset):
     (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
     n_train = 50
     n_test = 50
-    yield (x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test])
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.only_with_platform("tensorflow")
-def test_inverse_gan(fix_get_mnist_subset, get_image_classifier_list_for_attack):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+@pytest.mark.skipMlFramework("keras", "pytorch", "scikitlearn", "mxnet", "kerastf")
+def test_inverse_gan(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+    try:
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    gan, inverse_gan, sess = get_gan_inverse_gan_ft()
-    if gan is None:
-        logging.warning("Couldn't perform  this test because no gan is defined for this framework configuration")
-        return
+        gan, inverse_gan, sess = get_gan_inverse_gan_ft()
+        if gan is None:
+            logging.warning("Couldn't perform  this test because no gan is defined for this framework configuration")
+            return
 
-    classifier_list = get_image_classifier_list_for_attack(FastGradientMethod)
+        classifier = image_dl_estimator_for_attack(FastGradientMethod)
 
-    if classifier_list is None:
-        logging.warning("Couldn't perform  this test because no classifier is defined")
-        return
+        attack = FastGradientMethod(classifier, eps=0.2)
+        x_test_adv = attack.generate(x=x_test_mnist)
 
-    classifier = classifier_list[0]
+        inverse_gan = InverseGAN(sess=sess, gan=gan, inverse_gan=inverse_gan)
 
-    attack = FastGradientMethod(classifier, eps=0.2)
-    x_test_adv = attack.generate(x=x_test_mnist)
+        x_test_defended = inverse_gan(x_test_adv, maxiter=1)
 
-    inverse_gan = InverseGAN(sess=sess, gan=gan, inverse_gan=inverse_gan)
-
-    x_test_defended = inverse_gan(x_test_adv, maxiter=1)
-
-    np.testing.assert_array_almost_equal(
-        float(np.mean(x_test_defended - x_test_adv)), 0.08818667382001877, decimal=0.01,
-    )
-
-
-if __name__ == "__main__":
-    pytest.cmdline.main("-q -s {} --mlFramework=tensorflow --durations=0".format(__file__).split(" "))
+        np.testing.assert_array_almost_equal(
+            float(np.mean(x_test_defended - x_test_adv)), 0.08818667382001877, decimal=0.01,
+        )
+    except ARTTestException as e:
+        art_warning(e)

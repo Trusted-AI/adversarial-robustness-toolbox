@@ -35,17 +35,152 @@ import zipfile
 import numpy as np
 from scipy.special import gammainc
 import six
+from tqdm import tqdm
 
-from art.config import ART_DATA_PATH, ART_NUMPY_DTYPE, DATASET_TYPE
-
-if TYPE_CHECKING:
-    from art.config import CLIP_VALUES_TYPE
-    from art.estimators.classification.classifier import Classifier
+from art import config
 
 logger = logging.getLogger(__name__)
 
 
-# ------------------------------------------------------------------------------------------------- DEPRECATION
+# ------------------------------------------------------------------------------------------------- CONSTANTS AND TYPES
+
+
+DATASET_TYPE = Tuple[Tuple[np.ndarray, np.ndarray], Tuple[np.ndarray, np.ndarray], float, float]
+CLIP_VALUES_TYPE = Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]]
+
+if TYPE_CHECKING:
+    # pylint: disable=R0401
+
+    from art.defences.preprocessor.preprocessor import Preprocessor
+
+    PREPROCESSING_TYPE = Optional[
+        Tuple[Union[int, float, np.ndarray], Union[int, float, np.ndarray]], Preprocessor, Tuple[Preprocessor, ...]
+    ]
+
+    from art.estimators.classification.classifier import (
+        Classifier,
+        ClassifierLossGradients,
+        ClassifierClassLossGradients,
+        ClassifierNeuralNetwork,
+        ClassifierDecisionTree,
+    )
+    from art.estimators.classification.blackbox import BlackBoxClassifier
+    from art.estimators.classification.catboost import CatBoostARTClassifier
+    from art.estimators.classification.detector_classifier import DetectorClassifier
+    from art.estimators.classification.ensemble import EnsembleClassifier
+    from art.estimators.classification.GPy import GPyGaussianProcessClassifier
+    from art.estimators.classification.keras import KerasClassifier
+    from art.estimators.classification.lightgbm import LightGBMClassifier
+    from art.estimators.classification.mxnet import MXClassifier
+    from art.estimators.classification.pytorch import PyTorchClassifier
+    from art.estimators.classification.scikitlearn import (
+        ScikitlearnClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+    )
+    from art.estimators.classification.tensorflow import TensorFlowClassifier, TensorFlowV2Classifier
+    from art.estimators.classification.xgboost import XGBoostClassifier
+
+    from art.estimators.object_detection.object_detector import ObjectDetector
+    from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
+    from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
+
+    from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
+    from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
+
+    CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[
+        ClassifierLossGradients,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+    ]
+
+    CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE = Union[
+        ClassifierClassLossGradients,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+    ]
+
+    CLASSIFIER_NEURALNETWORK_TYPE = Union[
+        ClassifierNeuralNetwork,
+        DetectorClassifier,
+        EnsembleClassifier,
+        KerasClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+    ]
+
+    CLASSIFIER_DECISION_TREE_TYPE = Union[
+        ClassifierDecisionTree,
+        LightGBMClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        XGBoostClassifier,
+    ]
+
+    CLASSIFIER_TYPE = Union[
+        Classifier,
+        BlackBoxClassifier,
+        CatBoostARTClassifier,
+        DetectorClassifier,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        LightGBMClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+        XGBoostClassifier,
+        CLASSIFIER_NEURALNETWORK_TYPE,
+    ]
+
+    OBJECT_DETECTOR_TYPE = Union[
+        ObjectDetector, PyTorchFasterRCNN, TensorFlowFasterRCNN,
+    ]
+
+    SPEECH_RECOGNIZER_TYPE = Union[
+        PyTorchDeepSpeech, TensorFlowLingvoASR,
+    ]
+
+# --------------------------------------------------------------------------------------------------------- DEPRECATION
 
 
 class _Deprecated:
@@ -162,13 +297,13 @@ def deprecated_keyword_arg(identifier: str, end_version: str, *, reason: str = "
 # ----------------------------------------------------------------------------------------------------- MATH OPERATIONS
 
 
-def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.ndarray:
+def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: Union[int, float, str]) -> np.ndarray:
     """
     Project `values` on the L_p norm ball of size `eps`.
 
     :param values: Array of perturbations to clip.
     :param eps: Maximum norm allowed.
-    :param norm_p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+    :param norm_p: L_p norm to use for clipping. Only 1, 2, `np.Inf` and "inf" supported for now.
     :return: Values of `values` after projection.
     """
     # Pick a small scalar to avoid division by 0
@@ -176,33 +311,56 @@ def projection(values: np.ndarray, eps: float, norm_p: Union[int, float]) -> np.
     values_tmp = values.reshape((values.shape[0], -1))
 
     if norm_p == 2:
+        if isinstance(eps, np.ndarray):
+            raise NotImplementedError("The parameter `eps` of type `np.ndarray` is not supported to use with norm 2.")
+
         values_tmp = values_tmp * np.expand_dims(
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1) + tol)), axis=1
         )
+
     elif norm_p == 1:
+        if isinstance(eps, np.ndarray):
+            raise NotImplementedError("The parameter `eps` of type `np.ndarray` is not supported to use with norm 1.")
+
         values_tmp = values_tmp * np.expand_dims(
             np.minimum(1.0, eps / (np.linalg.norm(values_tmp, axis=1, ord=1) + tol)), axis=1,
         )
-    elif norm_p == np.inf:
+
+    elif norm_p in [np.inf, "inf"]:
+        if isinstance(eps, np.ndarray):
+            eps = eps * np.ones_like(values)
+            eps = eps.reshape([eps.shape[0], -1])
+
         values_tmp = np.sign(values_tmp) * np.minimum(abs(values_tmp), eps)
+
     else:
-        raise NotImplementedError("Values of `norm_p` different from 1, 2 and `np.inf` are currently not supported.")
+        raise NotImplementedError(
+            'Values of `norm_p` different from 1, 2, `np.inf` and "inf" are currently not ' "supported."
+        )
 
     values = values_tmp.reshape(values.shape)
+
     return values
 
 
-def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, float]) -> np.ndarray:
+def random_sphere(
+    nb_points: int, nb_dims: int, radius: Union[int, float, np.ndarray], norm: Union[int, float, str],
+) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
 
     :param nb_points: Number of random data points.
     :param nb_dims: Dimensionality of the sphere.
     :param radius: Radius of the sphere.
-    :param norm: Current support: 1, 2, np.inf.
+    :param norm: Current support: 1, 2, np.inf, "inf".
     :return: The generated random sphere.
     """
     if norm == 1:
+        if isinstance(radius, np.ndarray):
+            raise NotImplementedError(
+                "The parameter `radius` of type `np.ndarray` is not supported to use with norm 1."
+            )
+
         a_tmp = np.zeros(shape=(nb_points, nb_dims + 1))
         a_tmp[:, -1] = np.sqrt(np.random.uniform(0, radius ** 2, nb_points))
 
@@ -210,13 +368,24 @@ def random_sphere(nb_points: int, nb_dims: int, radius: float, norm: Union[int, 
             a_tmp[i, 1:-1] = np.sort(np.random.uniform(0, a_tmp[i, -1], nb_dims - 1))
 
         res = (a_tmp[:, 1:] - a_tmp[:, :-1]) * np.random.choice([-1, 1], (nb_points, nb_dims))
+
     elif norm == 2:
+        if isinstance(radius, np.ndarray):
+            raise NotImplementedError(
+                "The parameter `radius` of type `np.ndarray` is not supported to use with norm 2."
+            )
+
         a_tmp = np.random.randn(nb_points, nb_dims)
         s_2 = np.sum(a_tmp ** 2, axis=1)
         base = gammainc(nb_dims / 2.0, s_2 / 2.0) ** (1 / nb_dims) * radius / np.sqrt(s_2)
         res = a_tmp * (np.tile(base, (nb_dims, 1))).T
-    elif norm == np.inf:
-        res = np.random.uniform(float(-radius), float(radius), (nb_points, nb_dims))
+
+    elif norm in [np.inf, "inf"]:
+        if isinstance(radius, np.ndarray):
+            radius = radius * np.ones(shape=(nb_points, nb_dims))
+
+        res = np.random.uniform(-radius, radius, (nb_points, nb_dims))
+
     else:
         raise NotImplementedError("Norm {} not supported".format(norm))
 
@@ -261,7 +430,7 @@ def tanh_to_original(
 # --------------------------------------------------------------------------------------------------- LABELS OPERATIONS
 
 
-def to_categorical(labels: np.ndarray, nb_classes: Optional[int] = None) -> np.ndarray:
+def to_categorical(labels: Union[np.ndarray, List[float]], nb_classes: Optional[int] = None) -> np.ndarray:
     """
     Convert an array of labels to binary class matrix.
 
@@ -353,7 +522,7 @@ def random_targets(labels: np.ndarray, nb_classes: int) -> np.ndarray:
     return to_categorical(result, nb_classes)
 
 
-def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
+def least_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np.ndarray:
     """
     Compute the least likely class predictions for sample `x`. This strategy for choosing attack targets was used in
     (Kurakin et al., 2016).
@@ -367,7 +536,7 @@ def least_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
     return to_categorical(np.argmin(classifier.predict(x), axis=1), nb_classes=classifier.nb_classes)
 
 
-def second_most_likely_class(x: np.ndarray, classifier: "Classifier") -> np.ndarray:
+def second_most_likely_class(x: np.ndarray, classifier: "CLASSIFIER_TYPE") -> np.ndarray:
     """
     Compute the second most likely class predictions for sample `x`. This strategy can be used for choosing target
     labels for an attack to improve its chances to succeed.
@@ -401,12 +570,12 @@ def get_labels_np_array(preds: np.ndarray) -> np.ndarray:
     """
     preds_max = np.amax(preds, axis=1, keepdims=True)
     y = preds == preds_max
-
+    y = y.astype(np.uint8)
     return y
 
 
 def compute_success_array(
-    classifier: "Classifier",
+    classifier: "CLASSIFIER_TYPE",
     x_clean: np.ndarray,
     labels: np.ndarray,
     x_adv: np.ndarray,
@@ -436,7 +605,7 @@ def compute_success_array(
 
 
 def compute_success(
-    classifier: "Classifier",
+    classifier: "CLASSIFIER_TYPE",
     x_clean: np.ndarray,
     labels: np.ndarray,
     x_adv: np.ndarray,
@@ -454,7 +623,6 @@ def compute_success(
            correct labels of the clean samples.
     :param batch_size: Batch size.
     :return: Percentage of successful adversarial samples.
-    :rtype: `float`
     """
     attack_success = compute_success_array(classifier, x_clean, labels, x_adv, targeted, batch_size)
     return np.sum(attack_success) / x_adv.shape[0]
@@ -520,7 +688,7 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
     path = get_file(
         "cifar-10-batches-py",
         extract=True,
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         url="http://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz",
     )
 
@@ -541,8 +709,8 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
     y_test = np.reshape(y_test, (len(y_test), 1))
 
     # Set channels last
-    x_train = x_train.transpose(0, 2, 3, 1)
-    x_test = x_test.transpose(0, 2, 3, 1)
+    x_train = x_train.transpose((0, 2, 3, 1))
+    x_test = x_test.transpose((0, 2, 3, 1))
 
     min_, max_ = 0.0, 255.0
     if not raw:
@@ -555,12 +723,12 @@ def load_cifar10(raw: bool = False,) -> DATASET_TYPE:
 
 def load_mnist(raw: bool = False,) -> DATASET_TYPE:
     """
-    Loads MNIST dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads MNIST dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :return: `(x_train, y_train), (x_test, y_test), min, max`.
     """
-    path = get_file("mnist.npz", path=ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz",)
+    path = get_file("mnist.npz", path=config.ART_DATA_PATH, url="https://s3.amazonaws.com/img-datasets/mnist.npz",)
 
     dict_mnist = np.load(path)
     x_train = dict_mnist["x_train"]
@@ -583,7 +751,7 @@ def load_mnist(raw: bool = False,) -> DATASET_TYPE:
 
 def load_stl() -> DATASET_TYPE:
     """
-    Loads the STL-10 dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads the STL-10 dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :return: `(x_train, y_train), (x_test, y_test), min, max`.
     """
@@ -593,7 +761,7 @@ def load_stl() -> DATASET_TYPE:
 
     path = get_file(
         "stl10_binary",
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         extract=True,
         url="https://ai.stanford.edu/~acoates/stl10/stl10_binary.tar.gz",
     )
@@ -607,8 +775,8 @@ def load_stl() -> DATASET_TYPE:
         x_test = np.reshape(x_test, (-1, 3, 96, 96))
 
     # Set channel last
-    x_train = x_train.transpose(0, 2, 3, 1)
-    x_test = x_test.transpose(0, 2, 3, 1)
+    x_train = x_train.transpose((0, 2, 3, 1))
+    x_test = x_test.transpose((0, 2, 3, 1))
 
     with open(os.path.join(path, "train_y.bin"), "rb") as f_numpy:
         y_train = np.fromfile(f_numpy, dtype=np.uint8)
@@ -626,7 +794,7 @@ def load_stl() -> DATASET_TYPE:
 
 def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     """
-    Loads the UCI Iris dataset from `ART_DATA_PATH` or downloads it if necessary.
+    Loads the UCI Iris dataset from `config.ART_DATA_PATH` or downloads it if necessary.
 
     :param raw: `True` if no preprocessing should be applied to the data. Otherwise, data is normalized to 1.
     :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
@@ -635,12 +803,12 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     # Download data if needed
     path = get_file(
         "iris.data",
-        path=ART_DATA_PATH,
+        path=config.ART_DATA_PATH,
         extract=False,
         url="https://archive.ics.uci.edu/ml/machine-learning-databases/iris/iris.data",
     )
 
-    data = np.loadtxt(path, delimiter=",", usecols=(0, 1, 2, 3), dtype=ART_NUMPY_DTYPE)
+    data = np.loadtxt(path, delimiter=",", usecols=(0, 1, 2, 3), dtype=config.ART_NUMPY_DTYPE)
     labels = np.loadtxt(path, delimiter=",", usecols=4, dtype=str)
 
     # Preprocess
@@ -674,6 +842,109 @@ def load_iris(raw: bool = False, test_set: float = 0.3) -> DATASET_TYPE:
     return (x_train, y_train), (x_test, y_test), min_, max_
 
 
+def load_nursery(raw: bool = False, test_set: float = 0.2, transform_social: bool = False) -> DATASET_TYPE:
+    """
+    Loads the UCI Nursery dataset from `config.ART_DATA_PATH` or downloads it if necessary.
+
+    :param raw: `True` if no preprocessing should be applied to the data. Otherwise, categorical data is one-hot
+                encoded and data is scaled using sklearn's StandardScaler.
+    :param test_set: Proportion of the data to use as validation split. The value should be between 0 and 1.
+    :param transform_social: If `True`, transforms the social feature to be binary for the purpose of attribute
+                             inference. This is done by assigning the original value 'problematic' the new value 1, and
+                             the other original values are assigned the new value 0.
+    :return: Entire dataset and labels.
+    """
+    import pandas as pd
+    import sklearn.model_selection
+    import sklearn.preprocessing
+
+    # Download data if needed
+    path = get_file(
+        "nursery.data",
+        path=config.ART_DATA_PATH,
+        extract=False,
+        url="https://archive.ics.uci.edu/ml/machine-learning-databases/nursery/nursery.data",
+    )
+
+    # load data
+    features = ["parents", "has_nurs", "form", "children", "housing", "finance", "social", "health", "label"]
+    categorical_features = ["parents", "has_nurs", "form", "housing", "finance", "social", "health"]
+    data = pd.read_csv(path, sep=",", names=features, engine="python")
+    # remove rows with missing label or too sparse label
+    data = data.dropna(subset=["label"])
+    data.drop(data.loc[data["label"] == "recommend"].index, axis=0, inplace=True)
+
+    # fill missing values
+    data["children"] = data["children"].fillna(0)
+
+    for col in ["parents", "has_nurs", "form", "housing", "finance", "social", "health"]:
+        data[col] = data[col].fillna("other")
+
+    # make categorical label
+    def modify_label(value):  # 5 classes
+        if value == "not_recom":
+            return 0
+        elif value == "very_recom":
+            return 1
+        elif value == "priority":
+            return 2
+        elif value == "spec_prior":
+            return 3
+        else:
+            raise Exception("Bad label value: %s" % value)
+
+    data["label"] = data["label"].apply(modify_label)
+    data["children"] = data["children"].apply(lambda x: 4 if x == "more" else x)
+
+    if transform_social:
+
+        def modify_social(value):
+            if value == "problematic":
+                return 1
+            else:
+                return 0
+
+        data["social"] = data["social"].apply(modify_social)
+        categorical_features.remove("social")
+
+    if not raw:
+        # one-hot-encode categorical features
+        features_to_remove = []
+        for feature in categorical_features:
+            all_values = data.loc[:, feature]
+            values = list(all_values.unique())
+            data[feature] = pd.Categorical(data.loc[:, feature], categories=values, ordered=False)
+            one_hot_vector = pd.get_dummies(data[feature], prefix=feature)
+            data = pd.concat([data, one_hot_vector], axis=1)
+            features_to_remove.append(feature)
+        data = data.drop(features_to_remove, axis=1)
+
+        # normalize data
+        label = data.loc[:, "label"]
+        features = data.drop(["label"], axis=1)
+        scaler = sklearn.preprocessing.StandardScaler()
+        scaler.fit(features)
+        scaled_features = pd.DataFrame(scaler.transform(features), columns=features.columns)
+
+        data = pd.concat([label, scaled_features], axis=1, join="inner")
+
+    features = data.drop(["label"], axis=1)
+    # print(features.columns)
+    min_, max_ = np.amin(features.to_numpy()), np.amax(features.to_numpy())
+
+    # Split training and test sets
+    stratified = sklearn.model_selection.StratifiedShuffleSplit(n_splits=1, test_size=test_set, random_state=18)
+    for train_set, test_set in stratified.split(data, data["label"]):
+        train = data.iloc[train_set]
+        test = data.iloc[test_set]
+    x_train = train.drop(["label"], axis=1).to_numpy()
+    y_train = train.loc[:, "label"].to_numpy()
+    x_test = test.drop(["label"], axis=1).to_numpy()
+    y_test = test.loc[:, "label"].to_numpy()
+
+    return (x_train, y_train), (x_test, y_test), min_, max_
+
+
 def load_dataset(name: str,) -> DATASET_TYPE:
     """
     Loads or downloads the dataset corresponding to `name`. Options are: `mnist`, `cifar10` and `stl10`.
@@ -690,6 +961,8 @@ def load_dataset(name: str,) -> DATASET_TYPE:
         return load_stl()
     if "iris" in name:
         return load_iris()
+    if "nursery" in name:
+        return load_nursery()
 
     raise NotImplementedError("There is no loader for dataset '{}'.".format(name))
 
@@ -722,7 +995,7 @@ def _extract(full_path: str, path: str) -> bool:
     return True
 
 
-def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool = False) -> str:
+def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool = False, verbose: bool = False) -> str:
     """
     Downloads a file from a URL if it not already in the cache. The file at indicated by `url` is downloaded to the
     path `path` (default is ~/.art/data). and given the name `filename`. Files in tar, tar.gz, tar.bz, and zip formats
@@ -732,12 +1005,13 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
     :param url: Download URL.
     :param path: Folder to store the download. If not specified, `~/.art/data` is used instead.
     :param extract: If true, tries to extract the archive.
+    :param verbose: If true, print download progress bar.
     :return: Path to the downloaded file.
     """
     if path is None:
-        from art.config import ART_DATA_PATH
+        from art import config
 
-        path_ = os.path.expanduser(ART_DATA_PATH)
+        path_ = os.path.expanduser(config.ART_DATA_PATH)
     else:
         path_ = os.path.expanduser(path)
     if not os.access(path_, os.W_OK):
@@ -769,11 +1043,30 @@ def get_file(filename: str, url: str, path: Optional[str] = None, extract: bool 
 
                 ssl._create_default_https_context = ssl._create_unverified_context
 
-                urlretrieve(url, full_path)
+                if verbose:
+                    with tqdm() as t:
+                        last_block = [0]
+
+                        def progress_bar(blocks: int = 1, block_size: int = 1, total_size: Optional[int] = None):
+                            """
+                            :param blocks: Number of blocks transferred so far [default: 1].
+                            :param block_size: Size of each block (in tqdm units) [default: 1].
+                            :param total_size: Total size (in tqdm units). If [default: None] or -1, remains unchanged.
+                            """
+                            if total_size not in (None, -1):
+                                t.total = total_size
+                            displayed = t.update((blocks - last_block[0]) * block_size)
+                            last_block[0] = blocks
+                            return displayed
+
+                        urlretrieve(url, full_path, reporthook=progress_bar)
+                else:
+                    urlretrieve(url, full_path)
+
             except HTTPError as exception:
-                raise Exception(error_msg.format(url, exception.code, exception.msg))  # type: ignore
+                raise Exception(error_msg.format(url, exception.code, exception.msg)) from HTTPError  # type: ignore
             except URLError as exception:
-                raise Exception(error_msg.format(url, exception.errno, exception.reason))
+                raise Exception(error_msg.format(url, exception.errno, exception.reason)) from HTTPError
         except (Exception, KeyboardInterrupt):
             if os.path.exists(full_path):
                 os.remove(full_path)
@@ -842,7 +1135,7 @@ def preprocess(
     return normalized_x, categorical_y
 
 
-def segment_by_class(data: np.ndarray, classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
+def segment_by_class(data: Union[np.ndarray, List[int]], classes: np.ndarray, num_classes: int) -> List[np.ndarray]:
     """
     Returns segmented data according to specified features.
 
@@ -864,8 +1157,8 @@ def segment_by_class(data: np.ndarray, classes: np.ndarray, num_classes: int) ->
 
 
 def performance_diff(
-    model1: "Classifier",
-    model2: "Classifier",
+    model1: "CLASSIFIER_TYPE",
+    model2: "CLASSIFIER_TYPE",
     test_data: np.ndarray,
     test_labels: np.ndarray,
     perf_function: Union[str, Callable] = "accuracy",
@@ -923,3 +1216,22 @@ def is_probability(vector: np.ndarray) -> bool:
     is_larger_0 = np.amin(vector) >= 0.0
 
     return is_sum_1 and is_smaller_1 and is_larger_0
+
+
+def pad_sequence_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Apply padding to a batch of 1-dimensional samples such that it has shape of (batch_size, max_length).
+
+    :param x: A batch of 1-dimensional input data, e.g. `np.array([np.array([1,2,3]), np.array([4,5,6,7])])`.
+    :return: The padded input batch and its corresponding mask.
+    """
+    max_length = max(map(len, x))
+    batch_size = x.shape[0]
+
+    x_padded = np.zeros((batch_size, max_length))
+    x_mask = np.zeros((batch_size, max_length), dtype=bool)
+
+    for i, x_i in enumerate(x):
+        x_padded[i, : len(x_i)] = x_i
+        x_mask[i, : len(x_i)] = 1
+    return x_padded, x_mask

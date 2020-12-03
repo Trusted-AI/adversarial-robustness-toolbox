@@ -23,7 +23,7 @@ This module implements the Knockoff Nets attack `KnockoffNets`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional
+from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from tqdm import trange
@@ -31,9 +31,11 @@ from tqdm import trange
 from art.config import ART_NUMPY_DTYPE
 from art.attacks.attack import ExtractionAttack
 from art.estimators.estimator import BaseEstimator
-from art.estimators.classification.classifier import ClassifierMixin, Classifier
+from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import to_categorical
 
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_TYPE
 
 logger = logging.getLogger(__name__)
 
@@ -52,19 +54,21 @@ class KnockoffNets(ExtractionAttack):
         "nb_stolen",
         "sampling_strategy",
         "reward",
+        "verbose",
     ]
 
     _estimator_requirements = (BaseEstimator, ClassifierMixin)
 
     def __init__(
         self,
-        classifier: Classifier,
+        classifier: "CLASSIFIER_TYPE",
         batch_size_fit: int = 1,
         batch_size_query: int = 1,
         nb_epochs: int = 10,
         nb_stolen: int = 1,
         sampling_strategy: str = "random",
         reward: str = "all",
+        verbose: bool = True,
     ) -> None:
         """
         Create a KnockoffNets attack instance. Note, it is assumed that both the victim classifier and the thieved
@@ -77,8 +81,9 @@ class KnockoffNets(ExtractionAttack):
         :param nb_stolen: Number of queries submitted to the victim classifier to steal it.
         :param sampling_strategy: Sampling strategy, either `random` or `adaptive`.
         :param reward: Reward type, in ['cert', 'div', 'loss', 'all'].
+        :param verbose: Show progress bars.
         """
-        super(KnockoffNets, self).__init__(estimator=classifier)
+        super().__init__(estimator=classifier)
 
         self.batch_size_fit = batch_size_fit
         self.batch_size_query = batch_size_query
@@ -86,9 +91,10 @@ class KnockoffNets(ExtractionAttack):
         self.nb_stolen = nb_stolen
         self.sampling_strategy = sampling_strategy
         self.reward = reward
+        self.verbose = verbose
         self._check_params()
 
-    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Classifier:
+    def extract(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> "CLASSIFIER_TYPE":
         """
         Extract a thieved classifier.
 
@@ -96,7 +102,6 @@ class KnockoffNets(ExtractionAttack):
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   `(nb_samples,)`.
         :param thieved_classifier: A thieved classifier to be stolen.
-        :type thieved_classifier: :class:`.Classifier`
         :return: The stolen classifier.
         """
         # Check prerequisite for random strategy
@@ -127,7 +132,7 @@ class KnockoffNets(ExtractionAttack):
 
         return thieved_classifier
 
-    def _random_extraction(self, x: np.ndarray, thieved_classifier: Classifier) -> Classifier:
+    def _random_extraction(self, x: np.ndarray, thieved_classifier: "CLASSIFIER_TYPE") -> "CLASSIFIER_TYPE":
         """
         Extract with the random sampling strategy.
 
@@ -173,7 +178,9 @@ class KnockoffNets(ExtractionAttack):
 
         return labels
 
-    def _adaptive_extraction(self, x: np.ndarray, y: np.ndarray, thieved_classifier: Classifier) -> Classifier:
+    def _adaptive_extraction(
+        self, x: np.ndarray, y: np.ndarray, thieved_classifier: "CLASSIFIER_TYPE"
+    ) -> "CLASSIFIER_TYPE":
         """
         Extract with the adaptive sampling strategy.
 
@@ -208,7 +215,7 @@ class KnockoffNets(ExtractionAttack):
         queried_labels = []
 
         avg_reward = 0.0
-        for it in trange(1, self.nb_stolen + 1, desc="Knock-off nets"):
+        for it in trange(1, self.nb_stolen + 1, desc="Knock-off nets", disable=not self.verbose):
             # Sample an action
             action = np.random.choice(np.arange(0, nb_actions), p=probs)
 
@@ -393,3 +400,6 @@ class KnockoffNets(ExtractionAttack):
 
         if self.reward not in ["cert", "div", "loss", "all"]:
             raise ValueError("Reward type must be in ['cert', 'div', 'loss', 'all'].")
+
+        if not isinstance(self.verbose, bool):
+            raise ValueError("The argument `verbose` has to be of type bool.")

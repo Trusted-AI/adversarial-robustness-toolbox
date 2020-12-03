@@ -23,7 +23,7 @@ from typing import Callable, Tuple
 import numpy as np
 
 from art.defences.detector.evasion.subsetscanning.scoring_functions import ScoringFunctions
-from art.defences.detector.evasion import ScanningOps
+from art.defences.detector.evasion.subsetscanning.scanningops import ScanningOps
 
 
 class Scanner:

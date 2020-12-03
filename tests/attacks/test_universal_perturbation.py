@@ -23,9 +23,9 @@ import unittest
 import numpy as np
 
 from art.attacks.evasion.universal_perturbation import UniversalPerturbation
-from art.estimators.classification.classifier import ClassGradientsMixin
+from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.classification.keras import KerasClassifier
-from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
+from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 from tests.utils import (
     TestBase,
@@ -56,7 +56,7 @@ class TestUniversalPerturbation(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
-    def test_tensorflow_mnist(self):
+    def test_3_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -82,7 +82,7 @@ class TestUniversalPerturbation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_keras_mnist(self):
+    def test_8_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -108,7 +108,7 @@ class TestUniversalPerturbation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_pytorch_mnist(self):
+    def test_5_pytorch_mnist(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -136,7 +136,7 @@ class TestUniversalPerturbation(TestBase):
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_keras_iris_clipped(self):
+    def test_6_keras_iris_clipped(self):
         classifier = get_tabular_classifier_kr()
 
         # Test untargeted attack
@@ -153,7 +153,7 @@ class TestUniversalPerturbation(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
-    def test_keras_iris_unbounded(self):
+    def test_7_keras_iris_unbounded(self):
         classifier = get_tabular_classifier_kr()
 
         # Recreate a classifier without clip values
@@ -169,7 +169,7 @@ class TestUniversalPerturbation(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
-    def test_tensorflow_iris(self):
+    def test_2_tensorflow_iris(self):
         classifier, _ = get_tabular_classifier_tf()
 
         # Test untargeted attack
@@ -186,7 +186,7 @@ class TestUniversalPerturbation(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
-    def test_pytorch_iris(self):
+    def test_4_pytorch_iris(self):
         classifier = get_tabular_classifier_pt()
 
         attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
@@ -202,10 +202,8 @@ class TestUniversalPerturbation(TestBase):
         acc = np.sum(preds_adv == np.argmax(self.y_test_iris, axis=1)) / self.y_test_iris.shape[0]
         logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
 
-    def test_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(
-            UniversalPerturbation, [BaseEstimator, NeuralNetworkMixin, ClassGradientsMixin]
-        )
+    def test_1_classifier_type_check_fail(self):
+        backend_test_classifier_type_check_fail(UniversalPerturbation, [BaseEstimator, ClassifierMixin])
 
 
 if __name__ == "__main__":

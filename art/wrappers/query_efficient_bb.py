@@ -21,19 +21,22 @@ Provides black-box gradient estimation using NES.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 from scipy.stats import entropy
 
-from art.estimators.classification.classifier import ClassifierGradients
+from art.estimators.classification.classifier import ClassifierClassLossGradients
 from art.utils import clip_and_round
 from art.wrappers.wrapper import ClassifierWrapper
+
+if TYPE_CHECKING:
+    from art.utils import CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE
 
 logger = logging.getLogger(__name__)
 
 
-class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients):
+class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossGradients):
     """
     Implementation of Query-Efficient Black-box Adversarial Examples. The attack approximates the gradient by
     maximizing the loss function over samples drawn from random Gaussian noise around the input.
@@ -44,7 +47,11 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
     attack_params = ["num_basis", "sigma", "round_samples"]
 
     def __init__(
-        self, classifier: ClassifierGradients, num_basis: int, sigma: float, round_samples: float = 0.0,
+        self,
+        classifier: "CLASSIFIER_CLASS_LOSS_GRADIENTS_TYPE",
+        num_basis: int,
+        sigma: float,
+        round_samples: float = 0.0,
     ) -> None:
         """
         :param classifier: An instance of a `Classifier` whose loss_gradient is being approximated.
@@ -53,7 +60,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         :param round_samples: The resolution of the input domain to round the data to, e.g., 1.0, or 1/255. Set to 0 to
                               disable.
         """
-        super(QueryEfficientBBGradientEstimation, self).__init__(classifier)
+        super().__init__(classifier)
         # self.predict refers to predict of classifier
         # pylint: disable=E0203
         self._predict = self.classifier.predict
@@ -61,6 +68,15 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         self.sigma = sigma
         self.round_samples = round_samples
         self._nb_classes = self.classifier.nb_classes
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -71,7 +87,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        return self._wrap_predict(x, **kwargs)
+        return self._wrap_predict(x, batch_size=batch_size)
 
     def fit(self, x: np.ndarray, y: np.ndarray, **kwargs) -> None:
         """
@@ -142,7 +158,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierGradients)
                 axis=0,
             )
             grads.append(query_efficient_grad)
-        grads = self._apply_preprocessing_normalization_gradient(np.array(grads))
+        grads = self._apply_preprocessing_gradient(x, np.array(grads))
         return grads
 
     def _wrap_predict(self, x: np.ndarray, batch_size: int = 128) -> np.ndarray:

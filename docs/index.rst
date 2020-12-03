@@ -6,12 +6,27 @@
 Welcome to the Adversarial Robustness Toolbox
 =============================================
 
+.. image:: ./images/art_lfai.png
+  :width: 400
+  :alt: ART Logo
+  :align: center
+
 Adversarial Robustness Toolbox (ART) is a Python library for Machine Learning Security. ART provides tools that enable
 developers and researchers to evaluate, defend, certify and verify Machine Learning models and applications against
 the adversarial threats of Evasion, Poisoning, Extraction, and Inference. ART supports all popular machine learning
 frameworks (TensorFlow, Keras, PyTorch, MXNet, scikit-learn, XGBoost, LightGBM, CatBoost, GPy, etc.), all data types
 (images, tables, audio, video, etc.) and machine learning tasks (classification, object detection, generation,
 certification, etc.).
+
+.. image:: ./images/adversarial_threats_attacker.png
+  :width: 400
+  :alt: ART Logo
+  :align: center
+
+.. image:: ./images/adversarial_threats_art.png
+  :width: 400
+  :alt: ART Logo
+  :align: center
 
 The code of ART is on `GitHub`_ and the Wiki contains overviews of implemented `attacks`_, `defences`_ and `metrics`_.
 
@@ -45,15 +60,20 @@ Supported Machine Learning Libraries
    modules/attacks
    modules/attacks/evasion
    modules/attacks/extraction
-   modules/attacks/inference
+   modules/attacks/inference/attribute_inference
+   modules/attacks/inference/membership_inference
+   modules/attacks/inference/model_inversion
+   modules/attacks/inference/reconstruction
    modules/attacks/poisoning
    modules/defences
    modules/defences/detector_evasion
-   modules/defences/detector_poison
+   modules/defences/detector_evasion_subsetscanning
+   modules/defences/detector_poisoning
    modules/defences/postprocessor
    modules/defences/preprocessor
    modules/defences/trainer
-   modules/defences/transformer
+   modules/defences/transformer_evasion
+   modules/defences/transformer_poisoning
    modules/estimators
    modules/estimators/certification
    modules/estimators/certification_randomized_smoothing
@@ -62,8 +82,16 @@ Supported Machine Learning Libraries
    modules/estimators/encoding
    modules/estimators/generation
    modules/estimators/object_detection
+   modules/estimators/poison_mitigation_neural_cleanse
+   modules/estimators/poison_mitigation_strip
    modules/estimators/regression
+   modules/estimators/speech_recognition
+   modules/evaluations
    modules/metrics
+   modules/preprocessing
+   modules/preprocessing/audio
+   modules/preprocessing/expectation_over_transformation
+   modules/preprocessing/standardisation_mean_std
    modules/wrappers
    modules/data_generators
    modules/exceptions
@@ -71,14 +99,14 @@ Supported Machine Learning Libraries
    modules/tests/utils
 
 
-Indices and tables
+Indices and Tables
 ==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
 
-.. _GitHub: https://github.com/IBM/adversarial-robustness-toolbox
-.. _attacks: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Attacks
-.. _defences: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Defences
-.. _metrics: https://github.com/IBM/adversarial-robustness-toolbox/wiki/ART-Metrics
+.. _GitHub: https://github.com/Trusted-AI/adversarial-robustness-toolbox
+.. _attacks: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Attacks
+.. _defences: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Defences
+.. _metrics: https://github.com/Trusted-AI/adversarial-robustness-toolbox/wiki/ART-Metrics

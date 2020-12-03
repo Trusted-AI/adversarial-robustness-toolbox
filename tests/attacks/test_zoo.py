@@ -52,7 +52,7 @@ class TestZooAttack(TestBase):
         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 
-    def test_tensorflow_failure_attack(self):
+    def test_2_tensorflow_failure_attack(self):
         """
         Test the corner case when attack fails.
         :return:
@@ -76,7 +76,7 @@ class TestZooAttack(TestBase):
         if sess is not None:
             sess.close()
 
-    def test_tensorflow_mnist(self):
+    def test_3_tensorflow_mnist(self):
         """
         First test with the TensorFlowClassifier.
         :return:
@@ -117,7 +117,7 @@ class TestZooAttack(TestBase):
         if sess is not None:
             sess.close()
 
-    def test_keras_mnist(self):
+    def test_5_keras_mnist(self):
         """
         Second test with the KerasClassifier.
         :return:
@@ -173,7 +173,7 @@ class TestZooAttack(TestBase):
         # Clean-up
         k.clear_session()
 
-    def test_pytorch_mnist(self):
+    def test_4_pytorch_mnist(self):
         """
         Third test with the PyTorchClassifier.
         :return:
@@ -216,12 +216,12 @@ class TestZooAttack(TestBase):
         # print(x_test[0, 0, 14, :])
         # print(x_test_adv[0, 0, 14, :])
         # print(np.amax(x_test - x_test_adv))
-        x_test_adv_expected = []
+        # x_test_adv_expected = []
 
         # Check that x_test has not been modified by attack and classifier
         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
 
-    def test_classifier_type_check_fail(self):
+    def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(ZooAttack, [BaseEstimator, ClassifierMixin])
 
 

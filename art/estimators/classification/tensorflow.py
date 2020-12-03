@@ -30,17 +30,16 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Union, TYPE_CHECK
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH, CLIP_VALUES_TYPE, PREPROCESSING_TYPE
-from art.estimators.classification.classifier import (
-    ClassGradientsMixin,
-    ClassifierMixin,
-)
+from art import config
+from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.estimators.tensorflow import TensorFlowEstimator, TensorFlowV2Estimator
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
 
 if TYPE_CHECKING:
+    # pylint: disable=C0412
     import tensorflow as tf
 
+    from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.data_generators import DataGenerator
     from art.defences.preprocessor import Preprocessor
     from art.defences.postprocessor import Postprocessor
@@ -53,7 +52,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     This class implements a classifier with the TensorFlow framework.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         input_ph: "tf.Placeholder",
@@ -65,11 +64,11 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         sess: Optional["tf.Session"] = None,
         channel_index=Deprecated,
         channels_first: bool = False,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
-        feed_dict: Dict[Any, Any] = {},
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        feed_dict: Optional[Dict[Any, Any]] = None,
     ) -> None:
         """
         Initialization specific to TensorFlow models implementation.
@@ -94,7 +93,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(subtractor, divider)` of floats or `np.ndarray` of values to be
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
@@ -103,7 +102,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         # pylint: disable=E0401
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:
@@ -111,7 +110,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(TensorFlowClassifier, self).__init__(
+        super().__init__(
+            model=None,
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -128,7 +128,10 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         self._train = train
         self._loss = loss
         self._learning = learning
-        self._feed_dict = feed_dict
+        if feed_dict is None:
+            self._feed_dict = dict()
+        else:
+            self._feed_dict = feed_dict
 
         # Assign session
         if sess is None:
@@ -147,6 +150,15 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
             self._reduce_labels = True
         else:
             self._reduce_labels = False
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -239,11 +251,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         from art.data_generators import TensorFlowDataGenerator
 
         # Train directly in TensorFlow
-        if (
-            isinstance(generator, TensorFlowDataGenerator)
-            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
-            and self.preprocessing == (0, 1)
-        ):
+        if isinstance(generator, TensorFlowDataGenerator) and not self.preprocessing and self.preprocessing == (0, 1):
             for _ in range(nb_epochs):
                 for _ in range(int(generator.size / generator.batch_size)):  # type: ignore
                     i_batch, o_batch = generator.get_batch()
@@ -258,7 +266,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
                     # Run train step
                     self._sess.run(self._train, feed_dict=feed_dict)
         else:
-            super(TensorFlowClassifier, self).fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
+            super().fit_generator(generator, nb_epochs=nb_epochs, **kwargs)
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
@@ -349,6 +357,45 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         assert grads.shape == x_preprocessed.shape
 
         return grads
+
+    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+        """
+        Compute the loss of the neural network for samples `x`.
+
+        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
+                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': Not supported
+                   'sum': Not supported
+        :return: Loss values.
+        :rtype: Format as expected by the `model`
+        """
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        if self.loss is None:
+            raise TypeError("The loss placeholder `loss` is required for computing losses, but it is not defined.")
+
+        if reduction == "none":
+            _loss = self._loss
+        elif reduction == "mean":
+            _loss = tf.reduce_mean(self._loss)
+        elif reduction == "sum":
+            _loss = tf.reduce_sum(self._loss)
+
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
+
+        # Create feed_dict
+        feed_dict = {self._input_ph: x_preprocessed, self._labels_ph: y}
+        feed_dict.update(self._feed_dict)
+
+        # Run train step
+        loss_value = self._sess.run(_loss, feed_dict=feed_dict)
+
+        return loss_value
 
     def _init_class_grads(self, label=None):
         # pylint: disable=E0401
@@ -499,7 +546,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         from tensorflow.python.saved_model.signature_def_utils_impl import predict_signature_def
 
         if path is None:
-            full_path = os.path.join(ART_DATA_PATH, filename)
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
 
@@ -571,7 +618,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         import tensorflow as tf  # lgtm [py/repeated-import]
         from tensorflow.python.saved_model import tag_constants
 
-        full_path = os.path.join(ART_DATA_PATH, state["model_name"])
+        full_path = os.path.join(config.ART_DATA_PATH, state["model_name"])
 
         graph = tf.Graph()
         sess = tf.Session(graph=graph)
@@ -652,7 +699,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     This class implements a classifier with the TensorFlow v2 framework.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         model: Callable,
@@ -662,10 +709,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         train_step: Optional[Callable] = None,
         channel_index=Deprecated,
         channels_first: bool = False,
-        clip_values: Optional[CLIP_VALUES_TYPE] = None,
+        clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: PREPROCESSING_TYPE = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
     ) -> None:
         """
         Initialization specific to TensorFlow v2 models.
@@ -687,13 +734,13 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                the shape of clip values needs to match the total number of features.
         :param preprocessing_defences: Preprocessing defence(s) to be applied by the classifier.
         :param postprocessing_defences: Postprocessing defence(s) to be applied by the classifier.
-        :param preprocessing: Tuple of the form `(substractor, divider)` of floats or `np.ndarray` of values to be
-               used for data preprocessing. The first value will be substracted from the input. The input will then
+        :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
+               used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:
@@ -701,7 +748,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super(TensorFlowV2Classifier, self).__init__(
+        super().__init__(
+            model=model,
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -710,7 +758,6 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             preprocessing=preprocessing,
         )
 
-        self._model = model
         self._nb_classes = nb_classes
         self._input_shape = input_shape
         self._loss_object = loss_object
@@ -721,6 +768,15 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             self._reduce_labels = True
         else:
             self._reduce_labels = False
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
@@ -819,11 +875,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             )
 
         # Train directly in TensorFlow
-        if (
-            isinstance(generator, TensorFlowV2DataGenerator)
-            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
-            and self.preprocessing == (0, 1)
-        ):
+        if isinstance(generator, TensorFlowV2DataGenerator) and not self.preprocessing:
             for _ in range(nb_epochs):
                 for i_batch, o_batch in generator.iterator:
                     if self._reduce_labels:
@@ -848,97 +900,116 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+        x = tf.convert_to_tensor(x)
 
-        # Compute the gradients
-        if tf.executing_eagerly():
-            if label is None:
-                # Compute the gradients w.r.t. all classes
-                class_gradients = list()
+        with tf.GradientTape(persistent=True) as tape:
+            # Apply preprocessing
+            if self.all_framework_preprocessing:
+                x_grad = tf.convert_to_tensor(x)
+                tape.watch(x_grad)
+                x_input, _ = self._apply_preprocessing(x_grad, y=None, fit=False)
+            else:
+                x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+                x_grad = tf.convert_to_tensor(x_preprocessed)
+                tape.watch(x_grad)
+                x_input = x_grad
 
-                for i in range(self.nb_classes):
-                    with tf.GradientTape() as tape:
-                        x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
-                        tape.watch(x_preprocessed_tf)
-                        predictions = self._model(x_preprocessed_tf)
+            tape.watch(x_input)
+
+            # Compute the gradients
+            if tf.executing_eagerly():
+                if label is None:
+                    # Compute the gradients w.r.t. all classes
+                    class_gradients = list()
+
+                    for i in range(self.nb_classes):
+                        predictions = self._model(x_input)
                         prediction = predictions[:, i]
                         tape.watch(prediction)
 
-                    class_gradient = tape.gradient(prediction, x_preprocessed_tf).numpy()
-                    class_gradients.append(class_gradient)
+                        class_gradient = tape.gradient(prediction, x_input).numpy()
+                        class_gradients.append(class_gradient)
 
-                gradients = np.swapaxes(np.array(class_gradients), 0, 1)
+                    gradients = np.swapaxes(np.array(class_gradients), 0, 1)
 
-            elif isinstance(label, (int, np.integer)):
-                # Compute the gradients only w.r.t. the provided label
-                with tf.GradientTape() as tape:
-                    x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
-                    tape.watch(x_preprocessed_tf)
-                    predictions = self._model(x_preprocessed_tf)
+                elif isinstance(label, (int, np.integer)):
+                    # Compute the gradients only w.r.t. the provided label
+                    predictions = self._model(x_input)
                     prediction = predictions[:, label]
                     tape.watch(prediction)
 
-                class_gradient = tape.gradient(prediction, x_preprocessed_tf).numpy()
-                gradients = np.expand_dims(class_gradient, axis=1)
+                    class_gradient = tape.gradient(prediction, x_grad).numpy()
+                    gradients = np.expand_dims(class_gradient, axis=1)
 
-            else:
-                # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
-                class_gradients = list()
-                unique_labels = list(np.unique(label))
+                else:
+                    # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
+                    class_gradients = list()
+                    unique_labels = list(np.unique(label))
 
-                for unique_label in unique_labels:
-                    with tf.GradientTape() as tape:
-                        x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
-                        tape.watch(x_preprocessed_tf)
-                        predictions = self._model(x_preprocessed_tf)
+                    for unique_label in unique_labels:
+                        predictions = self._model(x_input)
                         prediction = predictions[:, unique_label]
                         tape.watch(prediction)
 
-                    class_gradient = tape.gradient(prediction, x_preprocessed_tf).numpy()
-                    class_gradients.append(class_gradient)
+                        class_gradient = tape.gradient(prediction, x_grad).numpy()
+                        class_gradients.append(class_gradient)
 
-                gradients = np.swapaxes(np.array(class_gradients), 0, 1)
-                lst = [unique_labels.index(i) for i in label]
-                gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
+                    gradients = np.swapaxes(np.array(class_gradients), 0, 1)
+                    lst = [unique_labels.index(i) for i in label]
+                    gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
 
-        else:
-            raise NotImplementedError("Expecting eager execution.")
+                if not self.all_framework_preprocessing:
+                    gradients = self._apply_preprocessing_gradient(x, gradients)
+
+            else:
+                raise NotImplementedError("Expecting eager execution.")
 
         return gradients
 
-    def loss_gradient_framework(self, x: "tf.Tensor", y: "tf.Tensor", **kwargs) -> "tf.Tensor":
+    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
-        Compute the gradient of the loss function w.r.t. `x`.
+        Compute the loss function w.r.t. `x`.
 
-        :param x: Input with shape as expected by the model.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :return: Gradients of the same shape as `x`.
+        :param x: Sample input with shape as expected by the model.
+        :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices
+                  of shape `(nb_samples,)`.
+        :param reduction: Specifies the reduction to apply to the output: 'none' | 'mean' | 'sum'.
+                   'none': no reduction will be applied
+                   'mean': the sum of the output will be divided by the number of elements in the output,
+                   'sum': the output will be summed.
+        :return: Array of losses of the same shape as `x`.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         if self._loss_object is None:
-            raise ValueError("Loss object is necessary for computing the loss gradient.")
+            raise TypeError("The loss function `loss_object` is required for computing losses, but it is not defined.")
+        prev_reduction = self._loss_object.reduction
+        if reduction == "none":
+            self._loss_object.reduction = tf.keras.losses.Reduction.NONE
+        elif reduction == "mean":
+            self._loss_object.reduction = tf.keras.losses.Reduction.SUM_OVER_BATCH_SIZE
+        elif reduction == "sum":
+            self._loss_object.reduction = tf.keras.losses.Reduction.SUM
+
+        # Apply preprocessing
+        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
 
         if tf.executing_eagerly():
-            with tf.GradientTape() as tape:
-                tape.watch(x)
-                predictions = self._model(x)
-
-                if self._reduce_labels:
-                    loss = self._loss_object(tf.argmax(y, axis=1), predictions)
-                else:
-                    loss = self._loss_object(y, predictions)
-
-                loss_grads = tape.gradient(loss, x)
-
+            x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
+            predictions = self._model(x_preprocessed_tf)
+            if self._reduce_labels:
+                loss = self._loss_object(np.argmax(y, axis=1), predictions)
+            else:
+                loss = self._loss_object(y, predictions)
         else:
             raise NotImplementedError("Expecting eager execution.")
 
-        return loss_grads
+        self._loss_object.reduction = prev_reduction
+        return loss.numpy()
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss_gradient(
+        self, x: Union[np.ndarray, "tf.Tensor"], y: Union[np.ndarray, "tf.Tensor"], **kwargs
+    ) -> Union[np.ndarray, "tf.Tensor"]:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
@@ -954,26 +1025,38 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 "defined."
             )
 
-        # Apply preprocessing
-        x_preprocessed, _ = self._apply_preprocessing(x, y, fit=False)
-
         if tf.executing_eagerly():
             with tf.GradientTape() as tape:
-                x_preprocessed_tf = tf.convert_to_tensor(x_preprocessed)
-                tape.watch(x_preprocessed_tf)
-                predictions = self._model(x_preprocessed_tf)
+                # Apply preprocessing
+                if self.all_framework_preprocessing:
+                    x_grad = tf.convert_to_tensor(x)
+                    tape.watch(x_grad)
+                    x_input, _ = self._apply_preprocessing(x_grad, y=None, fit=False)
+                else:
+                    x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
+                    x_grad = tf.convert_to_tensor(x_preprocessed)
+                    tape.watch(x_grad)
+                    x_input = x_grad
+
+                predictions = self._model(x_input)
+
                 if self._reduce_labels:
                     loss = self._loss_object(np.argmax(y, axis=1), predictions)
                 else:
                     loss = self._loss_object(y, predictions)
 
-            gradients = tape.gradient(loss, x_preprocessed_tf).numpy()
+            gradients = tape.gradient(loss, x_grad)
+
+            if isinstance(x, np.ndarray):
+                gradients = gradients.numpy()
 
         else:
             raise NotImplementedError("Expecting eager execution.")
 
         # Apply preprocessing gradients
-        gradients = self._apply_preprocessing_gradient(x, gradients)
+        if not self.all_framework_preprocessing:
+            gradients = self._apply_preprocessing_gradient(x, gradients)
+
         return gradients
 
     def _get_layers(self) -> list:
@@ -985,7 +1068,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         raise NotImplementedError
 
     @property
-    def layer_names(self) -> List[str]:
+    def layer_names(self) -> Optional[List[str]]:
         """
         Return the hidden layers in the model, if applicable.
 
@@ -998,14 +1081,14 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if isinstance(self._model, tf.keras.Model) or isinstance(self._model, tf.keras.model.Sequential):
+        if isinstance(self._model, (tf.keras.Model, tf.keras.models.Sequential)):
             return self._model.layers
-        else:
-            return None  # type: ignore
+
+        return None  # type: ignore
 
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int = 128, framework: bool = False
-    ) -> np.ndarray:
+    ) -> Optional[np.ndarray]:
         """
         Return the output of the specified layer for input `x`. `layer` is specified by layer index (between 0 and
         `nb_layers - 1`) or by name. The number of layers can be determined by counting the results returned by
@@ -1021,6 +1104,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
 
         if isinstance(self._model, tf.keras.models.Sequential):
             i_layer = None
+            if self.layer_names is None:
+                raise ValueError("No layer names identified.")
+
             if isinstance(layer, six.string_types):
                 if layer not in self.layer_names:
                     raise ValueError("Layer name %s is not part of the graph." % layer)
@@ -1055,8 +1141,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
                 activations[begin:end] = activation_model([x_preprocessed[begin:end]]).numpy()
 
             return activations
-        else:
-            return None
+
+        return None
 
     def set_learning_phase(self, train: bool) -> None:
         """
