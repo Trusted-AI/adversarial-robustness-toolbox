@@ -322,7 +322,7 @@ def clever_t(
 
     # Compute gradients for all samples in rand_pool
     for i in range(batch_size):
-        rand_pool_batch = rand_pool[i * pool_factor:(i+1) * pool_factor]
+        rand_pool_batch = rand_pool[i * pool_factor:(i + 1) * pool_factor]
 
         # Compute gradients
         grad_pred_class = classifier.class_gradient(rand_pool_batch, label=pred_class)
