@@ -53,14 +53,12 @@ class TestImperceptibleASR:
         try:
             test_input, test_target = audio_data
 
-            mocker.patch.object(ImperceptibleASR, "_create_adversarial")
-            mocker.patch.object(ImperceptibleASR, "_create_imperceptible")
+            mocker.patch.object(ImperceptibleASR, "_generate_batch")
 
             imperceptible_asr = ImperceptibleASR(estimator=asr_dummy_estimator(), masker=PsychoacousticMasker())
-            _ = imperceptible_asr._generate_batch(test_input, test_target)
+            _ = imperceptible_asr.generate(test_input, test_target)
 
-            imperceptible_asr._create_adversarial.assert_called()
-            imperceptible_asr._create_imperceptible.assert_called()
+            imperceptible_asr._generate_batch.assert_called()
         except ARTTestException as e:
             art_warning(e)
 
