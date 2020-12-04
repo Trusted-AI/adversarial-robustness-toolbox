@@ -21,7 +21,7 @@ This module implements the classifier `TensorFlowGenerator` for TensorFlow model
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
 
 from art.estimators.generation.generator import GeneratorMixin
 from art.estimators.tensorflow import TensorFlowEstimator
@@ -80,6 +80,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
@@ -89,7 +90,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
 
         self._input_ph = input_ph
         self._encoding_length = self._input_ph.shape[1]
-        self._model = model
         self._loss = loss
         if self._loss is not None:
             self._grad = tf.gradients(self._loss, self._input_ph)
@@ -103,6 +103,15 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
             raise ValueError("A session cannot be None.")
             # TODO do the same thing for all not None variables
         self._sess = sess
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """

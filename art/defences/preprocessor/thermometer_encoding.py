@@ -54,7 +54,7 @@ class ThermometerEncoding(Preprocessor):
 
     params = ["clip_values", "num_space", "channel_index", "channels_first"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         clip_values: "CLIP_VALUES_TYPE",
@@ -76,7 +76,7 @@ class ThermometerEncoding(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 2:
             channels_first = False
         elif channel_index == 1:
@@ -84,23 +84,12 @@ class ThermometerEncoding(Preprocessor):
         elif channel_index is not Deprecated:
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
-        super().__init__()
-        self._is_fitted = True
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
+        super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.clip_values = clip_values
         self.num_space = num_space
         self.channel_index = channel_index
         self.channels_first = channels_first
         self._check_params()
-
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
 
     def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
         """
@@ -168,12 +157,6 @@ class ThermometerEncoding(Preprocessor):
             grad = np.transpose(grad, (0,) + (len(x.shape) - 1,) + tuple(range(1, len(x.shape) - 1)))
 
         return grad / (self.clip_values[1] - self.clip_values[0])
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         if not isinstance(self.num_space, (int, np.int)) or self.num_space <= 0:

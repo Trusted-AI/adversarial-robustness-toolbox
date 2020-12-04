@@ -21,7 +21,7 @@ This module implements the classifier `TensorFlowEncoder` for TensorFlow models.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Any, Dict, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Union, Tuple, TYPE_CHECKING
 
 from art.estimators.encoding.encoder import EncoderMixin
 from art.estimators.tensorflow import TensorFlowEstimator
@@ -80,6 +80,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
@@ -90,7 +91,6 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         self._nb_classes = int(model.get_shape()[-1])
         self._input_shape = tuple(input_ph.get_shape().as_list()[1:])
         self._input_ph = input_ph
-        self._model = model
         self._encoding_length = self._model.shape[1]
         self._loss = loss
         if feed_dict is None:
@@ -106,6 +106,15 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         # Get the loss gradients graph
         if self._loss is not None:
             self._loss_grads = tf.gradients(self._loss, self._input_ph)[0]
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def predict(self, x: "np.ndarray", batch_size: int = 128, **kwargs):
         """

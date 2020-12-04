@@ -17,7 +17,6 @@
 # SOFTWARE.
 """
 This module implements attribute inference attacks.
-
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
@@ -27,7 +26,7 @@ from typing import Optional
 import numpy as np
 
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier
-from art.attacks import AttributeInferenceAttack
+from art.attacks.attack import AttributeInferenceAttack
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +54,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
         :param attack_feature: The index of the feature to be attacked.
         """
         super().__init__(estimator=classifier, attack_feature=attack_feature)
+        self._check_params()
 
     def infer(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -138,3 +138,7 @@ class AttributeInferenceWhiteBoxDecisionTree(AttributeInferenceAttack):
                 for index, value in enumerate(predicted_pred)
             ]
         )
+
+    def _check_params(self) -> None:
+        if self.attack_feature < 0:
+            raise ValueError("Attack feature must be positive.")

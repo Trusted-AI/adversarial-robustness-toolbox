@@ -27,7 +27,7 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 import numpy as np
 import six
 
-from art.config import ART_NUMPY_DTYPE, ART_DATA_PATH
+from art import config
 from art.estimators.mxnet import MXEstimator
 from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.utils import Deprecated, deprecated_keyword_arg, check_and_transform_label_format
@@ -49,7 +49,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
     Wrapper class for importing MXNet Gluon models.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         model: "mx.gluon.Block",
@@ -91,7 +91,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         """
         import mxnet as mx  # lgtm [py/repeated-import]
 
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:
@@ -100,6 +100,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
@@ -108,7 +109,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             preprocessing=preprocessing,
         )
 
-        self._model = model
         self._loss = loss
         self._nb_classes = nb_classes
         self._input_shape = input_shape
@@ -122,6 +122,15 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         # Get the internal layer
         self._layer_names = self._get_layers()
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 20, **kwargs) -> None:
         """
@@ -156,7 +165,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             # Train for one epoch
             for m in range(nb_batch):
                 x_batch = mx.nd.array(
-                    x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]].astype(ART_NUMPY_DTYPE)
+                    x_preprocessed[ind[m * batch_size : (m + 1) * batch_size]].astype(config.ART_NUMPY_DTYPE)
                 ).as_in_context(self._ctx)
                 y_batch = mx.nd.array(y_preprocessed[ind[m * batch_size : (m + 1) * batch_size]]).as_in_context(
                     self._ctx
@@ -195,13 +204,13 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         if (
             isinstance(generator, MXDataGenerator)
-            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
+            and (self.preprocessing is None or self.preprocessing == [])
             and self.preprocessing == (0, 1)
         ):
             # Train directly in MXNet
             for _ in range(nb_epochs):
                 for x_batch, y_batch in generator.iterator:
-                    x_batch = mx.nd.array(x_batch.astype(ART_NUMPY_DTYPE)).as_in_context(self._ctx)
+                    x_batch = mx.nd.array(x_batch.astype(config.ART_NUMPY_DTYPE)).as_in_context(self._ctx)
                     y_batch = mx.nd.argmax(y_batch, axis=1)
                     y_batch = mx.nd.array(y_batch).as_in_context(self._ctx)
 
@@ -246,7 +255,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             )
 
             # Predict
-            x_batch = mx.nd.array(x_preprocessed[begin:end].astype(ART_NUMPY_DTYPE), ctx=self._ctx)
+            x_batch = mx.nd.array(x_preprocessed[begin:end].astype(config.ART_NUMPY_DTYPE), ctx=self._ctx)
             x_batch.attach_grad()
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model(x_batch)
@@ -290,7 +299,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
-        x_preprocessed = mx.nd.array(x_preprocessed.astype(ART_NUMPY_DTYPE), ctx=self._ctx)
+        x_preprocessed = mx.nd.array(x_preprocessed.astype(config.ART_NUMPY_DTYPE), ctx=self._ctx)
         x_preprocessed.attach_grad()
 
         if label is None:
@@ -349,7 +358,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
         y_preprocessed = mx.nd.array([np.argmax(y_preprocessed, axis=1)], ctx=self._ctx).T
-        x_preprocessed = mx.nd.array(x_preprocessed.astype(ART_NUMPY_DTYPE), ctx=self._ctx)
+        x_preprocessed = mx.nd.array(x_preprocessed.astype(config.ART_NUMPY_DTYPE), ctx=self._ctx)
         x_preprocessed.attach_grad()
 
         with mx.autograd.record(train_mode=train_mode):
@@ -445,7 +454,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             )
 
             # Predict
-            x_batch = mx.nd.array(x_preprocessed[begin:end].astype(ART_NUMPY_DTYPE), ctx=self._ctx)
+            x_batch = mx.nd.array(x_preprocessed[begin:end].astype(config.ART_NUMPY_DTYPE), ctx=self._ctx)
             x_batch.attach_grad()
             with mx.autograd.record(train_mode=train_mode):
                 preds = self._model[layer_ind](x_batch)
@@ -475,7 +484,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                      the default data location of the library `ART_DATA_PATH`.
         """
         if path is None:
-            full_path = os.path.join(ART_DATA_PATH, filename)
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
@@ -488,7 +497,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
     def __repr__(self):
         repr_ = (
             "%s(model=%r, loss=%r, input_shape=%r, nb_classes=%r, optimizer=%r, ctx=%r, channel_index=%r,"
-            " channels_first=%r, clip_values=%r, preprocessing_defences=%r, postprocessing_defences=%r,"
+            " channels_first=%r, clip_values=%r, preprocessing=%r, postprocessing_defences=%r,"
             " preprocessing=%r)"
             % (
                 self.__module__ + "." + self.__class__.__name__,
@@ -501,7 +510,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 self.channel_index,
                 self.channels_first,
                 self.clip_values,
-                self.preprocessing_defences,
+                self.preprocessing,
                 self.postprocessing_defences,
                 self.preprocessing,
             )

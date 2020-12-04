@@ -13,3 +13,15 @@ Membership Inference Black-Box Rule-Based
 .. autoclass:: MembershipInferenceBlackBoxRuleBased
    :members:
    :special-members:
+
+Membership Inference Label-Only - Decision Boundary
+---------------------------------------------------
+.. autoclass:: LabelOnlyDecisionBoundary
+   :members:
+   :special-members:
+
+Membership Inference Label-Only - Gap Attack
+--------------------------------------------
+.. autoclass:: LabelOnlyGapAttack
+   :members:
+   :special-members:

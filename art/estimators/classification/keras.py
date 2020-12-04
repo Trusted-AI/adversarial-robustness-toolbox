@@ -38,7 +38,7 @@ from typing import (
 import numpy as np
 import six
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.estimators.keras import KerasEstimator
 from art.estimators.classification.classifier import (
     ClassifierMixin,
@@ -66,7 +66,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     Wrapper class for importing Keras models.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         model: KERAS_MODEL_TYPE,
@@ -105,7 +105,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                              with this index will be considered for computing gradients. For models with only one output
                              layer this values is not required.
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:
@@ -114,6 +114,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             preprocessing_defences=preprocessing_defences,
             postprocessing_defences=postprocessing_defences,
@@ -122,7 +123,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             channels_first=channels_first,
         )
 
-        self._model = model
         self._input_layer = input_layer
         self._output_layer = output_layer
 
@@ -299,6 +299,15 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         # Get the internal layer
         self._layer_names = self._get_layers()
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self._input_shape  # type: ignore
 
     def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
@@ -521,11 +530,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         from art.data_generators import KerasDataGenerator
 
         # Try to use the generator as a Keras native generator, otherwise use it through the `DataGenerator` interface
-        if (
-            isinstance(generator, KerasDataGenerator)
-            and (self.preprocessing_defences is None or self.preprocessing_defences == [])
-            and self.preprocessing == (0, 1)
-        ):
+        if isinstance(generator, KerasDataGenerator) and not self.preprocessing:
             try:
                 self._model.fit_generator(generator.iterator, epochs=nb_epochs, **kwargs)
             except ValueError:
@@ -712,7 +717,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                      the default data location of the library `ART_DATA_PATH`.
         """
         if path is None:
-            full_path = os.path.join(ART_DATA_PATH, filename)
+            full_path = os.path.join(config.ART_DATA_PATH, filename)
         else:
             full_path = os.path.join(path, filename)
         folder = os.path.split(full_path)[0]
@@ -774,7 +779,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             from keras.models import load_model
 
-        full_path = os.path.join(ART_DATA_PATH, state["model_name"])
+        full_path = os.path.join(config.ART_DATA_PATH, state["model_name"])
         model = load_model(str(full_path))
 
         self._model = model

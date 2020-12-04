@@ -63,7 +63,7 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         """
         Create an instance of local spatial smoothing.
 
-        :window_size: Size of spatial smoothing window.
+        :param window_size: Size of spatial smoothing window.
         :param channels_first: Set channels first or last.
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
@@ -73,10 +73,8 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
         """
         import torch  # lgtm [py/repeated-import]
 
-        super().__init__()
+        super().__init__(apply_fit=apply_fit, apply_predict=apply_predict)
 
-        self._apply_fit = apply_fit
-        self._apply_predict = apply_predict
         self.channels_first = channels_first
         self.window_size = window_size
         self.clip_values = clip_values
@@ -144,14 +142,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
 
         self.median_blur = MedianBlurCustom(kernel_size=(self.window_size, self.window_size))
 
-    @property
-    def apply_fit(self) -> bool:
-        return self._apply_fit
-
-    @property
-    def apply_predict(self) -> bool:
-        return self._apply_predict
-
     def forward(
         self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
@@ -204,54 +194,6 @@ class SpatialSmoothingPyTorch(PreprocessorPyTorch):
             x = x.clamp(min=self.clip_values[0], max=self.clip_values[1])
 
         return x, y
-
-    def estimate_forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> "torch.Tensor":
-        """
-        No need to estimate, since the forward pass is differentiable.
-        """
-        return self.forward(x, y)[0]
-
-    def __call__(self, x: np.ndarray, y: Optional[np.ndarray] = None) -> Tuple[np.ndarray, Optional[np.ndarray]]:
-        """
-        Apply local spatial smoothing to sample `x`.
-
-        :param x: Sample to smooth with shape `(batch_size, width, height, depth)`.
-        :param y: Labels of the sample `x`. This function does not affect them in any way.
-        :return: Smoothed sample.
-        """
-        import torch  # lgtm [py/repeated-import]
-
-        x = torch.tensor(x, device=self._device)
-        if y is not None:
-            y = torch.tensor(y, device=self._device)
-
-        with torch.no_grad():
-            x, y = self.forward(x, y)
-
-        result = x.cpu().numpy()
-        if y is not None:
-            y = y.cpu().numpy()
-        return result, y
-
-    # Backward compatibility.
-    def estimate_gradient(self, x: np.ndarray, grad: np.ndarray) -> np.ndarray:
-        import torch  # lgtm [py/repeated-import]
-
-        x = torch.tensor(x, device=self._device, requires_grad=True)
-        grad = torch.tensor(grad, device=self._device)
-
-        x_prime = self.estimate_forward(x)
-        x_prime.backward(grad)
-        x_grad = x.grad.detach().cpu().numpy()
-        if x_grad.shape != x.shape:
-            raise ValueError("The input shape is {} while the gradient shape is {}".format(x.shape, x_grad.shape))
-        return x_grad
-
-    def fit(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> None:
-        """
-        No parameters to learn for this method; do nothing.
-        """
-        pass
 
     def _check_params(self) -> None:
         if not (isinstance(self.window_size, (int, np.int)) and self.window_size > 0):
