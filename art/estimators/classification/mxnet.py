@@ -148,7 +148,8 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         if self._optimizer is None:
             raise ValueError("An MXNet optimizer is required for fitting the model.")
-        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
+
+        training_mode = True
 
         y = check_and_transform_label_format(y, self.nb_classes)
 
@@ -171,7 +172,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                     self._ctx
                 )
 
-                with mx.autograd.record(train_mode=train_mode):
+                with mx.autograd.record(train_mode=training_mode):
                     # Perform prediction
                     preds = self._model(x_batch)
 
@@ -200,7 +201,8 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         if self._optimizer is None:
             raise ValueError("An MXNet optimizer is required for fitting the model.")
-        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else True
+
+        training_mode = True
 
         if (
             isinstance(generator, MXDataGenerator)
@@ -214,7 +216,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                     y_batch = mx.nd.argmax(y_batch, axis=1)
                     y_batch = mx.nd.array(y_batch).as_in_context(self._ctx)
 
-                    with mx.autograd.record(train_mode=train_mode):
+                    with mx.autograd.record(train_mode=training_mode):
                         # Perform prediction
                         preds = self._model(x_batch)
 
@@ -239,7 +241,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         """
         import mxnet as mx  # lgtm [py/repeated-import]
 
-        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
+        training_mode = False
 
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
@@ -257,7 +259,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             # Predict
             x_batch = mx.nd.array(x_preprocessed[begin:end].astype(config.ART_NUMPY_DTYPE), ctx=self._ctx)
             x_batch.attach_grad()
-            with mx.autograd.record(train_mode=train_mode):
+            with mx.autograd.record(train_mode=training_mode):
                 preds = self._model(x_batch)
 
             results[begin:end] = preds.asnumpy()
@@ -267,7 +269,9 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         return predictions
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int], None] = None, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
 
@@ -276,6 +280,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
@@ -314,7 +319,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
                 grads.append(grad)
             grads = np.swapaxes(np.array(grads), 0, 1)
         elif isinstance(label, (int, np.integer)):
-            with mx.autograd.record(train_mode=train_mode):
+            with mx.autograd.record(train_mode=training_mode):
                 preds = self._model(x_preprocessed)
                 class_slice = preds[:, label]
 
@@ -323,7 +328,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         else:
             unique_labels = list(np.unique(label))
 
-            with mx.autograd.record(train_mode=train_mode):
+            with mx.autograd.record(train_mode=training_mode):
                 preds = self._model(x_preprocessed)
                 class_slices = [preds[:, i] for i in unique_labels]
 
@@ -342,18 +347,17 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
 
         return grads
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape `(nb_samples, nb_classes)` or indices of shape
                   `(nb_samples,)`.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
         import mxnet as mx  # lgtm [py/repeated-import]
-
-        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
 
         # Apply preprocessing
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
@@ -361,7 +365,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         x_preprocessed = mx.nd.array(x_preprocessed.astype(config.ART_NUMPY_DTYPE), ctx=self._ctx)
         x_preprocessed.attach_grad()
 
-        with mx.autograd.record(train_mode=train_mode):
+        with mx.autograd.record(train_mode=training_mode):
             preds = self._model(x_preprocessed)
             loss = self._loss(preds, y_preprocessed)
 
@@ -417,8 +421,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         """
         import mxnet as mx  # lgtm [py/repeated-import]
 
-        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
-
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s is not part of the model." % layer)
@@ -456,22 +458,13 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
             # Predict
             x_batch = mx.nd.array(x_preprocessed[begin:end].astype(config.ART_NUMPY_DTYPE), ctx=self._ctx)
             x_batch.attach_grad()
-            with mx.autograd.record(train_mode=train_mode):
+            with mx.autograd.record(train_mode=False):
                 preds = self._model[layer_ind](x_batch)
 
             activations.append(preds.asnumpy())
 
         activations = np.vstack(activations)
         return activations
-
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        """
-        if isinstance(train, bool):
-            self._learning_phase = train
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
