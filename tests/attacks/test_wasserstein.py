@@ -466,9 +466,6 @@ class TestWasserstein(TestBase):
             def loss(self, x, y, **kwargs):
                 pass
 
-            def set_learning_phase(self):
-                pass
-
             def input_shape(self):
                 pass
 

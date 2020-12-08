@@ -481,16 +481,3 @@ def test_class_gradient(
         )
     except ARTTestException as e:
         art_warning(e)
-
-
-@pytest.mark.skipMlFramework("tensorflow", "non_dl_frameworks")
-def test_learning_phase(art_warning, image_dl_estimator):
-    try:
-        classifier, _ = image_dl_estimator()
-        classifier.set_learning_phase(False)
-        assert classifier.learning_phase is False
-        classifier.set_learning_phase(True)
-        assert classifier.learning_phase
-        assert hasattr(classifier, "_learning_phase")
-    except ARTTestException as e:
-        art_warning(e)

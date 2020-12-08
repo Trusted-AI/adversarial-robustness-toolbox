@@ -85,9 +85,6 @@ class ClassifierNeuralNetworkInstance(
     def layer_names(self):
         pass
 
-    def set_learning_phase(self, train):
-        pass
-
     def input_shape(self):
         pass
 
