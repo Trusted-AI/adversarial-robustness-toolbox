@@ -127,6 +127,8 @@ jobs:
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
   style:
     name: Style Check
     runs-on: ubuntu-latest
