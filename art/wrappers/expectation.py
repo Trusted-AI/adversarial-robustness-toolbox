@@ -159,14 +159,6 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradi
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: `True` if the learning phase is training, `False` if learning phase is not training.
-        """
-        raise NotImplementedError
-
     @property
     def nb_classes(self) -> int:
         """

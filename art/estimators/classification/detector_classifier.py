@@ -294,17 +294,6 @@ class DetectorClassifier(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        """
-        if isinstance(train, bool):
-            self._learning_phase = train
-            self.classifier.set_learning_phase(train=train)
-            self.detector.set_learning_phase(train=train)
-
     def save(self, filename: str, path: Optional[str] = None) -> None:
         """
         Save a model to file in the format specific to the backend framework.

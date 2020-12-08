@@ -491,10 +491,3 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
 
     def get_activations(self):
         raise NotImplementedError
-
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Do nothing.
-        """
-        if train:
-            raise NotImplementedError("Training is not implemented for this estimator.")

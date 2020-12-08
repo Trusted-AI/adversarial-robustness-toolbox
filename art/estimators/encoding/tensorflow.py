@@ -145,13 +145,6 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Do nothing.
-        """
-        if train:
-            raise NotImplementedError("Training is not implemented for this estimator.")
-
     def loss_gradient(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """
         No gradients to compute for this method; do nothing.

@@ -278,17 +278,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
-    def set_learning_phase(self, train: bool) -> None:
-        """
-        Set the learning phase for the backend framework.
-
-        :param train: True to set the learning phase to training, False to set it to prediction.
-        """
-        if self._learning_phase is not None and isinstance(train, bool):
-            for classifier in self._classifiers:
-                classifier.set_learning_phase(train)
-            self._learning_phase = train
-
     def __repr__(self):
         repr_ = (
             "%s(classifiers=%r, classifier_weights=%r, channel_index=%r, channels_first=%r, clip_values=%r, "

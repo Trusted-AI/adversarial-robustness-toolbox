@@ -151,9 +151,6 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         """
         raise NotImplementedError
 
-    def set_learning_phase(self, train: bool) -> None:
-        self.detector.set_learning_phase(train)
-
     def save(self, filename: str, path: Optional[str] = None) -> None:
         self.detector.save(filename, path)
 
@@ -298,9 +295,6 @@ class BinaryActivationDetector(
         :raises `NotImplementedException`: This method is not supported for detectors.
         """
         raise NotImplementedError
-
-    def set_learning_phase(self, train: bool) -> None:
-        self.detector.set_learning_phase(train)
 
     def save(self, filename: str, path: Optional[str] = None) -> None:
         self.detector.save(filename, path)
