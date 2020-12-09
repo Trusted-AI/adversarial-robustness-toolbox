@@ -27,7 +27,7 @@ import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-from tqdm import tqdm
+from tqdm import tqdm, trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE
@@ -75,6 +75,7 @@ class BoundaryAttack(EvasionAttack):
         num_trial: int = 25,
         sample_size: int = 20,
         init_size: int = 100,
+        min_epsilon: Optional[float] = None,
         verbose: bool = True,
     ) -> None:
         """
@@ -89,6 +90,7 @@ class BoundaryAttack(EvasionAttack):
         :param num_trial: Maximum number of trials per iteration.
         :param sample_size: Number of samples per trial.
         :param init_size: Maximum number of trials for initial generation of adversarial examples.
+        :param min_epsilon: Stop attack if perturbation is smaller than `min_epsilon`.
         :param verbose: Show progress bars.
         """
         super().__init__(estimator=estimator)
@@ -101,9 +103,12 @@ class BoundaryAttack(EvasionAttack):
         self.num_trial = num_trial
         self.sample_size = sample_size
         self.init_size = init_size
+        self.min_epsilon = min_epsilon
         self.batch_size = 1
         self.verbose = verbose
         self._check_params()
+
+        self.curr_adv = None
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> np.ndarray:
         """
@@ -230,8 +235,10 @@ class BoundaryAttack(EvasionAttack):
         self.curr_delta = initial_delta
         self.curr_epsilon = initial_epsilon
 
+        self.curr_adv = x_adv
+
         # Main loop to wander around the boundary
-        for _ in range(self.max_iter):
+        for _ in trange(self.max_iter, desc="Boundary attack - iterations", disable=not self.verbose):
             # Trust region method to adjust delta
             for _ in range(self.num_trial):
                 potential_advs = []
@@ -273,10 +280,14 @@ class BoundaryAttack(EvasionAttack):
 
                 if epsilon_ratio > 0:
                     x_adv = potential_advs[np.where(satisfied)[0][0]]
+                    self.curr_adv = x_adv
                     break
             else:
                 logger.warning("Adversarial example found but not optimal.")
                 return x_advs[0]
+
+            if self.min_epsilon is not None and self.curr_epsilon < self.min_epsilon:
+                return x_adv
 
         return x_adv
 
@@ -299,20 +310,13 @@ class BoundaryAttack(EvasionAttack):
         # Project the perturbation onto sphere
         direction = original_sample - current_sample
 
-        if len(self.estimator.input_shape) == 3:
-            channel_index = 1 if self.estimator.channels_first else 3
-            perturb = np.swapaxes(perturb, 0, channel_index - 1)
-            direction = np.swapaxes(direction, 0, channel_index - 1)
-            for i in range(direction.shape[0]):
-                direction[i] /= np.linalg.norm(direction[i])
-                perturb[i] -= np.dot(np.dot(perturb[i], direction[i].T), direction[i])
+        direction_flat = direction.flatten()
+        perturb_flat = perturb.flatten()
 
-            perturb = np.swapaxes(perturb, 0, channel_index - 1)
-        elif len(self.estimator.input_shape) == 1:
-            direction /= np.linalg.norm(direction)
-            perturb -= np.dot(perturb, direction.T) * direction
-        else:
-            raise ValueError("Input shape not recognised.")
+        direction_flat /= np.linalg.norm(direction_flat)
+        perturb_flat -= np.dot(perturb_flat, direction_flat.T) * direction_flat
+        perturb = perturb_flat.reshape(self.estimator.input_shape)
+
         hypotenuse = np.sqrt(1 + delta ** 2)
         perturb = ((1 - hypotenuse) * (current_sample - original_sample) + perturb) / hypotenuse
         return perturb
@@ -402,6 +406,9 @@ class BoundaryAttack(EvasionAttack):
 
         if self.step_adapt <= 0 or self.step_adapt >= 1:
             raise ValueError("The adaptation factor must be in the range (0, 1).")
+
+        if self.min_epsilon is not None and (isinstance(self.min_epsilon, float) or self.min_epsilon <= 0):
+            raise ValueError("The minimum epsilon must be a positive float.")
 
         if not isinstance(self.verbose, bool):
             raise ValueError("The argument `verbose` has to be of type bool.")

@@ -1,8 +1,6 @@
 """
-Module for preprocessing steps providing accurate or estimated gradients.
+Module for preprocessing operations.
 """
-from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
-from art.preprocessing.standardisation_mean_std.standardisation_mean_std_pytorch import StandardisationMeanStdPyTorch
-from art.preprocessing.standardisation_mean_std.standardisation_mean_std_tensorflow import (
-    StandardisationMeanStdTensorFlowV2,
-)
+from art.preprocessing.preprocessing import Preprocessor  # lgtm [py/unused-import]
+from art.preprocessing.preprocessing import PreprocessorPyTorch  # lgtm [py/unused-import]
+from art.preprocessing.preprocessing import PreprocessorTensorFlowV2  # lgtm [py/unused-import]

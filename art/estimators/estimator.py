@@ -340,7 +340,7 @@ class NeuralNetworkMixin(ABC):
     has to be mixed in with class `BaseEstimator`.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(self, channels_first: Optional[bool], channel_index=Deprecated, **kwargs) -> None:
         """
         Initialize a neural network attributes.
@@ -349,7 +349,7 @@ class NeuralNetworkMixin(ABC):
         :type channel_index: `int`
         :param channels_first: Set channels first or last.
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 3:
             channels_first = False
         elif channel_index == 1:
@@ -456,7 +456,7 @@ class NeuralNetworkMixin(ABC):
         raise NotImplementedError
 
     @property  # type: ignore
-    @deprecated(end_version="1.5.0", replaced_by="channels_first")
+    @deprecated(end_version="1.6.0", replaced_by="channels_first")
     def channel_index(self) -> Optional[int]:
         """
         :return: Index of the axis containing the color channels in the samples `x`.

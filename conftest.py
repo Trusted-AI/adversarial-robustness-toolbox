@@ -38,7 +38,7 @@ from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt
 
 logger = logging.getLogger(__name__)
 
-deep_learning_frameworks = ["keras", "tensorflow1", "tensorflow2", "pytorch", "kerastf", "mxnet"]
+deep_learning_frameworks = ["keras", "tensorflow1", "tensorflow2", "tensorflow2v1", "pytorch", "kerastf", "mxnet"]
 non_deep_learning_frameworks = ["scikitlearn"]
 
 art_supported_frameworks = []
@@ -50,6 +50,7 @@ master_seed(1234)
 
 def get_default_framework():
     import tensorflow as tf
+
     default_framework = "tensorflow"
 
     if tf.__version__[0] == "2":
@@ -66,11 +67,13 @@ def pytest_addoption(parser):
         action="store",
         default=get_default_framework(),
         help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is `tensorflow`. "
-             "Other options available are {0}".format(art_supported_frameworks),
+        "Other options available are {0}".format(art_supported_frameworks),
     )
     parser.addoption(
-        "--skip_travis", action="store", default=False,
-        help="Whether tests annotated with the decorator skip_travis should be skipped or not"
+        "--skip_travis",
+        action="store",
+        default=False,
+        help="Whether tests annotated with the decorator skip_travis should be skipped or not",
     )
 
 
@@ -99,17 +102,20 @@ def image_dl_estimator_defended(framework):
             kr_classifier = get_image_classifier_kr(**kwargs)
             # Get the ready-trained Keras model
 
-            classifier = KerasClassifier(model=kr_classifier._model, clip_values=(0, 1),
-                                         preprocessing_defences=defenses)
+            classifier = KerasClassifier(
+                model=kr_classifier._model, clip_values=(0, 1), preprocessing_defences=defenses
+            )
 
         if framework == "kerastf":
             kr_tf_classifier = get_image_classifier_kr_tf(**kwargs)
-            classifier = KerasClassifier(model=kr_tf_classifier._model, clip_values=(0, 1),
-                                         preprocessing_defences=defenses)
+            classifier = KerasClassifier(
+                model=kr_tf_classifier._model, clip_values=(0, 1), preprocessing_defences=defenses
+            )
 
         if classifier is None:
-            raise ARTTestFixtureNotImplemented("no defended image estimator", image_dl_estimator_defended.__name__,
-                                               framework, {"defenses": defenses})
+            raise ARTTestFixtureNotImplemented(
+                "no defended image estimator", image_dl_estimator_defended.__name__, framework, {"defenses": defenses}
+            )
         return classifier, sess
 
     return _image_dl_estimator_defended
@@ -131,8 +137,9 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
         ]
 
         if len(classifier_tested) == 0:
-            raise ARTTestFixtureNotImplemented("no estimator available", image_dl_estimator_for_attack.__name__,
-                                               framework, {"attack": attack})
+            raise ARTTestFixtureNotImplemented(
+                "no estimator available", image_dl_estimator_for_attack.__name__, framework, {"attack": attack}
+            )
         return classifier_tested[0]
 
     return _image_dl_estimator_for_attack
@@ -174,6 +181,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
     def _get_image_iterator():
         if framework == "keras" or framework == "kerastf":
             from keras.preprocessing.image import ImageDataGenerator
+
             keras_gen = ImageDataGenerator(
                 width_shift_range=0.075,
                 height_shift_range=0.075,
@@ -187,6 +195,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
 
         if framework == "tensorflow1":
             import tensorflow as tf
+
             x_tensor = tf.convert_to_tensor(x_train_mnist.reshape(10, 100, 28, 28, 1))
             y_tensor = tf.convert_to_tensor(y_train_mnist.reshape(10, 100, 10))
             dataset = tf.data.Dataset.from_tensor_slices((x_tensor, y_tensor))
@@ -194,6 +203,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
 
         if framework == "pytorch":
             import torch
+
             # Create tensors from data
             x_train_tens = torch.from_numpy(x_train_mnist)
             x_train_tens = x_train_tens.float()
@@ -203,6 +213,7 @@ def image_iterator(framework, get_default_mnist_subset, default_batch_size):
 
         if framework == "mxnet":
             from mxnet import gluon
+
             dataset = gluon.data.dataset.ArrayDataset(x_train_mnist, y_train_mnist)
             return gluon.data.DataLoader(dataset, batch_size=5, shuffle=True)
 
@@ -221,30 +232,35 @@ def image_data_generator(framework, get_default_mnist_subset, image_iterator, de
         data_generator = None
         if framework == "keras" or framework == "kerastf":
             data_generator = KerasDataGenerator(
-                iterator=image_it,
-                size=x_train_mnist.shape[0],
-                batch_size=default_batch_size,
+                iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size,
             )
 
         if framework == "tensorflow1":
             data_generator = TensorFlowDataGenerator(
-                sess=kwargs["sess"], iterator=image_it, iterator_type="initializable", iterator_arg={},
+                sess=kwargs["sess"],
+                iterator=image_it,
+                iterator_type="initializable",
+                iterator_arg={},
                 size=x_train_mnist.shape[0],
                 batch_size=default_batch_size,
             )
 
         if framework == "pytorch":
-            data_generator = PyTorchDataGenerator(iterator=image_it, size=x_train_mnist.shape[0],
-                                                  batch_size=default_batch_size)
+            data_generator = PyTorchDataGenerator(
+                iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
+            )
 
         if framework == "mxnet":
-            data_generator = MXDataGenerator(iterator=image_it, size=x_train_mnist.shape[0],
-                                             batch_size=default_batch_size)
+            data_generator = MXDataGenerator(
+                iterator=image_it, size=x_train_mnist.shape[0], batch_size=default_batch_size
+            )
 
         if data_generator is None:
             raise ARTTestFixtureNotImplemented(
-                "framework {0} does not current have any data generator implemented", image_data_generator.__name__,
-                framework)
+                "framework {0} does not current have any data generator implemented",
+                image_data_generator.__name__,
+                framework,
+            )
 
         return data_generator
 
@@ -272,7 +288,7 @@ def store_expected_values(request):
 
         try:
             with open(
-                    os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
             ) as f:
                 expected_values = json.load(f)
         except FileNotFoundError:
@@ -282,7 +298,7 @@ def store_expected_values(request):
         expected_values[test_name] = values_to_store
 
         with open(
-                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 
@@ -305,7 +321,7 @@ def expected_values(framework, request):
 
     def _expected_values():
         with open(
-                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
         ) as f:
             expected_values = json.load(f)
 
@@ -318,7 +334,9 @@ def expected_values(framework, request):
             else:
                 raise ARTTestFixtureNotImplemented(
                     "Couldn't find any expected values for test {0}".format(request.node.name),
-                    expected_values.__name__, framework_name)
+                    expected_values.__name__,
+                    framework_name,
+                )
 
     return _expected_values
 
@@ -335,10 +353,10 @@ def get_image_classifier_mx_model():
             super(Model, self).__init__(**kwargs)
             self.model = mxnet.gluon.nn.Sequential()
             self.model.add(
-                mxnet.gluon.nn.Conv2D(channels=1, kernel_size=7, activation="relu", ),
+                mxnet.gluon.nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
                 mxnet.gluon.nn.MaxPool2D(pool_size=4, strides=4),
                 mxnet.gluon.nn.Flatten(),
-                mxnet.gluon.nn.Dense(10, activation=None, ),
+                mxnet.gluon.nn.Dense(10, activation=None,),
             )
 
         def forward(self, x):
@@ -365,8 +383,11 @@ def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape)
         if from_logits is False:
             # due to the fact that only 1 instance of get_image_classifier_mx_model can be created in one session
             # this will be resolved once Mxnet allows for 2 models with identical weights to be created in 1 session
-            raise ARTTestFixtureNotImplemented("Currently only supporting Mxnet classifier with from_logit set to True",
-                                               get_image_classifier_mx_instance.__name__, framework)
+            raise ARTTestFixtureNotImplemented(
+                "Currently only supporting Mxnet classifier with from_logit set to True",
+                get_image_classifier_mx_instance.__name__,
+                framework,
+            )
 
         loss = mxnet.gluon.loss.SoftmaxCrossEntropyLoss(from_logits=from_logits)
         trainer = mxnet.gluon.Trainer(model.collect_params(), "sgd", {"learning_rate": 0.1})
@@ -401,8 +422,9 @@ def supported_losses_types(framework):
             # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
             return ["label", "function", "class"]
 
-        raise ARTTestFixtureNotImplemented("Could not find supported_losses_types", supported_losses_types.__name__,
-                                           framework)
+        raise ARTTestFixtureNotImplemented(
+            "Could not find supported_losses_types", supported_losses_types.__name__, framework
+        )
 
     return supported_losses_types
 
@@ -414,12 +436,15 @@ def supported_losses_logit(framework):
             return ["categorical_crossentropy_function_backend", "sparse_categorical_crossentropy_function_backend"]
         if framework == "kerastf":
             # if loss_type is not "label" and loss_name not in ["categorical_hinge", "kullback_leibler_divergence"]:
-            return ["categorical_crossentropy_function",
-                    "categorical_crossentropy_class",
-                    "sparse_categorical_crossentropy_function",
-                    "sparse_categorical_crossentropy_class"]
-        raise ARTTestFixtureNotImplemented("Could not find  supported_losses_logit", supported_losses_logit.__name__,
-                                           framework)
+            return [
+                "categorical_crossentropy_function",
+                "categorical_crossentropy_class",
+                "sparse_categorical_crossentropy_function",
+                "sparse_categorical_crossentropy_class",
+            ]
+        raise ARTTestFixtureNotImplemented(
+            "Could not find  supported_losses_logit", supported_losses_logit.__name__, framework
+        )
 
     return _supported_losses_logit
 
@@ -452,8 +477,9 @@ def supported_losses_proba(framework):
                 "kullback_leibler_divergence_class",
             ]
 
-        raise ARTTestFixtureNotImplemented("Could not find supported_losses_proba", supported_losses_proba.__name__,
-                                           framework)
+        raise ARTTestFixtureNotImplemented(
+            "Could not find supported_losses_proba", supported_losses_proba.__name__, framework
+        )
 
     return _supported_losses_proba
 
@@ -480,7 +506,9 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                     except NotImplementedError:
                         raise ARTTestFixtureNotImplemented(
                             "This combination of loss function options is currently not supported.",
-                            image_dl_estimator.__name__, framework)
+                            image_dl_estimator.__name__,
+                            framework,
+                        )
         if framework == "tensorflow1" or framework == "tensorflow2":
             if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs)
@@ -503,7 +531,8 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
 
         if classifier is None:
             raise ARTTestFixtureNotImplemented(
-                "no test deep learning estimator available", image_dl_estimator.__name__, framework)
+                "no test deep learning estimator available", image_dl_estimator.__name__, framework
+            )
 
         return classifier, sess
 
@@ -516,13 +545,19 @@ def art_warning(request):
         if type(exception) is ARTTestFixtureNotImplemented:
             if request.node.get_closest_marker("framework_agnostic"):
                 if not request.node.get_closest_marker("parametrize"):
-                    raise Exception("This test has marker framework_agnostic decorator which means it will only be ran "
-                                    "once. However the ART test exception was thrown, hence it is never run fully. ")
-            elif request.node.get_closest_marker("only_with_platform") and len(
-                    request.node.get_closest_marker("only_with_platform").args) == 1:
-                raise Exception("This test has marker only_with_platform decorator which means it will only be ran "
-                                "once. However the ARTTestFixtureNotImplemented exception was thrown, hence it is "
-                                "never run fully. ")
+                    raise Exception(
+                        "This test has marker framework_agnostic decorator which means it will only be ran "
+                        "once. However the ART test exception was thrown, hence it is never run fully. "
+                    )
+            elif (
+                request.node.get_closest_marker("only_with_platform")
+                and len(request.node.get_closest_marker("only_with_platform").args) == 1
+            ):
+                raise Exception(
+                    "This test has marker only_with_platform decorator which means it will only be ran "
+                    "once. However the ARTTestFixtureNotImplemented exception was thrown, hence it is "
+                    "never run fully. "
+                )
 
             # NotImplementedErrors are raised in ART whenever a test model does not exist for a specific
             # model/framework combination. By catching there here, we can provide a report at the end of each
@@ -541,7 +576,8 @@ def decision_tree_estimator(framework):
             return get_tabular_classifier_scikit_list(clipped=clipped, model_list_names=["decisionTreeClassifier"])[0]
 
         raise ARTTestFixtureNotImplemented(
-            "no test decision_tree_classifier available", decision_tree_estimator.__name__, framework)
+            "no test decision_tree_classifier available", decision_tree_estimator.__name__, framework
+        )
 
     return _decision_tree_estimator
 
@@ -566,8 +602,9 @@ def tabular_dl_estimator(framework):
                 classifier = get_tabular_classifier_pt()
 
         if classifier is None:
-            raise ARTTestFixtureNotImplemented("no deep learning tabular estimator available",
-                                               tabular_dl_estimator.__name__, framework)
+            raise ARTTestFixtureNotImplemented(
+                "no deep learning tabular estimator available", tabular_dl_estimator.__name__, framework
+            )
         return classifier
 
     return _tabular_dl_estimator
@@ -593,14 +630,18 @@ def framework(request):
     ml_framework = request.config.getoption("--mlFramework")
     if ml_framework == "tensorflow":
         import tensorflow as tf
+
         if tf.__version__[0] == "2":
             ml_framework = "tensorflow2"
         else:
             ml_framework = "tensorflow1"
 
     if ml_framework not in art_supported_frameworks:
-        raise Exception("mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
-            ml_framework, " ".join(art_supported_frameworks)))
+        raise Exception(
+            "mlFramework value {0} is unsupported. Please use one of these valid values: {1}".format(
+                ml_framework, " ".join(art_supported_frameworks)
+            )
+        )
     # if utils_test.is_valid_framework(mlFramework):
     #     raise Exception("The mlFramework specified was incorrect. Valid options available
     #     are {0}".format(art_supported_frameworks))
@@ -723,6 +764,7 @@ def skip_by_framework(request, framework):
         if "tensorflow" in framework_to_skip_list:
             framework_to_skip_list.append("tensorflow1")
             framework_to_skip_list.append("tensorflow2")
+            framework_to_skip_list.append("tensorflow2v1")
 
         if framework in framework_to_skip_list:
             pytest.skip("skipped on this platform: {}".format(framework))
@@ -735,8 +777,8 @@ def skip_travis(request):
     :param request:
     :return:
     """
-    if request.node.get_closest_marker('skip_travis') and request.config.getoption("--skip_travis"):
-        pytest.skip('skipped due to skip_travis being set to {}'.format(skip_travis))
+    if request.node.get_closest_marker("skip_travis") and request.config.getoption("--skip_travis"):
+        pytest.skip("skipped due to skip_travis being set to {}".format(skip_travis))
 
 
 @pytest.fixture

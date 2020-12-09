@@ -40,6 +40,7 @@ class STRIPMixin(AbstainPredictorMixin):
 
     | Paper link: https://arxiv.org/abs/1902.06531
     """
+
     def __init__(
         self,
         predict_fn: Callable[[np.ndarray], np.ndarray],

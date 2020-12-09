@@ -2104,17 +2104,10 @@ class BrendelBethgeAttack(EvasionAttack):
         """
         Applies the Brendel & Bethge attack.
 
-        Parameters
-        ----------
-        inputs : Tensor that matches model type
-            The original clean inputs.
-        criterion : Callable
-            A callable that returns true if the given logits of perturbed
-            inputs should be considered adversarial w.r.t. to the given labels
-            and unperturbed inputs.
-        starting_point : Tensor of same type and shape as inputs
-            Adversarial inputs to use as a starting points, in particular
-            for targeted attacks.
+        :param x: The original clean inputs.
+        :param y: The labels for inputs `x`.
+        :param starting_points: Adversarial inputs to use as a starting points, in particular for targeted attacks.
+        :param early_stop: Early-stopping criteria.
         """
         originals = x.copy()
 

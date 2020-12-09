@@ -150,12 +150,7 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
 @pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_loss_gradient_amp(
-    art_warning,
-    get_default_mnist_subset,
-    image_dl_estimator,
-    expected_values,
-    mnist_shape,
-    device_type,
+    art_warning, get_default_mnist_subset, image_dl_estimator, expected_values, mnist_shape, device_type,
 ):
     import torch
     import torch.nn as nn

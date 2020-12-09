@@ -44,7 +44,7 @@ class Resample(Preprocessor):
 
     params = ["sr_original", "sr_new", "channel_index", "channels_first"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.5.0", replaced_by="channels_first")
+    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         sr_original: int,
@@ -65,7 +65,7 @@ class Resample(Preprocessor):
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        # Remove in 1.5.0
+        # Remove in 1.6.0
         if channel_index == 2:
             channels_first = False
         elif channel_index == 1:

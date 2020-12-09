@@ -92,9 +92,19 @@ class TestMetrics(unittest.TestCase):
     @staticmethod
     def _cnn_mnist_k(input_shape):
         import tensorflow as tf
-        import keras
-        from keras.models import Sequential
-        from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+
+        tf_version = [int(v) for v in tf.__version__.split(".")]
+        if tf_version[0] == 2 and tf_version[1] >= 3:
+            is_tf23_keras24 = True
+            tf.compat.v1.disable_eager_execution()
+            from tensorflow import keras
+            from tensorflow.keras.models import Sequential
+            from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+        else:
+            is_tf23_keras24 = False
+            import keras
+            from keras.models import Sequential
+            from keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 
         # Create simple CNN
         model = Sequential()
@@ -117,6 +127,7 @@ class TestMetrics(unittest.TestCase):
         :return:
         """
         import tensorflow as tf
+
         # Define input and output placeholders
         input_ph = tf.placeholder(tf.float32, shape=[None, 28, 28, 1])
         labels_ph = tf.placeholder(tf.int32, shape=[None, 10])
@@ -159,6 +170,7 @@ class TestMetrics(unittest.TestCase):
         :return:
         """
         import tensorflow as tf
+
         tf_version = [int(v) for v in tf.__version__.split(".")]
         if tf_version[0] == 2 and tf_version[1] >= 3:
             # is_tf23_keras24 = True
@@ -193,6 +205,7 @@ class TestMetrics(unittest.TestCase):
         To create a simple PyTorchClassifier for testing.
         :return:
         """
+
         class Model(nn.Module):
             def __init__(self):
                 super(Model, self).__init__()

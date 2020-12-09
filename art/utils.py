@@ -93,32 +93,8 @@ if TYPE_CHECKING:
     from art.estimators.object_detection.pytorch_faster_rcnn import PyTorchFasterRCNN
     from art.estimators.object_detection.tensorflow_faster_rcnn import TensorFlowFasterRCNN
 
-    CLASSIFIER_TYPE = Union[
-        Classifier,
-        BlackBoxClassifier,
-        CatBoostARTClassifier,
-        DetectorClassifier,
-        EnsembleClassifier,
-        GPyGaussianProcessClassifier,
-        KerasClassifier,
-        LightGBMClassifier,
-        MXClassifier,
-        PyTorchClassifier,
-        ScikitlearnClassifier,
-        ScikitlearnDecisionTreeClassifier,
-        ScikitlearnDecisionTreeRegressor,
-        ScikitlearnExtraTreeClassifier,
-        ScikitlearnAdaBoostClassifier,
-        ScikitlearnBaggingClassifier,
-        ScikitlearnExtraTreesClassifier,
-        ScikitlearnGradientBoostingClassifier,
-        ScikitlearnRandomForestClassifier,
-        ScikitlearnLogisticRegression,
-        ScikitlearnSVC,
-        TensorFlowClassifier,
-        TensorFlowV2Classifier,
-        XGBoostClassifier,
-    ]
+    from art.estimators.speech_recognition.pytorch_deep_speech import PyTorchDeepSpeech
+    from art.estimators.speech_recognition.tensorflow_lingvo import TensorFlowLingvoASR
 
     CLASSIFIER_LOSS_GRADIENTS_TYPE = Union[
         ClassifierLossGradients,
@@ -168,10 +144,41 @@ if TYPE_CHECKING:
         XGBoostClassifier,
     ]
 
+    CLASSIFIER_TYPE = Union[
+        Classifier,
+        BlackBoxClassifier,
+        CatBoostARTClassifier,
+        DetectorClassifier,
+        EnsembleClassifier,
+        GPyGaussianProcessClassifier,
+        KerasClassifier,
+        LightGBMClassifier,
+        MXClassifier,
+        PyTorchClassifier,
+        ScikitlearnClassifier,
+        ScikitlearnDecisionTreeClassifier,
+        ScikitlearnDecisionTreeRegressor,
+        ScikitlearnExtraTreeClassifier,
+        ScikitlearnAdaBoostClassifier,
+        ScikitlearnBaggingClassifier,
+        ScikitlearnExtraTreesClassifier,
+        ScikitlearnGradientBoostingClassifier,
+        ScikitlearnRandomForestClassifier,
+        ScikitlearnLogisticRegression,
+        ScikitlearnSVC,
+        TensorFlowClassifier,
+        TensorFlowV2Classifier,
+        XGBoostClassifier,
+        CLASSIFIER_NEURALNETWORK_TYPE,
+    ]
+
     OBJECT_DETECTOR_TYPE = Union[
         ObjectDetector, PyTorchFasterRCNN, TensorFlowFasterRCNN,
     ]
 
+    SPEECH_RECOGNIZER_TYPE = Union[
+        PyTorchDeepSpeech, TensorFlowLingvoASR,
+    ]
 
 # --------------------------------------------------------------------------------------------------------- DEPRECATION
 
@@ -337,10 +344,7 @@ def projection(values: np.ndarray, eps: Union[int, float, np.ndarray], norm_p: U
 
 
 def random_sphere(
-    nb_points: int,
-    nb_dims: int,
-    radius: Union[int, float, np.ndarray],
-    norm: Union[int, float, str],
+    nb_points: int, nb_dims: int, radius: Union[int, float, np.ndarray], norm: Union[int, float, str],
 ) -> np.ndarray:
     """
     Generate randomly `m x n`-dimension points with radius `radius` and centered around 0.
@@ -1212,3 +1216,22 @@ def is_probability(vector: np.ndarray) -> bool:
     is_larger_0 = np.amin(vector) >= 0.0
 
     return is_sum_1 and is_smaller_1 and is_larger_0
+
+
+def pad_sequence_input(x: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Apply padding to a batch of 1-dimensional samples such that it has shape of (batch_size, max_length).
+
+    :param x: A batch of 1-dimensional input data, e.g. `np.array([np.array([1,2,3]), np.array([4,5,6,7])])`.
+    :return: The padded input batch and its corresponding mask.
+    """
+    max_length = max(map(len, x))
+    batch_size = x.shape[0]
+
+    x_padded = np.zeros((batch_size, max_length))
+    x_mask = np.zeros((batch_size, max_length), dtype=bool)
+
+    for i, x_i in enumerate(x):
+        x_padded[i, : len(x_i)] = x_i
+        x_mask[i, : len(x_i)] = 1
+    return x_padded, x_mask

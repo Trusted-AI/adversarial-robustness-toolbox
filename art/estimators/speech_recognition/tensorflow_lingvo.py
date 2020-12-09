@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from art.config import ART_DATA_PATH
+from art import config
 from art.estimators.speech_recognition.speech_recognizer import SpeechRecognizerMixin
 from art.estimators.tensorflow import TensorFlowV2Estimator
 from art.utils import get_file, make_directory
@@ -43,35 +43,31 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
+class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
     """
     This class implements the task-specific Lingvo ASR model of Qin et al. (2019).
 
     The estimator uses a pre-trained model provided by Qin et al., which is trained using the Lingvo library and the
     LibriSpeech dataset.
 
-    | Paper link: http://proceedings.mlr.press/v97/qin19a.html
-    |             https://arxiv.org/abs/1902.08295
+    | Paper link: http://proceedings.mlr.press/v97/qin19a.html, https://arxiv.org/abs/1902.08295
 
-    .. warning::
-
-    In order to calculate loss gradients, this estimator requires a user-patched Lingvo module. A patched source file
-    for the `lingvo.tasks.asr.decoder` module will be automatically applied. The original source file can be found in
-    `<PYTHON_SITE_PACKAGES>/lingvo/tasks/asr/decoder.py` and will be patched as outlined in the following commit diff:
-
-    * https://github.com/yaq007/lingvo/commit/414e035b2c60372de732c9d67db14d1003be6dd6
+    .. warning:: In order to calculate loss gradients, this estimator requires a user-patched Lingvo module. A patched
+                 source file for the `lingvo.tasks.asr.decoder` module will be automatically applied. The original
+                 source file can be found in `<PYTHON_SITE_PACKAGES>/lingvo/tasks/asr/decoder.py` and will be patched as
+                 outlined in the following commit diff:
+                 https://github.com/yaq007/lingvo/commit/414e035b2c60372de732c9d67db14d1003be6dd6
 
     The patched `decoder_patched.py` can be found in `ART_DATA_PATH/lingvo/asr`.
 
-    Note: Run `python -m site` to obtain a list of possible candidates where to find the `<PYTHON_SITE_PACKAGES`
-    folder.
+    Note: Run `python -m site` to obtain a list of possible candidates where to find the `<PYTHON_SITE_PACKAGES` folder.
     """
 
     # Note: Support for the estimator is pinned to Lingvo version 0.6.4. Some additional source files that are not
     # provided by pip package need to be downloaded. Those downloads are pinned to the following commit:
     # https://github.com/tensorflow/lingvo/commit/9961306adf66f7340e27f109f096c9322d4f9636
     _LINGVO_CFG: Dict[str, Any] = {
-        "path": os.path.join(ART_DATA_PATH, "lingvo"),
+        "path": os.path.join(config.ART_DATA_PATH, "lingvo"),
         "model_data": {
             "uri": "http://cseweb.ucsd.edu/~yaq007/ckpt-00908156.data-00000-of-00001",
             "basename": "ckpt-00908156.data-00000-of-00001",
@@ -136,6 +132,7 @@ class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         # Super initialization
         super().__init__(
+            model=None,
             clip_values=clip_values,
             channels_first=channels_first,
             preprocessing_defences=preprocessing_defences,
@@ -178,7 +175,7 @@ class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         self._mask_frequency = tf1.placeholder(tf1.float32, shape=[None, None, 80], name="art_mask_frequency")
 
         # init Lingvo computation graph
-        self._sess = tf1.Session() if sess is None else sess
+        self._sess: "Session" = tf1.Session() if sess is None else sess
         model, task, cluster = self._load_model()
         self._model = model
         self._task = task
@@ -401,14 +398,14 @@ class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         """
         if x[0].ndim != 1:
             raise ValueError(
-                "The LingvoAsr estimator can only be used temporal data of type mono. Please remove any channel"
+                "The LingvoASR estimator can only be used temporal data of type mono. Please remove any channel"
                 "dimension."
             )
         # if inputs have 32-bit floating point wav format, the preprocessing argument is required
         is_normalized = max(map(max, np.abs(x))) <= 1.0
         if is_normalized and self.preprocessing is None:
             raise ValueError(
-                "The LingvoAsr estimator requires input values in the range [-32768, 32767] or normalized input values"
+                "The LingvoASR estimator requires input values in the range [-32768, 32767] or normalized input values"
                 " with correct preprocessing argument (mean=0, stddev=1/normalization_factor)."
             )
 
@@ -473,7 +470,7 @@ class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
         is_normalized = max(map(max, np.abs(x))) <= 1.0
         if is_normalized and self.preprocessing is None:
             raise ValueError(
-                "The LingvoAsr estimator requires input values in the range [-32768, 32767] or normalized input values"
+                "The LingvoASR estimator requires input values in the range [-32768, 32767] or normalized input values"
                 " with correct preprocessing argument (mean=0, stddev=1/normalization_factor)."
             )
 
@@ -544,8 +541,10 @@ class TensorFlowLingvoAsr(SpeechRecognizerMixin, TensorFlowV2Estimator):
 
         return np.array(gradients, dtype=object)
 
-    def set_learning_phase(self) -> None:
+    def set_learning_phase(self, train: bool) -> None:
         raise NotImplementedError
 
-    def get_activations(self) -> np.ndarray:
+    def get_activations(
+        self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
+    ) -> np.ndarray:
         raise NotImplementedError
