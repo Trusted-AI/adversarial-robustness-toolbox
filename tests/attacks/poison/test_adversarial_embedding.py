@@ -74,7 +74,7 @@ def test_poison(art_warning, image_dl_estimator, get_default_mnist_subset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "mxnet", "pytorch", "kerastf")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "mxnet", "pytorch")
 @pytest.mark.parametrize("params", [dict(regularization=-1), dict(discriminator_layer_1=-1),
                                     dict(discriminator_layer_2=-1), dict(pp_poison=-1), dict(pp_poison=[]),
                                     dict(pp_poison=[-1])])
