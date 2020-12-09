@@ -66,7 +66,15 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
 
         :param x: Input data.
         :param y: True labels for `x`.
-        :param kwargs: Parameters for HopSkipJump attack except argument `estimator`.
+
+        :Keyword Arguments for HopSkipJump:
+            * *norm*: Order of the norm. Possible values: "inf", np.inf or 2.
+            * *max_iter*: Maximum number of iterations.
+            * *max_eval*: Maximum number of evaluations for estimating gradient.
+            * *init_eval*: Initial number of evaluations for estimating gradient.
+            * *init_size*: Maximum number of trials for initial generation of adversarial examples.
+            * *verbose*: Show progress bars.
+
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
@@ -80,6 +88,12 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
                 "`distance_threshold_tau` or run method `calibrate_distance_threshold` on known training and test"
                 "dataset."
             )
+
+        if "classifier" in kwargs:
+            raise ValueError("Keyword `classifier` in kwargs is not supported.")
+
+        if "targeted" in kwargs:
+            raise ValueError("Keyword `targeted` in kwargs is not supported.")
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
@@ -106,8 +120,25 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
         :param y_train: Labels of training data `x_train`.
         :param x_test: Test data.
         :param y_test: Labels of test data `x_test`.
+
+        :Keyword Arguments for HopSkipJump:
+            * *norm*: Order of the norm. Possible values: "inf", np.inf or 2.
+            * *max_iter*: Maximum number of iterations.
+            * *max_eval*: Maximum number of evaluations for estimating gradient.
+            * *init_eval*: Initial number of evaluations for estimating gradient.
+            * *init_size*: Maximum number of trials for initial generation of adversarial examples.
+            * *verbose*: Show progress bars.
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
+
+        if "classifier" in kwargs:
+            raise ValueError("Keyword `classifier` in kwargs is not supported.")
+
+        if "targeted" in kwargs:
+            raise ValueError("Keyword `targeted` in kwargs is not supported.")
+
+        y_train = check_and_transform_label_format(y_train, self.estimator.nb_classes)
+        y_test = check_and_transform_label_format(y_test, self.estimator.nb_classes)
 
         hsj = HopSkipJump(classifier=self.estimator, **kwargs)
 
