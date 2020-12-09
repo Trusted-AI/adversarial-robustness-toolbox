@@ -97,7 +97,7 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
 
         y = check_and_transform_label_format(y, self.estimator.nb_classes)
 
-        hsj = HopSkipJump(classifier=self.estimator, **kwargs)
+        hsj = HopSkipJump(classifier=self.estimator, targeted=False, **kwargs)
         x_adv = hsj.generate(x=x, y=y)
 
         distance = np.linalg.norm((x_adv - x).reshape((x.shape[0], -1)), ord=2, axis=1)
@@ -140,7 +140,7 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
         y_train = check_and_transform_label_format(y_train, self.estimator.nb_classes)
         y_test = check_and_transform_label_format(y_test, self.estimator.nb_classes)
 
-        hsj = HopSkipJump(classifier=self.estimator, **kwargs)
+        hsj = HopSkipJump(classifier=self.estimator, targeted=False, **kwargs)
 
         x_train_adv = hsj.generate(x=x_train, y=y_train)
         x_test_adv = hsj.generate(x=x_test, y=y_test)
