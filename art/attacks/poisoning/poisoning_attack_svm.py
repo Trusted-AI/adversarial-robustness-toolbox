@@ -21,7 +21,7 @@ This module implements poisoning attacks on Support Vector Machines.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import Optional, Tuple
 
 import numpy as np
 from tqdm import tqdm
@@ -29,9 +29,6 @@ from tqdm import tqdm
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators.classification.scikitlearn import ScikitlearnSVC
 from art.utils import compute_success
-
-if TYPE_CHECKING:
-    from art.estimators.classification import SklearnClassifier
 
 
 logger = logging.getLogger(__name__)
@@ -58,7 +55,7 @@ class PoisoningAttackSVM(PoisoningAttackWhiteBox):
 
     def __init__(
         self,
-        classifier: "SklearnClassifier",
+        classifier: "ScikitlearnSVC",
         step: Optional[float] = None,
         eps: Optional[float] = None,
         x_train: Optional[np.ndarray] = None,
