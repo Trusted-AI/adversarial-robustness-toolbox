@@ -24,10 +24,11 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import numpy as np
 
+from art.estimators.estimator import BaseEstimator
 from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
 from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 import logging
-from typing import List, Union, TYPE_CHECKING
+from typing import List, Union, TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -35,7 +36,9 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin):
+class NumpyRandomizedSmoothing(
+    RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin, BaseEstimator  # lgtm [py/missing-call-to-init]
+):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
     in Cohen et al. (2019).
@@ -53,12 +56,24 @@ class NumpyRandomizedSmoothing(RandomizedSmoothingMixin, ClassGradientsMixin, Cl
         :param scale: Standard deviation of Gaussian noise added.
         :param alpha: The failure probability of smoothing
         """
-        super().__init__(classifier)
+        super().__init__(
+            model=None,
+            input_shape=classifier.input_shape,
+            nb_classes=classifier.nb_classes,
+            channels_first=classifier.channels_first,
+            clip_values=classifier.clip_values,
+            preprocessing_defences=classifier.preprocessing_defences,
+            postprocessing_defences=classifier.postprocessing_defences,
+            preprocessing=classifier.preprocessing,
+            sample_size=sample_size,
+            scale=scale,
+            alpha=alpha,
+        )
         self.classifier = classifier
-        self._nb_classes = classifier.nb_classes
-        self.sample_size = sample_size
-        self.scale = scale
-        self.alpha = alpha
+
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        return self.classifier.input_shape
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
         """

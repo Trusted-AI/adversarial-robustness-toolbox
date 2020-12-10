@@ -194,7 +194,6 @@ class ImperceptibleASR(EvasionAttack):
         x_adversarial = [None] * batch_size
 
         x_perturbed = x.copy()
-        perturbation = np.zeros_like(x_perturbed)
 
         for i in range(self.max_iter_1):
             # perform FGSM step for x

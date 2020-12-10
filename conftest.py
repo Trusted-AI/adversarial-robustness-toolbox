@@ -51,8 +51,6 @@ master_seed(1234)
 def get_default_framework():
     import tensorflow as tf
 
-    default_framework = "tensorflow"
-
     if tf.__version__[0] == "2":
         default_framework = "tensorflow2"
     else:
@@ -343,7 +341,7 @@ def expected_values(framework, request):
 
 @pytest.fixture(scope="session")
 def get_image_classifier_mx_model():
-    import mxnet
+    import mxnet  # lgtm [py/import-and-import-from]
 
     # TODO needs to be made parameterizable once Mxnet allows multiple identical models to be created in one session
     from_logits = True
@@ -374,7 +372,7 @@ def get_image_classifier_mx_model():
 
 @pytest.fixture
 def get_image_classifier_mx_instance(get_image_classifier_mx_model, mnist_shape):
-    import mxnet
+    import mxnet  # lgtm [py/import-and-import-from]
     from art.estimators.classification import MXClassifier
 
     model = get_image_classifier_mx_model
