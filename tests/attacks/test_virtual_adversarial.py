@@ -128,7 +128,7 @@ def back_end_test_mnist(classifier, x_test, y_test):
     # Check that x_test has not been modified by attack and classifier
     # self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test))), 0.0, delta=0.00001)
     np.testing.assert_almost_equal(float(np.max(np.abs(x_test_original - x_test))), 0, decimal=5)
-    
+
 # from __future__ import absolute_import, division, print_function, unicode_literals
 #
 # import logging
