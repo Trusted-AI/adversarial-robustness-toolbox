@@ -22,6 +22,7 @@ import keras
 import pytest
 
 from art.defences.transformer.poisoning import NeuralCleanse
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -31,16 +32,19 @@ NB_TEST = 10
 
 
 @pytest.mark.only_with_platform("keras")
-def test_mitigate(get_default_mnist_subset, image_dl_estimator):
-    (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-    krc, _ = image_dl_estimator()
+def test_mitigate(art_warning, get_default_mnist_subset, image_dl_estimator):
+    try:
+        (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
+        krc, _ = image_dl_estimator()
 
-    if keras.__version__ != "2.2.4":
-        with pytest.raises(NotImplementedError):
+        if keras.__version__ != "2.2.4":
+            with pytest.raises(NotImplementedError):
+                cleanse = NeuralCleanse(krc)
+                defense_cleanse = cleanse(krc, steps=2)
+        else:
+            krc.fit(x_train, y_train, nb_epochs=1)
             cleanse = NeuralCleanse(krc)
             defense_cleanse = cleanse(krc, steps=2)
-    else:
-        krc.fit(x_train, y_train, nb_epochs=1)
-        cleanse = NeuralCleanse(krc)
-        defense_cleanse = cleanse(krc, steps=2)
-        defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
+            defense_cleanse.mitigate(x_test, y_test, mitigation_types=["filtering", "pruning", "unlearning"])
+    except ARTTestException as e:
+        art_warning(e)
