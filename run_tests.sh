@@ -17,7 +17,6 @@ then
     echo "############## Running tests with framework $mlFramework ##############"
     echo "#######################################################################"
 
-    # TODO: merge defences/detector/poison tests to one line
     pytest --cov-report=xml --cov=art --cov-append  -q -vv tests/defences/detector/poison --mlFramework=$mlFramework --skip_travis=True --durations=0
     if [[ $? -ne 0 ]]; then exit_code=1; echo "Failed defences/detector/poison tests"; fi
 
