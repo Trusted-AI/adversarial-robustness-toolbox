@@ -24,7 +24,6 @@ import pprint
 import pytest
 
 from art.defences.detector.poison import GroundTruthEvaluator
-from conftest import art_warning
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
@@ -53,7 +52,7 @@ def get_eval():
 
 
 @pytest.mark.framework_agnostic
-def test_analyze_correct_all_clean(get_eval):
+def test_analyze_correct_all_clean(art_warning, get_eval):
     try:
         evaluator, is_clean_all_clean, _, _ = get_eval
 
@@ -93,7 +92,7 @@ def test_analyze_correct_all_clean(get_eval):
 
 
 @pytest.mark.framework_agnostic
-def test_analyze_correct_all_poison(get_eval):
+def test_analyze_correct_all_poison(art_warning, get_eval):
     try:
         evaluator, _, is_clean_all_poison, _ = get_eval
         # perfect detection all data is actually poison
@@ -133,7 +132,7 @@ def test_analyze_correct_all_poison(get_eval):
 
 
 @pytest.mark.framework_agnostic
-def test_analyze_correct_mixed(get_eval):
+def test_analyze_correct_mixed(art_warning, get_eval):
     try:
         evaluator, _, _, is_clean_mixed = get_eval
         # perfect detection mixed
@@ -171,7 +170,7 @@ def test_analyze_correct_mixed(get_eval):
 
 
 @pytest.mark.framework_agnostic
-def test_analyze_fully_misclassified(get_eval):
+def test_analyze_fully_misclassified(art_warning, get_eval):
     try:
         # Completely wrong
         # order parameters: analyze_correctness(assigned_clean_by_class, is_clean_by_class)
@@ -212,7 +211,7 @@ def test_analyze_fully_misclassified(get_eval):
 
 
 @pytest.mark.framework_agnostic
-def test_analyze_fully_misclassified_rev(get_eval):
+def test_analyze_fully_misclassified_rev(art_warning, get_eval):
     try:
         # Completely wrong
         # order parameters: analyze_correctness(assigned_clean_by_class, is_clean_by_class)

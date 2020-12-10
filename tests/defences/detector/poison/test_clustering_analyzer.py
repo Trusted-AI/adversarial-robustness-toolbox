@@ -23,14 +23,13 @@ import numpy as np
 import pytest
 
 from art.defences.detector.poison import ClusteringAnalyzer
-from conftest import art_warning
 from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
 
 @pytest.mark.framework_agnostic
-def test_size_analyzer():
+def test_size_analyzer(art_warning):
     try:
         nb_clusters = 2
         nb_classes = 3
@@ -83,7 +82,7 @@ def test_size_analyzer():
 
 
 @pytest.mark.framework_agnostic
-def test_size_analyzer_three():
+def test_size_analyzer_three(art_warning):
     try:
         nb_clusters = 3
         nb_classes = 3
@@ -144,7 +143,7 @@ def test_size_analyzer_three():
 
 
 @pytest.mark.framework_agnostic
-def test_relative_size_analyzer_three():
+def test_relative_size_analyzer_three(art_warning):
     try:
         nb_clusters = 3
         nb_classes = 3

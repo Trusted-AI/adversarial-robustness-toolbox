@@ -27,7 +27,7 @@ from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
 from art.estimators.classification.scikitlearn import SklearnClassifier, ScikitlearnSVC
 from art.defences.detector.poison.provenance_defense import ProvenanceDefense
 from art.utils import load_mnist
-
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -128,50 +128,62 @@ def get_prov_defense():
 
 @pytest.mark.parametrize("params", [dict(eps=-2.0), dict(pp_valid=-0.1), dict(eps=-0.1)])
 @pytest.mark.only_with_platform("scikitlearn")
-def test_wrong_parameters_1(get_prov_defense, params):
-    _, defence_trust, defence_no_trust = get_prov_defense
-    with pytest.raises(ValueError):
-        defence_no_trust.set_params(**params)
-    with pytest.raises(ValueError):
-        defence_trust.set_params(**params)
+def test_wrong_parameters_1(art_warning, get_prov_defense, params):
+    try:
+        _, defence_trust, defence_no_trust = get_prov_defense
+        with pytest.raises(ValueError):
+            defence_no_trust.set_params(**params)
+        with pytest.raises(ValueError):
+            defence_trust.set_params(**params)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("scikitlearn")
-def test_wrong_parameters_2(get_prov_defense):
-    mnist, defence_trust, defence_no_trust = get_prov_defense
-    (all_data, _, p_train), (x_test, y_test), (_, _), (_, _), (_, _) = mnist
-    with pytest.raises(ValueError):
-        defence_no_trust.set_params(x_train=-all_data, y_train=y_test)
-    with pytest.raises(ValueError):
-        defence_trust.set_params(x_train=-all_data, y_train=y_test)
-    with pytest.raises(ValueError):
-        defence_no_trust.set_params(x_train=-x_test, y_train=y_test, p_train=p_train)
-    with pytest.raises(ValueError):
-        defence_trust.set_params(x_train=-x_test, y_train=y_test, p_train=p_train)
+def test_wrong_parameters_2(art_warning, get_prov_defense):
+    try:
+        mnist, defence_trust, defence_no_trust = get_prov_defense
+        (all_data, _, p_train), (x_test, y_test), (_, _), (_, _), (_, _) = mnist
+        with pytest.raises(ValueError):
+            defence_no_trust.set_params(x_train=-all_data, y_train=y_test)
+        with pytest.raises(ValueError):
+            defence_trust.set_params(x_train=-all_data, y_train=y_test)
+        with pytest.raises(ValueError):
+            defence_no_trust.set_params(x_train=-x_test, y_train=y_test, p_train=p_train)
+        with pytest.raises(ValueError):
+            defence_trust.set_params(x_train=-x_test, y_train=y_test, p_train=p_train)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("scikitlearn")
-def test_detect_poison(get_prov_defense):
-    _, defence_trust, defence_no_trust = get_prov_defense
-    _, clean_trust = defence_trust.detect_poison()
-    _, clean_no_trust = defence_no_trust.detect_poison()
-    real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
-    pc_tp_trust = np.average(real_clean[:NB_TRAIN] == clean_trust[:NB_TRAIN])
-    pc_tn_trust = np.average(real_clean[NB_TRAIN:] == clean_trust[NB_TRAIN:])
-    assert pc_tn_trust >= 0.7
-    assert pc_tp_trust >= 0.7
+def test_detect_poison(art_warning, get_prov_defense):
+    try:
+        _, defence_trust, defence_no_trust = get_prov_defense
+        _, clean_trust = defence_trust.detect_poison()
+        _, clean_no_trust = defence_no_trust.detect_poison()
+        real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
+        pc_tp_trust = np.average(real_clean[:NB_TRAIN] == clean_trust[:NB_TRAIN])
+        pc_tn_trust = np.average(real_clean[NB_TRAIN:] == clean_trust[NB_TRAIN:])
+        assert pc_tn_trust >= 0.7
+        assert pc_tp_trust >= 0.7
 
-    pc_tp_no_trust = np.average(real_clean[:NB_TRAIN] == clean_no_trust[:NB_TRAIN])
-    pc_tn_no_trust = np.average(real_clean[NB_TRAIN:] == clean_no_trust[NB_TRAIN:])
-    assert pc_tn_no_trust >= 0.7
-    assert pc_tp_no_trust >= 0.7
+        pc_tp_no_trust = np.average(real_clean[:NB_TRAIN] == clean_no_trust[:NB_TRAIN])
+        pc_tn_no_trust = np.average(real_clean[NB_TRAIN:] == clean_no_trust[NB_TRAIN:])
+        assert pc_tn_no_trust >= 0.7
+        assert pc_tp_no_trust >= 0.7
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("scikitlearn")
-def test_evaluate_defense(get_prov_defense):
-    _, defence_trust, defence_no_trust = get_prov_defense
-    real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
-    defence_no_trust.detect_poison()
-    defence_trust.detect_poison()
-    logger.info(defence_trust.evaluate_defence(real_clean))
-    logger.info(defence_no_trust.evaluate_defence(real_clean))
+def test_evaluate_defense(art_warning, get_prov_defense):
+    try:
+        _, defence_trust, defence_no_trust = get_prov_defense
+        real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
+        defence_no_trust.detect_poison()
+        defence_trust.detect_poison()
+        logger.info(defence_trust.evaluate_defence(real_clean))
+        logger.info(defence_no_trust.evaluate_defence(real_clean))
+    except ARTTestException as e:
+        art_warning(e)

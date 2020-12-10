@@ -27,7 +27,7 @@ from art.attacks.poisoning.poisoning_attack_svm import PoisoningAttackSVM
 from art.estimators.classification.scikitlearn import SklearnClassifier, ScikitlearnSVC
 from art.defences.detector.poison.roni import RONIDefense
 from art.utils import load_mnist
-
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -117,41 +117,50 @@ def get_roni():
 
 
 @pytest.mark.only_with_platform("scikitlearn")
-def test_wrong_parameters(get_roni):
-    mnist, classifier, defense_cal, defence_no_cal = get_roni
-    (all_data, _), (_, y_test), (_, _), (_, _), (_, _) = mnist
-    with pytest.raises(ValueError):
-        defence_no_cal.set_params(eps=-2.0)
-    with pytest.raises(ValueError):
-        defense_cal.set_params(eps=-2.0)
-    with pytest.raises(ValueError):
-        defence_no_cal.set_params(x_train=all_data, y_train=y_test)
-    with pytest.raises(ValueError):
-        defense_cal.set_params(x_train=all_data, y_train=y_test)
+def test_wrong_parameters(art_warning, get_roni):
+    try:
+        mnist, classifier, defense_cal, defence_no_cal = get_roni
+        (all_data, _), (_, y_test), (_, _), (_, _), (_, _) = mnist
+        with pytest.raises(ValueError):
+            defence_no_cal.set_params(eps=-2.0)
+        with pytest.raises(ValueError):
+            defense_cal.set_params(eps=-2.0)
+        with pytest.raises(ValueError):
+            defence_no_cal.set_params(x_train=all_data, y_train=y_test)
+        with pytest.raises(ValueError):
+            defense_cal.set_params(x_train=all_data, y_train=y_test)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("scikitlearn")
-def test_detect_poison(get_roni):
-    mnist, classifier, defense_cal, defence_no_cal = get_roni
-    _, clean_trust = defense_cal.detect_poison()
-    _, clean_no_trust = defence_no_cal.detect_poison()
-    real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
-    pc_tp_cal = np.average(real_clean[:NB_TRAIN] == clean_trust[:NB_TRAIN])
-    pc_tn_cal = np.average(real_clean[NB_TRAIN:] == clean_trust[NB_TRAIN:])
-    assert pc_tn_cal >= 0
-    assert pc_tp_cal >= 0.7
+def test_detect_poison(art_warning, get_roni):
+    try:
+        mnist, classifier, defense_cal, defence_no_cal = get_roni
+        _, clean_trust = defense_cal.detect_poison()
+        _, clean_no_trust = defence_no_cal.detect_poison()
+        real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
+        pc_tp_cal = np.average(real_clean[:NB_TRAIN] == clean_trust[:NB_TRAIN])
+        pc_tn_cal = np.average(real_clean[NB_TRAIN:] == clean_trust[NB_TRAIN:])
+        assert pc_tn_cal >= 0
+        assert pc_tp_cal >= 0.7
 
-    pc_tp_no_cal = np.average(real_clean[:NB_TRAIN] == clean_no_trust[:NB_TRAIN])
-    pc_tn_no_cal = np.average(real_clean[NB_TRAIN:] == clean_no_trust[NB_TRAIN:])
-    assert pc_tn_no_cal >= 0
-    assert pc_tp_no_cal >= 0.7
+        pc_tp_no_cal = np.average(real_clean[:NB_TRAIN] == clean_no_trust[:NB_TRAIN])
+        pc_tn_no_cal = np.average(real_clean[NB_TRAIN:] == clean_no_trust[NB_TRAIN:])
+        assert pc_tn_no_cal >= 0
+        assert pc_tp_no_cal >= 0.7
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.only_with_platform("scikitlearn")
-def test_evaluate_defense(get_roni):
-    mnist, classifier, defense_cal, defence_no_cal = get_roni
-    real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
-    defence_no_cal.detect_poison()
-    defense_cal.detect_poison()
-    logger.info(defense_cal.evaluate_defence(real_clean))
-    logger.info(defence_no_cal.evaluate_defence(real_clean))
+def test_evaluate_defense(art_warning, get_roni):
+    try:
+        mnist, classifier, defense_cal, defence_no_cal = get_roni
+        real_clean = np.array([1 if i < NB_TRAIN else 0 for i in range(NB_TRAIN + NB_POISON)])
+        defence_no_cal.detect_poison()
+        defense_cal.detect_poison()
+        logger.info(defense_cal.evaluate_defence(real_clean))
+        logger.info(defence_no_cal.evaluate_defence(real_clean))
+    except ARTTestException as e:
+        art_warning(e)
