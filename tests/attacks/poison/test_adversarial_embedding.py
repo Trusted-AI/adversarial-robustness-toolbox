@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 NB_EPOCHS = 3
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "mxnet", "pytorch")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "mxnet", "pytorch", "kerastf")
 def test_poison(art_warning, image_dl_estimator, get_default_mnist_subset):
     """
     Test the backdoor attack with a pattern-based perturbation can be trained on classifier
@@ -74,7 +74,7 @@ def test_poison(art_warning, image_dl_estimator, get_default_mnist_subset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "mxnet", "pytorch")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "mxnet", "pytorch", "kerastf")
 @pytest.mark.parametrize("params", [dict(regularization=-1), dict(discriminator_layer_1=-1),
                                     dict(discriminator_layer_2=-1), dict(pp_poison=-1), dict(pp_poison=[]),
                                     dict(pp_poison=[-1])])
