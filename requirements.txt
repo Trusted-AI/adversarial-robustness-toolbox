@@ -27,7 +27,7 @@ torchvision==0.7.0
 catboost==0.24.1
 GPy==1.9.9
 lightgbm==3.0.0
-xgboost==1.2.0
+xgboost==1.3.0.post0
 kornia==0.4.0
 
 # Lingvo ASR dependencies
