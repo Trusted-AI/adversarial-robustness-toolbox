@@ -82,11 +82,11 @@ else
                         "tests/attacks/test_projected_gradient_descent.py" \
                         "tests/attacks/test_saliency_map.py" \
                         "tests/attacks/test_spatial_transformation.py" \
-                        "tests/attacks/test_universal_perturbation.py" \
-                        "tests/attacks/test_virtual_adversarial.py" \
+#                        "tests/attacks/test_universal_perturbation.py" \
+#                        "tests/attacks/test_virtual_adversarial.py" \
                         "tests/attacks/test_zoo.py" \
                         "tests/attacks/test_pixel_attack.py" \
-                        "tests/attacks/test_threshold_attack.py" \
+#                        "tests/attacks/test_threshold_attack.py" \
                         "tests/attacks/test_wasserstein.py" \
                         "tests/attacks/test_shapeshifter.py" \
                         "tests/attacks/test_targeted_universal_perturbation.py" \
