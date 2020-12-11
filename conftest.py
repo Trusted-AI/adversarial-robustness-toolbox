@@ -65,7 +65,7 @@ def pytest_addoption(parser):
         action="store",
         default=get_default_framework(),
         help="ART tests allow you to specify which mlFramework to use. The default mlFramework used is `tensorflow`. "
-        "Other options available are {0}".format(art_supported_frameworks),
+             "Other options available are {0}".format(art_supported_frameworks),
     )
     parser.addoption(
         "--skip_travis",
@@ -123,9 +123,9 @@ def image_dl_estimator_defended(framework):
 def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estimator_defended):
     def _image_dl_estimator_for_attack(attack, defended=False, **kwargs):
         if defended:
-            potential_classifier, _ = image_dl_estimator_defended(**kwargs)
+            potential_classifier, sess = image_dl_estimator_defended(**kwargs)
         else:
-            potential_classifier, _ = image_dl_estimator(**kwargs)
+            potential_classifier, sess = image_dl_estimator(**kwargs)
 
         classifier_list = [potential_classifier]
         classifier_tested = [
@@ -138,7 +138,7 @@ def image_dl_estimator_for_attack(framework, image_dl_estimator, image_dl_estima
             raise ARTTestFixtureNotImplemented(
                 "no estimator available", image_dl_estimator_for_attack.__name__, framework, {"attack": attack}
             )
-        return classifier_tested[0]
+        return classifier_tested[0], sess
 
     return _image_dl_estimator_for_attack
 
@@ -286,7 +286,7 @@ def store_expected_values(request):
 
         try:
             with open(
-                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+                    os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
             ) as f:
                 expected_values = json.load(f)
         except FileNotFoundError:
@@ -296,7 +296,7 @@ def store_expected_values(request):
         expected_values[test_name] = values_to_store
 
         with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "w"
         ) as f:
             json.dump(expected_values, f, indent=4)
 
@@ -319,7 +319,7 @@ def expected_values(framework, request):
 
     def _expected_values():
         with open(
-            os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
+                os.path.join(os.path.dirname(__file__), os.path.dirname(request.node.location[0]), file_name), "r"
         ) as f:
             expected_values = json.load(f)
 
@@ -351,10 +351,10 @@ def get_image_classifier_mx_model():
             super(Model, self).__init__(**kwargs)
             self.model = mxnet.gluon.nn.Sequential()
             self.model.add(
-                mxnet.gluon.nn.Conv2D(channels=1, kernel_size=7, activation="relu",),
+                mxnet.gluon.nn.Conv2D(channels=1, kernel_size=7, activation="relu", ),
                 mxnet.gluon.nn.MaxPool2D(pool_size=4, strides=4),
                 mxnet.gluon.nn.Flatten(),
-                mxnet.gluon.nn.Dense(10, activation=None,),
+                mxnet.gluon.nn.Dense(10, activation=None, ),
             )
 
         def forward(self, x):
@@ -548,8 +548,8 @@ def art_warning(request):
                         "once. However the ART test exception was thrown, hence it is never run fully. "
                     )
             elif (
-                request.node.get_closest_marker("only_with_platform")
-                and len(request.node.get_closest_marker("only_with_platform").args) == 1
+                    request.node.get_closest_marker("only_with_platform")
+                    and len(request.node.get_closest_marker("only_with_platform").args) == 1
             ):
                 raise Exception(
                     "This test has marker only_with_platform decorator which means it will only be ran "
@@ -700,6 +700,15 @@ def get_default_mnist_subset(get_mnist_dataset, default_dataset_subset_sizes, mn
     x_test_mnist = np.reshape(x_test_mnist, (x_test_mnist.shape[0],) + mnist_shape).astype(np.float32)
 
     yield (x_train_mnist[:n_train], y_train_mnist[:n_train]), (x_test_mnist[:n_test], y_test_mnist[:n_test])
+
+
+@pytest.fixture()
+def mnist_subset_100_10(get_mnist_dataset):
+    # TODO all tests using this fixture should ultimately use get_default_mnist_subset instead
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    n_train = 100
+    n_test = 10
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
 @pytest.fixture(scope="session")
