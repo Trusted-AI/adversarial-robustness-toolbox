@@ -40,6 +40,7 @@ NB_EPOCHS = 10
 NB_STOLEN = 100
 
 
+
 class TestKnockoffNets(TestBase):
     """
     A unittest class for testing the KnockoffNets attack.
