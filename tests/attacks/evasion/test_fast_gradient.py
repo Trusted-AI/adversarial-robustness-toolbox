@@ -185,6 +185,7 @@ def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator
 
 @pytest.mark.skipMlFramework("scikitlearn")  # temporarily skipping for scikitlearn until find bug fix in bounded test
 @pytest.mark.parametrize("targeted, clipped", [(True, True), (True, False), (False, True), (False, False)])
+# @pytest.mark.parametrize("targeted, clipped", [(True, True)])
 @pytest.mark.framework_agnostic
 def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset, targeted, clipped):
     try:

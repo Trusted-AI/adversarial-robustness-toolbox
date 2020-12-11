@@ -584,6 +584,7 @@ def decision_tree_estimator(framework):
 def tabular_dl_estimator(framework):
     def _tabular_dl_estimator(clipped=True):
         classifier = None
+        sess = None
         if framework == "keras":
             if clipped:
                 classifier = get_tabular_classifier_kr()
@@ -593,7 +594,7 @@ def tabular_dl_estimator(framework):
 
         if framework == "tensorflow1" or framework == "tensorflow2":
             if clipped:
-                classifier, _ = get_tabular_classifier_tf()
+                classifier, sess = get_tabular_classifier_tf()
 
         if framework == "pytorch":
             if clipped:
@@ -603,7 +604,7 @@ def tabular_dl_estimator(framework):
             raise ARTTestFixtureNotImplemented(
                 "no deep learning tabular estimator available", tabular_dl_estimator.__name__, framework
             )
-        return classifier
+        return classifier, sess
 
     return _tabular_dl_estimator
 
