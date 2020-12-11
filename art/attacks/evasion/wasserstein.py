@@ -738,8 +738,10 @@ class Wasserstein(EvasionAttack):
         if self.eps_step <= 0:
             raise ValueError("The perturbation step-size `eps_step` has to be positive.")
 
-        if self.eps_step > self.eps:
-            raise ValueError("The iteration step `eps_step` has to be smaller than the total attack `eps`.")
+        if self.norm == "inf" and self.eps_step > self.eps:
+            raise ValueError(
+                "The iteration step `eps_step` has to be smaller than or equal to the total attack budget `eps`."
+            )
 
         if self.eps_iter <= 0:
             raise ValueError("The number of epsilon iterations `eps_iter` has to be a positive integer.")
