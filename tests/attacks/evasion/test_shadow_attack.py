@@ -41,7 +41,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.only_with_platform("pytorch")
 def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(ShadowAttack)
+        classifier, _ = image_dl_estimator_for_attack(ShadowAttack)
         attack = ShadowAttack(
             estimator=classifier,
             sigma=0.5,
@@ -66,7 +66,7 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 @pytest.mark.only_with_platform("pytorch")
 def test_get_regularisation_loss_gradients(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(ShadowAttack)
+        classifier, _ = image_dl_estimator_for_attack(ShadowAttack)
 
         attack = ShadowAttack(
             estimator=classifier,
