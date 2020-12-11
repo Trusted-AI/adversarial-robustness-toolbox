@@ -42,7 +42,7 @@ def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack
     try:
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-        classifier = image_dl_estimator_for_attack(FeatureAdversaries)
+        classifier, _ = image_dl_estimator_for_attack(FeatureAdversaries)
 
         attack = FeatureAdversaries(classifier, delta=0.2, layer=1, batch_size=32)
         x_train_mnist_adv = attack.generate(x=x_train_mnist[0:3], y=x_test_mnist[0:3], maxiter=1)
