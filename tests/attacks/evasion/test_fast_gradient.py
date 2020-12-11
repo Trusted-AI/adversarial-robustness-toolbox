@@ -45,7 +45,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 # of the defended classifier exists
 def test_classifier_defended_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(FastGradientMethod, defended=True)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod, defended=True)
         attack = FastGradientMethod(classifier, eps=1.0, batch_size=128)
         backend_test_defended_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
@@ -55,7 +55,7 @@ def test_classifier_defended_images(art_warning, fix_get_mnist_subset, image_dl_
 @pytest.mark.framework_agnostic
 def test_random_initialisation_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod)
         attack = FastGradientMethod(classifier, num_random_init=3)
         backend_test_random_initialisation_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
@@ -65,7 +65,7 @@ def test_random_initialisation_images(art_warning, fix_get_mnist_subset, image_d
 @pytest.mark.framework_agnostic
 def test_targeted_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod)
         attack = FastGradientMethod(classifier, eps=1.0, targeted=True)
         attack_params = {"minimal": True, "eps_step": 0.01, "eps": 1.0}
         attack.set_params(**attack_params)
@@ -78,7 +78,7 @@ def test_targeted_images(art_warning, fix_get_mnist_subset, image_dl_estimator_f
 @pytest.mark.framework_agnostic
 def test_masked_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod)
         attack = FastGradientMethod(classifier, eps=1.0, num_random_init=1)
         backend_masked_images(attack, fix_get_mnist_subset)
     except ARTTestException as e:
@@ -88,7 +88,7 @@ def test_masked_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for
 @pytest.mark.framework_agnostic
 def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod)
 
         expected_values = {
             "x_test_mean": ExpectedValue(0.03896513, 0.01),
@@ -151,7 +151,7 @@ def test_minimal_perturbations_images(art_warning, fix_get_mnist_subset, image_d
 @pytest.mark.framework_agnostic
 def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod)
 
         if norm == np.inf:
             expected_values = {
@@ -188,7 +188,7 @@ def test_norm_images(art_warning, norm, fix_get_mnist_subset, image_dl_estimator
 @pytest.mark.framework_agnostic
 def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset, targeted, clipped):
     try:
-        classifier = tabular_dl_estimator(clipped=clipped)
+        classifier, _ = tabular_dl_estimator(clipped=clipped)
 
         if targeted:
             attack = FastGradientMethod(classifier, targeted=True, eps=0.1, batch_size=128)
