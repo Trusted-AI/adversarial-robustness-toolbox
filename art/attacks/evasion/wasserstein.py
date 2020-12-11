@@ -40,6 +40,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+EPS_LOG = 10 ** -10
+
 
 class Wasserstein(EvasionAttack):
     """
@@ -400,6 +402,7 @@ class Wasserstein(EvasionAttack):
 
         for _ in range(self.conjugate_sinkhorn_max_iter):
             # Block coordinate descent iterates
+            x[x == 0.0] = EPS_LOG  # Prevent divide by zero in np.log
             alpha[I_nonzero_] = (np.log(self._local_transport(K, exp_beta, self.kernel_size)) - np.log(x))[I_nonzero_]
             exp_alpha = np.exp(-alpha)
 
@@ -475,6 +478,7 @@ class Wasserstein(EvasionAttack):
 
         for _ in range(self.projected_sinkhorn_max_iter):
             # Block coordinate descent iterates
+            x_init[x_init == 0.0] = EPS_LOG  # Prevent divide by zero in np.log
             alpha = np.log(self._local_transport(K, exp_beta, self.kernel_size)) - np.log(x_init)
             exp_alpha = np.exp(-alpha)
 
