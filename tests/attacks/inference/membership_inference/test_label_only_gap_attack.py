@@ -35,7 +35,7 @@ num_classes_mnist = 10
 
 def test_rule_based_image(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(LabelOnlyGapAttack)
+        classifier, _ = image_dl_estimator_for_attack(LabelOnlyGapAttack)
         attack = LabelOnlyGapAttack(classifier)
         backend_check_membership_accuracy_no_fit(attack, get_default_mnist_subset, 0.8)
     except ARTTestException as e:

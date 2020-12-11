@@ -66,7 +66,7 @@ def backend_check_inferred_values(attack, mnist_dataset, classifier):
 @pytest.mark.framework_agnostic
 def test_miface(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(MIFace)
+        classifier, _ = image_dl_estimator_for_attack(MIFace)
 
         # for the one-shot method, frame saliency attack should resort to plain FastGradientMethod
         # expected_values = {

@@ -38,7 +38,7 @@ num_classes_mnist = 10
 
 def test_black_box_image(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(MembershipInferenceBlackBox)
+        classifier, _ = image_dl_estimator_for_attack(MembershipInferenceBlackBox)
         attack = MembershipInferenceBlackBox(classifier)
         backend_check_membership_accuracy(attack, get_default_mnist_subset, attack_train_ratio, 0.03)
     except ARTTestException as e:
