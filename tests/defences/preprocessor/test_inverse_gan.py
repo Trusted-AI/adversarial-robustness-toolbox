@@ -46,7 +46,7 @@ def test_inverse_gan(art_warning, fix_get_mnist_subset, image_dl_estimator_for_a
             logging.warning("Couldn't perform  this test because no gan is defined for this framework configuration")
             return
 
-        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod)
 
         attack = FastGradientMethod(classifier, eps=0.2)
         x_test_adv = attack.generate(x=x_test_mnist)
