@@ -44,7 +44,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.framework_agnostic
 def test_one_shot(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod)
 
         # for the one-shot method, frame saliency attack should resort to plain FastGradientMethod
         expected_values = {
@@ -65,7 +65,7 @@ def test_one_shot(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
 @pytest.mark.framework_agnostic
 def test_iterative_saliency(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod)
 
         expected_values_axis_1 = {
             "nb_perturbed_frames": ExpectedValue(np.asarray([10, 1, 2, 12, 16, 1, 2, 7, 4, 11, 5]), 2)
@@ -90,7 +90,7 @@ def test_iterative_saliency(art_warning, fix_get_mnist_subset, image_dl_estimato
 @pytest.mark.framework_agnostic
 def test_iterative_saliency_refresh(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
     try:
-        classifier = image_dl_estimator_for_attack(FastGradientMethod)
+        classifier, _ = image_dl_estimator_for_attack(FastGradientMethod)
 
         expected_values_axis_1 = {
             "nb_perturbed_frames": ExpectedValue(np.asarray([5, 1, 3, 10, 8, 1, 3, 8, 4, 7, 7]), 2)
