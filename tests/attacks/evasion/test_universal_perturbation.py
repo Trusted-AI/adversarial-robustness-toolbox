@@ -181,7 +181,8 @@ def test_classifier_type_check_fail():
 #         krc = get_image_classifier_kr()
 #
 #         # Attack
-#         up = UniversalPerturbation(krc, max_iter=1, attacker="ead", attacker_params={"max_iter": 2, "targeted": False})
+#         up = UniversalPerturbation(krc, max_iter=1, attacker="ead", attacker_params={"max_iter": 2, "targeted":
+#         False})
 #         x_train_adv = up.generate(self.x_train_mnist)
 #         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
 #
