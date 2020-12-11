@@ -34,7 +34,7 @@ from tests.utils import get_tabular_classifier_kr, get_tabular_classifier_tf, ge
 from tests.utils import get_tabular_classifier_scikit_list, load_dataset, get_image_classifier_kr_tf
 from tests.utils import get_image_classifier_mxnet_custom_ini, get_image_classifier_kr_tf_with_wildcard
 from tests.utils import get_image_classifier_kr_tf_functional, get_image_classifier_kr_functional
-from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt
+from tests.utils import ARTTestFixtureNotImplemented, get_attack_classifier_pt, filter_out_non_supported_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -497,40 +497,46 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
         if framework == "keras":
             if wildcard is False and functional is False:
                 if functional:
-                    classifier = get_image_classifier_kr_functional(**kwargs)
+                    new_kwargs = filter_out_non_supported_kwargs(kwargs, ["input_layer", "output_layer"])
+                    classifier = get_image_classifier_kr_functional(**new_kwargs)
                 else:
                     try:
-                        classifier = get_image_classifier_kr(**kwargs)
+                        new_kwargs = filter_out_non_supported_kwargs(kwargs, ["loss_name", "loss_type", "from_logits",
+                                                                              "load_init"])
+                        classifier = get_image_classifier_kr(**new_kwargs)
                     except NotImplementedError:
                         raise ARTTestFixtureNotImplemented(
                             "This combination of loss function options is currently not supported.",
-                            image_dl_estimator.__name__,
-                            framework,
-                        )
+                            image_dl_estimator.__name__, framework)
         if framework == "tensorflow1" or framework == "tensorflow2":
             if wildcard is False and functional is False:
-                classifier, sess = get_image_classifier_tf(**kwargs)
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["from_logits", "load_init", "sess"])
+                classifier, sess = get_image_classifier_tf(**new_kwargs)
                 return classifier, sess
         if framework == "pytorch":
             if wildcard is False and functional is False:
-                classifier = get_image_classifier_pt(**kwargs)
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["from_logits", "load_init"])
+                classifier = get_image_classifier_pt(**new_kwargs)
         if framework == "kerastf":
             if wildcard:
-                classifier = get_image_classifier_kr_tf_with_wildcard(**kwargs)
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, [])
+                classifier = get_image_classifier_kr_tf_with_wildcard(**new_kwargs)
             else:
                 if functional:
-                    classifier = get_image_classifier_kr_tf_functional(**kwargs)
+                    new_kwargs = filter_out_non_supported_kwargs(kwargs, ["input_layer", "output_layer"])
+                    classifier = get_image_classifier_kr_tf_functional(**new_kwargs)
                 else:
-                    classifier = get_image_classifier_kr_tf(**kwargs)
+                    new_kwargs = filter_out_non_supported_kwargs(kwargs, ["loss_name", "loss_type", "from_logits"])
+                    classifier = get_image_classifier_kr_tf(**new_kwargs)
 
         if framework == "mxnet":
             if wildcard is False and functional is False:
-                classifier = get_image_classifier_mx_instance(**kwargs)
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["from_logits"])
+                classifier = get_image_classifier_mx_instance(**new_kwargs)
 
         if classifier is None:
             raise ARTTestFixtureNotImplemented(
-                "no test deep learning estimator available", image_dl_estimator.__name__, framework
-            )
+                "no test deep learning estimator available", image_dl_estimator.__name__, framework)
 
         return classifier, sess
 
@@ -582,28 +588,31 @@ def decision_tree_estimator(framework):
 
 @pytest.fixture
 def tabular_dl_estimator(framework):
-    def _tabular_dl_estimator(clipped=True):
+    def _tabular_dl_estimator(clipped=True, **kwargs):
         classifier = None
         sess = None
         if framework == "keras":
             if clipped:
-                classifier = get_tabular_classifier_kr()
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init"])
+                classifier = get_tabular_classifier_kr(**new_kwargs)
             else:
-                kr_classifier = get_tabular_classifier_kr()
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init"])
+                kr_classifier = get_tabular_classifier_kr(**new_kwargs)
                 classifier = KerasClassifier(model=kr_classifier.model, use_logits=False, channels_first=True)
 
         if framework == "tensorflow1" or framework == "tensorflow2":
             if clipped:
-                classifier, sess = get_tabular_classifier_tf()
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init", "sess"])
+                classifier, sess = get_tabular_classifier_tf(**new_kwargs)
 
         if framework == "pytorch":
             if clipped:
-                classifier = get_tabular_classifier_pt()
+                new_kwargs = filter_out_non_supported_kwargs(kwargs, ["load_init"])
+                classifier = get_tabular_classifier_pt(**new_kwargs)
 
         if classifier is None:
-            raise ARTTestFixtureNotImplemented(
-                "no deep learning tabular estimator available", tabular_dl_estimator.__name__, framework
-            )
+            raise ARTTestFixtureNotImplemented("no deep learning tabular estimator available",
+                                               tabular_dl_estimator.__name__, framework)
         return classifier, sess
 
     return _tabular_dl_estimator
