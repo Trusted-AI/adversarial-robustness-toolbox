@@ -15,343 +15,79 @@
 # AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import unittest
-
 import numpy as np
-import keras.backend as k
+import pytest
 
 from art.attacks.extraction.knockoff_nets import KnockoffNets
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
 
-from tests.utils import TestBase, master_seed
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
-from tests.utils import get_tabular_classifier_tf, get_tabular_classifier_kr, get_tabular_classifier_pt
+from tests.utils import ARTTestException
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
 
-BATCH_SIZE = 10
-NB_TRAIN = 100
-NB_EPOCHS = 10
-NB_STOLEN = 100
 
+@pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
+@pytest.mark.parametrize("sampling_strategy", ["random", "adaptive"])
+@pytest.mark.framework_agnostic
+def test_with_images(art_warning, mnist_subset_100_10, image_dl_estimator, sampling_strategy):
+    try:
+        (x_train, y_train, x_test, y_test) = mnist_subset_100_10
 
-
-class TestKnockoffNets(TestBase):
-    """
-    A unittest class for testing the KnockoffNets attack.
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        master_seed(seed=1234, set_tensorflow=True)
-        super().setUpClass()
-
-    def setUp(self):
-        super().setUp()
-
-    def test_3_tensorflow_classifier(self):
-        """
-        First test with the TensorFlowClassifier.
-        :return:
-        """
         # Build TensorFlowClassifier
-        victim_tfc, sess = get_image_classifier_tf()
+        victim_tfc, sess = image_dl_estimator()
 
         # Create the thieved classifier
-        thieved_tfc, _ = get_image_classifier_tf(load_init=False, sess=sess)
+        thieved_tfc, _ = image_dl_estimator(load_init=False, sess=sess)
 
-        # Create random attack
-        attack = KnockoffNets(
-            classifier=victim_tfc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="random",
-        )
-        thieved_tfc = attack.extract(x=self.x_train_mnist, thieved_classifier=thieved_tfc)
+        back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_mnist), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_mnist), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+    except ARTTestException as e:
+        art_warning(e)
 
-        self.assertGreater(acc, 0.3)
 
-        # Create adaptive attack
-        attack = KnockoffNets(
-            classifier=victim_tfc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="adaptive",
-            reward="all",
-        )
-        thieved_tfc = attack.extract(x=self.x_train_mnist, y=self.y_train_mnist, thieved_classifier=thieved_tfc)
+@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.parametrize("sampling_strategy", ["random", "adaptive"])
+@pytest.mark.framework_agnostic
+def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator, sampling_strategy):
+    try:
+        (x_train, y_train), (_, _) = get_iris_dataset
 
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_mnist), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_mnist), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.4)
-
-        # Clean-up session
-        if sess is not None:
-            sess.close()
-
-    def test_7_keras_classifier(self):
-        """
-        Second test with the KerasClassifier.
-        :return:
-        """
-        # Build KerasClassifier
-        victim_krc = get_image_classifier_kr()
+        victim_tfc, sess = tabular_dl_estimator()
 
         # Create the thieved classifier
-        thieved_krc = get_image_classifier_kr(load_init=False)
+        thieved_tfc, _ = tabular_dl_estimator(load_init=False, sess=sess)
 
-        # Create random attack
-        attack = KnockoffNets(
-            classifier=victim_krc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="random",
-        )
-        thieved_krc = attack.extract(x=self.x_train_mnist, thieved_classifier=thieved_krc)
+        back_end_knockoff_nets(0.33, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
 
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_mnist), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_mnist), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.3)
-
-        # Create adaptive attack
-        attack = KnockoffNets(
-            classifier=victim_krc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="adaptive",
-            reward="all",
-        )
-        thieved_krc = attack.extract(x=self.x_train_mnist, y=self.y_train_mnist, thieved_classifier=thieved_krc)
-
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_mnist), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_mnist), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.4)
-
-        # Clean-up
-        k.clear_session()
-
-    def test_5_pytorch_classifier(self):
-        """
-        Third test with the PyTorchClassifier.
-        :return:
-        """
-        self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-
-        # Build PyTorchClassifier
-        victim_ptc = get_image_classifier_pt()
-
-        # Create the thieved classifier
-        thieved_ptc = get_image_classifier_pt(load_init=False)
-
-        # Create random attack
-        attack = KnockoffNets(
-            classifier=victim_ptc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="random",
-        )
-
-        thieved_ptc = attack.extract(x=self.x_train_mnist, thieved_classifier=thieved_ptc)
-
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_mnist), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_mnist), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.3)
-
-        # Create adaptive attack
-        attack = KnockoffNets(
-            classifier=victim_ptc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="adaptive",
-            reward="all",
-        )
-        thieved_ptc = attack.extract(x=self.x_train_mnist, y=self.y_train_mnist, thieved_classifier=thieved_ptc)
-
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_mnist), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_mnist), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.4)
-
-        self.x_train_mnist = np.reshape(self.x_train_mnist, (self.x_train_mnist.shape[0], 28, 28, 1)).astype(np.float32)
-
-    def test_1_classifier_type_check_fail(self):
-        backend_test_classifier_type_check_fail(KnockoffNets, [BaseEstimator, ClassifierMixin])
-
-    def test_2_tensorflow_iris(self):
-        """
-        First test for TensorFlow.
-        :return:
-        """
-        # Get the TensorFlow classifier
-        victim_tfc, sess = get_tabular_classifier_tf()
-
-        # Create the thieved classifier
-        thieved_tfc, _ = get_tabular_classifier_tf(load_init=False, sess=sess)
-
-        # Create random attack
-        attack = KnockoffNets(
-            classifier=victim_tfc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="random",
-        )
-        thieved_tfc = attack.extract(x=self.x_train_iris, thieved_classifier=thieved_tfc)
-
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_iris), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_iris), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.3)
-
-        # Create adaptive attack
-        attack = KnockoffNets(
-            classifier=victim_tfc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="adaptive",
-            reward="all",
-        )
-        thieved_tfc = attack.extract(x=self.x_train_iris, y=self.y_train_iris, thieved_classifier=thieved_tfc)
-
-        victim_preds = np.argmax(victim_tfc.predict(x=self.x_train_iris), axis=1)
-        thieved_preds = np.argmax(thieved_tfc.predict(x=self.x_train_iris), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.4)
-
-        # Clean-up session
-        if sess is not None:
-            sess.close()
-
-    def test_6_keras_iris(self):
-        """
-        Second test for Keras.
-        :return:
-        """
-        # Build KerasClassifier
-        victim_krc = get_tabular_classifier_kr()
-
-        # Create the thieved classifier
-        thieved_krc = get_tabular_classifier_kr(load_init=False)
-
-        # Create random attack
-        attack = KnockoffNets(
-            classifier=victim_krc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="random",
-        )
-        thieved_krc = attack.extract(x=self.x_train_iris, thieved_classifier=thieved_krc)
-
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_iris), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_iris), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.3)
-
-        # Create adaptive attack
-        attack = KnockoffNets(
-            classifier=victim_krc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="adaptive",
-            reward="all",
-        )
-        thieved_krc = attack.extract(x=self.x_train_iris, y=self.y_train_iris, thieved_classifier=thieved_krc)
-
-        victim_preds = np.argmax(victim_krc.predict(x=self.x_train_iris), axis=1)
-        thieved_preds = np.argmax(thieved_krc.predict(x=self.x_train_iris), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.33)
-
-        # Clean-up
-        k.clear_session()
-
-    def test_4_pytorch_iris(self):
-        """
-        Third test for PyTorch.
-        :return:
-        """
-        # Build PyTorchClassifier
-        victim_ptc = get_tabular_classifier_pt()
-
-        # Create the thieved classifier
-        thieved_ptc = get_tabular_classifier_pt(load_init=False)
-
-        # Create random attack
-        attack = KnockoffNets(
-            classifier=victim_ptc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="random",
-        )
-        thieved_ptc = attack.extract(x=self.x_train_iris, thieved_classifier=thieved_ptc)
-
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_iris), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_iris), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.3)
-
-        # Create adaptive attack
-        attack = KnockoffNets(
-            classifier=victim_ptc,
-            batch_size_fit=BATCH_SIZE,
-            batch_size_query=BATCH_SIZE,
-            nb_epochs=NB_EPOCHS,
-            nb_stolen=NB_STOLEN,
-            sampling_strategy="adaptive",
-            reward="all",
-        )
-        thieved_ptc = attack.extract(x=self.x_train_iris, y=self.y_train_iris, thieved_classifier=thieved_ptc)
-
-        victim_preds = np.argmax(victim_ptc.predict(x=self.x_train_iris), axis=1)
-        thieved_preds = np.argmax(thieved_ptc.predict(x=self.x_train_iris), axis=1)
-        acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
-
-        self.assertGreater(acc, 0.4)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-if __name__ == "__main__":
-    unittest.main()
+def back_end_knockoff_nets(min_accuracy, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train=None):
+    # Create random attack
+
+    attack = KnockoffNets(
+        classifier=victim_tfc,
+        batch_size_fit=10,
+        batch_size_query=10,
+        nb_epochs=10,
+        nb_stolen=100,
+        sampling_strategy=sampling_strategy,
+    )
+
+    thieved_tfc = attack.extract(x=x_train, y=y_train, thieved_classifier=thieved_tfc)
+
+    victim_preds = np.argmax(victim_tfc.predict(x=x_train), axis=1)
+    thieved_preds = np.argmax(thieved_tfc.predict(x=x_train), axis=1)
+    acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+    assert acc > min_accuracy
+
+
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(KnockoffNets, [BaseEstimator, ClassifierMixin])
