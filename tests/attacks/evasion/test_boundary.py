@@ -42,7 +42,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 @pytest.mark.parametrize("clipped_classifier, targeted", [(True, True), (True, False), (False, True), (False, False)])
 def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset, clipped_classifier, targeted):
     try:
-        classifier = tabular_dl_estimator(clipped=clipped_classifier)
+        classifier, _ = tabular_dl_estimator(clipped=clipped_classifier)
         attack = BoundaryAttack(classifier, targeted=targeted, max_iter=10)
         if targeted:
             backend_targeted_tabular(attack, get_iris_dataset)
@@ -56,7 +56,7 @@ def test_tabular(art_warning, tabular_dl_estimator, framework, get_iris_dataset,
 @pytest.mark.parametrize("targeted", [True, False])
 def test_images(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, framework, targeted):
     try:
-        classifier = image_dl_estimator_for_attack(BoundaryAttack)
+        classifier, _ = image_dl_estimator_for_attack(BoundaryAttack)
         attack = BoundaryAttack(estimator=classifier, targeted=targeted, max_iter=20)
         if targeted:
             backend_targeted_images(attack, fix_get_mnist_subset)
