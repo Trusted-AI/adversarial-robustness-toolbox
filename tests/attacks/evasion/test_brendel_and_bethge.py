@@ -35,8 +35,8 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize("norm", [1, 2, np.inf, "inf"])
 def test_generate(art_warning, get_default_mnist_subset, image_dl_estimator_for_attack, targeted, norm):
     try:
-        (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
-        classifier = image_dl_estimator_for_attack(BrendelBethgeAttack, defended=False, from_logits=True)
+        (_, _), (x_test_mnist, y_test_mnist) = get_default_mnist_subset
+        classifier, _ = image_dl_estimator_for_attack(BrendelBethgeAttack, defended=False, from_logits=True)
 
         attack = BrendelBethgeAttack(
             estimator=classifier,
