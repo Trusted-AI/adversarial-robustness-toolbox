@@ -27,7 +27,7 @@ from typing import Optional, Tuple, TYPE_CHECKING
 
 from scipy.signal import lfilter
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.preprocessing.preprocessing import Preprocessor

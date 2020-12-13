@@ -27,7 +27,7 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 # pylint: disable=E0001
 import numpy as np
 from sklearn import metrics
-from tqdm import trange, tqdm
+from tqdm.auto import trange, tqdm
 
 from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.estimators.classification.classifier import ClassifierNeuralNetwork

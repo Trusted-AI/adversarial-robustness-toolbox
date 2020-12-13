@@ -29,7 +29,7 @@ from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from scipy.ndimage import rotate, shift
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin

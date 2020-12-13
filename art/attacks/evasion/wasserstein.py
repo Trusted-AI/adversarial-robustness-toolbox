@@ -27,7 +27,7 @@ from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from scipy.special import lambertw
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
