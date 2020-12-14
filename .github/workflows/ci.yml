@@ -129,8 +129,8 @@ jobs:
         run: ./run_tests.sh ${{ matrix.framework }}
       - name: Save code coverage report
         uses: actions/upload-artifact@v2
-          with:
-            path: coverage/${{ matrix.name }}/*
+        with:
+          path: coverage/${{ matrix.name }}/*
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
   codecov:
