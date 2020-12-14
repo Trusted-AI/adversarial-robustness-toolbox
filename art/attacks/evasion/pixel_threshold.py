@@ -43,7 +43,7 @@ from six import string_types
 from scipy._lib._util import check_random_state
 from scipy.optimize.optimize import _status_message
 from scipy.optimize import OptimizeResult, minimize
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
