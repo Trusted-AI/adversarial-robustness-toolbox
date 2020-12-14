@@ -37,7 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class NumpyRandomizedSmoothing(
-    RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin, BaseEstimator  # lgtm [py/missing-call-to-init]
+    RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin, BaseEstimator
 ):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
@@ -57,10 +57,7 @@ class NumpyRandomizedSmoothing(
         :param alpha: The failure probability of smoothing
         """
         super().__init__(
-            model=None,
-            input_shape=classifier.input_shape,
-            nb_classes=classifier.nb_classes,
-            channels_first=classifier.channels_first,
+            model=classifier.model,
             clip_values=classifier.clip_values,
             preprocessing_defences=classifier.preprocessing_defences,
             postprocessing_defences=classifier.postprocessing_defences,
@@ -69,11 +66,14 @@ class NumpyRandomizedSmoothing(
             scale=scale,
             alpha=alpha,
         )
+        self._input_shape = classifier.input_shape
+        self._nb_classes = classifier.nb_classes
+
         self.classifier = classifier
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
-        return self.classifier.input_shape
+        return self._input_shape
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
         """
@@ -98,33 +98,6 @@ class NumpyRandomizedSmoothing(
                        and providing it takes no effect.
         """
         return self.classifier.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
-
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
-        """
-        Fit the classifier on the training set `(x, y)`.
-
-        :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :param batch_size: Batch size.
-        :key nb_epochs: Number of epochs to use for training
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
-        :type kwargs: `dict`
-        """
-        RandomizedSmoothingMixin.fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs)
-
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
-        """
-        Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
-
-        :param x: Test set.
-        :param batch_size: Batch size.
-        :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
-        :type is_abstain: `boolean`
-        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        """
-        return RandomizedSmoothingMixin.predict(self, x, batch_size=128, **kwargs)
 
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
