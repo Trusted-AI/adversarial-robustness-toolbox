@@ -172,7 +172,7 @@ class UniversalPerturbation(EvasionAttack):
 
         # Generate the adversarial examples
         nb_iter = 0
-        pbar = tqdm(self.max_iter, desc="Universal perturbation", disable=not self.verbose)
+        pbar = tqdm(total=self.max_iter, desc="Universal perturbation", disable=not self.verbose)
 
         while fooling_rate < 1.0 - self.delta and nb_iter < self.max_iter:
             # Go through all the examples randomly
