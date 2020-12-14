@@ -130,9 +130,8 @@ jobs:
       - name: Save code coverage report
         uses: actions/upload-artifact@v2
         with:
-          path: coverage/${{ matrix.name }}/*
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+          name: ${{ matrix.name }} Code Coverage
+          path: coverage.xml
   codecov:
     name: Upload to Codecov
     needs: test
