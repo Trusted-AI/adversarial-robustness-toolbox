@@ -64,7 +64,7 @@ art_datagen = KerasDataGenerator(
 classifier = KerasClassifier(build_model(), clip_values=(0, 1), use_logits=False)
 
 # Create attack for adversarial trainer; here, we use 2 attacks, both crafting adv examples on the target model
-pgd = ProjectedGradientDescent(classifier, eps=8, eps_step=2, max_iter=10, num_random_init=20)
+pgd = ProjectedGradientDescent(classifier, eps=8 / 255, eps_step=2 / 255, max_iter=10, num_random_init=1)
 
 # Create some adversarial samples for evaluation
 x_test_pgd = pgd.generate(x_test)
