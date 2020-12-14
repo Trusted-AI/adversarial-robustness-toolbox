@@ -30,11 +30,12 @@ from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
-NB_TRAIN, NB_TEST, BATCH_SIZE = 300, 10, 128
+NB_TRAIN = 800
+BATCH_SIZE = 128
 
 
 @pytest.fixture()
-def get_ac(get_default_mnist_subset, image_dl_estimator):
+def get_ac(get_default_mnist_subset, image_dl_estimator, framework):
     (x_train, y_train), (_, _) = get_default_mnist_subset
     x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
 
@@ -57,7 +58,7 @@ def get_ac(get_default_mnist_subset, image_dl_estimator):
 
 @pytest.mark.parametrize("params", [dict(nb_clusters=0), dict(clustering_method="what"), dict(reduce="what"),
                                     dict(cluster_analysis="what")])
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet")
 def test_wrong_parameters(art_warning, get_ac, params):
     try:
         _, defence, defence_gen = get_ac
@@ -69,7 +70,7 @@ def test_wrong_parameters(art_warning, get_ac, params):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet")
 def test_activations(art_warning, get_ac, get_default_mnist_subset):
     try:
         _, defence, _ = get_ac
@@ -80,7 +81,7 @@ def test_activations(art_warning, get_ac, get_default_mnist_subset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet")
 def test_output_clusters(art_warning, get_ac, get_default_mnist_subset):
     try:
         classifier, defence, _ = get_ac
@@ -104,7 +105,7 @@ def test_output_clusters(art_warning, get_ac, get_default_mnist_subset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet")
 def test_detect_poison(art_warning, get_ac, get_default_mnist_subset):
     try:
         _, defence, defence_gen = get_ac
@@ -160,7 +161,7 @@ def test_detect_poison(art_warning, get_ac, get_default_mnist_subset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet")
 def test_evaluate_defense(art_warning, get_ac, get_default_mnist_subset):
     try:
         _, defence, defence_gen = get_ac
@@ -176,7 +177,7 @@ def test_evaluate_defense(art_warning, get_ac, get_default_mnist_subset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet")
 def test_analyze_cluster(art_warning, get_ac, get_default_mnist_subset):
     try:
         classifier, defence, defence_gen = get_ac
@@ -234,7 +235,7 @@ def test_analyze_cluster(art_warning, get_ac, get_default_mnist_subset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet")
 def test_plot_clusters(art_warning, get_ac):
     try:
         _, defence, defence_gen = get_ac
@@ -246,7 +247,7 @@ def test_plot_clusters(art_warning, get_ac):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "keras")
 def test_pickle(art_warning, get_ac):
     try:
         classifier, _, _ = get_ac
@@ -258,15 +259,17 @@ def test_pickle(art_warning, get_ac):
 
         np.testing.assert_equal(classifier._clip_values, loaded._clip_values)
         assert classifier._channels_first == loaded._channels_first
-        assert classifier._use_logits == loaded._use_logits
-        assert classifier._input_layer == loaded._input_layer
+        if hasattr(classifier, "_use_logits"):
+            assert classifier._use_logits == loaded._use_logits
+        if hasattr(classifier, "_input_layer"):
+            assert classifier._input_layer == loaded._input_layer
 
         ActivationDefence._remove_pickle(filename)
     except ARTTestException as e:
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "keras")
 def test_fix_relabel_poison(art_warning, get_ac, get_default_mnist_subset):
     try:
         classifier, _, _ = get_ac
@@ -306,7 +309,7 @@ def test_fix_relabel_poison(art_warning, get_ac, get_default_mnist_subset):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "tensorflow")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet")
 def test_visualizations(art_warning, get_ac, get_default_mnist_subset):
     try:
         _, defence, _ = get_ac
