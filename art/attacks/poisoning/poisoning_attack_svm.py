@@ -24,7 +24,7 @@ import logging
 from typing import Optional, Tuple
 
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.attacks.attack import PoisoningAttackWhiteBox
 from art.estimators.classification.scikitlearn import ScikitlearnSVC

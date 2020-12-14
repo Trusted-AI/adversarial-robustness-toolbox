@@ -27,7 +27,7 @@ from typing import List, Optional, Tuple, Union, TYPE_CHECKING
 # pylint: disable=E0001
 import numpy as np
 from sklearn import metrics
-from tqdm import trange, tqdm
+from tqdm.auto import trange, tqdm
 
 from art.defences.detector.evasion.subsetscanning.scanner import Scanner
 from art.estimators.classification.classifier import ClassifierNeuralNetwork
@@ -151,7 +151,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         if clean_size is None and advs_size is None:
             # Individual scan
             with tqdm(
-                len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning", disable=not self.verbose
+                total=len(clean_pvalranges) + len(adv_pvalranges), desc="Subset scanning", disable=not self.verbose
             ) as pbar:
                 for j, c_p in enumerate(clean_pvalranges):
                     best_score, _, _, _ = Scanner.fgss_individ_for_nets(c_p)

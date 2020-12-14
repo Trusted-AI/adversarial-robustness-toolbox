@@ -29,7 +29,7 @@ from tempfile import TemporaryDirectory
 from typing import Optional, Tuple
 
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art import config
 from art.defences.preprocessor.preprocessor import Preprocessor

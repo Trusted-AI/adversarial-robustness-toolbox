@@ -35,7 +35,7 @@ import zipfile
 import numpy as np
 from scipy.special import gammainc
 import six
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art import config
 
