@@ -247,7 +247,7 @@ def test_plot_clusters(art_warning, get_ac):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "keras")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "keras", "tensorflow")
 def test_pickle(art_warning, get_ac):
     try:
         classifier, _, _ = get_ac
@@ -269,7 +269,7 @@ def test_pickle(art_warning, get_ac):
         art_warning(e)
 
 
-@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "keras")
+@pytest.mark.skipMlFramework("non_dl_frameworks", "pytorch", "mxnet", "keras", "tensorflow")
 def test_fix_relabel_poison(art_warning, get_ac, get_default_mnist_subset):
     try:
         classifier, _, _ = get_ac
