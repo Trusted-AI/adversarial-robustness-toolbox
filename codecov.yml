@@ -1,0 +1,52 @@
+codecov:
+  bot: "codecov-io"
+  max_report_age: 24
+  disable_default_path_fixes: no
+  require_ci_to_pass: yes
+  notify:
+    after_n_builds: 2
+    wait_for_ci: yes
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project: yes
+    patch: yes
+    changes: no
+
+  status:
+    project:
+      default:
+        # basic
+        target: 50
+        threshold: 5
+        base: auto
+        flags: null
+        paths: null
+        # advanced
+        branches: null
+        if_not_found: success
+        if_ci_failed: error
+        informational: False
+        only_pulls: false
+
+    patch:
+      default:
+        target: auto
+        threshold: 95
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "reach,diff,flags,tree"
+  behavior: default
+  require_changes: no
