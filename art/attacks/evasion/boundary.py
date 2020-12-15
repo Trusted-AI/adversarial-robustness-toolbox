@@ -27,7 +27,7 @@ import logging
 from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
-from tqdm import tqdm, trange
+from tqdm.auto import tqdm, trange
 
 from art.attacks.attack import EvasionAttack
 from art.config import ART_NUMPY_DTYPE

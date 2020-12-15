@@ -21,7 +21,7 @@ This module implements gradient check functions for estimators
 from typing import TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 if TYPE_CHECKING:
     from art.estimators.estimator import LossGradientsMixin

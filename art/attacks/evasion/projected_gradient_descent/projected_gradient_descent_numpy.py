@@ -30,7 +30,7 @@ from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
 from scipy.stats import truncnorm
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.evasion.fast_gradient import FastGradientMethod
 from art.config import ART_NUMPY_DTYPE
