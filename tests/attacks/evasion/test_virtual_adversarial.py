@@ -48,7 +48,7 @@ def test_image(art_warning, fix_get_mnist_subset, image_dl_estimator, framework)
     try:
         (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
 
-        estimator, sess = image_dl_estimator()
+        estimator, _ = image_dl_estimator()
 
         scores = get_labels_np_array(estimator.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
@@ -78,8 +78,8 @@ def test_tabular(art_warning, get_iris_dataset, tabular_dl_estimator, framework,
                 _ = attack.generate(x_test.astype(np.float32))
 
                 assert (
-                    "This attack requires a classifier predicting probabilities in the range [0, 1] "
-                    "as output." in str(context.exception)
+                        "This attack requires a classifier predicting probabilities in the range [0, 1] "
+                        "as output." in str(context.exception)
                 )
                 assert "Values smaller than 0.0 or larger than 1.0 have been detected." in str(context.exception)
             return
