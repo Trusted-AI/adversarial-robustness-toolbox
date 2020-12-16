@@ -42,7 +42,25 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
+# Working with Pytorch, Tensorflow, Keras
+@pytest.mark.skipMlFramework("mxnet")
+def test_image(art_warning, fix_get_mnist_subset, image_dl_estimator, framework):
+    try:
+        (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
 
+        estimator, _ = image_dl_estimator()
+
+        scores = get_labels_np_array(estimator.predict(x_train))
+        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
+        logger.info("[PyTorch, MNIST] Accuracy on training set: %.2f%%", (acc * 100))
+
+        scores = get_labels_np_array(estimator.predict(x_test))
+        acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info("[PyTorch, MNIST] Accuracy on test set: %.2f%%", (acc * 100))
+
+        back_end_test_mnist(estimator, x_test, y_test)
+    except ARTTestException as e:
+        art_warning(e)
 
 
 @pytest.mark.parametrize("clipped", [True, False])
@@ -86,8 +104,7 @@ def test_tabular(art_warning, get_iris_dataset, tabular_dl_estimator, framework,
         art_warning(e)
 
 
-def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(VirtualAdversarialMethod, [BaseEstimator, ClassifierMixin])
+
 
 
 def back_end_test_mnist(classifier, x_test, y_test):
