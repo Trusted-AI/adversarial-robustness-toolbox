@@ -63,7 +63,7 @@ def test_image(art_warning, fix_get_mnist_subset, image_dl_estimator, targeted):
 
 def _back_end_test_attack(classifier, x_test, y_test, targeted):
     """
-    Test with the Threshold Attack 
+    Test with the Threshold Attack
     :return:
     """
     x_test_original = x_test.copy()
