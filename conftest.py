@@ -494,7 +494,7 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                 wildcard = True
             del kwargs["wildcard"]
 
-        if framework == "kerass":
+        if framework == "keras":
             if wildcard is False and functional is False:
                 if functional:
                     new_kwargs = filter_out_non_supported_kwargs(kwargs, ["input_layer", "output_layer"])
