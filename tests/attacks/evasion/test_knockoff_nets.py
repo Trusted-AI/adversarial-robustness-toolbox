@@ -45,7 +45,7 @@ def test_with_images(art_warning, mnist_subset_100_10, image_dl_estimator, sampl
         # Create the thieved classifier
         thieved_tfc, _ = image_dl_estimator(load_init=False, sess=sess)
 
-        back_end_knockoff_nets(0.3, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
+        back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
 
     except ARTTestException as e:
         art_warning(e)
