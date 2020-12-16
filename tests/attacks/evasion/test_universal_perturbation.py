@@ -72,7 +72,32 @@ def test_image(art_warning, fix_get_mnist_subset, image_dl_estimator):
         art_warning(e)
 
 
+@pytest.mark.parametrize("clipped", [True, False])
+def test_tabular(art_warning, get_iris_dataset, tabular_dl_estimator, clipped):
+    try:
+        (_, _), (x_test, y_test) = get_iris_dataset
 
+        estimator = tabular_dl_estimator(clipped)
+
+        # Test untargeted attack
+        attack_params = {"max_iter": 1, "attacker": "ead", "attacker_params": {"max_iter": 5, "targeted": False}}
+        attack = UniversalPerturbation(estimator)
+        attack.set_params(**attack_params)
+        x_test_iris_adv = attack.generate(x_test)
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test, x_test_iris_adv)
+
+        if clipped:
+            np.testing.assert_array_less(x_test_iris_adv, 1)
+            # Note: the np version of the assert doesn't seem to pass
+            # np.testing.assert_array_less(0, x_test_iris_adv)
+            assert bool((x_test_iris_adv >= 0).all())
+
+        preds_adv = np.argmax(estimator.predict(x_test_iris_adv), axis=1)
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, np.argmax(y_test, axis=1), preds_adv)
+        acc = np.sum(preds_adv == np.argmax(y_test, axis=1)) / y_test.shape[0]
+        logger.info("Accuracy on Iris with universal adversarial examples: %.2f%%", (acc * 100))
+    except ARTTestException as e:
+        art_warning(e)
 
 
 def test_classifier_type_check_fail():
