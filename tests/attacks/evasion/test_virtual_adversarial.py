@@ -78,8 +78,8 @@ def test_tabular(art_warning, get_iris_dataset, tabular_dl_estimator, framework,
                 _ = attack.generate(x_test.astype(np.float32))
 
                 assert (
-                        "This attack requires a classifier predicting probabilities in the range [0, 1] "
-                        "as output." in str(context.exception)
+                    "This attack requires a classifier predicting probabilities in the range [0, 1] "
+                    "as output." in str(context.exception)
                 )
                 assert "Values smaller than 0.0 or larger than 1.0 have been detected." in str(context.exception)
             return
