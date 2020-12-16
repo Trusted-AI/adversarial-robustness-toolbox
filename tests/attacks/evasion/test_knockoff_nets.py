@@ -52,3 +52,26 @@ def test_with_images(art_warning, mnist_subset_100_10, image_dl_estimator, sampl
 
 
 
+
+def back_end_knockoff_nets(min_accuracy, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train=None):
+    # Create random attack
+
+    attack = KnockoffNets(
+        classifier=victim_tfc,
+        batch_size_fit=10,
+        batch_size_query=10,
+        nb_epochs=10,
+        nb_stolen=100,
+        sampling_strategy=sampling_strategy,
+    )
+
+    thieved_tfc = attack.extract(x=x_train, y=y_train, thieved_classifier=thieved_tfc)
+
+    victim_preds = np.argmax(victim_tfc.predict(x=x_train), axis=1)
+    thieved_preds = np.argmax(thieved_tfc.predict(x=x_train), axis=1)
+    acc = np.sum(victim_preds == thieved_preds) / len(victim_preds)
+    assert acc > min_accuracy
+
+
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(KnockoffNets, [BaseEstimator, ClassifierMixin])
