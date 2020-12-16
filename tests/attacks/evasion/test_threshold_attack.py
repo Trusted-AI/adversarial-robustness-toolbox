@@ -50,15 +50,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.parametrize("targeted", [True, False])
-def test_image(art_warning, fix_get_mnist_subset, image_dl_estimator, targeted):
-    try:
-        (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
 
-        estimator, _ = image_dl_estimator()
-        _back_end_test_attack(estimator, x_test, y_test, targeted)
-    except ARTTestException as e:
-        art_warning(e)
 
 
 def _back_end_test_attack(classifier, x_test, y_test, targeted):
