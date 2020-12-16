@@ -49,7 +49,7 @@ def test_image(art_warning, fix_get_mnist_subset, image_dl_estimator):
         x_test_original = x_test.copy()
 
         # Build TensorFlowClassifier
-        estimator, sess = image_dl_estimator()
+        estimator, _ = image_dl_estimator()
 
         # Attack
         up = UniversalPerturbation(estimator, max_iter=1, attacker="newtonfool", attacker_params={"max_iter": 5})
