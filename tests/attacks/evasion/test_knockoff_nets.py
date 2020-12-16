@@ -51,6 +51,22 @@ def test_with_images(art_warning, mnist_subset_100_10, image_dl_estimator, sampl
         art_warning(e)
 
 
+@pytest.mark.skipMlFramework("non_dl_frameworks")
+@pytest.mark.parametrize("sampling_strategy", ["random", "adaptive"])
+@pytest.mark.framework_agnostic
+def test_with_tabular_data(art_warning, get_iris_dataset, tabular_dl_estimator, sampling_strategy):
+    try:
+        (x_train, y_train), (_, _) = get_iris_dataset
+
+        victim_tfc, sess = tabular_dl_estimator()
+
+        # Create the thieved classifier
+        thieved_tfc, _ = tabular_dl_estimator(load_init=False, sess=sess)
+
+        back_end_knockoff_nets(0.33, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
+
+    except ARTTestException as e:
+        art_warning(e)
 
 
 def back_end_knockoff_nets(min_accuracy, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train=None):
