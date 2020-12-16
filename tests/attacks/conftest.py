@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 @pytest.fixture
 def tabular_dl_estimator_for_attack(framework, tabular_dl_estimator):
     def _tabular_dl_estimator_for_attack(attack, clipped=True):
-        classifier, sess = tabular_dl_estimator(clipped)
+        classifier, _ = tabular_dl_estimator(clipped)
         classifier_list = [classifier]
 
         classifier_tested = [
