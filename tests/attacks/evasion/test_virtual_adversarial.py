@@ -48,7 +48,7 @@ def test_image(art_warning, fix_get_mnist_subset, image_dl_estimator, framework)
     try:
         (x_train, y_train, x_test, y_test) = fix_get_mnist_subset
 
-        estimator, _ = image_dl_estimator()
+        estimator, sess = image_dl_estimator()
 
         scores = get_labels_np_array(estimator.predict(x_train))
         acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train, axis=1)) / y_train.shape[0]
@@ -104,7 +104,8 @@ def test_tabular(art_warning, get_iris_dataset, tabular_dl_estimator, framework,
         art_warning(e)
 
 
-
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(VirtualAdversarialMethod, [BaseEstimator, ClassifierMixin])
 
 
 def back_end_test_mnist(classifier, x_test, y_test):
