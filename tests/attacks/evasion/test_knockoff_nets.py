@@ -32,4 +32,23 @@ from tests.attacks.utils import backend_test_classifier_type_check_fail
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.skipMlFramework("mxnet", "non_dl_frameworks")
+@pytest.mark.parametrize("sampling_strategy", ["random", "adaptive"])
+@pytest.mark.framework_agnostic
+def test_with_images(art_warning, mnist_subset_100_10, image_dl_estimator, sampling_strategy):
+    try:
+        (x_train, y_train, x_test, y_test) = mnist_subset_100_10
+
+        # Build TensorFlowClassifier
+        victim_tfc, sess = image_dl_estimator()
+
+        # Create the thieved classifier
+        thieved_tfc, _ = image_dl_estimator(load_init=False, sess=sess)
+
+        back_end_knockoff_nets(0.4, victim_tfc, thieved_tfc, sampling_strategy, x_train, y_train)
+
+    except ARTTestException as e:
+        art_warning(e)
+
+
 
