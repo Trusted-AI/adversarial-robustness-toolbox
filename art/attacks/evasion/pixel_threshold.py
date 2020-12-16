@@ -281,7 +281,7 @@ class PixelThreshold(EvasionAttack):
                     predict_fn,
                     maxfun=max(1, 400 // len(bounds)) * len(bounds) * 100,
                     callback=callback_fn,
-                    iterations=1,
+                    iterations=max_iter,
                 )
             except Exception as exception:
                 if self.verbose:
