@@ -80,7 +80,7 @@ def _back_end_test_attack(classifier, x_test, y_test, targeted):
         targets = y_test
 
     for es in [0, 1]:
-        df = ThresholdAttack(classifier, th=64, es=es, targeted=targeted)
+        df = ThresholdAttack(classifier, th=65, es=es, targeted=targeted)
         x_test_adv = df.generate(x_test_original, targets, max_iter=1)
 
         np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test, x_test_adv)
