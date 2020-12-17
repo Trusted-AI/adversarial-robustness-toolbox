@@ -40,9 +40,9 @@ def get_ac(get_default_mnist_subset, image_dl_estimator, framework):
     x_train, y_train = x_train[:NB_TRAIN], y_train[:NB_TRAIN]
 
     classifier, _ = image_dl_estimator()
-    classifier.fit(x_train, y_train, nb_epochs=1, batch_size=128)
+    classifier.fit(x_train, y_train, nb_epochs=1, batch_size=BATCH_SIZE)
 
-    defence = ActivationDefence(classifier, x_train, y_train)
+    defence = ActivationDefence(classifier, x_train, y_train, layer=len(classifier.layer_names) - 2)
 
     datagen = ImageDataGenerator()
     datagen.fit(x_train)
@@ -183,11 +183,16 @@ def test_analyze_cluster(art_warning, get_ac, get_default_mnist_subset):
         classifier, defence, defence_gen = get_ac
         (x_train, _), (_, _) = get_default_mnist_subset
 
+        defence.cluster_activations()
+        defence_gen.cluster_activations()
+
         defence.analyze_clusters(cluster_analysis="relative-size")
         defence_gen.analyze_clusters(cluster_analysis="relative-size")
 
         defence.analyze_clusters(cluster_analysis="silhouette-scores")
-        defence_gen.analyze_clusters(cluster_analysis="silhouette-scores")
+
+        if len(defence_gen.clusters_by_class) > 2:
+            defence_gen.analyze_clusters(cluster_analysis="silhouette-scores")
 
         report, dist_clean_by_class = defence.analyze_clusters(cluster_analysis="distance")
         report_gen, dist_clean_by_class_gen = defence_gen.analyze_clusters(cluster_analysis="distance")
@@ -242,7 +247,8 @@ def test_plot_clusters(art_warning, get_ac):
         defence.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
         defence_gen.detect_poison(nb_clusters=2, nb_dims=10, reduce="PCA")
         defence.plot_clusters(save=False)
-        defence_gen.plot_clusters(save=False)
+        if len(defence_gen.clusters_by_class) > 2:
+            defence_gen.plot_clusters(save=False)
     except ARTTestException as e:
         art_warning(e)
 
