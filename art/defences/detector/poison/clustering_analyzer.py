@@ -76,6 +76,7 @@ class ClusteringAnalyzer:
 
             # assume that smallest cluster is poisonous and all others are clean
             sizes = np.bincount(clusters)
+            sizes = np.append(sizes, [0] * (nb_clusters - len(sizes)))
             total_dp_in_class = np.sum(sizes)
             poison_clusters: List[int] = [int(np.argmin(sizes))]
             clean_clusters = list(set(clusters) - set(poison_clusters))
