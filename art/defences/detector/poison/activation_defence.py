@@ -74,6 +74,7 @@ class ActivationDefence(PoisonFilteringDefence):
         x_train: Optional[np.ndarray],
         y_train: Optional[np.ndarray],
         generator: Optional[DataGenerator] = None,
+        layer: Optional[int] = None,
     ) -> None:
         """
         Create an :class:`.ActivationDefence` object with the provided classifier.
@@ -102,6 +103,7 @@ class ActivationDefence(PoisonFilteringDefence):
         self.confidence_level: List[float] = []
         self.poisonous_clusters: List[List[np.ndarray]] = []
         self.clusterer = MiniBatchKMeans(n_clusters=self.nb_clusters)
+        self.layer = layer if layer is not None else len(self.classifier.layer_names) - 1
         self._check_params()
 
     def evaluate_defence(self, is_clean: np.ndarray, **kwargs) -> str:
@@ -571,7 +573,7 @@ class ActivationDefence(PoisonFilteringDefence):
             nb_layers = len(self.classifier.layer_names)
         else:
             raise ValueError("No layer names identified.")
-        protected_layer = nb_layers - 1
+        protected_layer = self.layer
 
         if self.generator is not None:
             activations = self.classifier.get_activations(
