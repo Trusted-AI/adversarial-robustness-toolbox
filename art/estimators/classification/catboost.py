@@ -113,7 +113,7 @@ class CatBoostARTClassifier(ClassifierDecisionTree):
         """
         Perform prediction for a batch of inputs.
 
-        :param x: Test set.
+        :param x: Input samples.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
         # Apply preprocessing

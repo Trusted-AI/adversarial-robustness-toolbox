@@ -366,8 +366,7 @@ class NeuralNetworkMixin(ABC):
         """
         Perform prediction of the neural network for samples `x`.
 
-        :param x: Samples of shape (nb_samples, nb_features) or (nb_samples, nb_pixels_1, nb_pixels_2,
-                  nb_channels) or (nb_samples, nb_channels, nb_pixels_1, nb_pixels_2).
+        :param x: Input samples.
         :param batch_size: Batch size.
         :return: Predictions.
         :rtype: Format as expected by the `model`

@@ -157,7 +157,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         models without aggregation. The same option should be used for logits output, as logits are not comparable
         between models and should not be aggregated.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`, or of shape

@@ -165,7 +165,7 @@ class QueryEfficientBBGradientEstimation(ClassifierWrapper, ClassifierClassLossG
         """
         Perform prediction for a batch of inputs. Rounds results first.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """

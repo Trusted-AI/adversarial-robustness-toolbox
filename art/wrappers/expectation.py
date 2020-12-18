@@ -71,7 +71,7 @@ class ExpectationOverTransformations(ClassifierWrapper, ClassifierClassLossGradi
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
 
-        :param x: Test set.
+        :param x: Input samples.
         :param batch_size: Size of batches.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
