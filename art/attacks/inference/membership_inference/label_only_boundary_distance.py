@@ -28,6 +28,7 @@ import numpy as np
 from art.attacks.attack import InferenceAttack
 from art.estimators.estimator import BaseEstimator
 from art.estimators.classification.classifier import ClassifierMixin
+from art.utils import check_and_transform_label_format
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_TYPE
@@ -65,12 +66,38 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
 
         :param x: Input data.
         :param y: True labels for `x`.
-        :param kwargs: Parameters for HopSkipJump attack except argument `estimator`.
+
+        :Keyword Arguments for HopSkipJump:
+            * *norm*: Order of the norm. Possible values: "inf", np.inf or 2.
+            * *max_iter*: Maximum number of iterations.
+            * *max_eval*: Maximum number of evaluations for estimating gradient.
+            * *init_eval*: Initial number of evaluations for estimating gradient.
+            * *init_size*: Maximum number of trials for initial generation of adversarial examples.
+            * *verbose*: Show progress bars.
+
         :return: An array holding the inferred membership status, 1 indicates a member and 0 indicates non-member.
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
-        hsj = HopSkipJump(classifier=self.estimator, **kwargs)
+        if y is None:
+            raise ValueError("Argument `y` is None, but this attack requires true labels `y` to be provided.")
+
+        if self.distance_threshold_tau is None:
+            raise ValueError(
+                "No value for distance threshold `distance_threshold_tau` provided. Please set"
+                "`distance_threshold_tau` or run method `calibrate_distance_threshold` on known training and test"
+                "dataset."
+            )
+
+        if "classifier" in kwargs:
+            raise ValueError("Keyword `classifier` in kwargs is not supported.")
+
+        if "targeted" in kwargs:
+            raise ValueError("Keyword `targeted` in kwargs is not supported.")
+
+        y = check_and_transform_label_format(y, self.estimator.nb_classes)
+
+        hsj = HopSkipJump(classifier=self.estimator, targeted=False, **kwargs)
         x_adv = hsj.generate(x=x, y=y)
 
         distance = np.linalg.norm((x_adv - x).reshape((x.shape[0], -1)), ord=2, axis=1)
@@ -84,26 +111,36 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
         return is_member
 
     def calibrate_distance_threshold(
-        self,
-        classifier_train: "CLASSIFIER_TYPE",
-        x_train: np.ndarray,
-        y_train: np.ndarray,
-        x_test: np.ndarray,
-        y_test: np.ndarray,
-        **kwargs
+        self, x_train: np.ndarray, y_train: np.ndarray, x_test: np.ndarray, y_test: np.ndarray, **kwargs
     ) -> NoReturn:
         """
         Calibrate distance threshold maximising the membership inference accuracy on `x_train` and `x_test`.
 
-        :param classifier_train: A trained classifier
         :param x_train: Training data.
         :param y_train: Labels of training data `x_train`.
         :param x_test: Test data.
         :param y_test: Labels of test data `x_test`.
+
+        :Keyword Arguments for HopSkipJump:
+            * *norm*: Order of the norm. Possible values: "inf", np.inf or 2.
+            * *max_iter*: Maximum number of iterations.
+            * *max_eval*: Maximum number of evaluations for estimating gradient.
+            * *init_eval*: Initial number of evaluations for estimating gradient.
+            * *init_size*: Maximum number of trials for initial generation of adversarial examples.
+            * *verbose*: Show progress bars.
         """
         from art.attacks.evasion.hop_skip_jump import HopSkipJump
 
-        hsj = HopSkipJump(classifier=classifier_train, **kwargs)
+        if "classifier" in kwargs:
+            raise ValueError("Keyword `classifier` in kwargs is not supported.")
+
+        if "targeted" in kwargs:
+            raise ValueError("Keyword `targeted` in kwargs is not supported.")
+
+        y_train = check_and_transform_label_format(y_train, self.estimator.nb_classes)
+        y_test = check_and_transform_label_format(y_test, self.estimator.nb_classes)
+
+        hsj = HopSkipJump(classifier=self.estimator, targeted=False, **kwargs)
 
         x_train_adv = hsj.generate(x=x_train, y=y_train)
         x_test_adv = hsj.generate(x=x_test, y=y_test)
@@ -139,5 +176,7 @@ class LabelOnlyDecisionBoundary(InferenceAttack):
         self.distance_threshold_tau = distance_threshold_tau
 
     def _check_params(self) -> None:
-        if not isinstance(self.distance_threshold_tau, (int, float)) or self.distance_threshold_tau <= 0.0:
+        if self.distance_threshold_tau is not None and (
+            not isinstance(self.distance_threshold_tau, (int, float)) or self.distance_threshold_tau <= 0.0
+        ):
             raise ValueError("The distance threshold `distance_threshold_tau` needs to be a positive float.")
