@@ -30,7 +30,7 @@ from typing import Optional, Union, Tuple, TYPE_CHECKING
 import random
 import numpy as np
 from scipy.ndimage import rotate, shift, zoom
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin

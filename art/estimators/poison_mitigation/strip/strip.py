@@ -27,7 +27,7 @@ from typing import Callable, Optional
 
 import numpy as np
 from scipy.stats import entropy, norm
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.estimators.certification.abstain import AbstainPredictorMixin
 

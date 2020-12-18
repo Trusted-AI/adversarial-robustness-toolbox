@@ -24,7 +24,7 @@ This module implements the adversarial and imperceptible attack on automatic spe
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-from typing import TYPE_CHECKING, Tuple, Union
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
 import scipy.signal as ss
@@ -68,7 +68,7 @@ class ImperceptibleASR(EvasionAttack):
     def __init__(
         self,
         estimator: "SPEECH_RECOGNIZER_TYPE",
-        masker: "PsychoacousticMasker",
+        masker: Optional["PsychoacousticMasker"],
         eps: float = 2000.0,
         learning_rate_1: float = 100.0,
         max_iter_1: int = 1000,

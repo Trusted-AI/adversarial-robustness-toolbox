@@ -24,7 +24,7 @@ import logging
 from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 if TYPE_CHECKING:
     from art.estimators.classification.classifier import ClassifierDecisionTree

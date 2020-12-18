@@ -95,6 +95,7 @@ class PyTorchFasterRCNN(ObjectDetectorMixin, PyTorchEstimator):
             raise ValueError("Not a proper channel_index. Use channels_first.")
 
         super().__init__(
+            model=model,
             clip_values=clip_values,
             channel_index=channel_index,
             channels_first=channels_first,
