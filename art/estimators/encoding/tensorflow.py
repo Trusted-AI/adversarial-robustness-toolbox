@@ -145,7 +145,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         raise NotImplementedError
 
-    def loss_gradient(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+    def loss_gradient(self, x: "np.ndarray", y: "np.ndarray", training_mode: bool = False, **kwargs) -> "np.ndarray":
         """
         No gradients to compute for this method; do nothing.
         """

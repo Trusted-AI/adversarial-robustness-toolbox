@@ -140,7 +140,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
                 )
 
         self._classifiers = classifiers
-        self._learning_phase: Optional[bool] = None
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -232,7 +231,12 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         raise NotImplementedError
 
     def class_gradient(
-        self, x: np.ndarray, label: Union[int, List[int], None] = None, raw: bool = False, **kwargs
+        self,
+        x: np.ndarray,
+        label: Union[int, List[int], None] = None,
+        training_mode: bool = False,
+        raw: bool = False,
+        **kwargs
     ) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
@@ -240,6 +244,7 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :param x: Sample input with shape as expected by the model.
         :param label: Index of a specific per-class derivative. If `None`, then gradients for all
                       classes will be computed.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
@@ -248,7 +253,8 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         """
         grads = np.array(
             [
-                self._classifier_weights[i] * self._classifiers[i].class_gradient(x, label)
+                self._classifier_weights[i]
+                * self._classifiers[i].class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
                 for i in range(self._nb_classifiers)
             ]
         )
@@ -257,19 +263,23 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
 
         return np.sum(grads, axis=0)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, raw: bool = False, **kwargs) -> np.ndarray:
+    def loss_gradient(
+        self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, raw: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x`.
 
         :param x: Sample input with shape as expected by the model.
         :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
                   (nb_samples,).
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :param raw: Return the individual classifier raw outputs (not aggregated).
         :return: Array of gradients of the same shape as `x`. If `raw=True`, shape becomes `[nb_classifiers, x.shape]`.
         """
         grads = np.array(
             [
-                self._classifier_weights[i] * self._classifiers[i].loss_gradient(x, y)
+                self._classifier_weights[i]
+                * self._classifiers[i].loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
                 for i in range(self._nb_classifiers)
             ]
         )

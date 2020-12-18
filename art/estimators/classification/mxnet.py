@@ -300,8 +300,6 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
         ):
             raise ValueError("Label %s is out of range." % str(label))
 
-        train_mode = self._learning_phase if hasattr(self, "_learning_phase") else False
-
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
         x_preprocessed = mx.nd.array(x_preprocessed.astype(config.ART_NUMPY_DTYPE), ctx=self._ctx)

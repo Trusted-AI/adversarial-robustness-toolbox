@@ -461,6 +461,9 @@ class NeuralNetworkMixin(ABC):
         """
         return self._channels_first
 
+    @deprecated(
+        end_version="1.6.0", replaced_by="kwarg 'training_mode' in 'class_gradient' and 'loss_gradient' methods"
+    )
     @property
     def learning_phase(self) -> Optional[bool]:
         """
@@ -471,7 +474,13 @@ class NeuralNetworkMixin(ABC):
 
         :return: Learning phase.
         """
-        return self._learning_phase  # type: ignore
+        return None  # type: ignore
+
+    @deprecated(
+        end_version="1.6.0", replaced_by="kwarg 'training_mode' in 'class_gradient' and 'loss_gradient' methods"
+    )
+    def set_learning_phase(self, train: bool) -> None:
+        pass
 
     @property
     def layer_names(self) -> Optional[List[str]]:

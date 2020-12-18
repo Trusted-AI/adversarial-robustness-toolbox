@@ -99,24 +99,28 @@ class NumpyRandomizedSmoothing(
         """
         return self.classifier.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def loss_gradient(self, x: np.ndarray, y: np.ndarray, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the given classifier's loss function w.r.t. `x` of the original classifier.
         :param x: Sample input with shape as expected by the model.
         :param y: Correct labels, one-hot encoded.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
-        return self.classifier.loss_gradient(x, y)
+        return self.classifier.loss_gradient(x=x, y=y, training_mode=training_mode, **kwargs)
 
-    def class_gradient(self, x: np.ndarray, label: Union[int, List[int]] = None, **kwargs) -> np.ndarray:
+    def class_gradient(
+        self, x: np.ndarray, label: Union[int, List[int]] = None, training_mode: bool = False, **kwargs
+    ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
                       `x`. If `None`, then gradients for all classes will be computed for each sample.
+        :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of input features w.r.t. each class in the form
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        return self.classifier.class_gradient(x, label)
+        return self.classifier.class_gradient(x=x, label=label, training_mode=training_mode, **kwargs)
