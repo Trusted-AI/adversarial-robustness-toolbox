@@ -460,10 +460,10 @@ class NeuralNetworkMixin(ABC):
         """
         return self._channels_first
 
+    @property
     @deprecated(
         end_version="1.6.0", replaced_by="kwarg 'training_mode' in 'class_gradient' and 'loss_gradient' methods"
     )
-    @property
     def learning_phase(self) -> Optional[bool]:
         """
         The learning phase set by the user. Possible values are `True` for training or `False` for prediction and
