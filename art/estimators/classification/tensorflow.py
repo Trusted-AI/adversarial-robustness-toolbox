@@ -823,12 +823,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         predictions = self._apply_postprocessing(preds=results, fit=False)
         return predictions
 
-    def _predict_framework(self, x: "tf.Tensor", batch_size: int, training_mode: bool = False, **kwargs) -> "tf.Tensor":
+    def _predict_framework(self, x: "tf.Tensor", training_mode: bool = False, **kwargs) -> "tf.Tensor":
         """
         Perform prediction for a batch of inputs.
 
         :param x: Input samples.
-        :param batch_size: Size of batches.
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
