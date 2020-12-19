@@ -238,9 +238,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         inputs = x.to(self.estimator.device)
         targets = targets.to(self.estimator.device)
-        adv_x = inputs
+        adv_x = torch.clone(inputs)
 
         if mask is not None:
             mask = mask.to(self.estimator.device)
