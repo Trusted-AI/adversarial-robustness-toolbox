@@ -153,6 +153,3 @@ class TestPixelAttack(TestBase):
     def test_1_classifier_type_check_fail(self):
         backend_test_classifier_type_check_fail(PixelAttack, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])
 
-
-if __name__ == "__main__":
-    unittest.main()
