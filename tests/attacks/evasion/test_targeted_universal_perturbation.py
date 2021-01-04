@@ -45,13 +45,14 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def test_mnist(fix_get_mnist_subset):
+def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     x_test_original = x_test_mnist.copy()
 
     # Build TensorFlowClassifier
-    tfc, sess = get_image_classifier_tf()
+    # tfc, sess = get_image_classifier_tf()
+    estimator, _ = image_dl_estimator(from_logits=False)
 
     # set target label
     target = 0
@@ -61,7 +62,7 @@ def test_mnist(fix_get_mnist_subset):
 
     # Attack
     up = TargetedUniversalPerturbation(
-        tfc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
+        estimator, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
     )
     x_train_adv = up.generate(x_train_mnist, y=y_target)
     assert (up.fooling_rate >= 0.2) or not up.converged
@@ -69,8 +70,8 @@ def test_mnist(fix_get_mnist_subset):
     x_test_adv = x_test_mnist + up.noise
     np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_mnist, x_test_adv)
 
-    train_y_pred = np.argmax(tfc.predict(x_train_adv), axis=1)
-    test_y_pred = np.argmax(tfc.predict(x_test_adv), axis=1)
+    train_y_pred = np.argmax(estimator.predict(x_train_adv), axis=1)
+    test_y_pred = np.argmax(estimator.predict(x_test_adv), axis=1)
     assert bool((np.argmax(y_test_mnist, axis=1) == test_y_pred).all()) is False
     assert bool((np.argmax(y_train_mnist, axis=1) == train_y_pred).all()) is False
 
