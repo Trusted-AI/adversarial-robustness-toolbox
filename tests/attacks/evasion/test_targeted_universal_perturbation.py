@@ -21,6 +21,7 @@ import logging
 import unittest
 
 import numpy as np
+import pytest
 
 from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversalPerturbation
 from art.estimators.classification.classifier import ClassifierMixin
@@ -34,6 +35,47 @@ from tests.utils import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+@pytest.fixture()
+def fix_get_mnist_subset(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    n_train = 150
+    n_test = 10
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
+
+
+def test_mnist(fix_get_mnist_subset):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    # x_test_original = self.x_test_mnist.copy()
+
+    # Build TensorFlowClassifier
+    tfc, sess = get_image_classifier_tf()
+
+    # set target label
+    target = 0
+    y_target = np.zeros([len(x_train_mnist), 10])
+    for i in range(len(x_train_mnist)):
+        y_target[i, target] = 1.0
+
+    # Attack
+    up = TargetedUniversalPerturbation(
+        tfc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
+    )
+    x_train_adv = up.generate(x_train_mnist, y=y_target)
+    # self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
+    #
+    # x_test_adv = x_test_mnist + up.noise
+    # self.assertFalse((x_test_mnist == x_test_adv).all())
+    #
+    # train_y_pred = np.argmax(tfc.predict(x_train_adv), axis=1)
+    # test_y_pred = np.argmax(tfc.predict(x_test_adv), axis=1)
+    # self.assertFalse((np.argmax(y_test_mnist, axis=1) == test_y_pred).all())
+    # self.assertFalse((np.argmax(y_train_mnist, axis=1) == train_y_pred).all())
+    #
+    # # Check that x_test has not been modified by attack and classifier
+    # self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
 
 #
 # class TestTargetedUniversalPerturbation(TestBase):
@@ -56,39 +98,7 @@ logger = logging.getLogger(__name__)
 #         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
 #         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
 #
-#     def test_2_tensorflow_mnist(self):
-#         """
-#         First test with the TensorFlowClassifier.
-#         :return:
-#         """
-#         x_test_original = self.x_test_mnist.copy()
-#
-#         # Build TensorFlowClassifier
-#         tfc, sess = get_image_classifier_tf()
-#
-#         # set target label
-#         target = 0
-#         y_target = np.zeros([len(self.x_train_mnist), 10])
-#         for i in range(len(self.x_train_mnist)):
-#             y_target[i, target] = 1.0
-#
-#         # Attack
-#         up = TargetedUniversalPerturbation(
-#             tfc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
-#         )
-#         x_train_adv = up.generate(self.x_train_mnist, y=y_target)
-#         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
-#
-#         x_test_adv = self.x_test_mnist + up.noise
-#         self.assertFalse((self.x_test_mnist == x_test_adv).all())
-#
-#         train_y_pred = np.argmax(tfc.predict(x_train_adv), axis=1)
-#         test_y_pred = np.argmax(tfc.predict(x_test_adv), axis=1)
-#         self.assertFalse((np.argmax(self.y_test_mnist, axis=1) == test_y_pred).all())
-#         self.assertFalse((np.argmax(self.y_train_mnist, axis=1) == train_y_pred).all())
-#
-#         # Check that x_test has not been modified by attack and classifier
-#         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
+
 #
 #     def test_4_keras_mnist(self):
 #         """
