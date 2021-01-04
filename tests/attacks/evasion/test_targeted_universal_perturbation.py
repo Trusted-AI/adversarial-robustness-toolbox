@@ -48,7 +48,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
 def test_mnist(fix_get_mnist_subset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    # x_test_original = self.x_test_mnist.copy()
+    x_test_original = x_test_mnist.copy()
 
     # Build TensorFlowClassifier
     tfc, sess = get_image_classifier_tf()
@@ -67,18 +67,15 @@ def test_mnist(fix_get_mnist_subset):
     assert (up.fooling_rate >= 0.2) or not up.converged
 
     x_test_adv = x_test_mnist + up.noise
-    # self.assertFalse((x_test_mnist == x_test_adv).all())
     np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_mnist, x_test_adv)
 
     train_y_pred = np.argmax(tfc.predict(x_train_adv), axis=1)
     test_y_pred = np.argmax(tfc.predict(x_test_adv), axis=1)
-    # self.assertFalse((np.argmax(y_test_mnist, axis=1) == test_y_pred).all())
     assert bool((np.argmax(y_test_mnist, axis=1) == test_y_pred).all()) is False
-    # self.assertFalse((np.argmax(y_train_mnist, axis=1) == train_y_pred).all())
     assert bool((np.argmax(y_train_mnist, axis=1) == train_y_pred).all()) is False
-    #
-    # # Check that x_test has not been modified by attack and classifier
-    # self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
+
+    # Check that x_test has not been modified by attack and classifier
+    np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
 
 #
 # class TestTargetedUniversalPerturbation(TestBase):
