@@ -42,16 +42,11 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def test_mnist(fix_get_mnist_subset, image_dl_estimator):
+@pytest.mark.skipMlFramework("mxnet", "scikitlearn")
+@pytest.mark.parametrize("targeted", [False, True])
+def test_mnist(fix_get_mnist_subset, image_dl_estimator, targeted):
     estimator, _ = image_dl_estimator(from_logits=False)
-    _test_attack(estimator, fix_get_mnist_subset, False)
-
-
-def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(SimBA, (BaseEstimator, ClassifierMixin))
-
-
-def _test_attack(classifier, fix_get_mnist_subset, targeted):
+    
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     x_test_original = x_test_mnist.copy()
@@ -61,7 +56,7 @@ def _test_attack(classifier, fix_get_mnist_subset, targeted):
         y_target = np.zeros(10)
         y_target[8] = 1.0
 
-    df = SimBA(classifier, attack="dct", targeted=targeted)
+    df = SimBA(estimator, attack="dct", targeted=targeted)
 
     x_i = x_test_original[0][None, ...]
     if targeted:
@@ -81,7 +76,7 @@ def _test_attack(classifier, fix_get_mnist_subset, targeted):
     np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_mnist, x_test_adv)
     np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, 0.0, x_test_adv)
 
-    y_pred = get_labels_np_array(classifier.predict(x_test_adv))
+    y_pred = get_labels_np_array(estimator.predict(x_test_adv))
     np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, y_test_mnist, y_pred)
 
     accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
@@ -89,3 +84,10 @@ def _test_attack(classifier, fix_get_mnist_subset, targeted):
 
     # Check that x_test has not been modified by attack and classifier
     np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
+
+
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(SimBA, (BaseEstimator, ClassifierMixin))
+
+
+

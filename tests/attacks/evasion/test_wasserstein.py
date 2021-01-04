@@ -27,8 +27,6 @@ from art.estimators.estimator import BaseEstimator, LossGradientsMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array
 
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf
 from tests.attacks.utils import backend_test_classifier_type_check_fail
 
 logger = logging.getLogger(__name__)
@@ -40,23 +38,6 @@ def fix_get_mnist_subset(get_mnist_dataset):
     n_train = 10
     n_test = 10
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
-
-
-@pytest.mark.skipMlFramework("mxnet", "scikitlearn")
-def test_mnist(fix_get_mnist_subset, image_dl_estimator):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
-    estimator, _ = image_dl_estimator(from_logits=False)
-
-    scores = get_labels_np_array(estimator.predict(x_train_mnist))
-    acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train_mnist, axis=1)) / y_train_mnist.shape[0]
-    logger.info("[TF, MNIST] Accuracy on training set: %.2f%%", acc * 100)
-
-    scores = get_labels_np_array(estimator.predict(x_test_mnist))
-    acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
-    logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", acc * 100)
-
-    _test_backend_mnist(estimator, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
 
 def test_unsquared_images():
@@ -125,7 +106,20 @@ def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(Wasserstein, (BaseEstimator, LossGradientsMixin, ClassifierMixin))
 
 
-def _test_backend_mnist(classifier, x_train, y_train, x_test, y_test):
+@pytest.mark.skipMlFramework("mxnet", "scikitlearn")
+def test_mnist(fix_get_mnist_subset, image_dl_estimator):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    estimator, _ = image_dl_estimator(from_logits=False)
+
+    scores = get_labels_np_array(estimator.predict(x_train_mnist))
+    acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train_mnist, axis=1)) / y_train_mnist.shape[0]
+    logger.info("[TF, MNIST] Accuracy on training set: %.2f%%", acc * 100)
+
+    scores = get_labels_np_array(estimator.predict(x_test_mnist))
+    acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
+    logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", acc * 100)
+
     base_success_rate = 0.1
     num_iter = 5
     regularization = 100
@@ -134,7 +128,7 @@ def _test_backend_mnist(classifier, x_train, y_train, x_test, y_test):
 
     # Test Wasserstein with wasserstein ball and wasserstein norm
     attack = Wasserstein(
-        classifier,
+        estimator,
         regularization=regularization,
         max_iter=num_iter,
         conjugate_sinkhorn_max_iter=num_iter,
@@ -151,25 +145,26 @@ def _test_backend_mnist(classifier, x_train, y_train, x_test, y_test):
         batch_size=batch_size,
     )
 
-    x_train_adv = attack.generate(x_train)
-    x_test_adv = attack.generate(x_test)
+    x_train_adv = attack.generate(x_train_mnist)
+    x_test_adv = attack.generate(x_test_mnist)
 
     # self.assertFalse((x_train_adv == x_train).all())
-    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_train_adv, x_train)
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_train_adv, x_train_mnist)
     # self.assertFalse((x_test_adv == x_test).all())
-    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_adv, x_test)
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_adv, x_test_mnist)
 
-    train_y_pred = get_labels_np_array(classifier.predict(x_train_adv)).astype(float)
-    test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
+    train_y_pred = get_labels_np_array(estimator.predict(x_train_adv)).astype(float)
+    test_y_pred = get_labels_np_array(estimator.predict(x_test_adv)).astype(float)
 
     train_success_rate = (
-            np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) /
-            y_train.shape[0]
+            np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(estimator.predict(x_train_mnist), axis=1)) /
+            y_train_mnist.shape[0]
     )
     # self.assertGreaterEqual(train_success_rate, base_success_rate)
     np.testing.assert_array_less(base_success_rate, train_success_rate)
     test_success_rate = (
-            np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[0]
+            np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(estimator.predict(x_test_mnist), axis=1)) /
+            y_test_mnist.shape[0]
     )
     # self.assertGreaterEqual(test_success_rate, base_success_rate)
     np.testing.assert_array_less(base_success_rate, test_success_rate)
