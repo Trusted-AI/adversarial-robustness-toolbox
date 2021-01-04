@@ -59,6 +59,68 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     _test_backend_mnist(estimator, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
 
+def test_unsquared_images():
+    from art.estimators.estimator import (
+        BaseEstimator,
+        LossGradientsMixin,
+        NeuralNetworkMixin,
+    )
+
+    from art.estimators.classification.classifier import (
+        ClassGradientsMixin,
+        ClassifierMixin,
+    )
+
+    class DummyClassifier(
+        ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
+    ):
+        def __init__(self):
+            super(DummyClassifier, self).__init__(model=None, clip_values=None, channels_first=True)
+            self._nb_classes = 10
+
+        def class_gradient(self):
+            return None
+
+        def fit(self):
+            pass
+
+        def loss_gradient(self, x, y):
+            return np.random.normal(size=(1, 3, 33, 32))
+
+        def predict(self, x, batch_size=1):
+            return np.array([[0, 1, 0, 0, 0, 0, 0, 0, 0, 0]])
+
+        def get_activations(self):
+            return None
+
+        def save(self):
+            pass
+
+        def loss(self, x, y, **kwargs):
+            pass
+
+        def set_learning_phase(self):
+            pass
+
+        def input_shape(self):
+            pass
+
+    classifier = DummyClassifier()
+    attack = Wasserstein(
+        classifier,
+        regularization=1,
+        kernel_size=3,
+        max_iter=1,
+        conjugate_sinkhorn_max_iter=10,
+        projected_sinkhorn_max_iter=10,
+    )
+
+    x = np.random.normal(size=(1, 3, 33, 32))
+    x_adv = attack.generate(x)
+
+    assert x_adv.shape == x.shape
+
+
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(Wasserstein, (BaseEstimator, LossGradientsMixin, ClassifierMixin))
 
