@@ -42,10 +42,11 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def test_mnist(fix_get_mnist_subset):
+def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    estimator, sess = get_image_classifier_tf()
+    # estimator, sess = get_image_classifier_tf()
+    estimator, _ = image_dl_estimator(from_logits=False)
 
     scores = get_labels_np_array(estimator.predict(x_train_mnist))
     acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train_mnist, axis=1)) / y_train_mnist.shape[0]
@@ -100,13 +101,12 @@ def _test_backend_mnist(classifier, x_train, y_train, x_test, y_test):
             y_train.shape[0]
     )
     # self.assertGreaterEqual(train_success_rate, base_success_rate)
-
+    np.testing.assert_array_less(base_success_rate, train_success_rate)
     test_success_rate = (
-            np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[
-        0]
+            np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[0]
     )
     # self.assertGreaterEqual(test_success_rate, base_success_rate)
-
+    np.testing.assert_array_less(base_success_rate, test_success_rate)
 
 # def test_classifier_type_check_fail(self):
 #     backend_test_classifier_type_check_fail(Wasserstein, (BaseEstimator, LossGradientsMixin, ClassifierMixin))
