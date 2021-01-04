@@ -55,55 +55,57 @@ def test_mnist(fix_get_mnist_subset):
     acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_test_mnist, axis=1)) / y_test_mnist.shape[0]
     logger.info("[TF, MNIST] Accuracy on test set: %.2f%%", acc * 100)
 
-    # _test_backend_mnist(estimator, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
+    _test_backend_mnist(estimator, x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist)
 
 
-# def _test_backend_mnist(classifier, x_train, y_train, x_test, y_test):
-#     base_success_rate = 0.1
-#     num_iter = 5
-#     regularization = 100
-#     batch_size = 5
-#     eps = 0.3
-#
-#     # Test Wasserstein with wasserstein ball and wasserstein norm
-#     attack = Wasserstein(
-#         classifier,
-#         regularization=regularization,
-#         max_iter=num_iter,
-#         conjugate_sinkhorn_max_iter=num_iter,
-#         projected_sinkhorn_max_iter=num_iter,
-#         norm="wasserstein",
-#         ball="wasserstein",
-#         targeted=False,
-#         p=2,
-#         eps_iter=2,
-#         eps_factor=1.05,
-#         eps=eps,
-#         eps_step=0.1,
-#         kernel_size=5,
-#         batch_size=batch_size,
-#     )
-#
-#     x_train_adv = attack.generate(x_train)
-#     x_test_adv = attack.generate(x_test)
-#
-#     self.assertFalse((x_train_adv == x_train).all())
-#     self.assertFalse((x_test_adv == x_test).all())
-#
-#     train_y_pred = get_labels_np_array(classifier.predict(x_train_adv)).astype(float)
-#     test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
-#
-#     train_success_rate = (
-#             np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) /
-#             y_train.shape[0]
-#     )
-#     self.assertGreaterEqual(train_success_rate, base_success_rate)
-#
-#     test_success_rate = (
-#             np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[
-#         0]
-#     )
-#     self.assertGreaterEqual(test_success_rate, base_success_rate)
+def _test_backend_mnist(classifier, x_train, y_train, x_test, y_test):
+    base_success_rate = 0.1
+    num_iter = 5
+    regularization = 100
+    batch_size = 5
+    eps = 0.3
+
+    # Test Wasserstein with wasserstein ball and wasserstein norm
+    attack = Wasserstein(
+        classifier,
+        regularization=regularization,
+        max_iter=num_iter,
+        conjugate_sinkhorn_max_iter=num_iter,
+        projected_sinkhorn_max_iter=num_iter,
+        norm="wasserstein",
+        ball="wasserstein",
+        targeted=False,
+        p=2,
+        eps_iter=2,
+        eps_factor=1.05,
+        eps=eps,
+        eps_step=0.1,
+        kernel_size=5,
+        batch_size=batch_size,
+    )
+
+    x_train_adv = attack.generate(x_train)
+    x_test_adv = attack.generate(x_test)
+
+    # self.assertFalse((x_train_adv == x_train).all())
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_train_adv, x_train)
+    # self.assertFalse((x_test_adv == x_test).all())
+    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_adv, x_test)
+
+    train_y_pred = get_labels_np_array(classifier.predict(x_train_adv)).astype(float)
+    test_y_pred = get_labels_np_array(classifier.predict(x_test_adv)).astype(float)
+
+    train_success_rate = (
+            np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(classifier.predict(x_train), axis=1)) /
+            y_train.shape[0]
+    )
+    # self.assertGreaterEqual(train_success_rate, base_success_rate)
+
+    test_success_rate = (
+            np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(classifier.predict(x_test), axis=1)) / y_test.shape[
+        0]
+    )
+    # self.assertGreaterEqual(test_success_rate, base_success_rate)
 
 
 # def test_classifier_type_check_fail(self):
