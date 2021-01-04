@@ -18,7 +18,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import unittest
 
 import numpy as np
 import pytest
@@ -27,12 +26,7 @@ from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversa
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import (
-    TestBase,
-    get_image_classifier_kr,
-    get_image_classifier_pt,
-    get_image_classifier_tf,
-)
+
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +45,6 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     x_test_original = x_test_mnist.copy()
 
     # Build TensorFlowClassifier
-    # tfc, sess = get_image_classifier_tf()
     estimator, _ = image_dl_estimator(from_logits=False)
 
     # set target label
@@ -81,92 +74,3 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
 
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(TargetedUniversalPerturbation, (BaseEstimator, ClassifierMixin))
-
-#
-# class TestTargetedUniversalPerturbation(TestBase):
-#     """
-#     A unittest class for testing the TargetedUniversalPerturbation attack.
-#
-#     This module tests the Targeted Universal Perturbation.
-#
-#     | Paper link: https://arxiv.org/abs/1911.06502)
-#     """
-#
-#
-
-#
-#     def test_4_keras_mnist(self):
-#         """
-#         Second test with the KerasClassifier.
-#         :return:
-#         """
-#         x_test_original = self.x_test_mnist.copy()
-#
-#         # Build KerasClassifier
-#         krc = get_image_classifier_kr()
-#
-#         # set target label
-#         target = 0
-#         y_target = np.zeros([len(self.x_train_mnist), 10])
-#         for i in range(len(self.x_train_mnist)):
-#             y_target[i, target] = 1.0
-#
-#         # Attack
-#         up = TargetedUniversalPerturbation(
-#             krc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
-#         )
-#         x_train_adv = up.generate(self.x_train_mnist, y=y_target)
-#         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
-#
-#         x_test_adv = self.x_test_mnist + up.noise
-#         self.assertFalse((self.x_test_mnist == x_test_adv).all())
-#
-#         train_y_pred = np.argmax(krc.predict(x_train_adv), axis=1)
-#         test_y_pred = np.argmax(krc.predict(x_test_adv), axis=1)
-#         self.assertFalse((np.argmax(self.y_test_mnist, axis=1) == test_y_pred).all())
-#         self.assertFalse((np.argmax(self.y_train_mnist, axis=1) == train_y_pred).all())
-#
-#         # Check that x_test has not been modified by attack and classifier
-#         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
-#
-#     def test_3_pytorch_mnist(self):
-#         """
-#         Third test with the PyTorchClassifier.
-#         :return:
-#         """
-#         x_train_mnist = np.swapaxes(self.x_train_mnist, 1, 3).astype(np.float32)
-#         x_test_mnist = np.swapaxes(self.x_test_mnist, 1, 3).astype(np.float32)
-#         x_test_original = x_test_mnist.copy()
-#
-#         # Build PyTorchClassifier
-#         ptc = get_image_classifier_pt()
-#
-#         # set target label
-#         target = 0
-#         y_target = np.zeros([len(self.x_train_mnist), 10])
-#         for i in range(len(self.x_train_mnist)):
-#             y_target[i, target] = 1.0
-#
-#         # Attack
-#         up = TargetedUniversalPerturbation(
-#             ptc, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
-#         )
-#         x_train_mnist_adv = up.generate(x_train_mnist, y=y_target)
-#         self.assertTrue((up.fooling_rate >= 0.2) or not up.converged)
-#
-#         x_test_mnist_adv = x_test_mnist + up.noise
-#         self.assertFalse((x_test_mnist == x_test_mnist_adv).all())
-#
-#         train_y_pred = np.argmax(ptc.predict(x_train_mnist_adv), axis=1)
-#         test_y_pred = np.argmax(ptc.predict(x_test_mnist_adv), axis=1)
-#         self.assertFalse((np.argmax(self.y_test_mnist, axis=1) == test_y_pred).all())
-#         self.assertFalse((np.argmax(self.y_train_mnist, axis=1) == train_y_pred).all())
-#
-#         # Check that x_test has not been modified by attack and classifier
-#         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
-#
-
-#
-#
-# if __name__ == "__main__":
-#     unittest.main()
