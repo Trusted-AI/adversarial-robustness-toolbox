@@ -11,6 +11,7 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 mlFramework=$1
 
+
 if [[ ${mlFramework} != "legacy" ]]
 then
     echo "#######################################################################"
