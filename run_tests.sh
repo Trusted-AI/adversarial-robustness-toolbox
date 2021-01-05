@@ -6,6 +6,7 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 
 # --------------------------------------------------------------------------------------------------------------- TESTS
 
+
 #NOTE: All the tests should be ran within this loop. All other tests are legacy tests that must be
 # made framework independent to be incorporated within this loop
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
