@@ -27,12 +27,17 @@ from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
 from art.utils import to_categorical
 
-from tests.utils import TestBase, master_seed, get_image_classifier_kr
-
 logger = logging.getLogger(__name__)
 
 PP_POISON = 0.33
 NB_EPOCHS = 3
+backdoor_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                             "..",
+                             "utils",
+                             "data",
+                             "backdoors",
+                             "alert.png",
+                             )
 
 
 @pytest.fixture()
@@ -54,49 +59,10 @@ def poison(fix_get_mnist_subset):
 def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, poison, perturbation):
     estimator, _ = image_dl_estimator()
 
-    _back_end(fix_get_mnist_subset, estimator, poison.perturbation_dic[perturbation])
-
-
-# @pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
-# def test_multiple_perturbations(fix_get_mnist_subset, image_dl_estimator, poison):
-#     """
-#     Test using multiple perturbation functions in the same attack can be trained on classifier
-#     """
-#     # poison = Poison(fix_get_mnist_subset)
-#
-#     # krc = get_image_classifier_kr() from_logits=False
-#     estimator, _ = image_dl_estimator()
-#
-#     _back_end(fix_get_mnist_subset, estimator, [poison.poison_func_4, poison.pattern_based_perturbation])
-
-
-def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, poison):
-    """
-    Tests failure modes for image perturbation functions
-    """
-    # poison = Poison(fix_get_mnist_subset)
-
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
-    backdoor_attack = PoisoningAttackBackdoor(poison.image_perturbation_1)
-    adv_target = np.argmax(y_train_mnist) + 1 % 10
-
-    with pytest.raises(ValueError) as context:
-        backdoor_attack.poison(x_train_mnist, y=adv_target)
-        assert "Backdoor does not fit inside original image" in str(context.exception)
-
-    backdoor_attack = PoisoningAttackBackdoor(poison.image_perturbation_2)
-
-    with pytest.raises(ValueError) as context:
-        backdoor_attack.poison(np.zeros(5), y=np.ones(5))
-        assert "Invalid array shape" in str(context.exception)
-
-
-def _back_end(fix_get_mnist_subset, estimator, poison_function):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     (is_poison_train, x_poisoned_raw, y_poisoned_raw) = poison_dataset(
-        x_train_mnist, y_train_mnist, poison_function)
+        x_train_mnist, y_train_mnist, poison.perturbation_dic[perturbation])
     # Shuffle training data
     n_train = np.shape(y_poisoned_raw)[0]
     shuffled_indices = np.arange(n_train)
@@ -105,6 +71,36 @@ def _back_end(fix_get_mnist_subset, estimator, poison_function):
     y_train = y_poisoned_raw[shuffled_indices]
 
     estimator.fit(x_train, y_train, nb_epochs=NB_EPOCHS, batch_size=32)
+
+
+def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, poison):
+    """
+    Tests failure modes for image perturbation functions
+    """
+
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    def image_perturbation_1(x):
+        return np.expand_dims(
+            insert_image(x.squeeze(3), backdoor_path=backdoor_path, random=True, size=(100, 100)), axis=3
+        )
+    
+    backdoor_attack = PoisoningAttackBackdoor(image_perturbation_1)
+    adv_target = np.argmax(y_train_mnist) + 1 % 10
+
+    with pytest.raises(ValueError) as context:
+        backdoor_attack.poison(x_train_mnist, y=adv_target)
+        assert "Backdoor does not fit inside original image" in str(context.exception)
+
+
+    def image_perturbation_2(x):
+        return np.expand_dims(insert_image(x, backdoor_path=backdoor_path, random=True, size=(100, 100)), axis=3)
+
+    backdoor_attack = PoisoningAttackBackdoor(image_perturbation_2)
+
+    with pytest.raises(ValueError) as context:
+        backdoor_attack.poison(np.zeros(5), y=np.ones(5))
+        assert "Invalid array shape" in str(context.exception)
 
 
 def poison_dataset(x_clean, y_clean, poison_func):
@@ -140,13 +136,6 @@ def poison_dataset(x_clean, y_clean, poison_func):
 class Poison():
     def __init__(self, mnist_dataset):
         (self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist) = mnist_dataset
-        self.backdoor_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-                                          "..",
-                                          "utils",
-                                          "data",
-                                          "backdoors",
-                                          "alert.png",
-                                          )
 
         self.perturbation_dic = {"pattern_based_perturbation": self.pattern_based_perturbation,
                                  "pixel_based_perturbation": self.pixel_based_perturbation,
@@ -164,20 +153,12 @@ class Poison():
     def image_based_perturbation(self, x):
         return np.expand_dims(
             insert_image(
-                x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=False, x_shift=3, y_shift=3
+                x.squeeze(3), backdoor_path=backdoor_path, size=(5, 5), random=False, x_shift=3, y_shift=3
             ),
             axis=3,
         )
 
     def poison_func_4(self, x):
         return np.expand_dims(
-            insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=True), axis=3
+            insert_image(x.squeeze(3), backdoor_path=backdoor_path, size=(5, 5), random=True), axis=3
         )
-
-    def image_perturbation_1(self, x):
-        return np.expand_dims(
-            insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3
-        )
-
-    def image_perturbation_2(self, x):
-        return np.expand_dims(insert_image(x, backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3)
