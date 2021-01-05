@@ -507,7 +507,7 @@ def image_dl_estimator(framework, get_image_classifier_mx_instance):
                             image_dl_estimator.__name__,
                             framework,
                         )
-        if framework == "tensorflow1" or framework == "tensorflow2":
+        if framework == "tensorflow1" or framework == "tensorflow2" or framework == "tensorflow2v1":
             if wildcard is False and functional is False:
                 classifier, sess = get_image_classifier_tf(**kwargs)
                 return classifier, sess
