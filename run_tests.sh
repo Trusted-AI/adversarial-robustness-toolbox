@@ -85,7 +85,6 @@ else
                         "tests/attacks/test_universal_perturbation.py" \
                         "tests/attacks/test_virtual_adversarial.py" \
                         "tests/attacks/test_zoo.py" \
-                        "tests/attacks/test_pixel_attack.py" \
                         "tests/attacks/test_threshold_attack.py" \
                         "tests/attacks/test_wasserstein.py" \
                         "tests/attacks/test_shapeshifter.py" \

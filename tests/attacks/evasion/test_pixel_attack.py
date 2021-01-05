@@ -49,7 +49,7 @@ class TestPixelAttack(TestBase):
     A unittest class for testing the Pixel Attack.
 
     This module tests the Pixel Attack.
-    The Pixel Attack is a generalisation of One Pixel Attack. 
+    The Pixel Attack is a generalisation of One Pixel Attack.
 
     | One Pixel Attack Paper link:
         https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
