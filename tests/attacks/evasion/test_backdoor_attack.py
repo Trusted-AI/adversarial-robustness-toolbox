@@ -80,6 +80,40 @@ def test_backdoor_image(fix_get_mnist_subset, image_dl_estimator):
     _back_end(fix_get_mnist_subset, estimator, poison.poison_func_3)
 
 
+def test_multiple_perturbations(fix_get_mnist_subset, image_dl_estimator):
+    """
+    Test using multiple perturbation functions in the same attack can be trained on classifier
+    """
+    poison = Poison(fix_get_mnist_subset)
+
+    # krc = get_image_classifier_kr() from_logits=False
+    estimator, _ = image_dl_estimator()
+
+    _back_end(fix_get_mnist_subset, estimator, [poison.poison_func_4, poison.poison_func_1])
+
+
+def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator):
+    """
+    Tests failure modes for image perturbation functions
+    """
+    poison = Poison(fix_get_mnist_subset)
+
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    backdoor_attack = PoisoningAttackBackdoor(poison.poison_func_5)
+    adv_target = np.argmax(y_train_mnist) + 1 % 10
+
+    with pytest.raises(ValueError) as context:
+        backdoor_attack.poison(x_train_mnist, y=adv_target)
+        assert "Backdoor does not fit inside original image" in str(context.exception)
+
+    backdoor_attack = PoisoningAttackBackdoor(poison.poison_func_6)
+
+    with pytest.raises(ValueError) as context:
+        backdoor_attack.poison(np.zeros(5), y=np.ones(5))
+        assert "Invalid array shape" in str(context.exception)
+
+
 def _back_end(fix_get_mnist_subset, estimator, poison_function):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
@@ -165,68 +199,4 @@ class Poison():
     def poison_func_6(self, x):
         return np.expand_dims(insert_image(x, backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3)
 
-#
-#
-# class TestBackdoorAttack(TestBase):
-#     """
-#     A unittest class for testing Backdoor Poisoning attack.
-#     """
-#
-#     def setUp(self):
-#         master_seed(seed=301)
-#         self.backdoor_path = os.path.join(
-#             os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-#             "utils",
-#             "data",
-#             "backdoors",
-#             "alert.png",
-#         )
-#         super().setUp()
-#
 
-#
-
-#
-
-#
-
-#
-
-#
-#     def test_multiple_perturbations(self):
-#         """
-#         Test using multiple perturbation functions in the same attack can be trained on classifier
-#         """
-#
-#         krc = get_image_classifier_kr()
-#         (is_poison_train, x_poisoned_raw, y_poisoned_raw) = self.poison_dataset(
-#             self.x_train_mnist, self.y_train_mnist, [self.poison_func_4, self.poison_func_1]
-#         )
-#
-#         # Shuffle training data
-#         n_train = np.shape(y_poisoned_raw)[0]
-#         shuffled_indices = np.arange(n_train)
-#         np.random.shuffle(shuffled_indices)
-#         x_train = x_poisoned_raw[shuffled_indices]
-#         y_train = y_poisoned_raw[shuffled_indices]
-#
-#         krc.fit(x_train, y_train, nb_epochs=NB_EPOCHS, batch_size=32)
-#
-#     def test_image_failure_modes(self):
-#         """
-#         Tests failure modes for image perturbation functions
-#         """
-#         backdoor_attack = PoisoningAttackBackdoor(self.poison_func_5)
-#         adv_target = np.argmax(self.y_train_mnist) + 1 % 10
-#         with self.assertRaises(ValueError) as context:
-#             backdoor_attack.poison(self.x_train_mnist, y=adv_target)
-#
-#         self.assertIn("Backdoor does not fit inside original image", str(context.exception))
-#
-#         backdoor_attack = PoisoningAttackBackdoor(self.poison_func_6)
-#
-#         with self.assertRaises(ValueError) as context:
-#             backdoor_attack.poison(np.zeros(5), y=np.ones(5))
-#
-#         self.assertIn("Invalid array shape", str(context.exception))
-#
