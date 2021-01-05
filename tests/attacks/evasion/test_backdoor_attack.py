@@ -49,56 +49,13 @@ def poison(fix_get_mnist_subset):
 
 
 @pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
-def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, poison):
-    """
-    Test the backdoor attack with a pattern-based perturbation can be trained on classifier
-    """
+@pytest.mark.parametrize("perturbation", ["pattern_based_perturbation", "pixel_based_perturbation",
+                                          "image_based_perturbation", "pattern_based_perturbation"])
+def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, poison, perturbation):
 
-    # poison = Poison(fix_get_mnist_subset)
-
-    # krc = get_image_classifier_kr() from_logits=False
     estimator, _ = image_dl_estimator()
 
-    _back_end(fix_get_mnist_subset, estimator, poison.perturbation_dic["pattern_based_perturbation"])
-
-
-@pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
-def test_backdoor_pixel(fix_get_mnist_subset, image_dl_estimator, poison):
-    """
-    Test the backdoor attack with a pixel-based perturbation can be trained on classifier
-    """
-    # poison = Poison(fix_get_mnist_subset)
-
-    # krc = get_image_classifier_kr() from_logits=False
-    estimator, _ = image_dl_estimator()
-
-    _back_end(fix_get_mnist_subset, estimator, poison.pixel_based_perturbation)
-
-
-@pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
-def test_backdoor_image(fix_get_mnist_subset, image_dl_estimator, poison):
-    """
-    Test the backdoor attack with a image-based perturbation can be trained on classifier
-    """
-    # poison = Poison(fix_get_mnist_subset)
-
-    # krc = get_image_classifier_kr() from_logits=False
-    estimator, _ = image_dl_estimator()
-
-    _back_end(fix_get_mnist_subset, estimator, poison.image_based_perturbation)
-
-
-@pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
-def test_multiple_perturbations(fix_get_mnist_subset, image_dl_estimator, poison):
-    """
-    Test using multiple perturbation functions in the same attack can be trained on classifier
-    """
-    # poison = Poison(fix_get_mnist_subset)
-
-    # krc = get_image_classifier_kr() from_logits=False
-    estimator, _ = image_dl_estimator()
-
-    _back_end(fix_get_mnist_subset, estimator, [poison.poison_func_4, poison.pattern_based_perturbation])
+    _back_end(fix_get_mnist_subset, estimator, poison.perturbation_dic[perturbation])
 
 
 def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, poison):
@@ -179,7 +136,9 @@ class Poison():
                                           "alert.png",
                                           )
 
-        self.perturbation_dic = {"pattern_based_perturbation":self.pattern_based_perturbation}
+        self.perturbation_dic = {"pattern_based_perturbation":self.pattern_based_perturbation,
+                                 "pixel_based_perturbation": self.pixel_based_perturbation,
+                                 "image_based_perturbation": self.image_based_perturbation}
 
     def pattern_based_perturbation(self, x):
         max_val = np.max(self.x_train_mnist)
