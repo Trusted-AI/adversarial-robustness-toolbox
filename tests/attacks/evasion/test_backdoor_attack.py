@@ -43,12 +43,18 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator):
+@pytest.fixture()
+def poison(fix_get_mnist_subset):
+    yield Poison(fix_get_mnist_subset)
+
+
+@pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
+def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, poison):
     """
     Test the backdoor attack with a pattern-based perturbation can be trained on classifier
     """
 
-    poison = Poison(fix_get_mnist_subset)
+    # poison = Poison(fix_get_mnist_subset)
 
     # krc = get_image_classifier_kr() from_logits=False
     estimator, _ = image_dl_estimator()
@@ -56,11 +62,12 @@ def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator):
     _back_end(fix_get_mnist_subset, estimator, poison.poison_func_1)
 
 
-def test_backdoor_pixel(fix_get_mnist_subset, image_dl_estimator):
+@pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
+def test_backdoor_pixel(fix_get_mnist_subset, image_dl_estimator, poison):
     """
     Test the backdoor attack with a pixel-based perturbation can be trained on classifier
     """
-    poison = Poison(fix_get_mnist_subset)
+    # poison = Poison(fix_get_mnist_subset)
 
     # krc = get_image_classifier_kr() from_logits=False
     estimator, _ = image_dl_estimator()
@@ -68,11 +75,12 @@ def test_backdoor_pixel(fix_get_mnist_subset, image_dl_estimator):
     _back_end(fix_get_mnist_subset, estimator, poison.poison_func_2)
 
 
-def test_backdoor_image(fix_get_mnist_subset, image_dl_estimator):
+@pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
+def test_backdoor_image(fix_get_mnist_subset, image_dl_estimator, poison):
     """
     Test the backdoor attack with a image-based perturbation can be trained on classifier
     """
-    poison = Poison(fix_get_mnist_subset)
+    # poison = Poison(fix_get_mnist_subset)
 
     # krc = get_image_classifier_kr() from_logits=False
     estimator, _ = image_dl_estimator()
@@ -80,11 +88,12 @@ def test_backdoor_image(fix_get_mnist_subset, image_dl_estimator):
     _back_end(fix_get_mnist_subset, estimator, poison.poison_func_3)
 
 
-def test_multiple_perturbations(fix_get_mnist_subset, image_dl_estimator):
+@pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
+def test_multiple_perturbations(fix_get_mnist_subset, image_dl_estimator, poison):
     """
     Test using multiple perturbation functions in the same attack can be trained on classifier
     """
-    poison = Poison(fix_get_mnist_subset)
+    # poison = Poison(fix_get_mnist_subset)
 
     # krc = get_image_classifier_kr() from_logits=False
     estimator, _ = image_dl_estimator()
@@ -92,11 +101,11 @@ def test_multiple_perturbations(fix_get_mnist_subset, image_dl_estimator):
     _back_end(fix_get_mnist_subset, estimator, [poison.poison_func_4, poison.poison_func_1])
 
 
-def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator):
+def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, poison):
     """
     Tests failure modes for image perturbation functions
     """
-    poison = Poison(fix_get_mnist_subset)
+    # poison = Poison(fix_get_mnist_subset)
 
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
