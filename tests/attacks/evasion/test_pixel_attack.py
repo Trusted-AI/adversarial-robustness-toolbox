@@ -52,13 +52,15 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def test_mnist(fix_get_mnist_subset, image_dl_estimator):
+@pytest.mark.skipMlFramework("scikitlearn")
+@pytest.mark.parametrize("targeted", [True, False])
+def test_mnist(fix_get_mnist_subset, image_dl_estimator, targeted):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
     estimator, _ = image_dl_estimator()
 
     x_test_original = x_test_mnist.copy()
-    targeted = True
+
     if targeted:
         # Generate random target classes
         class_y_test = np.argmax(y_test_mnist, axis=1)
@@ -87,81 +89,6 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     # Check that x_test has not been modified by attack and classifier
     np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
 
-# class TestPixelAttack(TestBase):
-#     """
-#     A unittest class for testing the Pixel Attack.
-#
-#     This module tests the Pixel Attack.
-#     The Pixel Attack is a generalisation of One Pixel Attack.
-#
-#     | One Pixel Attack Paper link:
-#         https://ieeexplore.ieee.org/abstract/document/8601309/citations#citations
-#         (arXiv link: https://arxiv.org/pdf/1710.08864.pdf)
-#     | Pixel Attack Paper link:
-#         https://arxiv.org/abs/1906.06026
-#     """
-#
-#     @classmethod
-#     def setUpClass(cls):
-#         super().setUpClass()
-#
-#         cls.n_test = 2
-#         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
-#         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
-#
-#     def test_6_keras_mnist(self):
-#         """
-#         Test with the KerasClassifier. (Untargeted Attack)
-#         :return:
-#         """
-#
-#         classifier = get_image_classifier_kr()
-#         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
-#
-#     def test_2_tensorflow_mnist(self):
-#         """
-#         Test with the TensorFlowClassifier. (Untargeted Attack)
-#         :return:
-#         """
-#         classifier, sess = get_image_classifier_tf()
-#         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, False)
-#
-#     def test_4_pytorch_mnist(self):
-#         """
-#         Test with the PyTorchClassifier. (Untargeted Attack)
-#         :return:
-#         """
-#         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-#         classifier = get_image_classifier_pt()
-#         self._test_attack(classifier, x_test, self.y_test_mnist, False)
-#
-#     def test_7_keras_mnist_targeted(self):
-#         """
-#         Test with the KerasClassifier. (Targeted Attack)
-#         :return:
-#         """
-#         classifier = get_image_classifier_kr()
-#         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
-#
-#     def test_3_tensorflow_mnist_targeted(self):
-#         """
-#         Test with the TensorFlowClassifier. (Targeted Attack)
-#         :return:
-#         """
-#         classifier, sess = get_image_classifier_tf()
-#         self._test_attack(classifier, self.x_test_mnist, self.y_test_mnist, True)
-#
-#     def test_5_pytorch_mnist_targeted(self):
-#         """
-#         Test with the PyTorchClassifier. (Targeted Attack)
-#         :return:
-#         """
-#         x_test = np.reshape(self.x_test_mnist, (self.x_test_mnist.shape[0], 1, 28, 28)).astype(np.float32)
-#         classifier = get_image_classifier_pt()
-#         self._test_attack(classifier, x_test, self.y_test_mnist, True)
-#
 
-#
-#     def test_1_classifier_type_check_fail(self):
-#         backend_test_classifier_type_check_fail(PixelAttack, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])
-#
+def test_classifier_type_check_fail():
+    backend_test_classifier_type_check_fail(PixelAttack, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])
