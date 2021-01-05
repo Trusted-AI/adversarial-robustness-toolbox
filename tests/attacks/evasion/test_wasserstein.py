@@ -106,7 +106,7 @@ def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(Wasserstein, (BaseEstimator, LossGradientsMixin, ClassifierMixin))
 
 
-@pytest.mark.skipMlFramework("mxnet", "scikitlearn")
+@pytest.mark.skipMlFramework("mxnet", "scikitlearn", "tensorflow2v1")
 def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
