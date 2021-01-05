@@ -52,7 +52,7 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skipMlFramework("scikitlearn")
+@pytest.mark.skipMlFramework("scikitlearn", "tensorflow2v1")
 @pytest.mark.parametrize("targeted", [True, False])
 def test_mnist(fix_get_mnist_subset, image_dl_estimator, targeted):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
