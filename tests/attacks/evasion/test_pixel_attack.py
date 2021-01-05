@@ -52,10 +52,10 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-def test_mnist(fix_get_mnist_subset):
+def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    estimator, sess = get_image_classifier_tf()
+    estimator, _ = image_dl_estimator()
 
     x_test_original = x_test_mnist.copy()
     targeted = True
@@ -75,17 +75,17 @@ def test_mnist(fix_get_mnist_subset):
         df = PixelAttack(estimator, th=64, es=es, targeted=targeted)
         x_test_adv = df.generate(x_test_original, targets, max_iter=1)
 
-        # self.assertFalse((x_test_mnist == x_test_adv).all())
-        # self.assertFalse((0.0 == x_test_adv).all())
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_mnist, x_test_adv)
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, 0.0, x_test_adv)
 
         y_pred = get_labels_np_array(estimator.predict(x_test_adv))
-        # self.assertFalse((y_test_mnist == y_pred).all())
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, y_test_mnist, y_pred)
 
         accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
         logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
 
     # Check that x_test has not been modified by attack and classifier
-    # self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
+    np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
 
 # class TestPixelAttack(TestBase):
 #     """
