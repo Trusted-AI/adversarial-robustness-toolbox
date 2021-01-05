@@ -29,15 +29,16 @@ from art.utils import to_categorical
 
 logger = logging.getLogger(__name__)
 
-PP_POISON = 0.33
-NB_EPOCHS = 3
-backdoor_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
-                             "..",
-                             "utils",
-                             "data",
-                             "backdoors",
-                             "alert.png",
-                             )
+
+@pytest.fixture()
+def backdoor_path():
+    yield os.path.join(os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+                       "..",
+                       "utils",
+                       "data",
+                       "backdoors",
+                       "alert.png",
+                       )
 
 
 @pytest.fixture()
@@ -49,23 +50,53 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.fixture()
-def poison(fix_get_mnist_subset):
-    yield Poison(fix_get_mnist_subset)
+def perturbation_dic(fix_get_mnist_subset, backdoor_path):
+    (x_train_mnist, _, _, _) = fix_get_mnist_subset
+
+    def pattern_based_perturbation(x):
+        max_val = np.max(x_train_mnist)
+        return np.expand_dims(add_pattern_bd(x.squeeze(3), pixel_value=max_val), axis=3)
+
+    def pixel_based_perturbation(x):
+        max_val = np.max(x_train_mnist)
+        return np.expand_dims(add_single_bd(x.squeeze(3), pixel_value=max_val), axis=3)
+
+    def image_based_perturbation(x):
+        return np.expand_dims(
+            insert_image(
+                x.squeeze(3), backdoor_path=backdoor_path, size=(5, 5), random=False, x_shift=3, y_shift=3
+            ),
+            axis=3,
+        )
+
+    def poison_func_4(x):
+        return np.expand_dims(
+            insert_image(x.squeeze(3), backdoor_path=backdoor_path, size=(5, 5), random=True), axis=3
+        )
+
+    perturbation_dic = {"pattern_based_perturbation": pattern_based_perturbation,
+                        "pixel_based_perturbation": pixel_based_perturbation,
+                        "image_based_perturbation": image_based_perturbation,
+                        "multiple_perturbations": [poison_func_4, pattern_based_perturbation]}
+
+    yield perturbation_dic
 
 
 @pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
 @pytest.mark.parametrize("perturbation", ["pattern_based_perturbation", "pixel_based_perturbation",
                                           "image_based_perturbation", "multiple_perturbations"])
-def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, poison, perturbation):
+def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, perturbation_dic, perturbation):
     estimator, _ = image_dl_estimator()
 
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    poison_func = poison.perturbation_dic[perturbation]
+    poison_func = perturbation_dic[perturbation]
 
     x_poisoned_raw = np.copy(x_train_mnist)
     y_poisoned_raw = np.copy(y_train_mnist)
     is_poison_train = np.zeros(np.shape(y_poisoned_raw)[0])
+
+    PP_POISON = 0.33
 
     for i in range(10):
         src = i
@@ -96,10 +127,10 @@ def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, poison, pert
     x_train = x_poisoned_raw[shuffled_indices]
     y_train = y_poisoned_raw[shuffled_indices]
 
-    estimator.fit(x_train, y_train, nb_epochs=NB_EPOCHS, batch_size=32)
+    estimator.fit(x_train, y_train, nb_epochs=3, batch_size=32)
 
 
-def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, poison):
+def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, backdoor_path):
     """
     Tests failure modes for image perturbation functions
     """
@@ -126,34 +157,3 @@ def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, poison):
     with pytest.raises(ValueError) as context:
         backdoor_attack.poison(np.zeros(5), y=np.ones(5))
         assert "Invalid array shape" in str(context.exception)
-
-
-class Poison():
-    def __init__(self, mnist_dataset):
-        (self.x_train_mnist, self.y_train_mnist, self.x_test_mnist, self.y_test_mnist) = mnist_dataset
-
-        self.perturbation_dic = {"pattern_based_perturbation": self.pattern_based_perturbation,
-                                 "pixel_based_perturbation": self.pixel_based_perturbation,
-                                 "image_based_perturbation": self.image_based_perturbation,
-                                 "multiple_perturbations": [self.poison_func_4, self.pattern_based_perturbation]}
-
-    def pattern_based_perturbation(self, x):
-        max_val = np.max(self.x_train_mnist)
-        return np.expand_dims(add_pattern_bd(x.squeeze(3), pixel_value=max_val), axis=3)
-
-    def pixel_based_perturbation(self, x):
-        max_val = np.max(self.x_train_mnist)
-        return np.expand_dims(add_single_bd(x.squeeze(3), pixel_value=max_val), axis=3)
-
-    def image_based_perturbation(self, x):
-        return np.expand_dims(
-            insert_image(
-                x.squeeze(3), backdoor_path=backdoor_path, size=(5, 5), random=False, x_shift=3, y_shift=3
-            ),
-            axis=3,
-        )
-
-    def poison_func_4(self, x):
-        return np.expand_dims(
-            insert_image(x.squeeze(3), backdoor_path=backdoor_path, size=(5, 5), random=True), axis=3
-        )
