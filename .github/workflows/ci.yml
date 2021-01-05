@@ -16,7 +16,7 @@ on:
 
   # Run scheduled CI flow daily
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '0 8 * * 0'
 
 jobs:
   test:
