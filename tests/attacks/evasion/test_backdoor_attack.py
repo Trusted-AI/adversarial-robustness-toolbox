@@ -59,7 +59,7 @@ def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, poison):
     # krc = get_image_classifier_kr() from_logits=False
     estimator, _ = image_dl_estimator()
 
-    _back_end(fix_get_mnist_subset, estimator, poison.poison_func_1)
+    _back_end(fix_get_mnist_subset, estimator, poison.perturbation_dic["pattern_based_perturbation"])
 
 
 @pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
@@ -72,7 +72,7 @@ def test_backdoor_pixel(fix_get_mnist_subset, image_dl_estimator, poison):
     # krc = get_image_classifier_kr() from_logits=False
     estimator, _ = image_dl_estimator()
 
-    _back_end(fix_get_mnist_subset, estimator, poison.poison_func_2)
+    _back_end(fix_get_mnist_subset, estimator, poison.pixel_based_perturbation)
 
 
 @pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
@@ -85,7 +85,7 @@ def test_backdoor_image(fix_get_mnist_subset, image_dl_estimator, poison):
     # krc = get_image_classifier_kr() from_logits=False
     estimator, _ = image_dl_estimator()
 
-    _back_end(fix_get_mnist_subset, estimator, poison.poison_func_3)
+    _back_end(fix_get_mnist_subset, estimator, poison.image_based_perturbation)
 
 
 @pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
@@ -98,7 +98,7 @@ def test_multiple_perturbations(fix_get_mnist_subset, image_dl_estimator, poison
     # krc = get_image_classifier_kr() from_logits=False
     estimator, _ = image_dl_estimator()
 
-    _back_end(fix_get_mnist_subset, estimator, [poison.poison_func_4, poison.poison_func_1])
+    _back_end(fix_get_mnist_subset, estimator, [poison.poison_func_4, poison.pattern_based_perturbation])
 
 
 def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, poison):
@@ -109,14 +109,14 @@ def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, poison):
 
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    backdoor_attack = PoisoningAttackBackdoor(poison.poison_func_5)
+    backdoor_attack = PoisoningAttackBackdoor(poison.image_perturbation_1)
     adv_target = np.argmax(y_train_mnist) + 1 % 10
 
     with pytest.raises(ValueError) as context:
         backdoor_attack.poison(x_train_mnist, y=adv_target)
         assert "Backdoor does not fit inside original image" in str(context.exception)
 
-    backdoor_attack = PoisoningAttackBackdoor(poison.poison_func_6)
+    backdoor_attack = PoisoningAttackBackdoor(poison.image_perturbation_2)
 
     with pytest.raises(ValueError) as context:
         backdoor_attack.poison(np.zeros(5), y=np.ones(5))
@@ -179,15 +179,17 @@ class Poison():
                                           "alert.png",
                                           )
 
-    def poison_func_1(self, x):
+        self.perturbation_dic = {"pattern_based_perturbation":self.pattern_based_perturbation}
+
+    def pattern_based_perturbation(self, x):
         max_val = np.max(self.x_train_mnist)
         return np.expand_dims(add_pattern_bd(x.squeeze(3), pixel_value=max_val), axis=3)
 
-    def poison_func_2(self, x):
+    def pixel_based_perturbation(self, x):
         max_val = np.max(self.x_train_mnist)
         return np.expand_dims(add_single_bd(x.squeeze(3), pixel_value=max_val), axis=3)
 
-    def poison_func_3(self, x):
+    def image_based_perturbation(self, x):
         return np.expand_dims(
             insert_image(
                 x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=False, x_shift=3, y_shift=3
@@ -200,12 +202,12 @@ class Poison():
             insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, size=(5, 5), random=True), axis=3
         )
 
-    def poison_func_5(self, x):
+    def image_perturbation_1(self, x):
         return np.expand_dims(
             insert_image(x.squeeze(3), backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3
         )
 
-    def poison_func_6(self, x):
+    def image_perturbation_2(self, x):
         return np.expand_dims(insert_image(x, backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3)
 
 
