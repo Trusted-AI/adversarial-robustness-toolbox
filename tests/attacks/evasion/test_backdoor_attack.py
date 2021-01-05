@@ -50,12 +50,24 @@ def poison(fix_get_mnist_subset):
 
 @pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
 @pytest.mark.parametrize("perturbation", ["pattern_based_perturbation", "pixel_based_perturbation",
-                                          "image_based_perturbation", "pattern_based_perturbation"])
+                                          "image_based_perturbation", "multiple_perturbations"])
 def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, poison, perturbation):
-
     estimator, _ = image_dl_estimator()
 
     _back_end(fix_get_mnist_subset, estimator, poison.perturbation_dic[perturbation])
+
+
+# @pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
+# def test_multiple_perturbations(fix_get_mnist_subset, image_dl_estimator, poison):
+#     """
+#     Test using multiple perturbation functions in the same attack can be trained on classifier
+#     """
+#     # poison = Poison(fix_get_mnist_subset)
+#
+#     # krc = get_image_classifier_kr() from_logits=False
+#     estimator, _ = image_dl_estimator()
+#
+#     _back_end(fix_get_mnist_subset, estimator, [poison.poison_func_4, poison.pattern_based_perturbation])
 
 
 def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, poison):
@@ -136,9 +148,10 @@ class Poison():
                                           "alert.png",
                                           )
 
-        self.perturbation_dic = {"pattern_based_perturbation":self.pattern_based_perturbation,
+        self.perturbation_dic = {"pattern_based_perturbation": self.pattern_based_perturbation,
                                  "pixel_based_perturbation": self.pixel_based_perturbation,
-                                 "image_based_perturbation": self.image_based_perturbation}
+                                 "image_based_perturbation": self.image_based_perturbation,
+                                 "multiple_perturbations": [self.poison_func_4, self.pattern_based_perturbation]}
 
     def pattern_based_perturbation(self, x):
         max_val = np.max(self.x_train_mnist)
@@ -168,5 +181,3 @@ class Poison():
 
     def image_perturbation_2(self, x):
         return np.expand_dims(insert_image(x, backdoor_path=self.backdoor_path, random=True, size=(100, 100)), axis=3)
-
-
