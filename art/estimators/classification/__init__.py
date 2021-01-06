@@ -15,6 +15,7 @@ from art.estimators.classification.GPy import GPyGaussianProcessClassifier
 from art.estimators.classification.keras import KerasClassifier
 from art.estimators.classification.lightgbm import LightGBMClassifier
 from art.estimators.classification.mxnet import MXClassifier
+from art.estimators.classification.neuraldecisiontree import NeuralDecisionTree, auto_cluster
 from art.estimators.classification.pytorch import PyTorchClassifier
 from art.estimators.classification.scikitlearn import SklearnClassifier
 from art.estimators.classification.tensorflow import (
