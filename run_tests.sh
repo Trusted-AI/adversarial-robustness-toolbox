@@ -11,7 +11,6 @@ export TF_CPP_MIN_LOG_LEVEL="3"
 mlFrameworkList=("tensorflow" "keras" "pytorch" "scikitlearn" "mxnet" "kerastf")
 mlFramework=$1
 
-
 if [[ ${mlFramework} != "legacy" ]]
 then
     echo "#######################################################################"
@@ -84,7 +83,6 @@ else
                         "tests/attacks/test_spatial_transformation.py" \
                         "tests/attacks/test_universal_perturbation.py" \
                         "tests/attacks/test_virtual_adversarial.py" \
-                        "tests/attacks/test_zoo.py" \
                         "tests/attacks/test_threshold_attack.py" \
                         "tests/attacks/test_wasserstein.py" \
                         "tests/attacks/test_shapeshifter.py" \
