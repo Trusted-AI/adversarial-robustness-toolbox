@@ -81,8 +81,12 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     params = {"y": random_targets(y_test_mnist, tfc.nb_classes)}
     x_test_mnist_adv = zoo.generate(x_test_mnist, **params)
     # self.assertFalse((x_test_mnist == x_test_mnist_adv).all())
+    assert bool((x_test_mnist == x_test_mnist_adv).all()) is False
     # self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
+    assert_less_or_equal(np.amax(x_test_mnist_adv), 1.0)
     # self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
+    assert_less_or_equal(0.0, np.amin(x_test_mnist_adv))
+
     target = np.argmax(params["y"], axis=1)
     y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
     logger.debug("ZOO target: %s", target)
@@ -93,7 +97,10 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     zoo = ZooAttack(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=3)
     x_test_mnist_adv = zoo.generate(x_test_mnist)
     # self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
+    assert_less_or_equal(np.amax(x_test_mnist_adv), 1.0)
     # self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
+    assert_less_or_equal(0.0, np.amin(x_test_mnist_adv))
+
     y_pred = np.argmax(tfc.predict(x_test_mnist), axis=1)
     y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
     logger.debug("ZOO actual: %s", y_pred_adv)
@@ -101,6 +108,7 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
 
     # Check that x_test has not been modified by attack and classifier
     # self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
+    np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
 
     # Clean-up session
     # if sess is not None:
