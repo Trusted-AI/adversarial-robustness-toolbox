@@ -16,7 +16,7 @@ on:
 
   # Run scheduled CI flow daily
   schedule:
-    - cron: '0 8 * * *'
+    - cron: '0 8 * * 0'
 
 jobs:
   test:
@@ -127,6 +127,26 @@ jobs:
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}
+      - name: Save code coverage report
+        if: ${{ matrix.framework != 'legacy' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.name }} Code Coverage
+          path: coverage.xml
+  codecov:
+    name: Upload to Codecov
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get Coverage Reports
+        uses: actions/download-artifact@v2
+        with:
+          path: coverage
+      - name: Upload Coverage Reports to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          directory: coverage
+          fail_ci_if_error: true
   style:
     name: Style Check
     runs-on: ubuntu-latest

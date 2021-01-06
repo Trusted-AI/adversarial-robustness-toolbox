@@ -29,7 +29,7 @@ import logging
 from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -238,9 +238,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         inputs = x.to(self.estimator.device)
         targets = targets.to(self.estimator.device)
-        adv_x = inputs
+        adv_x = torch.clone(inputs)
 
         if mask is not None:
             mask = mask.to(self.estimator.device)
