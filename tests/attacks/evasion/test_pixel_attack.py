@@ -37,9 +37,8 @@ from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array
 
-from tests.utils import TestBase
-from tests.utils import get_image_classifier_tf, get_image_classifier_kr, get_image_classifier_pt
 from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -54,41 +53,47 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 @pytest.mark.skipMlFramework("scikitlearn", "tensorflow2v1")
 @pytest.mark.parametrize("targeted", [True, False])
-def test_mnist(fix_get_mnist_subset, image_dl_estimator, targeted):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+def test_image(fix_get_mnist_subset, image_dl_estimator, targeted, art_warning):
+    try:
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    estimator, _ = image_dl_estimator()
+        estimator, _ = image_dl_estimator()
 
-    x_test_original = x_test_mnist.copy()
+        x_test_original = x_test_mnist.copy()
 
-    if targeted:
-        # Generate random target classes
-        class_y_test = np.argmax(y_test_mnist, axis=1)
-        nb_classes = np.unique(class_y_test).shape[0]
+        if targeted:
+            # Generate random target classes
+            class_y_test = np.argmax(y_test_mnist, axis=1)
+            nb_classes = np.unique(class_y_test).shape[0]
 
-        targets = np.random.randint(nb_classes, size=x_test_mnist.shape[0])
-        for i in range(x_test_mnist.shape[0]):
-            if class_y_test[i] == targets[i]:
-                targets[i] -= 1
-    else:
-        targets = y_test_mnist
+            targets = np.random.randint(nb_classes, size=x_test_mnist.shape[0])
+            for i in range(x_test_mnist.shape[0]):
+                if class_y_test[i] == targets[i]:
+                    targets[i] -= 1
+        else:
+            targets = y_test_mnist
 
-    for es in [0, 1]:
-        df = PixelAttack(estimator, th=64, es=es, targeted=targeted)
-        x_test_adv = df.generate(x_test_original, targets, max_iter=1)
+        for es in [0, 1]:
+            df = PixelAttack(estimator, th=64, es=es, targeted=targeted)
+            x_test_adv = df.generate(x_test_original, targets, max_iter=1)
 
-        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_mnist, x_test_adv)
-        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, 0.0, x_test_adv)
+            np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_mnist, x_test_adv)
+            np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, 0.0, x_test_adv)
 
-        y_pred = get_labels_np_array(estimator.predict(x_test_adv))
-        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, y_test_mnist, y_pred)
+            y_pred = get_labels_np_array(estimator.predict(x_test_adv))
+            np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, y_test_mnist, y_pred)
 
-        accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
-        logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
+            accuracy = np.sum(np.argmax(y_pred, axis=1) == np.argmax(y_test_mnist, axis=1)) / x_test_mnist.shape[0]
+            logger.info("Accuracy on adversarial examples: %.2f%%", (accuracy * 100))
 
-    # Check that x_test has not been modified by attack and classifier
-    np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
+        # Check that x_test has not been modified by attack and classifier
+        np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(PixelAttack, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])
+def test_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(PixelAttack, [BaseEstimator, NeuralNetworkMixin, ClassifierMixin])
+    except ARTTestException as e:
+        art_warning(e)
