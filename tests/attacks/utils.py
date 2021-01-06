@@ -66,6 +66,17 @@ def backend_test_defended_images(attack, mnist_dataset):
     check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
 
 
+def assert_less_or_equal(x, y):
+    '''
+    temporary replacement for the missing numpy (replacing unitTest.assertGreaterEqual(x,y)
+    :return:
+    '''
+    try:
+        np.testing.assert_array_equal(x, y)
+    except Exception as e:
+        np.testing.assert_array_less(x, y)
+
+
 def backend_test_random_initialisation_images(attack, mnist_dataset):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = mnist_dataset
     x_test_adv = attack.generate(x_test_mnist)
@@ -122,7 +133,6 @@ def backend_check_adverse_frames(attack, mnist_dataset, expected_values):
 
 
 def backend_test_classifier_type_check_fail(attack, classifier_expected_list=[], classifier=None):
-
     assert len(classifier_expected_list) == len(attack._estimator_requirements)
 
     for cls in classifier_expected_list:
@@ -192,7 +202,7 @@ def backend_untargeted_tabular(attack, iris_dataset, clipped):
 
     # assert (y_test_true == y_pred_test_adv).any(), "An untargeted attack should have changed SOME predictions"
     assert (
-        bool((y_test_true == y_pred_test_adv).all()) is False
+            bool((y_test_true == y_pred_test_adv).all()) is False
     ), "An untargeted attack should NOT have changed all predictions"
 
     accuracy = np.sum(y_pred_test_adv == y_test_true) / y_test_true.shape[0]

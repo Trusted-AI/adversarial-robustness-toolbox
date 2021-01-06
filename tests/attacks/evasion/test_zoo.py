@@ -30,7 +30,7 @@ from art.utils import random_targets
 
 from tests.utils import TestBase, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils import get_image_classifier_tf, master_seed
-from tests.attacks.utils import backend_test_classifier_type_check_fail
+from tests.attacks.utils import backend_test_classifier_type_check_fail, assert_less_or_equal
 
 logger = logging.getLogger(__name__)
 
@@ -41,17 +41,6 @@ def fix_get_mnist_subset(get_mnist_dataset):
     n_train = 1
     n_test = 1
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
-
-
-def assert_less_or_equal(x, y):
-    '''
-    temporary replacement for the missing numpy (replacing unitTest.assertGreaterEqual(x,y)
-    :return:
-    '''
-    try:
-        np.testing.assert_array_equal(x, y)
-    except Exception as e:
-        np.testing.assert_array_less(x, y)
 
 
 def test_failure_attack(fix_get_mnist_subset, image_dl_estimator):
