@@ -192,6 +192,20 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         with open(full_path + ".pickle", "wb") as file_pickle:
             pickle.dump(self.model, file=file_pickle)
 
+    def clone_for_refitting(self) -> 'ScikitlearnClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        import sklearn  # lgtm [py/repeated-import]
+
+        clone = type(self)(sklearn.base.clone(self.model))
+        params = self.get_params()
+        del params['model']
+        clone.set_params(**params)
+        return clone
+
     def _get_input_shape(self, model) -> Optional[Tuple[int, ...]]:
         _input_shape: Optional[Tuple[int, ...]]
         if hasattr(model, "n_features_"):
