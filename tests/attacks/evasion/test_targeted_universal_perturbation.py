@@ -26,7 +26,7 @@ from art.attacks.evasion.targeted_universal_perturbation import TargetedUniversa
 from art.estimators.classification.classifier import ClassifierMixin
 from art.estimators.estimator import BaseEstimator
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -39,39 +39,43 @@ def fix_get_mnist_subset(get_mnist_dataset):
     yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
 
 
-@pytest.mark.skipMlFramework("mxnet", "scikitlearn", "tensorflow2v1")
-def test_mnist(fix_get_mnist_subset, image_dl_estimator):
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+def test_image(fix_get_mnist_subset, image_dl_estimator, art_warning):
+    try:
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    x_test_original = x_test_mnist.copy()
+        x_test_original = x_test_mnist.copy()
 
-    # Build TensorFlowClassifier
-    estimator, _ = image_dl_estimator(from_logits=False)
+        estimator, _ = image_dl_estimator(from_logits=False)
 
-    # set target label
-    target = 0
-    y_target = np.zeros([len(x_train_mnist), 10])
-    for i in range(len(x_train_mnist)):
-        y_target[i, target] = 1.0
+        # set target label
+        target = 0
+        y_target = np.zeros([len(x_train_mnist), 10])
+        for i in range(len(x_train_mnist)):
+            y_target[i, target] = 1.0
 
-    # Attack
-    up = TargetedUniversalPerturbation(
-        estimator, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
-    )
-    x_train_adv = up.generate(x_train_mnist, y=y_target)
-    assert (up.fooling_rate >= 0.2) or not up.converged
+        # Attack
+        up = TargetedUniversalPerturbation(
+            estimator, max_iter=1, attacker="fgsm", attacker_params={"eps": 0.3, "targeted": True}
+        )
+        x_train_adv = up.generate(x_train_mnist, y=y_target)
+        assert (up.fooling_rate >= 0.2) or not up.converged
 
-    x_test_adv = x_test_mnist + up.noise
-    np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_mnist, x_test_adv)
+        x_test_adv = x_test_mnist + up.noise
+        np.testing.assert_raises(AssertionError, np.testing.assert_array_equal, x_test_mnist, x_test_adv)
 
-    train_y_pred = np.argmax(estimator.predict(x_train_adv), axis=1)
-    test_y_pred = np.argmax(estimator.predict(x_test_adv), axis=1)
-    assert bool((np.argmax(y_test_mnist, axis=1) == test_y_pred).all()) is False
-    assert bool((np.argmax(y_train_mnist, axis=1) == train_y_pred).all()) is False
+        train_y_pred = np.argmax(estimator.predict(x_train_adv), axis=1)
+        test_y_pred = np.argmax(estimator.predict(x_test_adv), axis=1)
+        assert bool((np.argmax(y_test_mnist, axis=1) == test_y_pred).all()) is False
+        assert bool((np.argmax(y_train_mnist, axis=1) == train_y_pred).all()) is False
 
-    # Check that x_test has not been modified by attack and classifier
-    np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
+        # Check that x_test has not been modified by attack and classifier
+        np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
+    except ARTTestException as e:
+        art_warning(e)
 
 
-def test_classifier_type_check_fail():
-    backend_test_classifier_type_check_fail(TargetedUniversalPerturbation, (BaseEstimator, ClassifierMixin))
+def test_classifier_type_check_fail(art_warning):
+    try:
+        backend_test_classifier_type_check_fail(TargetedUniversalPerturbation, (BaseEstimator, ClassifierMixin))
+    except ARTTestException as e:
+        art_warning(e)

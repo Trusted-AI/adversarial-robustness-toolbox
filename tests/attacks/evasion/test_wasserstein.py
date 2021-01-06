@@ -28,7 +28,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import get_labels_np_array
 
 from tests.attacks.utils import backend_test_classifier_type_check_fail
-from tests.utils import ExpectedValue, ARTTestException
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
