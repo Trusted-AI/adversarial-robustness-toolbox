@@ -138,9 +138,9 @@ class NeuralDecisionTree(Classifier):
         # Build the tree and get the root note
         root = self._build_tree(root_key, classifier_dict, processed_cluster_list, _per_node_train)
 
-        super().__init__()
+        super().__init__(model=None, clip_values=root.classifier.clip_values) # Just calling this to avoid errors
         self.classifier = root
-        self._input_shape = input_shape
+
         self._root_key = root_key
         self._class_mapping = class_mapping
         self.classifier_dict = classifier_dict
