@@ -66,6 +66,11 @@ def backend_test_defended_images(attack, mnist_dataset):
     check_adverse_predicted_sample_y(y_test_pred_adv, y_test_mnist)
 
 
+def assert_within_range(x, min, max):
+    assert_less_or_equal(np.amax(x), max)
+    assert_less_or_equal(min, np.amin(x))
+
+
 def assert_less_or_equal(x, y):
     '''
     temporary replacement for the missing numpy (replacing unitTest.assertGreaterEqual(x,y)

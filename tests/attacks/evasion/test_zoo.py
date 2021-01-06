@@ -30,7 +30,7 @@ from art.utils import random_targets
 
 from tests.utils import TestBase, get_image_classifier_kr, get_image_classifier_pt
 from tests.utils import get_image_classifier_tf, master_seed
-from tests.attacks.utils import backend_test_classifier_type_check_fail, assert_less_or_equal
+from tests.attacks.utils import backend_test_classifier_type_check_fail, assert_less_or_equal, assert_within_range
 
 logger = logging.getLogger(__name__)
 
@@ -60,8 +60,7 @@ def test_failure_attack(fix_get_mnist_subset, image_dl_estimator):
     zoo = ZooAttack(classifier=estimator, max_iter=0, binary_search_steps=0, learning_rate=0)
     x_test_mnist_adv = zoo.generate(x_test_mnist)
 
-    assert_less_or_equal(np.amax(x_test_mnist_adv), 1.0)
-    assert_less_or_equal(0.0, np.amin(x_test_mnist_adv))
+    assert_within_range(x_test_mnist_adv, 0.0, 1.0)
 
     np.testing.assert_almost_equal(x_test_mnist, x_test_mnist_adv, 3)
 
@@ -80,12 +79,8 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=30, binary_search_steps=8, batch_size=128)
     params = {"y": random_targets(y_test_mnist, tfc.nb_classes)}
     x_test_mnist_adv = zoo.generate(x_test_mnist, **params)
-    # self.assertFalse((x_test_mnist == x_test_mnist_adv).all())
     assert bool((x_test_mnist == x_test_mnist_adv).all()) is False
-    # self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
-    assert_less_or_equal(np.amax(x_test_mnist_adv), 1.0)
-    # self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
-    assert_less_or_equal(0.0, np.amin(x_test_mnist_adv))
+    assert_within_range(x_test_mnist_adv, 0.0, 1.0)
 
     target = np.argmax(params["y"], axis=1)
     y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
@@ -96,10 +91,7 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     # Untargeted attack
     zoo = ZooAttack(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=3)
     x_test_mnist_adv = zoo.generate(x_test_mnist)
-    # self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
-    assert_less_or_equal(np.amax(x_test_mnist_adv), 1.0)
-    # self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
-    assert_less_or_equal(0.0, np.amin(x_test_mnist_adv))
+    assert_within_range(x_test_mnist_adv, 0.0, 1.0)
 
     y_pred = np.argmax(tfc.predict(x_test_mnist), axis=1)
     y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
