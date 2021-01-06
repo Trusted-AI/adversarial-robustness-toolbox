@@ -57,9 +57,9 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
             if not is_probability(alt_pred):
                 alt_pred = scipy.special.softmax(alt_pred, axis=1)
             # divide into 100 bins and return center of bin
-            pred_bin = np.floor(pred * 100) / 100 + 0.005
+            pred_bin = (np.floor(pred * 100) / 100).round(decimals=2) + 0.005
             pred_bin[pred_bin > 1] = 0.995
-            alt_pred_bin = np.floor(alt_pred * 100) / 100 + 0.005
+            alt_pred_bin = (np.floor(alt_pred * 100) / 100).round(decimals=2) + 0.005
             alt_pred_bin[alt_pred_bin > 1] = 0.995
             ratio_1 = pred_bin / alt_pred_bin
             ratio_2 = alt_pred_bin / pred_bin

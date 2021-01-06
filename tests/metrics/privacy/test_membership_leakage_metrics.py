@@ -26,40 +26,37 @@ from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
+@pytest.mark.skipMlFramework("dl_frameworks")
 def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         classifier = decision_tree_estimator()
         (x_train, y_train), _ = get_iris_dataset
-        # In real use, the same classifier should not be passed as target and extra, as extra_classifier is modified
-        # by the method
-        leakage = PDTP(classifier, classifier, x_train, y_train)
+        prev = classifier.model.tree_
+        leakage = PDTP(classifier, classifier.clone_for_refitting(), x_train, y_train)
+        print(leakage)
+        print(np.average(leakage))
+        print(np.max(leakage))
+        assert(classifier.model.tree_ == prev)
+    except ARTTestException as e:
+        art_warning(e)
+
+def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_dataset):
+    try:
+        classifier = tabular_dl_estimator()
+        (x_train, y_train), _ = get_iris_dataset
+        leakage = PDTP(classifier, classifier.clone_for_refitting(), x_train, y_train)
         print(leakage)
         print(np.average(leakage))
         print(np.max(leakage))
     except ARTTestException as e:
         art_warning(e)
 
-# def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_dataset):
-#     try:
-#         classifier = tabular_dl_estimator()
-#         (x_train, y_train), _ = get_iris_dataset
-#         # In real use, the same classifier should not be passed as target and extra, as extra_classifier is modified
-#         # by the method
-#         leakage = PDTP(classifier, classifier, x_train, y_train)
-#         print(leakage)
-#         print(np.average(leakage))
-#         print(np.max(leakage))
-#     except ARTTestException as e:
-#         art_warning(e)
-
 
 # def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_mnist_subset):
 #     try:
 #         classifier, _ = image_dl_estimator()
 #         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-#         # In real use, the same classifier should not be passed as target and extra, as extra_classifier is modified
-#         # by the method
-#         leakage = PDTP(classifier, classifier, x_train, y_train)
+#         leakage = PDTP(classifier, classifier.clone_for_refitting(), x_train, y_train)
 #         print(leakage)
 #         print(np.average(leakage))
 #         print(np.max(leakage))
