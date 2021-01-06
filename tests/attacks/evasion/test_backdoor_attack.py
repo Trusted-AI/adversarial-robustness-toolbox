@@ -26,6 +26,7 @@ import pytest
 from art.attacks.poisoning.backdoor_attack import PoisoningAttackBackdoor
 from art.attacks.poisoning.perturbations import add_pattern_bd, add_single_bd, insert_image
 from art.utils import to_categorical
+from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
@@ -85,75 +86,81 @@ def perturbation_dic(fix_get_mnist_subset, backdoor_path):
 @pytest.mark.skipMlFramework("pytorch", "scikitlearn", "mxnet", "tensorflow2v1")
 @pytest.mark.parametrize("perturbation", ["pattern_based_perturbation", "pixel_based_perturbation",
                                           "image_based_perturbation", "multiple_perturbations"])
-def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, perturbation_dic, perturbation):
-    estimator, _ = image_dl_estimator()
+def test_backdoor_pattern(fix_get_mnist_subset, image_dl_estimator, perturbation_dic, perturbation, art_warning):
+    try:
+        estimator, _ = image_dl_estimator()
 
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    poison_func = perturbation_dic[perturbation]
+        poison_func = perturbation_dic[perturbation]
 
-    x_poisoned_raw = np.copy(x_train_mnist)
-    y_poisoned_raw = np.copy(y_train_mnist)
-    is_poison_train = np.zeros(np.shape(y_poisoned_raw)[0])
+        x_poisoned_raw = np.copy(x_train_mnist)
+        y_poisoned_raw = np.copy(y_train_mnist)
+        is_poison_train = np.zeros(np.shape(y_poisoned_raw)[0])
 
-    PP_POISON = 0.33
+        pp_poison = 0.33
 
-    for i in range(10):
-        src = i
-        tgt = (i + 1) % 10
-        n_points_in_tgt = np.round(np.sum(np.argmax(y_train_mnist, axis=1) == tgt))
-        num_poison = int((PP_POISON * n_points_in_tgt) / (1 - PP_POISON))
-        src_imgs = np.copy(x_train_mnist[np.argmax(y_train_mnist, axis=1) == src])
+        for i in range(10):
+            src = i
+            tgt = (i + 1) % 10
+            n_points_in_tgt = np.round(np.sum(np.argmax(y_train_mnist, axis=1) == tgt))
+            num_poison = int((pp_poison * n_points_in_tgt) / (1 - pp_poison))
+            src_imgs = np.copy(x_train_mnist[np.argmax(y_train_mnist, axis=1) == src])
 
-        n_points_in_src = np.shape(src_imgs)[0]
-        if num_poison:
-            indices_to_be_poisoned = np.random.choice(n_points_in_src, num_poison)
+            n_points_in_src = np.shape(src_imgs)[0]
+            if num_poison:
+                indices_to_be_poisoned = np.random.choice(n_points_in_src, num_poison)
 
-            imgs_to_be_poisoned = src_imgs[indices_to_be_poisoned]
-            backdoor_attack = PoisoningAttackBackdoor(poison_func)
-            poison_images, poison_labels = backdoor_attack.poison(
-                imgs_to_be_poisoned, y=to_categorical(np.ones(num_poison) * tgt, 10)
+                imgs_to_be_poisoned = src_imgs[indices_to_be_poisoned]
+                backdoor_attack = PoisoningAttackBackdoor(poison_func)
+                poison_images, poison_labels = backdoor_attack.poison(
+                    imgs_to_be_poisoned, y=to_categorical(np.ones(num_poison) * tgt, 10)
+                )
+                x_poisoned_raw = np.append(x_poisoned_raw, poison_images, axis=0)
+                y_poisoned_raw = np.append(y_poisoned_raw, poison_labels, axis=0)
+                is_poison_train = np.append(is_poison_train, np.ones(num_poison))
+
+        is_poison_train = is_poison_train != 0
+
+        # Shuffle training data
+        n_train = np.shape(y_poisoned_raw)[0]
+        shuffled_indices = np.arange(n_train)
+        np.random.shuffle(shuffled_indices)
+        x_train = x_poisoned_raw[shuffled_indices]
+        y_train = y_poisoned_raw[shuffled_indices]
+
+        estimator.fit(x_train, y_train, nb_epochs=3, batch_size=32)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, backdoor_path, art_warning):
+    try:
+        """
+        Tests failure modes for image perturbation functions
+        """
+
+        (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+        def image_perturbation_1(x):
+            return np.expand_dims(
+                insert_image(x.squeeze(3), backdoor_path=backdoor_path, random=True, size=(100, 100)), axis=3
             )
-            x_poisoned_raw = np.append(x_poisoned_raw, poison_images, axis=0)
-            y_poisoned_raw = np.append(y_poisoned_raw, poison_labels, axis=0)
-            is_poison_train = np.append(is_poison_train, np.ones(num_poison))
 
-    is_poison_train = is_poison_train != 0
+        backdoor_attack = PoisoningAttackBackdoor(image_perturbation_1)
+        adv_target = np.argmax(y_train_mnist) + 1 % 10
 
-    # Shuffle training data
-    n_train = np.shape(y_poisoned_raw)[0]
-    shuffled_indices = np.arange(n_train)
-    np.random.shuffle(shuffled_indices)
-    x_train = x_poisoned_raw[shuffled_indices]
-    y_train = y_poisoned_raw[shuffled_indices]
+        with pytest.raises(ValueError) as context:
+            backdoor_attack.poison(x_train_mnist, y=adv_target)
+            assert "Backdoor does not fit inside original image" in str(context.exception)
 
-    estimator.fit(x_train, y_train, nb_epochs=3, batch_size=32)
+        def image_perturbation_2(x):
+            return np.expand_dims(insert_image(x, backdoor_path=backdoor_path, random=True, size=(100, 100)), axis=3)
 
+        backdoor_attack = PoisoningAttackBackdoor(image_perturbation_2)
 
-def test_image_failure_modes(fix_get_mnist_subset, image_dl_estimator, backdoor_path):
-    """
-    Tests failure modes for image perturbation functions
-    """
-
-    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
-
-    def image_perturbation_1(x):
-        return np.expand_dims(
-            insert_image(x.squeeze(3), backdoor_path=backdoor_path, random=True, size=(100, 100)), axis=3
-        )
-
-    backdoor_attack = PoisoningAttackBackdoor(image_perturbation_1)
-    adv_target = np.argmax(y_train_mnist) + 1 % 10
-
-    with pytest.raises(ValueError) as context:
-        backdoor_attack.poison(x_train_mnist, y=adv_target)
-        assert "Backdoor does not fit inside original image" in str(context.exception)
-
-    def image_perturbation_2(x):
-        return np.expand_dims(insert_image(x, backdoor_path=backdoor_path, random=True, size=(100, 100)), axis=3)
-
-    backdoor_attack = PoisoningAttackBackdoor(image_perturbation_2)
-
-    with pytest.raises(ValueError) as context:
-        backdoor_attack.poison(np.zeros(5), y=np.ones(5))
-        assert "Invalid array shape" in str(context.exception)
+        with pytest.raises(ValueError) as context:
+            backdoor_attack.poison(np.zeros(5), y=np.ones(5))
+            assert "Invalid array shape" in str(context.exception)
+    except ARTTestException as e:
+        art_warning(e)
