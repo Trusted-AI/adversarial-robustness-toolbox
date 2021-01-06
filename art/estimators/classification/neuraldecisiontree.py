@@ -140,6 +140,7 @@ class NeuralDecisionTree(Classifier):
 
         super().__init__()
         self.classifier = root
+        self._input_shape = input_shape
         self._root_key = root_key
         self._class_mapping = class_mapping
         self.classifier_dict = classifier_dict
@@ -158,6 +159,15 @@ class NeuralDecisionTree(Classifier):
                     queue.append(child_node)
                 else:
                     self._nb_outputs += 1
+                    
+    @property
+    def input_shape(self) -> Tuple[int, ...]:
+        """
+        Return the shape of one input sample.
+
+        :return: Shape of one input sample.
+        """
+        return self.classifier.classifier._input_shape  # type: ignore
 
     # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
