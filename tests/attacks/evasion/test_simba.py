@@ -88,6 +88,3 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator, targeted):
 
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(SimBA, (BaseEstimator, ClassifierMixin))
-
-
-

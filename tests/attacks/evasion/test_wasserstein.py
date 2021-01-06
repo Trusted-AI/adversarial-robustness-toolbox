@@ -106,11 +106,11 @@ def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(Wasserstein, (BaseEstimator, LossGradientsMixin, ClassifierMixin))
 
 
-@pytest.mark.skipMlFramework("mxnet", "scikitlearn", "tensorflow2v1")
+@pytest.mark.skipMlFramework("scikitlearn", "tensorflow2v1")
 def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
-    estimator, _ = image_dl_estimator(from_logits=False)
+    estimator, _ = image_dl_estimator()
 
     scores = get_labels_np_array(estimator.predict(x_train_mnist))
     acc = np.sum(np.argmax(scores, axis=1) == np.argmax(y_train_mnist, axis=1)) / y_train_mnist.shape[0]
@@ -158,15 +158,12 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
 
     train_success_rate = (
             np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(estimator.predict(x_train_mnist), axis=1)) /
-            y_train_mnist.shape[0]
-    )
-    # self.assertGreaterEqual(train_success_rate, base_success_rate)
+            y_train_mnist.shape[0])
+
     np.testing.assert_array_less(base_success_rate, train_success_rate)
-    test_success_rate = (
-            np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(estimator.predict(x_test_mnist), axis=1)) /
-            y_test_mnist.shape[0]
-    )
-    # self.assertGreaterEqual(test_success_rate, base_success_rate)
+    test_success_rate = (np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(estimator.predict(x_test_mnist), axis=1)) /
+                         y_test_mnist.shape[0])
+
     np.testing.assert_array_less(base_success_rate, test_success_rate)
 
     # original legacy test code commented out (so leaving it here in case it needs to be preserved for whatever reason)
