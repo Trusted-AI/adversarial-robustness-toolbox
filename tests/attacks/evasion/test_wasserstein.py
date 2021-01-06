@@ -52,9 +52,7 @@ def test_unsquared_images():
         ClassifierMixin,
     )
 
-    class DummyClassifier(
-        ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
-    ):
+    class DummyClassifier(ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         def __init__(self):
             super(DummyClassifier, self).__init__(model=None, clip_values=None, channels_first=True)
             self._nb_classes = 10
@@ -157,12 +155,15 @@ def test_mnist(fix_get_mnist_subset, image_dl_estimator):
     test_y_pred = get_labels_np_array(estimator.predict(x_test_adv)).astype(float)
 
     train_success_rate = (
-            np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(estimator.predict(x_train_mnist), axis=1)) /
-            y_train_mnist.shape[0])
+        np.sum(np.argmax(train_y_pred, axis=1) != np.argmax(estimator.predict(x_train_mnist), axis=1))
+        / y_train_mnist.shape[0]
+    )
 
     np.testing.assert_array_less(base_success_rate, train_success_rate)
-    test_success_rate = (np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(estimator.predict(x_test_mnist), axis=1)) /
-                         y_test_mnist.shape[0])
+    test_success_rate = (
+        np.sum(np.argmax(test_y_pred, axis=1) != np.argmax(estimator.predict(x_test_mnist), axis=1))
+        / y_test_mnist.shape[0]
+    )
 
     np.testing.assert_array_less(base_success_rate, test_success_rate)
 
