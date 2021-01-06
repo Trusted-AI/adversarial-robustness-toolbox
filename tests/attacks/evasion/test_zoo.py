@@ -35,6 +35,51 @@ from tests.attacks.utils import backend_test_classifier_type_check_fail
 logger = logging.getLogger(__name__)
 
 
+@pytest.fixture()
+def fix_get_mnist_subset(get_mnist_dataset):
+    (x_train_mnist, y_train_mnist), (x_test_mnist, y_test_mnist) = get_mnist_dataset
+    n_train = 1
+    n_test = 1
+    yield x_train_mnist[:n_train], y_train_mnist[:n_train], x_test_mnist[:n_test], y_test_mnist[:n_test]
+
+
+def assert_less_or_equal(x, y):
+    '''
+    temporary replacement for the missing numpy (replacing unitTest.assertGreaterEqual(x,y)
+    :return:
+    '''
+    try:
+        np.testing.assert_array_equal(x, y)
+    except Exception as e:
+        np.testing.assert_array_less(x, y)
+
+
+def test_failure_attack(fix_get_mnist_subset, image_dl_estimator):
+    """
+    Test the corner case when attack fails.
+    :return:
+    """
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+
+    x_test_original = x_test_mnist.copy()
+
+    # Build TensorFlowClassifier
+    # tfc, sess = get_image_classifier_tf()
+    estimator, _ = image_dl_estimator()
+
+    # Failure attack
+    zoo = ZooAttack(classifier=estimator, max_iter=0, binary_search_steps=0, learning_rate=0)
+    x_test_mnist_adv = zoo.generate(x_test_mnist)
+
+    assert_less_or_equal(np.amax(x_test_mnist_adv), 1.0)
+    assert_less_or_equal(0.0, np.amin(x_test_mnist_adv))
+
+    np.testing.assert_almost_equal(x_test_mnist, x_test_mnist_adv, 3)
+
+    # Check that x_test has not been modified by attack and classifier
+    np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
+
+
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(ZooAttack, [BaseEstimator, ClassifierMixin])
 
@@ -42,42 +87,9 @@ def test_classifier_type_check_fail():
 #     """
 #     A unittest class for testing the ZOO attack.
 #     """
+
 #
-#     @classmethod
-#     def setUpClass(cls):
-#         master_seed(seed=1234)
-#         super().setUpClass()
-#
-#         cls.n_train = 1
-#         cls.n_test = 1
-#         cls.x_train_mnist = cls.x_train_mnist[0 : cls.n_train]
-#         cls.y_train_mnist = cls.y_train_mnist[0 : cls.n_train]
-#         cls.x_test_mnist = cls.x_test_mnist[0 : cls.n_test]
-#         cls.y_test_mnist = cls.y_test_mnist[0 : cls.n_test]
-#
-#     def test_2_tensorflow_failure_attack(self):
-#         """
-#         Test the corner case when attack fails.
-#         :return:
-#         """
-#         x_test_original = self.x_test_mnist.copy()
-#
-#         # Build TensorFlowClassifier
-#         tfc, sess = get_image_classifier_tf()
-#
-#         # Failure attack
-#         zoo = ZooAttack(classifier=tfc, max_iter=0, binary_search_steps=0, learning_rate=0)
-#         x_test_mnist_adv = zoo.generate(self.x_test_mnist)
-#         self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
-#         self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
-#         np.testing.assert_almost_equal(self.x_test_mnist, x_test_mnist_adv, 3)
-#
-#         # Check that x_test has not been modified by attack and classifier
-#         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
-#
-#         # Clean-up session
-#         if sess is not None:
-#             sess.close()
+
 #
 #     def test_3_tensorflow_mnist(self):
 #         """
