@@ -62,7 +62,7 @@ def test_failure_attack(fix_get_mnist_subset, image_dl_estimator):
 
     np.testing.assert_almost_equal(x_test_mnist, x_test_mnist_adv, 3)
 
-    # Check that x_test has not been modified by attack and classifier
+    # Check that x_test has not been modified by attack and classifier 
     np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
 
 
