@@ -69,6 +69,44 @@ def test_failure_attack(fix_get_mnist_subset, image_dl_estimator):
     np.testing.assert_array_almost_equal(float(np.max(np.abs(x_test_original - x_test_mnist))), 0, decimal=5)
 
 
+def test_mnist(fix_get_mnist_subset, image_dl_estimator):
+    (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
+    x_test_original = x_test_mnist.copy()
+
+    # Build TensorFlowClassifier
+    tfc, sess = get_image_classifier_tf()
+
+    # Targeted attack
+    zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=30, binary_search_steps=8, batch_size=128)
+    params = {"y": random_targets(y_test_mnist, tfc.nb_classes)}
+    x_test_mnist_adv = zoo.generate(x_test_mnist, **params)
+    # self.assertFalse((x_test_mnist == x_test_mnist_adv).all())
+    # self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
+    # self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
+    target = np.argmax(params["y"], axis=1)
+    y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
+    logger.debug("ZOO target: %s", target)
+    logger.debug("ZOO actual: %s", y_pred_adv)
+    logger.info("ZOO success rate on MNIST: %.2f", (sum(target == y_pred_adv) / float(len(target))))
+
+    # Untargeted attack
+    zoo = ZooAttack(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=3)
+    x_test_mnist_adv = zoo.generate(x_test_mnist)
+    # self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
+    # self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
+    y_pred = np.argmax(tfc.predict(x_test_mnist), axis=1)
+    y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
+    logger.debug("ZOO actual: %s", y_pred_adv)
+    logger.info("ZOO success rate on MNIST: %.2f", (sum(y_pred != y_pred_adv) / float(len(y_pred))))
+
+    # Check that x_test has not been modified by attack and classifier
+    # self.assertAlmostEqual(float(np.max(np.abs(x_test_original - x_test_mnist))), 0.0, delta=0.00001)
+
+    # Clean-up session
+    # if sess is not None:
+    #     sess.close()
+
+
 def test_classifier_type_check_fail():
     backend_test_classifier_type_check_fail(ZooAttack, [BaseEstimator, ClassifierMixin])
 
@@ -77,49 +115,6 @@ def test_classifier_type_check_fail():
 #     A unittest class for testing the ZOO attack.
 #     """
 
-#
-
-#
-#     def test_3_tensorflow_mnist(self):
-#         """
-#         First test with the TensorFlowClassifier.
-#         :return:
-#         """
-#         x_test_original = self.x_test_mnist.copy()
-#
-#         # Build TensorFlowClassifier
-#         tfc, sess = get_image_classifier_tf()
-#
-#         # Targeted attack
-#         zoo = ZooAttack(classifier=tfc, targeted=True, max_iter=30, binary_search_steps=8, batch_size=128)
-#         params = {"y": random_targets(self.y_test_mnist, tfc.nb_classes)}
-#         x_test_mnist_adv = zoo.generate(self.x_test_mnist, **params)
-#         self.assertFalse((self.x_test_mnist == x_test_mnist_adv).all())
-#         self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
-#         self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
-#         target = np.argmax(params["y"], axis=1)
-#         y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
-#         logger.debug("ZOO target: %s", target)
-#         logger.debug("ZOO actual: %s", y_pred_adv)
-#         logger.info("ZOO success rate on MNIST: %.2f", (sum(target == y_pred_adv) / float(len(target))))
-#
-#         # Untargeted attack
-#         zoo = ZooAttack(classifier=tfc, targeted=False, max_iter=10, binary_search_steps=3)
-#         x_test_mnist_adv = zoo.generate(self.x_test_mnist)
-#         # self.assertFalse((x_test == x_test_adv).all())
-#         self.assertLessEqual(np.amax(x_test_mnist_adv), 1.0)
-#         self.assertGreaterEqual(np.amin(x_test_mnist_adv), 0.0)
-#         y_pred = np.argmax(tfc.predict(self.x_test_mnist), axis=1)
-#         y_pred_adv = np.argmax(tfc.predict(x_test_mnist_adv), axis=1)
-#         logger.debug("ZOO actual: %s", y_pred_adv)
-#         logger.info("ZOO success rate on MNIST: %.2f", (sum(y_pred != y_pred_adv) / float(len(y_pred))))
-#
-#         # Check that x_test has not been modified by attack and classifier
-#         self.assertAlmostEqual(float(np.max(np.abs(x_test_original - self.x_test_mnist))), 0.0, delta=0.00001)
-#
-#         # Clean-up session
-#         if sess is not None:
-#             sess.close()
 #
 #     def test_5_keras_mnist(self):
 #         """
