@@ -50,10 +50,10 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
             # create new model without sample in training data
             alt_x = np.delete(x, row, 0)
             alt_y = np.delete(y, row, 0)
-            # TODO: can we clone an estimator? Can we clear previous fitting?
-            extra_estimator.fit(alt_x, alt_y)
+            cur_estimator = extra_estimator.clone_for_refitting()
+            cur_estimator.fit(alt_x, alt_y)
             # get probabilities from new model
-            alt_pred = extra_estimator.predict(x)
+            alt_pred = cur_estimator.predict(x)
             if not is_probability(alt_pred):
                 alt_pred = scipy.special.softmax(alt_pred, axis=1)
             # divide into 100 bins and return center of bin
@@ -64,7 +64,8 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
             ratio_1 = pred_bin / alt_pred_bin
             ratio_2 = alt_pred_bin / pred_bin
             # get max value
-            iter_results.append(max(ratio_1.max(), ratio_2.max()))
+            max_value = max(ratio_1.max(), ratio_2.max())
+            iter_results.append(max_value)
         results.append(iter_results)
 
     # get average of iterations for each sample
