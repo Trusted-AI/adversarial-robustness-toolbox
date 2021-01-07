@@ -1,5 +1,5 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import logging
 
@@ -12,7 +12,8 @@ from art.estimators.classification.classifier import ClassifierMixin
 if TYPE_CHECKING:
     from art.estimators.classification import Classifier
 
-def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.ndarray, y: np.ndarray) -> np.ndarray:
+def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.ndarray, y: np.ndarray,
+         indexes: Optional[np.ndarray] = None) -> np.ndarray:
     """
         Compute the pointwise differential training privacy metric for the given classifier and training set.
         Taken from: https://arxiv.org/abs/1712.09136
@@ -22,6 +23,8 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
         :param x: The training data of the classifier.
         :param y: Target values (class labels) of `x`, one-hot-encoded of shape (nb_samples, nb_classes) or indices of
                   shape (nb_samples,).
+        :param indexes: the subset of indexes of `x` to compute the PDTP metric on. If not supplied, PDTP will be
+                        computed for all samples in `x`.
         :return: an array containing the average PDTP value for each sample in the training set.
     """
     if ClassifierMixin not in type(target_estimator).__mro__ or ClassifierMixin not in type(extra_estimator).__mro__:
@@ -46,7 +49,9 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
                 raise ValueError(
                     "PDTP metric only supports classifiers that output probabilities."
                 )
-        for row in range(x.shape[0]):
+        if not indexes:
+            indexes = range(x.shape[0])
+        for row in indexes:
             # create new model without sample in training data
             alt_x = np.delete(x, row, 0)
             alt_y = np.delete(y, row, 0)

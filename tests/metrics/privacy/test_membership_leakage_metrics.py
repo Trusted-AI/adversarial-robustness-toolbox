@@ -20,6 +20,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import logging
 import pytest
 import numpy as np
+import random
 
 from art.metrics import PDTP
 from tests.utils import ARTTestException
@@ -52,13 +53,14 @@ def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_
         art_warning(e)
 
 
-# def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_mnist_subset):
-#     try:
-#         classifier, _ = image_dl_estimator()
-#         (x_train, y_train), (x_test, y_test) = get_default_mnist_subset
-#         leakage = PDTP(classifier, classifier.clone_for_refitting(), x_train, y_train)
-#         print(leakage)
-#         print(np.average(leakage))
-#         print(np.max(leakage))
-#     except ARTTestException as e:
-#             art_warning(e)
+def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_mnist_subset):
+    try:
+        classifier, _ = image_dl_estimator()
+        (x_train, y_train), _ = get_default_mnist_subset
+        indexes = random.sample(range(x_train.shape[0]), 100)
+        leakage = PDTP(classifier, classifier.clone_for_refitting(), x_train, y_train, indexes=indexes)
+        print(leakage)
+        print(np.average(leakage))
+        print(np.max(leakage))
+    except ARTTestException as e:
+            art_warning(e)
