@@ -1067,7 +1067,6 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :return: new estimator
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
-        print(type(self.model))
         try:
             # only works for functionally defined models
             model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
