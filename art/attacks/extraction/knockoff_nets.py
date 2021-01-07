@@ -409,5 +409,3 @@ class KnockoffNets(ExtractionAttack):
             raise ValueError("The argument `verbose` has to be of type bool.")
         if not isinstance(self.use_probability, bool):
             raise ValueError("The argument `use_probability` has to be of type bool.")
-
-
