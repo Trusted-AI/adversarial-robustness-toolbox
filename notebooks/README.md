@@ -159,7 +159,7 @@ architecture in Keras for the CIFAR-10 dataset.
 
 ## Model stealing / model theft / model extraction
 
-[model-stealing-demo.ipynb](model-stealing-demo.ipynb) demonstrates model stealing attacks and a reverse sigmoid defense against them.
+[model-stealing-demo.ipynb](model-stealing-demo.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/model-stealing-demo.ipynb)] demonstrates model stealing attacks and a reverse sigmoid defense against them.
 
 ## Poisoning
 
