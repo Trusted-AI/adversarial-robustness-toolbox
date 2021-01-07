@@ -157,6 +157,10 @@ and MNIST datasets.
 demonstrates the detection of adversarial examples using ART. The classifier model is a neural network of a ResNet 
 architecture in Keras for the CIFAR-10 dataset.
 
+## Model stealing / model theft / model extraction
+
+[model-stealing-demo.ipynb](model-stealing-demo.ipynb) demonstrates model stealing attacks and a reverse sigmoid defense against them.
+
 ## Poisoning
 
 [poisoning_attack_svm.ipynb](poisoning_attack_svm.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_attack_svm.ipynb)]
