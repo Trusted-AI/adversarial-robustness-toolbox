@@ -375,6 +375,29 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
             # Fit a generic data generator through the API
             super().fit_generator(generator, nb_epochs=nb_epochs)
 
+    def clone_for_refitting(self) -> 'PyTorchClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
+
+        :return: new estimator
+        """
+        import sklearn  # lgtm [py/repeated-import]
+
+        def weight_reset(m):
+            reset_parameters = getattr(m, "reset_parameters", None)
+            if callable(reset_parameters):
+                m.reset_parameters()
+
+        model = copy.deepcopy(self.model)
+        #reset weights
+        model.apply(weight_reset)
+        clone = type(self)(model, self._loss, self.input_shape, self.nb_classes, optimizer=self._optimizer)
+        params = self.get_params()
+        del params['model']
+        clone.set_params(**params)
+        return clone
+
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives w.r.t. `x`.
