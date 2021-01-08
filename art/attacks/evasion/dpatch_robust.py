@@ -30,7 +30,7 @@ import random
 from typing import Dict, List, Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin

@@ -37,7 +37,7 @@ import logging
 from typing import List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import trange, tqdm
+from tqdm.auto import trange, tqdm
 
 from art.defences.trainer.trainer import Trainer
 

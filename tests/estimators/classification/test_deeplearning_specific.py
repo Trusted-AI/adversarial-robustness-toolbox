@@ -146,7 +146,7 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
         art_warning(e)
 
 
-@pytest.mark.skipModule("apex.amp")
+@pytest.mark.skip_module("apex.amp")
 @pytest.mark.skipMlFramework("tensorflow", "keras", "kerastf", "mxnet", "non_dl_frameworks")
 @pytest.mark.parametrize("device_type", ["cpu", "gpu"])
 def test_loss_gradient_amp(
