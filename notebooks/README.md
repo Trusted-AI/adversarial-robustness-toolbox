@@ -170,8 +170,8 @@ demonstrates a poisoning attack on a Support Vector Machine.
   <img src="../utils/data/images/svm_poly.gif?raw=true" width="200" title="svm_poly">
 </p>
 
-[poisoning_dataset_mnist.ipynb](poisoning_dataset_mnist.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_dataset_mnist.ipynb)]
-demonstrates the generation and detection of backdoors into neural networks by poisoning the training dataset.
+[poisoning_defense_activation_clustering.ipynb](poisoning_defense_activation_clustering.ipynb) [[on nbviewer](https://nbviewer.jupyter.org/github/Trusted-AI/adversarial-robustness-toolbox/blob/main/notebooks/poisoning_defense_activation_clustering.ipynb)]
+demonstrates the generation and detection of backdoors in neural networks via Activation Clustering.
 
 <p align="center">
   <img src="../utils/data/images/poisoning.png?raw=true" width="200" title="poisoning">
