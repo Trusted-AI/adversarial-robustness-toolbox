@@ -62,7 +62,7 @@ class CopycatCNN(ExtractionAttack):
         batch_size_query: int = 1,
         nb_epochs: int = 10,
         nb_stolen: int = 1,
-        use_probability: bool = False
+        use_probability: bool = False,
     ) -> None:
         """
         Create a Copycat CNN attack instance.
