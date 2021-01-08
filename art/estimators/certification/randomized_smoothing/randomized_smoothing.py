@@ -67,7 +67,6 @@ class RandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
-    # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
