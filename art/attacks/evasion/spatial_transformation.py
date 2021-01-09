@@ -29,7 +29,7 @@ from typing import Optional, TYPE_CHECKING
 
 import numpy as np
 from scipy.ndimage import rotate, shift
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
@@ -144,7 +144,7 @@ class SpatialTransformation(EvasionAttack):
 
             # Initialize progress bar
             pbar = tqdm(
-                len(grid_trans_x) * len(grid_trans_y) * len(grid_rot),
+                total=len(grid_trans_x) * len(grid_trans_y) * len(grid_rot),
                 desc="Spatial transformation",
                 disable=not self.verbose,
             )

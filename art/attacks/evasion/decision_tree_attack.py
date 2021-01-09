@@ -24,7 +24,7 @@ import logging
 from typing import List, Optional, Union
 
 import numpy as np
-from tqdm import trange
+from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
 from art.estimators.classification.scikitlearn import ScikitlearnDecisionTreeClassifier

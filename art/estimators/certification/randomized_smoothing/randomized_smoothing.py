@@ -28,7 +28,7 @@ from typing import Optional, Tuple
 
 import numpy as np
 from scipy.stats import norm
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.gaussian_augmentation import GaussianAugmentation
@@ -67,7 +67,6 @@ class RandomizedSmoothingMixin(ABC):
         """
         raise NotImplementedError
 
-    # pylint: disable=W0221
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
         """
         Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.

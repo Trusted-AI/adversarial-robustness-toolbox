@@ -29,7 +29,7 @@ import logging
 from typing import Optional, Union, TYPE_CHECKING
 
 import numpy as np
-from tqdm import tqdm
+from tqdm.auto import tqdm
 
 from art.config import ART_NUMPY_DTYPE
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin
@@ -234,7 +234,10 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
-        adv_x = x
+        import tensorflow as tf  # lgtm [py/repeated-import]
+
+        adv_x = tf.identity(x)
+
         for i_max_iter in range(self.max_iter):
             adv_x = self._compute_tf(
                 adv_x, x, targets, mask, eps, eps_step, self.num_random_init > 0 and i_max_iter == 0,

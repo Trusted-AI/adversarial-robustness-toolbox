@@ -22,13 +22,14 @@ This module implements Randomized Smoothing applied to classifier predictions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
-
-from art.estimators.estimator import BaseEstimator
-from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
-from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 import logging
 from typing import List, Union, TYPE_CHECKING, Tuple
+
+import numpy as np
+
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
+from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -37,7 +38,12 @@ logger = logging.getLogger(__name__)
 
 
 class NumpyRandomizedSmoothing(
-    RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin, BaseEstimator  # lgtm [py/missing-call-to-init]
+    RandomizedSmoothingMixin,
+    ClassGradientsMixin,
+    ClassifierMixin,
+    NeuralNetworkMixin,
+    LossGradientsMixin,
+    BaseEstimator,
 ):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
@@ -57,10 +63,7 @@ class NumpyRandomizedSmoothing(
         :param alpha: The failure probability of smoothing
         """
         super().__init__(
-            model=None,
-            input_shape=classifier.input_shape,
-            nb_classes=classifier.nb_classes,
-            channels_first=classifier.channels_first,
+            model=classifier.model,
             clip_values=classifier.clip_values,
             preprocessing_defences=classifier.preprocessing_defences,
             postprocessing_defences=classifier.postprocessing_defences,
@@ -69,11 +72,14 @@ class NumpyRandomizedSmoothing(
             scale=scale,
             alpha=alpha,
         )
+        self._input_shape = classifier.input_shape
+        self._nb_classes = classifier.nb_classes
+
         self.classifier = classifier
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
-        return self.classifier.input_shape
+        return self._input_shape
 
     def _predict_classifier(self, x: np.ndarray, batch_size: int) -> np.ndarray:
         """
@@ -99,33 +105,6 @@ class NumpyRandomizedSmoothing(
         """
         return self.classifier.fit(x, y, batch_size=batch_size, nb_epochs=nb_epochs, **kwargs)
 
-    def fit(self, x: np.ndarray, y: np.ndarray, batch_size: int = 128, nb_epochs: int = 10, **kwargs) -> None:
-        """
-        Fit the classifier on the training set `(x, y)`.
-
-        :param x: Training data.
-        :param y: Target values (class labels) one-hot-encoded of shape (nb_samples, nb_classes) or indices of shape
-                  (nb_samples,).
-        :param batch_size: Batch size.
-        :key nb_epochs: Number of epochs to use for training
-        :param kwargs: Dictionary of framework-specific arguments. This parameter is not currently supported for PyTorch
-               and providing it takes no effect.
-        :type kwargs: `dict`
-        """
-        RandomizedSmoothingMixin.fit(self, x, y, batch_size=128, nb_epochs=10, **kwargs)
-
-    def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs) -> np.ndarray:
-        """
-        Perform prediction of the given classifier for a batch of inputs, taking an expectation over transformations.
-
-        :param x: Test set.
-        :param batch_size: Batch size.
-        :param is_abstain: True if function will abstain from prediction and return 0s. Default: True
-        :type is_abstain: `boolean`
-        :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
-        """
-        return RandomizedSmoothingMixin.predict(self, x, batch_size=128, **kwargs)
-
     def loss_gradient(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the gradient of the given classifier's loss function w.r.t. `x` of the original classifier.
@@ -138,6 +117,7 @@ class NumpyRandomizedSmoothing(
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int]] = None, **kwargs) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
+        :param x: Sample input with shape as expected by the model.
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in
