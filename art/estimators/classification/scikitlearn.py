@@ -170,7 +170,8 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
                 y_pred = self.model.predict_log_proba(x_preprocessed)
             else:
                 logger.warning(
-                    "use_logits was True but classifier did not have callable predict_log_proba member. Falling back to probabilities"
+                    "use_logits was True but classifier did not have callable predict_log_proba member. Falling back to"
+                    " probabilities"
                 )
         elif callable(getattr(self.model, "predict_proba", None)):
             y_pred = self.model.predict_proba(x_preprocessed)
