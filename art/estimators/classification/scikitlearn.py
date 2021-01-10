@@ -57,6 +57,7 @@ def SklearnClassifier(
     preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
     postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
     preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+    use_logits: bool = False,
 ) -> "ScikitlearnClassifier":
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that
@@ -86,7 +87,8 @@ def SklearnClassifier(
         )
 
     # This basic class at least generically handles `fit`, `predict` and `save`
-    return ScikitlearnClassifier(model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing,)
+    return ScikitlearnClassifier(
+        model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing, use_logits,)
 
 
 class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/missing-call-to-init]
