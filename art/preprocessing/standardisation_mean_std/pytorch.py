@@ -19,9 +19,13 @@
 This module implements the standardisation with mean and standard deviation.
 """
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
+import numpy as np
+
+from art.config import ART_NUMPY_DTYPE
 from art.preprocessing.preprocessing import PreprocessorPyTorch
+from art.preprocessing.standardisation_mean_std.utils import broadcastable_mean_std
 
 if TYPE_CHECKING:
     import torch
@@ -38,8 +42,8 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
 
     def __init__(
         self,
-        mean: float = 0.0,
-        std: float = 1.0,
+        mean: Union[float, np.ndarray] = 0.0,
+        std: Union[float, np.ndarray] = 1.0,
         apply_fit: bool = True,
         apply_predict: bool = True,
         device_type: str = "gpu",
@@ -53,9 +57,13 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
         import torch  # lgtm [py/repeated-import]
 
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
-        self.mean = mean
-        self.std = std
+        self.mean = np.asarray(mean, dtype=ART_NUMPY_DTYPE)
+        self.std = np.asarray(std, dtype=ART_NUMPY_DTYPE)
         self._check_params()
+
+        # init broadcastable mean and std for lazy loading
+        self._broadcastable_mean = None
+        self._broadcastable_std = None
 
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
@@ -69,14 +77,18 @@ class StandardisationMeanStdPyTorch(PreprocessorPyTorch):
     ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
         Apply standardisation with mean and standard deviation to input `x`.
+
+        :param x: Input samples to standardise of shapes `NCHW`, `NHWC`, `NCFHW` or `NFHWC`.
+        :param y: Label data, will not be affected by this preprocessing.
+        :return: Standardised input samples and unmodified labels.
         """
         import torch  # lgtm [py/repeated-import]
 
-        mean = torch.tensor(self.mean, device=self._device, dtype=torch.float32)
-        std = torch.tensor(self.std, device=self._device, dtype=torch.float32)
+        if self._broadcastable_mean is None:
+            self._broadcastable_mean, self._broadcastable_std = broadcastable_mean_std(x, self.mean, self.std)
 
-        x_norm = x - mean
-        x_norm = x_norm / std
+        x_norm = x - torch.tensor(self._broadcastable_mean, device=self._device, dtype=torch.float32)
+        x_norm = x_norm / torch.tensor(self._broadcastable_std, device=self._device, dtype=torch.float32)
 
         return x_norm, y
 

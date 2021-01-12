@@ -19,12 +19,13 @@
 This module implements the standardisation with mean and standard deviation.
 """
 import logging
-from typing import Optional, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Tuple, Union
 
 import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
+from art.preprocessing.standardisation_mean_std.utils import broadcastable_mean_std
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -40,7 +41,11 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
     params = ["mean", "std", "apply_fit", "apply_predict"]
 
     def __init__(
-        self, mean: float = 0.0, std: float = 1.0, apply_fit: bool = True, apply_predict: bool = True,
+        self,
+        mean: Union[float, np.ndarray] = 0.0,
+        std: Union[float, np.ndarray] = 1.0,
+        apply_fit: bool = True,
+        apply_predict: bool = True,
     ):
         """
         Create an instance of StandardisationMeanStdTensorFlow.
@@ -49,21 +54,29 @@ class StandardisationMeanStdTensorFlow(PreprocessorTensorFlowV2):
         :param std: Standard Deviation.
         """
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
-        self.mean = mean
-        self.std = std
+        self.mean = np.asarray(mean, dtype=ART_NUMPY_DTYPE)
+        self.std = np.asarray(std, dtype=ART_NUMPY_DTYPE)
         self._check_params()
+
+        # init broadcastable mean and std for lazy loading
+        self._broadcastable_mean = None
+        self._broadcastable_std = None
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
         Apply standardisation with mean and standard deviation to input `x`.
+
+        :param x: Input samples to standardise of shapes `NCHW`, `NHWC`, `NCFHW` or `NFHWC`.
+        :param y: Label data, will not be affected by this preprocessing.
+        :return: Standardised input samples and unmodified labels.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        mean = np.asarray(self.mean, dtype=ART_NUMPY_DTYPE)
-        std = np.asarray(self.std, dtype=ART_NUMPY_DTYPE)
+        if self._broadcastable_mean is None:
+            self._broadcastable_mean, self._broadcastable_std = broadcastable_mean_std(x, self.mean, self.std)
 
-        x_norm = x - mean
-        x_norm = x_norm / std
+        x_norm = x - self._broadcastable_mean
+        x_norm = x_norm / self._broadcastable_std
         x_norm = tf.cast(x_norm, dtype=ART_NUMPY_DTYPE)
 
         return x_norm, y
