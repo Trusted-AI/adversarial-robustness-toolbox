@@ -113,9 +113,6 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         self.input_shape = self.estimator.input_shape
 
-        self.i_h_patch = 0
-        self.i_w_patch = 1
-
         self.nb_dims = len(self.input_shape)
         if self.nb_dims == 3:
             if self.estimator.channels_first:
