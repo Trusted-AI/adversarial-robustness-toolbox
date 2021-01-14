@@ -478,7 +478,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         transformation["pad_w_before"] = pad_w_before
 
         patch = np.pad(patch, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
-        patch_mask = np.pad(patch_mask, pad_width=pad_width, mode="constant", constant_values=(0, 0), )
+        patch_mask = np.pad(patch_mask, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
 
         # shift
         if mask_2d is None:
@@ -537,14 +537,14 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         if self.estimator.channels_first:
             if self.nb_dims == 3:
-                gradients = gradients[:, pad_h_before:pad_h_before+height, pad_w_before:pad_w_before+width]
+                gradients = gradients[:, pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width]
             elif self.nb_dims == 4:
-                gradients = gradients[:, :, pad_h_before:pad_h_before+height, pad_w_before:pad_w_before+width]
+                gradients = gradients[:, :, pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width]
         else:
             if self.nb_dims == 3:
-                gradients = gradients[pad_h_before:pad_h_before+height, pad_w_before:pad_w_before+width, :]
+                gradients = gradients[pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width, :]
             elif self.nb_dims == 4:
-                gradients = gradients[:, pad_h_before:pad_h_before+height, pad_w_before:pad_w_before+width, :]
+                gradients = gradients[:, pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width, :]
 
         # scale
         scale = transformation["scale"]
