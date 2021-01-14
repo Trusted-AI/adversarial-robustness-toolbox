@@ -1071,16 +1071,9 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             # only works for functionally defined models
             model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
         except ValueError:
-            # custom subclass of Model
-            try:
-                model = type(self.model)()
-                if hasattr(self.model, 'layers'):
-                    for layer in model.layers:
-                        model.add(layer)
-            except:
-                raise ValueError(
-                        'Cannot clone tensorflow model, custom subclass that requires non-default initialization'
-                )
+            raise ValueError(
+                    'Cannot clone custom tensorflow models'
+            )
 
         optimizer = self.model.optimizer
         # reset optimizer variables
