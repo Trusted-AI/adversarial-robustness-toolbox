@@ -109,8 +109,9 @@ class SaliencyMapMethod(EvasionAttack):
 
             # Main algorithm for each batch
             # Initialize the search space; optimize to remove features that can't be changed
-            search_space = np.zeros(batch.shape)
+            search_space = np.ones(batch.shape)
             if self.estimator.clip_values is not None:
+                search_space = np.zeros(batch.shape)
                 clip_min, clip_max = self.estimator.clip_values
                 if self.theta > 0:
                     search_space[batch < clip_max] = 1
