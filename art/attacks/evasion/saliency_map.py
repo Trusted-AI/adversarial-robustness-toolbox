@@ -119,7 +119,6 @@ class SaliencyMapMethod(EvasionAttack):
             else:
                 search_space = np.ones(batch.shape)
 
-
             # Get current predictions
             current_pred = preds[batch_index_1:batch_index_2]
             target = targets[batch_index_1:batch_index_2]
