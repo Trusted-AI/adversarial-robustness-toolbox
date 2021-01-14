@@ -213,6 +213,13 @@ class BaseEstimator(ABC):
         """
         raise NotImplementedError
 
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
     @property
     def model(self):
         """
