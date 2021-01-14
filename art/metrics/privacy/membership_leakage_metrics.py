@@ -35,7 +35,7 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
     if y.shape[0] != x.shape[0]:
         raise ValueError("Number of rows in x and y do not match")
 
-    num_iter = 10
+    num_iter = 1
     results = []
 
     for i in range(num_iter):
@@ -47,7 +47,7 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
                 pred = scipy.special.softmax(pred, axis=1)
             except:
                 raise ValueError(
-                    "PDTP metric only supports classifiers that output probabilities."
+                    "PDTP metric only supports classifiers that output logits or probabilities."
                 )
         if not indexes:
             indexes = range(x.shape[0])
@@ -55,10 +55,10 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
             # create new model without sample in training data
             alt_x = np.delete(x, row, 0)
             alt_y = np.delete(y, row, 0)
-            cur_estimator = extra_estimator.clone_for_refitting()
-            cur_estimator.fit(alt_x, alt_y)
+            extra_estimator.reset()
+            extra_estimator.fit(alt_x, alt_y)
             # get probabilities from new model
-            alt_pred = cur_estimator.predict(x)
+            alt_pred = extra_estimator.predict(x)
             if not is_probability(alt_pred):
                 alt_pred = scipy.special.softmax(alt_pred, axis=1)
             # divide into 100 bins and return center of bin

@@ -31,9 +31,10 @@ logger = logging.getLogger(__name__)
 def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
         classifier = decision_tree_estimator()
+        extra_classifier = decision_tree_estimator()
         (x_train, y_train), _ = get_iris_dataset
         prev = classifier.model.tree_
-        leakage = PDTP(classifier, classifier.clone_for_refitting(), x_train, y_train)
+        leakage = PDTP(classifier, extra_classifier, x_train, y_train)
         print(leakage)
         print(np.average(leakage))
         print(np.max(leakage))
@@ -44,8 +45,9 @@ def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, 
 def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator()
+        extra_classifier = tabular_dl_estimator()
         (x_train, y_train), _ = get_iris_dataset
-        leakage = PDTP(classifier, classifier.clone_for_refitting(), x_train, y_train)
+        leakage = PDTP(classifier, extra_classifier, x_train, y_train)
         print(leakage)
         print(np.average(leakage))
         print(np.max(leakage))
@@ -56,9 +58,10 @@ def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_
 def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_mnist_subset):
     try:
         classifier, _ = image_dl_estimator()
+        extra_classifier, _ = image_dl_estimator()
         (x_train, y_train), _ = get_default_mnist_subset
         indexes = random.sample(range(x_train.shape[0]), 100)
-        leakage = PDTP(classifier, classifier.clone_for_refitting(), x_train, y_train, indexes=indexes)
+        leakage = PDTP(classifier, extra_classifier, x_train, y_train, indexes=indexes)
         print(leakage)
         print(np.average(leakage))
         print(np.max(leakage))

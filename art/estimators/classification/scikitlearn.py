@@ -194,7 +194,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
 
     def clone_for_refitting(self) -> 'ScikitlearnClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
         """
-        Create a copy of the estimator that can be refit from scratch.
+        Create a copy of the classifier that can be refit from scratch.
 
         :return: new estimator
         """
@@ -205,6 +205,14 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         del params['model']
         clone.set_params(**params)
         return clone
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the classifier so that it can be refit from scratch.
+
+        """
+        # No need to do anything since scikitlearn models start from scratch each time fit() is called
+        pass
 
     def _get_input_shape(self, model) -> Optional[Tuple[int, ...]]:
         _input_shape: Optional[Tuple[int, ...]]
