@@ -16,9 +16,9 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements the L2, LInf and L0 optimized attacks `CarliniL2Method`, `CarliniLInfMethod` and `CarliniL0Method` of Carlini and Wagner
-(2016). These attacks are among the most effective white-box attacks and should be used among the primary attacks to
-evaluate potential defences. A major difference with respect to the original implementation
+This module implements the L2, LInf and L0 optimized attacks `CarliniL2Method`, `CarliniLInfMethod` and `CarliniL0Method
+of Carlini and Wagner (2016). These attacks are among the most effective white-box attacks and should be used among the
+primary attacks to evaluate potential defences. A major difference with respect to the original implementation
 (https://github.com/carlini/nn_robust_attacks) is that this implementation uses line search in the optimization of the
 attack objective.
 
@@ -837,7 +837,7 @@ class CarliniL0Method(EvasionAttack):
         max_iter=10,
         initial_const=0.01,
         mask=None,
-        #warm_start=True, # For later implementation of warm_start
+        # warm_start=True, # For later implementation of warm_start
         max_halving=5,
         max_doubling=5,
         batch_size=1,
@@ -889,7 +889,7 @@ class CarliniL0Method(EvasionAttack):
             "max_iter": max_iter,
             "initial_const": initial_const,
             "mask": mask,
-            #"warm_start": warm_start, # For later implementation of warm_start
+            # "warm_start": warm_start, # For later implementation of warm_start
             "max_halving": max_halving,
             "max_doubling": max_doubling,
             "batch_size": batch_size,
@@ -992,7 +992,6 @@ class CarliniL0Method(EvasionAttack):
 
         return loss_gradient
 
-
     def generate(self, x, y=None, **kwargs):
         """
         Generate adversarial samples and return them in an array.
@@ -1050,8 +1049,8 @@ class CarliniL0Method(EvasionAttack):
                 logger.debug("Processing batch %i out of %i", batch_id, nb_batches)
 
                 batch_index_1, batch_index_2 = batch_id * self.batch_size, (batch_id + 1) * self.batch_size
-                #x_batch = x[batch_index_1:batch_index_2]
-                x_batch = x_adv[batch_index_1:batch_index_2] #use for future implementation of warm_start
+                # x_batch = x[batch_index_1:batch_index_2]
+                x_batch = x_adv[batch_index_1:batch_index_2]  # use for future implementation of warm_start
                 y_batch = y[batch_index_1:batch_index_2]
                 activation_batch = activation[batch_index_1:batch_index_2]
 
@@ -1070,7 +1069,7 @@ class CarliniL0Method(EvasionAttack):
 
                 for bss in range(self.binary_search_steps):
                     logger.debug(
-                        "Binary search step %i out of %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current)
+                        "Binary search step %i / %i (c_mean==%f)", bss, self.binary_search_steps, np.mean(c_current)
                     )
                     nb_active = int(np.sum(c_current < self._c_upper_bound))
                     logger.debug(
@@ -1099,7 +1098,8 @@ class CarliniL0Method(EvasionAttack):
                             len(attack_success),
                         )
 
-                        l0dist = np.sum((np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=1)
+                        l0dist = np.sum((np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), \
+                                         axis=1)
                         improved_adv = attack_success & (l0dist < best_l0dist_batch)
                         logger.debug("Number of improved L0 distances: %i", int(np.sum(improved_adv)))
                         if np.sum(improved_adv) > 0:
@@ -1150,7 +1150,9 @@ class CarliniL0Method(EvasionAttack):
                                 lr_mult = lr_mult[:, np.newaxis]
 
                             x_adv1 = x_adv_batch_tanh[active_and_do_halving]
-                            new_x_adv_batch_tanh = x_adv1 + lr_mult * perturbation_tanh[do_halving] * activation_batch[do_halving]
+                            new_x_adv_batch_tanh = x_adv1 + lr_mult * \
+                                                   perturbation_tanh[do_halving] * \
+                                                   activation_batch[do_halving]
                             new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                             _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
                                 x_batch[active_and_do_halving],
@@ -1186,7 +1188,9 @@ class CarliniL0Method(EvasionAttack):
                                 lr_mult = lr_mult[:, np.newaxis]
 
                             x_adv2 = x_adv_batch_tanh[active_and_do_doubling]
-                            new_x_adv_batch_tanh = x_adv2 + lr_mult * perturbation_tanh[do_doubling] * activation_batch[do_doubling]
+                            new_x_adv_batch_tanh = x_adv2 + lr_mult * \
+                                                   perturbation_tanh[do_doubling] * \
+                                                   activation_batch[do_doubling]
                             new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                             _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
                                 x_batch[active_and_do_doubling],
@@ -1214,7 +1218,8 @@ class CarliniL0Method(EvasionAttack):
 
                             x_adv4 = x_adv_batch_tanh[active_and_update_adv]
                             best_lr1 = best_lr_mult * perturbation_tanh[update_adv]
-                            x_adv_batch_tanh[active_and_update_adv] = x_adv4 + best_lr1 * activation_batch[active_and_update_adv]
+                            x_adv_batch_tanh[active_and_update_adv] = x_adv4 + best_lr1 * \
+                                                                      activation_batch[active_and_update_adv]
 
                             x_adv6 = x_adv_batch_tanh[active_and_update_adv]
                             x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv6, clip_min, clip_max)
@@ -1260,13 +1265,13 @@ class CarliniL0Method(EvasionAttack):
             # If the L_2 attack can't find any adversarial examples with the new activation, return the last one
             z_logits, l2dist, loss = self._loss(x, x_adv, y, c_final)
             attack_success = loss - l2dist <= 0
-            #l0dist = np.sum((np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=1)
+            # l0dist = np.sum((np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), axis=1)
             l0dist = np.sum((np.abs(x - x_adv) > self._perturbation_threshold).astype(int), axis=1)
             improved_adv = attack_success & (l0dist < best_l0dist)
             if np.sum(improved_adv) > 0:
                 final_adversarial_example[improved_adv] = x_adv[improved_adv]
             else:
-                return x*(old_activation == 0).astype(int) + final_adversarial_example*old_activation
+                return x * (old_activation == 0).astype(int) + final_adversarial_example * old_activation
 
             # Compute the gradients of the objective function evaluated at the adversarial instance
             x_adv_tanh = original_to_tanh(x_adv, clip_min, clip_max, self._tanh_smoother)
@@ -1293,8 +1298,8 @@ class CarliniL0Method(EvasionAttack):
             fix_feature_index = np.argmin(objective_reduction, axis=1)
             fix_feature = np.ones(x.shape)
             fix_feature[np.arange(fix_feature_index.size), fix_feature_index] = 0
-            old_activation[improved_adv]  = activation.copy()[improved_adv]
-            activation[improved_adv]  *= fix_feature[improved_adv]
+            old_activation[improved_adv] = activation.copy()[improved_adv]
+            activation[improved_adv] *= fix_feature[improved_adv]
             print(
                 "L0 norm before fixing :\n{}\nNumber active features :\n{}\nIndex of fixed feature :\n{}"
                 .format(
