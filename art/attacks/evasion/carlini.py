@@ -1098,8 +1098,8 @@ class CarliniL0Method(EvasionAttack):
                             len(attack_success),
                         )
 
-                        l0dist = np.sum((np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int), \
-                                         axis=1)
+                        l0dist = np.sum((np.abs(x_batch - x_adv_batch) > self._perturbation_threshold).astype(int),
+                                        axis=1)
                         improved_adv = attack_success & (l0dist < best_l0dist_batch)
                         logger.debug("Number of improved L0 distances: %i", int(np.sum(improved_adv)))
                         if np.sum(improved_adv) > 0:
@@ -1150,9 +1150,10 @@ class CarliniL0Method(EvasionAttack):
                                 lr_mult = lr_mult[:, np.newaxis]
 
                             x_adv1 = x_adv_batch_tanh[active_and_do_halving]
-                            new_x_adv_batch_tanh = x_adv1 + lr_mult * \
-                                                   perturbation_tanh[do_halving] * \
-                                                   activation_batch[do_halving]
+                            new_x_adv_batch_tanh = \
+                                x_adv1 + lr_mult * \
+                                perturbation_tanh[do_halving] * \
+                                activation_batch[do_halving]
                             new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                             _, l2dist[active_and_do_halving], loss[active_and_do_halving] = self._loss(
                                 x_batch[active_and_do_halving],
@@ -1188,9 +1189,10 @@ class CarliniL0Method(EvasionAttack):
                                 lr_mult = lr_mult[:, np.newaxis]
 
                             x_adv2 = x_adv_batch_tanh[active_and_do_doubling]
-                            new_x_adv_batch_tanh = x_adv2 + lr_mult * \
-                                                   perturbation_tanh[do_doubling] * \
-                                                   activation_batch[do_doubling]
+                            new_x_adv_batch_tanh = \
+                                x_adv2 + lr_mult * \
+                                perturbation_tanh[do_doubling] * \
+                                acivation_batch[do_doubling]
                             new_x_adv_batch = tanh_to_original(new_x_adv_batch_tanh, clip_min, clip_max)
                             _, l2dist[active_and_do_doubling], loss[active_and_do_doubling] = self._loss(
                                 x_batch[active_and_do_doubling],
@@ -1218,8 +1220,9 @@ class CarliniL0Method(EvasionAttack):
 
                             x_adv4 = x_adv_batch_tanh[active_and_update_adv]
                             best_lr1 = best_lr_mult * perturbation_tanh[update_adv]
-                            x_adv_batch_tanh[active_and_update_adv] = x_adv4 + best_lr1 * \
-                                                                      activation_batch[active_and_update_adv]
+                            x_adv_batch_tanh[active_and_update_adv] = \
+                                x_adv4 + best_lr1 * \
+                                activation_batch[active_and_update_adv]
 
                             x_adv6 = x_adv_batch_tanh[active_and_update_adv]
                             x_adv_batch[active_and_update_adv] = tanh_to_original(x_adv6, clip_min, clip_max)
