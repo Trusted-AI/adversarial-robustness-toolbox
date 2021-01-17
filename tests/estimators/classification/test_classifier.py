@@ -67,7 +67,7 @@ class ClassifierNeuralNetworkInstance(
     def get_activations(self, x, layer, batch_size):
         pass
 
-    def loss(self, x, y, **kwargs):
+    def compute_loss(self, x, y, **kwargs):
         pass
 
     def loss_gradient(self, x, y, **kwargs):

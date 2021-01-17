@@ -157,7 +157,7 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         raise NotImplementedError
 
-    def loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+    def compute_loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """
         Compute the loss of the neural network for samples `x`.
 

@@ -55,6 +55,16 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     This class implements a classifier with the PyTorch framework.
     """
 
+    estimator_params = PyTorchEstimator.estimator_params + [
+        "loss",
+        "input_shape",
+        "nb_classes",
+        "optimizer",
+        "use_amp",
+        "opt_level",
+        "loss_scale",
+    ]
+
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
@@ -133,6 +143,8 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         self._optimizer = optimizer
         self._use_amp = use_amp
         self._learning_phase: Optional[bool] = None
+        self._opt_level = opt_level
+        self._loss_scale = loss_scale
 
         # Get the internal layers
         self._layer_names = self._model.get_layers
@@ -200,6 +212,53 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
         :return: Shape of one input sample.
         """
         return self._input_shape  # type: ignore
+
+    @property
+    def loss(self) -> "torch.nn.modules.loss._Loss":
+        """
+        Return the loss function.
+
+        :return: The loss function.
+        """
+        return self._loss  # type: ignore
+
+    @property
+    def optimizer(self) -> "torch.optim.Optimizer":
+        """
+        Return the optimizer.
+
+        :return: The optimizer.
+        """
+        return self._optimizer  # type: ignore
+
+    @property
+    def use_amp(self) -> bool:
+        """
+        Return a boolean indicating whether to use the automatic mixed precision tool.
+
+        :return: Whether to use the automatic mixed precision tool.
+        """
+        return self._use_amp  # type: ignore
+
+    @property
+    def opt_level(self) -> str:
+        """
+        Return a string specifying a pure or mixed precision optimization level.
+
+        :return: A string specifying a pure or mixed precision optimization level. Possible
+                 values are `O0`, `O1`, `O2`, and `O3`.
+        """
+        return self._opt_level  # type: ignore
+
+    @property
+    def loss_scale(self) -> Union[float, str]:
+        """
+        Return the loss scaling value.
+
+        :return: Loss scaling. Possible values for string: a string representing a number, e.g., “1.0”,
+                 or the string “dynamic”.
+        """
+        return self._loss_scale  # type: ignore
 
     def reduce_labels(self, y: Union[np.ndarray, "torch.Tensor"]) -> Union[np.ndarray, "torch.Tensor"]:
         import torch  # lgtm [py/repeated-import]
@@ -469,7 +528,7 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
 
         return grads
 
-    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss function w.r.t. `x`.
 

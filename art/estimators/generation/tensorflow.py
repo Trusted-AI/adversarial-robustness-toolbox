@@ -113,7 +113,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         return self._input_shape  # type: ignore
 
-    def loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+    def compute_loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """
         Compute the loss of the neural network for samples `x`.
 
