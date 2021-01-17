@@ -92,7 +92,7 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -236,7 +236,7 @@ class BinaryActivationDetector(
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 

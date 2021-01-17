@@ -326,15 +326,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         return self._use_logits  # type: ignore
 
     @property
-    def channels_first(self) -> bool:
-        """
-        A boolean representing whether the color channels are in the first (or last) axis.
-
-        :return: a boolean representing whether the color channels are in the first (or last) axis.
-        """
-        return self._channels_first  # type: ignore
-
-    @property
     def input_layer(self) -> int:
         """
         The index of the layer considered as input for models with multiple input layers.
@@ -354,7 +345,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         return self._output_layer  # type: ignore
 
-    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
