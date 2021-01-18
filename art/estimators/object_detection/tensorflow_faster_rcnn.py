@@ -46,6 +46,14 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
     """
     This class implements a model-specific object detector using Faster-RCNN and TensorFlow.
     """
+    estimator_params = TensorFlowEstimator.estimator_params +[
+        "images",
+        # "filename",
+        # "url",
+        "sess",
+        "is_training",
+        "attack_losses"
+    ]
 
     def __init__(
         self,
@@ -156,7 +164,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     "faster_rcnn_inception_v2_coco_2017_11_08.tar.gz",
                 )
 
-            self._predictions, self._losses, self._detections = self._load_model(
+            self._model, self._predictions, self._losses, self._detections = self._load_model(
                 images=images,
                 filename=filename,
                 url=url,
@@ -168,7 +176,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
             )
 
         else:
-            self._predictions, self._losses, self._detections = self._load_model(
+            self._model, self._predictions, self._losses, self._detections = self._load_model(
                 images=images,
                 filename=None,
                 url=None,
@@ -204,6 +212,9 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         :return: Shape of one input sample.
         """
         return self._input_shape  # type: ignore
+
+    #         "filename",
+    #         "url",
 
     @staticmethod
     def _load_model(
@@ -311,7 +322,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         # Initialize from checkpoint
         tf.train.init_from_checkpoint(fine_tune_checkpoint_path, vars_in_ckpt)
 
-        return predictions, losses, detections
+        return obj_detection_model, predictions, losses, detections
 
     def loss_gradient(self, x: np.ndarray, y: List[Dict[str, np.ndarray]], **kwargs) -> np.ndarray:
         """

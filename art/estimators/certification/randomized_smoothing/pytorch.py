@@ -49,6 +49,11 @@ class PyTorchRandomizedSmoothing(RandomizedSmoothingMixin, PyTorchClassifier):
 
     | Paper link: https://arxiv.org/abs/1902.02918
     """
+    estimator_params = PyTorchClassifier.estimator_params + [
+        "sample_size",
+        "scale",
+        "alpha"
+    ]
 
     def __init__(
         self,
