@@ -51,6 +51,12 @@ class NumpyRandomizedSmoothing(
 
     | Paper link: https://arxiv.org/abs/1902.02918
     """
+    estimator_params = BaseEstimator.estimator_params + [
+        "classifier",
+        "sample_size",
+        "scale",
+        "alpha"
+    ]
 
     def __init__(
         self, classifier: "CLASSIFIER_LOSS_GRADIENTS_TYPE", sample_size: int, scale: float = 0.1, alpha: float = 0.001
