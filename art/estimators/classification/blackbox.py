@@ -51,7 +51,7 @@ class BlackBoxClassifier(ClassifierMixin, BaseEstimator):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
     ):
         """
         Create a `Classifier` instance for a black-box model.

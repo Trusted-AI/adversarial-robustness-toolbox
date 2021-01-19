@@ -49,7 +49,7 @@ classifier = MXClassifier(
     ctx=None,
     channels_first=True,
     preprocessing_defences=None,
-    preprocessing=(0, 1),
+    preprocessing=(0.0, 1.0),
 )
 
 # Step 4: Train the ART classifier

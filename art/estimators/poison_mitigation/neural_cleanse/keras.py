@@ -72,7 +72,7 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
         clip_values: Optional["CLIP_VALUES_TYPE"] = None,
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
-        preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        preprocessing: "PREPROCESSING_TYPE" = (0.0, 1.0),
         input_layer: int = 0,
         output_layer: int = 0,
         steps: int = 1000,
