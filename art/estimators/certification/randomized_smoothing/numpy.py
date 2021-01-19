@@ -38,7 +38,6 @@ logger = logging.getLogger(__name__)
 
 
 class NumpyRandomizedSmoothing(
-    RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin, BaseEstimator
     RandomizedSmoothingMixin,
     ClassGradientsMixin,
     ClassifierMixin,
