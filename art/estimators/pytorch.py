@@ -37,7 +37,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     Estimator class for PyTorch models.
     """
     estimator_params = BaseEstimator.estimator_params + [
-        "device_type"
+        "device_type",
+        "channels_first"
     ]
 
     def __init__(self, device_type: str = "gpu", **kwargs) -> None:

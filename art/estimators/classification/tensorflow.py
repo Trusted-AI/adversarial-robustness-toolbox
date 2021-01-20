@@ -59,7 +59,8 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         "loss",
         "learning",
         "sess",
-        "feed_dict"
+        "feed_dict",
+        "channels_first"
     ]
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
@@ -775,7 +776,8 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         "nb_classes",
         "input_shape",
         "loss_object",
-        "train_step"
+        "train_step",
+        "channels_first"
     ]
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
