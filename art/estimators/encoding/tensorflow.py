@@ -46,7 +46,8 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         "input_ph",
         "loss",
         "sess",
-        "feed_dict"
+        "feed_dict",
+        "channels_first"
     ]
 
     def __init__(

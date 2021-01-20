@@ -43,6 +43,11 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
     Class allowing to aggregate multiple classifiers as an ensemble. The individual classifiers are expected to be
     trained when the ensemble is created and no training procedures are provided through this class.
     """
+    estimator_params = ClassifierNeuralNetwork.estimator_params + [
+        "classifiers",
+        "classifier_weights",
+        "channels_first"
+    ]
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
@@ -150,6 +155,24 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
         :return: Shape of one input sample.
         """
         return self._input_shape  # type: ignore
+
+    @property
+    def classifiers(self) -> List[ClassifierNeuralNetwork]:
+        """
+        Return the Classifier instances that are ensembled together.
+
+        :return: Classifier instances that are ensembled together.
+        """
+        return self._classifiers  # type: ignore
+
+    @property
+    def classifier_weights(self) -> Union[list, np.ndarray, None]:
+        """
+        Return the list of classifier weights to assign to their prediction when aggregating results.
+
+        :return: The list of classifier weights to assign to their prediction when aggregating results.
+        """
+        return self._classifier_weights  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, raw: bool = False, **kwargs) -> np.ndarray:
         """
