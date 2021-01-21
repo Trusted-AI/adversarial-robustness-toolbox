@@ -136,7 +136,20 @@ class Classifier(ClassifierMixin, BaseEstimator, ABC):
     Typing variable definition.
     """
 
-    pass
+    def clone_for_refitting(self) -> 'Classifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
 
 
 class ClassifierLossGradients(ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
@@ -144,7 +157,20 @@ class ClassifierLossGradients(ClassifierMixin, LossGradientsMixin, BaseEstimator
     Typing variable definition.
     """
 
-    pass
+    def clone_for_refitting(self) -> 'ClassifierLossGradients':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
 
 
 class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
@@ -152,7 +178,20 @@ class ClassifierClassLossGradients(ClassGradientsMixin, ClassifierMixin, LossGra
     Typing variable definition.
     """
 
-    pass
+    def clone_for_refitting(self) -> 'ClassifierClassLossGradients':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
 
 
 class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
@@ -174,10 +213,38 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
         """
         raise NotImplementedError
 
+    def clone_for_refitting(self) -> 'ClassifierNeuralNetwork':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
 
 class ClassifierDecisionTree(DecisionTreeMixin, ClassifierMixin, BaseEstimator, ABC):
     """
     Typing variable definition.
     """
 
-    pass
+    def clone_for_refitting(self) -> 'ClassifierDecisionTree':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError

@@ -114,6 +114,21 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         raise NotImplementedError
 
+    def clone_for_refitting(self) -> 'PyTorchEstimator':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
     def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:
         """
         Apply all preprocessing defences of the estimator on the raw inputs `x` and `y`. This function is should

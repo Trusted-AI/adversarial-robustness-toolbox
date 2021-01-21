@@ -35,7 +35,7 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
     if y.shape[0] != x.shape[0]:
         raise ValueError("Number of rows in x and y do not match")
 
-    num_iter = 1
+    num_iter = 10
     results = []
 
     for i in range(num_iter):
@@ -55,7 +55,12 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
             # create new model without sample in training data
             alt_x = np.delete(x, row, 0)
             alt_y = np.delete(y, row, 0)
-            extra_estimator.reset()
+            try:
+                extra_estimator.reset()
+            except NotImplementedError:
+                raise ValueError(
+                    "PDTP metric can only be applied to classifiers that implement the reset method."
+                )
             extra_estimator.fit(alt_x, alt_y)
             # get probabilities from new model
             alt_pred = extra_estimator.predict(x)
