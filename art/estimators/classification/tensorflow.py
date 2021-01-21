@@ -1072,7 +1072,7 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             model = tf.keras.models.clone_model(self.model, input_tensors=self.model.inputs)
         except ValueError:
             raise ValueError(
-                    'Cannot clone custom tensorflow models'
+                'Cannot clone custom tensorflow models'
             )
 
         optimizer = self.model.optimizer
@@ -1081,11 +1081,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
             var.assign(tf.zeros_like(var))
 
         model.compile(
-                optimizer=optimizer, loss=self.model.loss,
-                metrics=self.model.metrics,
-                loss_weights=self.model.compiled_loss._loss_weights,
-                weighted_metrics=self.model.compiled_metrics._weighted_metrics,
-                run_eagerly=self.model.run_eagerly
+            optimizer=optimizer, loss=self.model.loss,
+            metrics=self.model.metrics,
+            loss_weights=self.model.compiled_loss._loss_weights,
+            weighted_metrics=self.model.compiled_metrics._weighted_metrics,
+            run_eagerly=self.model.run_eagerly
         )
 
         clone = type(self)(model, self.nb_classes, self.input_shape)

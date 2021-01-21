@@ -12,6 +12,7 @@ from art.estimators.classification.classifier import ClassifierMixin
 if TYPE_CHECKING:
     from art.estimators.classification import Classifier
 
+
 def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.ndarray, y: np.ndarray,
          indexes: Optional[np.ndarray] = None, num_iter: Optional[int] = 10) -> np.ndarray:
     """
@@ -82,7 +83,7 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
     # get average of iterations for each sample
     # We now have a list of list, internal lists represent an iteration. We need to transpose and get averages.
     per_sample = list(map(list, zip(*results)))
-    avg_per_sample = np.array([sum(l)/len(l) for l in per_sample])
+    avg_per_sample = np.array([sum(l) / len(l) for l in per_sample])
 
     # return leakage per sample
     return avg_per_sample
