@@ -27,6 +27,7 @@ from tests.utils import ARTTestException
 
 logger = logging.getLogger(__name__)
 
+
 @pytest.mark.skipMlFramework("dl_frameworks")
 def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, get_iris_dataset):
     try:
@@ -42,6 +43,8 @@ def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, 
     except ARTTestException as e:
         art_warning(e)
 
+
+@pytest.mark.skipMlFramework("keras")
 def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_dataset):
     try:
         classifier = tabular_dl_estimator()
@@ -55,6 +58,7 @@ def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_
         art_warning(e)
 
 
+@pytest.mark.skipMlFramework("keras")
 def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_mnist_subset):
     try:
         classifier, _ = image_dl_estimator()
@@ -67,3 +71,32 @@ def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_m
         print(np.max(leakage))
     except ARTTestException as e:
             art_warning(e)
+
+
+@pytest.mark.skipMlFramework("keras")
+def test_errors(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_generator):
+    try:
+        classifier = tabular_dl_estimator()
+        not_classifier = image_data_generator()
+        (x_train, y_train), (x_test, y_test) = get_iris_dataset
+        with pytest.raises(ValueError):
+            PDTP(not_classifier, classifier, x_train, y_train)
+        with pytest.raises(ValueError):
+            PDTP(classifier, not_classifier, x_train, y_train)
+        with pytest.raises(ValueError):
+            PDTP(classifier, classifier, np.delete(x_train, 1, 1), y_train)
+        with pytest.raises(ValueError):
+            PDTP(classifier, classifier, x_train, y_test)
+    except ARTTestException as e:
+        art_warning(e)
+
+
+@pytest.mark.skipMlFramework("pytorch", "tensorflow", "scikitlearn")
+def test_not_implemented(art_warning, tabular_dl_estimator, get_iris_dataset, image_data_generator):
+    try:
+        classifier = tabular_dl_estimator()
+        (x_train, y_train), _ = get_iris_dataset
+        with pytest.raises(ValueError):
+            PDTP(classifier, classifier, x_train, y_train)
+    except ARTTestException as e:
+        art_warning(e)

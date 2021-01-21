@@ -213,6 +213,7 @@ class BaseEstimator(ABC):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def reset(self) -> None:
         """
         Resets the weights of the estimator so that it can be refit from scratch.
