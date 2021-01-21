@@ -65,7 +65,7 @@ def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_m
         extra_classifier, _ = image_dl_estimator()
         (x_train, y_train), _ = get_default_mnist_subset
         indexes = random.sample(range(x_train.shape[0]), 100)
-        leakage = PDTP(classifier, extra_classifier, x_train, y_train, indexes=indexes)
+        leakage = PDTP(classifier, extra_classifier, x_train, y_train, indexes=indexes, num_iter=1)
         print(leakage)
         print(np.average(leakage))
         print(np.max(leakage))

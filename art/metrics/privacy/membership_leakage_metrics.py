@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from art.estimators.classification import Classifier
 
 def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.ndarray, y: np.ndarray,
-         indexes: Optional[np.ndarray] = None) -> np.ndarray:
+         indexes: Optional[np.ndarray] = None, num_iter: Optional[int] = 10) -> np.ndarray:
     """
         Compute the pointwise differential training privacy metric for the given classifier and training set.
         Taken from: https://arxiv.org/abs/1712.09136
@@ -25,6 +25,8 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
                   shape (nb_samples,).
         :param indexes: the subset of indexes of `x` to compute the PDTP metric on. If not supplied, PDTP will be
                         computed for all samples in `x`.
+        :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
+                         defaults to 10. The result is the average across iterations.
         :return: an array containing the average PDTP value for each sample in the training set.
     """
     if ClassifierMixin not in type(target_estimator).__mro__ or ClassifierMixin not in type(extra_estimator).__mro__:
@@ -35,7 +37,6 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
     if y.shape[0] != x.shape[0]:
         raise ValueError("Number of rows in x and y do not match")
 
-    num_iter = 10
     results = []
 
     for i in range(num_iter):
