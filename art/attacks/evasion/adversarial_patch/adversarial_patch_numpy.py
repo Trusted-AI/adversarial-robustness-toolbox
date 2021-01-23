@@ -143,6 +143,9 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         self.patch_shape = self.image_shape
 
+        self._reset_patch()
+
+    def _reset_patch(self):
         mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
             0
         ]
@@ -154,10 +157,14 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         :param x: An array with the original input images of shape NHWC or NCHW or input videos of shape NFHWC or NFCHW.
         :param y: An array with the original true labels.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
+        :param reset_patch: If `True` reset patch to initial values of mean of minimal and maximal clip value, else if
+                            `False` (default) restart from previous patch values created by previous call to `generate`
+                            or mean of minimal and maximal clip value if first call to `generate`.
+        :type reset_patch: bool
         :return: An array with adversarial patch and an array of the patch mask.
         """
         logger.info("Creating adversarial patch.")
@@ -183,6 +190,9 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "Feature vectors detected. The adversarial patch can only be applied to data with spatial "
                 "dimensions."
             )
+
+        if kwargs.get('reset_patch'):
+            self._reset_patch()
 
         y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
