@@ -143,13 +143,11 @@ class AdversarialPatchNumpy(EvasionAttack):
 
         self.patch_shape = self.image_shape
 
-        self._reset_patch()
-
-    def _reset_patch(self):
-        mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
+        self.patch = None
+        self.mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
             0
         ]
-        self.patch = np.ones(shape=self.patch_shape).astype(np.float32) * mean_value
+        self.reset_patch(self.mean_value)
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -191,7 +189,7 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "dimensions."
             )
 
-        if kwargs.get('reset_patch'):
+        if kwargs.get("reset_patch"):
             self._reset_patch()
 
         y_target = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
@@ -526,3 +524,18 @@ class AdversarialPatchNumpy(EvasionAttack):
         gradients = self._rotate(gradients, -angle)
 
         return gradients
+
+    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]]) -> None:
+        """
+        Reset the adversarial patch.
+
+        :param initial_patch_value: Patch value to use for resetting the patch.
+        """
+        if initial_patch_value is None:
+            self.patch = np.ones(shape=self.patch_shape).astype(np.float32) * self.mean_value
+        elif isinstance(initial_patch_value, float):
+            self.patch = np.ones(shape=self.patch_shape).astype(np.float32) * initial_patch_value
+        elif self.patch.shape == initial_patch_value.shape:
+            self.patch = initial_patch_value
+        else:
+            raise ValueError("Unexpected value for initial_patch_value.")

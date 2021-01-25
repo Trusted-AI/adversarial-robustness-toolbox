@@ -161,6 +161,14 @@ class AdversarialPatch(EvasionAttack):
         """
         return self._attack.apply_patch(x, scale, patch_external=patch_external)
 
+    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]]) -> None:
+        """
+        Reset the adversarial patch.
+
+        :param initial_patch_value: Patch value to use for resetting the patch.
+        """
+        self._attack.reset_patch(initial_patch_value=initial_patch_value)
+
     def set_params(self, **kwargs) -> None:
         super().set_params(**kwargs)
         self._attack.set_params(**kwargs)
