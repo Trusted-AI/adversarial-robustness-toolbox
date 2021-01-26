@@ -211,9 +211,6 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
         """
         return self._input_shape  # type: ignore
 
-    #         "filename",
-    #         "url",
-
     @staticmethod
     def _load_model(
         images: "tf.Tensor",
