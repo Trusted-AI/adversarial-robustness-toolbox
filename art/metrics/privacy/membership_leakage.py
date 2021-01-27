@@ -1,3 +1,23 @@
+# MIT License
+#
+# Copyright (C) The Adversarial Robustness Toolbox (ART) Authors 2020
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+# documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
+# rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit
+# persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
+# Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+# WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+"""
+This module implements membership leakage metrics.
+"""
 from __future__ import absolute_import, division, print_function, unicode_literals
 from typing import TYPE_CHECKING, Optional
 
@@ -17,7 +37,7 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
          indexes: Optional[np.ndarray] = None, num_iter: Optional[int] = 10) -> np.ndarray:
     """
         Compute the pointwise differential training privacy metric for the given classifier and training set.
-        Taken from: https://arxiv.org/abs/1712.09136
+        | Paper link: https://arxiv.org/abs/1712.09136
 
         :param target_estimator: The classifier to be analyzed.
         :param extra_estimator: Another classifier of the same type as the target classifier, but not yet fit.
@@ -28,7 +48,8 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
                         computed for all samples in `x`.
         :param num_iter: the number of iterations of PDTP computation to run for each sample. If not supplied,
                          defaults to 10. The result is the average across iterations.
-        :return: an array containing the average PDTP value for each sample in the training set.
+        :return: an array containing the average PDTP value for each sample in the training set. The higher the value,
+                 the higher the privacy leakage for that sample.
     """
     if ClassifierMixin not in type(target_estimator).__mro__ or ClassifierMixin not in type(extra_estimator).__mro__:
         raise ValueError("PDTP metric only supports classifiers")
@@ -51,6 +72,10 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
                 raise ValueError(
                     "PDTP metric only supports classifiers that output logits or probabilities."
                 )
+        # divide into 100 bins and return center of bin
+        pred_bin = (np.floor(pred * 100) / 100).round(decimals=2) + 0.005
+        pred_bin[pred_bin > 1] = 0.995
+
         if not indexes:
             indexes = range(x.shape[0])
         for row in indexes:
@@ -69,8 +94,6 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
             if not is_probability(alt_pred):
                 alt_pred = scipy.special.softmax(alt_pred, axis=1)
             # divide into 100 bins and return center of bin
-            pred_bin = (np.floor(pred * 100) / 100).round(decimals=2) + 0.005
-            pred_bin[pred_bin > 1] = 0.995
             alt_pred_bin = (np.floor(alt_pred * 100) / 100).round(decimals=2) + 0.005
             alt_pred_bin[alt_pred_bin > 1] = 0.995
             ratio_1 = pred_bin / alt_pred_bin
