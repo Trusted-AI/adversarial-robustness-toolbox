@@ -144,9 +144,9 @@ class AdversarialPatchNumpy(EvasionAttack):
         self.patch_shape = self.image_shape
 
         self.patch = None
-        self.mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
-            0
-        ]
+        self.mean_value = (
+            self.estimator.clip_values[1] - self.estimator.clip_values[0]
+        ) / 2.0 + self.estimator.clip_values[0]
         self.reset_patch(self.mean_value)
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
