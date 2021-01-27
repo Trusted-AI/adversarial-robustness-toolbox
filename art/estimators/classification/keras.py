@@ -551,6 +551,13 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         raise NotImplementedError
 
+    def reset(self) -> None:
+        """
+        Resets the weights of the classifier so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
     def get_activations(
         self, x: np.ndarray, layer: Union[int, str], batch_size: int, framework: bool = False
     ) -> np.ndarray:
