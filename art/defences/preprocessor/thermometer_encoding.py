@@ -33,7 +33,7 @@ import numpy as np
 
 from art.config import ART_NUMPY_DTYPE
 from art.defences.preprocessor.preprocessor import Preprocessor
-from art.utils import Deprecated, deprecated_keyword_arg, to_categorical
+from art.utils import to_categorical
 
 if TYPE_CHECKING:
     from art.utils import CLIP_VALUES_TYPE
@@ -52,14 +52,12 @@ class ThermometerEncoding(Preprocessor):
         https://arxiv.org/abs/1902.06705
     """
 
-    params = ["clip_values", "num_space", "channel_index", "channels_first"]
+    params = ["clip_values", "num_space", "channels_first"]
 
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
         clip_values: "CLIP_VALUES_TYPE",
         num_space: int = 10,
-        channel_index=Deprecated,
         channels_first: bool = False,
         apply_fit: bool = True,
         apply_predict: bool = True,
@@ -70,24 +68,13 @@ class ThermometerEncoding(Preprocessor):
         :param clip_values: Tuple of the form `(min, max)` representing the minimum and maximum values allowed
                for features.
         :param num_space: Number of evenly spaced levels within the interval of minimum and maximum clip values.
-        :param channel_index: Index of the axis in data containing the color channels or features.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
-        # Remove in 1.6.0
-        if channel_index == 2:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
         super().__init__(is_fitted=True, apply_fit=apply_fit, apply_predict=apply_predict)
         self.clip_values = clip_values
         self.num_space = num_space
-        self.channel_index = channel_index
         self.channels_first = channels_first
         self._check_params()
 

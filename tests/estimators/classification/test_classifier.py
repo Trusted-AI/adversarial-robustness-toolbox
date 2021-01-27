@@ -24,7 +24,6 @@ import numpy as np
 
 from art.estimators.classification.classifier import ClassGradientsMixin, ClassifierMixin
 from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
-from art.utils import Deprecated
 from tests.utils import TestBase, master_seed
 
 logger = logging.getLogger(__name__)
@@ -143,7 +142,7 @@ class TestClassifierNeuralNetwork(TestBase):
         classifier = ClassifierNeuralNetworkInstance((0, 1))
         repr_ = repr(classifier)
         self.assertIn("ClassifierNeuralNetworkInstance", repr_)
-        self.assertIn(f"channel_index={Deprecated}, channels_first=True", repr_)
+        self.assertIn(f"channels_first=True", repr_)
         self.assertIn("clip_values=[0. 1.]", repr_)
         self.assertIn("defences=None", repr_)
         self.assertIn(

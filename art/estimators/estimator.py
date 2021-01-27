@@ -25,7 +25,6 @@ import numpy as np
 from tqdm.auto import trange
 
 from art.config import ART_NUMPY_DTYPE
-from art.utils import Deprecated, deprecated, deprecated_keyword_arg
 
 if TYPE_CHECKING:
     # pylint: disable=R0401
@@ -340,24 +339,12 @@ class NeuralNetworkMixin(ABC):
     has to be mixed in with class `BaseEstimator`.
     """
 
-    @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
-    def __init__(self, channels_first: Optional[bool], channel_index=Deprecated, **kwargs) -> None:
+    def __init__(self, channels_first: Optional[bool], **kwargs) -> None:
         """
         Initialize a neural network attributes.
 
-        :param channel_index: Index of the axis in samples `x` representing the color channels.
-        :type channel_index: `int`
         :param channels_first: Set channels first or last.
         """
-        # Remove in 1.6.0
-        if channel_index == 3:
-            channels_first = False
-        elif channel_index == 1:
-            channels_first = True
-        elif channel_index is not Deprecated:
-            raise ValueError("Not a proper channel_index. Use channels_first.")
-
-        self._channel_index = channel_index
         self._channels_first: Optional[bool] = channels_first
         super().__init__(**kwargs)
 
@@ -454,14 +441,6 @@ class NeuralNetworkMixin(ABC):
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
-
-    @property  # type: ignore
-    @deprecated(end_version="1.6.0", replaced_by="channels_first")
-    def channel_index(self) -> Optional[int]:
-        """
-        :return: Index of the axis containing the color channels in the samples `x`.
-        """
-        return self._channel_index
 
     @property
     def channels_first(self) -> Optional[bool]:

@@ -133,7 +133,7 @@ def test_pickle(art_warning, get_default_mnist_subset, image_dl_estimator):
         with open(full_path, "rb") as f:
             loaded_model = pickle.load(f)
             np.testing.assert_equal(myclassifier_2._clip_values, loaded_model._clip_values)
-            assert myclassifier_2._channel_index == loaded_model._channel_index
+            assert myclassifier_2._channels_first == loaded_model._channels_first
             assert set(myclassifier_2.__dict__.keys()) == set(loaded_model.__dict__.keys())
 
         # Test predict
