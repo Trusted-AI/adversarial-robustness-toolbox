@@ -36,10 +36,10 @@ def test_membership_leakage_decision_tree(art_warning, decision_tree_estimator, 
         (x_train, y_train), _ = get_iris_dataset
         prev = classifier.model.tree_
         leakage = PDTP(classifier, extra_classifier, x_train, y_train)
-        print(leakage)
-        print(np.average(leakage))
-        print(np.max(leakage))
+        logger.info("Average PDTP leakage: %.2f%%", (np.average(leakage)))
+        logger.info("Max PDTP leakage: %.2f%%", (np.max(leakage)))
         assert(classifier.model.tree_ == prev)
+        assert (np.all(leakage >= 1.0))
     except ARTTestException as e:
         art_warning(e)
 
@@ -51,9 +51,9 @@ def test_membership_leakage_tabular(art_warning, tabular_dl_estimator, get_iris_
         extra_classifier = tabular_dl_estimator()
         (x_train, y_train), _ = get_iris_dataset
         leakage = PDTP(classifier, extra_classifier, x_train, y_train)
-        print(leakage)
-        print(np.average(leakage))
-        print(np.max(leakage))
+        logger.info("Average PDTP leakage: %.2f%%", (np.average(leakage)))
+        logger.info("Max PDTP leakage: %.2f%%", (np.max(leakage)))
+        assert(np.all(leakage >= 1.0))
     except ARTTestException as e:
         art_warning(e)
 
@@ -66,9 +66,9 @@ def test_membership_leakage_image(art_warning, image_dl_estimator, get_default_m
         (x_train, y_train), _ = get_default_mnist_subset
         indexes = random.sample(range(x_train.shape[0]), 100)
         leakage = PDTP(classifier, extra_classifier, x_train, y_train, indexes=indexes, num_iter=1)
-        print(leakage)
-        print(np.average(leakage))
-        print(np.max(leakage))
+        logger.info("Average PDTP leakage: %.2f%%", (np.average(leakage)))
+        logger.info("Max PDTP leakage: %.2f%%", (np.max(leakage)))
+        assert (np.all(leakage >= 1.0))
     except ARTTestException as e:
             art_warning(e)
 
