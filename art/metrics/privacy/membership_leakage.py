@@ -73,8 +73,9 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
                     "PDTP metric only supports classifiers that output logits or probabilities."
                 )
         # divide into 100 bins and return center of bin
-        pred_bin = (np.floor(pred * 100) / 100).round(decimals=2) + 0.005
-        pred_bin[pred_bin > 1] = 0.995
+        bins = np.array(np.arange(0.0, 1.01, 0.01).round(decimals=2))
+        pred_bin_indexes = np.digitize(pred, bins)
+        pred_bin = bins[pred_bin_indexes] - 0.005
 
         if not indexes:
             indexes = range(x.shape[0])
@@ -94,8 +95,8 @@ def PDTP(target_estimator: "Classifier", extra_estimator: "Classifier", x: np.nd
             if not is_probability(alt_pred):
                 alt_pred = scipy.special.softmax(alt_pred, axis=1)
             # divide into 100 bins and return center of bin
-            alt_pred_bin = (np.floor(alt_pred * 100) / 100).round(decimals=2) + 0.005
-            alt_pred_bin[alt_pred_bin > 1] = 0.995
+            alt_pred_bin_indexes = np.digitize(alt_pred, bins)
+            alt_pred_bin = bins[alt_pred_bin_indexes] - 0.005
             ratio_1 = pred_bin / alt_pred_bin
             ratio_2 = alt_pred_bin / pred_bin
             # get max value
