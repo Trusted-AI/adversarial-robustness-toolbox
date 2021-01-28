@@ -229,3 +229,20 @@ class GPyGaussianProcessClassifier(ClassifierClassLossGradients):
             os.makedirs(folder)
 
         self.model.save_model(full_path, save_data=False)
+
+    def clone_for_refitting(
+            self
+    ) -> 'GPyGaussianProcessClassifier':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
