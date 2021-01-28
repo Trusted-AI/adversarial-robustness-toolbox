@@ -73,22 +73,6 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
         """
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
 
-    def clone_for_refitting(self) -> 'TensorFlowEstimator':  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
-        Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
-        initialization as cloned model, but without weights.
-
-        :return: new estimator
-        """
-        raise NotImplementedError
-
-    def reset(self) -> None:
-        """
-        Resets the weights of the estimator so that it can be refit from scratch.
-
-        """
-        raise NotImplementedError
-
     @property
     def sess(self) -> "tf.python.client.session.Session":
         """
@@ -173,22 +157,6 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                   of shape `(nb_samples,)`.
         :return: Loss values.
         :rtype: Format as expected by the `model`
-        """
-        raise NotImplementedError
-
-    def clone_for_refitting(self) -> 'TensorFlowV2Estimator':  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
-        Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
-        initialization as cloned model, but without weights.
-
-        :return: new estimator
-        """
-        raise NotImplementedError
-
-    def reset(self) -> None:
-        """
-        Resets the weights of the estimator so that it can be refit from scratch.
-
         """
         raise NotImplementedError
 

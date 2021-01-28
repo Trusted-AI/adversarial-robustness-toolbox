@@ -489,6 +489,22 @@ class TensorFlowLingvoASR(SpeechRecognizerMixin, TensorFlowV2Estimator):
         gradients = self._apply_preprocessing_gradient(x, gradients)
         return gradients
 
+    def clone_for_refitting(self) -> 'TensorFlowLingvoASR':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
     def _loss_gradient_per_batch(self, x: np.ndarray, y: np.ndarray) -> np.ndarray:
         """
         Compute the gradient of the loss function w.r.t. `x` per batch.

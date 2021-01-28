@@ -170,6 +170,22 @@ class TensorFlowEncoder(EncoderMixin, TensorFlowEstimator):  # lgtm [py/missing-
         """
         raise NotImplementedError
 
+    def clone_for_refitting(self) -> 'TensorFlowEncoder':  # lgtm [py/inheritance/incorrect-overridden-signature]
+        """
+        Create a copy of the estimator that can be refit from scratch. Will inherit same architecture, optimizer and
+        initialization as cloned model, but without weights.
+
+        :return: new estimator
+        """
+        raise NotImplementedError
+
+    def reset(self) -> None:
+        """
+        Resets the weights of the estimator so that it can be refit from scratch.
+
+        """
+        raise NotImplementedError
+
     @property
     def encoding_length(self) -> int:
         """
