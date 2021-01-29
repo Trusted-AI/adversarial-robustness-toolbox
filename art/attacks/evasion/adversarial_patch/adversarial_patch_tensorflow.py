@@ -33,7 +33,7 @@ from tqdm.auto import trange
 from art.attacks.attack import EvasionAttack
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-from art.utils import check_and_transform_label_format
+from art.utils import check_and_transform_label_format, is_probability
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -111,6 +111,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         if self.estimator.channels_first:
             raise ValueError("Color channel needs to be in last dimension.")
 
+        self.use_logits = None
+
         self.i_h_patch = 0
         self.i_w_patch = 1
 
@@ -170,7 +172,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         return loss
 
-    def _probabilities(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
+    def _predictions(self, images: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
@@ -179,17 +181,17 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             patched_input, clip_value_min=self.estimator.clip_values[0], clip_value_max=self.estimator.clip_values[1],
         )
 
-        probabilities = self.estimator._predict_framework(patched_input)
+        predictions = self.estimator._predict_framework(patched_input)
 
-        return probabilities
+        return predictions
 
     def _loss(self, images: "tf.Tensor", target: "tf.Tensor", mask: Optional["tf.Tensor"]) -> "tf.Tensor":
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        probabilities = self._probabilities(images, mask)
+        predictions = self._predictions(images, mask)
 
         self._loss_per_example = tf.keras.losses.categorical_crossentropy(
-            y_true=target, y_pred=probabilities, from_logits=False, label_smoothing=0
+            y_true=target, y_pred=predictions, from_logits=self.use_logits, label_smoothing=0
         )
 
         loss = tf.reduce_mean(self._loss_per_example)
@@ -394,6 +396,14 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             mask = np.repeat(mask, repeats=x.shape[0], axis=0)
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
+
+        # check if logits or probabilities
+        y_pred = self.estimator.predict(x=x[[0]])
+
+        if is_probability(y_pred):
+            self.use_logits = False
+        else:
+            self.use_logits = True
 
         if mask is None:
             if shuffle:
