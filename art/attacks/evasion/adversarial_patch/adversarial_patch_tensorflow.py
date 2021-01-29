@@ -467,7 +467,7 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         patch = patch_external if patch_external is not None else self._patch
         return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).numpy()
 
-    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]]) -> None:
+    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
         """
         Reset the adversarial patch.
 
@@ -477,8 +477,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._patch.assign(self._initial_value)
         elif isinstance(initial_patch_value, float):
             initial_value = np.ones(self.patch_shape) * initial_patch_value
-            self._patch.assign(np.ones(shape=self.patch_shape) * initial_value)
-        elif self.patch.shape == initial_patch_value.shape:
+            self._patch.assign(initial_value)
+        elif self._patch.shape == initial_patch_value.shape:
             self._patch.assign(initial_patch_value)
         else:
             raise ValueError("Unexpected value for initial_patch_value.")
