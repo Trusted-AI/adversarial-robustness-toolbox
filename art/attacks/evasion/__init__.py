@@ -5,6 +5,7 @@ from art.attacks.evasion.adversarial_patch.adversarial_patch import AdversarialP
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
 from art.attacks.evasion.adversarial_patch.adversarial_patch_pytorch import AdversarialPatchPyTorch
+from art.attacks.evasion.adversarial_asr import CarliniWagnerASR
 from art.attacks.evasion.auto_attack import AutoAttack
 from art.attacks.evasion.auto_projected_gradient_descent import AutoProjectedGradientDescent
 from art.attacks.evasion.brendel_bethge import BrendelBethgeAttack
