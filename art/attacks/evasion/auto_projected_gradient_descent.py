@@ -508,7 +508,11 @@ class AutoProjectedGradientDescent(EvasionAttack):
 
                         f_k_p_1 = self.estimator.loss(x=x_k_p_1, y=y_batch, reduction="mean")
 
-                        if f_k_p_1 > self.f_max:
+                        if f_k_p_1 == 0.0:
+                            x_k = x_k_p_1.copy()
+                            break
+
+                        if (not self.targeted and f_k_p_1 > self.f_max) or (self.targeted and f_k_p_1 < self.f_max):
                             self.count_condition_1 += 1
                             self.x_max = x_k_p_1
                             self.x_max_m_1 = x_k

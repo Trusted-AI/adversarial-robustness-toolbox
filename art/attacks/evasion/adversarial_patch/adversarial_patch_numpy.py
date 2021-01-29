@@ -111,37 +111,35 @@ class AdversarialPatchNumpy(EvasionAttack):
                 "Unexpected input_shape in estimator detected. AdversarialPatch is expecting images or videos as input."
             )
 
-        self.image_shape = self.estimator.input_shape
+        self.input_shape = self.estimator.input_shape
 
-        self.i_h_patch = 0
-        self.i_w_patch = 1
-
-        self.nb_dims = len(self.image_shape)
+        self.nb_dims = len(self.input_shape)
         if self.nb_dims == 3:
             if self.estimator.channels_first:
+                self.i_c = 0
                 self.i_h = 1
                 self.i_w = 2
             else:
                 self.i_h = 0
                 self.i_w = 1
+                self.i_c = 2
         elif self.nb_dims == 4:
             if self.estimator.channels_first:
+                self.i_c = 1
                 self.i_h = 2
                 self.i_w = 3
             else:
                 self.i_h = 1
                 self.i_w = 2
+                self.i_c = 3
+
+        smallest_image_edge = np.minimum(self.input_shape[self.i_h], self.input_shape[self.i_w])
+        nb_channels = self.input_shape[self.i_c]
 
         if self.estimator.channels_first:
-            smallest_image_edge = np.minimum(self.image_shape[1], self.image_shape[2])
-            nb_channels = self.image_shape[0]
             self.patch_shape = (nb_channels, smallest_image_edge, smallest_image_edge)
         else:
-            smallest_image_edge = np.minimum(self.image_shape[0], self.image_shape[1])
-            nb_channels = self.image_shape[2]
             self.patch_shape = (smallest_image_edge, smallest_image_edge, nb_channels)
-
-        self.patch_shape = self.image_shape
 
         self.patch = None
         self.mean_value = (
@@ -166,6 +164,14 @@ class AdversarialPatchNumpy(EvasionAttack):
         :return: An array with adversarial patch and an array of the patch mask.
         """
         logger.info("Creating adversarial patch.")
+
+        test_input_shape = list(self.estimator.input_shape)
+
+        for i, size in enumerate(self.estimator.input_shape):
+            if size is None or size != x.shape[i + 1]:
+                test_input_shape[i] = x.shape[i + 1]
+
+        self.input_shape = tuple(test_input_shape)
 
         mask = kwargs.get("mask")
         if mask is not None:
@@ -214,6 +220,8 @@ class AdversarialPatchNumpy(EvasionAttack):
                     patch_gradients_i = self._reverse_transformation(
                         gradients[i_image, :, :, :], patch_mask_transformed[i_image, :, :, :], transforms[i_image],
                     )
+                    if self.nb_dims == 4:
+                        patch_gradients_i = np.mean(patch_gradients_i, axis=0)
                     patch_gradients += patch_gradients_i
 
             # patch_gradients = patch_gradients / (num_batches * self.batch_size)
@@ -282,7 +290,7 @@ class AdversarialPatchNumpy(EvasionAttack):
         """
         Return a circular patch mask
         """
-        diameter = np.minimum(self.patch_shape[self.i_h], self.patch_shape[self.i_w])
+        diameter = np.minimum(self.input_shape[self.i_h], self.input_shape[self.i_w])
 
         x = np.linspace(-1, 1, diameter)
         y = np.linspace(-1, 1, diameter)
@@ -294,26 +302,12 @@ class AdversarialPatchNumpy(EvasionAttack):
         channel_index = 1 if self.estimator.channels_first else 3
         axis = channel_index - 1
         mask = np.expand_dims(mask, axis=axis)
+
         mask = np.broadcast_to(mask, self.patch_shape).astype(np.float32)
 
-        pad_h_before = int((self.image_shape[self.i_h] - mask.shape[self.i_h]) / 2)
-        pad_h_after = int(self.image_shape[self.i_h] - pad_h_before - mask.shape[self.i_h])
-
-        pad_w_before = int((self.image_shape[self.i_w] - mask.shape[self.i_w]) / 2)
-        pad_w_after = int(self.image_shape[self.i_w] - pad_w_before - mask.shape[self.i_w])
-
-        if self.estimator.channels_first:
-            if self.nb_dims == 3:
-                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))  # type: ignore
-            elif self.nb_dims == 4:
-                pad_width = ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))  # type: ignore
-        else:
-            if self.nb_dims == 3:
-                pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
-            elif self.nb_dims == 4:
-                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
-
-        mask = np.pad(mask, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
+        if self.nb_dims == 4:
+            mask = np.expand_dims(mask, axis=0)
+            mask = np.repeat(mask, axis=0, repeats=self.input_shape[0]).astype(np.float32)
 
         return mask
 
@@ -361,22 +355,18 @@ class AdversarialPatchNumpy(EvasionAttack):
 
     def _scale(self, x, scale):
         zooms = None
-        height = None
-        width = None
+        height, width = x.shape[self.i_h], x.shape[self.i_w]
+
         if self.estimator.channels_first:
             if self.nb_dims == 3:
                 zooms = (1.0, scale, scale)
-                height, width = self.patch_shape[1:3]
             elif self.nb_dims == 4:
                 zooms = (1.0, 1.0, scale, scale)
-                height, width = self.patch_shape[2:4]
         elif not self.estimator.channels_first:
             if self.nb_dims == 3:
                 zooms = (scale, scale, 1.0)
-                height, width = self.patch_shape[0:2]
             elif self.nb_dims == 4:
                 zooms = (1.0, scale, scale, 1.0)
-                height, width = self.patch_shape[1:3]
 
         if scale < 1.0:
             scale_h = int(np.round(height * scale))
@@ -457,6 +447,10 @@ class AdversarialPatchNumpy(EvasionAttack):
         patch_mask = self._get_circular_patch_mask()
         transformation = dict()
 
+        if self.nb_dims == 4:
+            patch = np.expand_dims(patch, axis=0)
+            patch = np.repeat(patch, axis=0, repeats=self.input_shape[0]).astype(np.float32)
+
         # rotate
         angle = random.uniform(-self.rotation_max, self.rotation_max)
         transformation["rotate"] = angle
@@ -470,10 +464,34 @@ class AdversarialPatchNumpy(EvasionAttack):
         patch_mask = self._scale(patch_mask, scale)
         transformation["scale"] = scale
 
+        # pad
+        pad_h_before = int((self.input_shape[self.i_h] - patch.shape[self.i_h]) / 2)
+        pad_h_after = int(self.input_shape[self.i_h] - pad_h_before - patch.shape[self.i_h])
+
+        pad_w_before = int((self.input_shape[self.i_w] - patch.shape[self.i_w]) / 2)
+        pad_w_after = int(self.input_shape[self.i_w] - pad_w_before - patch.shape[self.i_w])
+
+        if self.estimator.channels_first:
+            if self.nb_dims == 3:
+                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))  # type: ignore
+            elif self.nb_dims == 4:
+                pad_width = ((0, 0), (0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after))  # type: ignore
+        else:
+            if self.nb_dims == 3:
+                pad_width = ((pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
+            elif self.nb_dims == 4:
+                pad_width = ((0, 0), (pad_h_before, pad_h_after), (pad_w_before, pad_w_after), (0, 0))  # type: ignore
+
+        transformation["pad_h_before"] = pad_h_before
+        transformation["pad_w_before"] = pad_w_before
+
+        patch = np.pad(patch, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
+        patch_mask = np.pad(patch_mask, pad_width=pad_width, mode="constant", constant_values=(0, 0),)
+
         # shift
         if mask_2d is None:
-            shift_max_h = (self.estimator.input_shape[self.i_h] - self.patch_shape[self.i_h] * scale) / 2.0
-            shift_max_w = (self.estimator.input_shape[self.i_w] - self.patch_shape[self.i_w] * scale) / 2.0
+            shift_max_h = (self.input_shape[self.i_h] - self.patch_shape[self.i_h] * scale) / 2.0
+            shift_max_w = (self.input_shape[self.i_w] - self.patch_shape[self.i_w] * scale) / 2.0
             if shift_max_h > 0 and shift_max_w > 0:
                 shift_h = random.uniform(-shift_max_h, shift_max_h)
                 shift_w = random.uniform(-shift_max_w, shift_max_w)
@@ -496,8 +514,8 @@ class AdversarialPatchNumpy(EvasionAttack):
             num_pos = np.argwhere(mask_2d).shape[0]
             pos_id = np.random.choice(num_pos, size=1)
             pos = np.argwhere(mask_2d)[pos_id[0]]
-            shift_h = pos[0] - (self.estimator.input_shape[self.i_h]) / 2.0
-            shift_w = pos[1] - (self.estimator.input_shape[self.i_w]) / 2.0
+            shift_h = pos[0] - (self.input_shape[self.i_h]) / 2.0
+            shift_w = pos[1] - (self.input_shape[self.i_w]) / 2.0
 
             patch = self._shift(patch, shift_h, shift_w)
             patch_mask = self._shift(patch_mask, shift_h, shift_w)
@@ -514,6 +532,27 @@ class AdversarialPatchNumpy(EvasionAttack):
         shift_h = transformation["shift_h"]
         shift_w = transformation["shift_w"]
         gradients = self._shift(gradients, -shift_h, -shift_w)
+
+        # unpad
+
+        pad_h_before = transformation["pad_h_before"]
+        pad_w_before = transformation["pad_w_before"]
+
+        if self.estimator.channels_first:
+            height, width = self.patch_shape[1], self.patch_shape[2]
+        else:
+            height, width = self.patch_shape[0], self.patch_shape[1]
+
+        if self.estimator.channels_first:
+            if self.nb_dims == 3:
+                gradients = gradients[:, pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width]
+            elif self.nb_dims == 4:
+                gradients = gradients[:, :, pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width]
+        else:
+            if self.nb_dims == 3:
+                gradients = gradients[pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width, :]
+            elif self.nb_dims == 4:
+                gradients = gradients[:, pad_h_before : pad_h_before + height, pad_w_before : pad_w_before + width, :]
 
         # scale
         scale = transformation["scale"]
