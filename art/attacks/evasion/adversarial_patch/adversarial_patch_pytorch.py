@@ -24,11 +24,8 @@ can be printed into the physical world with a common printer. The patch can be u
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 import logging
-import math
 from typing import Optional, Tuple, Union, TYPE_CHECKING
 
-import torch
-torch.autograd.set_detect_anomaly(True)
 import numpy as np
 from tqdm.auto import trange
 
@@ -106,6 +103,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self.patch_shape = self.estimator.input_shape
         else:
             self.patch_shape = patch_shape
+
         self.image_shape = classifier.input_shape
         self.verbose = verbose
         self._check_params()
@@ -115,6 +113,8 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         self.i_h_patch = 1
         self.i_w_patch = 2
+
+        self.input_shape = self.estimator.input_shape
 
         self.nb_dims = len(self.image_shape)
         if self.nb_dims == 3:
@@ -136,14 +136,15 @@ class AdversarialPatchPyTorch(EvasionAttack):
         mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
             0
         ]
-        initial_value = np.ones(self.patch_shape) * mean_value
-        self._patch = torch.tensor(initial_value, requires_grad=True, device=self.estimator.device)
+        self._initial_value = np.ones(self.patch_shape) * mean_value
+        self._patch = torch.tensor(self._initial_value, requires_grad=True, device=self.estimator.device)
 
         self._optimizer = torch.optim.Adam([self._patch], lr=self.learning_rate)
 
     def _train_step(
-        self, images: torch.Tensor, target: torch.Tensor, mask: Optional[torch.Tensor] = None
-    ) -> torch.Tensor:
+        self, images: "torch.Tensor", target: "torch.Tensor", mask: Optional["torch.Tensor"] = None
+    ) -> "torch.Tensor":
+        import torch  # lgtm [py/repeated-import]
 
         self._optimizer.zero_grad()
         loss = self._loss(images, target, mask)
@@ -151,11 +152,13 @@ class AdversarialPatchPyTorch(EvasionAttack):
         self._optimizer.step()
 
         with torch.no_grad():
-            self._patch[:] = torch.clamp(self._patch, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1])
+            self._patch[:] = torch.clamp(
+                self._patch, min=self.estimator.clip_values[0], max=self.estimator.clip_values[1]
+            )
 
         return loss
 
-    def _probabilities(self, images: torch.Tensor, mask: Optional[torch.Tensor]) -> torch.Tensor:
+    def _predictions(self, images: "torch.Tensor", mask: Optional["torch.Tensor"]) -> "torch.Tensor":
         import torch  # lgtm [py/repeated-import]
 
         patched_input = self._random_overlay(images, self._patch, mask=mask)
@@ -167,30 +170,24 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         return predictions
 
-    def _loss(self, images: torch.Tensor, target: torch.Tensor, mask: Optional[torch.Tensor]) -> torch.Tensor:
+    def _loss(self, images: "torch.Tensor", target: "torch.Tensor", mask: Optional["torch.Tensor"]) -> "torch.Tensor":
         import torch  # lgtm [py/repeated-import]
 
-        predictions = self._probabilities(images, mask)
+        predictions = self._predictions(images, mask)
 
         if self.use_logits:
-            loss = torch.nn.functional.cross_entropy(input=predictions,
-                                                     target=torch.argmax(target, dim=1),
-                                                     reduction='mean'
-                                                     )
+            loss = torch.nn.functional.cross_entropy(
+                input=predictions, target=torch.argmax(target, dim=1), reduction="mean"
+            )
         else:
-            loss = torch.nn.functional.nll_loss(input=predictions,
-                                                target=torch.argmax(target, dim=1),
-                                                reduction='mean'
-                                                )
+            loss = torch.nn.functional.nll_loss(input=predictions, target=torch.argmax(target, dim=1), reduction="mean")
 
         if not self.targeted:
             loss = -loss
 
-        print('loss:', loss)
-
         return loss
 
-    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> torch.Tensor:
+    def _get_circular_patch_mask(self, nb_samples: int, sharpness: int = 40) -> "torch.Tensor":
         """
         Return a circular patch mask.
         """
@@ -212,11 +209,11 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
     def _random_overlay(
         self,
-        images: torch.Tensor,
-        patch: torch.Tensor,
+        images: "torch.Tensor",
+        patch: "torch.Tensor",
         scale: Optional[float] = None,
-        mask: Optional[torch.Tensor] = None,
-    ) -> torch.Tensor:
+        mask: Optional["torch.Tensor"] = None,
+    ) -> "torch.Tensor":
         import torch  # lgtm [py/repeated-import]
         import torchvision
 
@@ -228,9 +225,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         smallest_image_edge = np.minimum(self.image_shape[self.i_h], self.image_shape[self.i_w])
 
         image_mask = torchvision.transforms.functional.resize(
-            img=image_mask,
-            size=(smallest_image_edge, smallest_image_edge),
-            interpolation=2,
+            img=image_mask, size=(smallest_image_edge, smallest_image_edge), interpolation=2,
         )
 
         pad_h_before = int((self.image_shape[self.i_h] - image_mask.shape[self.i_h_patch + 1]) / 2)
@@ -243,8 +238,12 @@ class AdversarialPatchPyTorch(EvasionAttack):
             img=image_mask,
             padding=[pad_h_before, pad_w_before, pad_h_after, pad_w_after],
             fill=0,
-            padding_mode='constant',
+            padding_mode="constant",
         )
+
+        if self.nb_dims == 4:
+            image_mask = torch.unsqueeze(image_mask, dim=1)
+            image_mask = torch.repeat_interleave(image_mask, dim=1, repeats=self.input_shape[0])
 
         image_mask = image_mask.float()
 
@@ -252,17 +251,19 @@ class AdversarialPatchPyTorch(EvasionAttack):
         padded_patch = torch.stack([patch] * nb_samples)
 
         padded_patch = torchvision.transforms.functional.resize(
-            img=padded_patch,
-            size=(smallest_image_edge, smallest_image_edge),
-            interpolation=2,
+            img=padded_patch, size=(smallest_image_edge, smallest_image_edge), interpolation=2,
         )
 
         padded_patch = torchvision.transforms.functional.pad(
             img=padded_patch,
             padding=[pad_h_before, pad_w_before, pad_h_after, pad_w_after],
             fill=0,
-            padding_mode='constant',
+            padding_mode="constant",
         )
+
+        if self.nb_dims == 4:
+            padded_patch = torch.unsqueeze(padded_patch, dim=1)
+            padded_patch = torch.repeat_interleave(padded_patch, dim=1, repeats=self.input_shape[0])
 
         padded_patch = padded_patch.float()
 
@@ -307,39 +308,35 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
             phi_rotate = float(np.random.uniform(-self.rotation_max, self.rotation_max))
 
-            image_mask_i = torchvision.transforms.functional.affine(img=image_mask[i_sample],
-                                                                            angle=phi_rotate,
-                                                                            translate=[x_shift, y_shift],
-                                                                            scale=im_scale,
-                                                                            shear=[0, 0],
-                                                                            resample=0,
-                                                                            fillcolor=None)
+            image_mask_i = torchvision.transforms.functional.affine(
+                img=image_mask[i_sample],
+                angle=phi_rotate,
+                translate=[x_shift, y_shift],
+                scale=im_scale,
+                shear=[0, 0],
+                resample=0,
+                fillcolor=None,
+            )
 
             image_mask_list.append(image_mask_i)
 
-            padded_patch_i = torchvision.transforms.functional.affine(img=padded_patch[i_sample],
-                                                                      angle=phi_rotate,
-                                                                      translate=[x_shift, y_shift],
-                                                                      scale=im_scale,
-                                                                      shear=[0, 0],
-                                                                      resample=0,
-                                                                      fillcolor=None)
+            padded_patch_i = torchvision.transforms.functional.affine(
+                img=padded_patch[i_sample],
+                angle=phi_rotate,
+                translate=[x_shift, y_shift],
+                scale=im_scale,
+                shear=[0, 0],
+                resample=0,
+                fillcolor=None,
+            )
 
             padded_patch_list.append(padded_patch_i)
 
-        image_mask_p = torch.stack(image_mask_list, dim=0)
-        padded_patch_p = torch.stack(padded_patch_list, dim=0)
+        image_mask = torch.stack(image_mask_list, dim=0)
+        padded_patch = torch.stack(padded_patch_list, dim=0)
+        inverted_mask = torch.from_numpy(np.ones(shape=image_mask.shape, dtype=np.float32)) - image_mask
 
-    #     if self.nb_dims == 4:
-    #         image_mask = tf.stack([image_mask] * images.shape[1], axis=1)
-    #         image_mask = tf.cast(image_mask, images.dtype)
-    #
-    #         padded_patch = tf.stack([padded_patch] * images.shape[1], axis=1)
-    #         padded_patch = tf.cast(padded_patch, images.dtype)
-
-        inverted_mask = torch.from_numpy(np.ones(shape=image_mask_p.shape, dtype=np.float32)) - image_mask_p
-
-        return images * inverted_mask + padded_patch_p * image_mask_p
+        return images * inverted_mask + padded_patch * image_mask
 
     def generate(self, x: np.ndarray, y: Optional[np.ndarray] = None, **kwargs) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -387,7 +384,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
-        # check logits
+        # check if logits or probabilities
         y_pred = self.estimator.predict(x=x[[0]])
 
         if is_probability(y_pred):
@@ -418,9 +415,6 @@ class AdversarialPatchPyTorch(EvasionAttack):
                 for images, target, mask_i in data_loader:
                     _ = self._train_step(images=images, target=target, mask=mask_i)
 
-        print(np.min(self._patch.detach().cpu().numpy()))
-        print(np.max(self._patch.detach().cpu().numpy()))
-
         return (
             self._patch.detach().cpu().numpy(),
             self._get_circular_patch_mask(nb_samples=1).numpy()[0],
@@ -444,17 +438,28 @@ class AdversarialPatchPyTorch(EvasionAttack):
                      center location of the patch during sampling.
         :return: The patched samples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         if mask is not None:
             mask = mask.copy()
         patch = patch_external if patch_external is not None else self._patch
         x = torch.Tensor(x)
         return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).detach().cpu().numpy()
 
-    # def reset_patch(self, initial_patch_value: np.ndarray) -> None:
-    #     """
-    #     Reset the adversarial patch.
-    #
-    #     :param initial_patch_value: Patch value to use for resetting the patch.
-    #     """
-    #     initial_value = np.ones(self.patch_shape) * initial_patch_value
-    #     self._patch.assign(np.ones(shape=self.patch_shape) * initial_value)
+    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
+        """
+        Reset the adversarial patch.
+
+        :param initial_patch_value: Patch value to use for resetting the patch.
+        """
+        import torch
+
+        if initial_patch_value is None:
+            self._patch.data = torch.Tensor(self._initial_value).double()
+        elif isinstance(initial_patch_value, float):
+            initial_value = np.ones(self.patch_shape) * initial_patch_value
+            self._patch.data = torch.Tensor(initial_value).double()
+        elif self._patch.shape == initial_patch_value.shape:
+            self._patch.data = torch.Tensor(initial_patch_value).double()
+        else:
+            raise ValueError("Unexpected value for initial_patch_value.")
