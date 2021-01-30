@@ -435,9 +435,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
     def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
         if mask is not None and (
-                (mask.dtype != np.bool)
-                or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
-                or not (mask.shape[1] == x.shape[self.i_h + 1] and mask.shape[2] == x.shape[self.i_w + 1])
+            (mask.dtype != np.bool)
+            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
+            or not (mask.shape[1] == x.shape[self.i_h + 1] and mask.shape[2] == x.shape[self.i_w + 1])
         ):
             raise ValueError(
                 "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
