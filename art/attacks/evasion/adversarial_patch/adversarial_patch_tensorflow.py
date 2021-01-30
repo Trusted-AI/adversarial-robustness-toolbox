@@ -144,8 +144,8 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             constraint=lambda x: tf.clip_by_value(x, self.estimator.clip_values[0], self.estimator.clip_values[1]),
         )
 
-        self._train_op = tf.keras.optimizers.SGD(
-            learning_rate=self.learning_rate, momentum=0.0, nesterov=False, name="SGD"
+        self._train_op = tf.keras.optimizers.Adam(
+            learning_rate=self.learning_rate, beta_1=0.9, beta_2=0.999, epsilon=1e-07, amsgrad=False, name="Adam"
         )
 
     def _train_step(
