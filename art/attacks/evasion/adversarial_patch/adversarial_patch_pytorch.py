@@ -356,21 +356,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
         mask = kwargs.get("mask")
         if mask is not None:
             mask = mask.copy()
-        if mask is not None and (
-            (mask.dtype != np.bool)
-            or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
-            or not (
-                (mask.shape[1] == x.shape[1] and mask.shape[2] == x.shape[2])
-                or (mask.shape[1] == x.shape[2] and mask.shape[2] == x.shape[3])
-            )
-        ):
-            raise ValueError(
-                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
-                "shape of `x` (N, H, W) without their channel dimensions."
-            )
-
-        if mask is not None and mask.shape[0] == 1:
-            mask = np.repeat(mask, repeats=x.shape[0], axis=0)
+        mask = self._check_mask(mask=mask, x=x)
 
         if y is None:
             logger.info("Setting labels to estimator predictions and running untargeted attack because `y=None`.")
@@ -420,6 +406,22 @@ class AdversarialPatchPyTorch(EvasionAttack):
             self._get_circular_patch_mask(nb_samples=1).numpy()[0],
         )
 
+    def _check_mask(self, mask: np.ndarray, x: np.ndarray) -> np.ndarray:
+        if mask is not None and (
+                (mask.dtype != np.bool)
+                or not (mask.shape[0] == 1 or mask.shape[0] == x.shape[0])
+                or not (mask.shape[1] == x.shape[self.i_h+1] and mask.shape[2] == x.shape[self.i_w+1])
+        ):
+            raise ValueError(
+                "The shape of `mask` has to be equal to the shape of a single samples (1, H, W) or the"
+                "shape of `x` (N, H, W) without their channel dimensions."
+            )
+
+        if mask is not None and mask.shape[0] == 1:
+            mask = np.repeat(mask, repeats=x.shape[0], axis=0)
+
+        return mask
+
     def apply_patch(
         self,
         x: np.ndarray,
@@ -442,6 +444,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         if mask is not None:
             mask = mask.copy()
+        mask = self._check_mask(mask=mask, x=x)
         patch = patch_external if patch_external is not None else self._patch
         x = torch.Tensor(x)
         return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).detach().cpu().numpy()
@@ -452,7 +455,7 @@ class AdversarialPatchPyTorch(EvasionAttack):
 
         :param initial_patch_value: Patch value to use for resetting the patch.
         """
-        import torch
+        import torch  # lgtm [py/repeated-import]
 
         if initial_patch_value is None:
             self._patch.data = torch.Tensor(self._initial_value).double()
