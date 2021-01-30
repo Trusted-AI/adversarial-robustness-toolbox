@@ -39,11 +39,12 @@ def fix_get_mnist_subset(get_mnist_dataset):
 
 
 @pytest.mark.framework_agnostic
-def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack):
+@pytest.mark.parametrize("norm", [2, "inf"])
+def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_attack, norm):
     try:
         classifier = image_dl_estimator_for_attack(SquareAttack)
 
-        attack = SquareAttack(estimator=classifier, norm=np.inf, max_iter=5, eps=0.3, p_init=0.8, nb_restarts=1)
+        attack = SquareAttack(estimator=classifier, norm=norm, max_iter=5, eps=0.3, p_init=0.8, nb_restarts=1)
 
         (x_train_mnist, y_train_mnist, x_test_mnist, y_test_mnist) = fix_get_mnist_subset
 
