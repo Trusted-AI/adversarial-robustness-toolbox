@@ -85,6 +85,8 @@ class AutoProjectedGradientDescent(EvasionAttack):
         :param nb_random_init: Number of random initialisations within the epsilon ball. For num_random_init=0
             starting at the original input.
         :param batch_size: Size of the batch on which adversarial samples are generated.
+        :param loss_type: Defines the loss to attack. Available options: None (Use loss defined by estimator),
+            "cross_entropy", or "difference_logits_ratio"
         :param verbose: Show progress bars.
         """
         from art.estimators.classification import TensorFlowClassifier, TensorFlowV2Classifier, PyTorchClassifier
