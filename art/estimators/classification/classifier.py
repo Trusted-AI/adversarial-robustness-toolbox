@@ -136,20 +136,7 @@ class Classifier(ClassifierMixin, BaseEstimator, ABC):
     Typing variable definition.
     """
 
-    def clone_for_refitting(self) -> "Classifier":  # lgtm [py/inheritance/incorrect-overridden-signature]
-        """
-        Create a copy of the estimator that can be refit from scratch.
-
-        :return: new estimator
-        """
-        raise NotImplementedError
-
-    def reset(self) -> None:
-        """
-        Resets the weights of the estimator so that it can be refit from scratch.
-
-        """
-        raise NotImplementedError
+    pass
 
 
 class ClassifierLossGradients(ClassifierMixin, LossGradientsMixin, BaseEstimator, ABC):
