@@ -339,6 +339,7 @@ class NeuralNetworkMixin(ABC):
     Mixin abstract base class defining additional functionality required for neural network estimators. This base class
     has to be mixed in with class `BaseEstimator`.
     """
+    estimator_params = ["channels_first"]
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(self, channels_first: Optional[bool], channel_index=Deprecated, **kwargs) -> None:

@@ -51,7 +51,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     """
     This class implements a classifier with the TensorFlow framework.
     """
-    estimator_params = TensorFlowEstimator.estimator_params + [
+    estimator_params = TensorFlowEstimator.estimator_params + ClassifierMixin.estimator_params + [
         "input_ph",
         "output",
         "labels_ph",
@@ -60,7 +60,6 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         "learning",
         "sess",
         "feed_dict",
-        "channels_first"
     ]
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
@@ -772,12 +771,10 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     """
     This class implements a classifier with the TensorFlow v2 framework.
     """
-    estimator_params = TensorFlowV2Estimator.estimator_params + [
-        "nb_classes",
+    estimator_params = TensorFlowV2Estimator.estimator_params + ClassifierMixin.estimator_params + [
         "input_shape",
         "loss_object",
         "train_step",
-        "channels_first"
     ]
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")

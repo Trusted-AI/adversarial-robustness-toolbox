@@ -46,7 +46,6 @@ class EnsembleClassifier(ClassifierNeuralNetwork):
     estimator_params = ClassifierNeuralNetwork.estimator_params + [
         "classifiers",
         "classifier_weights",
-        "channels_first"
     ]
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")

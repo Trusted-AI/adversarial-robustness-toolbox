@@ -66,9 +66,8 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     Wrapper class for importing Keras models.
     """
 
-    estimator_params = KerasEstimator.estimator_params + [
+    estimator_params = KerasEstimator.estimator_params + ClassifierMixin.estimator_params + [
         "use_logits",
-        "channels_first",
         "input_layer",
         "output_layer"
     ]

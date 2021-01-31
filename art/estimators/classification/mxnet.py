@@ -48,7 +48,7 @@ class MXClassifier(ClassGradientsMixin, ClassifierMixin, MXEstimator):  # lgtm [
     """
     Wrapper class for importing MXNet Gluon models.
     """
-    estimator_params = MXEstimator.estimator_params + [
+    estimator_params = MXEstimator.estimator_params + ClassifierMixin.estimator_params + [
         "loss",
         "input_shape",
         "nb_classes",

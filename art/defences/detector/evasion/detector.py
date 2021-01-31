@@ -44,6 +44,11 @@ class BinaryInputDetector(ClassGradientsMixin, ClassifierMixin, LossGradientsMix
     the user and trains it on data labeled as clean (label 0) or adversarial (label 1).
     """
 
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+        + ["detector"]
+    )
+
     def __init__(self, detector: "ClassifierNeuralNetwork") -> None:
         """
         Create a `BinaryInputDetector` instance which performs binary classification on input data.
@@ -165,6 +170,10 @@ class BinaryActivationDetector(
     Binary detector of adversarial samples coming from evasion attacks. The detector uses an architecture provided by
     the user and is trained on the values of the activations of a classifier at a given layer.
     """
+
+    estimator_params = (
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+    )
 
     def __init__(
         self, classifier: "ClassifierNeuralNetwork", detector: "ClassifierNeuralNetwork", layer: Union[int, str],

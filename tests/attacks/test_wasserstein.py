@@ -441,6 +441,12 @@ class TestWasserstein(TestBase):
         class DummyClassifier(
             ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
         ):
+            estimator_params = (
+                    BaseEstimator.estimator_params +
+                    NeuralNetworkMixin.estimator_params +
+                    ClassifierMixin.estimator_params
+            )
+
             def __init__(self):
                 super(DummyClassifier, self).__init__(model=None, clip_values=None, channels_first=True)
                 self._nb_classes = 10

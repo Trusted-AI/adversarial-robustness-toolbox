@@ -37,6 +37,7 @@ class KerasEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
     Estimator class for Keras models.
     """
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
 
     def __init__(self, **kwargs) -> None:
         """

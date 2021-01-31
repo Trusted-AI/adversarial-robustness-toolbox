@@ -40,6 +40,7 @@ class TensorFlowEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator)
     """
     Estimator class for TensorFlow models.
     """
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
 
     def __init__(self, **kwargs) -> None:
         """
@@ -103,6 +104,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
     """
     Estimator class for TensorFlow v2 models.
     """
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
 
     def __init__(self, **kwargs):
         """

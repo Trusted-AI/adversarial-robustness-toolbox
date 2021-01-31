@@ -51,7 +51,6 @@ class XGBoostClassifier(ClassifierDecisionTree):
     """
     estimator_params = ClassifierDecisionTree.estimator_params + [
         "nb_features",
-        "nb_classes"
     ]
 
     def __init__(

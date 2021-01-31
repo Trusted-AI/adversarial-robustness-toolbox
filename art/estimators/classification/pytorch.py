@@ -55,10 +55,9 @@ class PyTorchClassifier(ClassGradientsMixin, ClassifierMixin, PyTorchEstimator):
     This class implements a classifier with the PyTorch framework.
     """
 
-    estimator_params = PyTorchEstimator.estimator_params + [
+    estimator_params = PyTorchEstimator.estimator_params + ClassifierMixin.estimator_params + [
         "loss",
         "input_shape",
-        "nb_classes",
         "optimizer",
         "use_amp",
         "opt_level",

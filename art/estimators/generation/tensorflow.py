@@ -47,7 +47,6 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         "loss",
         "sess",
         "feed_dict",
-        "channels_first"
     ]
 
     def __init__(
