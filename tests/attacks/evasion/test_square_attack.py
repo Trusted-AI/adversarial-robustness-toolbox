@@ -55,7 +55,9 @@ def test_generate(art_warning, fix_get_mnist_subset, image_dl_estimator_for_atta
             expected_max = 0.3
         elif norm == 2:
             expected_mean = 0.00073682
-            expected_max = 0.3
+            expected_max = 0.25
+
+        print(np.max(np.abs(x_train_mnist_adv - x_train_mnist)) )
 
         assert np.mean(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected_mean, abs=0.025)
         assert np.max(np.abs(x_train_mnist_adv - x_train_mnist)) == pytest.approx(expected_max, abs=0.05)
