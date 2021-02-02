@@ -160,7 +160,7 @@ class ClassifierNeuralNetwork(  # lgtm [py/conflicting-attributes]
     Typing variable definition.
     """
     estimator_params = (
-            BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
     )
 
     @abstractmethod

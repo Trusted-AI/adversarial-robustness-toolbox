@@ -56,7 +56,7 @@ class ClassifierNeuralNetworkInstance(
     ClassGradientsMixin, ClassifierMixin, NeuralNetworkMixin, LossGradientsMixin, BaseEstimator
 ):
     estimator_params = (
-            BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
+        BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + ClassifierMixin.estimator_params
     )
 
     def __init__(self, clip_values, channels_first=True):
