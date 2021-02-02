@@ -42,6 +42,12 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
     """
     This class implements a GAN with the TensorFlow framework.
     """
+    estimator_params = TensorFlowEstimator.estimator_params + [
+        "input_ph",
+        "loss",
+        "sess",
+        "feed_dict",
+    ]
 
     def __init__(
         self,
@@ -113,7 +119,34 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         """
         return self._input_shape  # type: ignore
 
-    def loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
+    @property
+    def input_ph(self) -> "tf.Placeholder":
+        """
+        Return the input placeholder.
+
+        :return: The input placeholder.
+        """
+        return self._input_ph  # type: ignore
+
+    @property
+    def loss(self) -> "tf.Tensor":
+        """
+        Return the loss function.
+
+        :return: The loss function.
+        """
+        return self._loss  # type: ignore
+
+    @property
+    def feed_dict(self) -> Dict[Any, Any]:
+        """
+        Return the feed dictionary for the session run evaluating the classifier.
+
+        :return: The feed dictionary for the session run evaluating the classifier.
+        """
+        return self._feed_dict  # type: ignore
+
+    def compute_loss(self, x: "np.ndarray", y: "np.ndarray", **kwargs) -> "np.ndarray":
         """
         Compute the loss of the neural network for samples `x`.
 

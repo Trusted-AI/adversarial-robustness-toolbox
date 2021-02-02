@@ -178,9 +178,9 @@ class MembershipInferenceBlackBox(InferenceAttack):
             if NeuralNetworkMixin not in type(self.estimator).__mro__:
                 raise TypeError("loss input_type can only be used with neural networks")
             # members
-            features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
+            features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
             # non-members
-            test_features = self.estimator.loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
+            test_features = self.estimator.compute_loss(test_x, test_y).astype(np.float32).reshape(-1, 1)
         else:
             raise ValueError("Illegal value for parameter `input_type`.")
 
@@ -256,7 +256,7 @@ class MembershipInferenceBlackBox(InferenceAttack):
         if self.input_type == "prediction":
             features = self.estimator.predict(x).astype(np.float32)
         elif self.input_type == "loss":
-            features = self.estimator.loss(x, y).astype(np.float32).reshape(-1, 1)
+            features = self.estimator.compute_loss(x, y).astype(np.float32).reshape(-1, 1)
 
         if self.default_model and self.attack_model_type == "nn":
             import torch  # lgtm [py/repeated-import]
