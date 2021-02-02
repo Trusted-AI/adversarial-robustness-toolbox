@@ -37,7 +37,7 @@ from art.utils import load_dataset
 logger = logging.getLogger(__name__)
 
 # ----------------------------------------------------------------------------------------------------- TEST BASE CLASS
-art_supported_frameworks = ["keras", "tensorflow", "pytorch", "scikitlearn"]
+art_supported_frameworks = ["keras", "tensorflow", "tensorflow2v1", "pytorch", "scikitlearn"]
 
 
 class TestBase(unittest.TestCase):
