@@ -134,9 +134,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         mean_value = (self.estimator.clip_values[1] - self.estimator.clip_values[0]) / 2.0 + self.estimator.clip_values[
             0
         ]
-        initial_value = np.ones(self.patch_shape) * mean_value
+        self._initial_value = np.ones(self.patch_shape) * mean_value
         self._patch = tf.Variable(
-            initial_value=initial_value,
+            initial_value=self._initial_value,
             shape=self.patch_shape,
             dtype=tf.float32,
             constraint=lambda x: tf.clip_by_value(x, self.estimator.clip_values[0], self.estimator.clip_values[1]),
@@ -365,10 +365,14 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         :param x: An array with the original input images of shape NHWC or input videos of shape NFHWC.
         :param y: An array with the original true labels.
-        :param mask: An boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
+        :param mask: A boolean array of shape equal to the shape of a single samples (1, H, W) or the shape of `x`
                      (N, H, W) without their channel dimensions. Any features for which the mask is True can be the
                      center location of the patch during sampling.
         :type mask: `np.ndarray`
+        :param reset_patch: If `True` reset patch to initial values of mean of minimal and maximal clip value, else if
+                            `False` (default) restart from previous patch values created by previous call to `generate`
+                            or mean of minimal and maximal clip value if first call to `generate`.
+        :type reset_patch: bool
         :return: An array with adversarial patch and an array of the patch mask.
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
@@ -392,6 +396,9 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
 
         if mask is not None and mask.shape[0] == 1:
             mask = np.repeat(mask, repeats=x.shape[0], axis=0)
+
+        if kwargs.get("reset_patch"):
+            self.reset_patch(initial_patch_value=self._initial_value)
 
         y = check_and_transform_label_format(labels=y, nb_classes=self.estimator.nb_classes)
 
@@ -460,11 +467,18 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
         patch = patch_external if patch_external is not None else self._patch
         return self._random_overlay(images=x, patch=patch, scale=scale, mask=mask).numpy()
 
-    def reset_patch(self, initial_patch_value: np.ndarray) -> None:
+    def reset_patch(self, initial_patch_value: Optional[Union[float, np.ndarray]] = None) -> None:
         """
         Reset the adversarial patch.
 
         :param initial_patch_value: Patch value to use for resetting the patch.
         """
-        initial_value = np.ones(self.patch_shape) * initial_patch_value
-        self._patch.assign(np.ones(shape=self.patch_shape) * initial_value)
+        if initial_patch_value is None:
+            self._patch.assign(self._initial_value)
+        elif isinstance(initial_patch_value, float):
+            initial_value = np.ones(self.patch_shape) * initial_patch_value
+            self._patch.assign(initial_value)
+        elif self._patch.shape == initial_patch_value.shape:
+            self._patch.assign(initial_patch_value)
+        else:
+            raise ValueError("Unexpected value for initial_patch_value.")
