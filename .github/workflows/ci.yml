@@ -131,6 +131,7 @@ jobs:
         run: |
           pip install tensorflow==${{ matrix.tensorflow }}
           pip install lingvo==${{ matrix.lingvo }}
+          pip install tensorflow-addons==0.9.1
           pip list
       - name: Run ${{ matrix.name }} Tests
         run: ./run_tests.sh ${{ matrix.framework }}
