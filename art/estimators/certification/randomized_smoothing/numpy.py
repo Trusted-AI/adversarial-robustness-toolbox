@@ -22,13 +22,14 @@ This module implements Randomized Smoothing applied to classifier predictions.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import numpy as np
-
-from art.estimators.estimator import BaseEstimator
-from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
-from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 import logging
 from typing import List, Union, TYPE_CHECKING, Tuple
+
+import numpy as np
+
+from art.estimators.estimator import BaseEstimator, LossGradientsMixin, NeuralNetworkMixin
+from art.estimators.certification.randomized_smoothing.randomized_smoothing import RandomizedSmoothingMixin
+from art.estimators.classification import ClassifierMixin, ClassGradientsMixin
 
 if TYPE_CHECKING:
     from art.utils import CLASSIFIER_LOSS_GRADIENTS_TYPE
@@ -37,7 +38,12 @@ logger = logging.getLogger(__name__)
 
 
 class NumpyRandomizedSmoothing(
-    RandomizedSmoothingMixin, ClassGradientsMixin, ClassifierMixin, BaseEstimator
+    RandomizedSmoothingMixin,
+    ClassGradientsMixin,
+    ClassifierMixin,
+    NeuralNetworkMixin,
+    LossGradientsMixin,
+    BaseEstimator,
 ):
     """
     Implementation of Randomized Smoothing applied to classifier predictions and gradients, as introduced
@@ -114,6 +120,7 @@ class NumpyRandomizedSmoothing(
     ) -> np.ndarray:
         """
         Compute per-class derivatives of the given classifier w.r.t. `x` of original classifier.
+        :param x: Sample input with shape as expected by the model.
         :param label: Index of a specific per-class derivative. If an integer is provided, the gradient of that class
                       output is computed for all samples. If multiple values as provided, the first dimension should
                       match the batch size of `x`, and each value will be used as target for its corresponding sample in

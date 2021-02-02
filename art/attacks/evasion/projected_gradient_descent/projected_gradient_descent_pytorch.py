@@ -213,7 +213,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
 
         logger.info(
             "Success rate of attack: %.2f%%",
-            100 * compute_success(self.estimator, x, y, adv_x, self.targeted, batch_size=self.batch_size),
+            100 * compute_success(self.estimator, x, targets, adv_x, self.targeted, batch_size=self.batch_size),
         )
 
         return adv_x
@@ -238,9 +238,11 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         :param eps_step: Attack step size (input variation) at each iteration.
         :return: Adversarial examples.
         """
+        import torch  # lgtm [py/repeated-import]
+
         inputs = x.to(self.estimator.device)
         targets = targets.to(self.estimator.device)
-        adv_x = inputs
+        adv_x = torch.clone(inputs)
 
         if mask is not None:
             mask = mask.to(self.estimator.device)

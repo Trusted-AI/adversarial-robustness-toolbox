@@ -57,6 +57,7 @@ def SklearnClassifier(
     preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
     postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
     preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+    use_logits: bool = False,
 ) -> "ScikitlearnClassifier":
     """
     Create a `Classifier` instance from a scikit-learn Classifier model. This is a convenience function that
@@ -86,7 +87,8 @@ def SklearnClassifier(
         )
 
     # This basic class at least generically handles `fit`, `predict` and `save`
-    return ScikitlearnClassifier(model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing,)
+    return ScikitlearnClassifier(
+        model, clip_values, preprocessing_defences, postprocessing_defences, preprocessing, use_logits,)
 
 
 class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/missing-call-to-init]
@@ -101,6 +103,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         preprocessing_defences: Union["Preprocessor", List["Preprocessor"], None] = None,
         postprocessing_defences: Union["Postprocessor", List["Postprocessor"], None] = None,
         preprocessing: "PREPROCESSING_TYPE" = (0, 1),
+        use_logits: bool = False,
     ) -> None:
         """
         Create a `Classifier` instance from a scikit-learn classifier model.
@@ -113,6 +116,8 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         :param preprocessing: Tuple of the form `(subtrahend, divisor)` of floats or `np.ndarray` of values to be
                used for data preprocessing. The first value will be subtracted from the input. The input will then
                be divided by the second one.
+        :param use_logits: Determines whether predict() returns logits instead of probabilities if available. Some
+               adversarial attacks (DeepFool) may perform better if logits are used.
         """
         super().__init__(
             model=model,
@@ -123,6 +128,7 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         )
         self._input_shape = self._get_input_shape(model)
         self._nb_classes = self._get_nb_classes()
+        self._use_logits = use_logits
 
     @property
     def input_shape(self) -> Tuple[int, ...]:
@@ -161,10 +167,21 @@ class ScikitlearnClassifier(ClassifierMixin, ScikitlearnEstimator):  # lgtm [py/
         # Apply defences
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
-        if hasattr(self.model, "predict_proba") and callable(getattr(self.model, "predict_proba")):
+        if self._use_logits:
+            if callable(getattr(self.model, "predict_log_proba", None)):
+                y_pred = self.model.predict_log_proba(x_preprocessed)
+            else:
+                logger.warning(
+                    "use_logits was True but classifier did not have callable predict_log_proba member. Falling back to"
+                    " probabilities"
+                )
+        elif callable(getattr(self.model, "predict_proba", None)):
             y_pred = self.model.predict_proba(x_preprocessed)
-        elif hasattr(self.model, "predict") and callable(getattr(self.model, "predict")):
-            y_pred = to_categorical(self.model.predict(x_preprocessed), nb_classes=self.model.classes_.shape[0],)
+        elif callable(getattr(self.model, "predict", None)):
+            y_pred = to_categorical(
+                self.model.predict(x_preprocessed),
+                nb_classes=self.model.classes_.shape[0],
+            )
         else:
             raise ValueError("The provided model does not have methods `predict_proba` or `predict`.")
 
