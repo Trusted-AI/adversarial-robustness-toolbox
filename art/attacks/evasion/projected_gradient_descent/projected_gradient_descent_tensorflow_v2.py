@@ -304,7 +304,7 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if eps_step == np.inf:
+        if isinstance(eps_step, (int, float)) and eps_step == np.inf:
             clip_min, clip_max = self.estimator.clip_values
             x = tf.where(perturbation < 0.0, clip_min, x)
             x = tf.where(perturbation > 0.0, clip_max, x)

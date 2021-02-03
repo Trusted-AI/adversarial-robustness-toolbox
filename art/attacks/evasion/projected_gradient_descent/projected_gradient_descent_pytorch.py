@@ -311,7 +311,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         """
         import torch  # lgtm [py/repeated-import]
 
-        if eps_step == np.inf:
+        if isinstance(eps_step, (int, float)) and eps_step == np.inf:
             clip_min, clip_max = self.estimator.clip_values
             x[perturbation < 0.0] = float(clip_min)
             x[perturbation > 0.0] = float(clip_max)

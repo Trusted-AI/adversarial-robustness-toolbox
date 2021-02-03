@@ -296,13 +296,6 @@ class FastGradientMethod(EvasionAttack):
                 ", `float`, or `np.ndarray`."
             )
 
-        if (
-            hasattr(self, "minimal")
-            and self.minimal
-            and (isinstance(self.eps, np.ndarray) or isinstance(self.eps_step, np.ndarray))
-        ):
-            raise TypeError("The `minimal` FGM attack only supports `eps` and `eps_step` of types `int` or `float`.")
-
         if isinstance(self.eps, (int, float)):
             if self.eps < 0:
                 raise ValueError("The perturbation size `eps` has to be positive.")
@@ -384,7 +377,7 @@ class FastGradientMethod(EvasionAttack):
         self, batch: np.ndarray, perturbation: np.ndarray, eps_step: Union[int, float, np.ndarray]
     ) -> np.ndarray:
 
-        if eps_step == np.inf:
+        if isinstance(eps_step, (int, float)) and eps_step == np.inf:
             clip_min, clip_max = self.estimator.clip_values
             batch[perturbation < 0.0] = clip_min
             batch[perturbation > 0.0] = clip_max
