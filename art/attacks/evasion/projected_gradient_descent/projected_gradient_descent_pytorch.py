@@ -279,7 +279,7 @@ class ProjectedGradientDescentPyTorch(ProjectedGradientDescentCommon):
         grad = self.estimator.loss_gradient(x=x, y=y) * (1 - 2 * int(self.targeted))
 
         # Check for nan before normalisation an replace with 0
-        if torch.any(grad.is_nan()):
+        if torch.any(grad.isnan()):
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
             grad[grad.isnan()] = 0.0
 
