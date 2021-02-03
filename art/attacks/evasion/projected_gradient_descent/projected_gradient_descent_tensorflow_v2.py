@@ -269,6 +269,11 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
             1 - 2 * int(self.targeted), dtype=ART_NUMPY_DTYPE
         )
 
+        # Check for NaN before normalisation an replace with 0
+        if tf.reduce_any(tf.math.is_nan(grad)):
+            logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
+            grad = tf.where(tf.math.is_nan(grad), tf.zeros_like(grad), grad)
+
         # Apply mask
         if mask is not None:
             grad = tf.where(mask == 0.0, 0.0, grad)
