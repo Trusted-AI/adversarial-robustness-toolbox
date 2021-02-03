@@ -304,11 +304,16 @@ class ProjectedGradientDescentTensorFlowV2(ProjectedGradientDescentCommon):
         """
         import tensorflow as tf  # lgtm [py/repeated-import]
 
-        x = x + tf.constant(eps_step, dtype=ART_NUMPY_DTYPE) * perturbation
-
-        if self.estimator.clip_values is not None:
+        if eps_step == np.inf:
             clip_min, clip_max = self.estimator.clip_values
-            x = tf.clip_by_value(x, clip_min, clip_max)
+            x = tf.where(perturbation < 0.0, clip_min, x)
+            x = tf.where(perturbation > 0.0, clip_max, x)
+        else:
+            x = x + tf.constant(eps_step, dtype=ART_NUMPY_DTYPE) * perturbation
+
+            if self.estimator.clip_values is not None:
+                clip_min, clip_max = self.estimator.clip_values
+                x = tf.clip_by_value(x, clip_min, clip_max)
 
         return x
 
