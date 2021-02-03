@@ -47,6 +47,12 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
 
     | Paper link: https://www.cs.cmu.edu/~neill/papers/mcfowland13a.pdf
     """
+    estimator_params = ClassifierNeuralNetwork.estimator_params + [
+        "classifier",
+        "bgd_data",
+        "layer",
+        "verbose"
+    ]
 
     def __init__(
         self, classifier: ClassifierNeuralNetwork, bgd_data: np.ndarray, layer: Union[int, str], verbose: bool = True
@@ -70,6 +76,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         self.detector = classifier
         self.bgd_data = bgd_data
         self.verbose = verbose
+        self.layer = layer
 
         # Ensure that layer is well-defined
         if classifier.layer_names is None:
@@ -213,7 +220,7 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
         """
         raise NotImplementedError
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -253,6 +260,10 @@ class SubsetScanningDetector(ClassifierNeuralNetwork):
     @property
     def learning_phase(self) -> Optional[bool]:
         return self.detector.learning_phase
+
+    @property
+    def classifier(self) -> int:
+        return self.detector
 
     def class_gradient(self, x: np.ndarray, label: Union[int, List[int], None] = None, **kwargs) -> np.ndarray:
         return self.detector.class_gradient(x, label=label)

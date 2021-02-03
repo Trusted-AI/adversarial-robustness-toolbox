@@ -37,6 +37,7 @@ class MXEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
     Estimator for MXNet Gluon models.
     """
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params
 
     def __init__(self, **kwargs) -> None:
         """
@@ -69,7 +70,7 @@ class MXEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 

@@ -36,6 +36,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
     """
     Estimator class for PyTorch models.
     """
+    estimator_params = BaseEstimator.estimator_params + NeuralNetworkMixin.estimator_params + [
+        "device_type",
+    ]
 
     def __init__(self, device_type: str = "gpu", **kwargs) -> None:
         """
@@ -65,6 +68,8 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         super().__init__(**kwargs)
 
+        self._device_type = device_type
+
         from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
         self.all_framework_preprocessing = all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing])
@@ -75,6 +80,15 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         else:
             cuda_idx = torch.cuda.current_device()
             self._device = torch.device("cuda:{}".format(cuda_idx))
+
+    @property
+    def device_type(self) -> str:
+        """
+        Return the type of device on which the estimator is run.
+
+        :return: Type of device on which the estimator is run, either `gpu` or `cpu`.
+        """
+        return self._device_type  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
@@ -101,7 +115,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         """
         NeuralNetworkMixin.fit(self, x, y, batch_size=128, nb_epochs=20, **kwargs)
 
-    def loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
