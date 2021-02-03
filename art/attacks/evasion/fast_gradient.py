@@ -342,9 +342,9 @@ class FastGradientMethod(EvasionAttack):
         grad = self.estimator.loss_gradient(batch, batch_labels) * (1 - 2 * int(self.targeted))
 
         # Check for NaN before normalisation an replace with 0
-        if np.is_nan(grad).any():
+        if np.isnan(grad).any():
             logger.warning("Elements of the loss gradient are NaN and have been replaced with 0.0.")
-            grad = np.where(np.is_nan(grad), np.zeros_like(grad), grad)
+            grad = np.where(np.isnan(grad), np.zeros_like(grad), grad)
 
         # Apply mask
         if mask is not None:
