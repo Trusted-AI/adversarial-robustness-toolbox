@@ -259,7 +259,7 @@ class SquareAttack(EvasionAttack):
 
                     return delta
 
-                delta_init = np.zeros(x_robust.shape)
+                delta_init = np.zeros(x_robust.shape, dtype=ART_NUMPY_DTYPE)
 
                 height_start = 0
                 for _ in range(n_tiles):
