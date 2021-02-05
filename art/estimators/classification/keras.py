@@ -66,6 +66,12 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     Wrapper class for importing Keras models.
     """
 
+    estimator_params = KerasEstimator.estimator_params + ClassifierMixin.estimator_params + [
+        "use_logits",
+        "input_layer",
+        "output_layer"
+    ]
+
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
         self,
@@ -309,7 +315,36 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         """
         return self._input_shape  # type: ignore
 
-    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+    @property
+    def use_logits(self) -> bool:
+        """
+        A boolean representing whether the outputs of the model are logits.
+
+        :return: a boolean representing whether the outputs of the model are logits.
+        """
+        return self._use_logits  # type: ignore
+
+    @property
+    def input_layer(self) -> int:
+        """
+        The index of the layer considered as input for models with multiple input layers.
+        For models with only one input layer the index is 0.
+
+        :return: The index of the layer considered as input for models with multiple input layers.
+        """
+        return self._input_layer  # type: ignore
+
+    @property
+    def output_layer(self) -> int:
+        """
+        The index of the layer considered as output for models with multiple output layers.
+        For models with only one output layer the index is 0.
+
+        :return: The index of the layer considered as output for models with multiple output layers.
+        """
+        return self._output_layer  # type: ignore
+
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 

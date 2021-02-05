@@ -48,6 +48,20 @@ class KerasNeuralCleanse(NeuralCleanseMixin, KerasClassifier):
 
     | Paper link: https://people.cs.uchicago.edu/~ravenben/publications/pdf/backdoor-sp19.pdf
     """
+    estimator_params = KerasClassifier.estimator_params + [
+        "steps",
+        "init_cost",
+        "norm",
+        "learning_rate",
+        "attack_success_threshold",
+        "patience",
+        "early_stop",
+        "early_stop_threshold",
+        "early_stop_patience",
+        "cost_multiplier_up",
+        "cost_multiplier_down",
+        "batch_size"
+    ]
 
     def __init__(
         self,

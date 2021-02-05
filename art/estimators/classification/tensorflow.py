@@ -51,6 +51,16 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     """
     This class implements a classifier with the TensorFlow framework.
     """
+    estimator_params = TensorFlowEstimator.estimator_params + ClassifierMixin.estimator_params + [
+        "input_ph",
+        "output",
+        "labels_ph",
+        "train",
+        "loss",
+        "learning",
+        "sess",
+        "feed_dict",
+    ]
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
@@ -160,6 +170,69 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         """
         return self._input_shape  # type: ignore
 
+    @property
+    def input_ph(self) -> "tf.Placeholder":
+        """
+        Return the input placeholder.
+
+        :return: The input placeholder.
+        """
+        return self._input_ph  # type: ignore
+
+    @property
+    def output(self) -> "tf.Tensor":
+        """
+        Return the output layer of the model.
+
+        :return: The output layer of the model.
+        """
+        return self._output  # type: ignore
+
+    @property
+    def labels_ph(self) -> "tf.Placeholder":
+        """
+        Return the labels placeholder of the model.
+
+        :return: The labels placeholder of the model.
+        """
+        return self._labels_ph  # type: ignore
+
+    @property
+    def train(self) -> "tf.Tensor":
+        """
+        Return the train tensor for fitting.
+
+        :return: The train tensor for fitting.
+        """
+        return self._train  # type: ignore
+
+    @property
+    def loss(self) -> "tf.Tensor":
+        """
+        Return the loss function.
+
+        :return: The loss function.
+        """
+        return self._loss  # type: ignore
+
+    @property
+    def learning(self) -> "tf.Placeholder":
+        """
+        Return the placeholder to indicate if the model is training.
+
+        :return: The placeholder to indicate if the model is training.
+        """
+        return self._learning  # type: ignore
+
+    @property
+    def feed_dict(self) -> Dict[Any, Any]:
+        """
+        Return the feed dictionary for the session run evaluating the classifier.
+
+        :return: The feed dictionary for the session run evaluating the classifier.
+        """
+        return self._feed_dict  # type: ignore
+    
     def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
@@ -378,7 +451,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
 
         return grads
 
-    def loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
+    def compute_loss(self, x: np.ndarray, y: np.ndarray, reduction: str = "none", **kwargs) -> np.ndarray:
         """
         Compute the loss of the neural network for samples `x`.
 
@@ -714,6 +787,11 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     """
     This class implements a classifier with the TensorFlow v2 framework.
     """
+    estimator_params = TensorFlowV2Estimator.estimator_params + ClassifierMixin.estimator_params + [
+        "input_shape",
+        "loss_object",
+        "train_step",
+    ]
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
@@ -793,6 +871,24 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
         :return: Shape of one input sample.
         """
         return self._input_shape  # type: ignore
+
+    @property
+    def loss_object(self) -> "tf.keras.losses.Loss":
+        """
+        Return the loss function.
+
+        :return: The loss function.
+        """
+        return self._loss_object  # type: ignore
+
+    @property
+    def train_step(self) -> Callable:
+        """
+        Return the function that applies a gradient update to the trainable variables.
+
+        :return: The function that applies a gradient update to the trainable variables.
+        """
+        return self._train_step  # type: ignore
 
     def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
