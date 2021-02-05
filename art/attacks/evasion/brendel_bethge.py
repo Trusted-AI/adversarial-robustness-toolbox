@@ -40,9 +40,10 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from typing import Union, Optional, Tuple, TYPE_CHECKING
+import logging
 
 import numpy as np
-import logging
+from numba.experimental import jitclass
 
 from art import config
 from art.utils import get_labels_np_array, check_and_transform_label_format, is_probability
@@ -58,6 +59,7 @@ EPS = 1e-10
 logger = logging.getLogger(__name__)
 
 
+@jitclass(spec=[])
 class BFGSB(object):
     def __init__(self):
         pass
@@ -839,6 +841,10 @@ class Optimizer(object):
         return _delta
 
 
+spec = [("bfgsb", BFGSB.class_type.instance_type)]  # type: ignore
+
+
+@jitclass(spec=spec)
 class L2Optimizer(Optimizer):
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):  # noqa: C901
         """
@@ -1029,6 +1035,7 @@ class L2Optimizer(Optimizer):
         return np.linalg.norm(x0 - x) ** 2
 
 
+@jitclass(spec=spec)
 class L1Optimizer(Optimizer):
     def fun_and_jac(self, params, x0, x, b, min_, max_, c, r):
         lam, mu = params
@@ -1172,6 +1179,7 @@ class L1Optimizer(Optimizer):
         return np.abs(x0 - x).sum()
 
 
+@jitclass(spec=spec)
 class LinfOptimizer(Optimizer):
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
@@ -1356,6 +1364,7 @@ class LinfOptimizer(Optimizer):
         return np.abs(x0 - x).max()
 
 
+@jitclass(spec=spec)
 class L0Optimizer(Optimizer):
     def optimize_distance_s_t_boundary_and_trustregion(self, x0, x, b, min_, max_, c, r):
         """
