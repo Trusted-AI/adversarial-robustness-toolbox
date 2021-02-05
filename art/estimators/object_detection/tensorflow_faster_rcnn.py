@@ -30,7 +30,7 @@ from art import config
 
 if TYPE_CHECKING:
     # pylint: disable=C0412
-    import tensorflow as tf
+    import tensorflow.compat.v1 as tf
     from object_detection.meta_architectures.faster_rcnn_meta_arch import FasterRCNNMetaArch
     from tensorflow.python.framework.ops import Tensor
     from tensorflow.python.client.session import Session
@@ -106,7 +106,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               `first_stage_localization_loss`, `first_stage_objectness_loss`,
                               `second_stage_localization_loss`, `second_stage_classification_loss`.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
         # Super initialization
         super().__init__(
@@ -252,7 +252,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                               corresponding loss values.
                     - detections: a dictionary containing final detection results.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
         from object_detection.utils import variables_helper
 
         if obj_detection_model is None:
@@ -336,7 +336,7 @@ class TensorFlowFasterRCNN(ObjectDetectorMixin, TensorFlowEstimator):
                     weights for groundtruth boxes.
         :return: Loss gradients of the same shape as `x`.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
         # Only do loss_gradient if is_training is False
         if self.is_training:

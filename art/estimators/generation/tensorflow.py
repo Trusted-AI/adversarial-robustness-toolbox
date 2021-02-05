@@ -29,7 +29,7 @@ from art.estimators.tensorflow import TensorFlowEstimator
 if TYPE_CHECKING:
     # pylint: disable=C0412
     import numpy as np
-    import tensorflow as tf
+    import tensorflow.compat.v1 as tf
 
     from art.utils import CLIP_VALUES_TYPE, PREPROCESSING_TYPE
     from art.defences.preprocessor import Preprocessor
@@ -83,7 +83,7 @@ class TensorFlowGenerator(GeneratorMixin, TensorFlowEstimator):  # lgtm [py/miss
         :param feed_dict: A feed dictionary for the session run evaluating the classifier. This dictionary includes all
                           additionally required placeholders except the placeholders defined in this class.
         """
-        import tensorflow as tf  # lgtm [py/repeated-import]
+        import tensorflow.compat.v1 as tf  # lgtm [py/repeated-import]
 
         super().__init__(
             model=model,
