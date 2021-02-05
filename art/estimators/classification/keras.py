@@ -295,7 +295,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         self._predictions_op = self._output
         self._loss_function = loss_function
         self._loss = loss_
-        self._loss_gradients = k.function([self._input, label_ph], [loss_gradients])
+        self._loss_gradients = k.function([self._input, label_ph, k.learning_phase()], [loss_gradients])
 
         # Get the internal layer
         self._layer_names = self._get_layers()
@@ -331,8 +331,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             import tensorflow.keras.backend as k
         else:
             import keras.backend as k
-
-        k.set_learning_phase(0)
 
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
@@ -385,14 +383,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of gradients of the same shape as `x`.
         """
-        # pylint: disable=E0401
-        if self.is_tensorflow:
-            import tensorflow.keras.backend as k
-        else:
-            import keras.backend as k
-
-        k.set_learning_phase(int(training_mode))
-
         # Check shape of preprocessed `x` because of custom function for `_loss_gradients`
         x_preprocessed, y_preprocessed = self._apply_preprocessing(x, y, fit=False)
         shape_match = [i is None or i == j for i, j in zip(self._input_shape, x_preprocessed.shape[1:])]
@@ -408,7 +398,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             y_preprocessed = np.argmax(y_preprocessed, axis=1)
 
         # Compute gradients
-        gradients = self._loss_gradients([x_preprocessed, y_preprocessed])[0]
+        gradients = self._loss_gradients([x_preprocessed, y_preprocessed, int(training_mode)])[0]
         assert gradients.shape == x_preprocessed.shape
         gradients = self._apply_preprocessing_gradient(x, gradients)
         assert gradients.shape == x.shape
@@ -431,14 +421,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                  `(batch_size, nb_classes, input_shape)` when computing for all classes, otherwise shape becomes
                  `(batch_size, 1, input_shape)` when `label` parameter is specified.
         """
-        # pylint: disable=E0401
-        if self.is_tensorflow:
-            import tensorflow.keras.backend as k
-        else:
-            import keras.backend as k
-
-        k.set_learning_phase(int(training_mode))
-
         # Check value of label for computing gradients
         if not (
             label is None
@@ -470,13 +452,13 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
-            gradients = np.swapaxes(np.array(self._class_gradients_idx[label]([x_preprocessed])), 0, 1)  # type: ignore
+            gradients = np.swapaxes(np.array(self._class_gradients_idx[label]([x_preprocessed, int(training_mode)])), 0, 1)  # type: ignore
             assert gradients.shape == (x_preprocessed.shape[0], 1) + x_preprocessed.shape[1:]
 
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
-            gradients = np.array([self._class_gradients_idx[l]([x_preprocessed]) for l in unique_label])
+            gradients = np.array([self._class_gradients_idx[l]([x_preprocessed, int(training_mode)]) for l in unique_label])
             gradients = np.swapaxes(np.squeeze(gradients, axis=1), 0, 1)
             lst = [unique_label.index(i) for i in label]
             gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
@@ -494,26 +476,14 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         :param training_mode: `True` for model set to training mode and `'False` for model set to evaluation mode.
         :return: Array of predictions of shape `(nb_inputs, nb_classes)`.
         """
-        # pylint: disable=E0401
-        if self.is_tensorflow:
-            import tensorflow.keras.backend as k
-        else:
-            import keras.backend as k
-        from art.config import ART_NUMPY_DTYPE
-
-        k.set_learning_phase(int(training_mode))
-
         # Apply preprocessing
         x_preprocessed, _ = self._apply_preprocessing(x, y=None, fit=False)
 
         # Run predictions with batching
-        predictions = np.zeros((x_preprocessed.shape[0], self.nb_classes), dtype=ART_NUMPY_DTYPE)
-        for batch_index in range(int(np.ceil(x_preprocessed.shape[0] / float(batch_size)))):
-            begin, end = (
-                batch_index * batch_size,
-                min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
-            )
-            predictions[begin:end] = self._model.predict([x_preprocessed[begin:end]])
+        if training_mode:
+            predictions = self._model(x_preprocessed, training=training_mode)
+        else:
+            predictions = self._model.predict(x_preprocessed, batch_size=batch_size)
 
         # Apply postprocessing
         predictions = self._apply_postprocessing(preds=predictions, fit=False)
@@ -594,8 +564,6 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             import keras.backend as k
         from art.config import ART_NUMPY_DTYPE
 
-        k.set_learning_phase(0)
-
         if isinstance(layer, six.string_types):
             if layer not in self._layer_names:
                 raise ValueError("Layer name %s is not part of the graph." % layer)
@@ -627,10 +595,10 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 layer_output = keras_layer.get_output_at(0)
             else:
                 layer_output = keras_layer.output
-            self._activations_func[layer_name] = k.function([self._input], [layer_output])
+            self._activations_func[layer_name] = k.function([self._input, k.learning_phase()], [layer_output])
 
         # Determine shape of expected output and prepare array
-        output_shape = self._activations_func[layer_name]([x_preprocessed[0][None, ...]])[0].shape
+        output_shape = self._activations_func[layer_name]([x_preprocessed[0][None, ...]], 0)[0].shape
         activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
         # Get activations with batching
@@ -639,7 +607,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
                 batch_index * batch_size,
                 min((batch_index + 1) * batch_size, x_preprocessed.shape[0]),
             )
-            activations[begin:end] = self._activations_func[layer_name]([x_preprocessed[begin:end]])[0]
+            activations[begin:end] = self._activations_func[layer_name]([x_preprocessed[begin:end], 0])[0]
 
         if framework:
             placeholder = k.placeholder(shape=x.shape)
@@ -708,7 +676,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             for current_label in unique_labels:
                 if self._class_gradients_idx[current_label] is None:
                     class_gradients = [k.gradients(self._predictions_op[:, current_label], self._input)[0]]
-                    self._class_gradients_idx[current_label] = k.function([self._input], class_gradients)
+                    self._class_gradients_idx[current_label] = k.function([self._input, k.learning_phase()], class_gradients)
 
     def _get_layers(self) -> List[str]:
         """
