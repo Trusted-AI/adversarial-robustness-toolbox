@@ -132,8 +132,8 @@ class SecurityCurve(Evaluation):
         # Define parameters for Projected Gradient Descent
         max_iter = 100
         kwargs["max_iter"] = max_iter
-        kwargs["eps"] = classifier.clip_values[1]
-        kwargs["eps_step"] = classifier.clip_values[1] / (max_iter / 2)
+        kwargs["eps"] = float(classifier.clip_values[1])
+        kwargs["eps_step"] = float(classifier.clip_values[1] / (max_iter / 2))
 
         # Create attack
         attack_pgd = ProjectedGradientDescent(estimator=classifier, **kwargs)
