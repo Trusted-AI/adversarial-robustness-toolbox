@@ -51,16 +51,12 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
     """
     This class implements a classifier with the TensorFlow framework.
     """
-    estimator_params = TensorFlowEstimator.estimator_params + ClassifierMixin.estimator_params + [
-        "input_ph",
-        "output",
-        "labels_ph",
-        "train",
-        "loss",
-        "learning",
-        "sess",
-        "feed_dict",
-    ]
+
+    estimator_params = (
+        TensorFlowEstimator.estimator_params
+        + ClassifierMixin.estimator_params
+        + ["input_ph", "output", "labels_ph", "train", "loss", "learning", "sess", "feed_dict",]
+    )
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
@@ -232,7 +228,7 @@ class TensorFlowClassifier(ClassGradientsMixin, ClassifierMixin, TensorFlowEstim
         :return: The feed dictionary for the session run evaluating the classifier.
         """
         return self._feed_dict  # type: ignore
-    
+
     def predict(self, x: np.ndarray, batch_size: int = 128, training_mode: bool = False, **kwargs) -> np.ndarray:
         """
         Perform prediction for a batch of inputs.
@@ -787,11 +783,12 @@ class TensorFlowV2Classifier(ClassGradientsMixin, ClassifierMixin, TensorFlowV2E
     """
     This class implements a classifier with the TensorFlow v2 framework.
     """
-    estimator_params = TensorFlowV2Estimator.estimator_params + ClassifierMixin.estimator_params + [
-        "input_shape",
-        "loss_object",
-        "train_step",
-    ]
+
+    estimator_params = (
+        TensorFlowV2Estimator.estimator_params
+        + ClassifierMixin.estimator_params
+        + ["input_shape", "loss_object", "train_step",]
+    )
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(

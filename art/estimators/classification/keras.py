@@ -66,11 +66,11 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
     Wrapper class for importing Keras models.
     """
 
-    estimator_params = KerasEstimator.estimator_params + ClassifierMixin.estimator_params + [
-        "use_logits",
-        "input_layer",
-        "output_layer"
-    ]
+    estimator_params = (
+        KerasEstimator.estimator_params
+        + ClassifierMixin.estimator_params
+        + ["use_logits", "input_layer", "output_layer"]
+    )
 
     @deprecated_keyword_arg("channel_index", end_version="1.6.0", replaced_by="channels_first")
     def __init__(
@@ -493,7 +493,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
         else:
             # For each sample, compute the gradients w.r.t. the indicated target class (possibly distinct)
             unique_label = list(np.unique(label))
-            gradients = np.array([self._class_gradients_idx[l]([x_preprocessed, int(training_mode)]) for l in unique_label])
+            gradients = np.array(
+                [self._class_gradients_idx[l]([x_preprocessed, int(training_mode)]) for l in unique_label]
+            )
             gradients = np.swapaxes(np.squeeze(gradients, axis=1), 0, 1)
             lst = [unique_label.index(i) for i in label]
             gradients = np.expand_dims(gradients[np.arange(len(gradients)), lst], axis=1)
@@ -711,7 +713,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             for current_label in unique_labels:
                 if self._class_gradients_idx[current_label] is None:
                     class_gradients = [k.gradients(self._predictions_op[:, current_label], self._input)[0]]
-                    self._class_gradients_idx[current_label] = k.function([self._input, k.learning_phase()], class_gradients)
+                    self._class_gradients_idx[current_label] = k.function(
+                        [self._input, k.learning_phase()], class_gradients
+                    )
 
     def _get_layers(self) -> List[str]:
         """
