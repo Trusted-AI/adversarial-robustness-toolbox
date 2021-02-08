@@ -635,7 +635,7 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
             self._activations_func[layer_name] = k.function([self._input, k.learning_phase()], [layer_output])
 
         # Determine shape of expected output and prepare array
-        output_shape = self._activations_func[layer_name]([x_preprocessed[0][None, ...], 0])[0].shape
+        output_shape = self._activations_func[layer_name]([x_preprocessed[0][None, ...], int(False)])[0].shape
         activations = np.zeros((x_preprocessed.shape[0],) + output_shape[1:], dtype=ART_NUMPY_DTYPE)
 
         # Get activations with batching
