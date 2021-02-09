@@ -487,7 +487,9 @@ class KerasClassifier(ClassGradientsMixin, ClassifierMixin, KerasEstimator):
 
         elif isinstance(label, (int, np.integer)):
             # Compute the gradients only w.r.t. the provided label
-            gradients = np.swapaxes(np.array(self._class_gradients_idx[label]([x_preprocessed, int(training_mode)])), 0, 1)  # type: ignore
+            gradients = np.swapaxes(
+                np.array(self._class_gradients_idx[label]([x_preprocessed, int(training_mode)])), axis1=0, axis2=1
+            )  # type: ignore
             assert gradients.shape == (x_preprocessed.shape[0], 1) + x_preprocessed.shape[1:]
 
         else:
