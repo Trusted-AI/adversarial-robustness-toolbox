@@ -118,10 +118,6 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
 
         super().__init__(**kwargs)
 
-        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
-
-        self.all_framework_preprocessing = all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing])
-
     def predict(self, x: np.ndarray, batch_size: int = 128, **kwargs):
         """
         Perform prediction of the neural network for samples `x`.
@@ -159,6 +155,21 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
+
+    def set_params(self, **kwargs) -> None:
+        """
+        Take a dictionary of parameters and apply checks before setting them as attributes.
+
+        :param kwargs: A dictionary of attributes.
+        """
+        super().set_params(**kwargs)
+        self._check_params()
+
+    def _check_params(self) -> None:
+        from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
+
+        super()._check_params()
+        self.all_framework_preprocessing = all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing])
 
     def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
         """

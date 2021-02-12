@@ -47,7 +47,7 @@ class BaseEstimator(ABC):
         "clip_values",
         "preprocessing_defences",
         "postprocessing_defences",
-        "preprocessing",
+        # "preprocessing", # preprocessing cannot be set with set_params
     ]
 
     def __init__(
@@ -80,33 +80,47 @@ class BaseEstimator(ABC):
 
         self.preprocessing: List["Preprocessor"] = []
 
-        if preprocessing_defences is None:
-            pass
-        elif isinstance(preprocessing_defences, Preprocessor):
-            self.preprocessing.append(preprocessing_defences)
-        else:
-            self.preprocessing += preprocessing_defences
-
-        self.preprocessing_defences = preprocessing_defences
-
+        # preprocessing
+        self._preprocessing_argument = None
         if preprocessing is None:
             pass
         elif isinstance(preprocessing, tuple):
             from art.preprocessing.standardisation_mean_std.standardisation_mean_std import StandardisationMeanStd
 
-            self.preprocessing.append(StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1]))
+            self._preprocessing_argument = StandardisationMeanStd(mean=preprocessing[0], std=preprocessing[1])
         elif isinstance(preprocessing, Preprocessor):
-            self.preprocessing.append(preprocessing)
+            self._preprocessing_argument = preprocessing
         else:
-            self.preprocessing += preprocessing
+            raise ValueError("Preprocessing argument not recognised.")
 
+        # preprocessing_defences
+        self._set_preprocessing_defences(preprocessing_defences)
+
+        # postprocessing_defences
         self.postprocessing_defences: Optional[List["Postprocessor"]]
+        self._set_postprocessing_defences(postprocessing_defences)
+
+        self._check_params()
+
+    def _set_preprocessing_defences(self, preprocessing_defences):
+        from art.defences.preprocessor.preprocessor import Preprocessor
+
+        if preprocessing_defences is None:
+            pass
+        elif isinstance(preprocessing_defences, Preprocessor):
+            self.preprocessing = [preprocessing_defences] + [self._preprocessing_argument]
+        else:
+            self.preprocessing = preprocessing_defences + [self._preprocessing_argument]
+
+        self.preprocessing_defences = preprocessing_defences
+
+    def _set_postprocessing_defences(self, postprocessing_defences):
+        from art.defences.postprocessor.postprocessor import Postprocessor
+
         if isinstance(postprocessing_defences, Postprocessor):
             self.postprocessing_defences = [postprocessing_defences]
         else:
             self.postprocessing_defences = postprocessing_defences
-
-        self._check_params()
 
     def set_params(self, **kwargs) -> None:
         """
@@ -119,9 +133,14 @@ class BaseEstimator(ABC):
                 if hasattr(BaseEstimator, key) and isinstance(getattr(BaseEstimator, key), property):
                     setattr(self, "_" + key, value)
                 else:
-                    setattr(self, key, value)
+                    if key == "preprocessing_defences":
+                        self._set_preprocessing_defences(value)
+                    elif key == "postprocessing_defences":
+                        self._set_postprocessing_defences(value)
+                    else:
+                        setattr(self, key, value)
             else:
-                raise ValueError("Unexpected parameter {} found in kwargs.".format(key))
+                raise ValueError("Unexpected parameter `{}` found in kwargs.".format(key))
         self._check_params()
 
     def get_params(self) -> Dict[str, Any]:

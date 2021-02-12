@@ -65,10 +65,6 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
 
         super().__init__(**kwargs)
 
-        from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
-
-        self.all_framework_preprocessing = all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing])
-
         # Set device
         if device_type == "cpu" or not torch.cuda.is_available():
             self._device = torch.device("cpu")
@@ -113,6 +109,21 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         :rtype: Format as expected by the `model`
         """
         raise NotImplementedError
+
+    def set_params(self, **kwargs) -> None:
+        """
+        Take a dictionary of parameters and apply checks before setting them as attributes.
+
+        :param kwargs: A dictionary of attributes.
+        """
+        super().set_params(**kwargs)
+        self._check_params()
+
+    def _check_params(self) -> None:
+        from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
+
+        super()._check_params()
+        self.all_framework_preprocessing = all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing])
 
     def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:
         """
