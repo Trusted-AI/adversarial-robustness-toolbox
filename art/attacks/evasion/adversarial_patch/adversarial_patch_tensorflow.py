@@ -31,6 +31,7 @@ import numpy as np
 from tqdm.auto import trange
 
 from art.attacks.attack import EvasionAttack
+from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
 from art.utils import check_and_transform_label_format, is_probability
@@ -495,3 +496,17 @@ class AdversarialPatchTensorFlowV2(EvasionAttack):
             self._patch.assign(initial_patch_value)
         else:
             raise ValueError("Unexpected value for initial_patch_value.")
+
+    @staticmethod
+    def insert_transformed_patch(x: np.ndarray, patch: np.ndarray, image_coords: np.ndarray):
+        """
+        Insert patch to image based on given or selected coordinates.
+
+        :param x: The images to insert the patch.
+        :param patch: The patch to be transformed and inserted.
+        :param image_coords: The coordinates of the 4 corners of the transformed, inserted patch of shape
+            [[x1, y1], [x2, y2], [x3, y3], [x4, y4]] in pixel units going in clockwise direction, starting with upper
+            left corner.
+        :return: The input `x` with the patch inserted.
+        """
+        return insert_transformed_patch(x, patch, image_coords)

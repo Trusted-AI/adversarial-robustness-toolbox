@@ -31,9 +31,9 @@ import numpy as np
 
 from art.attacks.evasion.adversarial_patch.adversarial_patch_numpy import AdversarialPatchNumpy
 from art.attacks.evasion.adversarial_patch.adversarial_patch_tensorflow import AdversarialPatchTensorFlowV2
+from art.attacks.evasion.adversarial_patch.utils import insert_transformed_patch
 from art.estimators.estimator import BaseEstimator, NeuralNetworkMixin
 from art.estimators.classification.classifier import ClassifierMixin
-
 from art.estimators.classification import TensorFlowV2Classifier
 from art.attacks.attack import EvasionAttack
 
@@ -170,51 +170,18 @@ class AdversarialPatch(EvasionAttack):
         """
         self._attack.reset_patch(initial_patch_value=initial_patch_value)
 
-    def insert_transformed_patch(patch, image, image_coords):
+    def insert_transformed_patch(self, x: np.ndarray, patch: np.ndarray, image_coords: np.ndarray):
         """
-        Insert patch to image based on given or selected coordinates
+        Insert patch to image based on given or selected coordinates.
 
-        attributes::
-            patch
-                patch as numpy array
-            image
-                image as numpy array
-            image_coords
-                image coordinates patch coordinates will be mapped to [numpy array]
-                going in clockwise direction, starting with upper left corner
-
-        returns::
-            image with patch inserted
+        :param x: The images to insert the patch.
+        :param patch: The patch to be transformed and inserted.
+        :param image_coords: The coordinates of the 4 corners of the transformed, inserted patch of shape
+            [[x1, y1], [x2, y2], [x3, y3], [x4, y4]] in pixel units going in clockwise direction, starting with upper
+            left corner.
+        :return: The input `x` with the patch inserted.
         """
-
-        rows = patch.shape[0]
-        cols = patch.shape[1]
-        if image_coords.shape[0] == 4:
-            patch_coords = np.array([[0, 0], [cols - 1, 0], [cols - 1, rows - 1], [0, rows - 1]])
-        else:
-            patch_coords = np.array([[0, 0], [cols - 1, 0], [cols - 1, (rows - 1) // 2], \
-                                     [cols - 1, rows - 1], [0, rows - 1], [0, (rows - 1) // 2]])
-
-        # calculate homography
-        h, status = cv2.findHomography(patch_coords, image_coords)
-
-        # warp patch to destination coordinates
-        im_out = cv2.warpPerspective(patch, h, (image.shape[1], image.shape[0]),
-                                     cv2.INTER_CUBIC)
-        cv2.imwrite('im_out.jpg', im_out)
-
-        # mask to aid with insertion
-        mask = np.ones(patch.shape)
-        mask_out = cv2.warpPerspective(mask, h, (image.shape[1], image.shape[0]),
-                                       cv2.INTER_CUBIC)
-        cv2.imwrite('mask_out.jpg', mask_out * 255)
-
-        # save image before adding shadows
-        im_neg_patch = np.copy(image)
-        im_neg_patch[mask_out != 0] = 0  # negative of the patch space
-        im_out = im_neg_patch.astype('float32') + im_out.astype('float32')
-
-        return im_out
+        return self._attack.insert_transformed_patch(x, patch, image_coords)
 
     def set_params(self, **kwargs) -> None:
         super().set_params(**kwargs)
