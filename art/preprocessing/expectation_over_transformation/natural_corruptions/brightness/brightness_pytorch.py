@@ -19,7 +19,7 @@
 This module implements EoT of changes in brightness.
 """
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -41,7 +41,7 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
     def __init__(
         self,
         nb_samples: int = 1,
-        brightness_range: Tuple[float, float] = [0.0, 2.0],
+        brightness_range: Tuple[float, float] = (0.0, 2.0),
         apply_fit: bool = False,
         apply_predict: bool = True,
     ) -> None:
