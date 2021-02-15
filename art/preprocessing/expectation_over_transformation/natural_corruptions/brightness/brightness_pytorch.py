@@ -26,7 +26,7 @@ import numpy as np
 from art.preprocessing.preprocessing import PreprocessorPyTorch
 
 if TYPE_CHECKING:
-    import tensorflow as tf
+    import torch
 
 logger = logging.getLogger(__name__)
 
