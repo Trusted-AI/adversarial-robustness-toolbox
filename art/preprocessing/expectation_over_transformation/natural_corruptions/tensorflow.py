@@ -16,44 +16,33 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements EoT of changes in brightness by addition of uniformly sampled delta.
+This module defines a base class for EoT of natural corruptions in TensorFlow.
 """
+from abc import abstractmethod
 import logging
-from typing import Optional, Tuple, Union, TYPE_CHECKING
+from typing import Optional, Tuple, TYPE_CHECKING
 
-import numpy as np
-
-from art.preprocessing.preprocessing import PreprocessorPyTorch
+from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
-    import torch
+    import tensorflow as tf
 
 logger = logging.getLogger(__name__)
 
 
-class EOTBrightnessPyTorch(PreprocessorPyTorch):
+class EOTNaturalCorruptionsTensorFlowV2(PreprocessorTensorFlowV2):
     """
-    This module implements EoT of changes in brightness by addition of uniformly sampled delta.
+    This module defines a base class for EoT of natural corruptions in TensorFlow.
     """
-
-    params = ["nb_samples", "brightness"]
 
     def __init__(
-        self,
-        nb_samples: int,
-        clip_values: Tuple[float, float],
-        delta: Union[float, Tuple[float, float]],
-        apply_fit: bool = False,
-        apply_predict: bool = True,
+        self, nb_samples: int, clip_values: Tuple[float, float], apply_fit: bool = False, apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTBrightnessPyTorch.
+        Create an instance of EOTNaturalCorruptionsTensorFlowV2.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
-        :param delta: Range to sample the delta (addition) to the pixel values to adjust the brightness. A single float
-            is translated to range [-delta, delta] or a tuple of floats is used to create sampling range
-            [delta[0], delta[1]]. The applied delta is sampled uniformly from this range for each image.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
@@ -61,43 +50,39 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
 
         self.nb_samples = nb_samples
         self.clip_values = clip_values
-        self.delta = delta
-        self.delta_range = (-delta, delta) if isinstance(delta, float) else delta
-        self._check_params()
+        EOTNaturalCorruptionsTensorFlowV2._check_params(self)
 
-    def forward(
-        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
-    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+    @abstractmethod
+    def _corrupt(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
+        raise NotImplementedError
+
+    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
-        Apply audio filter to a single sample `x`.
+        Apply corruptions to inputs `x`.
 
-        # :param x: A single audio sample.
-        # :param y: Label of the sample `x`. This function does not modify `y`.
-        # :return: Similar sample.
+        :param x: A single audio sample.
+        :param y: Label of the sample `x`. This function does not modify `y`.
+        :return: Corrupted samples and labels.
         """
-        import torch  # lgtm [py/repeated-import]
-
-        if torch.max(x) > 1.0:
-            raise ValueError("Input data `x` has to be float in range [0.0, 1.0].")
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
         x_preprocess_list = list()
         y_preprocess_list = list()
 
         for i_image in range(x.shape[0]):
             for i_sample in range(self.nb_samples):
-                delta_i = np.random.uniform(low=self.delta_range[0], high=self.delta_range[1])
                 x_i = x[i_image]
-                x_preprocess_i = torch.clamp(x_i + delta_i, min=self.clip_values[0], max=self.clip_values[1])
+                x_preprocess_i = self._corrupt(x_i)
                 x_preprocess_list.append(x_preprocess_i)
 
                 if y is not None:
                     y_preprocess_list.append(y[i_image])
 
-        x_preprocess = torch.stack(x_preprocess_list, dim=0)
+        x_preprocess = tf.stack(x_preprocess_list, axis=0)
         if y is None:
             y_preprocess = y
         else:
-            y_preprocess = torch.stack(y_preprocess_list, dim=0)
+            y_preprocess = tf.stack(y_preprocess_list, axis=0)
 
         return x_preprocess, y_preprocess
 
@@ -113,14 +98,3 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
             or self.clip_values[0] > self.clip_values[1]
         ):
             raise ValueError("The argument `clip_Values` has to be a float or tuple of two float values as (min, max).")
-
-        if not (isinstance(self.delta, (int, float)) or isinstance(self.delta, tuple)) or (
-            isinstance(self.delta, tuple)
-            and (
-                len(self.delta) != 2
-                or not isinstance(self.delta[0], (int, float))
-                or not isinstance(self.delta[1], (int, float))
-                or self.delta[0] > self.delta[1]
-            )
-        ):
-            raise ValueError("The argument `delta` has to be a float or tuple of two float values as (min, max).")
