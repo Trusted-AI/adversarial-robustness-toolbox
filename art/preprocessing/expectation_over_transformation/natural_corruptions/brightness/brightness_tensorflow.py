@@ -107,10 +107,10 @@ class EOTBrightnessTensorFlowV2(PreprocessorTensorFlowV2):
             raise ValueError("The number of samples needs to be an integer greater than or equal to 1.")
 
         if not isinstance(self.clip_values, tuple) or (
-                len(self.clip_values) != 2
-                or not isinstance(self.clip_values[0], (int, float))
-                or not isinstance(self.clip_values[1], (int, float))
-                or self.clip_values[0] > self.clip_values[1]
+            len(self.clip_values) != 2
+            or not isinstance(self.clip_values[0], (int, float))
+            or not isinstance(self.clip_values[1], (int, float))
+            or self.clip_values[0] > self.clip_values[1]
         ):
             raise ValueError("The argument `clip_Values` has to be a float or tuple of two float values as (min, max).")
 

@@ -65,7 +65,9 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
         self.delta_range = (-delta, delta) if isinstance(delta, float) else delta
         self._check_params()
 
-    def forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+    def forward(
+        self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None
+    ) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
         """
         Apply audio filter to a single sample `x`.
 
@@ -85,9 +87,7 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
             for i_sample in range(self.nb_samples):
                 delta_i = np.random.uniform(low=self.delta_range[0], high=self.delta_range[1])
                 x_i = x[i_image]
-                x_preprocess_i = torch.clamp(
-                    x_i + delta_i, min=self.clip_values[0], max=self.clip_values[1]
-                )
+                x_preprocess_i = torch.clamp(x_i + delta_i, min=self.clip_values[0], max=self.clip_values[1])
                 x_preprocess_list.append(x_preprocess_i)
 
                 if y is not None:
@@ -107,10 +107,10 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
             raise ValueError("The number of samples needs to be an integer greater than or equal to 1.")
 
         if not isinstance(self.clip_values, tuple) or (
-                len(self.clip_values) != 2
-                or not isinstance(self.clip_values[0], (int, float))
-                or not isinstance(self.clip_values[1], (int, float))
-                or self.clip_values[0] > self.clip_values[1]
+            len(self.clip_values) != 2
+            or not isinstance(self.clip_values[0], (int, float))
+            or not isinstance(self.clip_values[1], (int, float))
+            or self.clip_values[0] > self.clip_values[1]
         ):
             raise ValueError("The argument `clip_Values` has to be a float or tuple of two float values as (min, max).")
 
