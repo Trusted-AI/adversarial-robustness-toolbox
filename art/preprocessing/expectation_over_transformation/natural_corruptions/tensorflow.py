@@ -54,13 +54,19 @@ class EOTNaturalCorruptionsTensorFlowV2(PreprocessorTensorFlowV2):
 
     @abstractmethod
     def _corrupt(self, x: "tf.Tensor", **kwargs) -> "tf.Tensor":
+        """
+        Internal method implementing the corruption per image.
+
+        :param x: Input samples.
+        :return: Corrupted samples.
+        """
         raise NotImplementedError
 
     def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
         Apply corruptions to inputs `x`.
 
-        :param x: A single audio sample.
+        :param x: Input samples.
         :param y: Label of the sample `x`. This function does not modify `y`.
         :return: Corrupted samples and labels.
         """

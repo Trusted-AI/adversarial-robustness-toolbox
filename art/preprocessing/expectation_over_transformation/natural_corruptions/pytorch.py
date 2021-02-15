@@ -54,6 +54,12 @@ class EOTNaturalCorruptionsPyTorch(PreprocessorPyTorch):
 
     @abstractmethod
     def _corrupt(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+        """
+        Internal method implementing the corruption per image.
+
+        :param x: Input samples.
+        :return: Corrupted samples.
+        """
         raise NotImplementedError
 
     def forward(
@@ -62,7 +68,7 @@ class EOTNaturalCorruptionsPyTorch(PreprocessorPyTorch):
         """
         Apply corruptions to inputs `x`.
 
-        :param x: A single audio sample.
+        :param x: Input samples.
         :param y: Label of the sample `x`. This function does not modify `y`.
         :return: Corrupted samples and labels.
         """

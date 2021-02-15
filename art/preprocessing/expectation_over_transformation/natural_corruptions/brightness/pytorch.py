@@ -64,6 +64,12 @@ class EOTBrightnessPyTorch(EOTNaturalCorruptionsPyTorch):
         self._check_params()
 
     def _corrupt(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
+        """
+        Internal method implementing the corruption per image by changing its brightness.
+
+        :param x: Input samples.
+        :return: Corrupted samples.
+        """
         import torch  # lgtm [py/repeated-import]
 
         delta_i = np.random.uniform(low=self.delta_range[0], high=self.delta_range[1])
