@@ -23,7 +23,7 @@ from typing import Optional, Tuple, Union, TYPE_CHECKING
 
 import numpy as np
 
-from art.preprocessing.preprocessing import PreprocessorPyTorch
+from art.preprocessing.preprocessing import PreprocessorTensorFlowV2
 
 if TYPE_CHECKING:
     import tensorflow as tf
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EOTBrightnessPyTorch(PreprocessorPyTorch):
+class EOTBrightnessTensorFlowV2(PreprocessorTensorFlowV2):
     """
     This module implements EoT of changes in brightness by addition of uniformly sampled delta.
     """
@@ -47,7 +47,7 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
         apply_predict: bool = True,
     ) -> None:
         """
-        Create an instance of EOTBrightnessPyTorch.
+        Create an instance of EOTBrightnessTensorFlowV2.
 
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
@@ -65,7 +65,7 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
         self.delta_range = (-delta, delta) if isinstance(delta, float) else delta
         self._check_params()
 
-    def forward(self, x: "torch.Tensor", y: Optional["torch.Tensor"] = None) -> Tuple["torch.Tensor", Optional["torch.Tensor"]]:
+    def forward(self, x: "tf.Tensor", y: Optional["tf.Tensor"] = None) -> Tuple["tf.Tensor", Optional["tf.Tensor"]]:
         """
         Apply audio filter to a single sample `x`.
 
@@ -73,9 +73,9 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
         # :param y: Label of the sample `x`. This function does not modify `y`.
         # :return: Similar sample.
         """
-        import torch  # lgtm [py/repeated-import]
+        import tensorflow as tf  # lgtm [py/repeated-import]
 
-        if torch.max(x) > 1.0:
+        if tf.reduce_max(x) > 1.0:
             raise ValueError("Input data `x` has to be float in range [0.0, 1.0].")
 
         x_preprocess_list = list()
@@ -85,19 +85,19 @@ class EOTBrightnessPyTorch(PreprocessorPyTorch):
             for i_sample in range(self.nb_samples):
                 delta_i = np.random.uniform(low=self.delta_range[0], high=self.delta_range[1])
                 x_i = x[i_image]
-                x_preprocess_i = torch.clamp(
-                    x_i + delta_i, min=self.clip_values[0], max=self.clip_values[1]
+                x_preprocess_i = tf.clip_by_value(
+                    x_i + delta_i, clip_value_min=self.clip_values[0], clip_value_max=self.clip_values[1]
                 )
                 x_preprocess_list.append(x_preprocess_i)
 
                 if y is not None:
                     y_preprocess_list.append(y[i_image])
 
-        x_preprocess = torch.stack(x_preprocess_list, dim=0)
+        x_preprocess = tf.stack(x_preprocess_list, axis=0)
         if y is None:
             y_preprocess = y
         else:
-            y_preprocess = torch.stack(y_preprocess_list, dim=0)
+            y_preprocess = tf.stack(y_preprocess_list, axis=0)
 
         return x_preprocess, y_preprocess
 
