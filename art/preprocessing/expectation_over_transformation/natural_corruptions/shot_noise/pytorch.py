@@ -73,7 +73,7 @@ class EOTShotNoisePyTorch(EOTNaturalCorruptionsPyTorch):
         import torch  # lgtm [py/repeated-import]
 
         lam_i = np.random.uniform(low=self.lam_range[0], high=self.lam_range[1])
-        delta_i = torch.poisson(input=torch.ones_like(x) * lam_i)
+        delta_i = torch.poisson(input=torch.ones_like(x) * lam_i) / lam_i * self.clip_values[1]
         return torch.clamp(x + delta_i, min=self.clip_values[0], max=self.clip_values[1])
 
     def _check_params(self) -> None:
