@@ -50,8 +50,7 @@ class EOTGaussianNoisePyTorch(EOTNaturalCorruptionsPyTorch):
         :param nb_samples: Number of random samples per input sample.
         :param clip_values: Tuple of float representing minimum and maximum values of input `(min, max)`.
         :param std: Range to sample the standard deviation for the Gaussian distribution. A single float
-            is translated to range [-delta, delta] or a tuple of floats is used to create sampling range
-            [delta[0], delta[1]]. The applied delta is sampled uniformly from this range for each image.
+            is translated to range [0, std]. The applied delta is sampled uniformly from this range for each image.
         :param apply_fit: True if applied during fitting/training.
         :param apply_predict: True if applied during predicting.
         """
@@ -60,7 +59,7 @@ class EOTGaussianNoisePyTorch(EOTNaturalCorruptionsPyTorch):
         )
 
         self.std = std
-        self.std_range = (-std, std) if isinstance(std, float) else std
+        self.std_range = (0.0, std)
         self._check_params()
 
     def _corrupt(self, x: "torch.Tensor", **kwargs) -> "torch.Tensor":
