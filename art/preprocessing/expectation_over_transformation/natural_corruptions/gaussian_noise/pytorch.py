@@ -16,7 +16,7 @@
 # TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 """
-This module implements EoT of changes in brightness by addition of uniformly sampled delta.
+This module implements EoT of adding Gaussian noise with uniformly sampled standard deviation.
 """
 import logging
 from typing import Tuple, Union, TYPE_CHECKING
@@ -86,4 +86,4 @@ class EOTGaussianNoisePyTorch(EOTNaturalCorruptionsPyTorch):
                 or self.std[0] > self.std[1]
             )
         ):
-            raise ValueError("The argument `delta` has to be a float or tuple of two float values as (min, max).")
+            raise ValueError("The argument `std` has to be a float or tuple of two float values as (min, max).")
