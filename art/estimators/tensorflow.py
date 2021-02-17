@@ -169,7 +169,9 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
         from art.defences.preprocessor.preprocessor import PreprocessorTensorFlowV2
 
         super()._check_params()
-        self.all_framework_preprocessing = all([isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing])
+        self.all_framework_preprocessing = all(
+            [isinstance(p, PreprocessorTensorFlowV2) for p in self.preprocessing_operations]
+        )
 
     def _apply_preprocessing(self, x, y, fit: bool = False) -> Tuple[Any, Any]:
         """
@@ -197,7 +199,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             StandardisationMeanStdTensorFlowV2,
         )
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return x, y
 
         if isinstance(x, tf.Tensor):
@@ -212,7 +214,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 if y is not None:
                     y = tf.convert_to_tensor(y)
 
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 if fit:
                     if preprocess.apply_fit:
                         x, y = preprocess.forward(x, y)
@@ -226,12 +228,14 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 if y is not None:
                     y = y.numpy()
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
-            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
+            and isinstance(
+                self.preprocessing_operations[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2)
+            )
         ):
             # Compatible with non-TensorFlow defences if no chaining.
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 x, y = preprocess(x, y)
 
         else:
@@ -265,7 +269,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
             StandardisationMeanStdTensorFlowV2,
         )
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return gradients
 
         if isinstance(x, tf.Tensor):
@@ -281,7 +285,7 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                 gradients = tf.convert_to_tensor(gradients, dtype=config.ART_NUMPY_DTYPE)
                 x_orig = x
 
-                for preprocess in self.preprocessing:
+                for preprocess in self.preprocessing_operations:
                     if fit:
                         if preprocess.apply_fit:
                             x = preprocess.estimate_forward(x)
@@ -298,13 +302,18 @@ class TensorFlowV2Estimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimato
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
             and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdTensorFlowV2))
         ):
             # Compatible with non-TensorFlow defences if no chaining.
-            defence = self.preprocessing[0]
-            gradients = defence.estimate_gradient(x, gradients)
+            for preprocess in self.preprocessing_operations[::-1]:
+                if fit:
+                    if preprocess.apply_fit:
+                        gradients = preprocess.estimate_gradient(x, gradients)
+                else:
+                    if preprocess.apply_predict:
+                        gradients = preprocess.estimate_gradient(x, gradients)
 
         else:
             raise NotImplementedError("The current combination of preprocessing types is not supported.")

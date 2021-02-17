@@ -123,7 +123,9 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
         from art.defences.preprocessor.preprocessor import PreprocessorPyTorch
 
         super()._check_params()
-        self.all_framework_preprocessing = all([isinstance(p, PreprocessorPyTorch) for p in self.preprocessing])
+        self.all_framework_preprocessing = all(
+            [isinstance(p, PreprocessorPyTorch) for p in self.preprocessing_operations]
+        )
 
     def _apply_preprocessing(self, x, y, fit: bool = False, no_grad=True) -> Tuple[Any, Any]:
         """
@@ -153,7 +155,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             StandardisationMeanStdPyTorch,
         )
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return x, y
 
         if isinstance(x, torch.Tensor):
@@ -169,7 +171,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                     y = torch.tensor(y, device=self._device)
 
             def chain_processes(x, y):
-                for preprocess in self.preprocessing:
+                for preprocess in self.preprocessing_operations:
                     if fit:
                         if preprocess.apply_fit:
                             x, y = preprocess.forward(x, y)
@@ -190,12 +192,12 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                 if y is not None:
                     y = y.cpu().numpy()
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
-            and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
+            and isinstance(self.preprocessing_operations[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
         ):
             # Compatible with non-PyTorch defences if no chaining.
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 x, y = preprocess(x, y)
 
         else:
@@ -229,7 +231,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             StandardisationMeanStdPyTorch,
         )
 
-        if not self.preprocessing:
+        if not self.preprocessing_operations:
             return gradients
 
         if isinstance(x, torch.Tensor):
@@ -243,7 +245,7 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
             gradients = torch.tensor(gradients, device=self._device)
             x_orig = x
 
-            for preprocess in self.preprocessing:
+            for preprocess in self.preprocessing_operations:
                 if fit:
                     if preprocess.apply_fit:
                         x = preprocess.estimate_forward(x)
@@ -260,13 +262,18 @@ class PyTorchEstimator(NeuralNetworkMixin, LossGradientsMixin, BaseEstimator):
                     "The input shape is {} while the gradient shape is {}".format(x.shape, gradients.shape)
                 )
 
-        elif len(self.preprocessing) == 1 or (
-            len(self.preprocessing) == 2
+        elif len(self.preprocessing_operations) == 1 or (
+            len(self.preprocessing_operations) == 2
             and isinstance(self.preprocessing[-1], (StandardisationMeanStd, StandardisationMeanStdPyTorch))
         ):
             # Compatible with non-PyTorch defences if no chaining.
-            defence = self.preprocessing[0]
-            gradients = defence.estimate_gradient(x, gradients)
+            for preprocess in self.preprocessing_operations[::-1]:
+                if fit:
+                    if preprocess.apply_fit:
+                        gradients = preprocess.estimate_gradient(x, gradients)
+                else:
+                    if preprocess.apply_predict:
+                        gradients = preprocess.estimate_gradient(x, gradients)
 
         else:
             raise NotImplementedError("The current combination of preprocessing types is not supported.")
