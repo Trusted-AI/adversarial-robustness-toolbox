@@ -84,6 +84,7 @@ class EOTGaussianNoisePyTorch(EOTNaturalCorruptionsPyTorch):
                 or not isinstance(self.std[0], (int, float))
                 or not isinstance(self.std[1], (int, float))
                 or self.std[0] > self.std[1]
+                or self.std[0] < 0.0
             )
         ):
             raise ValueError("The argument `std` has to be a float or tuple of two float values as (min, max).")

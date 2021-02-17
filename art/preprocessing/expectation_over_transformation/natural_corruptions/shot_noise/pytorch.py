@@ -85,6 +85,7 @@ class EOTShotNoisePyTorch(EOTNaturalCorruptionsPyTorch):
                 or not isinstance(self.lam[0], (int, float))
                 or not isinstance(self.lam[1], (int, float))
                 or self.lam[0] > self.lam[1]
+                or self.lam[0] < 0.0
             )
         ):
             raise ValueError("The argument `lam` has to be a float or tuple of two float values as (min, max).")

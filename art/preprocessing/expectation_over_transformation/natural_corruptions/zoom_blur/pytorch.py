@@ -104,6 +104,7 @@ class EOTZoomBlurPyTorch(EOTNaturalCorruptionsPyTorch):
                 or not isinstance(self.zoom[0], (int, float))
                 or not isinstance(self.zoom[1], (int, float))
                 or self.zoom[0] > self.zoom[1]
+                or self.zoom[0] < 1.0
             )
         ):
             raise ValueError("The argument `lam` has to be a float or tuple of two float values as (min, max).")
